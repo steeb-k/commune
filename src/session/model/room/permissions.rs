@@ -7,9 +7,7 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{
-    deserialized_responses::SyncOrStrippedState, event_handler::EventHandlerDropGuard,
-};
+use matrix_sdk::event_handler::EventHandlerDropGuard;
 use ruma::{
     events::{
         room::power_levels::{
@@ -203,29 +201,13 @@ mod imp {
             let matrix_room = room.matrix_room();
 
             let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move {
-                let state_event = match matrix_room_clone
-                    .get_state_event_static::<RoomPowerLevelsEventContent>()
-                    .await
-                {
-                    Ok(state_event) => state_event,
-                    Err(error) => {
-                        error!("Initial load of room power levels failed: {error}");
-                        return None;
-                    }
-                };
+            let handle = spawn_tokio!(async move { matrix_room_clone.room_power_levels().await });
 
-                state_event
-                    .and_then(|r| r.deserialize().ok())
-                    .and_then(|ev| match ev {
-                        SyncOrStrippedState::Sync(e) => Some(e),
-                        // The power levels are usually not in the stripped state.
-                        _ => None,
-                    })
-            });
-
-            if let Some(event) = handle.await.unwrap() {
-                self.update_power_levels(&event);
+            match handle.await.expect("task was not aborted") {
+                Ok(power_levels) => self.update_power_levels(power_levels),
+                Err(error) => {
+                    error!("Could not load room power levels: {error}");
+                }
             }
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
@@ -237,7 +219,7 @@ mod imp {
                         ctx.spawn(async move {
                             spawn!(async move {
                                 if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_power_levels(&event);
+                                    obj.imp().update_power_levels(event.power_levels());
                                 }
                             });
                         });
@@ -265,9 +247,8 @@ mod imp {
             self.permissions_changed();
         }
 
-        /// Update the power levels with the given event.
-        fn update_power_levels(&self, event: &SyncStateEvent<RoomPowerLevelsEventContent>) {
-            let power_levels = event.power_levels();
+        /// Update the power levels with the given data.
+        fn update_power_levels(&self, power_levels: RoomPowerLevels) {
             self.power_levels.replace(power_levels.clone());
             self.permissions_changed();
 

@@ -5,13 +5,9 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::event_handler::EventHandlerDropGuard;
 use ruma::{
-    events::{
-        room::join_rules::{
-            AllowRule, JoinRule as MatrixJoinRule, Restricted, RoomJoinRulesEventContent,
-        },
-        SyncStateEvent,
+    events::room::join_rules::{
+        AllowRule, JoinRule as MatrixJoinRule, Restricted, RoomJoinRulesEventContent,
     },
     OwnedRoomId,
 };
@@ -19,8 +15,7 @@ use tracing::error;
 
 use super::{Membership, Room};
 use crate::{
-    components::PillSource, gettext_f, session::model::RemoteRoom, spawn, spawn_tokio,
-    utils::BoundObject,
+    components::PillSource, gettext_f, session::model::RemoteRoom, spawn_tokio, utils::BoundObject,
 };
 
 /// Supported values for the join rule.
@@ -57,7 +52,7 @@ impl From<&MatrixJoinRule> for JoinRuleValue {
 }
 
 mod imp {
-    use std::cell::{Cell, OnceCell, RefCell};
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::Signal;
     use once_cell::sync::Lazy;
@@ -67,11 +62,10 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::JoinRule)]
     pub struct JoinRule {
-        /// The room where these permissions apply.
+        /// The room where this join rule apply.
         #[property(get)]
         pub room: glib::WeakRef<Room>,
         own_membership_handler: RefCell<Option<glib::SignalHandlerId>>,
-        join_rule_drop_guard: OnceCell<EventHandlerDropGuard>,
         /// The current join rule.
         pub matrix_join_rule: RefCell<Option<MatrixJoinRule>>,
         /// The value of the join rule.
@@ -123,11 +117,9 @@ mod imp {
     }
 
     impl JoinRule {
-        /// Initialize the join rule.
-        pub(super) async fn init_join_rule(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
+        /// Set the room where this join rule applies.
+        pub(super) fn set_room(&self, room: &Room) {
+            self.room.set(Some(room));
 
             let own_membership_handler = room.own_member().connect_membership_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -138,41 +130,15 @@ mod imp {
             ));
             self.own_membership_handler
                 .replace(Some(own_membership_handler));
-
-            let matrix_room = room.matrix_room();
-
-            // Initialize the properties.
-            self.update_join_rule(matrix_room.join_rule());
-
-            // Listen to changes.
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let handle = matrix_room.add_event_handler(
-                move |event: SyncStateEvent<RoomJoinRulesEventContent>| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_join_rule(event.join_rule().clone());
-                                }
-                            });
-                        });
-                    }
-                },
-            );
-
-            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-            self.join_rule_drop_guard.set(drop_guard).unwrap();
         }
 
         /// Update the join rule.
-        fn update_join_rule(&self, join_rule: MatrixJoinRule) {
-            if self.matrix_join_rule.borrow().as_ref() == Some(&join_rule) {
+        pub(super) fn update_join_rule(&self, join_rule: &MatrixJoinRule) {
+            if self.matrix_join_rule.borrow().as_ref() == Some(join_rule) {
                 return;
             }
 
-            self.matrix_join_rule.replace(Some(join_rule));
+            self.matrix_join_rule.replace(Some(join_rule.clone()));
 
             self.update_value();
             self.update_can_knock();
@@ -381,12 +347,14 @@ impl JoinRule {
         glib::Object::new()
     }
 
-    /// Set the room.
-    pub(super) async fn init(&self, room: &Room) {
-        let imp = self.imp();
+    /// Initialize the join rule with the room where it applies.
+    pub(super) fn init(&self, room: &Room) {
+        self.imp().set_room(room);
+    }
 
-        imp.room.set(Some(room));
-        imp.init_join_rule().await;
+    /// Update the join rule with the given value from the SDK.
+    pub(super) fn update(&self, join_rule: &MatrixJoinRule) {
+        self.imp().update_join_rule(join_rule);
     }
 
     /// Change the value of the join rule.

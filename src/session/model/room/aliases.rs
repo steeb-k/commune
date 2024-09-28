@@ -26,17 +26,17 @@ mod imp {
     pub struct RoomAliases {
         /// The room these aliases belong to.
         #[property(get)]
-        pub room: glib::WeakRef<Room>,
+        room: glib::WeakRef<Room>,
         /// The canonical alias.
-        pub canonical_alias: RefCell<Option<OwnedRoomAliasId>>,
+        pub(super) canonical_alias: RefCell<Option<OwnedRoomAliasId>>,
         /// The canonical alias, as a string.
         #[property(get = Self::canonical_alias_string)]
         canonical_alias_string: PhantomData<Option<String>>,
         /// The other aliases.
-        pub alt_aliases: RefCell<Vec<OwnedRoomAliasId>>,
+        pub(super) alt_aliases: RefCell<Vec<OwnedRoomAliasId>>,
         /// The other aliases, as a `GtkStringList`.
         #[property(get)]
-        pub alt_aliases_model: gtk::StringList,
+        alt_aliases_model: gtk::StringList,
         /// The alias, as a string.
         ///
         /// If the canonical alias is not set, it can be an alt alias.
@@ -60,10 +60,17 @@ mod imp {
     }
 
     impl RoomAliases {
+        /// Set the room these aliases belong to.
+        pub(super) fn set_room(&self, room: &Room) {
+            self.room.set(Some(room));
+        }
+
         /// Set the canonical alias.
-        pub(super) fn set_canonical_alias(&self, canonical_alias: Option<OwnedRoomAliasId>) {
+        ///
+        /// Returns `true` if the alias changed.
+        fn set_canonical_alias(&self, canonical_alias: Option<OwnedRoomAliasId>) -> bool {
             if *self.canonical_alias.borrow() == canonical_alias {
-                return;
+                return false;
             }
 
             self.canonical_alias.replace(canonical_alias);
@@ -71,6 +78,7 @@ mod imp {
             let obj = self.obj();
             obj.notify_canonical_alias_string();
             obj.notify_alias_string();
+            true
         }
 
         /// The canonical alias, as a string.
@@ -82,7 +90,14 @@ mod imp {
         }
 
         /// Set the alt aliases.
-        pub(super) fn set_alt_aliases(&self, alt_aliases: Vec<OwnedRoomAliasId>) {
+        ///
+        /// Returns `true` if the aliases changed.
+        fn set_alt_aliases(&self, alt_aliases: Vec<OwnedRoomAliasId>) -> bool {
+            // Check quickly if there are any changes first.
+            if *self.alt_aliases.borrow() == alt_aliases {
+                return false;
+            }
+
             let (pos, removed) = {
                 let old_aliases = &*self.alt_aliases.borrow();
                 let mut pos = None;
@@ -106,7 +121,7 @@ mod imp {
                 }
 
                 let Some(pos) = pos else {
-                    return;
+                    return false;
                 };
 
                 let removed = old_len.saturating_sub(pos);
@@ -121,22 +136,41 @@ mod imp {
                 .collect::<Vec<_>>();
 
             let Ok(pos) = u32::try_from(pos) else {
-                return;
+                return false;
             };
             let Ok(removed) = u32::try_from(removed) else {
-                return;
+                return false;
             };
 
             self.alt_aliases.replace(alt_aliases);
             self.alt_aliases_model.splice(pos, removed, &additions_str);
 
             self.obj().notify_alias_string();
+            true
         }
 
         /// The alias, as a string.
         fn alias_string(&self) -> Option<String> {
             self.canonical_alias_string()
                 .or_else(|| self.alt_aliases_model.string(0).map(Into::into))
+        }
+
+        /// Update the aliases with the SDK data.
+        pub(super) fn update(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            let obj = self.obj();
+            let _guard = obj.freeze_notify();
+
+            let matrix_room = room.matrix_room();
+            let mut changed = self.set_canonical_alias(matrix_room.canonical_alias());
+            changed |= self.set_alt_aliases(matrix_room.alt_aliases());
+
+            if changed {
+                obj.emit_by_name::<()>("changed", &[]);
+            }
         }
     }
 }
@@ -153,34 +187,12 @@ impl RoomAliases {
 
     /// Initialize these aliases with the given room.
     pub fn init(&self, room: &Room) {
-        let imp = self.imp();
-        self.imp().room.set(Some(room));
+        self.imp().set_room(room);
+    }
 
-        let matrix_room = room.matrix_room();
-        imp.set_canonical_alias(matrix_room.canonical_alias());
-        imp.set_alt_aliases(matrix_room.alt_aliases());
-
-        let obj_weak = glib::SendWeakRef::from(self.downgrade());
-        matrix_room.add_event_handler(move |_: SyncStateEvent<RoomCanonicalAliasEventContent>| {
-            let obj_weak = obj_weak.clone();
-            async move {
-                let ctx = glib::MainContext::default();
-                ctx.spawn(async move {
-                    if let Some(obj) = obj_weak.upgrade() {
-                        let Some(room) = obj.room() else {
-                            return;
-                        };
-                        let imp = obj.imp();
-
-                        let matrix_room = room.matrix_room();
-                        imp.set_canonical_alias(matrix_room.canonical_alias());
-                        imp.set_alt_aliases(matrix_room.alt_aliases());
-
-                        obj.emit_by_name::<()>("changed", &[]);
-                    }
-                });
-            }
-        });
+    /// Update the aliases with the SDK data.
+    pub fn update(&self) {
+        self.imp().update();
     }
 
     /// Get the content of the canonical alias event from the store.

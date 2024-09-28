@@ -25,7 +25,6 @@ use ruma::{
         session::logout,
     },
     assign,
-    events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
 use tokio::task::AbortHandle;
 use tracing::{debug, error, warn};
@@ -470,7 +469,6 @@ impl Session {
         self.imp().update_homeserver_reachable().await;
 
         self.room_list().load().await;
-        self.setup_direct_room_handler();
         self.verification_list().init();
         self.init_verification_state();
         self.init_recovery_state();
@@ -1021,29 +1019,5 @@ impl Session {
         self.notifications().clear();
 
         debug!("The logged out session was cleaned up");
-    }
-
-    /// Listen to changes to the list of direct rooms.
-    fn setup_direct_room_handler(&self) {
-        let session_weak = glib::SendWeakRef::from(self.downgrade());
-        self.client().add_event_handler(
-            move |_event: GlobalAccountDataEvent<DirectEventContent>| {
-                let session_weak = session_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(session) = session_weak.upgrade() {
-                                // We update all rooms as we don't know which
-                                // ones are no longer direct.
-                                for room in session.room_list().snapshot() {
-                                    room.load_is_direct().await;
-                                }
-                            }
-                        });
-                    });
-                }
-            },
-        );
     }
 }

@@ -11,7 +11,10 @@ use gtk::{
 };
 use indexmap::IndexMap;
 use matrix_sdk::sync::RoomUpdates;
-use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
+use ruma::{
+    events::{direct::DirectEventContent, GlobalAccountDataEvent},
+    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId,
+};
 use tracing::{error, warn};
 
 mod room_list_metainfo;
@@ -22,7 +25,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{Room, Session},
-    spawn_tokio,
+    spawn, spawn_tokio,
 };
 
 mod imp {
@@ -92,6 +95,36 @@ mod imp {
                 .cloned()
         }
     }
+
+    impl RoomList {
+        /// Listen to changes to the list of direct rooms.
+        pub(super) fn set_up_direct_room_handler(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            session.client().add_event_handler(
+                move |_event: GlobalAccountDataEvent<DirectEventContent>| {
+                    let obj_weak = obj_weak.clone();
+                    async move {
+                        let ctx = glib::MainContext::default();
+                        ctx.spawn(async move {
+                            spawn!(async move {
+                                if let Some(obj) = obj_weak.upgrade() {
+                                    // We update all rooms as we do not know which
+                                    // ones are no longer direct.
+                                    for room in obj.snapshot() {
+                                        room.update_is_direct().await;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                },
+            );
+        }
+    }
 }
 
 glib::wrapper! {
@@ -117,6 +150,7 @@ impl RoomList {
         self.imp().list.borrow().values().cloned().collect()
     }
 
+    /// Whether the room with the given identifier is pending.
     pub fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
         self.imp().pending_rooms.borrow().contains(identifier)
     }
@@ -135,7 +169,7 @@ impl RoomList {
         {
             let mut pending_rooms = self.imp().pending_rooms.borrow_mut();
             pending_rooms.remove(identifier);
-            if !self.contains_key(room_id) {
+            if !self.contains(room_id) {
                 pending_rooms.insert(room_id.to_owned().into());
             }
         }
@@ -195,7 +229,7 @@ impl RoomList {
         }
     }
 
-    /// Waits till the Room becomes available
+    /// Wait till the room with the given ID becomes available.
     pub async fn get_wait(&self, room_id: &RoomId) -> Option<Room> {
         if let Some(room) = self.get(room_id) {
             Some(room)
@@ -219,10 +253,12 @@ impl RoomList {
         }
     }
 
-    pub fn contains_key(&self, room_id: &RoomId) -> bool {
+    /// Whether this list contains the room with the given ID.
+    pub fn contains(&self, room_id: &RoomId) -> bool {
         self.imp().list.borrow().contains_key(room_id)
     }
 
+    /// Remove the room with the given ID.
     pub fn remove(&self, room_id: &RoomId) {
         let imp = self.imp();
 
@@ -246,6 +282,7 @@ impl RoomList {
 
             let position = list.len().saturating_sub(added);
 
+            let mut tombstoned_rooms_to_remove = Vec::new();
             for (_room_id, room) in list.iter().skip(position) {
                 room.connect_room_forgotten(clone!(
                     #[weak(rename_to = obj)]
@@ -254,22 +291,21 @@ impl RoomList {
                         obj.remove(room.room_id());
                     }
                 ));
-            }
 
-            let mut to_remove = Vec::new();
-            for room_id in imp.tombstoned_rooms.borrow().iter() {
-                if let Some(room) = list.get(room_id) {
-                    if room.update_outdated() {
-                        to_remove.push(room_id.clone());
+                // Check if the new room is the successor to a tombstoned room.
+                if let Some(predecessor_id) = room.predecessor_id() {
+                    if imp.tombstoned_rooms.borrow().contains(predecessor_id) {
+                        if let Some(room) = self.get(predecessor_id) {
+                            room.update_successor();
+                            tombstoned_rooms_to_remove.push(predecessor_id.clone());
+                        }
                     }
-                } else {
-                    to_remove.push(room_id.clone());
                 }
             }
 
-            if !to_remove.is_empty() {
+            if !tombstoned_rooms_to_remove.is_empty() {
                 let mut tombstoned_rooms = imp.tombstoned_rooms.borrow_mut();
-                for room_id in to_remove {
+                for room_id in tombstoned_rooms_to_remove {
                     tombstoned_rooms.remove(&room_id);
                 }
             }
@@ -292,6 +328,7 @@ impl RoomList {
         imp.list.borrow_mut().extend(rooms);
 
         self.items_added(added);
+        imp.set_up_direct_room_handler();
     }
 
     pub fn handle_room_updates(&self, rooms: RoomUpdates) {
@@ -319,8 +356,7 @@ impl RoomList {
             };
 
             self.pending_rooms_remove((*room_id).into());
-            room.update_room();
-            room.handle_left_update(left_room);
+            room.handle_ambiguity_changes(left_room.ambiguity_changes.values());
         }
 
         for (room_id, joined_room) in rooms.join {
@@ -340,8 +376,7 @@ impl RoomList {
 
             self.pending_rooms_remove((*room_id).into());
             imp.metainfo.watch_room(&room);
-            room.update_room();
-            room.handle_joined_update(joined_room);
+            room.handle_ambiguity_changes(joined_room.ambiguity_changes.values());
         }
 
         for (room_id, _invited_room) in rooms.invite {
@@ -361,7 +396,6 @@ impl RoomList {
 
             self.pending_rooms_remove((*room_id).into());
             imp.metainfo.watch_room(&room);
-            room.update_room();
         }
 
         if !new_rooms.is_empty() {

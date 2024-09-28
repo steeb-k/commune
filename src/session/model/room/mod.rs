@@ -9,13 +9,10 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    deserialized_responses::{
-        AmbiguityChange, MemberEvent, SyncOrStrippedState, SyncTimelineEvent,
-    },
+    deserialized_responses::{AmbiguityChange, SyncOrStrippedState},
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     send_queue::RoomSendQueueUpdate,
-    sync::{JoinedRoomUpdate, LeftRoomUpdate},
     DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
@@ -26,12 +23,9 @@ use ruma::{
     events::{
         receipt::ReceiptThread,
         room::{
-            avatar::RoomAvatarEventContent, encryption::SyncRoomEncryptionEvent,
-            guest_access::GuestAccess, history_visibility::HistoryVisibility,
+            avatar::RoomAvatarEventContent, guest_access::GuestAccess,
+            history_visibility::HistoryVisibility, member::SyncRoomMemberEvent,
         },
-        tag::{TagInfo, TagName},
-        typing::TypingEventContent,
-        AnyRoomAccountDataEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncEphemeralRoomEvent,
         SyncStateEvent,
     },
     EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
@@ -108,8 +102,8 @@ mod imp {
         ///
         /// This can be empty, the display name should be used instead in the
         /// interface.
-        #[property(get = Self::name)]
-        name: PhantomData<Option<String>>,
+        #[property(get)]
+        name: RefCell<Option<String>>,
         /// Whether this room has an avatar explicitly set.
         ///
         /// This is `false` if there is no avatar or if the avatar is the one
@@ -117,8 +111,8 @@ mod imp {
         #[property(get)]
         has_avatar: Cell<bool>,
         /// The topic of this room.
-        #[property(get = Self::topic)]
-        topic: PhantomData<Option<String>>,
+        #[property(get)]
+        topic: RefCell<Option<String>>,
         /// The linkified topic of this room.
         ///
         /// This is the string that should be used in the interface when markup
@@ -132,8 +126,8 @@ mod imp {
         #[property(get)]
         is_direct: Cell<bool>,
         /// Whether this room has been upgraded.
-        #[property(get = Self::is_tombstoned)]
-        is_tombstoned: PhantomData<bool>,
+        #[property(get)]
+        is_tombstoned: Cell<bool>,
         /// The ID of the room that was upgraded and that this one replaces.
         pub(super) predecessor_id: OnceCell<OwnedRoomId>,
         /// The ID of the room that was upgraded and that this one replaces, as
@@ -153,6 +147,7 @@ mod imp {
         /// The members of this room.
         #[property(get)]
         pub(super) members: glib::WeakRef<MemberList>,
+        members_drop_guard: OnceCell<EventHandlerDropGuard>,
         /// The number of joined members in the room, according to the
         /// homeserver.
         #[property(get)]
@@ -252,19 +247,18 @@ mod imp {
     impl Room {
         /// Initialize this room.
         pub(super) fn init(&self, matrix_room: MatrixRoom, metainfo: Option<RoomMetainfo>) {
-            let matrix_room = self.matrix_room.get_or_init(|| matrix_room);
-            self.set_joined_members_count(matrix_room.joined_members_count());
+            let obj = self.obj();
 
-            self.update_topic();
+            self.matrix_room
+                .set(matrix_room)
+                .expect("matrix room is uninitialized");
+
+            self.aliases.init(&obj);
             self.load_predecessor();
-            self.load_tombstone();
-            self.load_category();
-            self.set_up_typing();
+            self.watch_members();
             self.init_timeline();
-            self.set_up_is_encrypted();
-            self.aliases.init(&self.obj());
-            self.update_guests_allowed();
-            self.update_history_visibility();
+            self.join_rule.init(&obj);
+            self.set_up_typing();
 
             spawn!(
                 glib::Priority::DEFAULT_IDLE,
@@ -272,7 +266,9 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_avatar().await;
+                        imp.update_with_room_info(imp.matrix_room().clone_info())
+                            .await;
+                        imp.watch_room_info();
                     }
                 )
             );
@@ -283,7 +279,7 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_display_name().await;
+                        imp.update_is_direct().await;
                     }
                 )
             );
@@ -305,51 +301,7 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_is_direct().await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.watch_room_info().await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load_inviter().await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
                         imp.permissions.init(&imp.obj()).await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.join_rule.init(&imp.obj()).await;
                     }
                 )
             );
@@ -402,45 +354,71 @@ mod imp {
             self.matrix_room().room_id().to_string()
         }
 
-        /// The name of this room.
-        ///
-        /// This can be empty, the display name should be used instead in the
-        /// interface.
-        fn name(&self) -> Option<String> {
-            self.matrix_room().name()
+        /// Update the name of this room.
+        fn update_name(&self) {
+            let name = self
+                .matrix_room()
+                .name()
+                .map(|mut s| {
+                    s.truncate_end_whitespaces();
+                    s
+                })
+                .filter(|s| !s.is_empty());
+
+            if *self.name.borrow() == name {
+                return;
+            }
+
+            self.name.replace(name);
+            self.obj().notify_name();
         }
 
         /// Load the display name from the SDK.
-        async fn load_display_name(&self) {
-            let obj = self.obj();
-            let matrix_room = self.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.compute_display_name().await });
+        async fn update_display_name(&self) {
+            let matrix_room = self.matrix_room();
 
-            match handle.await.expect("task was not aborted") {
-                Ok(display_name) => {
-                    let name = match display_name {
-                        DisplayName::Named(s)
-                        | DisplayName::Calculated(s)
-                        | DisplayName::Aliased(s) => s,
-                        // Translators: This is the name of a room that is empty but had another
-                        // user before. Do NOT translate the content between
-                        // '{' and '}', this is a variable name.
-                        DisplayName::EmptyWas(s) => {
-                            gettext_f("Empty Room (was {user})", &[("user", &s)])
-                        }
-                        // Translators: This is the name of a room without other users.
-                        DisplayName::Empty => gettext("Empty Room"),
-                    };
+            let sdk_display_name = if let Some(sdk_display_name) = matrix_room.cached_display_name()
+            {
+                Some(sdk_display_name)
+            } else {
+                let matrix_room = matrix_room.clone();
+                let handle = spawn_tokio!(async move { matrix_room.compute_display_name().await });
 
-                    obj.set_display_name(name);
+                match handle.await.expect("task was not aborted") {
+                    Ok(sdk_display_name) => Some(sdk_display_name),
+                    Err(error) => {
+                        error!("Could not compute display name: {error}");
+                        None
+                    }
                 }
-                Err(error) => error!("Could not get display name: {error}"),
             };
 
-            if obj.display_name().is_empty() {
+            let mut display_name = if let Some(sdk_display_name) = sdk_display_name {
+                match sdk_display_name {
+                    DisplayName::Named(s)
+                    | DisplayName::Calculated(s)
+                    | DisplayName::Aliased(s) => s,
+                    // Translators: This is the name of a room that is empty but had another
+                    // user before. Do NOT translate the content between
+                    // '{' and '}', this is a variable name.
+                    DisplayName::EmptyWas(s) => {
+                        gettext_f("Empty Room (was {user})", &[("user", &s)])
+                    }
+                    // Translators: This is the name of a room without other users.
+                    DisplayName::Empty => gettext("Empty Room"),
+                }
+            } else {
+                Default::default()
+            };
+
+            display_name.truncate_end_whitespaces();
+
+            if display_name.is_empty() {
                 // Translators: This is displayed when the room name is unknown yet.
-                obj.set_display_name(gettext("Unknown"));
+                display_name = gettext("Unknown");
             }
+
+            self.obj().set_display_name(display_name);
         }
 
         /// Set whether this room has an avatar explicitly set.
@@ -453,49 +431,53 @@ mod imp {
             self.obj().notify_has_avatar();
         }
 
-        /// Load the avatar of the room.
-        async fn load_avatar(&self) {
+        /// Update the avatar of the room.
+        async fn update_avatar(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
+
             let obj = self.obj();
             let avatar_data = obj.avatar_data();
+            let matrix_room = self.matrix_room();
 
-            let matrix_room = self.matrix_room().clone();
-            let handle = spawn_tokio!(async move {
-                matrix_room
-                    .get_state_event_static::<RoomAvatarEventContent>()
-                    .await
-            });
+            let prev_avatar_url = avatar_data.image().and_then(|i| i.uri());
+            let room_avatar_url = matrix_room.avatar_url();
 
-            let avatar_event = match handle.await.expect("task was not aborted") {
-                Ok(Some(raw_event)) => match raw_event.deserialize() {
-                    Ok(event) => Some(event),
+            if prev_avatar_url.is_some() && prev_avatar_url == room_avatar_url {
+                // The avatar did not change.
+                return;
+            }
+
+            if let Some(avatar_url) = room_avatar_url {
+                // The avatar has changed, try to load its info.
+                let matrix_room = matrix_room.clone();
+                let handle = spawn_tokio!(async move {
+                    matrix_room
+                        .get_state_event_static::<RoomAvatarEventContent>()
+                        .await
+                });
+
+                let avatar_event = match handle.await.expect("task was not aborted") {
+                    Ok(Some(raw_event)) => match raw_event.deserialize() {
+                        Ok(event) => Some(event),
+                        Err(error) => {
+                            warn!("Could not deserialize room avatar event: {error}");
+                            None
+                        }
+                    },
+                    Ok(None) => None,
                     Err(error) => {
-                        warn!("Could not deserialize room avatar event: {error}");
+                        warn!("Could not get room avatar event: {error}");
                         None
                     }
-                },
-                Ok(None) => None,
-                Err(error) => {
-                    warn!("Could not get room avatar event: {error}");
-                    None
-                }
-            };
+                };
 
-            let (avatar_url, avatar_info) = match avatar_event {
-                Some(event) => match event {
-                    SyncOrStrippedState::Sync(event) => match event {
-                        SyncStateEvent::Original(e) => (e.content.url, e.content.info),
-                        SyncStateEvent::Redacted(_) => (None, None),
-                    },
-                    SyncOrStrippedState::Stripped(event) => (event.content.url, event.content.info),
-                },
-                None => (None, None),
-            };
-
-            if let Some(avatar_url) = avatar_url {
-                self.set_has_avatar(true);
+                let avatar_info = match avatar_event {
+                    Some(SyncOrStrippedState::Sync(SyncStateEvent::Original(e))) => e.content.info,
+                    Some(SyncOrStrippedState::Stripped(e)) => e.content.info,
+                    _ => None,
+                };
 
                 if let Some(avatar_image) = avatar_data
                     .image()
@@ -513,8 +495,9 @@ mod imp {
                     avatar_data.set_image(Some(avatar_image.clone()));
                 }
 
+                self.set_has_avatar(true);
                 return;
-            }
+            };
 
             self.set_has_avatar(false);
 
@@ -542,23 +525,30 @@ mod imp {
             }
         }
 
-        /// The topic of this room.
-        fn topic(&self) -> Option<String> {
-            self.matrix_room()
-                .topic()
-                .filter(|topic| !topic.trim().is_empty())
-        }
-
         /// Update the topic of this room.
         fn update_topic(&self) {
-            let topic_linkified = self.topic().map(|t| {
+            let topic = self
+                .matrix_room()
+                .topic()
+                .map(|mut s| {
+                    s.truncate_end_whitespaces();
+                    s
+                })
+                .filter(|topic| !topic.is_empty());
+
+            if *self.topic.borrow() == topic {
+                return;
+            }
+
+            let topic_linkified = topic.as_ref().map(|t| {
                 // Detect links.
-                let mut s = linkify(&t);
+                let mut s = linkify(t);
                 // Remove trailing spaces.
                 s.truncate_end_whitespaces();
                 s
             });
 
+            self.topic.replace(topic);
             self.topic_linkified.replace(topic_linkified);
 
             let obj = self.obj();
@@ -576,10 +566,41 @@ mod imp {
 
             self.category.set(category);
             self.obj().notify_category();
+
+            // Check if the previous state was different.
+            let room_state = self.matrix_room().state();
+            if !old_category.is_state(room_state) {
+                debug!(room_id = %self.room_id(), ?room_state, "The state of the room changed");
+
+                match room_state {
+                    RoomState::Joined => {
+                        if let Some(members) = self.members.upgrade() {
+                            // If we where invited or left before, the list was likely not completed
+                            // or might have changed.
+                            members.reload();
+                        }
+
+                        self.set_up_typing();
+                    }
+                    RoomState::Left => {}
+                    RoomState::Invited => {
+                        spawn!(
+                            glib::Priority::DEFAULT_IDLE,
+                            clone!(
+                                #[weak(rename_to = imp)]
+                                self,
+                                async move {
+                                    imp.load_inviter().await;
+                                }
+                            )
+                        );
+                    }
+                }
+            }
         }
 
-        /// Load the category from the SDK.
-        pub(super) fn load_category(&self) {
+        /// Update the category from the SDK.
+        pub(super) fn update_category(&self) {
             // Don't load the category if this room was upgraded
             if self.category.get() == RoomCategory::Outdated {
                 return;
@@ -596,45 +617,27 @@ mod imp {
             }
 
             let matrix_room = self.matrix_room();
-            match matrix_room.state() {
+            let category = match matrix_room.state() {
                 RoomState::Joined => {
                     if matrix_room.is_space() {
-                        self.set_category(RoomCategory::Space);
+                        RoomCategory::Space
+                    } else if matrix_room.is_favourite() {
+                        RoomCategory::Favorite
+                    } else if matrix_room.is_low_priority() {
+                        RoomCategory::LowPriority
                     } else {
-                        let matrix_room = matrix_room.clone();
-                        let tags = spawn_tokio!(async move { matrix_room.tags().await });
-
-                        spawn!(
-                            glib::Priority::DEFAULT_IDLE,
-                            clone!(
-                                #[weak(rename_to = imp)]
-                                self,
-                                async move {
-                                    let mut category = RoomCategory::Normal;
-
-                                    if let Ok(Some(tags)) =
-                                        tags.await.expect("task was not aborted")
-                                    {
-                                        if tags.contains_key(&TagName::Favorite) {
-                                            category = RoomCategory::Favorite;
-                                        } else if tags.contains_key(&TagName::LowPriority) {
-                                            category = RoomCategory::LowPriority;
-                                        }
-                                    }
-
-                                    imp.set_category(category);
-                                }
-                            )
-                        );
+                        RoomCategory::Normal
                     }
                 }
-                RoomState::Invited => self.set_category(RoomCategory::Invited),
-                RoomState::Left => self.set_category(RoomCategory::Left),
+                RoomState::Invited => RoomCategory::Invited,
+                RoomState::Left => RoomCategory::Left,
             };
+
+            self.set_category(category);
         }
 
         /// Set whether this room is a direct chat.
-        fn set_is_direct(&self, is_direct: bool) {
+        async fn set_is_direct(&self, is_direct: bool) {
             if self.is_direct.get() == is_direct {
                 return;
             }
@@ -642,51 +645,43 @@ mod imp {
             self.is_direct.set(is_direct);
             self.obj().notify_is_direct();
 
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load_direct_member().await;
-                    }
-                )
-            );
+            self.update_direct_member().await;
         }
 
-        /// Load whether the room is direct or not.
-        pub(super) async fn load_is_direct(&self) {
+        /// Update whether the room is direct or not.
+        pub(super) async fn update_is_direct(&self) {
             let matrix_room = self.matrix_room().clone();
             let handle = spawn_tokio!(async move { matrix_room.is_direct().await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(is_direct) => self.set_is_direct(is_direct),
+                Ok(is_direct) => self.set_is_direct(is_direct).await,
                 Err(error) => {
                     error!(room_id = %self.room_id(), "Could not load whether room is direct: {error}");
                 }
             }
         }
 
-        /// Whether this room was tombstoned.
-        fn is_tombstoned(&self) -> bool {
-            self.matrix_room().is_tombstoned()
-        }
+        /// Update the tombstone for this room.
+        fn update_tombstone(&self) {
+            let matrix_room = self.matrix_room();
 
-        /// Load the tombstone for this room.
-        pub(super) fn load_tombstone(&self) {
-            if !self.is_tombstoned() || self.successor_id.get().is_some() {
+            if !matrix_room.is_tombstoned() || self.successor_id.get().is_some() {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(room_tombstone) = self.matrix_room().tombstone() {
+            if let Some(room_tombstone) = matrix_room.tombstone() {
                 self.successor_id
                     .set(room_tombstone.replacement_room)
                     .expect("successor ID is uninitialized");
                 obj.notify_successor_id_string();
             };
 
-            if !self.update_outdated() {
+            // Try to get the successor.
+            self.update_successor();
+
+            // If the successor was not found, watch for it in the room list.
+            if self.successor.upgrade().is_none() {
                 if let Some(session) = self.session.upgrade() {
                     session
                         .room_list()
@@ -694,36 +689,35 @@ mod imp {
                 }
             }
 
-            obj.notify_is_tombstoned();
+            if !self.is_tombstoned.get() {
+                self.is_tombstoned.set(true);
+                obj.notify_is_tombstoned();
+            }
         }
 
-        /// Update whether this `Room` is outdated.
-        ///
-        /// A room is outdated when it was tombstoned and we joined its
-        /// successor.
-        ///
-        /// Returns `true` if the `Room` was set as outdated, `false` otherwise.
-        pub(super) fn update_outdated(&self) -> bool {
+        /// Update the successor of this room.
+        pub(super) fn update_successor(&self) {
             if self.category.get() == RoomCategory::Outdated {
-                return true;
+                return;
             }
 
             let Some(session) = self.session.upgrade() else {
-                return false;
+                return;
             };
             let room_list = session.room_list();
 
-            if let Some(successor_id) = self.successor_id.get() {
-                if let Some(successor) = room_list.get(successor_id) {
-                    // The Matrix spec says that we should use the "predecessor" field of the
-                    // m.room.create event of the successor, not the "successor" field of the
-                    // m.room.tombstone event, so check it just to be sure.
-                    if let Some(predecessor_id) = successor.predecessor_id() {
-                        if predecessor_id == self.room_id() {
-                            self.set_successor(&successor);
-                            self.set_category(RoomCategory::Outdated);
-                            return true;
-                        }
+            if let Some(successor) = self
+                .successor_id
+                .get()
+                .and_then(|successor_id| room_list.get(successor_id))
+            {
+                // The Matrix spec says that we should use the "predecessor" field of the
+                // m.room.create event of the successor, not the "successor" field of the
+                // m.room.tombstone event, so check it just to be sure.
+                if let Some(predecessor_id) = successor.predecessor_id() {
+                    if predecessor_id == self.room_id() {
+                        self.set_successor(&successor);
+                        return;
                     }
                 }
             }
@@ -738,13 +732,10 @@ mod imp {
                 if let Some(predecessor_id) = room.predecessor_id() {
                     if predecessor_id == self.room_id() {
                         self.set_successor(&room);
-                        self.set_category(RoomCategory::Outdated);
-                        return true;
+                        return;
                     }
                 }
             }
-
-            false
         }
 
         /// The ID of the room that was upgraded and that this one replaces, as
@@ -755,11 +746,6 @@ mod imp {
 
         /// Load the predecessor of this room.
         fn load_predecessor(&self) {
-            if self.predecessor_id.get().is_some() {
-                // The predecessor cannot change.
-                return;
-            }
-
             let Some(event) = self.matrix_room().create_content() else {
                 return;
             };
@@ -773,15 +759,69 @@ mod imp {
             self.obj().notify_predecessor_id_string();
         }
 
-        /// The ID of the successor of this Room, if this room was upgraded.
+        /// The ID of the successor of this room, if this room was upgraded.
         fn successor_id_string(&self) -> Option<String> {
             self.successor_id.get().map(ToString::to_string)
         }
 
-        /// Set the successor of this Room.
+        /// Set the successor of this room.
         fn set_successor(&self, successor: &super::Room) {
             self.successor.set(Some(successor));
             self.obj().notify_successor();
+
+            self.set_category(RoomCategory::Outdated);
+        }
+
+        /// Watch changes in the members list.
+        fn watch_members(&self) {
+            let matrix_room = self.matrix_room();
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let handle = matrix_room.add_event_handler(move |event: SyncRoomMemberEvent| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().handle_member_event(event);
+                            }
+                        });
+                    });
+                }
+            });
+
+            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
+            self.members_drop_guard.set(drop_guard).unwrap();
+        }
+
+        /// Handle a member event received via sync
+        fn handle_member_event(&self, event: SyncRoomMemberEvent) {
+            let user_id = event.state_key();
+
+            if let Some(members) = self.members.upgrade() {
+                members.update_member(user_id.clone());
+            } else if user_id == self.own_member().user_id() {
+                self.own_member().update();
+            } else if self
+                .direct_member
+                .borrow()
+                .as_ref()
+                .is_some_and(|member| member.user_id() == user_id)
+            {
+                if let Some(member) = self.direct_member.borrow().as_ref() {
+                    member.update();
+                }
+            }
+
+            // It might change the direct member if the number of members changed.
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.update_direct_member().await;
+                }
+            ));
         }
 
         /// Set the number of joined members in the room, according to the
@@ -820,55 +860,29 @@ mod imp {
         }
 
         /// Load the member that invited us to this room, when applicable.
-        pub(super) async fn load_inviter(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
+        async fn load_inviter(&self) {
             let matrix_room = self.matrix_room();
 
             if matrix_room.state() != RoomState::Invited {
                 return;
             }
 
-            let own_user_id = session.user_id().clone();
             let matrix_room_clone = matrix_room.clone();
-            let handle =
-                spawn_tokio!(
-                    async move { matrix_room_clone.get_member_no_sync(&own_user_id).await }
-                );
+            let handle = spawn_tokio!(async move { matrix_room_clone.invite_details().await });
 
-            let own_member = match handle.await.expect("task was not aborted") {
-                Ok(Some(member)) => member,
-                Ok(None) => return,
+            let invite = match handle.await.expect("task was not aborted") {
+                Ok(invite) => invite,
                 Err(error) => {
-                    error!("Could not get room member: {error}");
+                    error!("Could not get invite: {error}");
                     return;
                 }
             };
 
-            let inviter_id = match &**own_member.event() {
-                MemberEvent::Sync(_) => return,
-                MemberEvent::Stripped(event) => event.sender.clone(),
+            let Some(inviter_member) = invite.inviter else {
+                return;
             };
 
-            let inviter_id_clone = inviter_id.clone();
-            let matrix_room = matrix_room.clone();
-            let handle =
-                spawn_tokio!(
-                    async move { matrix_room.get_member_no_sync(&inviter_id_clone).await }
-                );
-
-            let inviter_member = match handle.await.expect("task was not aborted") {
-                Ok(Some(member)) => member,
-                Ok(None) => return,
-                Err(error) => {
-                    error!("Could not get room member: {error}");
-                    return;
-                }
-            };
-
-            let inviter = Member::new(&self.obj(), inviter_id);
+            let inviter = Member::new(&self.obj(), inviter_member.user_id().to_owned());
             inviter.update_from_room_member(&inviter_member);
 
             inviter
@@ -877,14 +891,15 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
-                        imp.load_category();
+                        // When the user is ignored, this invite should be ignored too.
+                        imp.update_category();
                     }
                 ));
 
             self.inviter.replace(Some(inviter));
 
             self.obj().notify_inviter();
-            self.load_category();
+            self.update_category();
         }
 
         /// Set the other member of the room, if this room is a direct chat and
@@ -903,7 +918,7 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_avatar().await;
+                        imp.update_avatar().await;
                     }
                 )
             );
@@ -971,9 +986,9 @@ mod imp {
             Some(direct_target_user_id)
         }
 
-        /// Load the other member of the room, if this room is a direct chat and
-        /// there is only one other member.
-        async fn load_direct_member(&self) {
+        /// Update the other member of the room, if this room is a direct chat
+        /// and there is only one other member.
+        async fn update_direct_member(&self) {
             let Some(direct_user_id) = self.direct_user_id().await else {
                 self.set_direct_member(None);
                 return;
@@ -1133,39 +1148,8 @@ mod imp {
             self.obj().notify_has_notifications();
         }
 
-        /// Listen to changes in room encryption.
-        fn set_up_is_encrypted(&self) {
-            let matrix_room = self.matrix_room();
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            matrix_room.add_event_handler(move |_: SyncRoomEncryptionEvent| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().load_is_encrypted().await;
-                            }
-                        });
-                    });
-                }
-            });
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load_is_encrypted().await;
-                    }
-                )
-            );
-        }
-
-        /// Load whether the room is encrypted from the SDK.
-        async fn load_is_encrypted(&self) {
+        /// Update whether the room is encrypted from the SDK.
+        async fn update_is_encrypted(&self) {
             let matrix_room = self.matrix_room().clone();
             let handle = spawn_tokio!(async move { matrix_room.is_encrypted().await });
 
@@ -1175,7 +1159,7 @@ mod imp {
                     self.obj().notify_is_encrypted();
                 }
                 Ok(false) => {
-                    // Ignore as the room encryption cannot be deactivated.
+                    // Ignore as the room encryption cannot be disabled.
                 }
                 Err(error) => {
                     error!("Could not load room encryption state: {error}");
@@ -1237,31 +1221,36 @@ mod imp {
                 return;
             };
 
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let handle = matrix_room.add_event_handler(
-                move |event: SyncEphemeralRoomEvent<TypingEventContent>| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().handle_typing_event(event.content);
-                                }
-                            });
-                        });
-                    }
-                },
-            );
+            let (typing_drop_guard, receiver) = matrix_room.subscribe_to_typing_notifications();
+            let stream = BroadcastStream::new(receiver);
 
-            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let fut = stream.for_each(move |typing_user_ids| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let Ok(typing_user_ids) = typing_user_ids else {
+                        return;
+                    };
+
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().update_typing_list(typing_user_ids);
+                            }
+                        });
+                    });
+                }
+            });
+            spawn_tokio!(fut);
+
             self.typing_drop_guard
-                .set(drop_guard)
+                .set(typing_drop_guard)
                 .expect("typing drop guard is uninitialized");
         }
 
-        /// Handle a typing event received via sync.
-        fn handle_typing_event(&self, content: TypingEventContent) {
+        /// Update the typing list with the given user IDs.
+        fn update_typing_list(&self, typing_user_ids: Vec<OwnedUserId>) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -1275,12 +1264,10 @@ mod imp {
 
             let own_user_id = session.user_id();
 
-            let members = content
-                .user_ids
+            let members = typing_user_ids
                 .into_iter()
-                .filter_map(|user_id| {
-                    (user_id != *own_user_id).then(|| members.get_or_create(user_id))
-                })
+                .filter(|user_id| user_id != own_user_id)
+                .map(|user_id| members.get_or_create(user_id))
                 .collect();
 
             self.typing_list.update(members);
@@ -1340,109 +1327,41 @@ mod imp {
         }
 
         /// Watch the SDK's room info for changes to the room state.
-        async fn watch_room_info(&self) {
+        fn watch_room_info(&self) {
             let matrix_room = self.matrix_room();
             let subscriber = matrix_room.subscribe_info();
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            subscriber
-                .for_each(move |room_info| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_with_room_info(room_info)
-                                }
-                            });
+            let fut = subscriber.for_each(move |room_info| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().update_with_room_info(room_info).await;
+                            }
                         });
-                    }
-                })
-                .await;
+                    });
+                }
+            });
+            spawn_tokio!(fut);
         }
 
         /// Update this room with the given SDK room info.
-        fn update_with_room_info(&self, room_info: RoomInfo) {
+        async fn update_with_room_info(&self, room_info: RoomInfo) {
+            self.aliases.update();
+            self.update_name();
+            self.update_display_name().await;
+            self.update_avatar().await;
+            self.update_topic();
+            self.update_category();
+            self.update_tombstone();
             self.set_joined_members_count(room_info.joined_members_count());
-        }
-
-        /// Update the room state based on the timeline in the sync response.
-        // FIXME: We should use the sdk's event handler to get updates
-        pub(super) fn update_for_events(&self, batch: Vec<SyncTimelineEvent>) {
-            let events: Vec<_> = batch
-                .iter()
-                .flat_map(|e| e.event.deserialize().ok())
-                .collect();
-            let own_member = self.own_member();
-            let own_user_id = own_member.user_id();
-            let direct_member = self.direct_member.borrow().clone();
-            let direct_member_id = direct_member.as_ref().map(|m| m.user_id());
-
-            for event in events.iter() {
-                if let AnySyncTimelineEvent::State(state_event) = event {
-                    match state_event {
-                        AnySyncStateEvent::RoomMember(event) => {
-                            let user_id = event.state_key();
-
-                            if let Some(members) = self.members.upgrade() {
-                                members.update_member(user_id.clone());
-                            } else if user_id == own_user_id {
-                                own_member.update();
-                            } else if direct_member_id.is_some_and(|id| id == user_id) {
-                                if let Some(member) = &direct_member {
-                                    member.update();
-                                }
-                            }
-
-                            // It might change the direct member.
-                            spawn!(clone!(
-                                #[weak(rename_to = imp)]
-                                self,
-                                async move {
-                                    imp.load_direct_member().await;
-                                    imp.load_display_name().await;
-                                }
-                            ));
-                        }
-                        AnySyncStateEvent::RoomAvatar(_) => {
-                            spawn!(
-                                glib::Priority::DEFAULT_IDLE,
-                                clone!(
-                                    #[weak(rename_to = imp)]
-                                    self,
-                                    async move {
-                                        imp.load_avatar().await;
-                                    }
-                                )
-                            );
-                        }
-                        AnySyncStateEvent::RoomName(_) => {
-                            self.obj().notify_name();
-                            spawn!(clone!(
-                                #[weak(rename_to = imp)]
-                                self,
-                                async move {
-                                    imp.load_display_name().await;
-                                }
-                            ));
-                        }
-                        AnySyncStateEvent::RoomTopic(_) => {
-                            self.update_topic();
-                        }
-                        AnySyncStateEvent::RoomTombstone(_) => {
-                            self.load_tombstone();
-                        }
-                        AnySyncStateEvent::RoomGuestAccess(_) => {
-                            self.update_guests_allowed();
-                        }
-                        AnySyncStateEvent::RoomHistoryVisibility(_) => {
-                            self.update_history_visibility();
-                        }
-                        _ => {}
-                    }
-                }
-            }
+            self.update_is_encrypted().await;
+            self.join_rule.update(room_info.join_rule());
+            self.update_guests_allowed();
+            self.update_history_visibility();
         }
 
         /// Handle changes in the ambiguity of members display names.
@@ -1741,17 +1660,18 @@ impl Room {
         }
 
         if previous_category == RoomCategory::Outdated {
-            warn!("Can't set the category of an upgraded room");
+            warn!("Cannot change the category of an upgraded room");
             return Ok(());
         }
 
         match category {
-            RoomCategory::Invited => {
-                warn!("Rooms can’t be moved to the invite Category");
+            RoomCategory::Invited | RoomCategory::Space => {
+                warn!("Rooms cannot be moved to the {category:?} category");
                 return Ok(());
             }
-            RoomCategory::Outdated => {
-                // Outdated rooms don't need to propagate anything to the server
+            RoomCategory::Outdated | RoomCategory::Ignored => {
+                // These are local-only categories. We do not need to propagate anything to the
+                // server.
                 self.imp().set_category(category);
                 return Ok(());
             }
@@ -1762,136 +1682,54 @@ impl Room {
 
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move {
-            match matrix_room.state() {
-                RoomState::Invited => match category {
-                    RoomCategory::Invited => {}
-                    RoomCategory::Favorite => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if !tags.contains_key(&TagName::Favorite) {
-                                matrix_room
-                                    .set_tag(TagName::Favorite, TagInfo::new())
-                                    .await?;
-                            }
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                        }
-                        matrix_room.join().await?;
-                    }
-                    RoomCategory::Normal => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                        }
+            let room_state = matrix_room.state();
 
-                        if matrix_room.is_direct().await.unwrap_or_default() {
-                            matrix_room.set_is_direct(false).await?;
-                        }
+            match category {
+                RoomCategory::Favorite => {
+                    if !matrix_room.is_favourite() {
+                        // This method handles removing the low priority tag.
+                        matrix_room.set_is_favourite(true, None).await?;
+                    } else if matrix_room.is_low_priority() {
+                        matrix_room.set_is_low_priority(false, None).await?;
+                    }
 
+                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
                         matrix_room.join().await?;
                     }
-                    RoomCategory::LowPriority => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            if !tags.contains_key(&TagName::LowPriority) {
-                                matrix_room
-                                    .set_tag(TagName::LowPriority, TagInfo::new())
-                                    .await?;
-                            }
-                        }
+                }
+                RoomCategory::Normal => {
+                    if matrix_room.is_favourite() {
+                        matrix_room.set_is_favourite(false, None).await?;
+                    }
+                    if matrix_room.is_low_priority() {
+                        matrix_room.set_is_low_priority(false, None).await?;
+                    }
+
+                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
                         matrix_room.join().await?;
                     }
-                    RoomCategory::Left => {
+                }
+                RoomCategory::LowPriority => {
+                    if !matrix_room.is_low_priority() {
+                        // This method handles removing the favourite tag.
+                        matrix_room.set_is_low_priority(true, None).await?;
+                    } else if matrix_room.is_favourite() {
+                        matrix_room.set_is_favourite(false, None).await?;
+                    }
+
+                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
+                        matrix_room.join().await?;
+                    }
+                }
+                RoomCategory::Left => {
+                    if matches!(room_state, RoomState::Invited | RoomState::Joined) {
                         matrix_room.leave().await?;
                     }
-                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
-                        unimplemented!()
-                    }
-                },
-                RoomState::Joined => match category {
-                    RoomCategory::Invited => {}
-                    RoomCategory::Favorite => {
-                        matrix_room
-                            .set_tag(TagName::Favorite, TagInfo::new())
-                            .await?;
-                        if previous_category == RoomCategory::LowPriority {
-                            matrix_room.remove_tag(TagName::LowPriority).await?;
-                        }
-                    }
-                    RoomCategory::Normal => match previous_category {
-                        RoomCategory::Favorite => {
-                            matrix_room.remove_tag(TagName::Favorite).await?;
-                        }
-                        RoomCategory::LowPriority => {
-                            matrix_room.remove_tag(TagName::LowPriority).await?;
-                        }
-                        _ => {}
-                    },
-                    RoomCategory::LowPriority => {
-                        matrix_room
-                            .set_tag(TagName::LowPriority, TagInfo::new())
-                            .await?;
-                        if previous_category == RoomCategory::Favorite {
-                            matrix_room.remove_tag(TagName::Favorite).await?;
-                        }
-                    }
-                    RoomCategory::Left => {
-                        matrix_room.leave().await?;
-                    }
-                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
-                        unimplemented!()
-                    }
-                },
-                RoomState::Left => match category {
-                    RoomCategory::Invited => {}
-                    RoomCategory::Favorite => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if !tags.contains_key(&TagName::Favorite) {
-                                matrix_room
-                                    .set_tag(TagName::Favorite, TagInfo::new())
-                                    .await?;
-                            }
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                        }
-                        matrix_room.join().await?;
-                    }
-                    RoomCategory::Normal => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                        }
-                        matrix_room.join().await?;
-                    }
-                    RoomCategory::LowPriority => {
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            if !tags.contains_key(&TagName::LowPriority) {
-                                matrix_room
-                                    .set_tag(TagName::LowPriority, TagInfo::new())
-                                    .await?;
-                            }
-                        }
-                        matrix_room.join().await?;
-                    }
-                    RoomCategory::Left => {}
-                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
-                        unimplemented!()
-                    }
-                },
+                }
+                RoomCategory::Invited
+                | RoomCategory::Outdated
+                | RoomCategory::Space
+                | RoomCategory::Ignored => unreachable!(),
             }
 
             Result::<_, matrix_sdk::Error>::Ok(())
@@ -1902,8 +1740,8 @@ impl Room {
             Err(error) => {
                 error!("Could not set the room category: {error}");
 
-                // Load the previous category
-                self.imp().load_category();
+                // Reset the category
+                self.imp().update_category();
 
                 Err(error)
             }
@@ -2309,68 +2147,14 @@ impl Room {
             }
             Err(error) => {
                 error!("Could not forget the room: {error}");
-
-                // Reset the category.
-                self.imp().load_category();
-
                 Err(error)
             }
         }
     }
 
-    /// Reload the room from the SDK when its state might have changed.
-    pub fn update_room(&self) {
-        let state = self.matrix_room().state();
-        let category = self.category();
-
-        // Check if the previous state was different.
-        if category.is_state(state) {
-            // Nothing needs to be reloaded.
-            return;
-        }
-
-        debug!(room_id = %self.room_id(), ?state, "The state of `Room` changed");
-
-        if state == RoomState::Joined {
-            if let Some(members) = self.members() {
-                // If we where invited or left before, the list was likely not completed or
-                // might have changed.
-                members.reload();
-            }
-        }
-
-        let imp = self.imp();
-        imp.load_category();
-        spawn!(clone!(
-            #[weak]
-            imp,
-            async move {
-                imp.load_inviter().await;
-            }
-        ));
-    }
-
-    /// Handle an update as a left room.
-    pub fn handle_left_update(&self, update: LeftRoomUpdate) {
-        let imp = self.imp();
-        imp.update_for_events(update.timeline.events);
-        imp.handle_ambiguity_changes(update.ambiguity_changes.values());
-    }
-
-    /// Handle an update as a joined room.
-    pub fn handle_joined_update(&self, update: JoinedRoomUpdate) {
-        let imp = self.imp();
-
-        if update
-            .account_data
-            .iter()
-            .any(|e| matches!(e.deserialize(), Ok(AnyRoomAccountDataEvent::Tag(_))))
-        {
-            imp.load_category();
-        }
-
-        imp.update_for_events(update.timeline.events);
-        imp.handle_ambiguity_changes(update.ambiguity_changes.values());
+    /// Handle room member name ambiguity changes.
+    pub fn handle_ambiguity_changes<'a>(&self, changes: impl Iterator<Item = &'a AmbiguityChange>) {
+        self.imp().handle_ambiguity_changes(changes);
     }
 
     /// Update the latest activity of the room with the given events.
@@ -2389,23 +2173,14 @@ impl Room {
         self.imp().set_latest_activity(latest_activity);
     }
 
-    /// Load whether the room is direct or not.
-    pub async fn load_is_direct(&self) {
-        self.imp().load_is_direct().await;
+    /// Update whether the room is direct or not.
+    pub async fn update_is_direct(&self) {
+        self.imp().update_is_direct().await;
     }
 
-    /// Load the tombstone for this room.
-    pub fn load_tombstone(&self) {
-        self.imp().load_tombstone();
-    }
-
-    /// Update whether this `Room` is outdated.
-    ///
-    /// A room is outdated when it was tombstoned and we joined its successor.
-    ///
-    /// Returns `true` if the `Room` was set as outdated, `false` otherwise.
-    pub fn update_outdated(&self) -> bool {
-        self.imp().update_outdated()
+    /// Update the successor of this room.
+    pub fn update_successor(&self) {
+        self.imp().update_successor()
     }
 
     /// Connect to the signal emitted when the room was forgotten.
