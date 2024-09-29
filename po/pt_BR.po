@@ -11,10 +11,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-25 07:47+0000\n"
+"POT-Creation-Date: 2024-09-26 12:40+0000\n"
 "PO-Revision-Date: 2024-09-26 09:39-0300\n"
 "Last-Translator: Juliano de Souza Camargo <julianosc@pm.me>\n"
-"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>>\n"
+"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -164,15 +164,15 @@ msgstr "_Adicionar conta"
 msgid "Account Settings"
 msgstr "Configurações de conta"
 
-#: src/application.rs:212
+#: src/application.rs:275
 msgid "The Fractal Team"
 msgstr "A equipe do Fractal"
 
-#: src/application.rs:218
+#: src/application.rs:281
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2022 A equipe do Fractal"
 
-#: src/application.rs:232
+#: src/application.rs:295
 msgid "translator-credits"
 msgstr ""
 "Bruno Lopes da Silva <brunolopesdsilv@gmail.com>\n"
@@ -182,11 +182,11 @@ msgstr ""
 "Juliano de Souza Camargo <julianosc@pm.me>"
 
 #. This can't be added via the builder
-#: src/application.rs:236
+#: src/application.rs:299
 msgid "Name by"
 msgstr "Nome por"
 
-#: src/application.rs:351
+#: src/application.rs:414
 msgid "Session not found"
 msgstr "Sessão não encontrada"
 
@@ -707,8 +707,8 @@ msgstr "Sair"
 #: src/session/view/content/room_details/general_page.rs:1021
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:896
-#: src/session/view/content/room_history/item_row.rs:950
+#: src/session/view/content/room_history/item_row.rs:898
+#: src/session/view/content/room_history/item_row.rs:952
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -854,7 +854,7 @@ msgstr[1] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:897
+#: src/session/view/content/room_history/item_row.rs:899
 msgid "Remove"
 msgstr "Remover"
 
@@ -875,7 +875,7 @@ msgstr ""
 "tentar carregar mais indo mais para trás no histórico da sala."
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:932
+#: src/session/view/content/room_history/item_row.rs:934
 msgid "Reason (optional)"
 msgstr "Razão (opcional)"
 
@@ -932,15 +932,15 @@ msgstr "Promover"
 msgid "User Profile"
 msgstr "Perfil do usuário "
 
-#: src/components/offline_banner.rs:103
+#: src/components/offline_banner.rs:102
 msgid "Offline"
 msgstr "Sem internet"
 
-#: src/components/offline_banner.rs:111
+#: src/components/offline_banner.rs:109
 msgid "No network connection"
 msgstr "Sem conexão de rede"
 
-#: src/components/offline_banner.rs:115
+#: src/components/offline_banner.rs:112
 msgid "No Internet connection"
 msgstr "Sem conexão de internet"
 
@@ -1882,7 +1882,7 @@ msgstr ""
 "Falha ao acessar a coleção padrão. Tenha certeza que um chaveiro foi criado "
 "e definido como padrão."
 
-#: src/session/model/session.rs:982
+#: src/session/model/session.rs:981
 msgid "Could not log the session out"
 msgstr "Falha ao encerrar a sessão"
 
@@ -1928,17 +1928,17 @@ msgstr "Qualquer usuário registrado"
 msgid "Unsupported rule"
 msgstr "Regra sem suporte"
 
-#: src/session/model/room/mod.rs:1338
+#: src/session/model/room/mod.rs:1333
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1341
+#: src/session/model/room/mod.rs:1336
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1351
+#: src/session/model/room/mod.rs:1346
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -3723,7 +3723,7 @@ msgstr "Este é o início do histórico visível"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:380
+#: src/session/view/content/room_history/item_row.rs:382
 msgid "%A, %B %-e"
 msgstr "%A, %-e de %B"
 
@@ -3731,51 +3731,51 @@ msgstr "%A, %-e de %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:386
+#: src/session/view/content/room_history/item_row.rs:388
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %-e de %B de %Y"
 
-#: src/session/view/content/room_history/item_row.rs:392
+#: src/session/view/content/room_history/item_row.rs:394
 msgid "New Messages"
 msgstr "Novas mensagens"
 
-#: src/session/view/content/room_history/item_row.rs:544
+#: src/session/view/content/room_history/item_row.rs:546
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "Link da mensagem copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:681
-#: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/item_row.rs:769
-#: src/session/view/content/room_history/item_row.rs:847
+#: src/session/view/content/room_history/item_row.rs:683
+#: src/session/view/content/room_history/item_row.rs:736
+#: src/session/view/content/room_history/item_row.rs:771
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "Texto copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:789
+#: src/session/view/content/room_history/item_row.rs:791
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatura copiada para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:890
+#: src/session/view/content/room_history/item_row.rs:892
 msgid "Remove Message?"
 msgstr "Remover mensagem?"
 
-#: src/session/view/content/room_history/item_row.rs:892
+#: src/session/view/content/room_history/item_row.rs:894
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Você realmente quer remover essa mensagem? Isso não pode ser desfeito."
 
-#: src/session/view/content/room_history/item_row.rs:906
+#: src/session/view/content/room_history/item_row.rs:908
 msgid "Could not remove message"
 msgstr "Falha ao remover a mensagem"
 
-#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:919
 msgid "Could not toggle reaction"
 msgstr "Falha ao alternar reação"
 
-#: src/session/view/content/room_history/item_row.rs:943
+#: src/session/view/content/room_history/item_row.rs:945
 msgid "Report Event?"
 msgstr "Reportar evento?"
 
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:947
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3786,11 +3786,11 @@ msgstr ""
 "ou redigido."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:952
+#: src/session/view/content/room_history/item_row.rs:954
 msgid "Report"
 msgstr "Reportar"
 
-#: src/session/view/content/room_history/item_row.rs:970
+#: src/session/view/content/room_history/item_row.rs:972
 msgid "Could not report event"
 msgstr "Falha ao reportar evento"
 
