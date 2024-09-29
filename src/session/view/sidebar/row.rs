@@ -702,7 +702,7 @@ impl Row {
                             gettext(
                                 // Translators: Do NOT translate the content between '{' and '}', this
                                 // is a variable name.
-                                "Could not decline invitation for {room}. Try again later.",
+                                "Could not decline invitation for {room}",
                             ),
                             @room,
                         );
@@ -712,7 +712,7 @@ impl Row {
                             gettext(
                                 // Translators: Do NOT translate the content between '{' and '}', this
                                 // is a variable name.
-                                "Could not accept invitation for {room}. Try again later.",
+                                "Could not accept invitation for {room}",
                             ),
                             @room,
                         );
@@ -724,7 +724,7 @@ impl Row {
                         gettext(
                             // Translators: Do NOT translate the content between '{' and '}', this is a
                             // variable name.
-                            "Could not join {room}. Try again later.",
+                            "Could not join {room}",
                         ),
                         @room,
                     );

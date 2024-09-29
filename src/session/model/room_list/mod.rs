@@ -437,7 +437,7 @@ impl RoomList {
                 let error = gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "Could not join room {room_name}. Try again later.",
+                    "Could not join room {room_name}",
                     &[("room_name", identifier.as_str())],
                 );
 

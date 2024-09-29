@@ -610,7 +610,7 @@ impl RoomHistory {
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "Could not join {room}. Try again later.",
+                    "Could not join {room}",
                 ),
                 @room,
             );
