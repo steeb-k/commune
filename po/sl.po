@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-25 07:47+0000\n"
-"PO-Revision-Date: 2024-09-26 11:42+0200\n"
+"POT-Creation-Date: 2024-09-30 10:46+0000\n"
+"PO-Revision-Date: 2024-09-30 15:20+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -166,24 +166,24 @@ msgstr "_Dodaj račun"
 msgid "Account Settings"
 msgstr "Nastavitve računa"
 
-#: src/application.rs:212
+#: src/application.rs:275
 msgid "The Fractal Team"
 msgstr "Ekipa Fraktala"
 
-#: src/application.rs:218
+#: src/application.rs:281
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Ekipa Fraktala"
 
-#: src/application.rs:232
+#: src/application.rs:295
 msgid "translator-credits"
 msgstr "Martin Srebotnjak"
 
 #. This can't be added via the builder
-#: src/application.rs:236
+#: src/application.rs:299
 msgid "Name by"
 msgstr "Ime po"
 
-#: src/application.rs:351
+#: src/application.rs:414
 msgid "Session not found"
 msgstr "Seje ni bilo mogoče najti"
 
@@ -439,7 +439,7 @@ msgstr "Obnovitveno geslo ali ključ"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/sidebar/mod.rs:300
 msgid "Recover"
 msgstr "Obnovi"
 
@@ -583,7 +583,7 @@ msgstr "P_otrdi"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:225
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:997
+#: src/session/view/content/room_history/mod.rs:996
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Pogled"
@@ -635,7 +635,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:1000
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Pridruži se"
@@ -699,8 +699,8 @@ msgstr "Zapusti"
 #: src/session/view/content/room_details/general_page.rs:1021
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:896
-#: src/session/view/content/room_history/item_row.rs:950
+#: src/session/view/content/room_history/item_row.rs:898
+#: src/session/view/content/room_history/item_row.rs:952
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -855,7 +855,7 @@ msgstr[3] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:897
+#: src/session/view/content/room_history/item_row.rs:899
 msgid "Remove"
 msgstr "Odstrani"
 
@@ -876,7 +876,7 @@ msgstr ""
 "lahko poskusite naložiti tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:932
+#: src/session/view/content/room_history/item_row.rs:934
 msgid "Reason (optional)"
 msgstr "Razlog (neobvezno)"
 
@@ -935,15 +935,15 @@ msgstr "Povišaj"
 msgid "User Profile"
 msgstr "Profil uporabnika"
 
-#: src/components/offline_banner.rs:103
+#: src/components/offline_banner.rs:102
 msgid "Offline"
 msgstr "Nepovezani"
 
-#: src/components/offline_banner.rs:111
+#: src/components/offline_banner.rs:109
 msgid "No network connection"
 msgstr "Brez omrežne povezave"
 
-#: src/components/offline_banner.rs:115
+#: src/components/offline_banner.rs:112
 msgid "No Internet connection"
 msgstr "Brez internetne povezave"
 
@@ -982,7 +982,7 @@ msgstr "Obvesti celotno klepetalnico"
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:71
 msgid "Custom"
 msgstr "Po meri"
 
@@ -1122,9 +1122,9 @@ msgstr "Prezri"
 msgid "Could not stop ignoring user"
 msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
-#: src/components/user_page.rs:777 src/session/view/content/invite.rs:302
+#: src/components/user_page.rs:777 src/session/view/content/invite.rs:301
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:617
+#: src/session/view/sidebar/row.rs:760
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
@@ -1161,7 +1161,7 @@ msgstr "Varnost"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:293
 msgid "Verify"
 msgstr "Preveri"
 
@@ -1884,7 +1884,7 @@ msgstr ""
 "Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
 "ključev ustvarjena in nastavljena kot privzeta."
 
-#: src/session/model/session.rs:982
+#: src/session/model/session.rs:979
 msgid "Could not log the session out"
 msgstr "Seje ni bilo mogoče odjaviti"
 
@@ -1900,105 +1900,103 @@ msgstr "{uporabnik} je poslal/a zahtevo za preverjanje"
 msgid "Verify your new session “{name}”"
 msgstr "Overite novo sejo »{name}«"
 
-#: src/session/model/room/join_rule.rs:281
+#: src/session/model/room/join_rule.rs:247
 msgid "Only invited users, and users can knock"
 msgstr "Samo povabljeni uporabniki in uporabniki lahko potrkajo"
 
-#: src/session/model/room/join_rule.rs:283
+#: src/session/model/room/join_rule.rs:249
 msgid "Only invited users"
 msgstr "Samo povabljeni uporabniki"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:297
+#: src/session/model/room/join_rule.rs:263
 msgid "Members of {room}, and users can knock"
 msgstr "Člani {room} in uporabniki lahko trkajo"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:304
+#: src/session/model/room/join_rule.rs:270
 msgid "Members of {room}"
 msgstr "Člani {room}"
 
-#: src/session/model/room/join_rule.rs:309
+#: src/session/model/room/join_rule.rs:275
 msgid "Any registered user"
 msgstr "Vsak registriran uporabnik"
 
-#: src/session/model/room/join_rule.rs:310
+#: src/session/model/room/join_rule.rs:276
 #: src/session/view/content/room_details/general_page.rs:925
 msgid "Unsupported rule"
 msgstr "Nepodprto pravilo"
 
-#: src/session/model/room/mod.rs:1338
+#: src/session/model/room/mod.rs:405
 msgid "Empty Room (was {user})"
 msgstr "Prazna klepetalnica (prej {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1341
+#: src/session/model/room/mod.rs:408
 msgid "Empty Room"
 msgstr "Prazna klepetalnica"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1351
+#: src/session/model/room/mod.rs:418
 msgid "Unknown"
 msgstr "Neznano"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:71
+#: src/session/model/room/permissions.rs:69
 msgid "Default"
 msgstr "Privzeto"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:72
 msgid "Moderator"
 msgstr "Moderator"
 
-#: src/session/model/room/permissions.rs:75
+#: src/session/model/room/permissions.rs:73
 msgid "Admin"
 msgstr "Skrbnik"
 
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:77
+#: src/session/model/room/permissions.rs:75
 msgid "Muted"
 msgstr "Utišan"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:614
-msgid "Could not join room {room_name}. Try again later."
-msgstr ""
-"Ni se možno pridružiti klepetalnici {room_name}. Poskusite znova pozneje."
+#: src/session/model/room_list/mod.rs:440
+msgid "Could not join room {room_name}"
+msgstr "Ni se možno pridružiti klepetalnici {room_name}"
 
-#: src/session/model/sidebar_data/category/category_type.rs:29
+#: src/session/model/sidebar_data/section/name.rs:64
 msgid "Verifications"
 msgstr "Preverjanja"
 
-#: src/session/model/sidebar_data/category/category_type.rs:30
+#: src/session/model/sidebar_data/section/name.rs:65
 #: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "Povabljen"
 
-#: src/session/model/sidebar_data/category/category_type.rs:31
+#: src/session/model/sidebar_data/section/name.rs:66
 msgid "Favorites"
 msgstr "Priljubljeni"
 
-#: src/session/model/sidebar_data/category/category_type.rs:32
+#: src/session/model/sidebar_data/section/name.rs:67
 msgid "Rooms"
 msgstr "Klepetalnice"
 
-#: src/session/model/sidebar_data/category/category_type.rs:33
+#: src/session/model/sidebar_data/section/name.rs:68
 msgid "Low Priority"
 msgstr "Nizka prednost"
 
-#: src/session/model/sidebar_data/category/category_type.rs:34
+#: src/session/model/sidebar_data/section/name.rs:69
 msgid "Historical"
 msgstr "Zgodovinsko"
 
-#: src/session/model/sidebar_data/icon_item.rs:30
+#: src/session/model/sidebar_data/icon_item.rs:32
 msgid "Explore"
 msgstr "Razišči"
 
-#: src/session/model/sidebar_data/icon_item.rs:31
+#: src/session/model/sidebar_data/icon_item.rs:33
 msgid "Forget Room"
 msgstr "Pozabi klepetalnico"
 
@@ -2480,7 +2478,7 @@ msgstr "Preverjanje lastnih naprav ali drugih uporabnikov ni mogoče"
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
+#: src/session/view/sidebar/mod.rs:291 src/session/view/sidebar/mod.rs:297
 msgid "Enable"
 msgstr "Omogoči"
 
@@ -2770,15 +2768,15 @@ msgstr "{user_name} ({user_id}) vas je povabil/a"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:249
-msgid "Could not accept invitation for {room}. Try again later."
-msgstr "Povabila za {room} ni bilo mogoče sprejeti. Poskusite znova pozneje."
+#: src/session/view/content/invite.rs:248 src/session/view/sidebar/row.rs:715
+msgid "Could not accept invitation for {room}"
+msgstr "Povabila za {room} ni bilo mogoče sprejeti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:289
-msgid "Could not decline invitation for {room}. Try again later."
-msgstr "Povabila za {room} ni bilo mogoče zavrniti. Poskusite znova pozneje."
+#: src/session/view/content/invite.rs:288 src/session/view/sidebar/row.rs:705
+msgid "Could not decline invitation for {room}"
+msgstr "Povabila za {room} ni bilo mogoče zavrniti"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
@@ -3354,13 +3352,12 @@ msgstr "Prepovedan"
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
 #: src/session/view/content/room_details/invite_subpage/mod.rs:239
-msgid "Could not invite {user} to {room}. Try again later."
-msgid_plural "Could not invite {n} users to {room}. Try again later."
-msgstr[0] "Could not invite {user} to {room}. Try again later."
-msgstr[1] "Could not invite {n} users to {room}. Try again later."
-msgstr[2] "Could not invite {n} users to {room}. Try again later."
-msgstr[3] ""
-"Ni bilo mogoče povabiti {n} uporabnike v {room}. Poskusite znova pozneje."
+msgid "Could not invite {user} to {room}"
+msgid_plural "Could not invite {n} users to {room}"
+msgstr[0] "Ni bilo mogoče povabiti {n} uporabnikov v klepetalnico {room}"
+msgstr[1] "Ni bilo mogoče povabiti {n} uporabnika v klepetalnico {room}"
+msgstr[2] "Ni bilo mogoče povabiti {n} uporabnikov v klepetalnico {room}"
+msgstr[3] "Ni bilo mogoče povabiti {n} uporabnikov v klepetalnico {room}"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:4
 msgid "Invite New Members"
@@ -3731,7 +3728,7 @@ msgstr "To je začetek vidne zgodovine"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:380
+#: src/session/view/content/room_history/item_row.rs:382
 msgid "%A, %B %-e"
 msgstr "%A, %e. %B"
 
@@ -3739,51 +3736,51 @@ msgstr "%A, %e. %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:386
+#: src/session/view/content/room_history/item_row.rs:388
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %e. %B %Y"
 
-#: src/session/view/content/room_history/item_row.rs:392
+#: src/session/view/content/room_history/item_row.rs:394
 msgid "New Messages"
 msgstr "Nova sporočila"
 
-#: src/session/view/content/room_history/item_row.rs:544
+#: src/session/view/content/room_history/item_row.rs:546
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "Povezava sporočila kopirana v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:681
-#: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/item_row.rs:769
-#: src/session/view/content/room_history/item_row.rs:847
+#: src/session/view/content/room_history/item_row.rs:683
+#: src/session/view/content/room_history/item_row.rs:736
+#: src/session/view/content/room_history/item_row.rs:771
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "Besedilo je kopirano v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:789
+#: src/session/view/content/room_history/item_row.rs:791
 msgid "Thumbnail copied to clipboard"
 msgstr "Sličica je kopirana v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:890
+#: src/session/view/content/room_history/item_row.rs:892
 msgid "Remove Message?"
 msgstr "Želite odstraniti sporočilo?"
 
-#: src/session/view/content/room_history/item_row.rs:892
+#: src/session/view/content/room_history/item_row.rs:894
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Ali res želite odstraniti to sporočilo? Tega ni mogoče razveljaviti."
 
-#: src/session/view/content/room_history/item_row.rs:906
+#: src/session/view/content/room_history/item_row.rs:908
 msgid "Could not remove message"
 msgstr "Sporočila ni bilo mogoče odstraniti"
 
-#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:919
 msgid "Could not toggle reaction"
 msgstr "Odziva ni bilo mogoče preklopiti"
 
-#: src/session/view/content/room_history/item_row.rs:943
+#: src/session/view/content/room_history/item_row.rs:945
 msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:947
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3793,11 +3790,11 @@ msgstr ""
 "ID. Skrbnik ne bo mogel videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:952
+#: src/session/view/content/room_history/item_row.rs:954
 msgid "Report"
 msgstr "Poročilo"
 
-#: src/session/view/content/room_history/item_row.rs:970
+#: src/session/view/content/room_history/item_row.rs:972
 msgid "Could not report event"
 msgstr "Dogodka ni bilo mogoče prijaviti"
 
@@ -3838,7 +3835,7 @@ msgstr "Dogodek ni podprt"
 msgid "File: {filename}"
 msgstr "Datoteka: {filename}"
 
-#: src/session/view/content/room_history/message_row/location.rs:102
+#: src/session/view/content/room_history/message_row/location.rs:103
 msgid "Location is invalid and cannot be displayed"
 msgstr "Lokacija ni veljavna in je ni mogoče prikazati"
 
@@ -3903,31 +3900,31 @@ msgstr "Odgovor na"
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:302
+#: src/session/view/content/room_history/message_row/visual_media.rs:315
 msgid "Image: {filename}"
 msgstr "Slika: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:305
+#: src/session/view/content/room_history/message_row/visual_media.rs:318
 msgid "Sticker: {filename}"
 msgstr "Nalepka: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:308
+#: src/session/view/content/room_history/message_row/visual_media.rs:321
 msgid "Video: {filename}"
 msgstr "Videoposnetek: {imedatoteke }"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:313
+#: src/session/view/content/room_history/message_row/visual_media.rs:326
 msgid "Image"
 msgstr "Slika"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:314
+#: src/session/view/content/room_history/message_row/visual_media.rs:327
 msgid "Sticker"
 msgstr "Nalepka"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:315
+#: src/session/view/content/room_history/message_row/visual_media.rs:328
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/session/view/content/room_history/message_row/visual_media.rs:415
 #: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
@@ -4077,37 +4074,45 @@ msgstr "%-e. %b %Y ob %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e. %b %Y ob %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:358
+#: src/session/view/content/room_history/mod.rs:357
 msgid "Error getting file from drop"
 msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:595
+#: src/session/view/content/room_history/mod.rs:594
+#: src/session/view/sidebar/row.rs:738
 msgid "Could not leave {room}"
 msgstr "Ni možno zapustiti {room}"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/view/content/room_history/mod.rs:613
+#: src/session/view/sidebar/row.rs:727
+msgid "Could not join {room}"
+msgstr "Ni se možno pridružiti {room_name}"
+
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:631
-#: src/session/view/sidebar/row.rs:628
+#: src/session/view/content/room_history/mod.rs:630
+#: src/session/view/sidebar/row.rs:771
 msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
-#: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:434
+#: src/session/view/content/room_history/mod.rs:802
+#: src/session/view/sidebar/mod.rs:408
 msgid "Context Menu"
 msgstr "Kontekstni meni"
 
-#: src/session/view/content/room_history/mod.rs:823
+#: src/session/view/content/room_history/mod.rs:822
 msgid "Sender Context Menu"
 msgstr "Kontekstni meni pošiljatelja"
 
-#: src/session/view/content/room_history/mod.rs:995
-#: src/session/view/content/room_history/mod.rs:999
+#: src/session/view/content/room_history/mod.rs:994
+#: src/session/view/content/room_history/mod.rs:998
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Obstaja novejša različica te klepetalnice"
 
-#: src/session/view/content/room_history/mod.rs:1002
+#: src/session/view/content/room_history/mod.rs:1001
 msgid "This room was closed"
 msgstr "Ta klepetalnica je bila zaprta"
 
@@ -4684,76 +4689,19 @@ msgstr "Pozneje ni mogoče onemogočiti"
 msgid "_Create Room"
 msgstr "_Ustvari klepetalnico"
 
-#. Translators: This is an action to join a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:115
-msgid "Join Room as Favorite"
-msgstr "Pridruži se klepetalnici kot priljubljeni"
-
-#: src/session/view/sidebar/category_row.rs:116
-msgid "Join Room"
-msgstr "Pridruži se klepetalnici"
-
-#. Translators: This is an action to join a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:119
-msgid "Join Room as Low Priority"
-msgstr "Pridružite se klepetalnici z nizko prioriteto"
-
-#: src/session/view/sidebar/category_row.rs:120
-msgid "Reject Invite"
-msgstr "Zavrni povabilo"
-
-#: src/session/view/sidebar/category_row.rs:124
-#: src/session/view/sidebar/category_row.rs:137
-msgid "Move to Rooms"
-msgstr "Premakni med klepetalnice"
-
-#: src/session/view/sidebar/category_row.rs:125
-#: src/session/view/sidebar/category_row.rs:131
-msgid "Move to Low Priority"
-msgstr "Premakni na nizko prioriteto"
-
-#: src/session/view/sidebar/category_row.rs:126
-#: src/session/view/sidebar/category_row.rs:132
-#: src/session/view/sidebar/category_row.rs:138
-msgid "Leave Room"
-msgstr "Zapusti klepetalnico"
-
-#: src/session/view/sidebar/category_row.rs:130
-#: src/session/view/sidebar/category_row.rs:136
-msgid "Move to Favorites"
-msgstr "Premakni med priljubljene"
-
-#. Translators: This is an action to rejoin a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:144
-msgid "Rejoin Room as Favorite"
-msgstr "Znova se pridružite klepetalnici kot priljubljeni"
-
-#: src/session/view/sidebar/category_row.rs:145
-msgid "Rejoin Room"
-msgstr "Znova se pridruži klepetalnici"
-
-#. Translators: This is an action to rejoin a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:148
-msgid "Rejoin Room as Low Priority"
-msgstr "Znova se pridružite klepetalnici z nizko prioriteto"
-
-#: src/session/view/sidebar/mod.rs:322
+#: src/session/view/sidebar/mod.rs:291
 msgid "No crypto identity"
 msgstr "Brez kripto identitete"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:293
 msgid "Crypto identity incomplete"
 msgstr "Kripto identiteta ni popolna"
 
-#: src/session/view/sidebar/mod.rs:328
+#: src/session/view/sidebar/mod.rs:297
 msgid "Account recovery disabled"
 msgstr "Obnovitev računa je onemogočena"
 
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/sidebar/mod.rs:300
 msgid "Account recovery incomplete"
 msgstr "Obnovitev računa ni dokončana"
 
@@ -4778,8 +4726,8 @@ msgid "_About Fractal"
 msgstr "_O programu Fraktal"
 
 #: src/session/view/sidebar/mod.ui:37
-msgid "_Reject"
-msgstr "_Zavrni"
+msgid "Dec_line"
+msgstr "Zavr_ni"
 
 #: src/session/view/sidebar/mod.ui:44
 msgid "_Mark as Read"
@@ -4836,14 +4784,14 @@ msgstr "Omogoča krmarjenje med klepetalnicami"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:286
+#: src/session/view/sidebar/room_row.rs:266
 msgid "Direct chat with {name}"
 msgstr "Neposreden klepet s/z {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:298
+#: src/session/view/sidebar/room_row.rs:278
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "{count} obvestil"
@@ -4852,22 +4800,79 @@ msgstr[2] "{count} obvestili"
 msgstr[3] "{count} obvestila"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:607
+#: src/session/view/sidebar/row.rs:747
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:644
+#: src/session/view/sidebar/row.rs:787
 msgid "Could not mark {room} as direct chat"
 msgstr "Ni mogoče označiti {room} kot neposrednega klepeta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:649
+#: src/session/view/sidebar/row.rs:792
 msgid "Could not unmark {room} as direct chat"
 msgstr "Ni mogoče umakniti oznake {room} kot neposrednega klepeta"
+
+#. Translators: This is an action to join a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:113
+msgid "Join Room as Favorite"
+msgstr "Pridruži se klepetalnici kot priljubljeni"
+
+#: src/session/view/sidebar/section_row.rs:114
+msgid "Join Room"
+msgstr "Pridruži se klepetalnici"
+
+#. Translators: This is an action to join a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:117
+msgid "Join Room as Low Priority"
+msgstr "Pridružite se klepetalnici z nizko prioriteto"
+
+#: src/session/view/sidebar/section_row.rs:118
+msgid "Reject Invite"
+msgstr "Zavrni povabilo"
+
+#: src/session/view/sidebar/section_row.rs:122
+#: src/session/view/sidebar/section_row.rs:135
+msgid "Move to Rooms"
+msgstr "Premakni med klepetalnice"
+
+#: src/session/view/sidebar/section_row.rs:123
+#: src/session/view/sidebar/section_row.rs:129
+msgid "Move to Low Priority"
+msgstr "Premakni na nizko prioriteto"
+
+#: src/session/view/sidebar/section_row.rs:124
+#: src/session/view/sidebar/section_row.rs:130
+#: src/session/view/sidebar/section_row.rs:136
+msgid "Leave Room"
+msgstr "Zapusti klepetalnico"
+
+#: src/session/view/sidebar/section_row.rs:128
+#: src/session/view/sidebar/section_row.rs:134
+msgid "Move to Favorites"
+msgstr "Premakni med priljubljene"
+
+#. Translators: This is an action to rejoin a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:142
+msgid "Rejoin Room as Favorite"
+msgstr "Znova se pridružite klepetalnici kot priljubljeni"
+
+#: src/session/view/sidebar/section_row.rs:143
+msgid "Rejoin Room"
+msgstr "Znova se pridruži klepetalnici"
+
+#. Translators: This is an action to rejoin a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:146
+msgid "Rejoin Room as Low Priority"
+msgstr "Znova se pridružite klepetalnici z nizko prioriteto"
 
 #: src/session_list/mod.rs:269
 msgid "Could not restore previous sessions"
