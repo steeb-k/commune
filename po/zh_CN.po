@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-25 07:47+0000\n"
-"PO-Revision-Date: 2024-09-25 21:15+0800\n"
+"POT-Creation-Date: 2024-09-30 10:46+0000\n"
+"PO-Revision-Date: 2024-09-30 20:53+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -160,26 +160,26 @@ msgstr "添加账号(_A)"
 msgid "Account Settings"
 msgstr "账号设置"
 
-#: src/application.rs:212
+#: src/application.rs:275
 msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
-#: src/application.rs:218
+#: src/application.rs:281
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal 团队"
 
-#: src/application.rs:232
+#: src/application.rs:295
 msgid "translator-credits"
 msgstr ""
 "lumingzh <lumingzh@qq.com>, 2018-2024\n"
 "WodeShengli <wodeshengli@disroot.org>, 2024"
 
 #. This can't be added via the builder
-#: src/application.rs:236
+#: src/application.rs:299
 msgid "Name by"
 msgstr "名字"
 
-#: src/application.rs:351
+#: src/application.rs:414
 msgid "Session not found"
 msgstr "会话未找到"
 
@@ -419,7 +419,7 @@ msgstr "恢复口令或密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/sidebar/mod.rs:300
 msgid "Recover"
 msgstr "恢复"
 
@@ -556,7 +556,7 @@ msgstr "确认(_O)"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:225
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:997
+#: src/session/view/content/room_history/mod.rs:996
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "查看"
@@ -602,7 +602,7 @@ msgstr "输入聊天室标识、别名或链接来查找聊天室"
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:1000
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "加入"
@@ -660,8 +660,8 @@ msgstr "离开"
 #: src/session/view/content/room_details/general_page.rs:1021
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:896
-#: src/session/view/content/room_history/item_row.rs:950
+#: src/session/view/content/room_history/item_row.rs:898
+#: src/session/view/content/room_history/item_row.rs:952
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -795,7 +795,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:897
+#: src/session/view/content/room_history/item_row.rs:899
 msgid "Remove"
 msgstr "移除"
 
@@ -816,7 +816,7 @@ msgstr ""
 "早来加载更多历史。"
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:932
+#: src/session/view/content/room_history/item_row.rs:934
 msgid "Reason (optional)"
 msgstr "原因（可选）"
 
@@ -868,15 +868,15 @@ msgstr "晋升"
 msgid "User Profile"
 msgstr "用户配置"
 
-#: src/components/offline_banner.rs:103
+#: src/components/offline_banner.rs:102
 msgid "Offline"
 msgstr "离线"
 
-#: src/components/offline_banner.rs:111
+#: src/components/offline_banner.rs:109
 msgid "No network connection"
 msgstr "无网络连接"
 
-#: src/components/offline_banner.rs:115
+#: src/components/offline_banner.rs:112
 msgid "No Internet connection"
 msgstr "没有互联网连接"
 
@@ -915,7 +915,7 @@ msgstr "通知整个房间"
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:71
 msgid "Custom"
 msgstr "自定义"
 
@@ -1052,9 +1052,9 @@ msgstr "忽略"
 msgid "Could not stop ignoring user"
 msgstr "无法停止忽略用户"
 
-#: src/components/user_page.rs:777 src/session/view/content/invite.rs:302
+#: src/components/user_page.rs:777 src/session/view/content/invite.rs:301
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:617
+#: src/session/view/sidebar/row.rs:760
 msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
@@ -1091,7 +1091,7 @@ msgstr "安全"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:293
 msgid "Verify"
 msgstr "验证"
 
@@ -1768,7 +1768,7 @@ msgid ""
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:982
+#: src/session/model/session.rs:979
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -1784,104 +1784,103 @@ msgstr "{user} 发送了一个验证请求"
 msgid "Verify your new session “{name}”"
 msgstr "验证您的新会话“{name}”"
 
-#: src/session/model/room/join_rule.rs:281
+#: src/session/model/room/join_rule.rs:247
 msgid "Only invited users, and users can knock"
 msgstr "仅邀请的和可以敲门的用户"
 
-#: src/session/model/room/join_rule.rs:283
+#: src/session/model/room/join_rule.rs:249
 msgid "Only invited users"
 msgstr "仅邀请的用户"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:297
+#: src/session/model/room/join_rule.rs:263
 msgid "Members of {room}, and users can knock"
 msgstr "{room} 的成员和可以敲门的用户"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:304
+#: src/session/model/room/join_rule.rs:270
 msgid "Members of {room}"
 msgstr "{room} 的成员"
 
-#: src/session/model/room/join_rule.rs:309
+#: src/session/model/room/join_rule.rs:275
 msgid "Any registered user"
 msgstr "任何注册的用户"
 
-#: src/session/model/room/join_rule.rs:310
+#: src/session/model/room/join_rule.rs:276
 #: src/session/view/content/room_details/general_page.rs:925
 msgid "Unsupported rule"
 msgstr "不支持的规则"
 
-#: src/session/model/room/mod.rs:1338
+#: src/session/model/room/mod.rs:405
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1341
+#: src/session/model/room/mod.rs:408
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1351
+#: src/session/model/room/mod.rs:418
 msgid "Unknown"
 msgstr "未知"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:71
+#: src/session/model/room/permissions.rs:69
 msgid "Default"
 msgstr "默认"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:72
 msgid "Moderator"
 msgstr "仲裁员"
 
-#: src/session/model/room/permissions.rs:75
+#: src/session/model/room/permissions.rs:73
 msgid "Admin"
 msgstr "管理员"
 
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:77
+#: src/session/model/room/permissions.rs:75
 msgid "Muted"
 msgstr "已禁言"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:614
-msgid "Could not join room {room_name}. Try again later."
-msgstr "无法加入聊天室 {room_name}。请稍后重试。"
+#: src/session/model/room_list/mod.rs:440
+msgid "Could not join room {room_name}"
+msgstr "无法加入聊天室 {room_name}"
 
-#: src/session/model/sidebar_data/category/category_type.rs:29
+#: src/session/model/sidebar_data/section/name.rs:64
 msgid "Verifications"
 msgstr "验证"
 
-#: src/session/model/sidebar_data/category/category_type.rs:30
+#: src/session/model/sidebar_data/section/name.rs:65
 #: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "已邀请"
 
-#: src/session/model/sidebar_data/category/category_type.rs:31
+#: src/session/model/sidebar_data/section/name.rs:66
 msgid "Favorites"
 msgstr "最爱"
 
-#: src/session/model/sidebar_data/category/category_type.rs:32
+#: src/session/model/sidebar_data/section/name.rs:67
 msgid "Rooms"
 msgstr "聊天室"
 
-#: src/session/model/sidebar_data/category/category_type.rs:33
+#: src/session/model/sidebar_data/section/name.rs:68
 msgid "Low Priority"
 msgstr "低优先级"
 
-#: src/session/model/sidebar_data/category/category_type.rs:34
+#: src/session/model/sidebar_data/section/name.rs:69
 msgid "Historical"
 msgstr "过去的"
 
-#: src/session/model/sidebar_data/icon_item.rs:30
+#: src/session/model/sidebar_data/icon_item.rs:32
 msgid "Explore"
 msgstr "发现"
 
-#: src/session/model/sidebar_data/icon_item.rs:31
+#: src/session/model/sidebar_data/icon_item.rs:33
 msgid "Forget Room"
 msgstr "忘记聊天室"
 
@@ -2342,7 +2341,7 @@ msgstr "无法认证您自己的设备或别的用户"
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
+#: src/session/view/sidebar/mod.rs:291 src/session/view/sidebar/mod.rs:297
 msgid "Enable"
 msgstr "启用"
 
@@ -2623,15 +2622,15 @@ msgstr "{user_name}（{user_id}）已邀请您"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:249
-msgid "Could not accept invitation for {room}. Try again later."
-msgstr "无法接受 {room} 的邀请。请稍后重试。"
+#: src/session/view/content/invite.rs:248 src/session/view/sidebar/row.rs:715
+msgid "Could not accept invitation for {room}"
+msgstr "无法接受 {room} 的邀请"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:289
-msgid "Could not decline invitation for {room}. Try again later."
-msgstr "无法拒绝 {room} 的邀请。请稍后重试。"
+#: src/session/view/content/invite.rs:288 src/session/view/sidebar/row.rs:705
+msgid "Could not decline invitation for {room}"
+msgstr "无法拒绝 {room} 的邀请"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
@@ -3199,9 +3198,9 @@ msgstr "已封禁"
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
 #: src/session/view/content/room_details/invite_subpage/mod.rs:239
-msgid "Could not invite {user} to {room}. Try again later."
-msgid_plural "Could not invite {n} users to {room}. Try again later."
-msgstr[0] "无法邀请 {n} 个用户到 {room}。请稍后重试。"
+msgid "Could not invite {user} to {room}"
+msgid_plural "Could not invite {n} users to {room}"
+msgstr[0] "无法邀请 {n} 个用户到 {room}"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:4
 msgid "Invite New Members"
@@ -3554,7 +3553,7 @@ msgstr "这是可见历史记录的开始"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:380
+#: src/session/view/content/room_history/item_row.rs:382
 msgid "%A, %B %-e"
 msgstr "%m 月 %d 日，%A"
 
@@ -3562,51 +3561,51 @@ msgstr "%m 月 %d 日，%A"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:386
+#: src/session/view/content/room_history/item_row.rs:388
 msgid "%A, %B %-e, %Y"
 msgstr "%Y 年 %m 月 %d 日，%A"
 
-#: src/session/view/content/room_history/item_row.rs:392
+#: src/session/view/content/room_history/item_row.rs:394
 msgid "New Messages"
 msgstr "新消息"
 
-#: src/session/view/content/room_history/item_row.rs:544
+#: src/session/view/content/room_history/item_row.rs:546
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "消息链接已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:681
-#: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/item_row.rs:769
-#: src/session/view/content/room_history/item_row.rs:847
+#: src/session/view/content/room_history/item_row.rs:683
+#: src/session/view/content/room_history/item_row.rs:736
+#: src/session/view/content/room_history/item_row.rs:771
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "文字已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:789
+#: src/session/view/content/room_history/item_row.rs:791
 msgid "Thumbnail copied to clipboard"
 msgstr "缩略图已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:890
+#: src/session/view/content/room_history/item_row.rs:892
 msgid "Remove Message?"
 msgstr "移除消息吗？"
 
-#: src/session/view/content/room_history/item_row.rs:892
+#: src/session/view/content/room_history/item_row.rs:894
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "您确定想要移除该消息吗？该操作无法撤消。"
 
-#: src/session/view/content/room_history/item_row.rs:906
+#: src/session/view/content/room_history/item_row.rs:908
 msgid "Could not remove message"
 msgstr "无法移除消息"
 
-#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:919
 msgid "Could not toggle reaction"
 msgstr "无法切换回应"
 
-#: src/session/view/content/room_history/item_row.rs:943
+#: src/session/view/content/room_history/item_row.rs:945
 msgid "Report Event?"
 msgstr "举报事件？"
 
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:947
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3616,11 +3615,11 @@ msgstr ""
 "编校，管理员将无法看到它。"
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:952
+#: src/session/view/content/room_history/item_row.rs:954
 msgid "Report"
 msgstr "举报"
 
-#: src/session/view/content/room_history/item_row.rs:970
+#: src/session/view/content/room_history/item_row.rs:972
 msgid "Could not report event"
 msgstr "无法举报该事件"
 
@@ -3659,7 +3658,7 @@ msgstr "不支持的事件"
 msgid "File: {filename}"
 msgstr "文件：{filename}"
 
-#: src/session/view/content/room_history/message_row/location.rs:102
+#: src/session/view/content/room_history/message_row/location.rs:103
 msgid "Location is invalid and cannot be displayed"
 msgstr "位置无效且无法显示"
 
@@ -3721,31 +3720,31 @@ msgstr "在回复中"
 msgid "Details"
 msgstr "详情"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:302
+#: src/session/view/content/room_history/message_row/visual_media.rs:315
 msgid "Image: {filename}"
 msgstr "图像：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:305
+#: src/session/view/content/room_history/message_row/visual_media.rs:318
 msgid "Sticker: {filename}"
 msgstr "贴纸：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:308
+#: src/session/view/content/room_history/message_row/visual_media.rs:321
 msgid "Video: {filename}"
 msgstr "视频：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:313
+#: src/session/view/content/room_history/message_row/visual_media.rs:326
 msgid "Image"
 msgstr "图像"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:314
+#: src/session/view/content/room_history/message_row/visual_media.rs:327
 msgid "Sticker"
 msgstr "贴纸"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:315
+#: src/session/view/content/room_history/message_row/visual_media.rs:328
 msgid "Video"
 msgstr "视频"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/session/view/content/room_history/message_row/visual_media.rs:415
 #: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "无法找回媒体文件"
@@ -3895,37 +3894,45 @@ msgstr "%m 月 %d 日 %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%m 月 %d 日 %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:358
+#: src/session/view/content/room_history/mod.rs:357
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:595
+#: src/session/view/content/room_history/mod.rs:594
+#: src/session/view/sidebar/row.rs:738
 msgid "Could not leave {room}"
 msgstr "无法离开 {room}"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/view/content/room_history/mod.rs:613
+#: src/session/view/sidebar/row.rs:727
+msgid "Could not join {room}"
+msgstr "无法加入 {room}"
+
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:631
-#: src/session/view/sidebar/row.rs:628
+#: src/session/view/content/room_history/mod.rs:630
+#: src/session/view/sidebar/row.rs:771
 msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
-#: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:434
+#: src/session/view/content/room_history/mod.rs:802
+#: src/session/view/sidebar/mod.rs:408
 msgid "Context Menu"
 msgstr "上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:823
+#: src/session/view/content/room_history/mod.rs:822
 msgid "Sender Context Menu"
 msgstr "发送者上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:995
-#: src/session/view/content/room_history/mod.rs:999
+#: src/session/view/content/room_history/mod.rs:994
+#: src/session/view/content/room_history/mod.rs:998
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:1002
+#: src/session/view/content/room_history/mod.rs:1001
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
@@ -4491,76 +4498,19 @@ msgstr "无法在之后禁用"
 msgid "_Create Room"
 msgstr "创建聊天室(_C)"
 
-#. Translators: This is an action to join a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:115
-msgid "Join Room as Favorite"
-msgstr "加入聊天室并设为最爱"
-
-#: src/session/view/sidebar/category_row.rs:116
-msgid "Join Room"
-msgstr "加入聊天室"
-
-#. Translators: This is an action to join a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:119
-msgid "Join Room as Low Priority"
-msgstr "加入聊天室并设为低优先级"
-
-#: src/session/view/sidebar/category_row.rs:120
-msgid "Reject Invite"
-msgstr "拒绝邀请"
-
-#: src/session/view/sidebar/category_row.rs:124
-#: src/session/view/sidebar/category_row.rs:137
-msgid "Move to Rooms"
-msgstr "移至聊天室"
-
-#: src/session/view/sidebar/category_row.rs:125
-#: src/session/view/sidebar/category_row.rs:131
-msgid "Move to Low Priority"
-msgstr "移至低优先级"
-
-#: src/session/view/sidebar/category_row.rs:126
-#: src/session/view/sidebar/category_row.rs:132
-#: src/session/view/sidebar/category_row.rs:138
-msgid "Leave Room"
-msgstr "离开聊天室"
-
-#: src/session/view/sidebar/category_row.rs:130
-#: src/session/view/sidebar/category_row.rs:136
-msgid "Move to Favorites"
-msgstr "移至最爱"
-
-#. Translators: This is an action to rejoin a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:144
-msgid "Rejoin Room as Favorite"
-msgstr "重新加入聊天室并设为最爱"
-
-#: src/session/view/sidebar/category_row.rs:145
-msgid "Rejoin Room"
-msgstr "重新加入聊天室"
-
-#. Translators: This is an action to rejoin a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:148
-msgid "Rejoin Room as Low Priority"
-msgstr "重新加入聊天室并设为低优先级"
-
-#: src/session/view/sidebar/mod.rs:322
+#: src/session/view/sidebar/mod.rs:291
 msgid "No crypto identity"
 msgstr "没有加密身份"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:293
 msgid "Crypto identity incomplete"
 msgstr "加密身份不完整"
 
-#: src/session/view/sidebar/mod.rs:328
+#: src/session/view/sidebar/mod.rs:297
 msgid "Account recovery disabled"
 msgstr "账号恢复已禁用"
 
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/sidebar/mod.rs:300
 msgid "Account recovery incomplete"
 msgstr "账号恢复不完全"
 
@@ -4585,8 +4535,8 @@ msgid "_About Fractal"
 msgstr "关于 Fractal(_A)"
 
 #: src/session/view/sidebar/mod.ui:37
-msgid "_Reject"
-msgstr "拒绝(_R)"
+msgid "Dec_line"
+msgstr "拒绝(_L)"
 
 #: src/session/view/sidebar/mod.ui:44
 msgid "_Mark as Read"
@@ -4643,34 +4593,91 @@ msgstr "允许在聊天室间导览"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:286
+#: src/session/view/sidebar/room_row.rs:266
 msgid "Direct chat with {name}"
 msgstr "与 {name} 的直接聊天"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:298
+#: src/session/view/sidebar/room_row.rs:278
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "{count} 条通知"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:607
+#: src/session/view/sidebar/row.rs:747
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "无法将 {room} 从 {previous_category} 移至 {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:644
+#: src/session/view/sidebar/row.rs:787
 msgid "Could not mark {room} as direct chat"
 msgstr "无法将 {room} 标记为直接聊天"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:649
+#: src/session/view/sidebar/row.rs:792
 msgid "Could not unmark {room} as direct chat"
 msgstr "无法取消将 {room} 标记为直接聊天"
+
+#. Translators: This is an action to join a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:113
+msgid "Join Room as Favorite"
+msgstr "加入聊天室并设为最爱"
+
+#: src/session/view/sidebar/section_row.rs:114
+msgid "Join Room"
+msgstr "加入聊天室"
+
+#. Translators: This is an action to join a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:117
+msgid "Join Room as Low Priority"
+msgstr "加入聊天室并设为低优先级"
+
+#: src/session/view/sidebar/section_row.rs:118
+msgid "Reject Invite"
+msgstr "拒绝邀请"
+
+#: src/session/view/sidebar/section_row.rs:122
+#: src/session/view/sidebar/section_row.rs:135
+msgid "Move to Rooms"
+msgstr "移至聊天室"
+
+#: src/session/view/sidebar/section_row.rs:123
+#: src/session/view/sidebar/section_row.rs:129
+msgid "Move to Low Priority"
+msgstr "移至低优先级"
+
+#: src/session/view/sidebar/section_row.rs:124
+#: src/session/view/sidebar/section_row.rs:130
+#: src/session/view/sidebar/section_row.rs:136
+msgid "Leave Room"
+msgstr "离开聊天室"
+
+#: src/session/view/sidebar/section_row.rs:128
+#: src/session/view/sidebar/section_row.rs:134
+msgid "Move to Favorites"
+msgstr "移至最爱"
+
+#. Translators: This is an action to rejoin a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:142
+msgid "Rejoin Room as Favorite"
+msgstr "重新加入聊天室并设为最爱"
+
+#: src/session/view/sidebar/section_row.rs:143
+msgid "Rejoin Room"
+msgstr "重新加入聊天室"
+
+#. Translators: This is an action to rejoin a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:146
+msgid "Rejoin Room as Low Priority"
+msgstr "重新加入聊天室并设为低优先级"
 
 #: src/session_list/mod.rs:269
 msgid "Could not restore previous sessions"
@@ -4831,6 +4838,9 @@ msgstr "文件"
 #: src/window.ui:60
 msgid "Session"
 msgstr "会话"
+
+#~ msgid "_Reject"
+#~ msgstr "拒绝(_R)"
 
 #~ msgid "Authenticate via Browser"
 #~ msgstr "通过浏览器认证"
