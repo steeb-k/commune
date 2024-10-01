@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{sync::Notification, Room as MatrixRoom};
 use ruma::{api::client::device::get_device, OwnedRoomId, RoomId};
 use tracing::{debug, warn};
@@ -83,6 +83,30 @@ impl Notifications {
     pub fn enabled(&self) -> bool {
         let settings = self.settings();
         settings.account_enabled() && settings.session_enabled()
+    }
+
+    /// Helper method to create notification
+    fn send_notification(
+        &self,
+        id: &str,
+        title: &str,
+        body: &str,
+        default_action: (&str, glib::Variant),
+        icon: Option<&gdk::Texture>,
+    ) {
+        let notification = gio::Notification::new(title);
+        notification.set_category(Some("im.received"));
+        notification.set_priority(gio::NotificationPriority::High);
+        notification.set_body(Some(body));
+
+        let (action, target_value) = default_action;
+        notification.set_default_action_and_target_value(action, Some(&target_value));
+
+        if let Some(notification_icon) = icon {
+            notification.set_icon(notification_icon);
+        }
+
+        Application::default().send_notification(Some(id), &notification);
     }
 
     /// Ask the system to show the given push notification, if applicable.
@@ -169,21 +193,12 @@ impl Notifications {
         let room_id = room.room_id().to_owned();
         let event_id = event.event_id();
 
-        let notification = gio::Notification::new(&room.display_name());
-        notification.set_priority(gio::NotificationPriority::High);
-
         let payload = intent::ShowRoomPayload {
             session_id: session_id.to_owned(),
             room_id: room_id.clone(),
         };
 
-        notification
-            .set_default_action_and_target_value("app.show-room", Some(&payload.to_variant()));
-        notification.set_body(Some(&body));
-
-        if let Some(icon) = room.avatar_data().as_notification_icon() {
-            notification.set_icon(&icon);
-        }
+        let icon = room.avatar_data().as_notification_icon();
 
         let id = if let Some(event_id) = event_id {
             format!("{session_id}//{room_id}//{event_id}")
@@ -192,7 +207,13 @@ impl Notifications {
             format!("{session_id}//{room_id}//{random_id}")
         };
 
-        app.send_notification(Some(&id), &notification);
+        self.send_notification(
+            &id,
+            &room.display_name(),
+            &body,
+            ("app.show-room", payload.to_variant()),
+            icon.as_ref(),
+        );
 
         self.imp()
             .push
@@ -232,27 +253,21 @@ impl Notifications {
             &[("user", &user.display_name())],
         );
 
-        let notification = gio::Notification::new(&title);
-        notification.set_priority(gio::NotificationPriority::High);
-
         let payload = intent::ShowIdentityVerificationPayload {
             session_id: session_id.to_owned(),
             key: verification.key(),
         };
 
-        notification.set_default_action_and_target_value(
-            "app.show-identity-verification",
-            Some(&payload.to_variant()),
-        );
-        notification.set_body(Some(&body));
-
-        if let Some(icon) = user.avatar_data().as_notification_icon() {
-            notification.set_icon(&icon);
-        }
+        let icon = user.avatar_data().as_notification_icon();
 
         let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
-
-        Application::default().send_notification(Some(&id), &notification);
+        self.send_notification(
+            &id,
+            &title,
+            &body,
+            ("app.show-identity-verification", payload.to_variant()),
+            icon.as_ref(),
+        );
 
         self.imp()
             .identity_verifications
@@ -301,23 +316,20 @@ impl Notifications {
             &[("name", display_name)],
         );
 
-        let notification = gio::Notification::new(&title);
-        notification.set_priority(gio::NotificationPriority::High);
-
         let payload = intent::ShowIdentityVerificationPayload {
             session_id: session_id.to_owned(),
             key: verification.key(),
         };
 
-        notification.set_default_action_and_target_value(
-            "app.show-identity-verification",
-            Some(&payload.to_variant()),
-        );
-        notification.set_body(Some(&body));
-
         let id = format!("{session_id}//{other_device_id}//{flow_id}");
 
-        Application::default().send_notification(Some(&id), &notification);
+        self.send_notification(
+            &id,
+            &title,
+            &body,
+            ("app.show-identity-verification", payload.to_variant()),
+            None,
+        );
 
         self.imp()
             .identity_verifications
