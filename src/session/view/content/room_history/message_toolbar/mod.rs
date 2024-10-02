@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Write};
 
 use adw::{prelude::*, subclass::prelude::*};
-use futures_util::{future, pin_mut, StreamExt};
+use futures_util::{future, lock::Mutex, pin_mut, StreamExt};
 use gettextrs::{gettext, pgettext};
 use gtk::{
     gdk, gio,
@@ -72,7 +72,7 @@ mod imp {
         /// The room to send messages in.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: glib::WeakRef<Room>,
-        pub can_send_message_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub send_message_permission_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// Whether outgoing messages should be interpreted as markdown.
         #[property(get, set)]
         pub markdown_enabled: Cell<bool>,
@@ -94,6 +94,8 @@ mod imp {
         ///
         /// The fallback composer state has the `None` key.
         pub composer_states: RefCell<ComposerStatesMap>,
+        /// A guard to avoid sending several messages at once.
+        pub(super) send_guard: Mutex<()>,
     }
 
     #[glib::object_subclass]
@@ -160,7 +162,7 @@ mod imp {
                 #[weak]
                 obj,
                 move |entry| {
-                    if !obj.imp().can_send_message() {
+                    if !obj.imp().can_compose_message() {
                         return;
                     }
 
@@ -253,7 +255,7 @@ mod imp {
             self.completion.unparent();
 
             if let Some(room) = self.room.upgrade() {
-                if let Some(handler) = self.can_send_message_handler.take() {
+                if let Some(handler) = self.send_message_permission_handler.take() {
                     room.permissions().disconnect(handler);
                 }
             }
@@ -273,43 +275,47 @@ mod imp {
             let obj = self.obj();
 
             if let Some(room) = &old_room {
-                if let Some(handler) = self.can_send_message_handler.take() {
+                if let Some(handler) = self.send_message_permission_handler.take() {
                     room.permissions().disconnect(handler);
                 }
             }
 
             if let Some(room) = &room {
-                let can_send_message_handler =
+                let send_message_permission_handler =
                     room.permissions().connect_can_send_message_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
-                            imp.can_send_message_updated();
+                            imp.send_message_permission_updated();
                         }
                     ));
-                self.can_send_message_handler
-                    .replace(Some(can_send_message_handler));
+                self.send_message_permission_handler
+                    .replace(Some(send_message_permission_handler));
             }
 
             self.room.set(room.as_ref());
 
-            self.can_send_message_updated();
+            self.send_message_permission_updated();
             self.message_entry.grab_focus();
 
             obj.notify_room();
             self.update_current_composer_state(old_room.as_ref());
         }
 
-        /// Whether our own user can send a message in the current room.
-        pub(super) fn can_send_message(&self) -> bool {
+        /// Whether the user can compose a message.
+        ///
+        /// It depends on whether our own user has the permission to send a
+        /// message in the current room.
+        pub(super) fn can_compose_message(&self) -> bool {
             self.room
                 .upgrade()
                 .is_some_and(|r| r.permissions().can_send_message())
         }
 
-        /// Update whether our own user can send a message in the current room.
-        fn can_send_message_updated(&self) {
-            let page = if self.can_send_message() {
+        /// Handle an update of the permission to send a message in the current
+        /// room.
+        fn send_message_permission_updated(&self) {
+            let page = if self.can_compose_message() {
                 "enabled"
             } else {
                 "disabled"
@@ -462,7 +468,12 @@ impl MessageToolbar {
 
     /// Add a mention of the given member to the message composer.
     pub fn mention_member(&self, member: &Member) {
-        let view = &*self.imp().message_entry;
+        let imp = self.imp();
+        if !imp.can_compose_message() {
+            return;
+        }
+
+        let view = &imp.message_entry;
         let buffer = view.buffer();
 
         let mut insert = buffer.iter_at_mark(&buffer.get_insert());
@@ -476,7 +487,7 @@ impl MessageToolbar {
     /// Set the event to reply to.
     pub fn set_reply_to(&self, event: Event) {
         let imp = self.imp();
-        if !imp.can_send_message() {
+        if !imp.can_compose_message() {
             return;
         }
 
@@ -494,7 +505,7 @@ impl MessageToolbar {
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
         let imp = self.imp();
-        if !imp.can_send_message() {
+        if !imp.can_compose_message() {
             return;
         }
 
@@ -518,7 +529,10 @@ impl MessageToolbar {
     /// Send the text message that is currently in the message entry.
     async fn send_text_message(&self) {
         let imp = self.imp();
-        if !imp.can_send_message() {
+        let Some(_send_guard) = imp.send_guard.try_lock() else {
+            return;
+        };
+        if !imp.can_compose_message() {
             return;
         }
         let Some(room) = self.room() else {
@@ -655,7 +669,7 @@ impl MessageToolbar {
     /// Open the emoji chooser in the message entry.
     fn open_emoji(&self) {
         let imp = self.imp();
-        if !imp.can_send_message() {
+        if !imp.can_compose_message() {
             return;
         }
         imp.message_entry.emit_insert_emoji();
@@ -666,7 +680,11 @@ impl MessageToolbar {
     /// Shows a preview of the location first and asks the user to confirm the
     /// action.
     async fn send_location(&self) {
-        if !self.imp().can_send_message() {
+        let imp = self.imp();
+        let Some(_send_guard) = imp.send_guard.try_lock() else {
+            return;
+        };
+        if !self.imp().can_compose_message() {
             return;
         }
         let Some(room) = self.room() else {
@@ -822,7 +840,11 @@ impl MessageToolbar {
     /// Shows a preview of the image first and asks the user to confirm the
     /// action.
     async fn send_image(&self, image: gdk::Texture) {
-        if !self.imp().can_send_message() {
+        let imp = self.imp();
+        let Some(_send_guard) = imp.send_guard.try_lock() else {
+            return;
+        };
+        if !imp.can_compose_message() {
             return;
         }
 
@@ -849,7 +871,11 @@ impl MessageToolbar {
 
     /// Select a file to send.
     pub async fn select_file(&self) {
-        if !self.imp().can_send_message() {
+        let imp = self.imp();
+        let Some(_send_guard) = imp.send_guard.try_lock() else {
+            return;
+        };
+        if !imp.can_compose_message() {
             return;
         }
 
@@ -864,7 +890,7 @@ impl MessageToolbar {
             .await
         {
             Ok(file) => {
-                self.send_file(file).await;
+                self.send_file_inner(file).await;
             }
             Err(error) => {
                 if error.matches(gtk::DialogError::Dismissed) {
@@ -882,10 +908,18 @@ impl MessageToolbar {
     /// Shows a preview of the file first, if possible, and asks the user to
     /// confirm the action.
     pub async fn send_file(&self, file: gio::File) {
-        if !self.imp().can_send_message() {
+        let imp = self.imp();
+        let Some(_send_guard) = imp.send_guard.try_lock() else {
+            return;
+        };
+        if !imp.can_compose_message() {
             return;
         }
 
+        self.send_file_inner(file).await;
+    }
+
+    async fn send_file_inner(&self, file: gio::File) {
         let (bytes, file_info) = match load_file(&file).await {
             Ok(data) => data,
             Err(error) => {
@@ -987,7 +1021,7 @@ impl MessageToolbar {
 
     /// Handle a paste action.
     pub fn handle_paste_action(&self) {
-        if !self.imp().can_send_message() {
+        if !self.imp().can_compose_message() {
             return;
         }
 
