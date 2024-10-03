@@ -118,6 +118,7 @@
                 <property name="autoplay">true</property>
                 <property name="popover">
                   <object class="GtkPopoverMenu">
+                    <property name="has-arrow">False</property>
                     <property name="menu-model">media-context-menu-model</property>
                   </object>
                 </property>
