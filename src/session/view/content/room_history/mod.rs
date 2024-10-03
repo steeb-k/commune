@@ -47,6 +47,7 @@ mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
+        ops::ControlFlow,
     };
 
     use glib::subclass::InitializingObject;
@@ -57,64 +58,66 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/mod.ui")]
     #[properties(wrapper_type = super::RoomHistory)]
     pub struct RoomHistory {
+        #[template_child]
+        pub(super) sender_menu_model: TemplateChild<gio::Menu>,
+        #[template_child]
+        pub(super) header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        room_menu: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        listview: TemplateChild<gtk::ListView>,
+        #[template_child]
+        content: TemplateChild<gtk::Widget>,
+        #[template_child]
+        scrolled_window: TemplateChild<gtk::ScrolledWindow>,
+        #[template_child]
+        scroll_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        scroll_btn_revealer: TemplateChild<gtk::Revealer>,
+        #[template_child]
+        pub(super) message_toolbar: TemplateChild<MessageToolbar>,
+        #[template_child]
+        loading: TemplateChild<adw::Spinner>,
+        #[template_child]
+        error: TemplateChild<adw::StatusPage>,
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        tombstoned_banner: TemplateChild<adw::Banner>,
+        #[template_child]
+        drag_overlay: TemplateChild<DragOverlay>,
+        pub(super) item_context_menu: OnceCell<gtk::PopoverMenu>,
+        pub(super) item_reaction_chooser: ReactionChooser,
+        pub(super) sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The room currently displayed.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: BoundObject<Room>,
+        room: BoundObject<Room>,
         /// Whether this is the only view visible, i.e. there is no sidebar.
         #[property(get, set)]
-        pub only_view: Cell<bool>,
+        is_only_view: Cell<bool>,
         /// Whether this `RoomHistory` is empty, aka no room is currently
         /// displayed.
-        #[property(get = Self::empty)]
-        empty: PhantomData<bool>,
-        pub room_members: RefCell<Option<MemberList>>,
-        pub timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        #[property(get = Self::is_empty)]
+        is_empty: PhantomData<bool>,
+        /// The members of the current room.
+        ///
+        /// We hold a strong reference here to keep the list in memory as long
+        /// as the room is opened.
+        pub(super) room_members: RefCell<Option<MemberList>>,
+        timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         /// Whether the current room history scrolling is automatic.
-        pub is_auto_scrolling: Cell<bool>,
+        is_auto_scrolling: Cell<bool>,
         /// Whether the room history should stick to the newest message in the
         /// timeline.
-        #[property(get, set = Self::set_sticky, explicit_notify)]
-        pub sticky: Cell<bool>,
-        pub item_context_menu: OnceCell<gtk::PopoverMenu>,
-        pub item_reaction_chooser: ReactionChooser,
-        pub sender_context_menu: OnceCell<gtk::PopoverMenu>,
-        #[template_child]
-        pub sender_menu_model: TemplateChild<gio::Menu>,
-        #[template_child]
-        pub header_bar: TemplateChild<adw::HeaderBar>,
-        #[template_child]
-        pub room_menu: TemplateChild<gtk::MenuButton>,
-        #[template_child]
-        pub listview: TemplateChild<gtk::ListView>,
-        #[template_child]
-        pub content: TemplateChild<gtk::Widget>,
-        #[template_child]
-        pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
-        #[template_child]
-        pub scroll_btn: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub scroll_btn_revealer: TemplateChild<gtk::Revealer>,
-        #[template_child]
-        pub message_toolbar: TemplateChild<MessageToolbar>,
-        #[template_child]
-        pub loading: TemplateChild<adw::Spinner>,
-        #[template_child]
-        pub error: TemplateChild<adw::StatusPage>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub tombstoned_banner: TemplateChild<adw::Banner>,
-        pub is_loading: Cell<bool>,
-        #[template_child]
-        pub drag_overlay: TemplateChild<DragOverlay>,
-        pub scroll_timeout: RefCell<Option<glib::SourceId>>,
-        pub read_timeout: RefCell<Option<glib::SourceId>>,
-        /// The GtkSelectionModel used in the listview.
-        // TODO: use gtk::MultiSelection to allow selection
-        pub selection_model: OnceCell<gtk::NoSelection>,
-        pub can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
-        pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
-        pub join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
+        #[property(get, explicit_notify)]
+        is_sticky: Cell<bool>,
+        /// The `GtkSelectionModel` used in the list view.
+        selection_model: OnceCell<gtk::NoSelection>,
+        scroll_timeout: RefCell<Option<glib::SourceId>>,
+        read_timeout: RefCell<Option<glib::SourceId>>,
+        can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
+        membership_handler: RefCell<Option<glib::SignalHandlerId>>,
+        join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -136,17 +139,13 @@ mod imp {
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
             klass.install_action_async("room-history.leave", None, |obj, _, _| async move {
-                obj.leave().await;
+                obj.imp().leave().await;
             });
             klass.install_action_async("room-history.join", None, |obj, _, _| async move {
-                obj.join().await;
+                obj.imp().join().await;
             });
             klass.install_action_async("room-history.forget", None, |obj, _, _| async move {
-                obj.forget().await;
-            });
-
-            klass.install_action("room-history.try-again", None, |obj, _, _| {
-                obj.try_again();
+                obj.imp().forget().await;
             });
 
             klass.install_action("room-history.details", None, |obj, _, _| {
@@ -156,15 +155,12 @@ mod imp {
                 obj.open_room_details(Some(room_details::SubpageName::Invite));
             });
 
-            klass.install_action("room-history.scroll-down", None, |obj, _, _| {
-                obj.scroll_down();
-            });
             klass.install_action(
                 "room-history.scroll-to-event",
                 Some(&EventKey::static_variant_type()),
                 |obj, _, v| {
                     if let Some(event_key) = v.and_then(EventKey::from_variant) {
-                        obj.scroll_to_event(&event_key);
+                        obj.imp().scroll_to_event(&event_key);
                     }
                 },
             );
@@ -220,8 +216,10 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for RoomHistory {
         fn constructed(&self) {
-            self.setup_listview();
-            self.setup_drop_target();
+            self.parent_constructed();
+
+            self.init_listview();
+            self.init_drop_target();
 
             self.scroll_btn_revealer
                 .connect_child_revealed_notify(|revealer| {
@@ -231,8 +229,6 @@ mod imp {
                         revealer.set_visible(false);
                     }
                 });
-
-            self.parent_constructed();
         }
 
         fn dispose(&self) {
@@ -244,7 +240,8 @@ mod imp {
     impl BinImpl for RoomHistory {}
 
     impl RoomHistory {
-        fn setup_listview(&self) {
+        /// Initialize the list view.
+        fn init_listview(&self) {
             let obj = self.obj();
 
             let factory = gtk::SignalListItemFactory::new();
@@ -269,92 +266,98 @@ mod imp {
             self.listview
                 .set_vscroll_policy(gtk::ScrollablePolicy::Natural);
 
-            self.listview.set_model(Some(obj.selection_model()));
+            self.listview.set_model(Some(self.selection_model()));
 
-            obj.set_sticky(true);
+            self.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
 
             adj.connect_value_changed(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
                     tracing::trace!("Scroll value changed");
-                    let imp = obj.imp();
+                    imp.trigger_read_receipts_update();
 
-                    obj.trigger_read_receipts_update();
-
-                    let is_at_bottom = obj.is_at_bottom();
+                    let is_at_bottom = imp.is_at_bottom();
                     if imp.is_auto_scrolling.get() {
                         tracing::trace!("Automatically scrolled");
                         if is_at_bottom {
                             imp.set_is_auto_scrolling(false);
-                            obj.set_sticky(true);
+                            imp.set_sticky(true);
                         } else {
-                            obj.scroll_down();
+                            imp.scroll_down();
                         }
                     } else {
                         tracing::trace!("User scrolled");
-                        obj.set_sticky(is_at_bottom);
+                        imp.set_sticky(is_at_bottom);
                     }
 
                     // Remove the typing row if we scroll up.
                     if !is_at_bottom {
-                        if let Some(room) = obj.room() {
+                        if let Some(room) = imp.room.obj() {
                             room.timeline().remove_empty_typing_row();
                         }
                     }
 
-                    obj.start_loading();
+                    imp.load_more_events_if_needed();
                 }
             ));
             adj.connect_upper_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
                     tracing::trace!("Scroll upper changed");
-                    if obj.sticky() {
-                        obj.scroll_down();
+                    if imp.is_sticky.get() {
+                        imp.scroll_down();
                     }
-                    obj.start_loading();
+                    imp.load_more_events_if_needed();
                 }
             ));
             adj.connect_page_size_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
                     tracing::trace!("Scroll page size changed");
-                    if obj.sticky() {
-                        obj.scroll_down();
+                    if imp.is_sticky.get() {
+                        imp.scroll_down();
                     }
-                    obj.start_loading();
+                    imp.load_more_events_if_needed();
                 }
             ));
         }
 
-        fn setup_drop_target(&self) {
-            let obj = self.obj();
+        /// Whether the GtkListView is scrolled at the bottom.
+        pub(super) fn is_at_bottom(&self) -> bool {
+            let adj = self
+                .listview
+                .vadjustment()
+                .expect("GtkListView has a vadjustment");
+            adj.value() + adj.page_size() == adj.upper()
+        }
 
+        /// Initialize the drop target.
+        fn init_drop_target(&self) {
             let target = gtk::DropTarget::new(
                 gio::File::static_type(),
                 gdk::DragAction::COPY | gdk::DragAction::MOVE,
             );
 
             target.connect_drop(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 #[upgrade_or]
                 false,
                 move |_, value, _, _| {
                     match value.get::<gio::File>() {
                         Ok(file) => {
                             spawn!(async move {
-                                obj.message_toolbar().send_file(file).await;
+                                imp.message_toolbar.send_file(file).await;
                             });
                             true
                         }
                         Err(error) => {
                             warn!("Could not get file from drop: {error:?}");
-                            toast!(obj, gettext("Error getting file from drop"));
+                            toast!(imp.obj(), gettext("Error getting file from drop"));
 
                             false
                         }
@@ -364,9 +367,8 @@ mod imp {
 
             self.drag_overlay.set_drop_target(target);
         }
-    }
 
-    impl RoomHistory {
+        /// Disconnect all the signals.
         fn disconnect_all(&self) {
             if let Some(room) = self.room.obj() {
                 for handler in self.timeline_handlers.take() {
@@ -392,10 +394,8 @@ mod imp {
             if self.room.obj() == room {
                 return;
             }
-            let obj = self.obj();
 
             self.disconnect_all();
-
             if let Some(source_id) = self.scroll_timeout.take() {
                 source_id.remove();
             }
@@ -412,44 +412,44 @@ mod imp {
                     .replace(Some(room.get_or_create_members()));
 
                 let membership_handler = room.own_member().connect_membership_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_room_menu();
+                        imp.update_room_menu();
                     }
                 ));
                 self.membership_handler.replace(Some(membership_handler));
 
                 let join_rule_handler = room.join_rule().connect_we_can_join_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_room_menu();
+                        imp.update_room_menu();
                     }
                 ));
                 self.join_rule_handler.replace(Some(join_rule_handler));
 
                 let tombstoned_handler = room.connect_is_tombstoned_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_tombstoned_banner();
+                        imp.update_tombstoned_banner();
                     }
                 ));
 
                 let successor_handler = room.connect_successor_id_string_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_tombstoned_banner();
+                        imp.update_tombstoned_banner();
                     }
                 ));
 
                 let successor_room_handler = room.connect_successor_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_tombstoned_banner();
+                        imp.update_tombstoned_banner();
                     }
                 ));
 
@@ -462,23 +462,25 @@ mod imp {
                     ],
                 );
 
-                let empty_handler = timeline.connect_empty_notify(clone!(
-                    #[weak]
-                    obj,
+                let empty_handler = timeline.connect_is_empty_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_view();
+                        imp.update_view();
                     }
                 ));
 
                 let state_handler = timeline.connect_state_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |timeline| {
-                        obj.update_view();
+                        imp.update_view();
 
-                        // Always test if we need to load more when timeline is ready.
+                        // Always test if we need to load more when the timeline is ready.
+                        // This is mostly to make sure that we load events if the timeline was not
+                        // initialized when the room was opened.
                         if timeline.state() == TimelineState::Ready {
-                            obj.start_loading();
+                            imp.load_more_events_if_needed();
                         }
                     }
                 ));
@@ -487,47 +489,53 @@ mod imp {
                     .replace(vec![empty_handler, state_handler]);
 
                 timeline.remove_empty_typing_row();
-                obj.selection_model().set_model(Some(&timeline.items()));
+                self.selection_model().set_model(Some(&timeline.items()));
 
-                obj.trigger_read_receipts_update();
-                obj.init_invite_action();
-                obj.scroll_down();
+                self.trigger_read_receipts_update();
+                self.init_invite_action();
+                self.scroll_down();
             } else {
-                obj.selection_model().set_model(None::<&gio::ListModel>);
+                self.selection_model().set_model(None::<&gio::ListModel>);
             }
 
-            self.is_loading.set(false);
-            obj.update_view();
-            obj.start_loading();
-            obj.update_room_menu();
-            obj.update_tombstoned_banner();
+            self.update_view();
+            self.load_more_events_if_needed();
+            self.update_room_menu();
+            self.update_tombstoned_banner();
 
+            let obj = self.obj();
             obj.notify_room();
-            obj.notify_empty();
+            obj.notify_is_empty();
+        }
+
+        /// The `GtkSelectionModel` used in the list view.
+        fn selection_model(&self) -> &gtk::NoSelection {
+            self.selection_model
+                .get_or_init(|| gtk::NoSelection::new(gio::ListModel::NONE.cloned()))
         }
 
         /// Whether this `RoomHistory` is empty, aka no room is currently
         /// displayed.
-        fn empty(&self) -> bool {
+        fn is_empty(&self) -> bool {
             self.room.obj().is_none()
         }
 
         /// Set whether the room history should stick to the newest message in
         /// the timeline.
-        fn set_sticky(&self, sticky: bool) {
-            tracing::trace!("set_sticky: {sticky:?}");
-            if self.sticky.get() == sticky {
+        pub(super) fn set_sticky(&self, is_sticky: bool) {
+            tracing::trace!("set_sticky: {is_sticky:?}");
+            if self.is_sticky.get() == is_sticky {
                 return;
             }
-            tracing::trace!("sticky changed");
+            tracing::trace!("is-sticky changed");
 
-            if !sticky {
+            if !is_sticky {
                 self.scroll_btn_revealer.set_visible(true);
             }
-            self.scroll_btn_revealer.set_reveal_child(!sticky);
+            self.scroll_btn_revealer.set_reveal_child(!is_sticky);
 
-            self.sticky.set(sticky);
-            self.obj().notify_sticky();
+            self.is_sticky.set(is_sticky);
+            self.obj().notify_is_sticky();
         }
 
         /// Set whether the current room history scrolling is automatic.
@@ -539,6 +547,370 @@ mod imp {
 
             tracing::trace!("is_auto_scrolling changed");
             self.is_auto_scrolling.set(is_auto);
+        }
+
+        /// Scroll to the bottom of the timeline.
+        pub(super) fn scroll_down(&self) {
+            tracing::trace!("scroll_down");
+            self.set_is_auto_scrolling(true);
+
+            let n_items = self.selection_model().n_items();
+
+            if n_items > 0 {
+                self.listview
+                    .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
+            }
+        }
+
+        /// Update the room menu for the current state.
+        fn update_room_menu(&self) {
+            let Some(room) = self.room.obj() else {
+                self.room_menu.set_visible(false);
+                return;
+            };
+
+            let obj = self.obj();
+            let membership = room.own_member().membership();
+            obj.action_set_enabled("room-history.leave", membership == Membership::Join);
+            obj.action_set_enabled(
+                "room-history.join",
+                membership == Membership::Leave && room.join_rule().we_can_join(),
+            );
+            obj.action_set_enabled(
+                "room-history.forget",
+                matches!(membership, Membership::Leave | Membership::Ban),
+            );
+
+            self.room_menu.set_visible(true);
+        }
+
+        /// Update the view for the current state.
+        fn update_view(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            let visible_child_name = if room.timeline().is_empty() {
+                if room.timeline().state() == TimelineState::Error {
+                    "error"
+                } else {
+                    "loading"
+                }
+            } else {
+                "content"
+            };
+            self.stack.set_visible_child_name(visible_child_name);
+        }
+
+        /// Whether we need to load more events.
+        fn needs_more_events(&self) -> bool {
+            if self.selection_model().n_items() == 0 {
+                // We definitely want events if the history is empty.
+                return true;
+            };
+
+            // Load more messages when the user gets close to the top of the known room
+            // history. Use the page size twice to detect if the user gets close to
+            // the top.
+            let adj = self
+                .listview
+                .vadjustment()
+                .expect("GtkListView has a vadjustment");
+            adj.value() < adj.page_size() * 2.0
+        }
+
+        /// Load more events at the beginning of the history if needed.
+        fn load_more_events_if_needed(&self) {
+            if !self.needs_more_events() {
+                return;
+            }
+
+            self.load_more_events();
+        }
+
+        /// Load more events at the beginning of the history.
+        pub(super) fn load_more_events(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    room.timeline()
+                        .load(clone!(
+                            #[weak]
+                            imp,
+                            #[upgrade_or]
+                            ControlFlow::Break(()),
+                            move || {
+                                if imp.needs_more_events() {
+                                    ControlFlow::Continue(())
+                                } else {
+                                    ControlFlow::Break(())
+                                }
+                            }
+                        ))
+                        .await;
+                }
+            ));
+        }
+
+        /// Scroll to the event with the given key.
+        fn scroll_to_event(&self, key: &EventKey) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            if let Some(pos) = room.timeline().find_event_position(key) {
+                let pos = pos as u32;
+                self.listview
+                    .scroll_to(pos, gtk::ListScrollFlags::FOCUS, None);
+            }
+        }
+
+        /// Trigger the process to update read receipts.
+        fn trigger_read_receipts_update(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            let timeline = room.timeline();
+            if !timeline.is_empty() {
+                if let Some(source_id) = self.scroll_timeout.take() {
+                    source_id.remove();
+                }
+                if let Some(source_id) = self.read_timeout.take() {
+                    source_id.remove();
+                }
+
+                // Only send read receipt when scrolling stopped.
+                self.scroll_timeout
+                    .replace(Some(glib::timeout_add_local_once(
+                        SCROLL_TIMEOUT,
+                        clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move || {
+                                imp.update_read_receipts();
+                            }
+                        ),
+                    )));
+            }
+        }
+
+        /// Update the read receipts.
+        fn update_read_receipts(&self) {
+            self.scroll_timeout.take();
+
+            if let Some(source_id) = self.read_timeout.take() {
+                source_id.remove();
+            }
+
+            self.read_timeout.replace(Some(glib::timeout_add_local_once(
+                READ_TIMEOUT,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move || {
+                        imp.update_read_marker();
+                    }
+                ),
+            )));
+
+            let Some(position) = self.receipt_position() else {
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let Some(room) = imp.room.obj() else { return };
+                    room.send_receipt(ReceiptType::Read, position).await;
+                }
+            ));
+        }
+
+        /// Update the read marker.
+        fn update_read_marker(&self) {
+            self.read_timeout.take();
+
+            let Some(position) = self.receipt_position() else {
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let Some(room) = imp.room.obj() else { return };
+                    room.send_receipt(ReceiptType::FullyRead, position).await;
+                }
+            ));
+        }
+
+        /// The position where a receipt should point to.
+        fn receipt_position(&self) -> Option<ReceiptPosition> {
+            let position = if self.is_at_bottom() {
+                ReceiptPosition::End
+            } else {
+                ReceiptPosition::Event(self.last_visible_event_id()?)
+            };
+
+            Some(position)
+        }
+
+        /// Get the ID of the last visible event in the room history.
+        fn last_visible_event_id(&self) -> Option<OwnedEventId> {
+            let listview = &*self.listview;
+            let mut child = listview.last_child();
+            // The visible part of the listview spans between 0 and max.
+            let max = listview.height() as f32;
+
+            while let Some(item) = child {
+                // Vertical position of the top of the item.
+                let top_pos = item
+                    .compute_point(listview, &Point::new(0.0, 0.0))
+                    .unwrap()
+                    .y();
+                // Vertical position of the bottom of the item.
+                let bottom_pos = item
+                    .compute_point(listview, &Point::new(0.0, item.height() as f32))
+                    .unwrap()
+                    .y();
+
+                let top_in_view = top_pos > 0.0 && top_pos <= max;
+                let bottom_in_view = bottom_pos > 0.0 && bottom_pos <= max;
+                // If a message is too big and takes more space than the current view.
+                let content_in_view = top_pos <= max && bottom_pos > 0.0;
+                if top_in_view || bottom_in_view || content_in_view {
+                    if let Some(event_id) = item
+                        .first_child()
+                        .and_downcast::<ItemRow>()
+                        .and_then(|row| row.item())
+                        .and_downcast::<Event>()
+                        .and_then(|event| event.event_id())
+                    {
+                        return Some(event_id);
+                    }
+                }
+
+                child = item.prev_sibling();
+            }
+
+            None
+        }
+
+        /// Update the tombstoned banner according to the state of the current
+        /// room.
+        fn update_tombstoned_banner(&self) {
+            let banner = &self.tombstoned_banner;
+
+            let Some(room) = self.room.obj() else {
+                banner.set_revealed(false);
+                return;
+            };
+
+            if !room.is_tombstoned() {
+                banner.set_revealed(false);
+                return;
+            }
+
+            if room.successor().is_some() {
+                banner.set_title(&gettext("There is a newer version of this room"));
+                // Translators: This is a verb, as in 'View Room'.
+                banner.set_button_label(Some(&gettext("View")));
+            } else if room.successor_id().is_some() {
+                banner.set_title(&gettext("There is a newer version of this room"));
+                banner.set_button_label(Some(&gettext("Join")));
+            } else {
+                banner.set_title(&gettext("This room was closed"));
+                banner.set_button_label(None);
+            }
+
+            banner.set_revealed(true);
+        }
+
+        /// Leave the room.
+        async fn leave(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            if confirm_leave_room_dialog(&room, &*self.obj())
+                .await
+                .is_none()
+            {
+                return;
+            }
+
+            if room.set_category(RoomCategory::Left).await.is_err() {
+                toast!(
+                    self.obj(),
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                        "Could not leave {room}",
+                    ),
+                    @room,
+                );
+            }
+        }
+
+        /// Join the room.
+        async fn join(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            if room.set_category(RoomCategory::Normal).await.is_err() {
+                toast!(
+                    self.obj(),
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this is a
+                        // variable name.
+                        "Could not join {room}",
+                    ),
+                    @room,
+                );
+            }
+        }
+
+        /// Forget the room.
+        async fn forget(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            if room.forget().await.is_err() {
+                toast!(
+                    self.obj(),
+                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                    gettext("Could not forget {room}"),
+                    @room,
+                );
+            }
+        }
+
+        /// Initialize the action to invite members.
+        fn init_invite_action(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let obj = self.obj();
+            let permissions = room.permissions();
+
+            let can_invite_handler = permissions.connect_can_invite_notify(clone!(
+                #[weak]
+                obj,
+                move |permissions| {
+                    obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
+                }
+            ));
+            self.can_invite_handler.replace(Some(can_invite_handler));
+
+            obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
         }
     }
 }
@@ -570,89 +942,6 @@ impl RoomHistory {
         self.imp().room_members.borrow().clone()
     }
 
-    fn selection_model(&self) -> &gtk::NoSelection {
-        self.imp()
-            .selection_model
-            .get_or_init(|| gtk::NoSelection::new(gio::ListModel::NONE.cloned()))
-    }
-
-    /// Leave the room.
-    async fn leave(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        if confirm_leave_room_dialog(&room, self).await.is_none() {
-            return;
-        }
-
-        if room.set_category(RoomCategory::Left).await.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Could not leave {room}",
-                ),
-                @room,
-            );
-        }
-    }
-
-    /// Join the room.
-    async fn join(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        if room.set_category(RoomCategory::Normal).await.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a
-                    // variable name.
-                    "Could not join {room}",
-                ),
-                @room,
-            );
-        }
-    }
-
-    /// Forget the room.
-    async fn forget(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        if room.forget().await.is_err() {
-            toast!(
-                self,
-                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Could not forget {room}"),
-                @room,
-            );
-        }
-    }
-
-    fn init_invite_action(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let permissions = room.permissions();
-
-        let can_invite_handler = permissions.connect_can_invite_notify(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |permissions| {
-                obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
-            }
-        ));
-        self.imp()
-            .can_invite_handler
-            .replace(Some(can_invite_handler));
-
-        self.action_set_enabled("room-history.invite-members", permissions.can_invite());
-    }
-
     /// Opens the room details.
     ///
     /// If `subpage_name` is set, the room details will be opened on the given
@@ -669,125 +958,30 @@ impl RoomHistory {
         window.present();
     }
 
-    fn update_room_menu(&self) {
+    /// Load more events at the beginning of the history.
+    #[template_callback]
+    fn load_more_events(&self) {
+        self.imp().load_more_events();
+    }
+
+    /// Scroll to the bottom of the timeline.
+    #[template_callback]
+    fn scroll_down(&self) {
+        self.imp().scroll_down();
+    }
+
+    /// Enable or disable the mode allowing the room history to stick to the
+    /// bottom based on scrollbar position.
+    pub fn enable_sticky_mode(&self, enable: bool) {
         let imp = self.imp();
-        let Some(room) = self.room() else {
-            imp.room_menu.set_visible(false);
-            return;
-        };
-
-        let membership = room.own_member().membership();
-        self.action_set_enabled("room-history.leave", membership == Membership::Join);
-        self.action_set_enabled(
-            "room-history.join",
-            membership == Membership::Leave && room.join_rule().we_can_join(),
-        );
-        self.action_set_enabled(
-            "room-history.forget",
-            matches!(membership, Membership::Leave | Membership::Ban),
-        );
-
-        imp.room_menu.set_visible(true);
-    }
-
-    fn update_view(&self) {
-        let imp = self.imp();
-
-        if let Some(room) = self.room() {
-            if room.timeline().empty() {
-                if room.timeline().state() == TimelineState::Error {
-                    imp.stack.set_visible_child(&*imp.error);
-                } else {
-                    imp.stack.set_visible_child(&*imp.loading);
-                }
-            } else {
-                imp.stack.set_visible_child(&*imp.content);
-            }
+        if enable {
+            imp.set_sticky(imp.is_at_bottom());
+        } else {
+            imp.set_sticky(false);
         }
     }
 
-    /// Whether we need to load more messages.
-    fn need_messages(&self) -> bool {
-        let Some(room) = self.room() else {
-            return false;
-        };
-        let timeline = room.timeline();
-
-        if !timeline.can_load() {
-            // We will retry when timeline is ready.
-            return false;
-        }
-
-        if timeline.empty() {
-            // We definitely want messages if the timeline is ready but empty.
-            return true;
-        };
-
-        // Load more messages when the user gets close to the top of the known room
-        // history. Use the page size twice to detect if the user gets close to
-        // the top.
-        let adj = self.imp().listview.vadjustment().unwrap();
-        adj.value() < adj.page_size() * 2.0 || adj.upper() <= adj.page_size() / 2.0
-    }
-
-    fn start_loading(&self) {
-        let imp = self.imp();
-
-        if imp.is_loading.get() {
-            return;
-        }
-
-        if !self.need_messages() {
-            return;
-        }
-
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        imp.is_loading.set(true);
-
-        let obj_weak = self.downgrade();
-        spawn!(glib::Priority::DEFAULT_IDLE, async move {
-            room.timeline().load().await;
-
-            // Remove the task
-            if let Some(obj) = obj_weak.upgrade() {
-                obj.imp().is_loading.set(false);
-            }
-        });
-    }
-
-    /// Scroll to the newest message in the timeline
-    pub fn scroll_down(&self) {
-        tracing::trace!("scroll_down");
-        let imp = self.imp();
-
-        imp.set_is_auto_scrolling(true);
-
-        let n_items = self.selection_model().n_items();
-
-        if n_items > 0 {
-            imp.listview
-                .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
-        }
-    }
-
-    /// Whether the GtkListView is scrolled at the bottom.
-    fn is_at_bottom(&self) -> bool {
-        let adj = self.imp().listview.vadjustment().unwrap();
-        adj.value() + adj.page_size() == adj.upper()
-    }
-
-    /// Set `RoomHistory` to stick to the bottom based on scrollbar position
-    pub fn enable_sticky_mode(&self) {
-        self.set_sticky(self.is_at_bottom());
-    }
-
-    fn try_again(&self) {
-        self.start_loading();
-    }
-
+    /// Handle a paste action.
     pub fn handle_paste_action(&self) {
         self.message_toolbar().handle_paste_action();
     }
@@ -823,186 +1017,6 @@ impl RoomHistory {
             ))]);
             popover
         })
-    }
-
-    fn scroll_to_event(&self, key: &EventKey) {
-        let room = match self.room() {
-            Some(room) => room,
-            None => return,
-        };
-
-        if let Some(pos) = room.timeline().find_event_position(key) {
-            let pos = pos as u32;
-            self.imp()
-                .listview
-                .scroll_to(pos, gtk::ListScrollFlags::FOCUS, None);
-        }
-    }
-
-    /// Trigger the process to update read receipts.
-    fn trigger_read_receipts_update(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        let timeline = room.timeline();
-        if !timeline.empty() {
-            let imp = self.imp();
-
-            if let Some(source_id) = imp.scroll_timeout.take() {
-                source_id.remove();
-            }
-            if let Some(source_id) = imp.read_timeout.take() {
-                source_id.remove();
-            }
-
-            // Only send read receipt when scrolling stopped.
-            imp.scroll_timeout
-                .replace(Some(glib::timeout_add_local_once(
-                    SCROLL_TIMEOUT,
-                    clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        move || {
-                            obj.update_read_receipts();
-                        }
-                    ),
-                )));
-        }
-    }
-
-    /// Update the read receipts.
-    fn update_read_receipts(&self) {
-        let imp = self.imp();
-        imp.scroll_timeout.take();
-
-        if let Some(source_id) = imp.read_timeout.take() {
-            source_id.remove();
-        }
-
-        imp.read_timeout.replace(Some(glib::timeout_add_local_once(
-            READ_TIMEOUT,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                move || {
-                    obj.update_read_marker();
-                }
-            ),
-        )));
-
-        let Some(position) = self.receipt_position() else {
-            return;
-        };
-
-        spawn!(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            async move {
-                let Some(room) = obj.room() else { return };
-                room.send_receipt(ReceiptType::Read, position).await;
-            }
-        ));
-    }
-
-    /// Update the read marker.
-    fn update_read_marker(&self) {
-        let imp = self.imp();
-        imp.read_timeout.take();
-
-        let Some(position) = self.receipt_position() else {
-            return;
-        };
-
-        spawn!(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            async move {
-                let Some(room) = obj.room() else { return };
-                room.send_receipt(ReceiptType::FullyRead, position).await;
-            }
-        ));
-    }
-
-    /// The position where a receipt should point to.
-    fn receipt_position(&self) -> Option<ReceiptPosition> {
-        let position = if self.is_at_bottom() {
-            ReceiptPosition::End
-        } else {
-            ReceiptPosition::Event(self.last_visible_event_id()?)
-        };
-
-        Some(position)
-    }
-
-    /// Get the ID of the last visible event in the room history.
-    fn last_visible_event_id(&self) -> Option<OwnedEventId> {
-        let listview = &*self.imp().listview;
-        let mut child = listview.last_child();
-        // The visible part of the listview spans between 0 and max.
-        let max = listview.height() as f32;
-
-        while let Some(item) = child {
-            // Vertical position of the top of the item.
-            let top_pos = item
-                .compute_point(listview, &Point::new(0.0, 0.0))
-                .unwrap()
-                .y();
-            // Vertical position of the bottom of the item.
-            let bottom_pos = item
-                .compute_point(listview, &Point::new(0.0, item.height() as f32))
-                .unwrap()
-                .y();
-
-            let top_in_view = top_pos > 0.0 && top_pos <= max;
-            let bottom_in_view = bottom_pos > 0.0 && bottom_pos <= max;
-            // If a message is too big and takes more space than the current view.
-            let content_in_view = top_pos <= max && bottom_pos > 0.0;
-            if top_in_view || bottom_in_view || content_in_view {
-                if let Some(event_id) = item
-                    .first_child()
-                    .and_downcast::<ItemRow>()
-                    .and_then(|row| row.item())
-                    .and_downcast::<Event>()
-                    .and_then(|event| event.event_id())
-                {
-                    return Some(event_id);
-                }
-            }
-
-            child = item.prev_sibling();
-        }
-
-        None
-    }
-
-    /// Update the tombstoned banner according to the state of the current room.
-    fn update_tombstoned_banner(&self) {
-        let banner = &self.imp().tombstoned_banner;
-
-        let Some(room) = self.room() else {
-            banner.set_revealed(false);
-            return;
-        };
-
-        if !room.is_tombstoned() {
-            banner.set_revealed(false);
-            return;
-        }
-
-        if room.successor().is_some() {
-            banner.set_title(&gettext("There is a newer version of this room"));
-            // Translators: This is a verb, as in 'View Room'.
-            banner.set_button_label(Some(&gettext("View")));
-        } else if room.successor_id().is_some() {
-            banner.set_title(&gettext("There is a newer version of this room"));
-            banner.set_button_label(Some(&gettext("Join")));
-        } else {
-            banner.set_title(&gettext("This room was closed"));
-            banner.set_button_label(None);
-        }
-
-        banner.set_revealed(true);
     }
 
     /// Join or view the room's successor, if possible.

@@ -108,7 +108,7 @@ mod imp {
                 return;
             };
             let popover = room_history.item_context_menu().to_owned();
-            room_history.set_sticky(false);
+            room_history.enable_sticky_mode(false);
 
             obj.add_css_class("has-open-popup");
 
@@ -122,7 +122,7 @@ mod imp {
                 #[weak]
                 room_history,
                 move |popover| {
-                    room_history.enable_sticky_mode();
+                    room_history.enable_sticky_mode(true);
 
                     obj.remove_css_class("has-open-popup");
 

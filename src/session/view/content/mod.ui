@@ -39,7 +39,7 @@
             <property name="title" translatable="yes">Room History</property>
             <property name="child">
               <object class="ContentRoomHistory" id="room_history">
-                <property name="only-view" bind-source="Content" bind-property="only-view" bind-flags="sync-create"/>
+                <property name="is-only-view" bind-source="Content" bind-property="only-view" bind-flags="sync-create"/>
               </object>
             </property>
           </object>

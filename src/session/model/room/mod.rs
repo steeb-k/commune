@@ -76,6 +76,7 @@ mod imp {
     use std::{
         cell::{Cell, OnceCell},
         marker::PhantomData,
+        ops::ControlFlow,
         time::SystemTime,
     };
 
@@ -1052,7 +1053,8 @@ mod imp {
                         #[weak]
                         timeline,
                         async move {
-                            timeline.load().await;
+                            // Make a single request for now.
+                            timeline.load(|| ControlFlow::Break(())).await;
                         }
                     )
                 );

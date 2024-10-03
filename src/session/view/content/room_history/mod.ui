@@ -144,7 +144,7 @@
                 <property name="valign">center</property>
                 <property name="icon-name">menu-secondary-symbolic</property>
                 <property name="menu-model">room-menu-model</property>
-                <property name="primary" bind-source="ContentRoomHistory" bind-property="only-view" bind-flags="sync-create"/>
+                <property name="primary" bind-source="ContentRoomHistory" bind-property="is-only-view" bind-flags="sync-create"/>
                 <property name="tooltip-text" translatable="yes">Room Menu</property>
               </object>
             </child>
@@ -195,8 +195,8 @@
                           <object class="GtkButton">
                             <property name="can-shrink">true</property>
                             <property name="label" translatable="yes">Try Again</property>
-                            <property name="action-name">room-history.try-again</property>
                             <property name="halign">center</property>
+                            <signal name="clicked" handler="load_more_events" swapped="true"/>
                             <style>
                               <class name="pill"/>
                             </style>
@@ -223,8 +223,8 @@
                             <child>
                               <object class="GtkButton" id="scroll_btn">
                                 <property name="icon-name">go-bottom-symbolic</property>
-                                <property name="action-name">room-history.scroll-down</property>
                                 <property name="tooltip-text" translatable="yes">Scroll to Bottom</property>
+                                <signal name="clicked" handler="scroll_down" swapped="true"/>
                                 <style>
                                   <class name="osd"/>
                                   <class name="circular"/>

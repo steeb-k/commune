@@ -10,14 +10,14 @@ use ruma::{
     events::{
         receipt::Receipt,
         room::message::{MessageType, OriginalSyncRoomMessageEvent},
-        AnySyncTimelineEvent, Mentions,
+        AnySyncTimelineEvent, Mentions, TimelineEventType,
     },
     serde::Raw,
     EventId, MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
     OwnedUserId,
 };
-use serde::Deserialize;
-use tracing::error;
+use serde::{de::IgnoredAny, Deserialize};
+use tracing::{debug, error};
 
 mod reaction_group;
 mod reaction_list;
@@ -807,6 +807,56 @@ impl Event {
             .ok()
     }
 
+    /// Whether this is an `m.room.create` event.
+    pub fn is_room_create_event(&self) -> bool {
+        match self.content() {
+            TimelineItemContent::OtherState(other_state) => matches!(
+                other_state.content(),
+                AnyOtherFullStateEventContent::RoomCreate(_)
+            ),
+            _ => false,
+        }
+    }
+
+    /// Whether this event can be redacted.
+    ///
+    /// This uses the raw JSON to redact even events that failed to deserialize.
+    pub fn is_redactable(&self) -> bool {
+        let Some(raw) = self.raw() else {
+            // Events without raw JSON are already redacted events, and events that are not
+            // sent yet, we can ignore them.
+            return false;
+        };
+
+        let is_redacted = match raw.get_field::<UnsignedRedactedDeHelper>("unsigned") {
+            Ok(Some(unsigned)) => unsigned.redacted_because.is_some(),
+            Ok(None) => {
+                debug!("Missing unsigned field in event");
+                false
+            }
+            Err(error) => {
+                error!("Could not deserialize unsigned field in event: {error}");
+                false
+            }
+        };
+        if is_redacted {
+            // There is no point in redacting it twice.
+            return false;
+        }
+
+        match raw.get_field::<TimelineEventType>("type") {
+            Ok(Some(t)) => !NON_REDACTABLE_EVENTS.contains(&t),
+            Ok(None) => {
+                debug!("Missing type field in event");
+                true
+            }
+            Err(error) => {
+                error!("Could not deserialize type field in event: {error}");
+                true
+            }
+        }
+    }
+
     /// Whether this `Event` can count as an unread message.
     ///
     /// This follows the algorithm in [MSC2654], excluding events that we don't
@@ -908,4 +958,17 @@ struct RawUnsigned {
 struct RawBundledRelations {
     #[serde(rename = "m.replace")]
     replace: Option<Raw<AnySyncTimelineEvent>>,
+}
+
+/// List of events that should not be redacted to avoid bricking a room.
+const NON_REDACTABLE_EVENTS: &[TimelineEventType] = &[
+    TimelineEventType::RoomCreate,
+    TimelineEventType::RoomEncryption,
+    TimelineEventType::RoomServerAcl,
+];
+
+/// A helper type to know whether an event was redacted.
+#[derive(Deserialize)]
+struct UnsignedRedactedDeHelper {
+    redacted_because: Option<IgnoredAny>,
 }
