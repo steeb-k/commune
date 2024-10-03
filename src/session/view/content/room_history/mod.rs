@@ -557,8 +557,12 @@ mod imp {
             let n_items = self.selection_model().n_items();
 
             if n_items > 0 {
+                // Make sure that the last item is focused.
                 self.listview
                     .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
+                // Make sure that we do scroll to the very bottom.
+                self.scrolled_window
+                    .emit_scroll_child(gtk::ScrollType::End, false);
             }
         }
 
