@@ -16,6 +16,8 @@ const MIN_N_ITEMS: u32 = 50;
 const SIZE_REQUEST: i32 = 150;
 
 mod imp {
+    use std::ops::ControlFlow;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -156,31 +158,61 @@ mod imp {
 
         /// Initialize the timeline
         async fn init_timeline(&self) {
-            let Some(model) = self.grid_view.model() else {
-                return;
-            };
-            let timeline = self.timeline.obj();
-            let obj = self.obj();
+            self.load_more_items().await;
 
-            // Load an initial number of items.
-            while model.n_items() < MIN_N_ITEMS {
-                if !timeline.load().await {
-                    break;
-                }
-            }
-
-            let adj = self.grid_view.vadjustment().unwrap();
+            let adj = self
+                .grid_view
+                .vadjustment()
+                .expect("GtkGridView has a vadjustment");
             adj.connect_value_notify(clone!(
-                #[weak]
-                obj,
-                move |adj| {
-                    if adj.value() + adj.page_size() * 2.0 >= adj.upper() {
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    if imp.needs_more_items() {
                         spawn!(async move {
-                            obj.load_more().await;
+                            imp.load_more_items().await;
                         });
                     }
                 }
             ));
+        }
+
+        /// Load more items in this viewer.
+        pub(super) async fn load_more_items(&self) {
+            self.timeline
+                .obj()
+                .load(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[upgrade_or]
+                    ControlFlow::Break(()),
+                    move || {
+                        if imp.needs_more_items() {
+                            ControlFlow::Continue(())
+                        } else {
+                            ControlFlow::Break(())
+                        }
+                    }
+                ))
+                .await;
+        }
+
+        /// Whether this viewer needs more items.
+        fn needs_more_items(&self) -> bool {
+            let Some(model) = self.grid_view.model() else {
+                return false;
+            };
+
+            // Make sure there is an initial number of items.
+            if model.n_items() < MIN_N_ITEMS {
+                return true;
+            }
+
+            let adj = self
+                .grid_view
+                .vadjustment()
+                .expect("GtkGridView has a vadjustment");
+            adj.value() + adj.page_size() * 2.0 >= adj.upper()
         }
 
         /// Update this viewer for the current state.
@@ -190,20 +222,23 @@ mod imp {
             };
             let timeline = self.timeline.obj();
 
-            match timeline.state() {
-                TimelineState::Initial | TimelineState::Loading if model.n_items() == 0 => {
-                    self.stack.set_visible_child_name("loading");
+            let visible_child_name = match timeline.state() {
+                TimelineState::Initial => "loading",
+                TimelineState::Error => "error",
+                TimelineState::Complete if model.n_items() == 0 => "empty",
+                TimelineState::Loading => {
+                    if model.n_items() == 0
+                        || (model.n_items() == 1
+                            && model.item(0).is_some_and(|item| item.is::<LoadingRow>()))
+                    {
+                        "loading"
+                    } else {
+                        "content"
+                    }
                 }
-                TimelineState::Error => {
-                    self.stack.set_visible_child_name("error");
-                }
-                TimelineState::Complete if model.n_items() == 0 => {
-                    self.stack.set_visible_child_name("empty");
-                }
-                _ => {
-                    self.stack.set_visible_child_name("content");
-                }
-            }
+                _ => "content",
+            };
+            self.stack.set_visible_child_name(visible_child_name);
         }
     }
 }
@@ -240,10 +275,9 @@ impl VisualMediaHistoryViewer {
         imp.media_viewer.reveal(item);
     }
 
-    /// Load more history.
+    /// Load more items in this viewery.
     #[template_callback]
-    async fn load_more(&self) {
-        let timeline = self.imp().timeline.obj();
-        timeline.load().await;
+    async fn load_more_items(&self) {
+        self.imp().load_more_items().await;
     }
 }

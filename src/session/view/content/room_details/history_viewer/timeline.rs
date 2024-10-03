@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     room::MessagesOptions,
@@ -144,20 +146,39 @@ impl HistoryViewerTimeline {
         glib::Object::builder().property("room", room).build()
     }
 
-    /// Load more events in the timeline.
-    ///
-    /// Returns `true` if more events can be loaded.
-    pub async fn load(&self) -> bool {
-        let imp = self.imp();
-
+    /// Load more events in the timeline until the given function tells us to
+    /// stop.
+    pub async fn load<F>(&self, continue_fn: F)
+    where
+        F: Fn() -> ControlFlow<()>,
+    {
         if matches!(
             self.state(),
             TimelineState::Loading | TimelineState::Complete
         ) {
-            return false;
+            return;
         }
 
+        let imp = self.imp();
         imp.set_state(TimelineState::Loading);
+
+        loop {
+            if !self.load_inner().await {
+                return;
+            }
+
+            if continue_fn().is_break() {
+                imp.set_state(TimelineState::Ready);
+                return;
+            }
+        }
+    }
+
+    /// Load more events in the timeline.
+    ///
+    /// Returns `true` if more events can be loaded.
+    async fn load_inner(&self) -> bool {
+        let imp = self.imp();
 
         let room = self.room();
         let matrix_room = room.matrix_room().clone();
@@ -190,7 +211,7 @@ impl HistoryViewerTimeline {
             matrix_room.messages(options).await
         });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(events) => match events.end {
                 Some(end_token) => {
                     *imp.last_token.lock().await = end_token;
@@ -202,7 +223,6 @@ impl HistoryViewerTimeline {
                         .collect();
 
                     imp.append(events);
-                    imp.set_state(TimelineState::Ready);
                     true
                 }
                 None => {

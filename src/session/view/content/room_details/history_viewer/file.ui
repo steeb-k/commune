@@ -52,7 +52,7 @@
                         <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Try Again</property>
                         <property name="halign">center</property>
-                        <signal name="clicked" handler="load_more" swapped="true"/>
+                        <signal name="clicked" handler="load_more_items" swapped="true"/>
                         <style>
                           <class name="pill"/>
                         </style>
