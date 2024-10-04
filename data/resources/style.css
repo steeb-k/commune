@@ -736,7 +736,6 @@ read-receipts-list:checked {
 typing-row {
   padding: 0 6px;
   min-height: 30px;
-  font-style: italic;
 }
 
 room-history-row .h1, .related-event-content .h1 {

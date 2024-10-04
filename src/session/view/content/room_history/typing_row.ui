@@ -10,7 +10,7 @@
         <property name="reveal-child" bind-source="ContentTypingRow" bind-property="is-empty" bind-flags="sync-create | invert-boolean"/>
         <property name="child">
           <object class="GtkBox">
-            <property name="spacing">6</property>
+            <property name="spacing">9</property>
             <child>
               <object class="OverlappingAvatars" id="avatar_list">
                 <property name="avatar-size">30</property>
@@ -23,6 +23,9 @@
               <object class="GtkLabel" id="label">
                 <property name="use-markup">True</property>
                 <property name="ellipsize">end</property>
+                <style>
+                  <class name="dim-label" />
+                </style>
               </object>
             </child>
           </object>
