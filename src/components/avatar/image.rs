@@ -51,7 +51,7 @@ mod imp {
         #[property(get = Self::uri_string)]
         uri_string: PhantomData<Option<String>>,
         /// Information about the avatar.
-        pub(super) info: RefCell<Option<Box<ImageInfo>>>,
+        pub(super) info: RefCell<Option<ImageInfo>>,
         /// The source of the avatar's URI.
         #[property(get, construct_only, builder(AvatarUriSource::default()))]
         pub uri_source: Cell<AvatarUriSource>,
@@ -112,12 +112,12 @@ mod imp {
         }
 
         /// Information about the avatar.
-        pub(super) fn info(&self) -> Option<Box<ImageInfo>> {
+        pub(super) fn info(&self) -> Option<ImageInfo> {
             self.info.borrow().clone()
         }
 
         /// Set information about the avatar.
-        pub(super) fn set_info(&self, info: Option<Box<ImageInfo>>) {
+        pub(super) fn set_info(&self, info: Option<ImageInfo>) {
             self.info.replace(info);
         }
 
@@ -161,7 +161,7 @@ impl AvatarImage {
         session: &Session,
         uri_source: AvatarUriSource,
         uri: Option<OwnedMxcUri>,
-        info: Option<Box<ImageInfo>>,
+        info: Option<ImageInfo>,
     ) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("session", session)
@@ -173,7 +173,7 @@ impl AvatarImage {
     }
 
     /// Set the Matrix URI and information of the avatar.
-    pub fn set_uri_and_info(&self, uri: Option<OwnedMxcUri>, info: Option<Box<ImageInfo>>) {
+    pub fn set_uri_and_info(&self, uri: Option<OwnedMxcUri>, info: Option<ImageInfo>) {
         let imp = self.imp();
 
         let changed = imp.set_uri(uri);
@@ -190,7 +190,7 @@ impl AvatarImage {
     }
 
     /// Information about the avatar.
-    pub fn info(&self) -> Option<Box<ImageInfo>> {
+    pub fn info(&self) -> Option<ImageInfo> {
         self.imp().info()
     }
 
@@ -234,7 +234,7 @@ impl AvatarImage {
         let downloader = ThumbnailDownloader {
             main: ImageSource {
                 source: (&uri).into(),
-                info: info.as_deref().map(Into::into),
+                info: info.as_ref().map(Into::into),
             },
             // Avatars are not encrypted so we should always get the thumbnail from the original.
             alt: None,

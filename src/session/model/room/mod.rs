@@ -9,11 +9,9 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    deserialized_responses::{AmbiguityChange, SyncOrStrippedState},
-    event_handler::EventHandlerDropGuard,
-    room::Room as MatrixRoom,
-    send_queue::RoomSendQueueUpdate,
-    DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
+    deserialized_responses::AmbiguityChange, event_handler::EventHandlerDropGuard,
+    room::Room as MatrixRoom, send_queue::RoomSendQueueUpdate, DisplayName, Result as MatrixResult,
+    RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     api::client::{
@@ -23,10 +21,9 @@ use ruma::{
     events::{
         receipt::ReceiptThread,
         room::{
-            avatar::RoomAvatarEventContent, guest_access::GuestAccess,
-            history_visibility::HistoryVisibility, member::SyncRoomMemberEvent,
+            guest_access::GuestAccess, history_visibility::HistoryVisibility,
+            member::SyncRoomMemberEvent,
         },
-        SyncStateEvent,
     },
     EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
@@ -433,7 +430,7 @@ mod imp {
         }
 
         /// Update the avatar of the room.
-        async fn update_avatar(&self) {
+        fn update_avatar(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -451,34 +448,8 @@ mod imp {
             }
 
             if let Some(avatar_url) = room_avatar_url {
-                // The avatar has changed, try to load its info.
-                let matrix_room = matrix_room.clone();
-                let handle = spawn_tokio!(async move {
-                    matrix_room
-                        .get_state_event_static::<RoomAvatarEventContent>()
-                        .await
-                });
-
-                let avatar_event = match handle.await.expect("task was not aborted") {
-                    Ok(Some(raw_event)) => match raw_event.deserialize() {
-                        Ok(event) => Some(event),
-                        Err(error) => {
-                            warn!("Could not deserialize room avatar event: {error}");
-                            None
-                        }
-                    },
-                    Ok(None) => None,
-                    Err(error) => {
-                        warn!("Could not get room avatar event: {error}");
-                        None
-                    }
-                };
-
-                let avatar_info = match avatar_event {
-                    Some(SyncOrStrippedState::Sync(SyncStateEvent::Original(e))) => e.content.info,
-                    Some(SyncOrStrippedState::Stripped(e)) => e.content.info,
-                    _ => None,
-                };
+                // The avatar has changed, update it.
+                let avatar_info = matrix_room.avatar_info();
 
                 if let Some(avatar_image) = avatar_data
                     .image()
@@ -912,17 +883,7 @@ mod imp {
 
             self.direct_member.replace(member);
             self.obj().notify_direct_member();
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.update_avatar().await;
-                    }
-                )
-            );
+            self.update_avatar();
         }
 
         /// The ID of the other user, if this is a direct chat and there is only
@@ -1355,7 +1316,7 @@ mod imp {
             self.aliases.update();
             self.update_name();
             self.update_display_name().await;
-            self.update_avatar().await;
+            self.update_avatar();
             self.update_topic();
             self.update_category();
             self.update_tombstone();
