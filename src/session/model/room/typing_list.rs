@@ -11,10 +11,10 @@ mod imp {
     #[properties(wrapper_type = super::TypingList)]
     pub struct TypingList {
         /// The list of members currently typing.
-        pub members: RefCell<Vec<Member>>,
+        pub(super) members: RefCell<Vec<Member>>,
         /// Whether this list is empty.
-        #[property(get, set = Self::set_is_empty, explicit_notify)]
-        pub is_empty: Cell<bool>,
+        #[property(get, explicit_notify)]
+        is_empty: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -46,7 +46,7 @@ mod imp {
 
     impl TypingList {
         /// Set whether the list is empty.
-        fn set_is_empty(&self, is_empty: bool) {
+        pub(super) fn set_is_empty(&self, is_empty: bool) {
             if self.is_empty.get() == is_empty {
                 return;
             }
@@ -64,23 +64,23 @@ glib::wrapper! {
 }
 
 impl TypingList {
+    /// Construct a new empty `TypingList`.
     pub fn new() -> Self {
         glib::Object::new()
     }
 
-    pub fn members(&self) -> Vec<Member> {
-        self.imp().members.borrow().clone()
-    }
+    /// Update this list with the given list of typing members.
+    pub(super) fn update(&self, new_members: Vec<Member>) {
+        let imp = self.imp();
 
-    pub fn update(&self, new_members: Vec<Member>) {
         if new_members.is_empty() {
-            self.set_is_empty(true);
+            imp.set_is_empty(true);
 
             return;
         }
 
         let (removed, added) = {
-            let mut members = self.imp().members.borrow_mut();
+            let mut members = imp.members.borrow_mut();
             let removed = members.len() as u32;
             let added = new_members.len() as u32;
             *members = new_members;
@@ -88,7 +88,7 @@ impl TypingList {
         };
 
         self.items_changed(0, removed, added);
-        self.set_is_empty(false);
+        imp.set_is_empty(false);
     }
 }
 

@@ -21,12 +21,12 @@ mod imp {
     #[properties(wrapper_type = super::TypingRow)]
     pub struct TypingRow {
         #[template_child]
-        pub avatar_list: TemplateChild<OverlappingAvatars>,
+        avatar_list: TemplateChild<OverlappingAvatars>,
         #[template_child]
-        pub label: TemplateChild<gtk::Label>,
+        label: TemplateChild<gtk::Label>,
         /// The list of members that are currently typing.
         #[property(get, set = Self::set_list, explicit_notify, nullable)]
-        pub list: BoundObjectWeakRef<TypingList>,
+        list: BoundObjectWeakRef<TypingList>,
         /// Whether the list is empty.
         #[property(get = Self::is_empty, default = true)]
         is_empty: PhantomData<bool>,
@@ -68,13 +68,13 @@ mod imp {
 
             self.list.disconnect_signals();
 
-            if let Some(list) = list {
+            if let Some(list) = &list {
                 let items_changed_handler_id = list.connect_items_changed(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |list, _pos, removed, added| {
                         if removed != 0 || added != 0 {
-                            obj.update_label(list);
+                            imp.update_label(list);
                         }
                     }
                 ));
@@ -85,14 +85,16 @@ mod imp {
                 ));
 
                 self.avatar_list.bind_model(Some(list.clone()), |item| {
-                    item.downcast_ref::<Member>().unwrap().avatar_data().clone()
+                    item.downcast_ref::<Member>()
+                        .expect("typing list item is a member")
+                        .avatar_data()
                 });
 
                 self.list.set(
-                    &list,
+                    list,
                     vec![items_changed_handler_id, is_empty_notify_handler_id],
                 );
-                obj.update_label(&list);
+                self.update_label(list);
             }
 
             if prev_is_empty != self.is_empty() {
@@ -110,48 +112,53 @@ mod imp {
 
             list.is_empty()
         }
+
+        /// Update the label for the current state of the given typing list.
+        fn update_label(&self, list: &TypingList) {
+            let n = list.n_items();
+            if n == 0 {
+                // Do not update anything, the `is-empty` property should trigger a revealer
+                // animation.
+                return;
+            }
+
+            let label = if n == 1 {
+                let user = list
+                    .item(0)
+                    .and_downcast::<Member>()
+                    .expect("typing list has a member")
+                    .disambiguated_name();
+
+                gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', these are
+                    // variable names.
+                    "{user} is typing…",
+                    &[("user", &format!("<b>{user}</b>"))],
+                )
+            } else {
+                ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', these are
+                    // variable names.
+                    "{n} member is typing…",
+                    "{n} members are typing…",
+                    n,
+                    &[("n", &n.to_string())],
+                )
+            };
+            self.label.set_label(&label);
+        }
     }
 }
 
 glib::wrapper! {
-    /// A widget row used to display typing notification.
+    /// A widget row used to display typing members.
     pub struct TypingRow(ObjectSubclass<imp::TypingRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 impl TypingRow {
+    /// Construct a new `TypingRow`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    fn update_label(&self, list: &TypingList) {
-        let n = list.n_items();
-        if n == 0 {
-            // Don't update anything, the `is-empty` property should trigger a revealer
-            // animation.
-            return;
-        }
-
-        let members = list.members();
-        let user = members[0].disambiguated_name();
-
-        let label = if n == 1 {
-            gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', these are
-                // variable names.
-                "{user} is typing…",
-                &[("user", &format!("<b>{user}</b>"))],
-            )
-        } else {
-            ngettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', these are
-                // variable names.
-                "{n} member is typing…",
-                "{n} members are typing…",
-                n,
-                &[("n", &n.to_string())],
-            )
-        };
-        self.imp().label.set_label(&label);
     }
 }

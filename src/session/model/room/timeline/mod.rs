@@ -157,20 +157,18 @@ mod imp {
 
     impl Timeline {
         /// Set the room containing this timeline.
-        fn set_room(&self, room: Option<Room>) {
-            self.room.set(room.as_ref());
+        fn set_room(&self, room: &Room) {
+            self.room.set(Some(room));
 
-            if let Some(room) = room {
-                room.typing_list().connect_items_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |list, _, _, _| {
-                        if !list.is_empty() {
-                            imp.add_typing_row();
-                        }
+            room.typing_list().connect_is_empty_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |list| {
+                    if !list.is_empty() {
+                        imp.add_typing_row();
                     }
-                ));
-            }
+                }
+            ));
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
