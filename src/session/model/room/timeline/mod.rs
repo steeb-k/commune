@@ -20,7 +20,7 @@ use matrix_sdk_ui::{
 use ruma::{
     events::{
         room::message::MessageType, AnySyncMessageLikeEvent, AnySyncStateEvent,
-        AnySyncTimelineEvent, SyncMessageLikeEvent,
+        AnySyncTimelineEvent, SyncMessageLikeEvent, SyncStateEvent,
     },
     OwnedEventId, UserId,
 };
@@ -223,6 +223,22 @@ mod imp {
                                 ) => true,
                                 _ => false,
                             },
+                            AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(
+                                SyncStateEvent::Original(member_event),
+                            )) => {
+                                // Do not show member events if the content that we support has not
+                                // changed. This avoids duplicate "user has joined" events in the
+                                // timeline which are confusing and wrong.
+                                !member_event.unsigned.prev_content.as_ref().is_some_and(
+                                    |prev_content| {
+                                        prev_content.membership == member_event.content.membership
+                                            && prev_content.displayname
+                                                == member_event.content.displayname
+                                            && prev_content.avatar_url
+                                                == member_event.content.avatar_url
+                                    },
+                                )
+                            }
                             AnySyncTimelineEvent::State(state) => matches!(
                                 state,
                                 AnySyncStateEvent::RoomMember(_)
