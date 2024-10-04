@@ -14,8 +14,10 @@ pub mod string;
 pub mod template_callbacks;
 
 use std::{
+    borrow::Cow,
     cell::{Cell, OnceCell, RefCell},
     fmt,
+    path::PathBuf,
     rc::{Rc, Weak},
 };
 
@@ -33,7 +35,32 @@ pub use self::{
     location::{Location, LocationError, LocationExt},
     single_item_list_model::SingleItemListModel,
 };
-use crate::RUNTIME;
+use crate::{AppProfile, GETTEXT_PACKAGE, PROFILE, RUNTIME};
+
+/// The path of the directory where data should be stored, depending on its
+/// type.
+pub fn data_dir_path(data_type: DataType) -> PathBuf {
+    let dir_name = match PROFILE {
+        AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
+        _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{PROFILE}")),
+    };
+
+    let mut path = match data_type {
+        DataType::Persistent => glib::user_data_dir(),
+        DataType::Cache => glib::user_cache_dir(),
+    };
+    path.push(dir_name.as_ref());
+
+    path
+}
+
+/// The type of data.
+pub enum DataType {
+    /// Data that should not be deleted.
+    Persistent,
+    /// Cache that can be deleted freely.
+    Cache,
+}
 
 pub enum TimeoutFuture {
     Timeout,

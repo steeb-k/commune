@@ -1,6 +1,6 @@
 //! API to store the data of a session in a secret store on the system.
 
-use std::{borrow::Cow, fmt, path::PathBuf};
+use std::{fmt, path::PathBuf};
 
 use gtk::glib;
 use matrix_sdk::{
@@ -28,7 +28,11 @@ pub use self::linux::{restore_sessions, store_session};
 use self::unimplemented::delete_session;
 #[cfg(not(target_os = "linux"))]
 pub use self::unimplemented::{restore_sessions, store_session};
-use crate::{application::AppProfile, prelude::*, spawn_tokio, GETTEXT_PACKAGE, PROFILE};
+use crate::{
+    prelude::*,
+    spawn_tokio,
+    utils::{data_dir_path, DataType},
+};
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.
 pub const SESSION_ID_LENGTH: usize = 8;
@@ -93,7 +97,7 @@ impl StoredSession {
 
         // Generate a unique random session ID.
         let mut id = None;
-        let data_path = db_dir_path(DbContentType::Data);
+        let data_path = data_dir_path(DataType::Persistent);
 
         // Try 10 times, so we do not have an infinite loop.
         for _ in 0..10 {
@@ -137,14 +141,14 @@ impl StoredSession {
 
     /// The path where the persistent data of this session lives.
     pub fn data_path(&self) -> PathBuf {
-        let mut path = db_dir_path(DbContentType::Data);
+        let mut path = data_dir_path(DataType::Persistent);
         path.push(&self.id);
         path
     }
 
     /// The path where the cached data of this session lives.
     pub fn cache_path(&self) -> PathBuf {
-        let mut path = db_dir_path(DbContentType::Cache);
+        let mut path = data_dir_path(DataType::Cache);
         path.push(&self.id);
         path
     }
@@ -178,29 +182,4 @@ pub struct Secret {
     pub access_token: String,
     /// The passphrase used to encrypt the local databases.
     pub passphrase: String,
-}
-
-/// The path of the directory where a database should be stored, depending on
-/// the type of content.
-fn db_dir_path(content_type: DbContentType) -> PathBuf {
-    let dir_name = match PROFILE {
-        AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
-        _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{PROFILE}")),
-    };
-
-    let mut path = match content_type {
-        DbContentType::Data => glib::user_data_dir(),
-        DbContentType::Cache => glib::user_cache_dir(),
-    };
-    path.push(dir_name.as_ref());
-
-    path
-}
-
-/// The type of content of a database.
-enum DbContentType {
-    /// Data that should not be deleted.
-    Data,
-    /// Cache that can be deleted freely.
-    Cache,
 }

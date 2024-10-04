@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, ffi::OsString};
 
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -16,7 +16,7 @@ use crate::{
     secret::{self, StoredSession},
     session::model::{Session, SessionState},
     spawn, spawn_tokio,
-    utils::LoadingState,
+    utils::{data_dir_path, DataType, LoadingState},
 };
 
 mod imp {
@@ -222,47 +222,8 @@ impl SessionList {
         self.set_state(LoadingState::Loading);
 
         let handle = spawn_tokio!(secret::restore_sessions());
-        match handle.await.unwrap() {
-            Ok(mut sessions) => {
-                let settings = self.settings();
-                settings.load();
-                let session_ids = settings.session_ids();
-
-                // Keep the order from the settings.
-                sessions.sort_by(|a, b| {
-                    let pos_a = session_ids.get_index_of(&a.id);
-                    let pos_b = session_ids.get_index_of(&b.id);
-
-                    match (pos_a, pos_b) {
-                        (Some(pos_a), Some(pos_b)) => pos_a.cmp(&pos_b),
-                        // Keep unknown sessions at the end.
-                        (Some(_), None) => Ordering::Greater,
-                        (None, Some(_)) => Ordering::Less,
-                        _ => Ordering::Equal,
-                    }
-                });
-
-                for stored_session in sessions {
-                    info!(
-                        "Restoring previous session {} for user {}",
-                        stored_session.id, stored_session.user_id,
-                    );
-                    self.insert(NewSession::new(stored_session.clone()));
-
-                    spawn!(
-                        glib::Priority::DEFAULT_IDLE,
-                        clone!(
-                            #[weak(rename_to = obj)]
-                            self,
-                            async move {
-                                obj.restore_stored_session(stored_session).await;
-                            }
-                        )
-                    );
-                }
-
-                self.set_state(LoadingState::Ready)
-            }
+        let mut sessions = match handle.await.unwrap() {
+            Ok(sessions) => sessions,
             Err(error) => {
                 let message = format!(
                     "{}\n\n{}",
@@ -272,8 +233,110 @@ impl SessionList {
 
                 self.set_error(message);
                 self.set_state(LoadingState::Error);
+                return;
+            }
+        };
+
+        let settings = self.settings();
+        settings.load();
+        let session_ids = settings.session_ids();
+
+        // Keep the order from the settings.
+        sessions.sort_by(|a, b| {
+            let pos_a = session_ids.get_index_of(&a.id);
+            let pos_b = session_ids.get_index_of(&b.id);
+
+            match (pos_a, pos_b) {
+                (Some(pos_a), Some(pos_b)) => pos_a.cmp(&pos_b),
+                // Keep unknown sessions at the end.
+                (Some(_), None) => Ordering::Greater,
+                (None, Some(_)) => Ordering::Less,
+                _ => Ordering::Equal,
+            }
+        });
+
+        // Get the directories present in the data path to only restore sessions with
+        // data on the system. This is necessary for users sharing their secrets between
+        // devices.
+        let mut directories = match self.data_directories(sessions.len()).await {
+            Ok(directories) => directories,
+            Err(error) => {
+                error!("Could not access data directory: {error}");
+                let message = format!(
+                    "{}\n\n{}",
+                    gettext("Could not restore previous sessions"),
+                    gettext("An unexpected error happened while accessing the data directory"),
+                );
+
+                self.set_error(message);
+                self.set_state(LoadingState::Error);
+                return;
+            }
+        };
+
+        for stored_session in sessions {
+            if let Some(pos) = directories
+                .iter()
+                .position(|dir_name| dir_name == stored_session.id.as_str())
+            {
+                directories.swap_remove(pos);
+                info!(
+                    "Restoring previous session {} for user {}",
+                    stored_session.id, stored_session.user_id,
+                );
+                self.insert(NewSession::new(stored_session.clone()));
+
+                spawn!(
+                    glib::Priority::DEFAULT_IDLE,
+                    clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        async move {
+                            obj.restore_stored_session(stored_session).await;
+                        }
+                    )
+                );
+            } else {
+                info!(
+                    "Ignoring session {} for user {}: no data directory",
+                    stored_session.id, stored_session.user_id,
+                );
             }
         }
+
+        self.set_state(LoadingState::Ready)
+    }
+
+    /// The list of directories in the data directory.
+    async fn data_directories(&self, capacity: usize) -> std::io::Result<Vec<OsString>> {
+        let data_path = data_dir_path(DataType::Persistent);
+
+        if !data_path.try_exists()? {
+            return Ok(Vec::new());
+        }
+
+        spawn_tokio!(async move {
+            let mut read_dir = tokio::fs::read_dir(data_path).await?;
+            let mut directories = Vec::with_capacity(capacity);
+
+            loop {
+                let Some(entry) = read_dir.next_entry().await? else {
+                    // We are at the end of the list.
+                    break;
+                };
+
+                if !entry.file_type().await?.is_dir() {
+                    // We are only interested in directories.
+                    continue;
+                }
+
+                directories.push(entry.file_name());
+            }
+
+            std::io::Result::Ok(directories)
+        })
+        .await
+        .expect("task was not aborted")
     }
 
     /// Restore a stored session.
