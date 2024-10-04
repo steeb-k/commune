@@ -1,22 +1,19 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
-mod imp {
-    use std::marker::PhantomData;
+use crate::session::model::VirtualItemKind;
 
+mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/divider_row.ui")]
-    #[properties(wrapper_type = super::DividerRow)]
     pub struct DividerRow {
         #[template_child]
-        pub inner_label: TemplateChild<gtk::Label>,
-        /// The label of this divider.
-        #[property(get = Self::label, set = Self::set_label)]
-        label: PhantomData<String>,
+        pub(super) inner_label: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -27,6 +24,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_css_name("divider-row");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -34,23 +33,10 @@ mod imp {
         }
     }
 
-    #[glib::derived_properties]
     impl ObjectImpl for DividerRow {}
 
     impl WidgetImpl for DividerRow {}
     impl BinImpl for DividerRow {}
-
-    impl DividerRow {
-        /// The label of this divider.
-        fn label(&self) -> String {
-            self.inner_label.text().into()
-        }
-
-        /// Set the label of this divider.
-        fn set_label(&self, label: String) {
-            self.inner_label.set_text(&label);
-        }
-    }
 }
 
 glib::wrapper! {
@@ -64,7 +50,48 @@ impl DividerRow {
         glib::Object::new()
     }
 
-    pub fn with_label(label: String) -> Self {
-        glib::Object::builder().property("label", &label).build()
+    /// Set the kind of this divider.
+    ///
+    /// Panics if the kind is not `TimelineStart`, `DayDivider` or
+    /// `NewMessages`.
+    pub fn set_kind(&self, kind: &VirtualItemKind) {
+        let label = match kind {
+            VirtualItemKind::TimelineStart => gettext("This is the start of the visible history"),
+            VirtualItemKind::DayDivider(utc_date) => {
+                let date = utc_date.to_local().unwrap_or(utc_date.clone());
+
+                let fmt = if date.year()
+                    == glib::DateTime::now_local()
+                        .expect("we should be able to get the local datetime")
+                        .year()
+                {
+                    // Translators: This is a date format in the day divider without the
+                    // year. For example, "Friday, May 5".
+                    // Please use `-` before specifiers that add spaces on single
+                    // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    gettext("%A, %B %-e")
+                } else {
+                    // Translators: This is a date format in the day divider with the
+                    // year. For ex. "Friday, May 5, 2023".
+                    // Please use `-` before specifiers that add spaces on single
+                    // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    gettext("%A, %B %-e, %Y")
+                };
+
+                date.format(&fmt)
+                    .expect("we should be able to format the datetime")
+                    .into()
+            }
+            VirtualItemKind::NewMessages => gettext("New Messages"),
+            _ => unimplemented!(),
+        };
+
+        if matches!(kind, VirtualItemKind::NewMessages) {
+            self.add_css_class("new-messages");
+        } else {
+            self.remove_css_class("new-messages");
+        }
+
+        self.imp().inner_label.set_label(&label);
     }
 }

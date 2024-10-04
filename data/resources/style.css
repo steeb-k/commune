@@ -700,9 +700,26 @@ read-receipts-list:checked {
   background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-.divider-row {
+divider-row {
   font-size: 0.9em;
   font-weight: bold;
+}
+
+divider-row label {
+  opacity: var(--dim-opacity);
+}
+
+divider-row.new-messages {
+  color: var(--accent-color);
+}
+
+divider-row.new-messages label {
+  opacity: 1;
+}
+
+divider-row.new-messages separator {
+  min-height: 2px;
+  background-color: var(--accent-color);
 }
 
 .timestamp {

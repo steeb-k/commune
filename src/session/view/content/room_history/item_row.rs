@@ -306,7 +306,8 @@ mod imp {
                     obj.set_popover(None);
                     obj.update_event_actions(None);
 
-                    match &*item.kind() {
+                    let kind = &*item.kind();
+                    match kind {
                         VirtualItemKind::Spinner => {
                             if !obj
                                 .child()
@@ -337,8 +338,6 @@ mod imp {
                             );
                         }
                         VirtualItemKind::TimelineStart => {
-                            let label = gettext("This is the start of the visible history");
-
                             // Hide this if the `m.room.create` event is visible.
                             if let Some(timeline) = self
                                 .room_history
@@ -354,51 +353,26 @@ mod imp {
                                 self.binding.replace(Some(binding));
                             }
 
-                            if let Some(child) = obj.child().and_downcast::<DividerRow>() {
-                                child.set_label(label);
-                            } else {
-                                let child = DividerRow::with_label(label);
-                                obj.set_child(Some(&child));
-                            };
-                        }
-                        VirtualItemKind::DayDivider(date) => {
-                            let child =
-                                if let Some(child) = obj.child().and_downcast::<DividerRow>() {
-                                    child
+                            let divider =
+                                if let Some(divider) = obj.child().and_downcast::<DividerRow>() {
+                                    divider
                                 } else {
-                                    let child = DividerRow::new();
-                                    obj.set_child(Some(&child));
-                                    child
+                                    let divider = DividerRow::new();
+                                    obj.set_child(Some(&divider));
+                                    divider
                                 };
-
-                            let date = date.to_local().unwrap_or(date.clone());
-
-                            let fmt = if date.year() == glib::DateTime::now_local().unwrap().year()
-                            {
-                                // Translators: This is a date format in the day divider without the
-                                // year. For example, "Friday, May 5".
-                                // Please use `-` before specifiers that add spaces on single
-                                // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-                                gettext("%A, %B %-e")
-                            } else {
-                                // Translators: This is a date format in the day divider with the
-                                // year. For ex. "Friday, May 5, 2023".
-                                // Please use `-` before specifiers that add spaces on single
-                                // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-                                gettext("%A, %B %-e, %Y")
-                            };
-
-                            child.set_label(date.format(&fmt).unwrap())
+                            divider.set_kind(kind);
                         }
-                        VirtualItemKind::NewMessages => {
-                            let label = gettext("New Messages");
-
-                            if let Some(child) = obj.child().and_downcast::<DividerRow>() {
-                                child.set_label(label);
-                            } else {
-                                let child = DividerRow::with_label(label);
-                                obj.set_child(Some(&child));
-                            };
+                        VirtualItemKind::DayDivider(_) | VirtualItemKind::NewMessages => {
+                            let divider =
+                                if let Some(divider) = obj.child().and_downcast::<DividerRow>() {
+                                    divider
+                                } else {
+                                    let divider = DividerRow::new();
+                                    obj.set_child(Some(&divider));
+                                    divider
+                                };
+                            divider.set_kind(kind);
                         }
                     }
                 }

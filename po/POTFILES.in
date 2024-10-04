@@ -134,6 +134,7 @@ src/session/view/content/room_details/permissions/members_subpage.ui
 src/session/view/content/room_details/permissions/permissions_subpage.rs
 src/session/view/content/room_details/permissions/permissions_subpage.ui
 src/session/view/content/room_details/room_upgrade_dialog.rs
+src/session/view/content/room_history/divider_row.rs
 src/session/view/content/room_history/event_actions.ui
 src/session/view/content/room_history/item_row.rs
 src/session/view/content/room_history/message_row/audio.rs
