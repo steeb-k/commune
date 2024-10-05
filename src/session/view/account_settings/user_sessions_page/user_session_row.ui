@@ -42,6 +42,7 @@
         <child>
           <object class="GtkLabel" id="last_seen_ts">
             <property name="xalign">0.0</property>
+            <property name="ellipsize">end</property>
             <style>
               <class name="caption"/>
             </style>
@@ -50,6 +51,7 @@
         <child>
           <object class="GtkLabel" id="last_seen_ip">
             <property name="xalign">0.0</property>
+            <property name="ellipsize">end</property>
             <style>
               <class name="dim-label"/>
               <class name="caption"/>

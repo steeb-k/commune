@@ -6,7 +6,7 @@ mod user_session_row;
 
 use self::user_session_row::UserSessionRow;
 use crate::{
-    session::model::{User, UserSession, UserSessionsList},
+    session::model::{UserSession, UserSessionsList},
     utils::{BoundObject, LoadingState},
 };
 
@@ -24,18 +24,18 @@ mod imp {
     #[properties(wrapper_type = super::UserSessionsPage)]
     pub struct UserSessionsPage {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        current_session_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub current_session_group: TemplateChild<adw::PreferencesGroup>,
+        current_session: TemplateChild<gtk::ListBox>,
         #[template_child]
-        pub current_session: TemplateChild<gtk::ListBox>,
+        other_sessions_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub other_sessions_group: TemplateChild<adw::PreferencesGroup>,
+        stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub other_sessions: TemplateChild<gtk::ListBox>,
+        other_sessions: TemplateChild<gtk::ListBox>,
         /// The list of user sessions.
         #[property(get, set = Self::set_user_sessions, explicit_notify, nullable)]
-        pub user_sessions: BoundObject<UserSessionsList>,
+        user_sessions: BoundObject<UserSessionsList>,
         other_sessions_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -193,15 +193,17 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// User sessions page.
+    /// Page to present the sessions of a user.
     pub struct UserSessionsPage(ObjectSubclass<imp::UserSessionsPage>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesPage, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesPage,
+        @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl UserSessionsPage {
-    pub fn new(user: &User) -> Self {
-        glib::Object::builder().property("user", user).build()
+    /// Construct a new empty `UserSessionsPage`.
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
     /// Reload the user sessions list.
@@ -212,5 +214,11 @@ impl UserSessionsPage {
         };
 
         user_sessions.load().await;
+    }
+}
+
+impl Default for UserSessionsPage {
+    fn default() -> Self {
+        Self::new()
     }
 }

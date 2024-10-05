@@ -2,7 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::Device as CryptoDevice;
 use ruma::{
     api::client::device::{delete_device, Device as DeviceData},
-    assign, DeviceId,
+    assign, DeviceId, OwnedDeviceId,
 };
 use tracing::{debug, error};
 
@@ -15,6 +15,8 @@ use crate::{
 /// The possible sources of the user data.
 #[derive(Debug, Clone)]
 pub enum UserSessionData {
+    /// We only have the device ID.
+    DeviceId(OwnedDeviceId),
     /// The data comes from the `/devices` API.
     DevicesApi(DeviceData),
     /// The data comes from the crypto store.
@@ -30,6 +32,7 @@ impl UserSessionData {
     /// The ID of the user session.
     pub fn device_id(&self) -> &DeviceId {
         match self {
+            UserSessionData::DeviceId(device_id) => device_id,
             UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => &api.device_id,
             UserSessionData::Crypto(crypto) => crypto.device_id(),
         }
@@ -39,7 +42,7 @@ impl UserSessionData {
     pub fn api(&self) -> Option<&DeviceData> {
         match self {
             UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => Some(api),
-            UserSessionData::Crypto(_) => None,
+            UserSessionData::DeviceId(_) | UserSessionData::Crypto(_) => None,
         }
     }
 
@@ -47,7 +50,7 @@ impl UserSessionData {
     pub fn crypto(&self) -> Option<&CryptoDevice> {
         match self {
             UserSessionData::Crypto(crypto) | UserSessionData::Both { crypto, .. } => Some(crypto),
-            UserSessionData::DevicesApi(_) => None,
+            UserSessionData::DeviceId(_) | UserSessionData::DevicesApi(_) => None,
         }
     }
 }
@@ -65,9 +68,9 @@ mod imp {
     pub struct UserSession {
         /// The current session.
         #[property(get, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The user session data.
-        pub data: OnceCell<UserSessionData>,
+        data: OnceCell<UserSessionData>,
         /// Whether this is the current user session.
         #[property(get)]
         is_current: Cell<bool>,
@@ -105,12 +108,12 @@ mod imp {
                 self.is_current.set(is_current);
             }
 
-            self.data.set(data).unwrap();
+            self.data.set(data).expect("data is uninitialized");
         }
 
         /// The user session data.
         pub(super) fn data(&self) -> &UserSessionData {
-            self.data.get().unwrap()
+            self.data.get().expect("data is initialized")
         }
 
         /// The ID of this user session.
@@ -129,8 +132,6 @@ mod imp {
 
         /// The last IP address used by the user session.
         fn last_seen_ip(&self) -> Option<String> {
-            // TODO: Would be nice to also show the location
-            // See: https://gitlab.gnome.org/World/fractal/-/issues/700
             self.data().api()?.last_seen_ip.clone()
         }
 
@@ -139,7 +140,7 @@ mod imp {
             self.data().api()?.last_seen_ts.map(|last_seen_ts| {
                 glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
                     .and_then(|t| t.to_local())
-                    .unwrap()
+                    .expect("constructing GDateTime works")
             })
         }
 

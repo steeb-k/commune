@@ -17,6 +17,7 @@ use self::{
 use crate::{
     components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
     session::model::Session,
+    spawn,
     utils::BoundObjectWeakRef,
 };
 
@@ -42,8 +43,6 @@ pub enum AccountSettingsSubpage {
 }
 
 mod imp {
-    use std::cell::RefCell;
-
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -54,12 +53,13 @@ mod imp {
     pub struct AccountSettings {
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
-        pub session: BoundObjectWeakRef<Session>,
-        pub session_handler: RefCell<Option<glib::SignalHandlerId>>,
+        session: BoundObjectWeakRef<Session>,
         #[template_child]
-        pub general_page: TemplateChild<GeneralPage>,
+        general_page: TemplateChild<GeneralPage>,
         #[template_child]
-        pub security_page: TemplateChild<SecurityPage>,
+        sessions_page: TemplateChild<UserSessionsPage>,
+        #[template_child]
+        security_page: TemplateChild<SecurityPage>,
     }
 
     #[glib::object_subclass]
@@ -69,10 +69,7 @@ mod imp {
         type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            UserSessionsPage::ensure_type();
-            GeneralPage::ensure_type();
             NotificationsPage::ensure_type();
-            SecurityPage::ensure_type();
 
             Self::bind_template(klass);
 
@@ -128,6 +125,15 @@ mod imp {
                     }
                 ));
                 self.session.set(&session, vec![logged_out_handler]);
+
+                // Refresh the list of sessions.
+                spawn!(clone!(
+                    #[weak]
+                    session,
+                    async move {
+                        session.user_sessions().load().await;
+                    }
+                ));
             }
 
             obj.notify_session();
@@ -136,12 +142,13 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
+    /// Preference window to display and update account settings.
     pub struct AccountSettings(ObjectSubclass<imp::AccountSettings>)
         @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog, @implements gtk::Accessible;
 }
 
 impl AccountSettings {
+    /// Construct new `AccountSettings` for the given session.
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }

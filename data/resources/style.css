@@ -54,11 +54,6 @@ box.paragraphs {
 	min-width: 86px;
 }
 
-.fix-preferences-page {
-  margin: 24px 12px;
-  border-spacing: 24px;
-}
-
 button.overlaid {
   margin: 3px; /* Make sure the outline is fully visible */
 }

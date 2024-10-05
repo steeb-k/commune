@@ -23,7 +23,7 @@
       </object>
     </child>
     <child>
-      <object class="UserSessionsPage">
+      <object class="UserSessionsPage" id="sessions_page">
         <binding name="user-sessions">
           <lookup name="user-sessions">
             <lookup name="session">AccountSettings</lookup>
