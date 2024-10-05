@@ -209,17 +209,18 @@ mod imp {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
+            let security = session.security();
 
             // If the session is already verified, offer to reset it.
-            let verification_state = session.verification_state();
+            let verification_state = security.verification_state();
             if verification_state == SessionVerificationState::Verified {
                 self.navigation
                     .replace_with_tags(&[CryptoIdentitySetupPage::Reset.as_ref()]);
                 return;
             }
 
-            let crypto_identity_state = session.crypto_identity_state();
-            let recovery_state = session.recovery_state();
+            let crypto_identity_state = security.crypto_identity_state();
+            let recovery_state = security.recovery_state();
 
             // If there is no crypto identity, we need to bootstrap it.
             if crypto_identity_state == CryptoIdentityState::Missing {
@@ -257,7 +258,7 @@ mod imp {
                 return;
             };
 
-            let can_recover = session.recovery_state() != RecoveryState::Disabled;
+            let can_recover = session.security().recovery_state() != RecoveryState::Disabled;
             self.use_recovery_btn.set_visible(can_recover);
         }
 
@@ -412,7 +413,7 @@ impl CryptoIdentitySetupView {
         };
 
         let imp = self.imp();
-        let can_recover = session.recovery_state() != RecoveryState::Disabled;
+        let can_recover = session.security().recovery_state() != RecoveryState::Disabled;
 
         if can_recover {
             let recovery_view = imp.recovery_page(CryptoRecoverySetupInitialPage::Reset);

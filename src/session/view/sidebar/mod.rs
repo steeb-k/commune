@@ -66,7 +66,8 @@ mod imp {
         #[property(get, set = Self::set_list_model, explicit_notify, nullable)]
         pub list_model: glib::WeakRef<SidebarListModel>,
         pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
-        session_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        session_handler: RefCell<Option<glib::SignalHandlerId>>,
+        security_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -159,8 +160,13 @@ mod imp {
 
             if let Some(user) = self.user.take() {
                 let session = user.session();
-                for handler in self.session_handlers.take() {
+                if let Some(handler) = self.session_handler.take() {
                     session.disconnect(handler);
+                }
+
+                let security = session.security();
+                for handler in self.security_handlers.take() {
+                    security.disconnect(handler);
                 }
             }
         }
@@ -179,8 +185,13 @@ mod imp {
 
             if let Some(user) = prev_user {
                 let session = user.session();
-                for handler in self.session_handlers.take() {
+                if let Some(handler) = self.session_handler.take() {
                     session.disconnect(handler);
+                }
+
+                let security = session.security();
+                for handler in self.security_handlers.take() {
+                    security.disconnect(handler);
                 }
             }
 
@@ -194,21 +205,25 @@ mod imp {
                         imp.update_security_banner();
                     }
                 ));
-                let crypto_identity_handler = session.connect_crypto_identity_state_notify(clone!(
+                self.session_handler.replace(Some(offline_handler));
+
+                let security = session.security();
+                let crypto_identity_handler =
+                    security.connect_crypto_identity_state_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_security_banner();
+                        }
+                    ));
+                let verification_handler = security.connect_verification_state_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
                         imp.update_security_banner();
                     }
                 ));
-                let verification_handler = session.connect_verification_state_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_security_banner();
-                    }
-                ));
-                let recovery_handler = session.connect_recovery_state_notify(clone!(
+                let recovery_handler = security.connect_recovery_state_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -216,8 +231,7 @@ mod imp {
                     }
                 ));
 
-                self.session_handlers.replace(vec![
-                    offline_handler,
+                self.security_handlers.replace(vec![
                     crypto_identity_handler,
                     verification_handler,
                     recovery_handler,
@@ -266,9 +280,10 @@ mod imp {
                 return;
             }
 
-            let crypto_identity_state = session.crypto_identity_state();
-            let verification_state = session.verification_state();
-            let recovery_state = session.recovery_state();
+            let security = session.security();
+            let crypto_identity_state = security.crypto_identity_state();
+            let verification_state = security.verification_state();
+            let recovery_state = security.recovery_state();
 
             if crypto_identity_state == CryptoIdentityState::Unknown
                 || verification_state == SessionVerificationState::Unknown
@@ -337,8 +352,9 @@ impl Sidebar {
         // Show the security tab if the user uses the back button.
         dialog.set_visible_page_name("security");
 
-        let crypto_identity_state = session.crypto_identity_state();
-        let verification_state = session.verification_state();
+        let security = session.security();
+        let crypto_identity_state = security.crypto_identity_state();
+        let verification_state = security.verification_state();
 
         let subpage = if crypto_identity_state == CryptoIdentityState::Missing
             || verification_state == SessionVerificationState::Unverified

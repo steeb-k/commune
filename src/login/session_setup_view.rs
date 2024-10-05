@@ -47,6 +47,7 @@ mod imp {
         /// The recovery view.
         recovery_view: OnceCell<CryptoRecoverySetupView>,
         session_handler: RefCell<Option<glib::SignalHandlerId>>,
+        security_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -83,6 +84,9 @@ mod imp {
             if let Some(session) = self.session.upgrade() {
                 if let Some(handler) = self.session_handler.take() {
                     session.disconnect(handler);
+                }
+                if let Some(handler) = self.security_handler.take() {
+                    session.security().disconnect(handler);
                 }
             }
         }
@@ -200,51 +204,55 @@ mod imp {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
+            let security = session.security();
 
             // Stop listening to notifications.
             if let Some(handler) = self.session_handler.take() {
                 session.disconnect(handler);
             }
+            if let Some(handler) = self.security_handler.take() {
+                security.disconnect(handler);
+            }
 
             // Wait if we don't know the crypto identity state.
-            let crypto_identity_state = session.crypto_identity_state();
+            let crypto_identity_state = security.crypto_identity_state();
             if crypto_identity_state == CryptoIdentityState::Unknown {
-                let handler = session.connect_crypto_identity_state_notify(clone!(
+                let handler = security.connect_crypto_identity_state_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
                         imp.check_session_setup();
                     }
                 ));
-                self.session_handler.replace(Some(handler));
+                self.security_handler.replace(Some(handler));
                 return;
             }
 
             // Wait if we don't know the verification state.
-            let verification_state = session.verification_state();
+            let verification_state = security.verification_state();
             if verification_state == SessionVerificationState::Unknown {
-                let handler = session.connect_verification_state_notify(clone!(
+                let handler = security.connect_verification_state_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
                         imp.check_session_setup();
                     }
                 ));
-                self.session_handler.replace(Some(handler));
+                self.security_handler.replace(Some(handler));
                 return;
             }
 
             // Wait if we don't know the recovery state.
-            let recovery_state = session.recovery_state();
+            let recovery_state = security.recovery_state();
             if recovery_state == RecoveryState::Unknown {
-                let handler = session.connect_recovery_state_notify(clone!(
+                let handler = security.connect_recovery_state_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
                         imp.check_session_setup();
                     }
                 ));
-                self.session_handler.replace(Some(handler));
+                self.security_handler.replace(Some(handler));
                 return;
             }
 
@@ -265,7 +273,7 @@ mod imp {
                 return;
             };
 
-            let verification_state = session.verification_state();
+            let verification_state = session.security().verification_state();
             if verification_state == SessionVerificationState::Unverified {
                 let crypto_identity_view = self.crypto_identity_view();
 
@@ -286,7 +294,7 @@ mod imp {
                 return;
             };
 
-            match session.recovery_state() {
+            match session.security().recovery_state() {
                 RecoveryState::Disabled => {
                     self.switch_to_recovery();
                 }

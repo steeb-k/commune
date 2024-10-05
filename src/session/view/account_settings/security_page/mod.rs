@@ -12,7 +12,6 @@ pub use self::{
 use crate::{
     components::ButtonCountRow,
     session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
-    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -52,8 +51,9 @@ mod imp {
         pub recovery_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
-        pub session: BoundObjectWeakRef<Session>,
-        pub ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub session: glib::WeakRef<Session>,
+        ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
+        security_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         bindings: RefCell<Vec<glib::Binding>>,
     }
 
@@ -75,9 +75,14 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for SecurityPage {
         fn dispose(&self) {
-            if let Some(session) = self.session.obj() {
+            if let Some(session) = self.session.upgrade() {
                 if let Some(handler) = self.ignored_users_count_handler.take() {
                     session.ignored_users().disconnect(handler);
+                }
+
+                let security = session.security();
+                for handler in self.security_handlers.take() {
+                    security.disconnect(handler);
                 }
             }
 
@@ -93,7 +98,7 @@ mod imp {
     impl SecurityPage {
         /// Set the current session.
         fn set_session(&self, session: Option<Session>) {
-            let prev_session = self.session.obj();
+            let prev_session = self.session.upgrade();
 
             if prev_session == session {
                 return;
@@ -104,11 +109,15 @@ mod imp {
                 if let Some(handler) = self.ignored_users_count_handler.take() {
                     session.ignored_users().disconnect(handler);
                 }
+
+                let security = session.security();
+                for handler in self.security_handlers.take() {
+                    security.disconnect(handler);
+                }
             }
             for binding in self.bindings.take() {
                 binding.unbind();
             }
-            self.session.disconnect_signals();
 
             if let Some(session) = &session {
                 let ignored_users = session.ignored_users();
@@ -146,22 +155,24 @@ mod imp {
                 self.bindings
                     .replace(vec![public_read_receipts_binding, typing_binding]);
 
+                let security = session.security();
                 let crypto_identity_state_handler =
-                    session.connect_crypto_identity_state_notify(clone!(
+                    security.connect_crypto_identity_state_notify(clone!(
                         #[weak]
                         obj,
                         move |_| {
                             obj.update_crypto_identity();
                         }
                     ));
-                let verification_state_handler = session.connect_verification_state_notify(clone!(
-                    #[weak]
-                    obj,
-                    move |_| {
-                        obj.update_crypto_identity();
-                    }
-                ));
-                let recovery_state_handler = session.connect_recovery_state_notify(clone!(
+                let verification_state_handler =
+                    security.connect_verification_state_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_crypto_identity();
+                        }
+                    ));
+                let recovery_state_handler = security.connect_recovery_state_notify(clone!(
                     #[weak]
                     obj,
                     move |_| {
@@ -169,15 +180,14 @@ mod imp {
                     }
                 ));
 
-                self.session.set(
-                    session,
-                    vec![
-                        crypto_identity_state_handler,
-                        verification_state_handler,
-                        recovery_state_handler,
-                    ],
-                );
+                self.security_handlers.replace(vec![
+                    crypto_identity_state_handler,
+                    verification_state_handler,
+                    recovery_state_handler,
+                ]);
             }
+
+            self.session.set(session.as_ref());
 
             obj.update_crypto_identity();
             obj.update_recovery();
@@ -204,8 +214,9 @@ impl SecurityPage {
             return;
         };
         let imp = self.imp();
+        let security = session.security();
 
-        let crypto_identity_state = session.crypto_identity_state();
+        let crypto_identity_state = security.crypto_identity_state();
         if matches!(
             crypto_identity_state,
             CryptoIdentityState::Unknown | CryptoIdentityState::Missing
@@ -232,7 +243,7 @@ impl SecurityPage {
             return;
         }
 
-        let verification_state = session.verification_state();
+        let verification_state = security.verification_state();
         if verification_state == SessionVerificationState::Verified {
             imp.crypto_identity_icon
                 .set_icon_name(Some("verified-symbolic"));
@@ -281,7 +292,7 @@ impl SecurityPage {
         };
         let imp = self.imp();
 
-        let recovery_state = session.recovery_state();
+        let recovery_state = session.security().recovery_state();
         match recovery_state {
             RecoveryState::Unknown | RecoveryState::Disabled => {
                 imp.recovery_icon.set_icon_name(Some("sync-off-symbolic"));

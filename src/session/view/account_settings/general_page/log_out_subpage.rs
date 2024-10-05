@@ -77,8 +77,9 @@ mod imp {
                 return;
             };
 
-            let verification_state = session.verification_state();
-            let recovery_state = session.recovery_state();
+            let security = session.security();
+            let verification_state = security.verification_state();
+            let recovery_state = security.recovery_state();
 
             if verification_state != SessionVerificationState::Verified
                 || recovery_state != RecoveryState::Enabled
@@ -88,7 +89,7 @@ mod imp {
                 return;
             }
 
-            let crypto_identity_state = session.crypto_identity_state();
+            let crypto_identity_state = security.crypto_identity_state();
 
             if crypto_identity_state == CryptoIdentityState::LastManStanding {
                 self.warning_description.set_label(&gettext("This is your last connected session. Make sure that you can still access your recovery key or passphrase, or to backup your encryption keys before logging out."));

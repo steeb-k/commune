@@ -4,6 +4,7 @@ mod remote_room;
 mod remote_user;
 mod room;
 mod room_list;
+mod security;
 mod session;
 mod session_settings;
 mod sidebar_data;
@@ -20,6 +21,7 @@ pub use self::{
     remote_user::RemoteUser,
     room::*,
     room_list::RoomList,
+    security::*,
     session::*,
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{

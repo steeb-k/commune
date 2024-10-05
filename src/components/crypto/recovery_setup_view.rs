@@ -149,10 +149,11 @@ mod imp {
         fn set_session(&self, session: &Session) {
             self.session.set(Some(session));
 
-            let recovery_state = session.recovery_state();
+            let security = session.security();
+            let recovery_state = security.recovery_state();
             let initial_page = match recovery_state {
                 RecoveryState::Unknown | RecoveryState::Disabled
-                    if !session.backup_exists_on_server() =>
+                    if !security.backup_exists_on_server() =>
                 {
                     CryptoRecoverySetupInitialPage::Enable
                 }
@@ -172,7 +173,8 @@ mod imp {
                 return;
             };
 
-            let (required, description) = if session.cross_signing_keys_available() {
+            let security = session.security();
+            let (required, description) = if security.cross_signing_keys_available() {
                 (
                     false,
                     gettext("Invalidates the verifications of all users and sessions"),
@@ -187,7 +189,7 @@ mod imp {
             self.reset_identity_row.set_is_active(required);
             self.reset_identity_row.set_subtitle(&description);
 
-            let (required, description) = if session.backup_enabled() {
+            let (required, description) = if security.backup_enabled() {
                 (
                     false,
                     gettext("You might not be able to read your past encrypted messages anymore"),
@@ -396,7 +398,7 @@ impl CryptoRecoverySetupView {
         match handle.await.unwrap() {
             Ok(key) => {
                 let imp = self.imp();
-                let key = if has_passphrase { None } else { Some(key) };
+                let key = (!has_passphrase).then_some(key);
 
                 imp.update_success(key);
                 imp.navigation
@@ -431,7 +433,7 @@ impl CryptoRecoverySetupView {
         match handle.await.unwrap() {
             Ok(key) => {
                 let imp = self.imp();
-                let key = if has_passphrase { None } else { Some(key) };
+                let key = (!has_passphrase).then_some(key);
 
                 imp.update_success(key);
                 imp.navigation
