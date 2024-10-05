@@ -443,8 +443,10 @@ mod imp {
                         let backup_exists_on_server = match backups.exists_on_server().await {
                             Ok(exists) => exists,
                             Err(error) => {
-                                warn!("Could not request if recovery backup exists on homeserver: {error}");
-                                false
+                                warn!("Could not request whether recovery backup exists on homeserver: {error}");
+                                // If the request failed, we have to try to delete the backup to
+                                // avoid unsolvable errors.
+                                true
                             }
                         };
                         (false, backup_exists_on_server)

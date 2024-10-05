@@ -5,7 +5,7 @@ use matrix_sdk::encryption::{
     recovery::{RecoveryError, RecoveryState as SdkRecoveryState},
     secret_storage::SecretStorageError,
 };
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use crate::{
     components::{AuthDialog, AuthError, LoadingButton, SwitchLoadingRow},
@@ -376,13 +376,51 @@ impl CryptoRecoverySetupView {
 
         // There is no method to reset the room keys backup, so we need to disable
         // recovery and re-enable it.
-        let recovery = encryption.recovery();
-        let handle = spawn_tokio!(async move { recovery.disable().await });
+        // If backups are not enabled locally, we cannot disable recovery, the API will
+        // return an error. If a backup exists on the homeserver but backups are not
+        // enabled locally, we need to delete the backup manually.
+        // In any case, `Recovery::enable` will reset the secret storage.
+        let backups = encryption.backups();
+        let (backups_are_enabled, backup_exists_on_server) = spawn_tokio!(async move {
+            let backups_are_enabled = backups.are_enabled().await;
 
-        if let Err(error) = handle.await.unwrap() {
-            error!("Could not disable recovery: {error}");
-            toast!(self, gettext("Could not reset account recovery"));
-            return;
+            let backup_exists_on_server = if !backups_are_enabled {
+                // Let's use up-to-date data instead of relying on the last time that we updated it.
+                match backups.exists_on_server().await {
+                    Ok(exists) => exists,
+                    Err(error) => {
+                        warn!("Could not request whether recovery backup exists on homeserver: {error}");
+                        // If the request failed, we have to try to delete the backup to avoid unsolvable errors.
+                        true
+                    }
+                }
+            } else {
+                true
+            };
+
+            (backups_are_enabled, backup_exists_on_server)
+        })
+        .await
+        .expect("task was not aborted");
+
+        if !backups_are_enabled && backup_exists_on_server {
+            let backups = encryption.backups();
+            let handle = spawn_tokio!(async move { backups.disable_and_delete().await });
+
+            if let Err(error) = handle.await.expect("task was not aborted") {
+                error!("Could not disable backups: {error}");
+                toast!(self, gettext("Could not reset account recovery"));
+                return;
+            }
+        } else if backups_are_enabled {
+            let recovery = encryption.recovery();
+            let handle = spawn_tokio!(async move { recovery.disable().await });
+
+            if let Err(error) = handle.await.expect("task was not aborted") {
+                error!("Could not disable recovery: {error}");
+                toast!(self, gettext("Could not reset account recovery"));
+                return;
+            }
         }
 
         let recovery = encryption.recovery();
