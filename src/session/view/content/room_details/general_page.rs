@@ -402,17 +402,24 @@ mod imp {
                 return;
             };
 
-            // Hide edit button when the user cannot edit any detail.
+            // Hide edit button when the user cannot edit any detail or when the room is
+            // direct.
             let permissions = room.permissions();
             let can_change_avatar = permissions.property_expression("can-change-avatar");
             let can_change_name = permissions.property_expression("can-change-name");
             let can_change_topic = permissions.property_expression("can-change-topic");
 
-            let can_change_name_topic = expression::or(can_change_name, can_change_topic);
-            let can_edit_details = expression::or(can_change_name_topic, can_change_avatar);
+            let can_change_name_or_topic = expression::or(can_change_name, can_change_topic);
+            let can_edit_at_least_one_detail =
+                expression::or(can_change_name_or_topic, can_change_avatar);
 
-            let expr_watch =
-                can_edit_details.bind(&*self.edit_details_btn, "visible", gtk::Widget::NONE);
+            let is_direct_expr = room.property_expression("is-direct");
+
+            let expr_watch = expression::and(
+                expression::not(is_direct_expr),
+                can_edit_at_least_one_detail,
+            )
+            .bind(&*self.edit_details_btn, "visible", gtk::Widget::NONE);
             self.expr_watch.replace(Some(expr_watch));
         }
 

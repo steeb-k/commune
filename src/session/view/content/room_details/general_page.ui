@@ -145,6 +145,13 @@
     <child>
       <object class="AdwPreferencesGroup" id="addresses_group">
         <property name="title" translatable="yes">Public Addresses</property>
+        <binding name="visible">
+          <closure type="gboolean" function="invert_boolean">
+            <lookup name="is-direct">
+              <lookup name="room">RoomDetailsGeneralPage</lookup>
+            </lookup>
+          </closure>
+        </binding>
         <child type="header-suffix">
           <object class="GtkButton" id="edit_addresses_button">
             <!-- Translators: In this string, 'Edit' is a verb. -->
@@ -188,6 +195,13 @@
     <child>
       <object class="AdwPreferencesGroup" id="visibility_group">
         <property name="title" translatable="yes">Access and Visibility</property>
+        <binding name="visible">
+          <closure type="gboolean" function="invert_boolean">
+            <lookup name="is-direct">
+              <lookup name="room">RoomDetailsGeneralPage</lookup>
+            </lookup>
+          </closure>
+        </binding>
         <child>
           <object class="ComboLoadingRow" id="join_rule">
             <property name="title" translatable="yes">Who Can Join</property>
@@ -267,8 +281,15 @@
           </object>
         </child>
         <child>
-          <object class="ButtonCountRow" id="permission">
+          <object class="ButtonCountRow">
             <property name="title" translatable="yes">Permissions</property>
+            <binding name="visible">
+              <closure type="gboolean" function="invert_boolean">
+                <lookup name="is-direct">
+                  <lookup name="room">RoomDetailsGeneralPage</lookup>
+                </lookup>
+              </closure>
+            </binding>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'permissions'</property>
           </object>
