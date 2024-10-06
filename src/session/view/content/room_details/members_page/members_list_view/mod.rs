@@ -6,19 +6,16 @@ use gtk::{
     CompositeTemplate,
 };
 
-mod extra_lists;
 mod item_row;
-mod member_row;
-mod membership_subpage_item;
 mod membership_subpage_row;
 
-pub use self::{extra_lists::ExtraLists, membership_subpage_item::MembershipSubpageItem};
-use self::{
-    item_row::ItemRow, member_row::MemberRow, membership_subpage_row::MembershipSubpageRow,
-};
+use self::{item_row::ItemRow, membership_subpage_row::MembershipSubpageRow};
 use crate::{
     prelude::*,
-    session::model::{Member, Membership},
+    session::{
+        model::{Member, Membership},
+        view::content::room_details::MembershipSubpageItem,
+    },
     utils::expression,
 };
 
@@ -39,18 +36,21 @@ mod imp {
     #[properties(wrapper_type = super::MembersListView)]
     pub struct MembersListView {
         #[template_child]
-        pub search_bar: TemplateChild<gtk::SearchBar>,
+        search_bar: TemplateChild<gtk::SearchBar>,
         #[template_child]
-        pub search_entry: TemplateChild<gtk::SearchEntry>,
+        search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
-        pub filtered_model: gtk::FilterListModel,
+        list_view: TemplateChild<gtk::ListView>,
+        filtered_model: gtk::FilterListModel,
         /// The model used for this view.
-        #[property(get = Self::model, set = Self::set_model, explicit_notify, nullable)]
-        pub model: PhantomData<Option<gio::ListModel>>,
+        #[property(get = Self::model, set = Self::set_model, construct_only)]
+        model: PhantomData<Option<gio::ListModel>>,
+        /// The model used to filter the model.
+        #[property(get, construct_only, builder(Membership::default()))]
+        membership: Cell<Membership>,
         /// Whether our own user can send an invite in the current room.
         #[property(get, set = Self::set_can_invite, explicit_notify)]
-        pub can_invite: Cell<bool>,
+        can_invite: Cell<bool>,
         items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -126,23 +126,20 @@ mod imp {
 
                     if let Some(member) = item.downcast_ref::<Member>() {
                         obj.activate_action(
-                            "members.show-member",
+                            "details.show-member",
                             Some(&member.user_id().as_str().to_variant()),
                         )
                         .unwrap();
                     } else if let Some(item) = item.downcast_ref::<MembershipSubpageItem>() {
                         obj.activate_action(
                             "members.show-membership-list",
-                            Some(&item.state().to_variant()),
+                            Some(&item.membership().to_variant()),
                         )
                         .unwrap();
                     }
                 }
             ));
 
-            obj.connect_tag_notify(|obj| {
-                obj.imp().update_title();
-            });
             self.update_title();
         }
 
@@ -192,7 +189,6 @@ mod imp {
 
             self.filtered_model.set_model(model.as_ref());
             self.obj().notify_model();
-            self.update_title();
         }
 
         /// Set whether our own user can send an invite in the current room.
@@ -210,38 +206,33 @@ mod imp {
             let Some(model) = self.model() else {
                 return;
             };
-            let obj = self.obj();
-            let Some(tag) = obj.tag() else {
-                return;
-            };
 
             let count = model.n_items();
-            let title = match &*tag {
-                "invited" => ngettext("Invited Room Member", "Invited Room Members", count),
-                "banned" => ngettext("Banned Room Member", "Banned Room Members", count),
+            let title = match self.membership.get() {
+                Membership::Invite => {
+                    ngettext("Invited Room Member", "Invited Room Members", count)
+                }
+                Membership::Ban => ngettext("Banned Room Member", "Banned Room Members", count),
                 _ => ngettext("Room Member", "Room Members", count),
             };
 
-            obj.set_title(&title);
+            self.obj().set_title(&title);
         }
     }
 }
 
 glib::wrapper! {
+    /// A page to display a list of members.
     pub struct MembersListView(ObjectSubclass<imp::MembersListView>)
         @extends gtk::Widget, adw::NavigationPage;
 }
 
 impl MembersListView {
-    pub fn new(model: &impl IsA<gio::ListModel>, membership: Membership) -> Self {
-        let tag = match membership {
-            Membership::Invite => "invited",
-            Membership::Ban => "banned",
-            _ => "joined",
-        };
-
+    /// Construct a new `MembersListView` with the given list and membership.
+    pub fn new(model: &impl IsA<gio::ListModel>, membership: Membership, tag: &str) -> Self {
         glib::Object::builder()
             .property("model", model)
+            .property("membership", membership)
             .property("tag", tag)
             .build()
     }

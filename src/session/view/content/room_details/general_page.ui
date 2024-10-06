@@ -72,7 +72,30 @@
       </object>
     </child>
     <child>
-      <object class="AdwPreferencesGroup">
+      <object class="AdwPreferencesGroup" id="direct_members_group">
+        <child>
+          <object class="GtkListBox" id="direct_members_list">
+            <property name="selection-mode">none</property>
+            <style>
+              <class name="boxed-list" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="no_direct_members_label">
+            <property name="wrap">true</property>
+            <property name="wrap-mode">word-char</property>
+            <property name="xalign">0.0</property>   
+            <property name="label" translatable="yes">There are no members in this room</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="members_row_group">
         <child>
           <object class="ButtonCountRow" id="members_row">
             <property name="icon-name">users-symbolic</property>
@@ -179,6 +202,7 @@
             <style>
               <class name="boxed-list" />
             </style>
+            <property name="selection-mode">none</property>
             <property name="margin-top">12</property>
             <property name="accessible-role">group</property>
             <child>

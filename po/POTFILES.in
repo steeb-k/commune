@@ -122,12 +122,12 @@ src/session/view/content/room_details/history_viewer/visual_media.ui
 src/session/view/content/room_details/invite_subpage/list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.ui
-src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs
-src/session/view/content/room_details/members_page/members_list_view/member_row.ui
+src/session/view/content/room_details/member_row.ui
 src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.ui
-src/session/view/content/room_details/members_page/mod.rs
+src/session/view/content/room_details/membership_lists.rs
+src/session/view/content/room_details/mod.rs
 src/session/view/content/room_details/mod.ui
 src/session/view/content/room_details/permissions/add_members_subpage.ui
 src/session/view/content/room_details/permissions/members_subpage.ui

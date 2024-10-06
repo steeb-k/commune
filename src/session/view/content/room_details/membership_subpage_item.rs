@@ -13,12 +13,12 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::MembershipSubpageItem)]
     pub struct MembershipSubpageItem {
-        /// The membership state used to filter the subpage's list.
+        /// The membership used to filter the list.
         #[property(get, construct_only, builder(Membership::default()))]
-        pub state: Cell<Membership>,
+        membership: Cell<Membership>,
         /// The model used for the subpage.
         #[property(get, construct_only)]
-        pub model: OnceCell<gio::ListModel>,
+        model: OnceCell<gio::ListModel>,
     }
 
     #[glib::object_subclass]
@@ -37,9 +37,10 @@ glib::wrapper! {
 }
 
 impl MembershipSubpageItem {
-    pub fn new(state: Membership, model: &impl IsA<gio::ListModel>) -> Self {
+    /// Construct a `MembershipSubpageItem` for the given membership and list.
+    pub fn new(membership: Membership, model: &impl IsA<gio::ListModel>) -> Self {
         glib::Object::builder()
-            .property("state", state)
+            .property("membership", membership)
             .property("model", model)
             .build()
     }

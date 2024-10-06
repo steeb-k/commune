@@ -3,14 +3,19 @@
 #![allow(deprecated)]
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gettextrs::gettext;
+use gtk::{glib, glib::clone, CompositeTemplate};
+use ruma::UserId;
 
 mod addresses_subpage;
 mod edit_details_subpage;
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
+mod member_row;
 mod members_page;
+mod membership_lists;
+mod membership_subpage_item;
 mod permissions;
 mod room_upgrade_dialog;
 
@@ -22,20 +27,32 @@ use self::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, VisualMediaHistoryViewer,
     },
     invite_subpage::InviteSubpage,
+    member_row::MemberRow,
     members_page::MembersPage,
+    membership_lists::MembershipLists,
+    membership_subpage_item::MembershipSubpageItem,
     permissions::PermissionsSubpage,
 };
-use crate::session::model::Room;
+use crate::{components::UserPage, session::model::Room, toast};
 
+/// The possible subpages of the room details.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
 pub enum SubpageName {
+    /// The page to edit the name, topic and avatar of the room.
     EditDetails,
+    /// The list of members of the room.
     Members,
+    /// The form to invite new members.
     Invite,
+    /// The history of visual media.
     VisualMediaHistory,
+    /// The history of files.
     FileHistory,
+    /// The history of audio.
     AudioHistory,
+    /// The page to edit the public addresses of the room.
     Addresses,
+    /// The page to edit the permissions of the room.
     Permissions,
 }
 
@@ -53,19 +70,22 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_details/mod.ui")]
     #[properties(wrapper_type = super::RoomDetails)]
     pub struct RoomDetails {
-        #[template_child]
-        pub general_page: TemplateChild<GeneralPage>,
         /// The room to show the details for.
-        #[property(get, construct_only)]
-        pub room: RefCell<Option<Room>>,
+        #[property(get, set = Self::set_room, construct_only)]
+        room: OnceCell<Room>,
+        /// The lists of members filtered by membership.
+        #[property(get)]
+        membership_lists: MembershipLists,
         /// The timeline for the history viewers.
-        #[property(get = Self::timeline)]
-        pub timeline: OnceCell<HistoryViewerTimeline>,
+        #[property(get)]
+        timeline: OnceCell<HistoryViewerTimeline>,
+        /// The general page.
+        general_page: OnceCell<GeneralPage>,
         /// The subpages that are loaded.
         ///
         /// We keep them around to avoid reloading them if the user reopens the
         /// same subpage.
-        pub subpages: RefCell<HashMap<SubpageName, adw::NavigationPage>>,
+        subpages: RefCell<HashMap<SubpageName, adw::NavigationPage>>,
     }
 
     #[glib::object_subclass]
@@ -85,7 +105,36 @@ mod imp {
                         .and_then(|variant| variant.get::<SubpageName>())
                         .expect("The parameter should be a valid subpage name");
 
-                    obj.show_subpage(subpage, false);
+                    obj.imp().show_subpage(subpage, false);
+                },
+            );
+
+            klass.install_action(
+                "details.show-member",
+                Some(&String::static_variant_type()),
+                |obj, _, param| {
+                    let Some(user_id) = param
+                        .and_then(|variant| variant.get::<String>())
+                        .and_then(|s| UserId::parse(s).ok())
+                    else {
+                        return;
+                    };
+
+                    let member = obj.membership_lists().members().get_or_create(user_id);
+                    let user_page = UserPage::new(&member);
+                    user_page.connect_close(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.pop_subpage();
+                            toast!(
+                                obj,
+                                gettext("The user is not in the room members list anymore")
+                            );
+                        }
+                    ));
+
+                    obj.push_subpage(&user_page);
                 },
             );
 
@@ -109,7 +158,11 @@ mod imp {
     impl WidgetImpl for RoomDetails {
         fn map(&self) {
             self.parent_map();
-            self.general_page.unselect_topic();
+
+            self.general_page
+                .get()
+                .expect("general page is initialized")
+                .unselect_topic();
         }
     }
 
@@ -118,16 +171,54 @@ mod imp {
     impl PreferencesWindowImpl for RoomDetails {}
 
     impl RoomDetails {
-        /// The timeline for the history viewers.
-        fn timeline(&self) -> HistoryViewerTimeline {
+        /// Set the room to show the details for.
+        fn set_room(&self, room: Room) {
+            self.room.set(room.clone()).expect("room is uninitialized");
+
+            // Initialize the media history viewers timeline.
             self.timeline
-                .get_or_init(|| {
-                    let room = self.room.borrow().clone().expect(
-                        "timeline should not be requested before RoomDetails is constructed",
-                    );
-                    HistoryViewerTimeline::new(&room)
-                })
-                .clone()
+                .set(HistoryViewerTimeline::new(&room))
+                .expect("timeline is uninitialized");
+
+            // Keep a strong reference to members list.
+            self.membership_lists
+                .set_members(room.get_or_create_members());
+
+            // Initialize the general page.
+            let general_page = self
+                .general_page
+                .get_or_init(|| GeneralPage::new(&room, &self.membership_lists));
+            self.obj().add(general_page);
+        }
+
+        /// The timeline for the history viewers.
+        fn timeline(&self) -> &HistoryViewerTimeline {
+            self.timeline.get().expect("timeline is initialized")
+        }
+
+        /// Show the subpage with the given name.
+        pub(super) fn show_subpage(&self, name: SubpageName, is_initial: bool) {
+            let room = self.room.get().expect("room is initialized");
+
+            let mut subpages = self.subpages.borrow_mut();
+            let subpage = subpages.entry(name).or_insert_with(|| match name {
+                SubpageName::EditDetails => EditDetailsSubpage::new(room).upcast(),
+                SubpageName::Members => MembersPage::new(room, &self.membership_lists).upcast(),
+                SubpageName::Invite => InviteSubpage::new(room).upcast(),
+                SubpageName::VisualMediaHistory => {
+                    VisualMediaHistoryViewer::new(self.timeline()).upcast()
+                }
+                SubpageName::FileHistory => FileHistoryViewer::new(self.timeline()).upcast(),
+                SubpageName::AudioHistory => AudioHistoryViewer::new(self.timeline()).upcast(),
+                SubpageName::Addresses => AddressesSubpage::new(room).upcast(),
+                SubpageName::Permissions => PermissionsSubpage::new(&room.permissions()).upcast(),
+            });
+
+            if is_initial {
+                subpage.set_can_pop(false);
+            }
+
+            self.obj().push_subpage(subpage);
         }
     }
 }
@@ -135,10 +226,13 @@ mod imp {
 glib::wrapper! {
     /// Preference Window to display and update room details.
     pub struct RoomDetails(ObjectSubclass<imp::RoomDetails>)
-        @extends gtk::Widget, gtk::Window, adw::Window, gtk::Root, adw::PreferencesWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, gtk::Root, adw::PreferencesWindow,
+        @implements gtk::Accessible;
 }
 
 impl RoomDetails {
+    /// Construct a `RoomDetails` for the given room with the given parent
+    /// window.
     pub fn new(parent_window: Option<&gtk::Window>, room: &Room) -> Self {
         glib::Object::builder()
             .property("transient-for", parent_window)
@@ -146,36 +240,8 @@ impl RoomDetails {
             .build()
     }
 
-    /// Show the subpage with the given name.
-    fn show_subpage(&self, name: SubpageName, is_initial: bool) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let mut subpages = imp.subpages.borrow_mut();
-        let subpage = subpages.entry(name).or_insert_with(|| match name {
-            SubpageName::EditDetails => EditDetailsSubpage::new(&room).upcast(),
-            SubpageName::Members => MembersPage::new(&room).upcast(),
-            SubpageName::Invite => InviteSubpage::new(&room).upcast(),
-            SubpageName::VisualMediaHistory => {
-                VisualMediaHistoryViewer::new(&self.timeline()).upcast()
-            }
-            SubpageName::FileHistory => FileHistoryViewer::new(&self.timeline()).upcast(),
-            SubpageName::AudioHistory => AudioHistoryViewer::new(&self.timeline()).upcast(),
-            SubpageName::Addresses => AddressesSubpage::new(&room).upcast(),
-            SubpageName::Permissions => PermissionsSubpage::new(&room.permissions()).upcast(),
-        });
-
-        if is_initial {
-            subpage.set_can_pop(false);
-        }
-
-        self.push_subpage(subpage);
-    }
-
     /// Show the given subpage as the initial page.
     pub fn show_initial_subpage(&self, name: SubpageName) {
-        self.show_subpage(name, true);
+        self.imp().show_subpage(name, true);
     }
 }

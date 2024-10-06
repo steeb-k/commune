@@ -26,7 +26,7 @@
           <object class="GtkBox">
             <property name="spacing">6</property>
             <child>
-              <object class="GtkLabel" id="title">
+              <object class="GtkLabel">
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
@@ -40,7 +40,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkImage" id="verified_icon">
+              <object class="GtkImage">
                 <property name="icon-name">verified-symbolic</property>
                 <property name="tooltip-text" translatable="yes">Identity Verified</property>
                 <binding name="visible">
@@ -55,7 +55,6 @@
             </child>
             <child>
               <object class="RoleBadge" id="role_badge">
-                <property name="visible" bind-source="role_badge" bind-property="is-default-role" bind-flags="sync-create | invert-boolean"/>
                 <binding name="role">
                   <lookup name="role" type="Member">
                     <lookup name="member">ContentMemberRow</lookup>
@@ -66,7 +65,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="subtitle">
+          <object class="GtkLabel">
             <property name="hexpand">True</property>
             <property name="halign">start</property>
             <property name="ellipsize">end</property>

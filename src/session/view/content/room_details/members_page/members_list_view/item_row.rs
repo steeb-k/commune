@@ -1,8 +1,14 @@
 use adw::{prelude::BinExt, subclass::prelude::*};
 use gtk::{glib, glib::prelude::*};
 
-use super::{MemberRow, MembershipSubpageItem, MembershipSubpageRow};
-use crate::{components::LoadingRow, session::model::Member};
+use super::MembershipSubpageRow;
+use crate::{
+    components::LoadingRow,
+    session::{
+        model::Member,
+        view::content::room_details::{MemberRow, MembershipSubpageItem},
+    },
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -16,7 +22,7 @@ mod imp {
         ///
         /// It can be a `Member` or a `MemberSubpageItem`.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<glib::Object>>,
+        item: RefCell<Option<glib::Object>>,
     }
 
     #[glib::object_subclass]
@@ -47,7 +53,7 @@ mod imp {
                     let child = if let Some(child) = obj.child().and_downcast::<MemberRow>() {
                         child
                     } else {
-                        let child = MemberRow::new();
+                        let child = MemberRow::new(true);
                         obj.set_child(Some(&child));
                         child
                     };

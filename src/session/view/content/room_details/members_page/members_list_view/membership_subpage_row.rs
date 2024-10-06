@@ -2,8 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::npgettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::MembershipSubpageItem;
-use crate::session::model::Membership;
+use crate::session::{
+    model::Membership, view::content::room_details::membership_subpage_item::MembershipSubpageItem,
+};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -20,17 +21,16 @@ mod imp {
     pub struct MembershipSubpageRow {
         /// The item presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<MembershipSubpageItem>>,
+        item: RefCell<Option<MembershipSubpageItem>>,
         items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The icon of this row.
         #[property(get = Self::icon)]
-        pub icon: PhantomData<Option<String>>,
+        icon: PhantomData<Option<String>>,
         /// The label of this row.
         #[property(get = Self::label)]
-        pub label: PhantomData<Option<String>>,
-        pub gesture: gtk::GestureClick,
+        label: PhantomData<Option<String>>,
         #[template_child]
-        pub members_count: TemplateChild<gtk::Label>,
+        members_count: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -102,7 +102,7 @@ mod imp {
 
         /// The icon of this row.
         fn icon(&self) -> Option<String> {
-            match self.item.borrow().as_ref()?.state() {
+            match self.item.borrow().as_ref()?.membership() {
                 Membership::Invite => Some("user-add-symbolic".to_owned()),
                 Membership::Ban => Some("blocked-symbolic".to_owned()),
                 _ => None,
@@ -114,7 +114,7 @@ mod imp {
             let item = self.item.borrow().clone()?;
             let count = item.model().n_items();
 
-            match item.state() {
+            match item.membership() {
                 // Translators: As in 'Invited Room Member(s)'.
                 Membership::Invite => Some(npgettext("members", "Invited", "Invited", count)),
                 // Translators: As in 'Banned Room Member(s)'.

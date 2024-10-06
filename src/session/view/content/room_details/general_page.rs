@@ -1,6 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{
+    gio,
     glib::{self, clone},
     pango, CompositeTemplate,
 };
@@ -21,7 +22,7 @@ use ruma::{
 };
 use tracing::error;
 
-use super::{room_upgrade_dialog::confirm_room_upgrade, RoomDetails};
+use super::{room_upgrade_dialog::confirm_room_upgrade, MemberRow, MembershipLists, RoomDetails};
 use crate::{
     components::{
         ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
@@ -30,7 +31,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{
-        HistoryVisibilityValue, JoinRuleValue, MemberList, NotificationsRoomSetting, Room,
+        HistoryVisibilityValue, JoinRuleValue, Member, NotificationsRoomSetting, Room,
     },
     spawn, spawn_tokio, toast,
     utils::{
@@ -56,14 +57,18 @@ mod imp {
     )]
     #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
-        /// The presented room.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: BoundObjectWeakRef<Room>,
-        pub room_members: RefCell<Option<MemberList>>,
         #[template_child]
         pub room_topic: TemplateChild<gtk::Label>,
         #[template_child]
         pub edit_details_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub direct_members_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        pub direct_members_list: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        pub no_direct_members_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub members_row_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         pub members_row: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -98,6 +103,12 @@ mod imp {
         pub upgrade_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
+        /// The presented room.
+        #[property(get, set = Self::set_room, construct_only)]
+        room: BoundObjectWeakRef<Room>,
+        /// The lists of members filtered by membership for the room.
+        #[property(get, set = Self::set_membership_lists, construct_only)]
+        membership_lists: glib::WeakRef<MembershipLists>,
         /// The notifications setting for the room.
         #[property(get = Self::notifications_setting, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         pub notifications_setting: PhantomData<NotificationsRoomSetting>,
@@ -118,6 +129,7 @@ mod imp {
         pub alt_aliases_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub capabilities: RefCell<Capabilities>,
+        direct_members_list_has_bound_model: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -186,14 +198,8 @@ mod imp {
 
     impl GeneralPage {
         /// Set the presented room.
-        fn set_room(&self, room: Option<Room>) {
-            let Some(room) = room else {
-                // Just ignore when room is missing.
-                return;
-            };
+        fn set_room(&self, room: &Room) {
             let obj = self.obj();
-
-            self.disconnect_all();
 
             let membership_handler = room.own_member().connect_membership_notify(clone!(
                 #[weak]
@@ -253,10 +259,17 @@ mod imp {
 
             let room_handler_ids = vec![
                 room.connect_joined_members_count_notify(clone!(
-                    #[weak]
-                    obj,
-                    move |room| {
-                        obj.member_count_changed(room.joined_members_count());
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_members();
+                    }
+                )),
+                room.connect_is_direct_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_members();
                     }
                 )),
                 room.connect_notifications_setting_notify(clone!(
@@ -296,13 +309,7 @@ mod imp {
                 )),
             ];
 
-            obj.member_count_changed(room.joined_members_count());
-
-            // Keep strong reference to members list.
-            self.room_members
-                .replace(Some(room.get_or_create_members()));
-
-            self.room.set(&room, room_handler_ids);
+            self.room.set(room, room_handler_ids);
             obj.notify_room();
 
             if let Some(session) = room.session() {
@@ -329,6 +336,7 @@ mod imp {
             }
 
             self.init_edit_details();
+            self.update_members();
             obj.update_notifications();
             obj.update_edit_addresses_button();
             obj.update_addresses();
@@ -349,6 +357,12 @@ mod imp {
             ));
 
             self.load_capabilities();
+        }
+
+        /// Set the lists of members filtered by membership for the room.
+        fn set_membership_lists(&self, membership_lists: &MembershipLists) {
+            self.membership_lists.set(Some(membership_lists));
+            self.update_members();
         }
 
         /// The notifications setting for the room.
@@ -423,6 +437,76 @@ mod imp {
             self.expr_watch.replace(Some(expr_watch));
         }
 
+        /// Update the members section.
+        fn update_members(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let Some(membership_lists) = self.membership_lists.upgrade() else {
+                return;
+            };
+
+            let joined_members_count = membership_lists.joined().n_items();
+
+            // When the room is direct there should only be 2 members in most cases, but use
+            // the members count to make sure we do not show a list that is too long.
+            let is_direct_with_few_members = room.is_direct() && joined_members_count < 5;
+            if is_direct_with_few_members {
+                let title = ngettext("Member", "Members", joined_members_count);
+                self.direct_members_group.set_title(&title);
+
+                // Set model of direct members list dynamically to avoid creating unnecessary
+                // widgets in the background.
+                if !self.direct_members_list_has_bound_model.get() {
+                    self.direct_members_list
+                        .bind_model(Some(&membership_lists.joined()), |item| {
+                            let member = item
+                                .downcast_ref::<Member>()
+                                .expect("joined members list contains members");
+                            let member_row = MemberRow::new(false);
+                            member_row.set_member(Some(member));
+
+                            gtk::ListBoxRow::builder()
+                                .selectable(false)
+                                .child(&member_row)
+                                .action_name("details.show-member")
+                                .action_target(&member.user_id().as_str().to_variant())
+                                .build()
+                                .upcast()
+                        });
+                    self.direct_members_list_has_bound_model.set(true);
+                }
+
+                let has_members = joined_members_count > 0;
+                self.direct_members_list.set_visible(has_members);
+                self.no_direct_members_label.set_visible(!has_members);
+            } else {
+                // Use the maximum between the count of joined members in the local list, and
+                // the one provided by the homeserver. The homeserver is usually right, except
+                // when we just joined a room, where it will be 0 for a while.
+                let joined_members_count =
+                    room.joined_members_count().max(joined_members_count as u64);
+                self.members_row.set_count(joined_members_count.to_string());
+
+                let n = joined_members_count.try_into().unwrap_or(u32::MAX);
+                let title = ngettext("Member", "Members", n);
+                self.members_row.set_title(&title);
+
+                if self.direct_members_list_has_bound_model.get() {
+                    self.direct_members_list
+                        .bind_model(None::<&gio::ListModel>, |_item| {
+                            gtk::ListBoxRow::new().upcast()
+                        });
+                    self.direct_members_list_has_bound_model.set(false);
+                }
+            }
+
+            self.direct_members_group
+                .set_visible(is_direct_with_few_members);
+            self.members_row_group
+                .set_visible(!is_direct_with_few_members);
+        }
+
         /// Disconnect all the signals.
         fn disconnect_all(&self) {
             if let Some(room) = self.room.obj() {
@@ -471,8 +555,11 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl GeneralPage {
-    pub fn new(room: &Room) -> Self {
-        glib::Object::builder().property("room", room).build()
+    pub fn new(room: &Room, membership_lists: &MembershipLists) -> Self {
+        glib::Object::builder()
+            .property("room", room)
+            .property("membership-lists", membership_lists)
+            .build()
     }
 
     /// Unselect the topic of the room.
@@ -493,19 +580,6 @@ impl GeneralPage {
                 }
             }
         ));
-    }
-
-    /// The members of the room.
-    pub fn room_members(&self) -> MemberList {
-        self.imp().room_members.borrow().clone().unwrap()
-    }
-
-    fn member_count_changed(&self, n: u64) {
-        let imp = self.imp();
-        imp.members_row.set_count(format!("{n}"));
-
-        let n = n.try_into().unwrap_or(u32::MAX);
-        imp.members_row.set_title(&ngettext("Member", "Members", n));
     }
 
     /// Update the section about notifications.
