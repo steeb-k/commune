@@ -429,6 +429,22 @@ mod imp {
                 ));
                 self.join_rule_handler.replace(Some(join_rule_handler));
 
+                let can_invite_handler = room.permissions().connect_can_invite_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_invite_action();
+                    }
+                ));
+                self.can_invite_handler.replace(Some(can_invite_handler));
+
+                let is_direct_handler = room.connect_is_direct_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_invite_action();
+                    }
+                ));
                 let tombstoned_handler = room.connect_is_tombstoned_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
@@ -436,16 +452,14 @@ mod imp {
                         imp.update_tombstoned_banner();
                     }
                 ));
-
-                let successor_handler = room.connect_successor_id_string_notify(clone!(
+                let successor_id_handler = room.connect_successor_id_string_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
                         imp.update_tombstoned_banner();
                     }
                 ));
-
-                let successor_room_handler = room.connect_successor_notify(clone!(
+                let successor_handler = room.connect_successor_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -456,9 +470,10 @@ mod imp {
                 self.room.set(
                     room,
                     vec![
+                        is_direct_handler,
                         tombstoned_handler,
+                        successor_id_handler,
                         successor_handler,
-                        successor_room_handler,
                     ],
                 );
 
@@ -492,7 +507,6 @@ mod imp {
                 self.selection_model().set_model(Some(&timeline.items()));
 
                 self.trigger_read_receipts_update();
-                self.init_invite_action();
                 self.scroll_down();
             } else {
                 self.selection_model().set_model(None::<&gio::ListModel>);
@@ -502,6 +516,7 @@ mod imp {
             self.load_more_events_if_needed();
             self.update_room_menu();
             self.update_tombstoned_banner();
+            self.update_invite_action();
 
             let obj = self.obj();
             obj.notify_room();
@@ -897,24 +912,17 @@ mod imp {
             }
         }
 
-        /// Initialize the action to invite members.
-        fn init_invite_action(&self) {
+        // Update the invite action according to the current state.
+        fn update_invite_action(&self) {
             let Some(room) = self.room.obj() else {
                 return;
             };
-            let obj = self.obj();
-            let permissions = room.permissions();
 
-            let can_invite_handler = permissions.connect_can_invite_notify(clone!(
-                #[weak]
-                obj,
-                move |permissions| {
-                    obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
-                }
-            ));
-            self.can_invite_handler.replace(Some(can_invite_handler));
+            // Enable the invite action when we can invite but it is not a direct room.
+            let can_invite = !room.is_direct() && room.permissions().can_invite();
 
-            obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
+            self.obj()
+                .action_set_enabled("room-history.invite-members", can_invite);
         }
     }
 }

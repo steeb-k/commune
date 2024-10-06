@@ -93,13 +93,7 @@ mod imp {
                 _ => return,
             };
 
-            let permissions = room.permissions();
-            let subpage = MembersListView::new(&model, membership, tag);
-            permissions
-                .bind_property("can-invite", &subpage, "can-invite")
-                .sync_create()
-                .build();
-
+            let subpage = MembersListView::new(&room, &model, membership, tag);
             self.navigation_view.push(&subpage);
         }
     }

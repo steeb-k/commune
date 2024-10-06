@@ -13,7 +13,7 @@ use self::{item_row::ItemRow, membership_subpage_row::MembershipSubpageRow};
 use crate::{
     prelude::*,
     session::{
-        model::{Member, Membership},
+        model::{Member, Membership, Room},
         view::content::room_details::MembershipSubpageItem,
     },
     utils::expression,
@@ -41,11 +41,15 @@ mod imp {
         search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         list_view: TemplateChild<gtk::ListView>,
-        filtered_model: gtk::FilterListModel,
+        /// The room containing the members to present.
+        #[property(get, set = Self::set_room, construct_only)]
+        room: glib::WeakRef<Room>,
         /// The model used for this view.
         #[property(get = Self::model, set = Self::set_model, construct_only)]
         model: PhantomData<Option<gio::ListModel>>,
-        /// The model used to filter the model.
+        /// The model with the search filter.
+        filtered_model: gtk::FilterListModel,
+        /// The membership used to filter the model.
         #[property(get, construct_only, builder(Membership::default()))]
         membership: Cell<Membership>,
         /// Whether our own user can send an invite in the current room.
@@ -156,38 +160,39 @@ mod imp {
     impl NavigationPageImpl for MembersListView {}
 
     impl MembersListView {
+        /// Set the room containing the members to present.
+        fn set_room(&self, room: &Room) {
+            self.room.set(Some(room));
+
+            // Show the invite button when we can invite but it is not a direct room.
+            let can_invite_expr = room.permissions().property_expression("can-invite");
+            let is_direct_expr = room.property_expression("is-direct");
+            expression::and(can_invite_expr, expression::not(is_direct_expr)).bind(
+                &*self.obj(),
+                "can-invite",
+                None::<&glib::Object>,
+            );
+        }
+
         /// The model used for this view.
         fn model(&self) -> Option<gio::ListModel> {
             self.filtered_model.model()
         }
 
         /// Set the model used for this view.
-        fn set_model(&self, model: Option<gio::ListModel>) {
-            let prev_model = self.model();
+        fn set_model(&self, model: &gio::ListModel) {
+            self.filtered_model.set_model(Some(model));
 
-            if prev_model == model {
-                return;
-            }
-
-            if let Some(model) = prev_model {
-                if let Some(handler) = self.items_changed_handler.take() {
-                    model.disconnect(handler);
+            let items_changed_handler = model.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_title();
                 }
-            }
+            ));
+            self.items_changed_handler
+                .replace(Some(items_changed_handler));
 
-            if let Some(model) = &model {
-                let items_changed_handler = model.connect_items_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_, _, _, _| {
-                        imp.update_title();
-                    }
-                ));
-                self.items_changed_handler
-                    .replace(Some(items_changed_handler));
-            }
-
-            self.filtered_model.set_model(model.as_ref());
             self.obj().notify_model();
         }
 
@@ -228,9 +233,16 @@ glib::wrapper! {
 }
 
 impl MembersListView {
-    /// Construct a new `MembersListView` with the given list and membership.
-    pub fn new(model: &impl IsA<gio::ListModel>, membership: Membership, tag: &str) -> Self {
+    /// Construct a new `MembersListView` with the given room, list and
+    /// membership.
+    pub fn new(
+        room: &Room,
+        model: &impl IsA<gio::ListModel>,
+        membership: Membership,
+        tag: &str,
+    ) -> Self {
         glib::Object::builder()
+            .property("room", room)
             .property("model", model)
             .property("membership", membership)
             .property("tag", tag)
