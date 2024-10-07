@@ -381,7 +381,13 @@ fn build_media_message_content(
                 caption_widget
             };
 
-        caption_widget.set_caption(caption, formatted_caption, room, format, detect_at_room);
+        caption_widget.set_caption(
+            caption.to_owned(),
+            formatted_caption.cloned(),
+            room,
+            format,
+            detect_at_room,
+        );
 
         let new_widget =
             build_media_content(caption_widget.child(), media_message, format, &session);

@@ -813,6 +813,8 @@ impl ItemRow {
 
             if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
                 if let Some((caption, _)) = media_message.caption() {
+                    let caption = caption.to_owned();
+
                     // Copy caption.
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(

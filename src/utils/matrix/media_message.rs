@@ -25,10 +25,7 @@ use crate::{
 /// Get the filename of a media message.
 macro_rules! filename {
     ($message:ident, $mime_fallback:expr) => {{
-        let mut filename = match &$message.filename {
-            Some(filename) if *filename != $message.body => filename.clone(),
-            _ => $message.body.clone(),
-        };
+        let filename = $message.filename();
 
         if filename.is_empty() {
             let mimetype = $message
@@ -36,21 +33,10 @@ macro_rules! filename {
                 .as_ref()
                 .and_then(|info| info.mimetype.as_deref());
 
-            filename = $crate::utils::media::filename_for_mime(mimetype, $mime_fallback);
+            $crate::utils::media::filename_for_mime(mimetype, $mime_fallback)
+        } else {
+            filename.to_owned()
         }
-
-        filename
-    }};
-}
-
-/// Get the caption of a media message.
-macro_rules! caption {
-    ($message:ident) => {{
-        $message
-            .filename
-            .as_deref()
-            .filter(|filename| *filename != $message.body)
-            .map(|_| ($message.body.clone(), $message.formatted.clone()))
     }};
 }
 
@@ -97,12 +83,12 @@ impl MediaMessage {
     /// The caption of the media, if any.
     ///
     /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub fn caption(&self) -> Option<(String, Option<FormattedBody>)> {
+    pub fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
         match self {
-            Self::Audio(c) => caption!(c),
-            Self::File(c) => caption!(c),
-            Self::Image(c) => caption!(c),
-            Self::Video(c) => caption!(c),
+            Self::Audio(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
+            Self::File(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
+            Self::Image(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
+            Self::Video(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
             Self::Sticker(_) => None,
         }
     }
@@ -248,10 +234,10 @@ impl VisualMediaMessage {
     /// The caption of the media, if any.
     ///
     /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub fn caption(&self) -> Option<(String, Option<FormattedBody>)> {
+    pub fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
         match self {
-            Self::Image(c) => caption!(c),
-            Self::Video(c) => caption!(c),
+            Self::Image(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
+            Self::Video(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
             Self::Sticker(_) => None,
         }
     }
