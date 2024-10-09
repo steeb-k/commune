@@ -5,7 +5,7 @@ use ruma::{
     api::client::space::{get_hierarchy, SpaceHierarchyRoomsChunk},
     assign, uint, OwnedRoomAliasId, OwnedRoomId,
 };
-use tracing::{debug, error};
+use tracing::{debug, warn};
 
 use super::Session;
 use crate::{
@@ -260,7 +260,7 @@ impl RemoteRoom {
                 match handle.await.unwrap() {
                     Ok(response) => response.room_id,
                     Err(error) => {
-                        error!("Could not resolve room alias `{}`: {error}", uri.id);
+                        warn!("Could not resolve room alias `{}`: {error}", uri.id);
                         imp.set_loading_state(LoadingState::Error);
                         return;
                     }
@@ -292,7 +292,7 @@ impl RemoteRoom {
                 }
             }
             Err(error) => {
-                error!("Could not get room details for room `{}`: {error}", uri.id);
+                warn!("Could not get room details for room `{}`: {error}", uri.id);
                 imp.set_loading_state(LoadingState::Error);
             }
         }
