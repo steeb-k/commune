@@ -216,6 +216,10 @@ mod imp {
         /// An ongoing identity verification in this room.
         #[property(get, set = Self::set_verification, nullable, explicit_notify)]
         verification: BoundObjectWeakRef<IdentityVerification>,
+        /// Whether the room info is initialized.
+        ///
+        /// Used to silence logs during initialization.
+        is_room_info_initialized: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -267,6 +271,7 @@ mod imp {
                         imp.update_with_room_info(imp.matrix_room().clone_info())
                             .await;
                         imp.watch_room_info();
+                        imp.is_room_info_initialized.set(true);
                     }
                 )
             );
@@ -531,7 +536,9 @@ mod imp {
             // Check if the previous state was different.
             let room_state = self.matrix_room().state();
             if !old_category.is_state(room_state) {
-                debug!(room_id = %self.room_id(), ?room_state, "The state of the room changed");
+                if self.is_room_info_initialized.get() {
+                    debug!(room_id = %self.room_id(), ?room_state, "The state of the room changed");
+                }
 
                 match room_state {
                     RoomState::Joined => {
