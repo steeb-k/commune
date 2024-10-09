@@ -277,17 +277,6 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.update_is_direct().await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
                         imp.load_own_member().await;
                     }
                 )
@@ -1319,6 +1308,7 @@ mod imp {
             self.update_avatar();
             self.update_topic();
             self.update_category();
+            self.update_is_direct().await;
             self.update_tombstone();
             self.set_joined_members_count(room_info.joined_members_count());
             self.update_is_encrypted().await;
@@ -2093,11 +2083,6 @@ impl Room {
         }
 
         self.imp().set_latest_activity(latest_activity);
-    }
-
-    /// Update whether the room is direct or not.
-    pub async fn update_is_direct(&self) {
-        self.imp().update_is_direct().await;
     }
 
     /// Update the successor of this room.

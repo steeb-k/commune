@@ -11,10 +11,7 @@ use gtk::{
 };
 use indexmap::IndexMap;
 use matrix_sdk::sync::RoomUpdates;
-use ruma::{
-    events::{direct::DirectEventContent, GlobalAccountDataEvent},
-    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId,
-};
+use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
 use tracing::{error, warn};
 
 mod room_list_metainfo;
@@ -25,7 +22,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{Room, Session},
-    spawn, spawn_tokio,
+    spawn_tokio,
 };
 
 mod imp {
@@ -93,36 +90,6 @@ mod imp {
                 .get_index(position as usize)
                 .map(|(_, v)| v.upcast_ref::<glib::Object>())
                 .cloned()
-        }
-    }
-
-    impl RoomList {
-        /// Listen to changes to the list of direct rooms.
-        pub(super) fn set_up_direct_room_handler(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            session.client().add_event_handler(
-                move |_event: GlobalAccountDataEvent<DirectEventContent>| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    // We update all rooms as we do not know which
-                                    // ones are no longer direct.
-                                    for room in obj.snapshot() {
-                                        room.update_is_direct().await;
-                                    }
-                                }
-                            });
-                        });
-                    }
-                },
-            );
         }
     }
 }
@@ -328,7 +295,6 @@ impl RoomList {
         imp.list.borrow_mut().extend(rooms);
 
         self.items_added(added);
-        imp.set_up_direct_room_handler();
     }
 
     pub fn handle_room_updates(&self, rooms: RoomUpdates) {
