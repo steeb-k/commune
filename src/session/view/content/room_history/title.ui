@@ -2,10 +2,11 @@
 <interface>
   <template class="RoomHistoryTitle" parent="AdwBin">
     <child>
-      <object class="GtkButton">
+      <object class="GtkButton" id="button">
         <style>
           <class name="flat"/>
         </style>
+        <property name="valign">center</property>
         <property name="tooltip-text" translatable="yes">Open Room Details</property>
         <property name="action-name">room-history.details</property>
         <property name="child">

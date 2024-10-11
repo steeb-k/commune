@@ -795,6 +795,11 @@ room-title {
   padding: 3px 0;
 }
 
+room-title.with-subtitle button {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 room-title .title {
   padding: 0;
   font-weight: bold;
@@ -803,6 +808,11 @@ room-title .title {
 room-title .subtitle {
   padding: 0;
   font-weight: normal;
+}
+
+room-title.with-subtitle .title,
+room-title.with-subtitle .subtitle {
+  margin-top: -0.2rem;
 }
 
 sender-avatar {

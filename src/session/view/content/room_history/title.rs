@@ -14,17 +14,19 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/title.ui")]
     #[properties(wrapper_type = super::RoomHistoryTitle)]
     pub struct RoomHistoryTitle {
+        #[template_child]
+        button: TemplateChild<gtk::Button>,
+        #[template_child]
+        subtitle_label: TemplateChild<gtk::Label>,
         // The room to present the title of.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: BoundObjectWeakRef<Room>,
+        room: BoundObjectWeakRef<Room>,
         // The title of the room that can be presented on a single line.
         #[property(get)]
-        pub title: RefCell<String>,
+        title: RefCell<String>,
         // The subtitle of the room that can be presented on a single line.
         #[property(get)]
-        pub subtitle: RefCell<Option<String>>,
-        #[template_child]
-        pub subtitle_label: TemplateChild<gtk::Label>,
+        subtitle: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -127,7 +129,19 @@ mod imp {
             let has_subtitle = subtitle.is_some();
 
             self.subtitle.replace(subtitle);
-            self.obj().notify_subtitle();
+
+            let obj = self.obj();
+            obj.notify_subtitle();
+
+            let button_valign = if has_subtitle {
+                obj.add_css_class("with-subtitle");
+                gtk::Align::Fill
+            } else {
+                obj.remove_css_class("with-subtitle");
+                gtk::Align::Center
+            };
+
+            self.button.set_valign(button_valign);
             self.subtitle_label.set_visible(has_subtitle);
         }
     }
