@@ -31,7 +31,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{
-        HistoryVisibilityValue, JoinRuleValue, Member, NotificationsRoomSetting, Room,
+        HistoryVisibilityValue, JoinRuleValue, Member, NotificationsRoomSetting, Room, RoomCategory,
     },
     spawn, spawn_tokio, toast,
     utils::{
@@ -272,6 +272,13 @@ mod imp {
                         imp.update_members();
                     }
                 )),
+                room.connect_category_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_members();
+                    }
+                )),
                 room.connect_notifications_setting_notify(clone!(
                     #[weak]
                     obj,
@@ -481,11 +488,20 @@ mod imp {
                 self.direct_members_list.set_visible(has_members);
                 self.no_direct_members_label.set_visible(!has_members);
             } else {
+                let mut server_joined_members_count = room.joined_members_count();
+
+                if room.category() == RoomCategory::Left {
+                    // The number of joined members count from the homeserver is only updated when
+                    // we are joined, so we must at least remove ourself from the count after we
+                    // left.
+                    server_joined_members_count = server_joined_members_count.saturating_sub(1);
+                }
+
                 // Use the maximum between the count of joined members in the local list, and
                 // the one provided by the homeserver. The homeserver is usually right, except
                 // when we just joined a room, where it will be 0 for a while.
                 let joined_members_count =
-                    room.joined_members_count().max(joined_members_count as u64);
+                    server_joined_members_count.max(joined_members_count as u64);
                 self.members_row.set_count(joined_members_count.to_string());
 
                 let n = joined_members_count.try_into().unwrap_or(u32::MAX);
