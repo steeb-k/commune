@@ -378,7 +378,7 @@ impl UserPage {
                     // Translators: As in, 'The room member knocked to request access to the room'.
                     .set_label(&pgettext("member", "Knocked"));
             }
-            Membership::Custom => {
+            Membership::Unsupported => {
                 imp.membership_label
                     // Translators: As in, 'The room member has an unknown role'.
                     .set_label(&pgettext("member", "Unknown"));

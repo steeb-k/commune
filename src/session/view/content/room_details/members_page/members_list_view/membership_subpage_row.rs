@@ -1,6 +1,5 @@
-use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::npgettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
     model::Membership, view::content::room_details::membership_subpage_item::MembershipSubpageItem,
@@ -23,9 +22,9 @@ mod imp {
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         item: RefCell<Option<MembershipSubpageItem>>,
         items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
-        /// The icon of this row.
-        #[property(get = Self::icon)]
-        icon: PhantomData<Option<String>>,
+        /// The name of the icon of this row.
+        #[property(get = Self::icon_name)]
+        icon_name: PhantomData<Option<String>>,
         /// The label of this row.
         #[property(get = Self::label)]
         label: PhantomData<Option<String>>,
@@ -37,7 +36,7 @@ mod imp {
     impl ObjectSubclass for MembershipSubpageRow {
         const NAME: &'static str = "MembersPageMembershipSubpageRow";
         type Type = super::MembershipSubpageRow;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -60,7 +59,7 @@ mod imp {
     }
 
     impl WidgetImpl for MembershipSubpageRow {}
-    impl BinImpl for MembershipSubpageRow {}
+    impl ListBoxRowImpl for MembershipSubpageRow {}
 
     impl MembershipSubpageRow {
         /// Set the item presented by this row.
@@ -96,17 +95,20 @@ mod imp {
             self.item.replace(item);
 
             obj.notify_item();
-            obj.notify_icon();
+            obj.notify_icon_name();
             obj.notify_label();
         }
 
-        /// The icon of this row.
-        fn icon(&self) -> Option<String> {
-            match self.item.borrow().as_ref()?.membership() {
-                Membership::Invite => Some("user-add-symbolic".to_owned()),
-                Membership::Ban => Some("blocked-symbolic".to_owned()),
-                _ => None,
-            }
+        /// The name of the icon of this row.
+        fn icon_name(&self) -> Option<String> {
+            Some(
+                self.item
+                    .borrow()
+                    .as_ref()?
+                    .membership()
+                    .icon_name()
+                    .to_owned(),
+            )
         }
 
         /// The label of this row.
@@ -132,7 +134,7 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a `MembershipSubpageItem`.
     pub struct MembershipSubpageRow(ObjectSubclass<imp::MembershipSubpageRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
 impl MembershipSubpageRow {

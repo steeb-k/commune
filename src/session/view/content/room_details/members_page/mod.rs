@@ -86,14 +86,7 @@ mod imp {
                 return;
             };
 
-            let model = match membership {
-                Membership::Join => membership_lists.joined_full(),
-                Membership::Invite => membership_lists.invited(),
-                Membership::Ban => membership_lists.banned(),
-                _ => return,
-            };
-
-            let subpage = MembersListView::new(&room, &model, membership, tag);
+            let subpage = MembersListView::new(&room, &membership_lists, membership);
             self.navigation_view.push(&subpage);
         }
     }

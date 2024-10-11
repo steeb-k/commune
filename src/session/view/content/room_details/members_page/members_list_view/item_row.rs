@@ -1,17 +1,14 @@
-use adw::{prelude::BinExt, subclass::prelude::*};
-use gtk::{glib, glib::prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::glib;
 
 use super::MembershipSubpageRow;
-use crate::{
-    components::LoadingRow,
-    session::{
-        model::Member,
-        view::content::room_details::{MemberRow, MembershipSubpageItem},
-    },
+use crate::session::{
+    model::Member,
+    view::content::room_details::{MemberRow, MembershipSubpageItem},
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use super::*;
 
@@ -23,6 +20,9 @@ mod imp {
         /// It can be a `Member` or a `MemberSubpageItem`.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         item: RefCell<Option<glib::Object>>,
+        /// Whether this row can be activated.
+        #[property(get)]
+        activatable: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -58,19 +58,24 @@ mod imp {
                         child
                     };
                     child.set_member(Some(member.clone()));
+                    self.set_activatable(true);
                 } else if let Some(item) = item.downcast_ref::<MembershipSubpageItem>() {
                     let child =
                         if let Some(child) = obj.child().and_downcast::<MembershipSubpageRow>() {
                             child
                         } else {
                             let child = MembershipSubpageRow::new();
+                            child.set_activatable(false);
+
                             obj.set_child(Some(&child));
                             child
                         };
 
                     child.set_item(Some(item.clone()));
-                } else if let Some(child) = item.downcast_ref::<LoadingRow>() {
-                    obj.set_child(Some(child))
+                    self.set_activatable(true);
+                } else if let Some(child) = item.downcast_ref::<gtk::Widget>() {
+                    obj.set_child(Some(child));
+                    self.set_activatable(false);
                 } else {
                     unimplemented!("The object {item:?} doesn't have a widget implementation");
                 }
@@ -78,6 +83,16 @@ mod imp {
 
             self.item.replace(item);
             obj.notify_item();
+        }
+
+        /// Set whether this row can be activated.
+        fn set_activatable(&self, activatable: bool) {
+            if self.activatable.get() == activatable {
+                return;
+            }
+
+            self.activatable.set(activatable);
+            self.obj().notify_activatable();
         }
     }
 }

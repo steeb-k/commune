@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="MembersPageMembershipSubpageRow" parent="AdwBin">
+  <template class="MembersPageMembershipSubpageRow" parent="GtkListBoxRow">
+    <property name="selectable">False</property>
     <accessibility>
       <relation name="labelled-by">title</relation>
     </accessibility>
-    <child>
+    <property name="child">
       <object class="GtkBox">
         <property name="spacing">6</property>
         <child>
           <object class="GtkImage">
             <property name="valign">center</property>
             <property name="accessible-role">presentation</property>
-            <property name="icon-name" bind-source="MembersPageMembershipSubpageRow" bind-property="icon" bind-flags="sync-create"/>
+            <property name="icon-name" bind-source="MembersPageMembershipSubpageRow" bind-property="icon-name" bind-flags="sync-create"/>
             <style>
               <class name="icon"/>
             </style>
@@ -39,6 +40,6 @@
           </object>
         </child>
       </object>
-    </child>
+    </property>
   </template>
 </interface>

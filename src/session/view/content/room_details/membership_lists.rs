@@ -170,6 +170,14 @@ mod imp {
                 loading_row
             } else {
                 let loading_row = LoadingRow::new();
+                loading_row.connect_retry(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.members.obj().reload();
+                    }
+                ));
+
                 self.extra_joined_items.insert(0, &loading_row);
                 loading_row
             };
@@ -206,9 +214,10 @@ mod imp {
             self.invited_is_empty.set(is_empty);
             let position = self.has_loading_row() as u32;
 
-            if is_empty && self.has_membership_item_at(Membership::Invite, position) {
+            let has_invite_row = self.has_membership_item_at(Membership::Invite, position);
+            if is_empty && has_invite_row {
                 self.extra_joined_items.remove(position);
-            } else if !is_empty && !self.has_membership_item_at(Membership::Invite, position) {
+            } else if !is_empty && !has_invite_row {
                 let invite_item = MembershipSubpageItem::new(
                     Membership::Invite,
                     self.invited.get().expect("invited members are initialized"),
@@ -239,9 +248,10 @@ mod imp {
             let mut position = self.has_loading_row() as u32;
             position += self.has_membership_item_at(Membership::Invite, position) as u32;
 
-            if is_empty && self.has_membership_item_at(Membership::Ban, position) {
+            let has_ban_row = self.has_membership_item_at(Membership::Ban, position);
+            if is_empty && has_ban_row {
                 self.extra_joined_items.remove(position);
-            } else if !is_empty && !self.has_membership_item_at(Membership::Ban, position) {
+            } else if !is_empty && !has_ban_row {
                 let invite_item = MembershipSubpageItem::new(
                     Membership::Ban,
                     self.banned.get().expect("banned members are initialized"),

@@ -15,18 +15,34 @@ use super::{
 };
 use crate::{components::PillSource, prelude::*, session::model::User, spawn, spawn_tokio};
 
+/// The possible states of membership of a user in a room.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, glib::Variant)]
-#[variant_enum(repr)]
-#[repr(u32)]
 #[enum_type(name = "Membership")]
 pub enum Membership {
+    /// The user left the room, or was never in the room.
     #[default]
-    Leave = 0,
-    Join = 1,
-    Invite = 2,
-    Ban = 3,
-    Knock = 4,
-    Custom = 5,
+    Leave,
+    /// The user is currently in the room.
+    Join,
+    /// The user was invited to the room.
+    Invite,
+    /// The user was baned from the room.
+    Ban,
+    /// The user knocked on the room.
+    Knock,
+    /// The user is in an unsupported membership state.
+    Unsupported,
+}
+
+impl Membership {
+    /// Get the icon name that represents this membership.
+    pub fn icon_name(&self) -> &'static str {
+        match self {
+            Self::Invite => "user-add-symbolic",
+            Self::Ban => "blocked-symbolic",
+            _ => "users-symbolic",
+        }
+    }
 }
 
 impl From<&MembershipState> for Membership {
@@ -37,7 +53,7 @@ impl From<&MembershipState> for Membership {
             MembershipState::Invite => Membership::Invite,
             MembershipState::Ban => Membership::Ban,
             MembershipState::Knock => Membership::Knock,
-            _ => Membership::Custom,
+            _ => Membership::Unsupported,
         }
     }
 }

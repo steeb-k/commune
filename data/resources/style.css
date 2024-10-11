@@ -985,10 +985,13 @@ audio-history-viewer listview > row:last-child {
 	background: transparent;
 }
 
-members-list row {
-  margin-bottom: 6px;
+members-list listview > row, members-list list > row {
   padding: 8px 12px;
   min-height: 32px;
+}
+
+members-list listview > row {
+  margin-bottom: 6px;
   border-radius: 12px;
 }
 
