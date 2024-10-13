@@ -4,23 +4,23 @@
 # Bruno Lopes da Silva <brunolopesbldsb@gmail.com>, 2018.
 # Enrico Nicoletto <liverig@gmail.com>, 2020, 2021.
 # Samuel Schlemper <samuelschlemper2006@gmail.com>, 2024.
-# Rafael Fontenelle <rafaelff@gnome.org>, 2018-2024.
 # Juliano de Souza Camargo <julianosc@pm.me>, 2024.
+# Rafael Fontenelle <rafaelff@gnome.org>, 2018-2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-30 10:46+0000\n"
-"PO-Revision-Date: 2024-10-01 10:10-0300\n"
-"Last-Translator: Juliano de Souza Camargo <julianosc@pm.me>\n"
+"POT-Creation-Date: 2024-10-10 08:42+0000\n"
+"PO-Revision-Date: 2024-10-12 22:25-0300\n"
+"Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Gtranslator 46.1\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"X-Generator: Gtranslator 47.0\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
@@ -196,7 +196,7 @@ msgstr "Confirmar mudança"
 
 #: src/components/action_button.ui:52 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:142
-#: src/session/view/account_settings/user_sessions_page/mod.ui:83
+#: src/session/view/account_settings/user_sessions_page/mod.ui:79
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
@@ -222,7 +222,6 @@ msgid "Warning"
 msgstr "Aviso"
 
 #: src/components/action_button.ui:126 src/error_page.ui:10
-#: src/session/view/account_settings/user_sessions_page/mod.ui:78
 #: src/session/view/content/room_details/invite_subpage/mod.ui:136
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
 #: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:69
@@ -262,12 +261,12 @@ msgstr "Remover o Avatar"
 msgid "Select New Avatar"
 msgstr "Selecione um novo avatar"
 
-#: src/components/crypto/identity_setup_view.rs:400
+#: src/components/crypto/identity_setup_view.rs:401
 #: src/identity_verification_view/cancelled_page.rs:189
 msgid "Could not send a new verification request"
 msgstr "Falha ao enviar uma requisição de verificação"
 
-#: src/components/crypto/identity_setup_view.rs:451
+#: src/components/crypto/identity_setup_view.rs:452
 msgid "Could not create the crypto identity"
 msgstr "Falha ao criar uma identidade criptografada"
 
@@ -304,8 +303,8 @@ msgstr "Recuperar conta"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:513
-#: src/session/view/account_settings/security_page/mod.rs:249
-#: src/session/view/account_settings/security_page/mod.rs:317
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "Redefinir"
 
@@ -342,7 +341,7 @@ msgstr "Configurar"
 #: src/components/crypto/identity_setup_view.ui:200
 #: src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
-#: src/session/view/account_settings/security_page/mod.rs:252
+#: src/session/view/account_settings/security_page/mod.rs:263
 msgid "Reset Crypto Identity"
 msgstr "Redefinir identidade criptográfica"
 
@@ -359,11 +358,11 @@ msgid "To proceed, you will also need to reset your account recovery key."
 msgstr ""
 "Para proceder, você deve também resetar sua chave de recuperação de conta."
 
-#: src/components/crypto/recovery_setup_view.rs:178
+#: src/components/crypto/recovery_setup_view.rs:180
 msgid "Invalidates the verifications of all users and sessions"
 msgstr "Invalida as verificações de todos os usuários e sessões"
 
-#: src/components/crypto/recovery_setup_view.rs:183
+#: src/components/crypto/recovery_setup_view.rs:185
 msgid ""
 "Required because the crypto identity in the recovery data is incomplete. "
 "Invalidates the verifications of all users and sessions."
@@ -371,11 +370,11 @@ msgstr ""
 "Necessário porque a identidade criptográfica nos dados de recuperação está "
 "incompleta. Invalida as verificações de todos os usuários e sessões."
 
-#: src/components/crypto/recovery_setup_view.rs:193
+#: src/components/crypto/recovery_setup_view.rs:195
 msgid "You might not be able to read your past encrypted messages anymore"
 msgstr "Você pode não conseguir ler suas mensagens criptografadas anteriores"
 
-#: src/components/crypto/recovery_setup_view.rs:198
+#: src/components/crypto/recovery_setup_view.rs:200
 msgid ""
 "Required because the backup is not set up properly. You might not be able to "
 "read your past encrypted messages anymore."
@@ -383,7 +382,7 @@ msgstr ""
 "Necessário porque o backup não está configurado corretamente. Você pode não "
 "conseguir ler suas mensagens criptografadas anteriores."
 
-#: src/components/crypto/recovery_setup_view.rs:216
+#: src/components/crypto/recovery_setup_view.rs:218
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
@@ -392,7 +391,7 @@ msgstr ""
 "Você precisará dela para recuperar sua conta se perder o acesso a todas as "
 "suas sessões."
 
-#: src/components/crypto/recovery_setup_view.rs:218
+#: src/components/crypto/recovery_setup_view.rs:220
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
@@ -401,28 +400,29 @@ msgstr ""
 "seguro. Você precisará dela para recuperar sua conta se perder o acesso a "
 "todas as suas sessões."
 
-#: src/components/crypto/recovery_setup_view.rs:299
+#: src/components/crypto/recovery_setup_view.rs:301
 msgid "The recovery passphrase or key is invalid"
 msgstr "A senha de recuperação ou chave é inválido(a)."
 
-#: src/components/crypto/recovery_setup_view.rs:302
+#: src/components/crypto/recovery_setup_view.rs:304
 msgid "Could not access recovery data"
 msgstr "Falha ao acessar os dados de recuperação"
 
-#: src/components/crypto/recovery_setup_view.rs:358
+#: src/components/crypto/recovery_setup_view.rs:360
 msgid "Could not reset the crypto identity"
 msgstr "Falha ao resetar a identidade criptográfica"
 
-#: src/components/crypto/recovery_setup_view.rs:382
-#: src/components/crypto/recovery_setup_view.rs:407
+#: src/components/crypto/recovery_setup_view.rs:412
+#: src/components/crypto/recovery_setup_view.rs:421
+#: src/components/crypto/recovery_setup_view.rs:447
 msgid "Could not reset account recovery"
 msgstr "Falha ao resetar a recuperação de conta"
 
-#: src/components/crypto/recovery_setup_view.rs:442
+#: src/components/crypto/recovery_setup_view.rs:482
 msgid "Could not reset account recovery key"
 msgstr "Falha ao resetar a chave de recuperação"
 
-#: src/components/crypto/recovery_setup_view.rs:480
+#: src/components/crypto/recovery_setup_view.rs:520
 msgid "Could not enable account recovery"
 msgstr "Falha ao ativar a recuperação de conta"
 
@@ -444,8 +444,8 @@ msgid "Recovery Passphrase or Key"
 msgstr "Senha de recuperação ou chave"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:300
+#: src/session/view/account_settings/security_page/mod.rs:348
+#: src/session/view/sidebar/mod.rs:315
 msgid "Recover"
 msgstr "Recuperação"
 
@@ -532,7 +532,7 @@ msgstr "OK"
 
 #: src/components/crypto/recovery_setup_view.ui:430
 #: src/components/crypto/recovery_setup_view.ui:457
-#: src/session/view/account_settings/security_page/mod.rs:332
+#: src/session/view/account_settings/security_page/mod.rs:343
 msgid "Account Recovery Incomplete"
 msgstr "Recuperação de conta incompleta"
 
@@ -595,7 +595,7 @@ msgstr "C_onfirmar"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:225
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:996
+#: src/session/view/content/room_history/mod.rs:843
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Ver"
@@ -643,7 +643,7 @@ msgstr "Digite um ID de sala, um apelido ou um link para procurar uma sala"
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:999
+#: src/session/view/content/room_history/mod.rs:846
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Entrar"
@@ -704,11 +704,11 @@ msgstr "Sair"
 #: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:1021
+#: src/session/view/content/room_details/general_page.rs:1102
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:898
-#: src/session/view/content/room_history/item_row.rs:952
+#: src/session/view/content/room_history/item_row.rs:874
+#: src/session/view/content/room_history/item_row.rs:928
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -854,7 +854,7 @@ msgstr[1] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:899
+#: src/session/view/content/room_history/item_row.rs:875
 msgid "Remove"
 msgstr "Remover"
 
@@ -875,7 +875,7 @@ msgstr ""
 "tentar carregar mais indo mais para trás no histórico da sala."
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:934
+#: src/session/view/content/room_history/item_row.rs:910
 msgid "Reason (optional)"
 msgstr "Razão (opcional)"
 
@@ -1155,9 +1155,9 @@ msgstr "Segurança"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:268
+#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:293
+#: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "Verificar"
 
@@ -1240,7 +1240,7 @@ msgid "Could Not Initialize Session"
 msgstr "Falha ao Iniciar Sessão"
 
 #: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:296
+#: src/session/model/notifications/mod.rs:311
 msgid "Login Request From Another Session"
 msgstr "Solicitação de Autenticação de outra Sessão"
 
@@ -1252,7 +1252,7 @@ msgstr "Verifique a nova sessão a partir da sessão atual."
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
 #: src/identity_verification_view/scan_qr_code_page.rs:179
-#: src/session/model/notifications/mod.rs:227
+#: src/session/model/notifications/mod.rs:248
 msgid "Verification Request"
 msgstr "Solicitação de verificação"
 
@@ -1329,7 +1329,7 @@ msgstr "Descartar"
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
 #: src/identity_verification_view/scan_qr_code_page.rs:174
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:74
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:76
 msgid "Verify Session"
 msgstr "Verificar sessão"
 
@@ -1882,19 +1882,19 @@ msgstr ""
 "Falha ao acessar a coleção padrão. Tenha certeza que um chaveiro foi criado "
 "e definido como padrão."
 
-#: src/session/model/session.rs:979
+#: src/session/model/session.rs:579
 msgid "Could not log the session out"
 msgstr "Falha ao encerrar a sessão"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:231
+#: src/session/model/notifications/mod.rs:252
 msgid "{user} sent a verification request"
 msgstr "{user} enviou uma mensagem de verificação"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:300
+#: src/session/model/notifications/mod.rs:315
 msgid "Verify your new session “{name}”"
 msgstr "Verifique a nova sessão “{name}”"
 
@@ -1924,21 +1924,21 @@ msgid "Any registered user"
 msgstr "Qualquer usuário registrado"
 
 #: src/session/model/room/join_rule.rs:276
-#: src/session/view/content/room_details/general_page.rs:925
+#: src/session/view/content/room_details/general_page.rs:1006
 msgid "Unsupported rule"
 msgstr "Regra sem suporte"
 
-#: src/session/model/room/mod.rs:405
+#: src/session/model/room/mod.rs:397
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:408
+#: src/session/model/room/mod.rs:400
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:418
+#: src/session/model/room/mod.rs:410
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -1962,7 +1962,7 @@ msgstr "Silenciado"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:440
+#: src/session/model/room_list/mod.rs:406
 msgid "Could not join room {room_name}"
 msgstr "Não pôde entrar na sala {room_name}"
 
@@ -2091,7 +2091,7 @@ msgstr ""
 "Para confirmar que você realmente deseja desativar esta conta, digite seu ID "
 "de usuário Matrix:"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:86
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:87
 msgid ""
 "The crypto identity and account recovery are not set up properly. If this is "
 "your last connected session and you have no recent local backup of your "
@@ -2102,7 +2102,7 @@ msgstr ""
 "recente de suas chaves de criptografia, você pode não ser capaz de restaurar "
 "sua conta"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:94
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:95
 msgid ""
 "This is your last connected session. Make sure that you can still access "
 "your recovery key or passphrase, or to backup your encryption keys before "
@@ -2114,7 +2114,7 @@ msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 #: src/session/view/account_settings/general_page/mod.ui:104
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
 msgid "Log Out"
 msgstr "Encerrar sessão"
 
@@ -2218,7 +2218,7 @@ msgid "Name"
 msgstr "Nome"
 
 #: src/session/view/account_settings/general_page/mod.ui:68
-#: src/session/view/content/room_details/general_page.ui:244
+#: src/session/view/content/room_details/general_page.ui:282
 msgid "Advanced Information"
 msgstr "Informações avançadas"
 
@@ -2271,7 +2271,7 @@ msgid "Could not add notification keyword"
 msgstr "Falha ao adicionar a palavra-chave de notificação"
 
 #: src/session/view/account_settings/notifications_page.ui:5
-#: src/session/view/content/room_details/general_page.ui:113
+#: src/session/view/content/room_details/general_page.ui:136
 msgid "Notifications"
 msgstr "Notificaçõse"
 
@@ -2419,7 +2419,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Importar chaves de encriptação de…"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233
-#: src/utils/matrix/media_message.rs:191
+#: src/utils/matrix/media_message.rs:177
 msgid "Could not access file"
 msgstr "Falha ao acessar o arquivo"
 
@@ -2467,76 +2467,76 @@ msgstr "Arquivo"
 msgid "Choose…"
 msgstr "Escolher…"
 
-#: src/session/view/account_settings/security_page/mod.rs:220
+#: src/session/view/account_settings/security_page/mod.rs:231
 msgid "No Crypto Identity"
 msgstr "Nenhuma identidade criptográfica"
 
-#: src/session/view/account_settings/security_page/mod.rs:222
+#: src/session/view/account_settings/security_page/mod.rs:233
 msgid "Verifying your own devices or other users is not possible"
 msgstr "Verificar seus próprios dispositivos ou outros usuários não é possível"
 
-#: src/session/view/account_settings/security_page/mod.rs:225
-#: src/session/view/account_settings/security_page/mod.rs:298
-#: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:291 src/session/view/sidebar/mod.rs:297
+#: src/session/view/account_settings/security_page/mod.rs:236
+#: src/session/view/account_settings/security_page/mod.rs:309
+#: src/session/view/content/room_details/general_page.rs:1103
+#: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
 msgid "Enable"
 msgstr "Habilitar"
 
-#: src/session/view/account_settings/security_page/mod.rs:228
+#: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
 msgstr "Habilitar identidade criptográfica"
 
-#: src/session/view/account_settings/security_page/mod.rs:244
+#: src/session/view/account_settings/security_page/mod.rs:255
 msgid "Crypto Identity Enabled"
 msgstr "Identidade Cripto Habilitada"
 
-#: src/session/view/account_settings/security_page/mod.rs:246
+#: src/session/view/account_settings/security_page/mod.rs:257
 msgid "The crypto identity exists and this device is verified"
 msgstr "A identidade cripto existe e esse dispositivo é verificado"
 
-#: src/session/view/account_settings/security_page/mod.rs:263
+#: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "Identidade cripto inconpleta"
 
-#: src/session/view/account_settings/security_page/mod.rs:265
+#: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "A identidade cripto existe, mas este dispositivo não está verificado"
 
-#: src/session/view/account_settings/security_page/mod.rs:271
+#: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
 msgstr "Verificar sessão"
 
-#: src/session/view/account_settings/security_page/mod.rs:293
+#: src/session/view/account_settings/security_page/mod.rs:304
 msgid "Account Recovery Disabled"
 msgstr "Recuperação de conta desativada"
 
-#: src/session/view/account_settings/security_page/mod.rs:295
+#: src/session/view/account_settings/security_page/mod.rs:306
 msgid ""
 "Enable recovery to be able to restore your account without another device"
 msgstr ""
 "Habilitar a recuperação para poder restaurar sua conta sem outro dispositivo"
 
-#: src/session/view/account_settings/security_page/mod.rs:301
+#: src/session/view/account_settings/security_page/mod.rs:312
 msgid "Enable Account Recovery"
 msgstr "Habilitar recuperação de conta"
 
-#: src/session/view/account_settings/security_page/mod.rs:312
+#: src/session/view/account_settings/security_page/mod.rs:323
 msgid "Account Recovery Enabled"
 msgstr "Recuperação de conta ativada"
 
-#: src/session/view/account_settings/security_page/mod.rs:314
+#: src/session/view/account_settings/security_page/mod.rs:325
 msgid "Your signing keys and encryption keys are synchronized"
 msgstr "Suas chaves de assinatura e criptografia estão sincronizadas"
 
-#: src/session/view/account_settings/security_page/mod.rs:320
+#: src/session/view/account_settings/security_page/mod.rs:331
 msgid "Reset Account Recovery Key"
 msgstr "Resetar chave de recuperação de conta"
 
-#: src/session/view/account_settings/security_page/mod.rs:334
+#: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Recupere para sincronizar suas chaves de assinatura e criptografia"
 
-#: src/session/view/account_settings/security_page/mod.rs:340
+#: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
 msgstr "Recuperar dados da conta"
 
@@ -2606,46 +2606,42 @@ msgstr ""
 msgid "Sessions"
 msgstr "Sessões"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:36
-#: src/session/view/account_settings/user_sessions_page/mod.ui:40
+#: src/session/view/account_settings/user_sessions_page/mod.ui:9
+#: src/session/view/account_settings/user_sessions_page/mod.ui:13
 msgid "Current Session"
 msgstr "Sessão atual"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:51
-#: src/session/view/account_settings/user_sessions_page/mod.ui:55
+#: src/session/view/account_settings/user_sessions_page/mod.ui:24
+#: src/session/view/account_settings/user_sessions_page/mod.ui:48
 msgid "Other Active Sessions"
 msgstr "Outras sessões ativas"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:79
+#: src/session/view/account_settings/user_sessions_page/mod.ui:70
 msgid "Could not load the list of connected devices"
 msgstr "Falha ao carregar a lista de dispositivos conectados"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:113
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:112
 msgid "Disconnect Session"
 msgstr "Desconectar sessão"
-
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:166
-msgid "Could not disconnect device “{device_name}”"
-msgstr "Falha ao desconectar o dispositivo “{device_name}”"
 
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:214
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:171
 msgid "Last seen at %H:%M"
 msgstr "Visto pela última vez às %H:%M"
 
 #. Translators: Time in 12h format, i.e. "11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:219
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:176
 msgid "Last seen at %I:%M %p"
 msgstr "Visto pela última vez às %I:%M %p"
 
 #. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:186
 #, no-c-format
 msgid "Last seen yesterday at %H:%M"
 msgstr "Visto pela última vez ontem às %H:%M"
@@ -2654,7 +2650,7 @@ msgstr "Visto pela última vez ontem às %H:%M"
 #. PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:236
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:193
 #, no-c-format
 msgid "Last seen yesterday at %I:%M %p"
 msgstr "Visto pela última vez ontem às %I:%M %p"
@@ -2663,7 +2659,7 @@ msgstr "Visto pela última vez ontem às %I:%M %p"
 #. format, i.e. "Last seen Monday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:204
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Visto pela última vez na(o) %A às %H:%M"
@@ -2672,7 +2668,7 @@ msgstr "Visto pela última vez na(o) %A às %H:%M"
 #. "Last seen Monday at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:254
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:211
 #, no-c-format
 msgid "Last seen %A at %I:%M %p"
 msgstr "Visto pela última vez em %A às %I:%M %p"
@@ -2681,7 +2677,7 @@ msgstr "Visto pela última vez em %A às %I:%M %p"
 #. seen February 3 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:220
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Visto pela última vez em %-e de %B às %H:%M"
@@ -2690,7 +2686,7 @@ msgstr "Visto pela última vez em %-e de %B às %H:%M"
 #. seen February 3 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:270
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:227
 #, no-c-format
 msgid "Last seen %B %-e at %I:%M %p"
 msgstr "Visto pela última vez em %-e de %B às %I:%M %p"
@@ -2699,7 +2695,7 @@ msgstr "Visto pela última vez em %-e de %B às %I:%M %p"
 #. seen February 3 2015 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:235
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Visto pela última vez em %-e de %B de %Y às %H:%M"
@@ -2708,10 +2704,14 @@ msgstr "Visto pela última vez em %-e de %B de %Y às %H:%M"
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:285
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:242
 #, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
 msgstr "Visto pela última vez em %-e de %B de %Y às %I:%M %p"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:294
+msgid "Could not disconnect device “{device_name}”"
+msgstr "Falha ao desconectar o dispositivo “{device_name}”"
 
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
@@ -2843,7 +2843,7 @@ msgid "Remove “{address}”"
 msgstr "Remover “{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:623
+#: src/session/view/content/room_details/general_page.rs:704
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "Endereço principal"
@@ -2911,7 +2911,7 @@ msgid "Edit Room Addresses"
 msgstr "Editar endereço da sala"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
-#: src/session/view/content/room_details/general_page.ui:147
+#: src/session/view/content/room_details/general_page.ui:170
 msgid "Public Addresses"
 msgstr "Endereços públicos"
 
@@ -3008,7 +3008,7 @@ msgstr "Descrição"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:156
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
-#: src/utils/matrix/media_message.rs:166
+#: src/utils/matrix/media_message.rs:152
 msgid "Save"
 msgstr "Salvar"
 
@@ -3016,82 +3016,83 @@ msgstr "Salvar"
 msgid "Save Description"
 msgstr "Salvar descrição"
 
-#: src/session/view/content/room_details/general_page.rs:501
+#: src/session/view/content/room_details/general_page.rs:455
+#: src/session/view/content/room_details/general_page.rs:492
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Membro"
 msgstr[1] "Membros"
 
-#: src/session/view/content/room_details/general_page.rs:577
+#: src/session/view/content/room_details/general_page.rs:658
 msgid "Could not change notifications setting"
 msgstr "Falha ao mudar a configuração de notificações"
 
-#: src/session/view/content/room_details/general_page.rs:618
-#: src/session/view/content/room_details/general_page.rs:657
+#: src/session/view/content/room_details/general_page.rs:699
+#: src/session/view/content/room_details/general_page.rs:738
 msgid "Copy address"
 msgstr "Copiar endereço"
 
-#: src/session/view/content/room_details/general_page.rs:619
-#: src/session/view/content/room_details/general_page.rs:658
+#: src/session/view/content/room_details/general_page.rs:700
+#: src/session/view/content/room_details/general_page.rs:739
 msgid "Address copied to clipboard"
 msgstr "Endereço copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:700
+#: src/session/view/content/room_details/general_page.rs:781
 msgid "Room link copied to clipboard"
 msgstr "Link da sala copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:753
+#: src/session/view/content/room_details/general_page.rs:834
 msgid "Could not change who can join"
 msgstr "Falha ao alterar quem consegue entrar"
 
-#: src/session/view/content/room_details/general_page.rs:801
+#: src/session/view/content/room_details/general_page.rs:882
 msgid "Could not change guest access"
 msgstr "Falha ao alterar o acesso de convidados"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:818
+#: src/session/view/content/room_details/general_page.rs:899
 msgid "Publish in the {homeserver} directory"
 msgstr "Publicar no diretório {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:895
+#: src/session/view/content/room_details/general_page.rs:976
 msgid "Could not publish room in directory"
 msgstr "Falha ao publicar sala no diretório"
 
-#: src/session/view/content/room_details/general_page.rs:897
+#: src/session/view/content/room_details/general_page.rs:978
 msgid "Could not unpublish room from directory"
 msgstr "Falha ao despublicar a sala do diretório"
 
-#: src/session/view/content/room_details/general_page.rs:918
-#: src/session/view/content/room_details/general_page.ui:230
+#: src/session/view/content/room_details/general_page.rs:999
+#: src/session/view/content/room_details/general_page.ui:268
 msgid "Anyone, even if they are not in the room"
 msgstr "Qualquer um, mesmo que eles não estejam na sala"
 
-#: src/session/view/content/room_details/general_page.rs:921
-#: src/session/view/content/room_details/general_page.ui:231
+#: src/session/view/content/room_details/general_page.rs:1002
+#: src/session/view/content/room_details/general_page.ui:269
 msgid "Members only, since this option was selected"
 msgstr "Apenas membros, já que esta opção foi selecionada"
 
-#: src/session/view/content/room_details/general_page.rs:923
-#: src/session/view/content/room_details/general_page.ui:233
+#: src/session/view/content/room_details/general_page.rs:1004
+#: src/session/view/content/room_details/general_page.ui:271
 msgid "Members only, since they were invited"
 msgstr "Membros apenas, uma vez que foram convidados"
 
-#: src/session/view/content/room_details/general_page.rs:924
-#: src/session/view/content/room_details/general_page.ui:232
+#: src/session/view/content/room_details/general_page.rs:1005
+#: src/session/view/content/room_details/general_page.ui:270
 msgid "Members only, since they joined the room"
 msgstr "Apenas membros, uma vez que entraram na sala"
 
-#: src/session/view/content/room_details/general_page.rs:972
+#: src/session/view/content/room_details/general_page.rs:1053
 msgid "Could not change who can read history"
 msgstr "Falha ao mudar quem pode ler o histórico"
 
-#: src/session/view/content/room_details/general_page.rs:1016
+#: src/session/view/content/room_details/general_page.rs:1097
 msgid "Enable Encryption?"
 msgstr "Habilitar Encriptação?"
 
-#: src/session/view/content/room_details/general_page.rs:1017
+#: src/session/view/content/room_details/general_page.rs:1098
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3099,25 +3100,25 @@ msgstr ""
 "Habilitar criptografia impedirá que novos membros leiam o histórico antes de "
 "sua chegada. Isso não pode ser desativado depois."
 
-#: src/session/view/content/room_details/general_page.rs:1032
+#: src/session/view/content/room_details/general_page.rs:1113
 msgid "Could not enable encryption"
 msgstr "Falha ao habilitar encriptação"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1058
+#: src/session/view/content/room_details/general_page.rs:1139
 msgid "Federated"
 msgstr "Federada"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1061
+#: src/session/view/content/room_details/general_page.rs:1142
 msgid "Not federated"
 msgstr "Não federada"
 
-#: src/session/view/content/room_details/general_page.rs:1091
+#: src/session/view/content/room_details/general_page.rs:1172
 msgid "Room upgraded successfully"
 msgstr "Sala atualizada com sucesso"
 
-#: src/session/view/content/room_details/general_page.rs:1095
+#: src/session/view/content/room_details/general_page.rs:1176
 msgid "Could not upgrade room"
 msgstr "Falha ao atualizar a sala"
 
@@ -3131,121 +3132,125 @@ msgid "Edit Details"
 msgstr "Editar detalhes"
 
 #: src/session/view/content/room_details/general_page.ui:89
+msgid "There are no members in this room"
+msgstr "Não há membros nesta sala"
+
+#: src/session/view/content/room_details/general_page.ui:112
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
 msgstr "Mídia"
 
-#: src/session/view/content/room_details/general_page.ui:96
+#: src/session/view/content/room_details/general_page.ui:119
 msgid "Files"
 msgstr "Arquivos"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page.ui:104
+#: src/session/view/content/room_details/general_page.ui:127
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:94
 msgid "Audio"
 msgstr "Áudio"
 
-#: src/session/view/content/room_details/general_page.ui:114
+#: src/session/view/content/room_details/general_page.ui:137
 msgid "Which messages trigger notifications in this room"
 msgstr "Quais mensagens acionam notificações nesta sala"
 
-#: src/session/view/content/room_details/general_page.ui:117
+#: src/session/view/content/room_details/general_page.ui:140
 msgid "Use Global Setting"
 msgstr "Usar configuração global"
 
-#: src/session/view/content/room_details/general_page.ui:124
+#: src/session/view/content/room_details/general_page.ui:147
 msgid "All Messages"
 msgstr "Todas as mensagens"
 
-#: src/session/view/content/room_details/general_page.ui:131
+#: src/session/view/content/room_details/general_page.ui:154
 msgid "Only Mentions and Keywords"
 msgstr "Apenas menções e palavras-chave"
 
-#: src/session/view/content/room_details/general_page.ui:138
+#: src/session/view/content/room_details/general_page.ui:161
 msgid "Disable Notifications"
 msgstr "Desabilitar notificações"
 
 #. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page.ui:151
+#: src/session/view/content/room_details/general_page.ui:181
 msgctxt "room details"
 msgid "Edit"
 msgstr "Editar"
 
-#: src/session/view/content/room_details/general_page.ui:155
+#: src/session/view/content/room_details/general_page.ui:185
 msgid "Edit Public Addresses"
 msgstr "Editar Endereço Público"
 
-#: src/session/view/content/room_details/general_page.ui:164
+#: src/session/view/content/room_details/general_page.ui:194
 msgid "This room has no public addresses"
 msgstr "Esta sala não tem endereço público"
 
-#: src/session/view/content/room_details/general_page.ui:180
+#: src/session/view/content/room_details/general_page.ui:211
 msgid "Copy Room Link"
 msgstr "Copiar link da sala"
 
-#: src/session/view/content/room_details/general_page.ui:190
+#: src/session/view/content/room_details/general_page.ui:221
 msgid "Access and Visibility"
 msgstr "Acesso e visibilidade"
 
-#: src/session/view/content/room_details/general_page.ui:193
+#: src/session/view/content/room_details/general_page.ui:231
 msgid "Who Can Join"
 msgstr "Quem Pode Entrar"
 
-#: src/session/view/content/room_details/general_page.ui:197
+#: src/session/view/content/room_details/general_page.ui:235
 msgid "Only Invited Users"
 msgstr "Apenas Usuários Convidados"
 
-#: src/session/view/content/room_details/general_page.ui:198
+#: src/session/view/content/room_details/general_page.ui:236
 msgid "Any Registered User"
 msgstr "Qualquer Usuário Registrado"
 
-#: src/session/view/content/room_details/general_page.ui:214
+#: src/session/view/content/room_details/general_page.ui:252
 msgid "Allow Guests"
 msgstr "Permitir convidados"
 
-#: src/session/view/content/room_details/general_page.ui:215
+#: src/session/view/content/room_details/general_page.ui:253
 msgid "Guests are Matrix users without a registered account"
 msgstr "Convidados são usuários do Matrix sem uma conta registrada"
 
-#: src/session/view/content/room_details/general_page.ui:226
+#: src/session/view/content/room_details/general_page.ui:264
 msgid "Who Can Read History"
 msgstr "Quem pode ler o histórico"
 
-#: src/session/view/content/room_details/general_page.ui:247
+#: src/session/view/content/room_details/general_page.ui:285
 msgid "Matrix Room ID"
 msgstr "ID da sala Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:254
+#: src/session/view/content/room_details/general_page.ui:292
 msgid "Copy Matrix Room ID"
 msgstr "Copiar ID da sala Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:255
+#: src/session/view/content/room_details/general_page.ui:293
 msgid "Matrix room ID copied to clipboard"
 msgstr "ID da sala Matrix copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.ui:260
+#: src/session/view/content/room_details/general_page.ui:298
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Habilitar encriptação"
 
-#: src/session/view/content/room_details/general_page.ui:271
+#: src/session/view/content/room_details/general_page.ui:309
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Permissões"
 
-#: src/session/view/content/room_details/general_page.ui:279
+#: src/session/view/content/room_details/general_page.ui:324
 msgid "Room Version"
 msgstr "Versão da sala"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page.ui:291
+#: src/session/view/content/room_details/general_page.ui:336
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "Atualizar"
 
-#: src/session/view/content/room_details/general_page.ui:304
+#: src/session/view/content/room_details/general_page.ui:349
 msgid "Federation"
 msgstr "Federação"
 
@@ -3309,7 +3314,7 @@ msgstr "Abrir arquivo"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:164
+#: src/utils/matrix/media_message.rs:150
 msgid "Save File"
 msgstr "Salvar arquivo"
 
@@ -3404,11 +3409,7 @@ msgstr "Ocorreu um erro ao pesquisar por correspondências"
 msgid "Searching for Users"
 msgstr "Procurando por usuários"
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:170
-msgid "Could not load the full list of room members"
-msgstr "Falha ao carregar a lista completa de membros da sala"
-
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#: src/session/view/content/room_details/member_row.ui:45
 msgid "Identity Verified"
 msgstr "Identidade verificada"
 
@@ -3428,19 +3429,19 @@ msgid_plural "Banned"
 msgstr[0] "Banido"
 msgstr[1] "Banidos"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:218
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] "Membro da sala convidado"
 msgstr[1] "Membros da sala convidados"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] "Membro da Sala Banido"
 msgstr[1] "Membros da Sala Banidos"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Membro de sala"
@@ -3460,7 +3461,11 @@ msgstr "Alternar pesquisa de membros da sala"
 msgid "Search for room members"
 msgstr "Pesquise por membros da sala"
 
-#: src/session/view/content/room_details/members_page/mod.rs:90
+#: src/session/view/content/room_details/membership_lists.rs:178
+msgid "Could not load the full list of room members"
+msgstr "Falha ao carregar a lista completa de membros da sala"
+
+#: src/session/view/content/room_details/mod.rs:132
 msgid "The user is not in the room members list anymore"
 msgstr "O usuário não está mais na lista de membros da sala"
 
@@ -3624,6 +3629,30 @@ msgstr ""
 msgid "{version} (unstable)"
 msgstr "{version} (instável)"
 
+#: src/session/view/content/room_history/divider_row.rs:59
+msgid "This is the start of the visible history"
+msgstr "Este é o início do histórico visível"
+
+#. Translators: This is a date format in the day divider without the
+#. year. For example, "Friday, May 5".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/divider_row.rs:72
+msgid "%A, %B %-e"
+msgstr "%A, %-e de %B"
+
+#. Translators: This is a date format in the day divider with the
+#. year. For ex. "Friday, May 5, 2023".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/divider_row.rs:78
+msgid "%A, %B %-e, %Y"
+msgstr "%A, %-e de %B de %Y"
+
+#: src/session/view/content/room_history/divider_row.rs:85
+msgid "New Messages"
+msgstr "Novas mensagens"
+
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
 #: src/session/view/content/room_history/event_actions.ui:98
@@ -3713,67 +3742,43 @@ msgstr "_Copiar miniatura"
 msgid "Rep_ort"
 msgstr "Rep_ortar"
 
-#: src/session/view/content/room_history/item_row.rs:340
-msgid "This is the start of the visible history"
-msgstr "Este é o início do histórico visível"
-
-#. Translators: This is a date format in the day divider without the
-#. year. For example, "Friday, May 5".
-#. Please use `-` before specifiers that add spaces on single
-#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:382
-msgid "%A, %B %-e"
-msgstr "%A, %-e de %B"
-
-#. Translators: This is a date format in the day divider with the
-#. year. For ex. "Friday, May 5, 2023".
-#. Please use `-` before specifiers that add spaces on single
-#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:388
-msgid "%A, %B %-e, %Y"
-msgstr "%A, %-e de %B de %Y"
-
-#: src/session/view/content/room_history/item_row.rs:394
-msgid "New Messages"
-msgstr "Novas mensagens"
-
-#: src/session/view/content/room_history/item_row.rs:546
+#: src/session/view/content/room_history/item_row.rs:520
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "Link da mensagem copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:683
-#: src/session/view/content/room_history/item_row.rs:736
-#: src/session/view/content/room_history/item_row.rs:771
-#: src/session/view/content/room_history/item_row.rs:849
+#: src/session/view/content/room_history/item_row.rs:657
+#: src/session/view/content/room_history/item_row.rs:710
+#: src/session/view/content/room_history/item_row.rs:745
+#: src/session/view/content/room_history/item_row.rs:825
 msgid "Text copied to clipboard"
 msgstr "Texto copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:791
+#: src/session/view/content/room_history/item_row.rs:765
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatura copiada para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:892
+#: src/session/view/content/room_history/item_row.rs:868
 msgid "Remove Message?"
 msgstr "Remover mensagem?"
 
-#: src/session/view/content/room_history/item_row.rs:894
+#: src/session/view/content/room_history/item_row.rs:870
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Você realmente quer remover essa mensagem? Isso não pode ser desfeito."
 
-#: src/session/view/content/room_history/item_row.rs:908
+#: src/session/view/content/room_history/item_row.rs:884
 msgid "Could not remove message"
 msgstr "Falha ao remover a mensagem"
 
-#: src/session/view/content/room_history/item_row.rs:919
+#: src/session/view/content/room_history/item_row.rs:895
 msgid "Could not toggle reaction"
 msgstr "Falha ao alternar reação"
 
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:921
 msgid "Report Event?"
 msgstr "Reportar evento?"
 
-#: src/session/view/content/room_history/item_row.rs:947
+#: src/session/view/content/room_history/item_row.rs:923
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3784,15 +3789,15 @@ msgstr ""
 "ou redigido."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:954
+#: src/session/view/content/room_history/item_row.rs:930
 msgid "Report"
 msgstr "Reportar"
 
-#: src/session/view/content/room_history/item_row.rs:972
+#: src/session/view/content/room_history/item_row.rs:948
 msgid "Could not report event"
 msgstr "Falha ao reportar evento"
 
-#: src/session/view/content/room_history/item_row.rs:988
+#: src/session/view/content/room_history/item_row.rs:964
 msgid "Could not discard message"
 msgstr "Falha ao descartar mensagem"
 
@@ -3938,80 +3943,80 @@ msgstr "Preenchimento automático de menção do membro da sala"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:432
+#: src/session/view/content/room_history/message_toolbar/mod.rs:438
 msgid "Reply to {user}"
 msgstr "Responder a {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:444
+#: src/session/view/content/room_history/message_toolbar/mod.rs:450
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Edição"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:620
+#: src/session/view/content/room_history/message_toolbar/mod.rs:634
 msgid "Could not send reply"
 msgstr "Falha ao enviar resposta"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:635
+#: src/session/view/content/room_history/message_toolbar/mod.rs:649
 msgid "Could not send edit"
 msgstr "Falha ao enviar edição"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:646
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "Could not send message"
 msgstr "Falha ao enviar mensagem"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:688
+#: src/session/view/content/room_history/message_toolbar/mod.rs:706
 msgid "Your Location"
 msgstr "Seu local"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:749
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Local do usuário {geo_uri} em {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:771
+#: src/session/view/content/room_history/message_toolbar/mod.rs:789
 msgid "Could not send location"
 msgstr "Falha ao enviar local"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:778
+#: src/session/view/content/room_history/message_toolbar/mod.rs:796
 msgid "The location request has been cancelled"
 msgstr "A solicitação de local foi cancelada"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:779
+#: src/session/view/content/room_history/message_toolbar/mod.rs:797
 msgid "The location services are disabled"
 msgstr "O serviço de localização está desabilitado"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:780
+#: src/session/view/content/room_history/message_toolbar/mod.rs:798
 msgid "Could not retrieve current location"
 msgstr "Falha ao recuperar a localização atual"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:816
+#: src/session/view/content/room_history/message_toolbar/mod.rs:834
 msgid "Could not send file"
 msgstr "Falha ao enviar arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:883
 msgid "Select File"
 msgstr "Selecionar um arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:859
+#: src/session/view/content/room_history/message_toolbar/mod.rs:885
 msgid "Select"
 msgstr "Selecionar"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:900
 msgid "Could not open file"
 msgstr "Falha ao abrir o arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:893
+#: src/session/view/content/room_history/message_toolbar/mod.rs:927
 msgid "Error reading file"
 msgstr "Erro ao ler o arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:953
+#: src/session/view/content/room_history/message_toolbar/mod.rs:987
 msgid "Error getting image from clipboard"
 msgstr "Erro ao pegar imagem da área de transferência"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:970
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1004
 msgid "Error getting file from clipboard"
 msgstr "Erro ao pegar arquivo da área de transferência"
 
@@ -4069,47 +4074,47 @@ msgstr "Visto pela última vez em %-e de %B às %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "Visto pela última vez em %-e de %B às %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:357
+#: src/session/view/content/room_history/mod.rs:360
 msgid "Error getting file from drop"
 msgstr "Erro ao obter arquivo largado"
 
+#: src/session/view/content/room_history/mod.rs:841
+#: src/session/view/content/room_history/mod.rs:845
+#: src/session/view/content/room_history/state_row/tombstone.ui:14
+msgid "There is a newer version of this room"
+msgstr "Há uma versão mais recente desta sala"
+
+#: src/session/view/content/room_history/mod.rs:848
+msgid "This room was closed"
+msgstr "Esta sala foi fechada"
+
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:594
+#: src/session/view/content/room_history/mod.rs:873
 #: src/session/view/sidebar/row.rs:738
 msgid "Could not leave {room}"
 msgstr "Falha ao deixar {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:613
+#: src/session/view/content/room_history/mod.rs:892
 #: src/session/view/sidebar/row.rs:727
 msgid "Could not join {room}"
 msgstr "Não pôde entrar em {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:630
+#: src/session/view/content/room_history/mod.rs:909
 #: src/session/view/sidebar/row.rs:771
 msgid "Could not forget {room}"
 msgstr "Falha em esquecer {room}"
 
-#: src/session/view/content/room_history/mod.rs:802
-#: src/session/view/sidebar/mod.rs:408
+#: src/session/view/content/room_history/mod.rs:1008
+#: src/session/view/sidebar/mod.rs:424
 msgid "Context Menu"
 msgstr "Menu de contexto"
 
-#: src/session/view/content/room_history/mod.rs:822
+#: src/session/view/content/room_history/mod.rs:1028
 msgid "Sender Context Menu"
 msgstr "Menu de Contexto do Remetente"
-
-#: src/session/view/content/room_history/mod.rs:994
-#: src/session/view/content/room_history/mod.rs:998
-#: src/session/view/content/room_history/state_row/tombstone.ui:14
-msgid "There is a newer version of this room"
-msgstr "Há uma versão mais recente desta sala"
-
-#: src/session/view/content/room_history/mod.rs:1001
-msgid "This room was closed"
-msgstr "Esta sala foi fechada"
 
 #: src/session/view/content/room_history/mod.ui:6
 msgid "Room _Details"
@@ -4206,7 +4211,7 @@ msgstr "Menu da sala"
 msgid "Could Not Load Room"
 msgstr "Falha ao carregar sala"
 
-#: src/session/view/content/room_history/mod.ui:227
+#: src/session/view/content/room_history/mod.ui:226
 msgid "Scroll to Bottom"
 msgstr "Rolar à parte inferior"
 
@@ -4460,13 +4465,13 @@ msgstr "Abrir detalhes da sala"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:142
+#: src/session/view/content/room_history/typing_row.rs:135
 msgid "{user} is typing…"
 msgstr "{user} está digitando…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:149
+#: src/session/view/content/room_history/typing_row.rs:142
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} membro está digitando…"
@@ -4679,19 +4684,19 @@ msgstr "Não é possível desativar mais tarde"
 msgid "_Create Room"
 msgstr "_Criar sala"
 
-#: src/session/view/sidebar/mod.rs:291
+#: src/session/view/sidebar/mod.rs:306
 msgid "No crypto identity"
 msgstr "Nenhuma identidade criptográfica"
 
-#: src/session/view/sidebar/mod.rs:293
+#: src/session/view/sidebar/mod.rs:308
 msgid "Crypto identity incomplete"
 msgstr "Identidade criptográfica incompleta"
 
-#: src/session/view/sidebar/mod.rs:297
+#: src/session/view/sidebar/mod.rs:312
 msgid "Account recovery disabled"
 msgstr "Recuperação de conta desativada"
 
-#: src/session/view/sidebar/mod.rs:300
+#: src/session/view/sidebar/mod.rs:315
 msgid "Account recovery incomplete"
 msgstr "Recuperação de conta incompleta"
 
@@ -4861,9 +4866,13 @@ msgstr "Entrar novamente na sala"
 msgid "Rejoin Room as Low Priority"
 msgstr "Entrar novamente na sala como baixa prioridade"
 
-#: src/session_list/mod.rs:269
+#: src/session_list/mod.rs:230 src/session_list/mod.rs:267
 msgid "Could not restore previous sessions"
 msgstr "Falha ao restaurar as sessões anteriores"
+
+#: src/session_list/mod.rs:268
+msgid "An unexpected error happened while accessing the data directory"
+msgstr "Ocorreu um erro inesperado ao acessar do diretório dos dados"
 
 #: src/shortcuts.ui:11
 msgctxt "shortcut window"
@@ -4954,7 +4963,7 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Falha ao abrir o armazenamento."
 
-#: src/utils/matrix/media_message.rs:183
+#: src/utils/matrix/media_message.rs:169
 msgid "Could not save file"
 msgstr "Falha ao salvar o arquivo"
 
