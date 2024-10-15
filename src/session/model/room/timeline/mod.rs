@@ -10,7 +10,6 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::Error as MatrixError;
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
@@ -25,7 +24,7 @@ use ruma::{
     OwnedEventId, UserId,
 };
 use tokio::task::AbortHandle;
-use tracing::{error, warn};
+use tracing::error;
 
 pub use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
@@ -679,12 +678,12 @@ glib::wrapper! {
 
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
-    pub fn new(room: &Room) -> Self {
+    pub(crate) fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
     }
 
     /// The underlying SDK timeline.
-    pub fn matrix_timeline(&self) -> Arc<SdkTimeline> {
+    pub(crate) fn matrix_timeline(&self) -> Arc<SdkTimeline> {
         self.imp().matrix_timeline().clone()
     }
 
@@ -701,7 +700,7 @@ impl Timeline {
 
     /// Load more events at the start of the timeline until the given function
     /// tells us to stop.
-    pub async fn load<F>(&self, continue_fn: F)
+    pub(crate) async fn load<F>(&self, continue_fn: F)
     where
         F: Fn() -> ControlFlow<()>,
     {
@@ -728,12 +727,12 @@ impl Timeline {
     ///
     /// Use this method if you are sure the event has already been received.
     /// Otherwise use `fetch_event_by_id`.
-    pub fn event_by_key(&self, key: &EventKey) -> Option<Event> {
+    pub(crate) fn event_by_key(&self, key: &EventKey) -> Option<Event> {
         self.imp().event_map.borrow().get(key).cloned()
     }
 
     /// Get the position of the event with the given key in this `Timeline`.
-    pub fn find_event_position(&self, key: &EventKey) -> Option<usize> {
+    pub(crate) fn find_event_position(&self, key: &EventKey) -> Option<usize> {
         for (pos, item) in self
             .items()
             .iter::<glib::Object>()
@@ -754,40 +753,8 @@ impl Timeline {
         None
     }
 
-    /// Fetch the event with the given id.
-    ///
-    /// If the event cannot be found locally, a request will be made to the
-    /// homeserver.
-    ///
-    /// Use this method if you are not sure the event has already been received.
-    /// Otherwise use `event_by_id`.
-    pub async fn fetch_event_by_id(
-        &self,
-        event_id: OwnedEventId,
-    ) -> Result<AnySyncTimelineEvent, MatrixError> {
-        if let Some(event) = self.event_by_key(&EventKey::EventId(event_id.clone())) {
-            event.raw().unwrap().deserialize().map_err(Into::into)
-        } else {
-            let Some(room) = self.room() else {
-                return Err(MatrixError::UnknownError("Could not upgrade Room".into()));
-            };
-            let matrix_room = room.matrix_room().clone();
-            let event_id_clone = event_id.clone();
-            let handle =
-                spawn_tokio!(async move { matrix_room.event(&event_id_clone, None).await });
-            match handle.await.unwrap() {
-                Ok(room_event) => room_event.event.deserialize_as().map_err(Into::into),
-                Err(error) => {
-                    // TODO: Retry on connection error?
-                    warn!("Could not fetch event {event_id}: {error}");
-                    Err(error)
-                }
-            }
-        }
-    }
-
     /// Remove the typing row from the timeline.
-    pub fn remove_empty_typing_row(&self) {
+    pub(crate) fn remove_empty_typing_row(&self) {
         self.imp().remove_empty_typing_row();
     }
 
@@ -795,7 +762,7 @@ impl Timeline {
     ///
     /// Returns `None` if it is not possible to know, for example if there are
     /// no events in the Timeline.
-    pub async fn has_unread_messages(&self) -> Option<bool> {
+    pub(crate) async fn has_unread_messages(&self) -> Option<bool> {
         let room = self.room()?;
         let session = room.session()?;
         let own_user_id = session.user_id().clone();
@@ -834,7 +801,7 @@ impl Timeline {
     }
 
     /// The IDs of redactable events sent by the given user in this timeline.
-    pub fn redactable_events_for(&self, user_id: &UserId) -> Vec<OwnedEventId> {
+    pub(crate) fn redactable_events_for(&self, user_id: &UserId) -> Vec<OwnedEventId> {
         let mut events = vec![];
 
         for item in self.imp().sdk_items.iter::<glib::Object>() {
@@ -866,7 +833,7 @@ impl Timeline {
     }
 
     /// Connect to the trigger emitted when a read change might have occurred.
-    pub fn connect_read_change_trigger<F: Fn(&Self) + 'static>(
+    pub(crate) fn connect_read_change_trigger<F: Fn(&Self) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
