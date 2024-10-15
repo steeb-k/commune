@@ -550,7 +550,7 @@ mod imp {
 
                         self.set_up_typing();
                     }
-                    RoomState::Left => {}
+                    RoomState::Left | RoomState::Knocked => {}
                     RoomState::Invited => {
                         spawn!(
                             glib::Priority::DEFAULT_IDLE,
@@ -598,7 +598,7 @@ mod imp {
                     }
                 }
                 RoomState::Invited => RoomCategory::Invited,
-                RoomState::Left => RoomCategory::Left,
+                RoomState::Left | RoomState::Knocked => RoomCategory::Left,
             };
 
             self.set_category(category);

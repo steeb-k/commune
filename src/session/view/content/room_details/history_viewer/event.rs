@@ -5,7 +5,7 @@ use matrix_sdk::deserialized_responses::TimelineEvent;
 use ruma::{
     events::{
         room::message::{MessageType, OriginalSyncRoomMessageEvent, Relation},
-        AnySyncMessageLikeEvent, AnyTimelineEvent, SyncMessageLikeEvent,
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
     },
     OwnedEventId,
 };
@@ -89,12 +89,9 @@ impl HistoryViewerEvent {
     /// Constructs a new `HistoryViewerEvent` with the given event, if it is
     /// viewable in one of the history viewers.
     pub fn try_new(room: &Room, event: TimelineEvent) -> Option<Self> {
-        let Ok(AnyTimelineEvent::MessageLike(message_like_event)) = event.event.deserialize()
-        else {
-            return None;
-        };
-        let AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(mut message_event)) =
-            message_like_event.into()
+        let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
+            SyncMessageLikeEvent::Original(mut message_event),
+        ))) = event.raw().deserialize()
         else {
             return None;
         };
