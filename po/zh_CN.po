@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-10-06 12:21+0000\n"
-"PO-Revision-Date: 2024-10-07 10:42+0800\n"
+"POT-Creation-Date: 2024-10-14 08:28+0000\n"
+"PO-Revision-Date: 2024-10-15 18:21+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -193,6 +193,7 @@ msgstr "确认更改"
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
 #: src/session/view/content/room_history/mod.ui:197
 msgid "Try Again"
 msgstr "重试"
@@ -217,6 +218,8 @@ msgstr "警告"
 #: src/components/action_button.ui:126 src/error_page.ui:10
 #: src/session/view/content/room_details/invite_subpage/mod.ui:136
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
 #: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:69
 msgid "Error"
 msgstr "错误"
@@ -657,11 +660,11 @@ msgstr "离开"
 #: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:1102
+#: src/session/view/content/room_details/general_page.rs:1118
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:872
-#: src/session/view/content/room_history/item_row.rs:926
+#: src/session/view/content/room_history/item_row.rs:874
+#: src/session/view/content/room_history/item_row.rs:928
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -795,7 +798,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:873
+#: src/session/view/content/room_history/item_row.rs:875
 msgid "Remove"
 msgstr "移除"
 
@@ -816,7 +819,7 @@ msgstr ""
 "早来加载更多历史。"
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:908
+#: src/session/view/content/room_history/item_row.rs:910
 msgid "Reason (optional)"
 msgstr "原因（可选）"
 
@@ -1809,21 +1812,21 @@ msgid "Any registered user"
 msgstr "任何注册的用户"
 
 #: src/session/model/room/join_rule.rs:276
-#: src/session/view/content/room_details/general_page.rs:1006
+#: src/session/view/content/room_details/general_page.rs:1022
 msgid "Unsupported rule"
 msgstr "不支持的规则"
 
-#: src/session/model/room/mod.rs:403
+#: src/session/model/room/mod.rs:397
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:406
+#: src/session/model/room/mod.rs:400
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:416
+#: src/session/model/room/mod.rs:410
 msgid "Unknown"
 msgstr "未知"
 
@@ -1847,7 +1850,7 @@ msgstr "已禁言"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:440
+#: src/session/model/room_list/mod.rs:406
 msgid "Could not join room {room_name}"
 msgstr "无法加入聊天室 {room_name}"
 
@@ -2283,7 +2286,7 @@ msgid "Import Encryption Keys From…"
 msgstr "导入加密密钥…"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233
-#: src/utils/matrix/media_message.rs:191
+#: src/utils/matrix/media_message.rs:177
 msgid "Could not access file"
 msgstr "无法访问文件"
 
@@ -2340,7 +2343,7 @@ msgstr "无法认证您自己的设备或别的用户"
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1103
+#: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
 msgid "Enable"
 msgstr "启用"
@@ -2634,7 +2637,7 @@ msgstr "无法拒绝 {room} 的邀请"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:99
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "邀请"
@@ -2693,7 +2696,7 @@ msgid "Remove “{address}”"
 msgstr "移除“{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:704
+#: src/session/view/content/room_details/general_page.rs:720
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "主地址"
@@ -2853,7 +2856,7 @@ msgstr "说明"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:156
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
-#: src/utils/matrix/media_message.rs:166
+#: src/utils/matrix/media_message.rs:152
 msgid "Save"
 msgstr "保存"
 
@@ -2861,106 +2864,106 @@ msgstr "保存"
 msgid "Save Description"
 msgstr "保存说明"
 
-#: src/session/view/content/room_details/general_page.rs:455
-#: src/session/view/content/room_details/general_page.rs:492
+#: src/session/view/content/room_details/general_page.rs:462
+#: src/session/view/content/room_details/general_page.rs:508
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "成员"
 
-#: src/session/view/content/room_details/general_page.rs:658
+#: src/session/view/content/room_details/general_page.rs:674
 msgid "Could not change notifications setting"
 msgstr "无法更改通知设置"
 
-#: src/session/view/content/room_details/general_page.rs:699
-#: src/session/view/content/room_details/general_page.rs:738
+#: src/session/view/content/room_details/general_page.rs:715
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Copy address"
 msgstr "复制地址"
 
-#: src/session/view/content/room_details/general_page.rs:700
-#: src/session/view/content/room_details/general_page.rs:739
+#: src/session/view/content/room_details/general_page.rs:716
+#: src/session/view/content/room_details/general_page.rs:755
 msgid "Address copied to clipboard"
 msgstr "地址已复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page.rs:781
+#: src/session/view/content/room_details/general_page.rs:797
 msgid "Room link copied to clipboard"
 msgstr "聊天室链接已复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page.rs:834
+#: src/session/view/content/room_details/general_page.rs:850
 msgid "Could not change who can join"
 msgstr "无法更改加入权限"
 
-#: src/session/view/content/room_details/general_page.rs:882
+#: src/session/view/content/room_details/general_page.rs:898
 msgid "Could not change guest access"
 msgstr "无法更改访客访问权限"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:899
+#: src/session/view/content/room_details/general_page.rs:915
 msgid "Publish in the {homeserver} directory"
 msgstr "公布在 {homeserver} 目录"
 
-#: src/session/view/content/room_details/general_page.rs:976
+#: src/session/view/content/room_details/general_page.rs:992
 msgid "Could not publish room in directory"
 msgstr "无法在目录公布聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:978
+#: src/session/view/content/room_details/general_page.rs:994
 msgid "Could not unpublish room from directory"
 msgstr "无法从目录撤下聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:999
+#: src/session/view/content/room_details/general_page.rs:1015
 #: src/session/view/content/room_details/general_page.ui:268
 msgid "Anyone, even if they are not in the room"
 msgstr "任何人，即使他们未加入聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:1002
+#: src/session/view/content/room_details/general_page.rs:1018
 #: src/session/view/content/room_details/general_page.ui:269
 msgid "Members only, since this option was selected"
 msgstr "仅成员，在选择该选项之后"
 
-#: src/session/view/content/room_details/general_page.rs:1004
+#: src/session/view/content/room_details/general_page.rs:1020
 #: src/session/view/content/room_details/general_page.ui:271
 msgid "Members only, since they were invited"
 msgstr "仅成员，在他们被邀请之后"
 
-#: src/session/view/content/room_details/general_page.rs:1005
+#: src/session/view/content/room_details/general_page.rs:1021
 #: src/session/view/content/room_details/general_page.ui:270
 msgid "Members only, since they joined the room"
 msgstr "仅成员，在他们加入聊天室后"
 
-#: src/session/view/content/room_details/general_page.rs:1053
+#: src/session/view/content/room_details/general_page.rs:1069
 msgid "Could not change who can read history"
 msgstr "无法更改历史查阅权限"
 
-#: src/session/view/content/room_details/general_page.rs:1097
+#: src/session/view/content/room_details/general_page.rs:1113
 msgid "Enable Encryption?"
 msgstr "启用加密吗？"
 
-#: src/session/view/content/room_details/general_page.rs:1098
+#: src/session/view/content/room_details/general_page.rs:1114
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
 msgstr "启用加密将阻止新成员在到达聊天室前查阅聊天历史。该选项无法在随后禁用。"
 
-#: src/session/view/content/room_details/general_page.rs:1113
+#: src/session/view/content/room_details/general_page.rs:1129
 msgid "Could not enable encryption"
 msgstr "无法启用加密"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1139
+#: src/session/view/content/room_details/general_page.rs:1155
 msgid "Federated"
 msgstr "联合的"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1142
+#: src/session/view/content/room_details/general_page.rs:1158
 msgid "Not federated"
 msgstr "未联合"
 
-#: src/session/view/content/room_details/general_page.rs:1172
+#: src/session/view/content/room_details/general_page.rs:1188
 msgid "Room upgraded successfully"
 msgstr "聊天室已成功升级"
 
-#: src/session/view/content/room_details/general_page.rs:1176
+#: src/session/view/content/room_details/general_page.rs:1192
 msgid "Could not upgrade room"
 msgstr "无法升级聊天室"
 
@@ -2974,6 +2977,7 @@ msgid "Edit Details"
 msgstr "编辑详情"
 
 #: src/session/view/content/room_details/general_page.ui:89
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
 msgid "There are no members in this room"
 msgstr "该聊天室没有成员"
 
@@ -3156,7 +3160,7 @@ msgstr "打开文件"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:164
+#: src/utils/matrix/media_message.rs:150
 msgid "Save File"
 msgstr "保存文件"
 
@@ -3254,33 +3258,53 @@ msgid "Identity Verified"
 msgstr "身份已验证"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
 msgstr[0] "已邀请"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
 msgstr[0] "已封禁"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:218
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:286
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] "邀请的聊天室成员"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:288
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] "封禁的聊天室成员"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:289
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "聊天室成员"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:330
+msgid "No Invited Room Members"
+msgstr "无邀请的聊天室成员"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:331
+msgid "There are no invited members in this room"
+msgstr "该聊天室没有被邀请的成员"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:335
+msgid "No Banned Room Members"
+msgstr "无封禁的聊天室成员"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:336
+msgid "There are no banned members in this room"
+msgstr "该聊天室没有被封禁的成员"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:340
+msgid "No Room Members"
+msgstr "无聊天室成员"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3296,7 +3320,8 @@ msgstr "切换聊天室成员搜索"
 msgid "Search for room members"
 msgstr "搜索聊天室成员"
 
-#: src/session/view/content/room_details/membership_lists.rs:178
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
+#: src/session/view/content/room_details/membership_lists.rs:186
 msgid "Could not load the full list of room members"
 msgstr "无法加载完整的聊天室成员列表"
 
@@ -3582,7 +3607,7 @@ msgstr "消息链接已复制到剪贴板"
 #: src/session/view/content/room_history/item_row.rs:657
 #: src/session/view/content/room_history/item_row.rs:710
 #: src/session/view/content/room_history/item_row.rs:745
-#: src/session/view/content/room_history/item_row.rs:823
+#: src/session/view/content/room_history/item_row.rs:825
 msgid "Text copied to clipboard"
 msgstr "文字已复制到剪贴板"
 
@@ -3590,27 +3615,27 @@ msgstr "文字已复制到剪贴板"
 msgid "Thumbnail copied to clipboard"
 msgstr "缩略图已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:866
+#: src/session/view/content/room_history/item_row.rs:868
 msgid "Remove Message?"
 msgstr "移除消息吗？"
 
-#: src/session/view/content/room_history/item_row.rs:868
+#: src/session/view/content/room_history/item_row.rs:870
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "您确定想要移除该消息吗？该操作无法撤消。"
 
-#: src/session/view/content/room_history/item_row.rs:882
+#: src/session/view/content/room_history/item_row.rs:884
 msgid "Could not remove message"
 msgstr "无法移除消息"
 
-#: src/session/view/content/room_history/item_row.rs:893
+#: src/session/view/content/room_history/item_row.rs:895
 msgid "Could not toggle reaction"
 msgstr "无法切换回应"
 
-#: src/session/view/content/room_history/item_row.rs:919
+#: src/session/view/content/room_history/item_row.rs:921
 msgid "Report Event?"
 msgstr "举报事件？"
 
-#: src/session/view/content/room_history/item_row.rs:921
+#: src/session/view/content/room_history/item_row.rs:923
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3620,15 +3645,15 @@ msgstr ""
 "编校，管理员将无法看到它。"
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:928
+#: src/session/view/content/room_history/item_row.rs:930
 msgid "Report"
 msgstr "举报"
 
-#: src/session/view/content/room_history/item_row.rs:946
+#: src/session/view/content/room_history/item_row.rs:948
 msgid "Could not report event"
 msgstr "无法举报该事件"
 
-#: src/session/view/content/room_history/item_row.rs:962
+#: src/session/view/content/room_history/item_row.rs:964
 msgid "Could not discard message"
 msgstr "无法取消发送消息"
 
@@ -4280,7 +4305,7 @@ msgstr "{user} 移除了他们的头像。"
 msgid "{user} changed their avatar."
 msgstr "{user} 更改了他们的头像。"
 
-#: src/session/view/content/room_history/title.ui:9
+#: src/session/view/content/room_history/title.ui:10
 msgid "Open Room Details"
 msgstr "打开聊天室详情"
 
@@ -4774,7 +4799,7 @@ msgstr "主服务器自动发现已失败。请尝试手动输入完整网址。
 msgid "Could not open the store."
 msgstr "无法打开存储。"
 
-#: src/utils/matrix/media_message.rs:183
+#: src/utils/matrix/media_message.rs:169
 msgid "Could not save file"
 msgstr "无法保存文件"
 
