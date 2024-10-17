@@ -71,6 +71,43 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="9~rc" type="development" date="2024-10-17">
+      <description>
+        <p>
+          It's time to experience <em>La vie en rose</em>! We just released Fractal 9.rc and to show
+          our support 🩷 for Breast Cancer Awareness Month, we decided to change the accent color to
+          pink. And it is also packed with bug fixes, take a look for yourself:
+        </p>
+        <ul>
+          <li>
+            We used to only rely on the secrets provider to tell us which Matrix accounts are
+            logged-in, which caused issues for people sharing their secrets between devices. Now we
+            also make sure that there is a data folder for a given session before trying to restore
+            it.
+          </li>
+          <li>
+            Our notifications are categorized as coming from an instant messenger, so graphical
+            shells that support it, such as Phosh, can play a sound for them.
+          </li>
+          <li>
+            Some room settings are hidden for direct chats, because it does not make sense to change
+            them in this type of room.
+          </li>
+          <li>
+            The size of the headerbar would change depending on whether the room has a topic or not.
+            This will not happen anymore.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, it should be mostly stable and we expect to only include minor
+          improvements until the release of Fractal 9.
+        </p>
+      </description>
+    </release>
     <release version="9~beta" type="development" date="2024-09-26">
       <description>
         <p>
