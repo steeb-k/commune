@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-10-18 04:25+0000\n"
-"PO-Revision-Date: 2024-10-18 15:53+0700\n"
+"POT-Creation-Date: 2024-10-18 09:39+0000\n"
+"PO-Revision-Date: 2024-10-18 16:39+0700\n"
 "Last-Translator: Atirut Wattanamongkol <atirut.wattanamongkol@gmail.com>\n"
 "Language-Team: Thai <thai-l10n@googlegroups.com>\n"
 "Language: th\n"
@@ -16,10 +16,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Gtranslator 47.0\n"
+"X-Generator: Poedit 3.5\n"
 
-#: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: data/org.gnome.Fractal.desktop.in.in:3 data/org.gnome.Fractal.metainfo.xml.in.in:7
 #: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
@@ -28,8 +27,7 @@ msgstr "Fractal"
 msgid ""
 "Fractal is a decentralized, secure messaging client for collaborative group "
 "communication."
-msgstr ""
-"Fractal เป็นไคลเอนต์ส่งข้อความแบบกระจายอำนาจที่ปลอดภัยสำหรับการสื่อสารร่วมมือกันแบบกลุ่ม"
+msgstr "Fractal เป็นไคลเอนต์ส่งข้อความแบบกระจายอำนาจที่ปลอดภัยสำหรับการสื่อสารร่วมมือกันแบบกลุ่ม"
 
 #: data/org.gnome.Fractal.desktop.in.in:5
 msgid "Fractal group messaging"
@@ -78,9 +76,9 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
 msgid ""
-"Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
-"is optimized for collaboration in large groups, such as free software "
-"projects, and will fit all screens, big or small."
+"Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized "
+"for collaboration in large groups, such as free software projects, and will fit all "
+"screens, big or small."
 msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
@@ -89,8 +87,8 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:16
 msgid ""
-"Find rooms to discuss your favorite topics, or talk privately to people, "
-"securely thanks to end-to-end encryption"
+"Find rooms to discuss your favorite topics, or talk privately to people, securely "
+"thanks to end-to-end encryption"
 msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:17
@@ -99,8 +97,8 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
 msgid ""
-"Reply to specific messages, react with emoji, mention users or rooms, edit "
-"or remove messages"
+"Reply to specific messages, react with emoji, mention users or rooms, edit or remove "
+"messages"
 msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
@@ -143,8 +141,7 @@ msgstr ""
 msgid "_Add Account"
 msgstr "เ_พิ่มบัญชี"
 
-#: src/account_switcher/session_item.ui:60
-#: src/account_switcher/session_item.ui:62
+#: src/account_switcher/session_item.ui:60 src/account_switcher/session_item.ui:62
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "การตั้งค่าบัญชี"
@@ -260,8 +257,8 @@ msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:46
 msgid ""
-"Verifying your session allows you and the people you chat with to be sure "
-"that no one is trying to impersonate you or intercept your conversations."
+"Verifying your session allows you and the people you chat with to be sure that no one "
+"is trying to impersonate you or intercept your conversations."
 msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:55
@@ -301,8 +298,8 @@ msgstr ""
 #: src/components/crypto/identity_setup_view.ui:162
 #: src/components/crypto/identity_setup_view.ui:237
 msgid ""
-"Your crypto identity allows you to verify other Matrix accounts and "
-"automatically trust their verified sessions."
+"Your crypto identity allows you to verify other Matrix accounts and automatically trust "
+"their verified sessions."
 msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:170
@@ -323,8 +320,8 @@ msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:245
 msgid ""
-"You should reset your crypto identity if a device that does not belong to "
-"you managed to be verified."
+"You should reset your crypto identity if a device that does not belong to you managed "
+"to be verified."
 msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:253
@@ -337,8 +334,8 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:185
 msgid ""
-"Required because the crypto identity in the recovery data is incomplete. "
-"Invalidates the verifications of all users and sessions."
+"Required because the crypto identity in the recovery data is incomplete. Invalidates "
+"the verifications of all users and sessions."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:195
@@ -347,20 +344,20 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:200
 msgid ""
-"Required because the backup is not set up properly. You might not be able to "
-"read your past encrypted messages anymore."
+"Required because the backup is not set up properly. You might not be able to read your "
+"past encrypted messages anymore."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:218
 msgid ""
-"Make sure to store this recovery key in a safe place. You will need it to "
-"recover your account if you lose access to all your sessions."
+"Make sure to store this recovery key in a safe place. You will need it to recover your "
+"account if you lose access to all your sessions."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:220
 msgid ""
-"Make sure to remember your passphrase or to store it in a safe place. You "
-"will need it to recover your account if you lose access to all your sessions."
+"Make sure to remember your passphrase or to store it in a safe place. You will need it "
+"to recover your account if you lose access to all your sessions."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:301
@@ -395,8 +392,8 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:54
 msgid ""
-"To access the recovery data, we need the recovery passphrase or the recovery "
-"key that is usually set up when you create your account."
+"To access the recovery data, we need the recovery passphrase or the recovery key that "
+"is usually set up when you create your account."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:67
@@ -420,8 +417,8 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:156
 msgid ""
-"Resetting account recovery can allow you to fix or reset part or all of your "
-"recovery setup."
+"Resetting account recovery can allow you to fix or reset part or all of your recovery "
+"setup."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:174
@@ -429,17 +426,15 @@ msgid "Reset Room Encryption Keys Backup"
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:181
-msgid ""
-"If you do not provide a new recovery passphrase, a recovery key will be "
-"created."
+msgid "If you do not provide a new recovery passphrase, a recovery key will be created."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:189
 #: src/components/crypto/recovery_setup_view.ui:284
 msgid ""
-"You should not reuse the password of your Matrix account as a passphrase. "
-"Otherwise, if someone manages to get your account password, they will also "
-"be able to access all your encrypted conversations and to impersonate you."
+"You should not reuse the password of your Matrix account as a passphrase. Otherwise, if "
+"someone manages to get your account password, they will also be able to access all your "
+"encrypted conversations and to impersonate you."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:202
@@ -454,13 +449,12 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:268
 msgid ""
-"Account recovery allows you to recover your crypto identity and to read your "
-"encrypted messages even if you lose access to all your sessions."
+"Account recovery allows you to recover your crypto identity and to read your encrypted "
+"messages even if you lose access to all your sessions."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:276
-msgid ""
-"If you do not provide a recovery passphrase, a recovery key will be created."
+msgid "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:327
@@ -489,14 +483,14 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:476
 msgid ""
-"To fix this, you should reset the recovery from a session that has all the "
-"data, and attempt to recover this session again."
+"To fix this, you should reset the recovery from a session that has all the data, and "
+"attempt to recover this session again."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:484
 msgid ""
-"Note that account recovery can have a different name in other Matrix "
-"clients, like “key backup” or “secure backup”."
+"Note that account recovery can have a different name in other Matrix clients, like “key "
+"backup” or “secure backup”."
 msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:504
@@ -509,8 +503,7 @@ msgstr ""
 
 #: src/components/dialogs/auth.rs:278
 msgid ""
-"Please authenticate the operation via the browser and, once completed, press "
-"confirm"
+"Please authenticate the operation via the browser and, once completed, press confirm"
 msgstr ""
 
 #: src/components/dialogs/auth.ui:4
@@ -540,16 +533,14 @@ msgid "View"
 msgstr ""
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/join_room.rs:228
-#: src/components/dialogs/join_room.ui:91
+#: src/components/dialogs/join_room.rs:228 src/components/dialogs/join_room.ui:91
 msgid "Look Up"
 msgstr ""
 
 #: src/components/dialogs/join_room.rs:291
 msgid ""
-"The room details cannot be previewed. It can be because the room is not "
-"known by the homeserver or because its details are private. You can still "
-"try to join it."
+"The room details cannot be previewed. It can be because the room is not known by the "
+"homeserver or because its details are private. You can still try to join it."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
@@ -559,14 +550,12 @@ msgstr ""
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/components/dialogs/join_room.ui:4 src/components/dialogs/join_room.ui:38
 msgid "Join a Room"
 msgstr ""
 
-#: src/components/dialogs/join_room.ui:17 src/login/greeter.ui:16
-#: src/login/greeter.ui:18
+#: src/components/dialogs/join_room.ui:17 src/login/greeter.ui:16 src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
 #: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
@@ -591,14 +580,13 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:26
 msgid ""
-"Do you really want to decline this invite? You can join this room on your "
-"own later."
+"Do you really want to decline this invite? You can join this room on your own later."
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:29
 msgid ""
-"Do you really want to decline this invite? You will not be able to join this "
-"room without it."
+"Do you really want to decline this invite? You will not be able to join this room "
+"without it."
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:32
@@ -618,8 +606,8 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:42
 msgid ""
-"Do you really want to leave this room? You will not be able to come back "
-"without an invitation."
+"Do you really want to leave this room? You will not be able to come back without an "
+"invitation."
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:45
@@ -663,13 +651,12 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:138
 msgid ""
-"Are you sure you want to ban {user_id}? They will not be able to join the "
-"room again until someone unbans them."
+"Are you sure you want to ban {user_id}? They will not be able to join the room again "
+"until someone unbans them."
 msgstr ""
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:141
-#: src/components/user_page.ui:155
+#: src/components/dialogs/message_dialogs.rs:141 src/components/user_page.ui:155
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr ""
@@ -684,20 +671,19 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:159
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will still be "
-"able to join the room on their own."
+"Are you sure you want to revoke the invite for {user_id}? They will still be able to "
+"join the room on their own."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:166
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will not be "
-"able to join the room again until someone reinvites them."
+"Are you sure you want to revoke the invite for {user_id}? They will not be able to join "
+"the room again until someone reinvites them."
 msgstr ""
 
-#: src/components/dialogs/message_dialogs.rs:170
-#: src/components/user_page.rs:417
+#: src/components/dialogs/message_dialogs.rs:170 src/components/user_page.rs:417
 msgid "Revoke Invite"
 msgstr ""
 
@@ -713,8 +699,7 @@ msgstr ""
 msgid "Are you sure you want to deny access to {user_id}?"
 msgstr ""
 
-#: src/components/dialogs/message_dialogs.rs:186
-#: src/components/user_page.rs:418
+#: src/components/dialogs/message_dialogs.rs:186 src/components/user_page.rs:418
 msgid "Deny Access"
 msgstr ""
 
@@ -728,22 +713,21 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:197
 msgid ""
-"Are you sure you want to kick {user_id}? They will still be able to join the "
-"room again on their own."
+"Are you sure you want to kick {user_id}? They will still be able to join the room again "
+"on their own."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:204
 msgid ""
-"Are you sure you want to kick {user_id}? They will not be able to join the "
-"room again until someone invites them."
+"Are you sure you want to kick {user_id}? They will not be able to join the room again "
+"until someone invites them."
 msgstr ""
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:208
-#: src/components/user_page.rs:420
+#: src/components/dialogs/message_dialogs.rs:208 src/components/user_page.rs:420
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr ""
@@ -758,13 +742,12 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:225
 msgid ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove 1 message sent by {user_id}? This cannot be undone."
+"This removes all the messages received from the homeserver. Are you sure you want to "
+"remove 1 message sent by {user_id}? This cannot be undone."
 msgid_plural ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove {n} messages sent by {user_id}? This cannot be undone."
+"This removes all the messages received from the homeserver. Are you sure you want to "
+"remove {n} messages sent by {user_id}? This cannot be undone."
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
@@ -783,8 +766,8 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:242
 msgid ""
-"There are no messages received from the homeserver sent by {user_id}. You "
-"can try to load more by going further back in the room history."
+"There are no messages received from the homeserver sent by {user_id}. You can try to "
+"load more by going further back in the room history."
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:257
@@ -798,7 +781,6 @@ msgstr ""
 msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] ""
-msgstr[1] ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -810,8 +792,7 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:358
 msgid ""
-"Are you sure you want to mute {user_id}? They will not be able to send new "
-"messages."
+"Are you sure you want to mute {user_id}? They will not be able to send new messages."
 msgstr ""
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
@@ -829,8 +810,8 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:393
 msgid ""
-"If you promote {user_id} to the same level as yours, you will not be able to "
-"demote them in the future."
+"If you promote {user_id} to the same level as yours, you will not be able to demote "
+"them in the future."
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:405
@@ -989,7 +970,6 @@ msgstr ""
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/components/user_page.rs:702
 msgid "Identity verified"
@@ -1032,8 +1012,7 @@ msgstr ""
 msgid "Could not ignore user"
 msgstr ""
 
-#: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:73
+#: src/components/user_page.ui:66 src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID"
 msgstr ""
@@ -1096,26 +1075,22 @@ msgstr ""
 
 #: src/error_page.ui:39
 msgid ""
-"Fractal relies on a Secret Portal to manage your sensitive session "
-"information and an error occurred while we were trying to restore your "
-"sessions."
+"Fractal relies on a Secret Portal to manage your sensitive session information and an "
+"error occurred while we were trying to restore your sessions."
 msgstr ""
 
 #: src/error_page.ui:51
-msgid ""
-"Here are a few things that might help you fix issues with the Secret Portal:"
+msgid "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr ""
 
 #: src/error_page.ui:68
-msgid ""
-"Make sure you have a Secret Portal Backend Provider installed, like gnome-"
-"keyring."
+msgid "Make sure you have a Secret Portal Backend Provider installed, like gnome-keyring."
 msgstr ""
 
 #: src/error_page.ui:91
 msgid ""
-"If you prefer to use a Secret Service Provider instead, you need to allow "
-"Fractal to interact with it, like this:"
+"If you prefer to use a Secret Service Provider instead, you need to allow Fractal to "
+"interact with it, like this:"
 msgstr ""
 
 #: src/error_page.ui:113
@@ -1127,9 +1102,7 @@ msgid "Check that you have a default keyring and that it is unlocked."
 msgstr ""
 
 #: src/error_page.ui:160
-msgid ""
-"Check the application logs and your distribution’s documentation for more "
-"details."
+msgid "Check the application logs and your distribution’s documentation for more details."
 msgstr ""
 
 #: src/error_page.ui:176
@@ -1200,8 +1173,7 @@ msgid "An unexpected error happened during the verification process."
 msgstr ""
 
 #: src/identity_verification_view/cancelled_page.rs:165
-#: src/identity_verification_view/mod.ui:113
-#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/mod.ui:113 src/identity_verification_view/mod.ui:124
 #: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr ""
@@ -1299,8 +1271,7 @@ msgstr ""
 #. variable name.
 #: src/identity_verification_view/completed_page.rs:130
 msgid ""
-"{user} is verified and you can now be sure that your communication will be "
-"private."
+"{user} is verified and you can now be sure that your communication will be private."
 msgstr ""
 
 #: src/identity_verification_view/confirm_qr_code_page.rs:128
@@ -1364,29 +1335,27 @@ msgid "Verification Successful"
 msgstr ""
 
 #: src/identity_verification_view/no_supported_methods_page.rs:138
-msgid ""
-"None of the methods offered by the other client are supported by Fractal."
+msgid "None of the methods offered by the other client are supported by Fractal."
 msgstr ""
 
 #: src/identity_verification_view/no_supported_methods_page.rs:141
 msgid ""
-"A login request was received, but none of the methods offered by the other "
-"client are supported by Fractal."
+"A login request was received, but none of the methods offered by the other client are "
+"supported by Fractal."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/no_supported_methods_page.rs:150
-msgid ""
-"None of the methods offered by {user}’s client are supported by Fractal."
+msgid "None of the methods offered by {user}’s client are supported by Fractal."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/no_supported_methods_page.rs:157
 msgid ""
-"{user} sent a verification request, but none of the methods offered by the "
-"other client are supported by Fractal."
+"{user} sent a verification request, but none of the methods offered by the other client "
+"are supported by Fractal."
 msgstr ""
 
 #: src/identity_verification_view/no_supported_methods_page.rs:169
@@ -1399,22 +1368,20 @@ msgstr ""
 
 #: src/identity_verification_view/no_supported_methods_page.ui:44
 msgid ""
-"You can accept this verification from another session or decline it for all "
-"your sessions"
+"You can accept this verification from another session or decline it for all your "
+"sessions"
 msgstr ""
 
 #: src/identity_verification_view/qr_code_scanned_page.rs:118
 msgid ""
-"You scanned the QR code successfully. You may need to confirm the "
-"verification from the other session."
+"You scanned the QR code successfully. You may need to confirm the verification from the "
+"other session."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/qr_code_scanned_page.rs:123
-msgid ""
-"You scanned the QR code successfully. {user} may need to confirm the "
-"verification."
+msgid "You scanned the QR code successfully. {user} may need to confirm the verification."
 msgstr ""
 
 #: src/identity_verification_view/room_left_page.ui:37
@@ -1433,16 +1400,14 @@ msgstr ""
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:164
 msgid ""
-"Ask {user} if they see the following emoji appear in the same order on their "
-"screen."
+"Ask {user} if they see the following emoji appear in the same order on their screen."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:171
 msgid ""
-"Ask {user} if they see the following numbers appear in the same order on "
-"their screen."
+"Ask {user} if they see the following numbers appear in the same order on their screen."
 msgstr ""
 
 #: src/identity_verification_view/sas_page.rs:253
@@ -1503,8 +1468,8 @@ msgstr ""
 
 #: src/identity_verification_view/wait_for_other_page.ui:41
 msgid ""
-"To be secure, the verification should happen in person or use a trusted way "
-"of communication."
+"To be secure, the verification should happen in person or use a trusted way of "
+"communication."
 msgstr ""
 
 #: src/identity_verification_view/wait_for_other_page.ui:55
@@ -1521,10 +1486,9 @@ msgstr ""
 
 #: src/login/advanced_dialog.ui:11
 msgid ""
-"Auto-discovery, also known as “well-known lookup”, allows to discover the "
-"URL of a Matrix homeserver from a domain name. This should only be disabled "
-"if your homeserver doesn’t support auto-discovery or if you want to provide "
-"the URL yourself."
+"Auto-discovery, also known as “well-known lookup”, allows to discover the URL of a "
+"Matrix homeserver from a domain name. This should only be disabled if your homeserver "
+"doesn’t support auto-discovery or if you want to provide the URL yourself."
 msgstr ""
 
 #: src/login/advanced_dialog.ui:14
@@ -1679,20 +1643,19 @@ msgstr ""
 
 #: src/secret/linux.rs:467
 msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
+"An unexpected error occurred when interacting with the D-Bus Secret Portal backend."
 msgstr ""
 
 #: src/secret/linux.rs:470
 msgid ""
-"The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
-"any prompt asking to access it."
+"The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt "
+"asking to access it."
 msgstr ""
 
 #: src/secret/linux.rs:473
 msgid ""
-"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
-"installed, and it is at least at version 1.5.0."
+"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, "
+"and it is at least at version 1.5.0."
 msgstr ""
 
 #: src/secret/linux.rs:476
@@ -1704,8 +1667,7 @@ msgid "The item was deleted."
 msgstr ""
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Service."
+msgid "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 
 #: src/secret/linux.rs:497
@@ -1722,14 +1684,14 @@ msgstr ""
 
 #: src/secret/linux.rs:507
 msgid ""
-"The request to the D-Bus Secret Service was cancelled. Make sure to accept "
-"any prompt asking to access it."
+"The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt "
+"asking to access it."
 msgstr ""
 
 #: src/secret/linux.rs:510
 msgid ""
-"Could not access the default collection. Make sure a keyring was created and "
-"set as default."
+"Could not access the default collection. Make sure a keyring was created and set as "
+"default."
 msgstr ""
 
 #: src/session/model/session.rs:579
@@ -1925,29 +1887,27 @@ msgstr ""
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:43
 msgid ""
-"Deactivating your account means you will lose access to all your messages, "
-"contacts, files, and more, forever."
+"Deactivating your account means you will lose access to all your messages, contacts, "
+"files, and more, forever."
 msgstr ""
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:52
 msgid ""
-"To confirm that you really want to deactivate this account, type in your "
-"Matrix user ID:"
+"To confirm that you really want to deactivate this account, type in your Matrix user ID:"
 msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.rs:87
 msgid ""
-"The crypto identity and account recovery are not set up properly. If this is "
-"your last connected session and you have no recent local backup of your "
-"encryption keys, you will not be able to restore your account."
+"The crypto identity and account recovery are not set up properly. If this is your last "
+"connected session and you have no recent local backup of your encryption keys, you will "
+"not be able to restore your account."
 msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.rs:95
 msgid ""
-"This is your last connected session. Make sure that you can still access "
-"your recovery key or passphrase, or to backup your encryption keys before "
-"logging out."
+"This is your last connected session. Make sure that you can still access your recovery "
+"key or passphrase, or to backup your encryption keys before logging out."
 msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
@@ -1974,15 +1934,14 @@ msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 msgid ""
-"Logging out of this session failed. You can try again, or, if this is a "
-"permanent error, you can remove the session."
+"Logging out of this session failed. You can try again, or, if this is a permanent "
+"error, you can remove the session."
 msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:150
 msgid ""
-"Removing the session deletes the associated data from the system, but your "
-"homeserver and other sessions will not be aware that this session was logged "
-"out."
+"Removing the session deletes the associated data from the system, but your homeserver "
+"and other sessions will not be aware that this session was logged out."
 msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:167
@@ -2122,9 +2081,7 @@ msgid "Global"
 msgstr ""
 
 #: src/session/view/account_settings/notifications_page.ui:28
-msgid ""
-"Which messages trigger notifications in rooms that do not have more specific "
-"rules"
+msgid "Which messages trigger notifications in rooms that do not have more specific rules"
 msgstr ""
 
 #: src/session/view/account_settings/notifications_page.ui:31
@@ -2145,8 +2102,8 @@ msgstr ""
 
 #: src/session/view/account_settings/notifications_page.ui:55
 msgid ""
-"Messages that contain one of these keywords trigger notifications. Matching "
-"on these keywords is case-insensitive."
+"Messages that contain one of these keywords trigger notifications. Matching on these "
+"keywords is case-insensitive."
 msgstr ""
 
 #: src/session/view/account_settings/notifications_page.ui:67
@@ -2184,15 +2141,15 @@ msgstr ""
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:173
 msgid ""
-"Exporting your room encryption keys allows you to make a backup to be able "
-"to decrypt your messages in end-to-end encrypted rooms on another device or "
-"with another Matrix client."
+"Exporting your room encryption keys allows you to make a backup to be able to decrypt "
+"your messages in end-to-end encrypted rooms on another device or with another Matrix "
+"client."
 msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:176
 msgid ""
-"The backup must be stored in a safe place and must be protected with a "
-"strong passphrase that will be used to encrypt the data."
+"The backup must be stored in a safe place and must be protected with a strong "
+"passphrase that will be used to encrypt the data."
 msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:179
@@ -2208,8 +2165,8 @@ msgstr ""
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:185
 msgid ""
-"Importing your room encryption keys allows you to decrypt your messages in "
-"end-to-end encrypted rooms with a previous backup from a Matrix client."
+"Importing your room encryption keys allows you to decrypt your messages in end-to-end "
+"encrypted rooms with a previous backup from a Matrix client."
 msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:188
@@ -2251,7 +2208,6 @@ msgstr ""
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:354
 msgid "Could not export the keys"
@@ -2327,8 +2283,7 @@ msgid "Account Recovery Disabled"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.rs:306
-msgid ""
-"Enable recovery to be able to restore your account without another device"
+msgid "Enable recovery to be able to restore your account without another device"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.rs:312
@@ -2365,8 +2320,8 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:14
 msgid ""
-"Allow other members of the rooms you participate in to track which messages "
-"you have seen"
+"Allow other members of the rooms you participate in to track which messages you have "
+"seen"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:20
@@ -2375,14 +2330,13 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:21
 msgid ""
-"Allow other members of the rooms you participate in to see when you are "
-"typing a message"
+"Allow other members of the rooms you participate in to see when you are typing a message"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:27
 msgid ""
-"All messages or invitations sent by these users will be ignored. You will "
-"still see some of their activity, like when they join or leave a room."
+"All messages or invitations sent by these users will be ignored. You will still see "
+"some of their activity, like when they join or leave a room."
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:36
@@ -2391,8 +2345,8 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:37
 msgid ""
-"Allows you to verify other Matrix accounts and automatically trust their "
-"verified sessions"
+"Allows you to verify other Matrix accounts and automatically trust their verified "
+"sessions"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:99
@@ -2401,8 +2355,8 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:100
 msgid ""
-"Allows to fully recover your account with a recovery key or passphrase, if "
-"you ever lose access to all your sessions"
+"Allows to fully recover your account with a recovery key or passphrase, if you ever "
+"lose access to all your sessions"
 msgstr ""
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:5
@@ -2610,8 +2564,7 @@ msgstr ""
 msgid "Join a room to start chatting"
 msgstr ""
 
-#: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/mod.ui:39 src/session/view/content/room_history/mod.ui:212
 msgid "Room History"
 msgstr ""
 
@@ -2718,15 +2671,15 @@ msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:15
 msgid ""
-"Public addresses are advertised for all users in the room and the main "
-"address is used to identify a room publicly. Before adding an address to "
-"this list, it must be registered as a local address."
+"Public addresses are advertised for all users in the room and the main address is used "
+"to identify a room publicly. Before adding an address to this list, it must be "
+"registered as a local address."
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:46
 msgid ""
-"Local addresses can only be registered with your own homeserver. If they are "
-"not made public, only people on your homeserver can discover them."
+"Local addresses can only be registered with your own homeserver. If they are not made "
+"public, only people on your homeserver can discover them."
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:81
@@ -2776,8 +2729,7 @@ msgstr ""
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:528
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:586
-msgid ""
-"This page contains unsaved changes. Changes which are not saved will be lost."
+msgid "This page contains unsaved changes. Changes which are not saved will be lost."
 msgstr ""
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:538
@@ -2814,7 +2766,6 @@ msgstr ""
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/general_page.rs:674
 msgid "Could not change notifications setting"
@@ -2886,8 +2837,8 @@ msgstr ""
 
 #: src/session/view/content/room_details/general_page.rs:1114
 msgid ""
-"Enabling encryption will prevent new members to read the history before they "
-"arrived. This cannot be disabled later."
+"Enabling encryption will prevent new members to read the history before they arrived. "
+"This cannot be disabled later."
 msgstr ""
 
 #: src/session/view/content/room_details/general_page.rs:1129
@@ -3155,7 +3106,6 @@ msgstr ""
 msgid "Could not invite {user} to {room}"
 msgid_plural "Could not invite {n} users to {room}"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:4
 msgid "Invite New Members"
@@ -3209,7 +3159,6 @@ msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
 msgstr[0] ""
-msgstr[1] ""
 
 #. Translators: As in 'Banned Room Member(s)'.
 #: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
@@ -3217,25 +3166,21 @@ msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:286
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:288
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:289
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:330
 msgid "No Invited Room Members"
@@ -3421,11 +3366,10 @@ msgstr ""
 
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:76
 msgid ""
-"Upgrading a room to a more recent version allows to benefit from new "
-"features from the Matrix specification. It can also be used to reset the "
-"room state, which should make the room faster to join. However it should be "
-"used sparingly because it can be disruptive, as room members need to join "
-"the new room manually."
+"Upgrading a room to a more recent version allows to benefit from new features from the "
+"Matrix specification. It can also be used to reset the room state, which should make "
+"the room faster to join. However it should be used sparingly because it can be "
+"disruptive, as room members need to join the new room manually."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
@@ -3585,9 +3529,9 @@ msgstr ""
 
 #: src/session/view/content/room_history/item_row.rs:923
 msgid ""
-"Reporting an event will send its unique ID to the administrator of your "
-"homeserver. The administrator will not be able to see the content of the "
-"event if it is encrypted or redacted."
+"Reporting an event will send its unique ID to the administrator of your homeserver. The "
+"administrator will not be able to see the content of the event if it is encrypted or "
+"redacted."
 msgstr ""
 
 #. Translators: This is a verb, as in 'Report Event'.
@@ -3617,8 +3561,7 @@ msgstr ""
 
 #: src/session/view/content/room_history/message_row/content.rs:237
 msgid ""
-"Could not decrypt this message, decryption will be retried once the keys are "
-"available."
+"Could not decrypt this message, decryption will be retried once the keys are available."
 msgstr ""
 
 #: src/session/view/content/room_history/message_row/content.rs:247
@@ -3678,7 +3621,6 @@ msgstr ""
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_history/message_row/reaction/mod.rs:233
 msgid "{user} reacted with {reaction_key}"
@@ -3886,26 +3828,22 @@ msgid "This room was closed"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:873
-#: src/session/view/sidebar/row.rs:738
+#: src/session/view/content/room_history/mod.rs:873 src/session/view/sidebar/row.rs:738
 msgid "Could not leave {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:892
-#: src/session/view/sidebar/row.rs:727
+#: src/session/view/content/room_history/mod.rs:892 src/session/view/sidebar/row.rs:727
 msgid "Could not join {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:909
-#: src/session/view/sidebar/row.rs:771
+#: src/session/view/content/room_history/mod.rs:909 src/session/view/sidebar/row.rs:771
 msgid "Could not forget {room}"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:1008
-#: src/session/view/sidebar/mod.rs:424
+#: src/session/view/content/room_history/mod.rs:1008 src/session/view/sidebar/mod.rs:424
 msgid "Context Menu"
 msgstr ""
 
@@ -3921,18 +3859,15 @@ msgstr "_รายละเอียดห้อง"
 msgid "_Invite New Members…"
 msgstr "_เชิญสมาชิกใหม่…"
 
-#: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:78
+#: src/session/view/content/room_history/mod.ui:18 src/session/view/sidebar/mod.ui:78
 msgid "_Leave Room"
 msgstr "_ออกจากห้อง"
 
-#: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:83
+#: src/session/view/content/room_history/mod.ui:23 src/session/view/sidebar/mod.ui:83
 msgid "Re_join Room"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/content/room_history/mod.ui:28 src/session/view/sidebar/mod.ui:88
 msgid "_Forget Room"
 msgstr ""
 
@@ -4021,7 +3956,6 @@ msgstr ""
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] ""
-msgstr[1] ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4095,7 +4029,6 @@ msgstr ""
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:769
 msgid "Stop ignoring user…"
@@ -4270,7 +4203,6 @@ msgstr ""
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/session/view/content/room_history/verification_info_bar.rs:67
 msgid "Could not accept verification"
@@ -4326,8 +4258,7 @@ msgstr ""
 msgid "Latest Edit Source"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:4
-#: src/session/view/event_details_dialog.ui:14
+#: src/session/view/event_details_dialog.ui:4 src/session/view/event_details_dialog.ui:14
 msgid "Event Details"
 msgstr ""
 
@@ -4531,7 +4462,6 @@ msgid "Move to _Rooms"
 msgstr ""
 
 #: src/session/view/sidebar/mod.ui:61
-#, fuzzy
 msgid "Move to Low _Priority"
 msgstr "ย้ายไปหมวด_ความสำคัญต่ำ"
 
@@ -4585,7 +4515,6 @@ msgstr ""
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] ""
-msgstr[1] ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:747
@@ -4624,24 +4553,20 @@ msgstr ""
 msgid "Reject Invite"
 msgstr ""
 
-#: src/session/view/sidebar/section_row.rs:122
-#: src/session/view/sidebar/section_row.rs:135
+#: src/session/view/sidebar/section_row.rs:122 src/session/view/sidebar/section_row.rs:135
 msgid "Move to Rooms"
 msgstr ""
 
-#: src/session/view/sidebar/section_row.rs:123
-#: src/session/view/sidebar/section_row.rs:129
+#: src/session/view/sidebar/section_row.rs:123 src/session/view/sidebar/section_row.rs:129
 msgid "Move to Low Priority"
 msgstr ""
 
-#: src/session/view/sidebar/section_row.rs:124
-#: src/session/view/sidebar/section_row.rs:130
+#: src/session/view/sidebar/section_row.rs:124 src/session/view/sidebar/section_row.rs:130
 #: src/session/view/sidebar/section_row.rs:136
 msgid "Leave Room"
 msgstr ""
 
-#: src/session/view/sidebar/section_row.rs:128
-#: src/session/view/sidebar/section_row.rs:134
+#: src/session/view/sidebar/section_row.rs:128 src/session/view/sidebar/section_row.rs:134
 msgid "Move to Favorites"
 msgstr ""
 
@@ -4722,7 +4647,6 @@ msgstr ""
 msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
 msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
 msgstr[0] ""
-msgstr[1] ""
 
 #: src/user_facing_error.rs:61
 msgid "You exceeded the homeserver’s rate limit, try again later."
