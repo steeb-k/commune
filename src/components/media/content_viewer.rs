@@ -2,14 +2,13 @@ use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
-use tracing::warn;
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
     spawn,
-    utils::{media::image::load_image, CountedRef},
+    utils::{media::image::IMAGE_QUEUE, CountedRef},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -243,15 +242,13 @@ impl MediaContentViewer {
             .unwrap_or_default();
 
         match content_type {
-            ContentType::Image => match load_image(file, None).await {
-                Ok(texture) => {
-                    self.view_image(&texture);
+            ContentType::Image => {
+                let handle = IMAGE_QUEUE.add_file_request(file, None).await;
+                if let Ok(image) = handle.await {
+                    self.view_image(&gdk::Paintable::from(image));
                     return;
                 }
-                Err(error) => {
-                    warn!("Could not load image from file: {error}");
-                }
-            },
+            }
             ContentType::Audio => {
                 let audio = if let Some(audio) = imp.viewer.child().and_downcast::<AudioPlayer>() {
                     audio

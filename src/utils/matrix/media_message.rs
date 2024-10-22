@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{gio, glib, prelude::*};
+use gtk::{gio, prelude::*};
 use matrix_sdk::Client;
 use ruma::{
     events::{
@@ -17,7 +17,13 @@ use crate::{
     prelude::*,
     toast,
     utils::{
-        media::image::{ImageSource, ThumbnailDownloader, ThumbnailSettings},
+        media::{
+            image::{
+                Image, ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
+                ThumbnailSettings,
+            },
+            MediaFileError,
+        },
         save_data_to_tmp_file,
     },
 };
@@ -254,7 +260,7 @@ impl VisualMediaMessage {
     }
 
     /// Fetch a thumbnail of the media with the given client and thumbnail
-    /// settings and write it to a temporary file.
+    /// settings.
     ///
     /// This might not return a thumbnail at the requested size, depending on
     /// the message and the homeserver.
@@ -263,12 +269,13 @@ impl VisualMediaMessage {
     /// could be downloaded. This only applies to video messages.
     ///
     /// Returns an error if something occurred while fetching the content or
-    /// saving the content to a file.
-    pub async fn thumbnail_tmp_file(
+    /// loading it.
+    pub async fn thumbnail(
         &self,
-        client: &Client,
+        client: Client,
         settings: ThumbnailSettings,
-    ) -> Result<Option<gio::File>, MediaFileError> {
+        priority: ImageRequestPriority,
+    ) -> Result<Option<Image>, ImageError> {
         let downloader = match &self {
             Self::Image(c) => {
                 let image_info = c.info.as_deref();
@@ -316,9 +323,10 @@ impl VisualMediaMessage {
             }
         };
 
-        let file = downloader.download_to_file(client, settings).await?;
-
-        Ok(Some(file))
+        downloader
+            .download(client, settings, priority)
+            .await
+            .map(Some)
     }
 
     /// Fetch the content of the media with the given client.
@@ -371,14 +379,4 @@ impl From<VisualMediaMessage> for MediaMessage {
             VisualMediaMessage::Sticker(c) => Self::Sticker(c),
         }
     }
-}
-
-/// All errors that can occur when downloading a media to a file.
-#[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub enum MediaFileError {
-    /// An error occurred when downloading the media.
-    Sdk(#[from] matrix_sdk::Error),
-    /// An error occurred when writing the media to a file.
-    File(#[from] glib::Error),
 }

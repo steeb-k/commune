@@ -1,6 +1,5 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
-use tracing::warn;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
@@ -8,7 +7,7 @@ use crate::{
     utils::{
         add_activate_binding_action,
         matrix::VisualMediaMessage,
-        media::image::{load_image, ImageDimensions, ThumbnailSettings},
+        media::image::{ImageDimensions, ImageRequestPriority, ThumbnailSettings},
     },
 };
 
@@ -174,22 +173,12 @@ mod imp {
                 prefer_thumbnail: false,
             };
 
-            let file = match media_message.thumbnail_tmp_file(&client, settings).await {
-                Ok(Some(file)) => file,
-                Ok(None) => return,
-                Err(error) => {
-                    warn!("Could not retrieve media file: {error}");
-                    return;
-                }
-            };
-
-            match load_image(file, Some(dimensions)).await {
-                Ok(paintable) => {
-                    self.picture.set_paintable(Some(&paintable));
-                }
-                Err(error) => {
-                    warn!("Image file not supported: {error}");
-                }
+            if let Ok(Some(image)) = media_message
+                .thumbnail(client, settings, ImageRequestPriority::Default)
+                .await
+            {
+                self.picture
+                    .set_paintable(Some(&gdk::Paintable::from(image)));
             }
         }
     }

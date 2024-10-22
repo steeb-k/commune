@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use glycin::{Frame, Image};
 use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
 use tracing::error;
@@ -14,12 +16,12 @@ mod imp {
 
     #[derive(Default)]
     pub struct AnimatedImagePaintable {
-        /// The source image.
-        image: OnceCell<Arc<Image<'static>>>,
+        /// The image loader.
+        image_loader: OnceCell<Arc<Image<'static>>>,
         /// The current frame that is displayed.
-        pub current_frame: RefCell<Option<Frame>>,
+        pub(super) current_frame: RefCell<Option<Arc<Frame>>>,
         /// The next frame of the animation, if any.
-        next_frame: RefCell<Option<Frame>>,
+        next_frame: RefCell<Option<Arc<Frame>>>,
         /// The source ID of the timeout to load the next frame, if any.
         timeout_source_id: RefCell<Option<glib::SourceId>>,
         /// The counted reference for the animation.
@@ -43,7 +45,7 @@ mod imp {
                 .borrow()
                 .as_ref()
                 .map(|f| f.height())
-                .unwrap_or_else(|| self.image().info().height) as i32
+                .unwrap_or_else(|| self.image_loader().info().height) as i32
         }
 
         fn intrinsic_width(&self) -> i32 {
@@ -51,7 +53,7 @@ mod imp {
                 .borrow()
                 .as_ref()
                 .map(|f| f.width())
-                .unwrap_or_else(|| self.image().info().width) as i32
+                .unwrap_or_else(|| self.image_loader().info().width) as i32
         }
 
         fn snapshot(&self, snapshot: &gdk::Snapshot, width: f64, height: f64) {
@@ -85,14 +87,18 @@ mod imp {
     }
 
     impl AnimatedImagePaintable {
-        /// The source image.
-        fn image(&self) -> &Arc<Image<'static>> {
-            self.image.get().unwrap()
+        /// The image loader.
+        fn image_loader(&self) -> &Arc<Image<'static>> {
+            self.image_loader
+                .get()
+                .expect("image loader is initialized")
         }
 
         /// Initialize the image.
-        pub(super) fn init(&self, image: Image<'static>, first_frame: Frame) {
-            self.image.set(Arc::new(image)).unwrap();
+        pub(super) fn init(&self, image_loader: Arc<Image<'static>>, first_frame: Arc<Frame>) {
+            self.image_loader
+                .set(image_loader)
+                .expect("image loader is uninitialized");
             self.current_frame.replace(Some(first_frame));
 
             self.update_animation();
@@ -179,7 +185,7 @@ mod imp {
         }
 
         async fn load_next_frame_inner(&self) {
-            let image = self.image().clone();
+            let image = self.image_loader().clone();
 
             let result = spawn_tokio!(async move { image.next_frame().await })
                 .await
@@ -187,7 +193,7 @@ mod imp {
 
             match result {
                 Ok(next_frame) => {
-                    self.next_frame.replace(Some(next_frame));
+                    self.next_frame.replace(Some(next_frame.into()));
 
                     // In case loading the frame took longer than the delay between frames.
                     if self.timeout_source_id.borrow().is_none() {
@@ -210,22 +216,23 @@ glib::wrapper! {
 }
 
 impl AnimatedImagePaintable {
-    /// Load an image from the given file.
-    pub fn new(image: Image<'static>, first_frame: Frame) -> Self {
+    /// Construct an `AnimatedImagePaintable` with the given loader and first
+    /// frame.
+    pub(crate) fn new(image_loader: Arc<Image<'static>>, first_frame: Arc<Frame>) -> Self {
         let obj = glib::Object::new::<Self>();
 
-        obj.imp().init(image, first_frame);
+        obj.imp().init(image_loader, first_frame);
 
         obj
     }
 
     /// Get the current `GdkTexture` of this paintable, if any.
-    pub fn current_texture(&self) -> Option<gdk::Texture> {
+    pub(crate) fn current_texture(&self) -> Option<gdk::Texture> {
         Some(self.imp().current_frame.borrow().as_ref()?.texture())
     }
 
     /// Get an animation ref.
-    pub fn animation_ref(&self) -> CountedRef {
+    pub(crate) fn animation_ref(&self) -> CountedRef {
         self.imp().animation_ref().clone()
     }
 }

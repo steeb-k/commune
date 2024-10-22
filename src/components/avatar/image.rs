@@ -3,13 +3,12 @@ use ruma::{
     api::client::media::get_content_thumbnail::v3::Method, events::room::avatar::ImageInfo,
     OwnedMxcUri,
 };
-use tracing::{error, warn};
 
 use crate::{
     session::model::Session,
     spawn,
     utils::media::image::{
-        load_image, ImageDimensions, ImageError, ImageSource, ThumbnailDownloader,
+        ImageDimensions, ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
         ThumbnailSettings,
     },
 };
@@ -246,23 +245,10 @@ impl AvatarImage {
             prefer_thumbnail: true,
         };
 
-        match downloader.download_to_file(&client, settings).await {
-            Ok(file) => {
-                let paintable =
-                    load_image(file, Some(dimensions))
-                        .await
-                        .map(Some)
-                        .map_err(|error| {
-                            warn!("Could not load avatar: {error}");
-                            error.into()
-                        });
-
-                imp.set_paintable(paintable);
-            }
-            Err(error) => {
-                error!("Could not retrieve avatar: {error}");
-                imp.set_paintable(Err(ImageError::Download));
-            }
-        };
+        // TODO: Change priority depending on size?
+        let result = downloader
+            .download(client, settings, ImageRequestPriority::Low)
+            .await;
+        imp.set_paintable(result.map(|image| Some(image.into())));
     }
 }

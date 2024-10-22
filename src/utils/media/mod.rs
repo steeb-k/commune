@@ -133,3 +133,13 @@ pub async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     info.duration = media_info.duration().map(Into::into);
     info
 }
+
+/// All errors that can occur when downloading a media to a file.
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub enum MediaFileError {
+    /// An error occurred when downloading the media.
+    Sdk(#[from] matrix_sdk::Error),
+    /// An error occurred when writing the media to a file.
+    File(#[from] glib::Error),
+}

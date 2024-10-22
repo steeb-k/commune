@@ -8,7 +8,7 @@ use gtk::{
     prelude::*,
     CompositeTemplate,
 };
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 
 use super::{AvatarData, AvatarImage};
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
     toast,
     utils::{
         expression,
-        media::image::{load_image, ImageDimensions, ImageError},
+        media::image::{ImageDimensions, ImageError, IMAGE_QUEUE},
         CountedRef,
     },
 };
@@ -295,13 +295,10 @@ mod imp {
 
         /// Load the temporary paintable from the given file.
         pub(super) async fn set_temp_paintable_from_file(&self, file: gio::File) {
-            let paintable = load_image(file, Some(self.avatar_dimensions()))
-                .await
-                .map(Some)
-                .map_err(|error| {
-                    warn!("Could not load avatar: {error}");
-                    error.into()
-                });
+            let handle = IMAGE_QUEUE
+                .add_file_request(file, Some(self.avatar_dimensions()))
+                .await;
+            let paintable = handle.await.map(|image| Some(image.into()));
             self.set_temp_paintable(paintable);
         }
 

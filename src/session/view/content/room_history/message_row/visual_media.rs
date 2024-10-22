@@ -17,7 +17,7 @@ use crate::{
     spawn,
     utils::{
         matrix::VisualMediaMessage,
-        media::image::{load_image, ImageDimensions, ImageError, ThumbnailSettings},
+        media::image::{ImageDimensions, ImageRequestPriority, ThumbnailSettings},
         CountedRef, LoadingState,
     },
 };
@@ -340,13 +340,13 @@ impl MessageVisualMedia {
                 #[weak(rename_to = obj)]
                 self,
                 async move {
-                    obj.build_inner(media_message, &client).await;
+                    obj.build_inner(media_message, client).await;
                 }
             )
         );
     }
 
-    async fn build_inner(&self, media_message: VisualMediaMessage, client: &Client) {
+    async fn build_inner(&self, media_message: VisualMediaMessage, client: Client) {
         let imp = self.imp();
 
         match &media_message {
@@ -365,49 +365,38 @@ impl MessageVisualMedia {
                     prefer_thumbnail: false,
                 };
 
-                let file = match media_message.thumbnail_tmp_file(client, settings).await {
-                    Ok(Some(file)) => file,
+                let image = match media_message
+                    .thumbnail(client, settings, ImageRequestPriority::Default)
+                    .await
+                {
+                    Ok(Some(image)) => image,
                     Ok(None) => unreachable!("Image messages should always have a fallback"),
                     Err(error) => {
-                        warn!("Could not retrieve media file: {error}");
-                        imp.overlay_error
-                            .set_tooltip_text(Some(&ImageError::Download.to_string()));
+                        imp.overlay_error.set_tooltip_text(Some(&error.to_string()));
                         imp.set_state(LoadingState::Error);
 
                         return;
                     }
                 };
 
-                match load_image(file, None).await {
-                    Ok(paintable) => {
-                        let child =
-                            if let Some(child) = imp.media.child().and_downcast::<gtk::Picture>() {
-                                child
-                            } else {
-                                let child = gtk::Picture::new();
-                                imp.media.set_child(Some(&child));
-                                child
-                            };
-                        child.set_paintable(Some(&paintable));
+                let child = if let Some(child) = imp.media.child().and_downcast::<gtk::Picture>() {
+                    child
+                } else {
+                    let child = gtk::Picture::new();
+                    imp.media.set_child(Some(&child));
+                    child
+                };
+                child.set_paintable(Some(&gdk::Paintable::from(image)));
 
-                        child.set_tooltip_text(Some(&filename));
-                        if is_sticker {
-                            imp.media.remove_css_class("opaque-bg");
-                        } else {
-                            imp.media.add_css_class("opaque-bg");
-                        }
-                    }
-                    Err(error) => {
-                        warn!("Could not load image: {error}");
-                        let image_error = ImageError::from(error);
-                        imp.overlay_error
-                            .set_tooltip_text(Some(&image_error.to_string()));
-                        imp.set_state(LoadingState::Error);
-                    }
+                child.set_tooltip_text(Some(&filename));
+                if is_sticker {
+                    imp.media.remove_css_class("opaque-bg");
+                } else {
+                    imp.media.add_css_class("opaque-bg");
                 }
             }
             VisualMediaMessage::Video(_) => {
-                let file = match media_message.into_tmp_file(client).await {
+                let file = match media_message.into_tmp_file(&client).await {
                     Ok(file) => file,
                     Err(error) => {
                         warn!("Could not retrieve media file: {error}");

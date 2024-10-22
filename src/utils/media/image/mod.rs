@@ -1,6 +1,6 @@
 //! Collection of methods for images.
 
-use std::{fmt, str::FromStr};
+use std::{fmt, str::FromStr, sync::Arc};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*};
@@ -21,14 +21,13 @@ use ruma::{
     },
     OwnedMxcUri,
 };
-use tracing::warn;
 
-use crate::{
-    components::AnimatedImagePaintable,
-    spawn_tokio,
-    utils::{matrix::MediaFileError, save_data_to_tmp_file},
-    DISABLE_GLYCIN_SANDBOX,
-};
+mod queue;
+
+pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
+
+use super::MediaFileError;
+use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
 
 /// The default width of a generated thumbnail.
 const THUMBNAIL_DEFAULT_WIDTH: u32 = 800;
@@ -60,8 +59,8 @@ const THUMBNAIL_MAX_FILESIZE_THRESHOLD: u32 = 1024 * 1024;
 /// assume it's worth it to generate a thumbnail.
 const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 
-/// Get an image reader for the given file.
-async fn image_reader(file: gio::File) -> Result<glycin::Image<'static>, glycin::ErrorCtx> {
+/// Get an image loader for the given file.
+async fn image_loader(file: gio::File) -> Result<glycin::Image<'static>, glycin::ErrorCtx> {
     let mut loader = glycin::Loader::new(file);
 
     if DISABLE_GLYCIN_SANDBOX {
@@ -77,14 +76,14 @@ async fn image_reader(file: gio::File) -> Result<glycin::Image<'static>, glycin:
 ///
 /// Set `request_dimensions` if the image will be shown at specific dimensions.
 /// To show the image at its natural size, set it to `None`.
-pub async fn load_image(
+async fn load_image(
     file: gio::File,
     request_dimensions: Option<ImageDimensions>,
-) -> Result<gdk::Paintable, glycin::ErrorCtx> {
-    let image = image_reader(file).await?;
+) -> Result<Image, glycin::ErrorCtx> {
+    let image_loader = image_loader(file).await?;
 
     let frame_request = request_dimensions.map(|request| {
-        let image_info = image.info();
+        let image_info = image_loader.info();
 
         let original_dimensions = ImageDimensions {
             width: image_info.width,
@@ -94,24 +93,44 @@ pub async fn load_image(
         original_dimensions.to_image_loader_request(request)
     });
 
-    let (image, first_frame) = spawn_tokio!(async move {
+    spawn_tokio!(async move {
         let first_frame = if let Some(frame_request) = frame_request {
-            image.specific_frame(frame_request).await?
+            image_loader.specific_frame(frame_request).await?
         } else {
-            image.next_frame().await?
+            image_loader.next_frame().await?
         };
-        Ok((image, first_frame))
+        Ok(Image {
+            loader: image_loader.into(),
+            first_frame: first_frame.into(),
+        })
     })
     .await
-    .unwrap()?;
+    .expect("task was not aborted")
+}
 
-    let paintable = if first_frame.delay().is_some() {
-        AnimatedImagePaintable::new(image, first_frame).upcast()
-    } else {
-        first_frame.texture().upcast()
-    };
+/// An image that was just loaded.
+#[derive(Clone)]
+pub struct Image {
+    /// The image loader.
+    loader: Arc<glycin::Image<'static>>,
+    /// The first frame of the image.
+    first_frame: Arc<glycin::Frame>,
+}
 
-    Ok(paintable)
+impl fmt::Debug for Image {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Image").finish_non_exhaustive()
+    }
+}
+
+impl From<Image> for gdk::Paintable {
+    fn from(value: Image) -> Self {
+        if value.first_frame.delay().is_some() {
+            AnimatedImagePaintable::new(value.loader, value.first_frame).upcast()
+        } else {
+            value.first_frame.texture().upcast()
+        }
+    }
 }
 
 /// An API to load image information.
@@ -130,8 +149,8 @@ impl ImageInfoLoader {
     async fn into_first_frame(self) -> Option<Frame> {
         match self {
             Self::File(file) => {
-                let image_reader = image_reader(file).await.ok()?;
-                let handle = spawn_tokio!(async move { image_reader.next_frame().await });
+                let image_loader = image_loader(file).await.ok()?;
+                let handle = spawn_tokio!(async move { image_loader.next_frame().await });
                 Some(Frame::Glycin(handle.await.unwrap().ok()?))
             }
             Self::Texture(texture) => Some(Frame::Texture(gdk::TextureDownloader::new(&texture))),
@@ -341,17 +360,17 @@ impl ImageDimensions {
     ///
     /// Returns `true` if either `width` or `height` is bigger than or equal to
     /// the given dimensions.
-    pub fn is_bigger_than(&self, other: ImageDimensions) -> bool {
+    fn is_bigger_than(&self, other: ImageDimensions) -> bool {
         self.width >= other.width || self.height >= other.height
     }
 
     /// Whether these dimensions should be resized to generate a thumbnail.
-    pub fn should_resize_for_thumbnail(&self, thumbnail_dimensions: ImageDimensions) -> bool {
+    fn should_resize_for_thumbnail(&self, thumbnail_dimensions: ImageDimensions) -> bool {
         self.is_bigger_than(thumbnail_dimensions.increase_by(THUMBNAIL_DIMENSIONS_THRESHOLD))
     }
 
     /// Increase both these dimensions by the given value.
-    pub const fn increase_by(mut self, value: u32) -> Self {
+    const fn increase_by(mut self, value: u32) -> Self {
         self.width = self.width.saturating_add(value);
         self.height = self.height.saturating_add(value);
         self
@@ -360,7 +379,7 @@ impl ImageDimensions {
     /// Compute the new dimensions for resizing to the requested dimensions
     /// while preserving the aspect ratio of these dimensions and respecting
     /// the given strategy.
-    pub fn resize(self, requested_dimensions: ImageDimensions, strategy: ResizeStrategy) -> Self {
+    fn resize(self, requested_dimensions: ImageDimensions, strategy: ResizeStrategy) -> Self {
         let w_ratio = self.width as f64 / requested_dimensions.width as f64;
         let h_ratio = self.height as f64 / requested_dimensions.height as f64;
 
@@ -387,7 +406,7 @@ impl ImageDimensions {
     ///
     /// Returns `None` if these dimensions are smaller than the wanted
     /// dimensions.
-    pub fn resize_for_thumbnail(self) -> Option<Self> {
+    pub(super) fn resize_for_thumbnail(self) -> Option<Self> {
         let thumbnail_dimensions = THUMBNAIL_DEFAULT_DIMENSIONS;
 
         if !self.should_resize_for_thumbnail(thumbnail_dimensions) {
@@ -399,7 +418,7 @@ impl ImageDimensions {
 
     /// Convert these dimensions to a request for the image loader with the
     /// requested dimensions.
-    pub fn to_image_loader_request(
+    fn to_image_loader_request(
         self,
         requested_dimensions: ImageDimensions,
     ) -> glycin::FrameRequest {
@@ -502,14 +521,14 @@ impl<'a> ThumbnailDownloader<'a> {
     ///
     /// This might not return a thumbnail at the requested size, depending on
     /// the sources and the homeserver.
-    ///
-    /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
-    /// if something occurred while fetching the content.
-    pub async fn download_to_file(
+    pub async fn download(
         self,
-        client: &Client,
+        client: Client,
         settings: ThumbnailSettings,
-    ) -> Result<gio::File, MediaFileError> {
+        priority: ImageRequestPriority,
+    ) -> Result<Image, ImageError> {
+        let dimensions = settings.dimensions;
+
         // First, select which source we are going to download from.
         let source = if let Some(alt) = self.alt {
             if !self.main.can_be_thumbnailed()
@@ -527,42 +546,31 @@ impl<'a> ThumbnailDownloader<'a> {
             self.main
         };
 
-        let data = if source.should_thumbnail(settings.prefer_thumbnail, settings.dimensions) {
+        if source.should_thumbnail(settings.prefer_thumbnail, settings.dimensions) {
             // Try to get a thumbnail.
-            let media = client.media();
             let request = MediaRequest {
                 source: source.source.to_common_media_source(),
                 format: MediaFormat::Thumbnail(settings.into()),
             };
-            let handle = spawn_tokio!(async move { media.get_media_content(&request, true).await });
+            let handle = IMAGE_QUEUE
+                .add_download_request(client.clone(), request, Some(dimensions), priority)
+                .await;
 
-            match handle.await.unwrap() {
-                Ok(data) => Some(data),
-                Err(error) => {
-                    warn!("Could not retrieve media thumbnail: {error}");
-                    None
-                }
+            if let Ok(image) = handle.await {
+                return Ok(image);
             }
-        } else {
-            None
-        };
+        }
 
         // Fallback to downloading the full source.
-        let data = if let Some(data) = data {
-            data
-        } else {
-            let media = client.media();
-            let request = MediaRequest {
-                source: source.source.to_common_media_source(),
-                format: MediaFormat::File,
-            };
-
-            spawn_tokio!(async move { media.get_media_content(&request, true).await })
-                .await
-                .unwrap()?
+        let request = MediaRequest {
+            source: source.source.to_common_media_source(),
+            format: MediaFormat::File,
         };
+        let handle = IMAGE_QUEUE
+            .add_download_request(client, request, Some(dimensions), priority)
+            .await;
 
-        Ok(save_data_to_tmp_file(&data)?)
+        handle.await
     }
 }
 
@@ -780,10 +788,16 @@ pub enum ImageError {
     None,
     /// Could not download the image.
     Download,
+    /// Could not save the image to a temporary file.
+    File,
     /// The image uses an unsupported format.
-    Unsupported,
+    UnsupportedFormat,
+    /// An I/O error occurred when loading the image with glycin.
+    Io,
     /// An unexpected error occurred.
     Unknown,
+    /// The request for the image was aborted.
+    Aborted,
 }
 
 impl ImageError {
@@ -796,20 +810,31 @@ impl ImageError {
 impl fmt::Display for ImageError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            Self::None => unimplemented!(),
+            Self::None | Self::Aborted => unimplemented!(),
             Self::Download => gettext("Could not retrieve media"),
-            Self::Unsupported => gettext("Image format not supported"),
-            Self::Unknown => gettext("An unexpected error occurred"),
+            Self::UnsupportedFormat => gettext("Image format not supported"),
+            Self::File | Self::Io | Self::Unknown => gettext("An unexpected error occurred"),
         };
 
         f.write_str(&s)
     }
 }
 
+impl From<MediaFileError> for ImageError {
+    fn from(value: MediaFileError) -> Self {
+        match value {
+            MediaFileError::Sdk(_) => Self::Download,
+            MediaFileError::File(_) => Self::File,
+        }
+    }
+}
+
 impl From<glycin::ErrorCtx> for ImageError {
     fn from(value: glycin::ErrorCtx) -> Self {
         if value.unsupported_format().is_some() {
-            Self::Unsupported
+            Self::UnsupportedFormat
+        } else if matches!(value.error(), glycin::Error::StdIoError { .. }) {
+            Self::Io
         } else {
             Self::Unknown
         }
