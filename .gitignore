@@ -12,3 +12,4 @@ subprojects/libadwaita
 subprojects/gtksourceview
 .vscode
 .fenv
+.zed
