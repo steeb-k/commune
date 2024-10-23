@@ -1,9 +1,9 @@
 //! Collection of methods for images.
 
-use std::{fmt, str::FromStr, sync::Arc};
+use std::{error::Error, fmt, str::FromStr, sync::Arc};
 
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{gdk, gio, prelude::*};
 use image::{ColorType, DynamicImage, ImageDecoder, ImageResult};
 use matrix_sdk::{
     attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
@@ -776,16 +776,8 @@ impl From<ThumbnailSettings> for MediaThumbnailSettings {
 }
 
 /// An error encountered when loading an image.
-///
-/// This type implements `Display` with localized messages for the actual
-/// errors, but the implementation crashes if it is called for the `None`
-/// variant.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
-#[enum_type(name = "ImageError")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageError {
-    /// There is no error.
-    #[default]
-    None,
     /// Could not download the image.
     Download,
     /// Could not save the image to a temporary file.
@@ -800,20 +792,16 @@ pub enum ImageError {
     Aborted,
 }
 
-impl ImageError {
-    /// Whether this is an actual error.
-    pub fn is_error(&self) -> bool {
-        !matches!(self, Self::None)
-    }
-}
+impl Error for ImageError {}
 
 impl fmt::Display for ImageError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            Self::None | Self::Aborted => unimplemented!(),
             Self::Download => gettext("Could not retrieve media"),
             Self::UnsupportedFormat => gettext("Image format not supported"),
-            Self::File | Self::Io | Self::Unknown => gettext("An unexpected error occurred"),
+            Self::File | Self::Io | Self::Unknown | Self::Aborted => {
+                gettext("An unexpected error occurred")
+            }
         };
 
         f.write_str(&s)

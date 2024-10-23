@@ -1,4 +1,9 @@
-use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    gdk, glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use ruma::{
     api::client::media::get_content_thumbnail::v3::Method, events::room::avatar::ImageInfo,
     OwnedMxcUri,
@@ -31,6 +36,9 @@ mod imp {
         marker::PhantomData,
     };
 
+    use glib::subclass::Signal;
+    use once_cell::sync::Lazy;
+
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
@@ -38,28 +46,27 @@ mod imp {
     pub struct AvatarImage {
         /// The image content as a paintable, if any.
         #[property(get)]
-        pub paintable: RefCell<Option<gdk::Paintable>>,
+        paintable: RefCell<Option<gdk::Paintable>>,
         /// The biggest needed size of the user-defined image.
         ///
         /// If this is `0`, no image will be loaded.
         #[property(get, set = Self::set_needed_size, explicit_notify, minimum = 0)]
-        pub needed_size: Cell<u32>,
+        needed_size: Cell<u32>,
         /// The Matrix URI of the avatar.
-        pub(super) uri: RefCell<Option<OwnedMxcUri>>,
+        uri: RefCell<Option<OwnedMxcUri>>,
         /// The Matrix URI of the `AvatarImage`, as a string.
         #[property(get = Self::uri_string)]
         uri_string: PhantomData<Option<String>>,
         /// Information about the avatar.
-        pub(super) info: RefCell<Option<ImageInfo>>,
+        info: RefCell<Option<ImageInfo>>,
         /// The source of the avatar's URI.
         #[property(get, construct_only, builder(AvatarUriSource::default()))]
-        pub uri_source: Cell<AvatarUriSource>,
+        uri_source: Cell<AvatarUriSource>,
         /// The current session.
         #[property(get, construct_only)]
-        pub session: OnceCell<Session>,
+        session: OnceCell<Session>,
         /// The error encountered when loading the avatar, if any.
-        #[property(get, builder(ImageError::default()))]
-        pub error: Cell<ImageError>,
+        pub(super) error: Cell<Option<ImageError>>,
     }
 
     #[glib::object_subclass]
@@ -69,7 +76,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for AvatarImage {}
+    impl ObjectImpl for AvatarImage {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("error-changed").build()]);
+            SIGNALS.as_ref()
+        }
+    }
 
     impl AvatarImage {
         /// Set the needed size of the user-defined image.
@@ -79,11 +92,10 @@ mod imp {
             if self.needed_size.get() >= size {
                 return;
             }
-            let obj = self.obj();
 
             self.needed_size.set(size);
-            obj.load();
-            obj.notify_needed_size();
+            self.load();
+            self.obj().notify_needed_size();
         }
 
         /// The Matrix URI of the `AvatarImage`.
@@ -124,8 +136,8 @@ mod imp {
         /// loading the avatar.
         pub(super) fn set_paintable(&self, paintable: Result<Option<gdk::Paintable>, ImageError>) {
             let (paintable, error) = match paintable {
-                Ok(paintable) => (paintable, ImageError::None),
-                Err(error) => (None, error),
+                Ok(paintable) => (paintable, None),
+                Err(error) => (None, Some(error)),
             };
 
             if *self.paintable.borrow() != paintable {
@@ -137,13 +149,72 @@ mod imp {
         }
 
         /// Set the error encountered when loading the avatar, if any.
-        fn set_error(&self, error: ImageError) {
+        fn set_error(&self, error: Option<ImageError>) {
             if self.error.get() == error {
                 return;
             }
 
             self.error.set(error);
-            self.obj().notify_error();
+            self.obj().emit_by_name::<()>("error-changed", &[]);
+        }
+
+        /// Load the image with the current settings.
+        pub(super) fn load(&self) {
+            if self.needed_size.get() == 0 {
+                // We do not need the avatar.
+                self.set_paintable(Ok(None));
+                return;
+            }
+
+            let Some(uri) = self.uri() else {
+                // We do not have an avatar.
+                self.set_paintable(Ok(None));
+                return;
+            };
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.load_inner(uri).await;
+                    }
+                )
+            );
+        }
+
+        async fn load_inner(&self, uri: OwnedMxcUri) {
+            let client = self.session.get().expect("session is initialized").client();
+            let info = self.info();
+
+            let needed_size = self.needed_size.get();
+            let dimensions = ImageDimensions {
+                width: needed_size,
+                height: needed_size,
+            };
+
+            let downloader = ThumbnailDownloader {
+                main: ImageSource {
+                    source: (&uri).into(),
+                    info: info.as_ref().map(Into::into),
+                },
+                // Avatars are not encrypted so we should always get the thumbnail from the
+                // original.
+                alt: None,
+            };
+            let settings = ThumbnailSettings {
+                dimensions,
+                method: Method::Crop,
+                animated: true,
+                prefer_thumbnail: true,
+            };
+
+            // TODO: Change priority depending on size?
+            let result = downloader
+                .download(client, settings, ImageRequestPriority::Low)
+                .await;
+            self.set_paintable(result.map(|image| Some(image.into())));
         }
     }
 }
@@ -156,7 +227,7 @@ glib::wrapper! {
 impl AvatarImage {
     /// Construct a new `AvatarImage` with the given session, Matrix URI and
     /// avatar info.
-    pub fn new(
+    pub(crate) fn new(
         session: &Session,
         uri_source: AvatarUriSource,
         uri: Option<OwnedMxcUri>,
@@ -172,83 +243,38 @@ impl AvatarImage {
     }
 
     /// Set the Matrix URI and information of the avatar.
-    pub fn set_uri_and_info(&self, uri: Option<OwnedMxcUri>, info: Option<ImageInfo>) {
+    pub(crate) fn set_uri_and_info(&self, uri: Option<OwnedMxcUri>, info: Option<ImageInfo>) {
         let imp = self.imp();
 
         let changed = imp.set_uri(uri);
         imp.set_info(info);
 
         if changed {
-            self.load();
+            imp.load();
         }
     }
 
     /// The Matrix URI of the avatar.
-    pub fn uri(&self) -> Option<OwnedMxcUri> {
+    pub(crate) fn uri(&self) -> Option<OwnedMxcUri> {
         self.imp().uri()
     }
 
-    /// Information about the avatar.
-    pub fn info(&self) -> Option<ImageInfo> {
-        self.imp().info()
+    /// The error encountered when loading the avatar, if any.
+    pub(crate) fn error(&self) -> Option<ImageError> {
+        self.imp().error.get()
     }
 
-    /// Load the image with the current settings.
-    fn load(&self) {
-        if self.needed_size() == 0 {
-            // We do not need the avatar.
-            self.imp().set_paintable(Ok(None));
-            return;
-        }
-
-        let Some(uri) = self.uri() else {
-            // We do not have an avatar.
-            self.imp().set_paintable(Ok(None));
-            return;
-        };
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                async move {
-                    obj.load_inner(uri).await;
-                }
-            )
-        );
-    }
-
-    async fn load_inner(&self, uri: OwnedMxcUri) {
-        let imp = self.imp();
-        let client = self.session().client();
-        let info = self.info();
-
-        let needed_size = self.needed_size();
-        let dimensions = ImageDimensions {
-            width: needed_size,
-            height: needed_size,
-        };
-
-        let downloader = ThumbnailDownloader {
-            main: ImageSource {
-                source: (&uri).into(),
-                info: info.as_ref().map(Into::into),
-            },
-            // Avatars are not encrypted so we should always get the thumbnail from the original.
-            alt: None,
-        };
-        let settings = ThumbnailSettings {
-            dimensions,
-            method: Method::Crop,
-            animated: true,
-            prefer_thumbnail: true,
-        };
-
-        // TODO: Change priority depending on size?
-        let result = downloader
-            .download(client, settings, ImageRequestPriority::Low)
-            .await;
-        imp.set_paintable(result.map(|image| Some(image.into())));
+    /// Connect to the signal emitted when the error changed.
+    pub(crate) fn connect_error_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "error-changed",
+            true,
+            closure_local!(|obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }

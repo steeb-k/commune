@@ -17,7 +17,7 @@ use crate::{
     utils::{
         expression,
         media::image::{ImageDimensions, ImageError, IMAGE_QUEUE},
-        CountedRef,
+        BoundObject, BoundObjectWeakRef, CountedRef,
     },
 };
 
@@ -49,45 +49,45 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/avatar/editable.ui")]
     #[properties(wrapper_type = super::EditableAvatar)]
     pub struct EditableAvatar {
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        temp_avatar: TemplateChild<adw::Avatar>,
+        #[template_child]
+        error_img: TemplateChild<gtk::Image>,
+        #[template_child]
+        button_remove: TemplateChild<ActionButton>,
+        #[template_child]
+        button_edit: TemplateChild<ActionButton>,
         /// The [`AvatarData`] to display.
         #[property(get, set = Self::set_data, explicit_notify)]
-        pub data: RefCell<Option<AvatarData>>,
+        data: BoundObject<AvatarData>,
+        /// The avatar image to watch.
+        #[property(get)]
+        image: BoundObjectWeakRef<AvatarImage>,
         /// Whether this avatar is changeable.
         #[property(get, set = Self::set_editable, explicit_notify)]
-        pub editable: Cell<bool>,
+        editable: Cell<bool>,
         /// Whether to prevent the remove button from showing.
         #[property(get, set = Self::set_inhibit_remove, explicit_notify)]
-        pub inhibit_remove: Cell<bool>,
+        inhibit_remove: Cell<bool>,
         /// The current state of the edit.
         #[property(get, set = Self::set_state, explicit_notify, builder(EditableAvatarState::default()))]
-        pub state: Cell<EditableAvatarState>,
+        state: Cell<EditableAvatarState>,
         /// The state of the avatar edit.
-        pub edit_state: Cell<ActionState>,
+        edit_state: Cell<ActionState>,
         /// Whether the edit button is sensitive.
-        pub edit_sensitive: Cell<bool>,
-        /// Whether this avatar is removable.
-        pub removable: Cell<bool>,
+        edit_sensitive: Cell<bool>,
         /// The state of the avatar removal.
-        pub remove_state: Cell<ActionState>,
+        remove_state: Cell<ActionState>,
         /// Whether the remove button is sensitive.
-        pub remove_sensitive: Cell<bool>,
+        remove_sensitive: Cell<bool>,
         /// A temporary paintable to show instead of the avatar.
         #[property(get)]
-        pub temp_paintable: RefCell<Option<gdk::Paintable>>,
+        temp_paintable: RefCell<Option<gdk::Paintable>>,
         /// The error encountered when loading the temporary avatar, if any.
-        #[property(get, builder(ImageError::default()))]
-        pub temp_error: Cell<ImageError>,
+        temp_error: Cell<Option<ImageError>>,
         temp_paintable_animation_ref: RefCell<Option<CountedRef>>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub temp_avatar: TemplateChild<adw::Avatar>,
-        #[template_child]
-        pub error_img: TemplateChild<gtk::Image>,
-        #[template_child]
-        pub button_remove: TemplateChild<ActionButton>,
-        #[template_child]
-        pub button_edit: TemplateChild<ActionButton>,
     }
 
     #[glib::object_subclass]
@@ -170,21 +170,6 @@ mod imp {
                     imp.update_temp_paintable_state();
                 }
             ));
-
-            // Watch errors for the avatar data.
-            obj.property_expression("data")
-                .chain_property::<AvatarData>("image")
-                .chain_property::<AvatarImage>("error")
-                .watch(
-                    None::<&glib::Object>,
-                    clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move || {
-                            imp.update_error();
-                        }
-                    ),
-                );
         }
     }
 
@@ -194,13 +179,52 @@ mod imp {
     impl EditableAvatar {
         /// Set the [`AvatarData`] to display.
         fn set_data(&self, data: Option<AvatarData>) {
-            if *self.data.borrow() == data {
+            if self.data.obj() == data {
                 return;
             }
 
-            self.data.replace(data);
-            self.update_error();
+            self.data.disconnect_signals();
+
+            if let Some(data) = data {
+                let image_handler = data.connect_image_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_image();
+                    }
+                ));
+
+                self.data.set(data, vec![image_handler]);
+            }
+
+            self.update_image();
             self.obj().notify_data();
+        }
+
+        /// Update the avatar image to watch.
+        fn update_image(&self) {
+            let image = self.data.obj().and_then(|data| data.image());
+
+            if self.image.obj() == image {
+                return;
+            }
+
+            self.image.disconnect_signals();
+
+            if let Some(image) = &image {
+                let error_handler = image.connect_error_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_error();
+                    }
+                ));
+
+                self.image.set(image, vec![error_handler]);
+            }
+
+            self.update_error();
+            self.obj().notify_image();
         }
 
         /// Set whether this avatar is editable.
@@ -224,61 +248,60 @@ mod imp {
         }
 
         /// Set the state of the edit.
-        fn set_state(&self, state: EditableAvatarState) {
+        pub(super) fn set_state(&self, state: EditableAvatarState) {
             if self.state.get() == state {
                 return;
             }
-            let obj = self.obj();
 
             match state {
                 EditableAvatarState::Default => {
                     self.show_temp_paintable(false);
-                    obj.set_edit_state(ActionState::Default);
-                    obj.set_edit_sensitive(true);
-                    obj.set_remove_state(ActionState::Default);
-                    obj.set_remove_sensitive(true);
+                    self.set_edit_state(ActionState::Default);
+                    self.set_edit_sensitive(true);
+                    self.set_remove_state(ActionState::Default);
+                    self.set_remove_sensitive(true);
 
                     self.set_temp_paintable(Ok(None));
                 }
                 EditableAvatarState::EditInProgress => {
                     self.show_temp_paintable(true);
-                    obj.set_edit_state(ActionState::Loading);
-                    obj.set_edit_sensitive(true);
-                    obj.set_remove_state(ActionState::Default);
-                    obj.set_remove_sensitive(false);
+                    self.set_edit_state(ActionState::Loading);
+                    self.set_edit_sensitive(true);
+                    self.set_remove_state(ActionState::Default);
+                    self.set_remove_sensitive(false);
                 }
                 EditableAvatarState::EditSuccessful => {
                     self.show_temp_paintable(false);
-                    obj.set_edit_sensitive(true);
-                    obj.set_remove_state(ActionState::Default);
-                    obj.set_remove_sensitive(true);
+                    self.set_edit_sensitive(true);
+                    self.set_remove_state(ActionState::Default);
+                    self.set_remove_sensitive(true);
 
                     self.set_temp_paintable(Ok(None));
 
                     // Animation for success.
-                    obj.set_edit_state(ActionState::Success);
+                    self.set_edit_state(ActionState::Success);
                     glib::timeout_add_local_once(
                         Duration::from_secs(2),
                         clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to =imp)]
+                            self,
                             move || {
-                                obj.set_state(EditableAvatarState::Default);
+                                imp.set_state(EditableAvatarState::Default);
                             }
                         ),
                     );
                 }
                 EditableAvatarState::RemovalInProgress => {
                     self.show_temp_paintable(true);
-                    obj.set_edit_state(ActionState::Default);
-                    obj.set_edit_sensitive(false);
-                    obj.set_remove_state(ActionState::Loading);
-                    obj.set_remove_sensitive(true);
+                    self.set_edit_state(ActionState::Default);
+                    self.set_edit_sensitive(false);
+                    self.set_remove_state(ActionState::Loading);
+                    self.set_remove_sensitive(true);
                 }
             }
 
             self.state.set(state);
-            obj.notify_state();
+            self.obj().notify_state();
         }
 
         /// The dimensions of the avatar in this widget.
@@ -305,8 +328,8 @@ mod imp {
         /// Set the temporary paintable.
         fn set_temp_paintable(&self, paintable: Result<Option<gdk::Paintable>, ImageError>) {
             let (paintable, error) = match paintable {
-                Ok(paintable) => (paintable, ImageError::None),
-                Err(error) => (None, error),
+                Ok(paintable) => (paintable, None),
+                Err(error) => (None, Some(error)),
             };
 
             if *self.temp_paintable.borrow() == paintable {
@@ -347,7 +370,7 @@ mod imp {
         }
 
         /// Set the error encountered when loading the temporary avatar, if any.
-        fn set_temp_error(&self, error: ImageError) {
+        fn set_temp_error(&self, error: Option<ImageError>) {
             if self.temp_error.get() == error {
                 return;
             }
@@ -355,7 +378,6 @@ mod imp {
             self.temp_error.set(error);
 
             self.update_error();
-            self.obj().notify_temp_error();
         }
 
         /// Update the error that is displayed.
@@ -365,20 +387,71 @@ mod imp {
                 .visible_child_name()
                 .is_some_and(|name| name == "default")
             {
-                self.data
-                    .borrow()
-                    .as_ref()
-                    .and_then(|data| data.image())
-                    .map(|image| image.error())
-                    .unwrap_or_default()
+                self.image.obj().and_then(|image| image.error())
             } else {
                 self.temp_error.get()
             };
 
-            if error.is_error() {
+            if let Some(error) = error {
                 self.error_img.set_tooltip_text(Some(&error.to_string()));
             }
-            self.error_img.set_visible(error.is_error());
+            self.error_img.set_visible(error.is_some());
+        }
+
+        /// The state of the avatar edit.
+        pub(super) fn edit_state(&self) -> ActionState {
+            self.edit_state.get()
+        }
+
+        /// Set the state of the avatar edit.
+        fn set_edit_state(&self, state: ActionState) {
+            if self.edit_state() == state {
+                return;
+            }
+
+            self.edit_state.set(state);
+        }
+
+        /// Whether the edit button is sensitive.
+        fn edit_sensitive(&self) -> bool {
+            self.edit_sensitive.get()
+        }
+
+        /// Set whether the edit button is sensitive.
+        fn set_edit_sensitive(&self, sensitive: bool) {
+            if self.edit_sensitive() == sensitive {
+                return;
+            }
+
+            self.edit_sensitive.set(sensitive);
+        }
+
+        /// The state of the avatar removal.
+        pub(super) fn remove_state(&self) -> ActionState {
+            self.remove_state.get()
+        }
+
+        /// Set the state of the avatar removal.
+        fn set_remove_state(&self, state: ActionState) {
+            if self.remove_state() == state {
+                return;
+            }
+
+            self.remove_state.set(state);
+        }
+
+        /// Whether the remove button is sensitive.
+        fn remove_sensitive(&self) -> bool {
+            self.remove_sensitive.get()
+        }
+
+        /// Set whether the remove button is sensitive.
+        fn set_remove_sensitive(&self, sensitive: bool) {
+            if self.remove_sensitive() == sensitive {
+                return;
+            }
+
+            self.remove_sensitive.set(sensitive);
         }
     }
 }
@@ -395,91 +468,36 @@ impl EditableAvatar {
     }
 
     /// Reset the state of the avatar.
-    pub fn reset(&self) {
-        self.set_state(EditableAvatarState::Default);
+    pub(crate) fn reset(&self) {
+        self.imp().set_state(EditableAvatarState::Default);
     }
 
     /// Show that an edit is in progress.
-    pub fn edit_in_progress(&self) {
-        self.set_state(EditableAvatarState::EditInProgress);
+    pub(crate) fn edit_in_progress(&self) {
+        self.imp().set_state(EditableAvatarState::EditInProgress);
     }
 
     /// Show that a removal is in progress.
-    pub fn removal_in_progress(&self) {
-        self.set_state(EditableAvatarState::RemovalInProgress);
+    pub(crate) fn removal_in_progress(&self) {
+        self.imp().set_state(EditableAvatarState::RemovalInProgress);
     }
 
     /// Show that the current ongoing action was successful.
     ///
     /// This is has no effect if no action is ongoing.
-    pub fn success(&self) {
-        if self.edit_state() == ActionState::Loading {
-            self.set_state(EditableAvatarState::EditSuccessful);
-        } else if self.remove_state() == ActionState::Loading {
+    pub(crate) fn success(&self) {
+        let imp = self.imp();
+        if imp.edit_state() == ActionState::Loading {
+            imp.set_state(EditableAvatarState::EditSuccessful);
+        } else if imp.remove_state() == ActionState::Loading {
             // The remove button is hidden as soon as the avatar is gone so we
             // don't need a state when it succeeds.
-            self.set_state(EditableAvatarState::Default);
+            imp.set_state(EditableAvatarState::Default);
         }
-    }
-
-    /// The state of the avatar edit.
-    fn edit_state(&self) -> ActionState {
-        self.imp().edit_state.get()
-    }
-
-    /// Set the state of the avatar edit.
-    fn set_edit_state(&self, state: ActionState) {
-        if self.edit_state() == state {
-            return;
-        }
-
-        self.imp().edit_state.set(state);
-    }
-
-    /// Whether the edit button is sensitive.
-    fn edit_sensitive(&self) -> bool {
-        self.imp().edit_sensitive.get()
-    }
-
-    /// Set whether the edit button is sensitive.
-    fn set_edit_sensitive(&self, sensitive: bool) {
-        if self.edit_sensitive() == sensitive {
-            return;
-        }
-
-        self.imp().edit_sensitive.set(sensitive);
-    }
-
-    /// The state of the avatar removal.
-    fn remove_state(&self) -> ActionState {
-        self.imp().remove_state.get()
-    }
-
-    /// Set the state of the avatar removal.
-    fn set_remove_state(&self, state: ActionState) {
-        if self.remove_state() == state {
-            return;
-        }
-
-        self.imp().remove_state.set(state);
-    }
-
-    /// Whether the remove button is sensitive.
-    fn remove_sensitive(&self) -> bool {
-        self.imp().remove_sensitive.get()
-    }
-
-    /// Set whether the remove button is sensitive.
-    fn set_remove_sensitive(&self, sensitive: bool) {
-        if self.remove_sensitive() == sensitive {
-            return;
-        }
-
-        self.imp().remove_sensitive.set(sensitive);
     }
 
     /// Choose a new avatar.
-    async fn choose_avatar(&self) {
+    pub(super) async fn choose_avatar(&self) {
         let filters = gio::ListStore::new::<gtk::FileFilter>();
 
         let image_filter = gtk::FileFilter::new();
@@ -524,7 +542,7 @@ impl EditableAvatar {
                 self.imp().set_temp_paintable_from_file(file.clone()).await;
                 self.emit_by_name::<()>("edit-avatar", &[&file]);
             } else {
-                error!("The chosen file is not an image");
+                error!("Expected an image, got {content_type}");
                 toast!(self, gettext("The chosen file is not an image"));
             }
         } else {
