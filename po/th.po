@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-10-18 11:15+0000\n"
-"PO-Revision-Date: 2024-10-19 09:52+0700\n"
+"POT-Creation-Date: 2024-10-23 17:17+0000\n"
+"PO-Revision-Date: 2024-10-29 01:41+0700\n"
 "Last-Translator: Atirut Wattanamongkol <atirut.wattanamongkol@gmail.com>\n"
 "Language-Team: Thai <thai-l10n@googlegroups.com>\n"
 "Language: th\n"
@@ -136,7 +136,7 @@ msgstr "เ_พิ่มบัญชี"
 
 #: src/account_switcher/session_item.ui:60 src/account_switcher/session_item.ui:62 src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
-msgstr "การตั้งค่าบัญชี"
+msgstr "ตั้งค่าบัญชี"
 
 #: src/application.rs:275
 msgid "The Fractal Team"
@@ -198,27 +198,27 @@ msgstr ""
 msgid "Error"
 msgstr ""
 
-#: src/components/avatar/editable.rs:489
+#: src/components/avatar/editable.rs:504
 msgid "Images"
 msgstr ""
 
-#: src/components/avatar/editable.rs:494
+#: src/components/avatar/editable.rs:509
 msgid "Choose Avatar"
 msgstr ""
 
-#: src/components/avatar/editable.rs:496 src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
+#: src/components/avatar/editable.rs:511 src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr ""
 
-#: src/components/avatar/editable.rs:510
+#: src/components/avatar/editable.rs:525
 msgid "Could not open avatar file"
 msgstr ""
 
-#: src/components/avatar/editable.rs:531
+#: src/components/avatar/editable.rs:546
 msgid "The chosen file is not an image"
 msgstr ""
 
-#: src/components/avatar/editable.rs:537
+#: src/components/avatar/editable.rs:552
 msgid "Could not determine the type of the chosen file"
 msgstr ""
 
@@ -309,7 +309,7 @@ msgstr ""
 msgid ""
 "Required because the crypto identity in the recovery data is incomplete. Invalidates the verifications of all users and "
 "sessions."
-msgstr ""
+msgstr "จำเป็นเนื่องจากข้อมูลประจำตัวการเข้ารหัสลับในข้อมูลการกู้คืนไม่สมบูรณ์ ทำให้การตรวจสอบผู้ใช้และเซสชันทั้งหมดเป็นโมฆะ"
 
 #: src/components/crypto/recovery_setup_view.rs:195
 msgid "You might not be able to read your past encrypted messages anymore"
@@ -317,7 +317,7 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:200
 msgid "Required because the backup is not set up properly. You might not be able to read your past encrypted messages anymore."
-msgstr ""
+msgstr "จำเป็นเนื่องจากการสำรองข้อมูลไม่ได้รับการตั้งค่าอย่างถูกต้อง คุณอาจไม่สามารถอ่านข้อความที่เข้ารหัสในอดีตได้อีกต่อไป"
 
 #: src/components/crypto/recovery_setup_view.rs:218
 msgid ""
@@ -358,52 +358,54 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.ui:46
 msgid "Restore full access to your account."
-msgstr ""
+msgstr "กู้คืนการเข้าถึงบัญชีของคุณอย่างเต็มที่"
 
 #: src/components/crypto/recovery_setup_view.ui:54
 msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery key that is usually set up when you create your "
 "account."
-msgstr ""
+msgstr "เพื่อเข้าถึงข้อมูลการกู้คืน เราต้องใช้รหัสผ่านการกู้คืนหรือคีย์การกู้คืนที่มักจะตั้งค่าไว้เมื่อคุณสร้างบัญชี"
 
 #: src/components/crypto/recovery_setup_view.ui:67
 msgid "Recovery Passphrase or Key"
-msgstr ""
+msgstr "รหัสผ่านหรือคีย์การกู้คืน"
 
 #: src/components/crypto/recovery_setup_view.ui:77 src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:315
 msgid "Recover"
-msgstr ""
+msgstr "กู้คืน"
 
 #: src/components/crypto/recovery_setup_view.ui:88
 msgid "Lost your recovery passphrase or key?"
-msgstr ""
+msgstr "ลืมรหัสผ่านหรือคีย์การกู้คืนใช่ไหม?"
 
 #: src/components/crypto/recovery_setup_view.ui:119 src/components/crypto/recovery_setup_view.ui:145
 msgid "Reset Account Recovery"
-msgstr ""
+msgstr "รีเซ็ตการกู้คืนบัญชี"
 
 #: src/components/crypto/recovery_setup_view.ui:156
 msgid "Resetting account recovery can allow you to fix or reset part or all of your recovery setup."
-msgstr ""
+msgstr "การรีเซ็ตการกู้คืนบัญชีช่วยให้คุณสามารถแก้ไขหรือรีเซ็ตการตั้งค่าการกู้คืนบางส่วนหรือทั้งหมดได้"
 
 #: src/components/crypto/recovery_setup_view.ui:174
 msgid "Reset Room Encryption Keys Backup"
-msgstr ""
+msgstr "รีเซ็ตรหัสเข้ารหัสห้องสำรอง"
 
 #: src/components/crypto/recovery_setup_view.ui:181
 msgid "If you do not provide a new recovery passphrase, a recovery key will be created."
-msgstr ""
+msgstr "หากคุณไม่ระบุรหัสผ่านการกู้คืนใหม่ ระบบจะสร้างคีย์การกู้คืนขึ้นมา"
 
 #: src/components/crypto/recovery_setup_view.ui:189 src/components/crypto/recovery_setup_view.ui:284
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. Otherwise, if someone manages to get your account "
 "password, they will also be able to access all your encrypted conversations and to impersonate you."
 msgstr ""
+"คุณไม่ควรใช้รหัสผ่านบัญชี Matrix ของคุณซ้ำเป็นรหัสผ่าน มิฉะนั้น หากมีใครสามารถขโมยรหัสผ่านบัญชีของคุณได้ "
+"เขาจะสามารถเข้าถึงบทสนทนาที่เข้ารหัสทั้งหมดของคุณและแอบอ้างเป็นคุณได้"
 
 #: src/components/crypto/recovery_setup_view.ui:202 src/components/crypto/recovery_setup_view.ui:297
 msgid "Recovery Passphrase (Optional)"
-msgstr ""
+msgstr "รหัสผ่านการกู้คืน (ไม่บังคับ)"
 
 #: src/components/crypto/recovery_setup_view.ui:231 src/components/crypto/recovery_setup_view.ui:257
 msgid "Set Up Account Recovery"
@@ -757,19 +759,19 @@ msgstr ""
 msgid "No Internet connection"
 msgstr ""
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:176
 msgid "Image not Viewable"
 msgstr ""
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:177
 msgid "Audio Clip not Playable"
 msgstr ""
 
-#: src/components/media/content_viewer.rs:179
+#: src/components/media/content_viewer.rs:178
 msgid "Video not Playable"
 msgstr ""
 
-#: src/components/media/content_viewer.rs:180
+#: src/components/media/content_viewer.rs:179
 msgid "File not Viewable"
 msgstr ""
 
@@ -819,7 +821,7 @@ msgstr ""
 
 #: src/components/user_page.rs:358
 msgid "In {room_name}"
-msgstr ""
+msgstr "ใน {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
 #: src/components/user_page.rs:369
@@ -886,11 +888,11 @@ msgstr[0] ""
 
 #: src/components/user_page.rs:702
 msgid "Identity verified"
-msgstr ""
+msgstr "ยืนยันตัวตนแล้ว"
 
 #: src/components/user_page.rs:709
 msgid "Identity not verified"
-msgstr ""
+msgstr "ยังไม่ได้ยืนยันตัวตน"
 
 #: src/components/user_page.rs:725
 msgid "Could not start user verification"
@@ -898,19 +900,19 @@ msgstr ""
 
 #: src/components/user_page.rs:751
 msgid "Ignored"
-msgstr ""
+msgstr "ถูกเพิกเฉย"
 
 #: src/components/user_page.rs:753 src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
-msgstr ""
+msgstr "หยุดเพิกเฉย"
 
 #: src/components/user_page.rs:756
 msgid "Not Ignored"
-msgstr ""
+msgstr "ไม่ได้เพิกเฉย"
 
 #: src/components/user_page.rs:757
 msgid "Ignore"
-msgstr ""
+msgstr "เพิกเฉย"
 
 #: src/components/user_page.rs:774 src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
 #: src/session/view/content/room_history/sender_avatar/mod.rs:777
@@ -934,7 +936,7 @@ msgstr ""
 #. Translators: value used to assign room member roles
 #: src/components/user_page.ui:132
 msgid "Power Level"
-msgstr ""
+msgstr "ระดับอำนาจ"
 
 #. Translators: As in, 'Unan room member'.
 #: src/components/user_page.ui:162
@@ -947,13 +949,13 @@ msgstr ""
 
 #: src/components/user_page.ui:185 src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
-msgstr ""
+msgstr "ความปลอดภัย"
 
 #: src/components/user_page.ui:212 src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:279 src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
-msgstr ""
+msgstr "ยืนยัน"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
 msgid "Could Not Connect to Camera"
@@ -1349,7 +1351,7 @@ msgstr ""
 
 #: src/identity_verification_view/wait_for_other_page.ui:55
 msgid "The request is not showing up on the other device?"
-msgstr ""
+msgstr "คำขอไม่ปรากฏในอุปกรณ์อื่นใช่ไหม?"
 
 #: src/identity_verification_view/wait_for_other_page.ui:64
 msgid "Cancel Verification Request"
@@ -2033,7 +2035,7 @@ msgstr ""
 msgid "Import Encryption Keys From…"
 msgstr ""
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233 src/utils/matrix/media_message.rs:177
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233 src/utils/matrix/media_message.rs:183
 msgid "Could not access file"
 msgstr ""
 
@@ -2386,11 +2388,11 @@ msgstr ""
 
 #: src/session/view/content/mod.ui:13 src/session/view/content/mod.ui:28
 msgid "No Room Selected"
-msgstr ""
+msgstr "ยังไม่ได้เลือกห้อง"
 
 #: src/session/view/content/mod.ui:29
 msgid "Join a room to start chatting"
-msgstr ""
+msgstr "เข้าร่วมห้องเพื่อเริ่มแชท"
 
 #: src/session/view/content/mod.ui:39 src/session/view/content/room_history/mod.ui:212
 msgid "Room History"
@@ -2574,7 +2576,7 @@ msgstr ""
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:156
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:597 src/utils/matrix/media_message.rs:152
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:597 src/utils/matrix/media_message.rs:158
 msgid "Save"
 msgstr ""
 
@@ -2678,7 +2680,7 @@ msgstr ""
 
 #: src/session/view/content/room_details/general_page.ui:4 src/session/view/content/room_details/mod.ui:4
 msgid "Room Details"
-msgstr ""
+msgstr "รายละเอียดห้อง"
 
 #: src/session/view/content/room_details/general_page.ui:62
 msgid "Edit Details"
@@ -2687,42 +2689,42 @@ msgstr ""
 #: src/session/view/content/room_details/general_page.ui:89
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
 msgid "There are no members in this room"
-msgstr ""
+msgstr "ไม่มีสมาชิกอยู่ในห้องนี้"
 
 #: src/session/view/content/room_details/general_page.ui:112
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
-msgstr ""
+msgstr "สื่อ"
 
 #: src/session/view/content/room_details/general_page.ui:119
 msgid "Files"
-msgstr ""
+msgstr "ไฟล์"
 
 #. Translators: As in 'Audio file'.
 #: src/session/view/content/room_details/general_page.ui:127 src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:94
 msgid "Audio"
-msgstr ""
+msgstr "เสียง"
 
 #: src/session/view/content/room_details/general_page.ui:137
 msgid "Which messages trigger notifications in this room"
-msgstr ""
+msgstr "ข้อความประเภทใดที่ทำให้เกิดการแจ้งเตือนในห้องนี้"
 
 #: src/session/view/content/room_details/general_page.ui:140
 msgid "Use Global Setting"
-msgstr ""
+msgstr "ใช้การตั้งค่าส่วนกลาง"
 
 #: src/session/view/content/room_details/general_page.ui:147
 msgid "All Messages"
-msgstr ""
+msgstr "ข้อความทั้งหมด"
 
 #: src/session/view/content/room_details/general_page.ui:154
 msgid "Only Mentions and Keywords"
-msgstr ""
+msgstr "เฉพาะการกล่าวถึงและคำสำคัญเท่านั้น"
 
 #: src/session/view/content/room_details/general_page.ui:161
 msgid "Disable Notifications"
-msgstr ""
+msgstr "ปิดการแจ้งเตือน"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:181
@@ -2736,71 +2738,71 @@ msgstr ""
 
 #: src/session/view/content/room_details/general_page.ui:194
 msgid "This room has no public addresses"
-msgstr ""
+msgstr "ห้องนี้ไม่มีที่อยู่สาธารณะ"
 
 #: src/session/view/content/room_details/general_page.ui:211
 msgid "Copy Room Link"
-msgstr ""
+msgstr "คัดลอกลิงก์ห้อง"
 
 #: src/session/view/content/room_details/general_page.ui:221
 msgid "Access and Visibility"
-msgstr ""
+msgstr "การเข้าถึงและการมองเห็น"
 
 #: src/session/view/content/room_details/general_page.ui:231
 msgid "Who Can Join"
-msgstr ""
+msgstr "ใครสามารถเข้าร่วมได้"
 
 #: src/session/view/content/room_details/general_page.ui:235
 msgid "Only Invited Users"
-msgstr ""
+msgstr "เฉพาะผู้ใช้ที่ได้รับเชิญเท่านั้น"
 
 #: src/session/view/content/room_details/general_page.ui:236
 msgid "Any Registered User"
-msgstr ""
+msgstr "ผู้ใช้ที่ลงทะเบียนแล้ว"
 
 #: src/session/view/content/room_details/general_page.ui:252
 msgid "Allow Guests"
-msgstr ""
+msgstr "อนุญาตให้ผู้เยี่ยมชมเข้าได้"
 
 #: src/session/view/content/room_details/general_page.ui:253
 msgid "Guests are Matrix users without a registered account"
-msgstr ""
+msgstr "ผู้เยี่ยมชมคือผู้ใช้ Matrix ที่ไม่มีบัญชีที่ลงทะเบียน"
 
 #: src/session/view/content/room_details/general_page.ui:264
 msgid "Who Can Read History"
-msgstr ""
+msgstr "ใครสามารถอ่านประวัติได้"
 
 #: src/session/view/content/room_details/general_page.ui:285
 msgid "Matrix Room ID"
-msgstr ""
+msgstr "ID ห้องเมทริกซ์"
 
 #: src/session/view/content/room_details/general_page.ui:292
 msgid "Copy Matrix Room ID"
-msgstr ""
+msgstr "คัดลอก ID ห้องเมทริกซ์"
 
 #: src/session/view/content/room_details/general_page.ui:293
 msgid "Matrix room ID copied to clipboard"
-msgstr ""
+msgstr "คัดลอก ID ห้องเมทริกซ์ลงคลิปบอร์ดแล้ว"
 
 #: src/session/view/content/room_details/general_page.ui:298
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
-msgstr ""
+msgstr "เปิดใช้งานการเข้ารหัส"
 
 #: src/session/view/content/room_details/general_page.ui:309
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
-msgstr ""
+msgstr "สิทธิ์"
 
 #: src/session/view/content/room_details/general_page.ui:324
 msgid "Room Version"
-msgstr ""
+msgstr "รุ่นห้อง"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:336 src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
-msgstr ""
+msgstr "อัปเกรด"
 
 #: src/session/view/content/room_details/general_page.ui:349
 msgid "Federation"
@@ -2864,7 +2866,7 @@ msgstr ""
 #: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25 src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:150
+#: src/utils/matrix/media_message.rs:156
 msgid "Save File"
 msgstr ""
 
@@ -3252,7 +3254,7 @@ msgstr ""
 #: src/session/view/content/room_history/event_actions.ui:64 src/session/view/content/room_history/event_actions.ui:150
 #: src/session/view/content/room_history/event_actions.ui:190 src/session/view/media_viewer.ui:21
 msgid "Copy Message _Link"
-msgstr "คัดลอก_ลิงค์ข้อความ"
+msgstr "คัดลอก_ลิงก์ข้อความ"
 
 #: src/session/view/content/room_history/event_actions.ui:69 src/session/view/content/room_history/event_actions.ui:155
 #: src/session/view/content/room_history/event_actions.ui:195 src/session/view/content/room_history/mod.ui:121
@@ -3447,7 +3449,7 @@ msgstr ""
 msgid "Video"
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:415 src/utils/media/image.rs:800
+#: src/session/view/content/room_history/message_row/visual_media.rs:404 src/utils/media/image/mod.rs:800
 msgid "Could not retrieve media"
 msgstr ""
 
@@ -3656,16 +3658,16 @@ msgstr ""
 #. Translators: In this string, 'Mention' is a verb.
 #: src/session/view/content/room_history/mod.ui:43
 msgid "_Mention"
-msgstr ""
+msgstr "_กล่าวถึง"
 
 #. Translators: In this string, 'Open' is a verb.
 #: src/session/view/content/room_history/mod.ui:49
 msgid "_Open Direct Chat"
-msgstr ""
+msgstr "เ_ปิดแชทโดยตรง"
 
 #: src/session/view/content/room_history/mod.ui:54
 msgid "Copy _Link"
-msgstr ""
+msgstr "คัดลอก_ลิงก์"
 
 #. Translators: In this string, 'Invite' is a verb.
 #: src/session/view/content/room_history/mod.ui:61
@@ -3709,11 +3711,11 @@ msgstr ""
 
 #: src/session/view/content/room_history/mod.ui:109
 msgid "I_gnore"
-msgstr ""
+msgstr "เ_พิกเฉย"
 
 #: src/session/view/content/room_history/mod.ui:114
 msgid "Stop I_gnoring"
-msgstr ""
+msgstr "หยุดเ_พิกเฉย"
 
 #: src/session/view/content/room_history/mod.ui:148
 msgid "Room Menu"
@@ -4195,7 +4197,7 @@ msgstr ""
 
 #: src/session/view/sidebar/mod.rs:315
 msgid "Account recovery incomplete"
-msgstr ""
+msgstr "การกู้คืนบัญชีไม่สมบูรณ์"
 
 #: src/session/view/sidebar/mod.ui:6
 msgid "New _Direct Chat…"
@@ -4448,7 +4450,7 @@ msgstr ""
 msgid "Could not open the store."
 msgstr ""
 
-#: src/utils/matrix/media_message.rs:169
+#: src/utils/matrix/media_message.rs:175
 msgid "Could not save file"
 msgstr ""
 
@@ -4490,11 +4492,11 @@ msgstr ""
 msgid "Could not generate unique session ID"
 msgstr ""
 
-#: src/utils/media/image.rs:801
+#: src/utils/media/image/mod.rs:801
 msgid "Image format not supported"
 msgstr ""
 
-#: src/utils/media/image.rs:802
+#: src/utils/media/image/mod.rs:803
 msgid "An unexpected error occurred"
 msgstr ""
 
