@@ -18,8 +18,10 @@
     - See who has read messages, and who is typing
     - Log into multiple accounts at once (with Single-Sign On support)
   </description>
-  
+
   <homepage rdf:resource="https://gitlab.gnome.org/World/fractal" />
+  <support-forum rdf:resource="https://discourse.gnome.org/tag/fractal" />
+  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/fractal/issues" />
 
   <programming-language>Rust</programming-language>
   <platform>GTK 4</platform>
