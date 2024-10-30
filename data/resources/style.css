@@ -1,7 +1,6 @@
 /* Global */
 
 :root {
-  --accent-bg-color: var(--accent-pink);
   --focus-outline-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
 }
 
