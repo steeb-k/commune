@@ -6,21 +6,27 @@
 # Samuel Schlemper <samuelschlemper2006@gmail.com>, 2024.
 # Juliano de Souza Camargo <julianosc@pm.me>, 2024.
 # Rafael Fontenelle <rafaelff@gnome.org>, 2018-2024.
+# Filipe Motta <luizfilipemotta@gmail.com>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-10-10 08:42+0000\n"
-"PO-Revision-Date: 2024-10-12 22:25-0300\n"
-"Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
-"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
+"POT-Creation-Date: 2024-10-14 08:28+0000\n"
+"PO-Revision-Date: 2024-10-22 02:00-0300\n"
+"Last-Translator: Filipe Motta <luizfilipemotta@gmail.com>\n"
+"Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1)\n"
 "X-Generator: Gtranslator 47.0\n"
+"X-DL-Lang: pt_BR\n"
+"X-DL-Module: fractal\n"
+"X-DL-Branch: main\n"
+"X-DL-Domain: po\n"
+"X-DL-State: None\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
@@ -179,7 +185,8 @@ msgstr ""
 "Enrico Nicoletto <hiko@duck.com>\n"
 "Rafael Fontenelle <Rafaelff@gnome.org>\n"
 "Samuel Schlemper <samuelschlepmer2006@gmail.com>\n"
-"Juliano de Souza Camargo <julianosc@pm.me>"
+"Juliano de Souza Camargo <julianosc@pm.me>\n"
+"Filipe Motta <luizfilipemotta@gmail.com>"
 
 #. This can't be added via the builder
 #: src/application.rs:299
@@ -200,6 +207,7 @@ msgstr "Confirmar mudança"
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
 #: src/session/view/content/room_history/mod.ui:197
 msgid "Try Again"
 msgstr "Tente novamente"
@@ -224,6 +232,8 @@ msgstr "Aviso"
 #: src/components/action_button.ui:126 src/error_page.ui:10
 #: src/session/view/content/room_details/invite_subpage/mod.ui:136
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
 #: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:69
 msgid "Error"
 msgstr "Erro"
@@ -704,7 +714,7 @@ msgstr "Sair"
 #: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:1102
+#: src/session/view/content/room_details/general_page.rs:1118
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
 #: src/session/view/content/room_history/item_row.rs:874
@@ -1924,7 +1934,7 @@ msgid "Any registered user"
 msgstr "Qualquer usuário registrado"
 
 #: src/session/model/room/join_rule.rs:276
-#: src/session/view/content/room_details/general_page.rs:1006
+#: src/session/view/content/room_details/general_page.rs:1022
 msgid "Unsupported rule"
 msgstr "Regra sem suporte"
 
@@ -2273,7 +2283,7 @@ msgstr "Falha ao adicionar a palavra-chave de notificação"
 #: src/session/view/account_settings/notifications_page.ui:5
 #: src/session/view/content/room_details/general_page.ui:136
 msgid "Notifications"
-msgstr "Notificaçõse"
+msgstr "Notificações"
 
 #: src/session/view/account_settings/notifications_page.ui:11
 msgid "Enable for This Account"
@@ -2477,7 +2487,7 @@ msgstr "Verificar seus próprios dispositivos ou outros usuários não é possí
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1103
+#: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
 msgid "Enable"
 msgstr "Habilitar"
@@ -2784,7 +2794,7 @@ msgstr "Não pôde recusar convite para {room}"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:99
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "Convidar"
@@ -2843,7 +2853,7 @@ msgid "Remove “{address}”"
 msgstr "Remover “{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:704
+#: src/session/view/content/room_details/general_page.rs:720
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "Endereço principal"
@@ -3016,83 +3026,83 @@ msgstr "Salvar"
 msgid "Save Description"
 msgstr "Salvar descrição"
 
-#: src/session/view/content/room_details/general_page.rs:455
-#: src/session/view/content/room_details/general_page.rs:492
+#: src/session/view/content/room_details/general_page.rs:462
+#: src/session/view/content/room_details/general_page.rs:508
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Membro"
 msgstr[1] "Membros"
 
-#: src/session/view/content/room_details/general_page.rs:658
+#: src/session/view/content/room_details/general_page.rs:674
 msgid "Could not change notifications setting"
 msgstr "Falha ao mudar a configuração de notificações"
 
-#: src/session/view/content/room_details/general_page.rs:699
-#: src/session/view/content/room_details/general_page.rs:738
+#: src/session/view/content/room_details/general_page.rs:715
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Copy address"
 msgstr "Copiar endereço"
 
-#: src/session/view/content/room_details/general_page.rs:700
-#: src/session/view/content/room_details/general_page.rs:739
+#: src/session/view/content/room_details/general_page.rs:716
+#: src/session/view/content/room_details/general_page.rs:755
 msgid "Address copied to clipboard"
 msgstr "Endereço copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:781
+#: src/session/view/content/room_details/general_page.rs:797
 msgid "Room link copied to clipboard"
 msgstr "Link da sala copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:834
+#: src/session/view/content/room_details/general_page.rs:850
 msgid "Could not change who can join"
 msgstr "Falha ao alterar quem consegue entrar"
 
-#: src/session/view/content/room_details/general_page.rs:882
+#: src/session/view/content/room_details/general_page.rs:898
 msgid "Could not change guest access"
 msgstr "Falha ao alterar o acesso de convidados"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:899
+#: src/session/view/content/room_details/general_page.rs:915
 msgid "Publish in the {homeserver} directory"
 msgstr "Publicar no diretório {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:976
+#: src/session/view/content/room_details/general_page.rs:992
 msgid "Could not publish room in directory"
 msgstr "Falha ao publicar sala no diretório"
 
-#: src/session/view/content/room_details/general_page.rs:978
+#: src/session/view/content/room_details/general_page.rs:994
 msgid "Could not unpublish room from directory"
 msgstr "Falha ao despublicar a sala do diretório"
 
-#: src/session/view/content/room_details/general_page.rs:999
+#: src/session/view/content/room_details/general_page.rs:1015
 #: src/session/view/content/room_details/general_page.ui:268
 msgid "Anyone, even if they are not in the room"
 msgstr "Qualquer um, mesmo que eles não estejam na sala"
 
-#: src/session/view/content/room_details/general_page.rs:1002
+#: src/session/view/content/room_details/general_page.rs:1018
 #: src/session/view/content/room_details/general_page.ui:269
 msgid "Members only, since this option was selected"
 msgstr "Apenas membros, já que esta opção foi selecionada"
 
-#: src/session/view/content/room_details/general_page.rs:1004
+#: src/session/view/content/room_details/general_page.rs:1020
 #: src/session/view/content/room_details/general_page.ui:271
 msgid "Members only, since they were invited"
 msgstr "Membros apenas, uma vez que foram convidados"
 
-#: src/session/view/content/room_details/general_page.rs:1005
+#: src/session/view/content/room_details/general_page.rs:1021
 #: src/session/view/content/room_details/general_page.ui:270
 msgid "Members only, since they joined the room"
 msgstr "Apenas membros, uma vez que entraram na sala"
 
-#: src/session/view/content/room_details/general_page.rs:1053
+#: src/session/view/content/room_details/general_page.rs:1069
 msgid "Could not change who can read history"
 msgstr "Falha ao mudar quem pode ler o histórico"
 
-#: src/session/view/content/room_details/general_page.rs:1097
+#: src/session/view/content/room_details/general_page.rs:1113
 msgid "Enable Encryption?"
 msgstr "Habilitar Encriptação?"
 
-#: src/session/view/content/room_details/general_page.rs:1098
+#: src/session/view/content/room_details/general_page.rs:1114
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3100,25 +3110,25 @@ msgstr ""
 "Habilitar criptografia impedirá que novos membros leiam o histórico antes de "
 "sua chegada. Isso não pode ser desativado depois."
 
-#: src/session/view/content/room_details/general_page.rs:1113
+#: src/session/view/content/room_details/general_page.rs:1129
 msgid "Could not enable encryption"
 msgstr "Falha ao habilitar encriptação"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1139
+#: src/session/view/content/room_details/general_page.rs:1155
 msgid "Federated"
 msgstr "Federada"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1142
+#: src/session/view/content/room_details/general_page.rs:1158
 msgid "Not federated"
 msgstr "Não federada"
 
-#: src/session/view/content/room_details/general_page.rs:1172
+#: src/session/view/content/room_details/general_page.rs:1188
 msgid "Room upgraded successfully"
 msgstr "Sala atualizada com sucesso"
 
-#: src/session/view/content/room_details/general_page.rs:1176
+#: src/session/view/content/room_details/general_page.rs:1192
 msgid "Could not upgrade room"
 msgstr "Falha ao atualizar a sala"
 
@@ -3132,6 +3142,7 @@ msgid "Edit Details"
 msgstr "Editar detalhes"
 
 #: src/session/view/content/room_details/general_page.ui:89
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
 msgid "There are no members in this room"
 msgstr "Não há membros nesta sala"
 
@@ -3414,7 +3425,7 @@ msgid "Identity Verified"
 msgstr "Identidade verificada"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
@@ -3422,30 +3433,50 @@ msgstr[0] "Convidado"
 msgstr[1] "Convidados"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
 msgstr[0] "Banido"
 msgstr[1] "Banidos"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:218
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:286
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] "Membro da sala convidado"
 msgstr[1] "Membros da sala convidados"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:288
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
-msgstr[0] "Membro da Sala Banido"
-msgstr[1] "Membros da Sala Banidos"
+msgstr[0] "Membro da sala banido"
+msgstr[1] "Membros da sala banidos"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:289
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Membro de sala"
 msgstr[1] "Membros de salas"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:330
+msgid "No Invited Room Members"
+msgstr "Nenhum membro da sala convidado"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:331
+msgid "There are no invited members in this room"
+msgstr "Não há membros convidados nesta sala"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:335
+msgid "No Banned Room Members"
+msgstr "Nenhum membro da sala banido"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:336
+msgid "There are no banned members in this room"
+msgstr "Não há membros banidos nesta sala"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:340
+msgid "No Room Members"
+msgstr "Nenhum membro de sala"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3461,7 +3492,8 @@ msgstr "Alternar pesquisa de membros da sala"
 msgid "Search for room members"
 msgstr "Pesquise por membros da sala"
 
-#: src/session/view/content/room_details/membership_lists.rs:178
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
+#: src/session/view/content/room_details/membership_lists.rs:186
 msgid "Could not load the full list of room members"
 msgstr "Falha ao carregar a lista completa de membros da sala"
 
@@ -4459,7 +4491,7 @@ msgstr "{user} removeu seu avatar."
 msgid "{user} changed their avatar."
 msgstr "{user} alterou seu avatar."
 
-#: src/session/view/content/room_history/title.ui:9
+#: src/session/view/content/room_history/title.ui:10
 msgid "Open Room Details"
 msgstr "Abrir detalhes da sala"
 
