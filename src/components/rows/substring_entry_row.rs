@@ -11,10 +11,10 @@ mod imp {
     use std::{
         cell::{Cell, RefCell},
         marker::PhantomData,
+        sync::LazyLock,
     };
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -102,7 +102,8 @@ mod imp {
 
     impl ObjectImpl for SubstringEntryRow {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| vec![Signal::builder("add").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("add").build()]);
             SIGNALS.as_ref()
         }
 

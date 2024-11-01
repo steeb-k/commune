@@ -11,11 +11,10 @@ use crate::contrib::qr_code_scanner::camera::Action;
 const HEADER: &[u8] = b"MATRIX";
 
 mod imp {
-    use std::sync::Mutex;
+    use std::sync::{LazyLock, Mutex};
 
     use gst::subclass::prelude::*;
     use gst_video::subclass::prelude::*;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -37,20 +36,21 @@ mod imp {
     impl GstObjectImpl for QrCodeDetector {}
     impl ElementImpl for QrCodeDetector {
         fn metadata() -> Option<&'static gst::subclass::ElementMetadata> {
-            static ELEMENT_METADATA: Lazy<gst::subclass::ElementMetadata> = Lazy::new(|| {
-                gst::subclass::ElementMetadata::new(
-                    "Matrix Qr Code detector Sink",
-                    "Sink/Video/QrCode/Matrix",
-                    "A Qr code detector for Matrix",
-                    "Julian Sparber <julian@sparber.net>",
-                )
-            });
+            static ELEMENT_METADATA: LazyLock<gst::subclass::ElementMetadata> =
+                LazyLock::new(|| {
+                    gst::subclass::ElementMetadata::new(
+                        "Matrix Qr Code detector Sink",
+                        "Sink/Video/QrCode/Matrix",
+                        "A Qr code detector for Matrix",
+                        "Julian Sparber <julian@sparber.net>",
+                    )
+                });
 
             Some(&*ELEMENT_METADATA)
         }
 
         fn pad_templates() -> &'static [gst::PadTemplate] {
-            static PAD_TEMPLATES: Lazy<Vec<gst::PadTemplate>> = Lazy::new(|| {
+            static PAD_TEMPLATES: LazyLock<Vec<gst::PadTemplate>> = LazyLock::new(|| {
                 let caps = gst_video::video_make_raw_caps(&[gst_video::VideoFormat::Gray8])
                     .any_features()
                     .build();

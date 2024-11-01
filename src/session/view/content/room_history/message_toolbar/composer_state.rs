@@ -30,11 +30,10 @@ const MENTION_START_TAG: &str = "<org.gnome.fractal.mention>";
 const MENTION_END_TAG: &str = "</org.gnome.fractal.mention>";
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::{cell::RefCell, marker::PhantomData, sync::LazyLock};
 
     use futures_util::lock::Mutex;
     use glib::subclass::Signal;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -76,8 +75,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for ComposerState {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("related-to-changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("related-to-changed").build()]);
             SIGNALS.as_ref()
         }
 

@@ -19,6 +19,7 @@ use std::{
     fmt,
     path::PathBuf,
     rc::{Rc, Weak},
+    sync::LazyLock,
 };
 
 use futures_util::{
@@ -26,7 +27,6 @@ use futures_util::{
     pin_mut,
 };
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
-use once_cell::sync::Lazy;
 use regex::Regex;
 
 pub use self::{
@@ -98,7 +98,7 @@ pub fn freplace(s: String, args: &[(&str, &str)]) -> String {
 }
 
 /// Regex that matches a string that only includes emojis.
-pub static EMOJI_REGEX: Lazy<Regex> = Lazy::new(|| {
+pub static EMOJI_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?x)
         ^

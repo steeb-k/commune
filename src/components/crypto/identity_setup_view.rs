@@ -47,10 +47,12 @@ pub enum CryptoIdentitySetupNextStep {
 }
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::{
+        cell::{OnceCell, RefCell},
+        sync::LazyLock,
+    };
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -102,7 +104,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for CryptoIdentitySetupView {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![
                     // The crypto identity setup is done.
                     Signal::builder("completed")

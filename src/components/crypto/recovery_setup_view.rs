@@ -44,8 +44,9 @@ pub enum CryptoRecoverySetupInitialPage {
 }
 
 mod imp {
+    use std::sync::LazyLock;
+
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -111,7 +112,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for CryptoRecoverySetupView {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![
                     // Recovery is enabled.
                     Signal::builder("completed").build(),

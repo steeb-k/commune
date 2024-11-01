@@ -25,16 +25,18 @@ mod user_facing_error;
 mod utils;
 mod window;
 
+use std::sync::LazyLock;
+
 use gettextrs::*;
 use gtk::{gdk::Display, gio, IconTheme};
-use once_cell::sync::Lazy;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 use self::{application::*, config::*, i18n::*, window::Window};
 
 /// The default tokio runtime to be used for async tasks
-pub static RUNTIME: Lazy<tokio::runtime::Runtime> =
-    Lazy::new(|| tokio::runtime::Runtime::new().unwrap());
+pub static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+    tokio::runtime::Runtime::new().expect("creating tokio runtime should succeed")
+});
 
 fn main() {
     // Initialize logger, debug is carried out via debug!, info!, warn! and error!.

@@ -1,8 +1,9 @@
 //! Camera API.
 
+use std::sync::LazyLock;
+
 use futures_util::{future::LocalBoxFuture, FutureExt};
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use once_cell::sync::Lazy;
 use tracing::error;
 
 mod camera_paintable;
@@ -13,7 +14,6 @@ pub use self::camera_paintable::Action;
 use self::camera_paintable::CameraPaintable;
 
 mod imp {
-
     use super::*;
 
     #[repr(C)]
@@ -74,7 +74,7 @@ impl Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        static CAMERA: Lazy<Camera> = Lazy::new(Camera::new);
+        static CAMERA: LazyLock<Camera> = LazyLock::new(Camera::new);
 
         CAMERA.to_owned()
     }

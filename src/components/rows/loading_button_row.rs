@@ -9,10 +9,9 @@ use gtk::{
 use crate::components::LoadingBin;
 
 mod imp {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, sync::LazyLock};
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -47,8 +46,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for LoadingButtonRow {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("activated").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("activated").build()]);
             SIGNALS.as_ref()
         }
 

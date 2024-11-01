@@ -1,7 +1,8 @@
+use std::sync::LazyLock;
+
 use adw::{prelude::BinExt, subclass::prelude::*};
 use gtk::{glib, glib::clone, pango, prelude::*};
 use matrix_sdk::ruma::events::room::message::FormattedBody;
-use once_cell::sync::Lazy;
 use ruma::{
     events::room::message::MessageFormat,
     html::{Html, ListBehavior, SanitizerConfig},
@@ -433,7 +434,7 @@ const SUPPORTED_BLOCK_ELEMENTS: &[&str] = &[
 ];
 
 /// HTML sanitizer config for HTML messages.
-static HTML_MESSAGE_SANITIZER_CONFIG: Lazy<SanitizerConfig> = Lazy::new(|| {
+static HTML_MESSAGE_SANITIZER_CONFIG: LazyLock<SanitizerConfig> = LazyLock::new(|| {
     SanitizerConfig::compat()
         .allow_elements(
             SUPPORTED_INLINE_ELEMENTS

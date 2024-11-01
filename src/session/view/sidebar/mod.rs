@@ -29,10 +29,12 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, OnceCell, RefCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        sync::LazyLock,
+    };
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -94,7 +96,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Sidebar {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![
                     Signal::builder("drop-source-category-changed").build(),
                     Signal::builder("drop-active-target-category-changed").build(),

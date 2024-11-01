@@ -4,10 +4,9 @@ use gtk::{glib, glib::closure_local, CompositeTemplate};
 use crate::components::LoadingButton;
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::{cell::RefCell, marker::PhantomData, sync::LazyLock};
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -54,8 +53,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for RemovableRow {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("remove").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("remove").build()]);
             SIGNALS.as_ref()
         }
     }

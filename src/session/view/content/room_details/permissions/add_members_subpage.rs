@@ -16,10 +16,9 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, collections::HashMap};
+    use std::{cell::RefCell, collections::HashMap, sync::LazyLock};
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -70,8 +69,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for PermissionsAddMembersSubpage {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("selection-changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("selection-changed").build()]);
             SIGNALS.as_ref()
         }
 

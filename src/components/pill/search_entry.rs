@@ -11,10 +11,9 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, collections::HashMap, marker::PhantomData};
+    use std::{cell::RefCell, collections::HashMap, marker::PhantomData, sync::LazyLock};
 
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -56,7 +55,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for PillSearchEntry {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![Signal::builder("pill-removed")
                     .param_types([PillSource::static_type()])
                     .build()]

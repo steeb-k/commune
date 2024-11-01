@@ -3,7 +3,7 @@ use std::{
     fmt,
     future::IntoFuture,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc, LazyLock, Mutex},
     time::{Duration, Instant},
 };
 
@@ -13,7 +13,6 @@ use matrix_sdk::{
     media::{MediaRequest, UniqueKey},
     Client,
 };
-use once_cell::sync::Lazy;
 use tokio::{
     sync::{broadcast, Mutex as AsyncMutex},
     task::{spawn_blocking, AbortHandle},
@@ -27,7 +26,7 @@ use crate::{
 };
 
 /// The default image request queue.
-pub static IMAGE_QUEUE: Lazy<ImageRequestQueue> = Lazy::new(ImageRequestQueue::new);
+pub static IMAGE_QUEUE: LazyLock<ImageRequestQueue> = LazyLock::new(ImageRequestQueue::new);
 
 /// The default limit of the [`ImageRequestQueue`], aka the maximum number of
 /// concurrent image requests.

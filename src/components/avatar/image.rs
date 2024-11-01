@@ -34,10 +34,10 @@ mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
+        sync::LazyLock,
     };
 
     use glib::subclass::Signal;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -78,8 +78,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for AvatarImage {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("error-changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("error-changed").build()]);
             SIGNALS.as_ref()
         }
     }

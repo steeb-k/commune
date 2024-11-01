@@ -8,12 +8,11 @@ mod qr_code_detector;
 pub use camera::{Camera, CameraExt};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, sync::LazyLock};
 
     use adw::subclass::prelude::*;
     use glib::subclass::{InitializingObject, Signal};
     use gtk::CompositeTemplate;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -43,7 +42,7 @@ mod imp {
     }
     impl ObjectImpl for QrCodeScanner {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![Signal::builder("code-detected")
                     .param_types([QrVerificationDataBoxed::static_type()])
                     .run_first()

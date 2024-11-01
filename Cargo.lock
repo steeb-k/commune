@@ -1373,7 +1373,6 @@ dependencies = [
  "matrix-sdk-ui",
  "mime",
  "mime_guess",
- "once_cell",
  "oo7",
  "pulldown-cmark",
  "qrcode",

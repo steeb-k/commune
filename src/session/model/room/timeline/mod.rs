@@ -58,10 +58,10 @@ mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
+        sync::LazyLock,
     };
 
     use glib::subclass::Signal;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -136,8 +136,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Timeline {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("read-change-trigger").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("read-change-trigger").build()]);
             SIGNALS.as_ref()
         }
 

@@ -26,10 +26,9 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, sync::LazyLock};
 
     use glib::subclass::Signal;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -64,8 +63,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for RoomList {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("pending-rooms-changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("pending-rooms-changed").build()]);
             SIGNALS.as_ref()
         }
 

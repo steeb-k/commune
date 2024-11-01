@@ -1,8 +1,9 @@
+use std::sync::LazyLock;
+
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
 use matrix_sdk_ui::timeline::TimelineItemContent;
-use once_cell::sync::Lazy;
 use ruma::events::room::message::MessageType;
 use tracing::error;
 
@@ -975,7 +976,7 @@ unsafe impl Sync for MenuModelSendSync {}
 
 /// The `MenuModel` for common message event actions, including reactions.
 fn event_message_menu_model_with_reactions() -> &'static gio::MenuModel {
-    static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
         MenuModelSendSync(
             gtk::Builder::from_resource(
                 "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",
@@ -989,7 +990,7 @@ fn event_message_menu_model_with_reactions() -> &'static gio::MenuModel {
 
 /// The `MenuModel` for common message event actions, without reactions.
 fn event_message_menu_model_no_reactions() -> &'static gio::MenuModel {
-    static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
         MenuModelSendSync(
             gtk::Builder::from_resource(
                 "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",
@@ -1003,7 +1004,7 @@ fn event_message_menu_model_no_reactions() -> &'static gio::MenuModel {
 
 /// The `MenuModel` for common state event actions.
 fn event_state_menu_model() -> &'static gio::MenuModel {
-    static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
         MenuModelSendSync(
             gtk::Builder::from_resource(
                 "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",

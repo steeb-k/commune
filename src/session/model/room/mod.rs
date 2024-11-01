@@ -74,11 +74,11 @@ mod imp {
         cell::{Cell, OnceCell},
         marker::PhantomData,
         ops::ControlFlow,
+        sync::LazyLock,
         time::SystemTime,
     };
 
     use glib::subclass::Signal;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -232,8 +232,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Room {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("room-forgotten").build()]);
             SIGNALS.as_ref()
         }
     }
