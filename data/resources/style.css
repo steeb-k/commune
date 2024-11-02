@@ -635,8 +635,12 @@ message-reactions flowboxchild:active {
   background-color: transparent;
 }
 
-message-reactions .toggle {
+message-reactions:dir(ltr) .toggle {
   padding: 1px 0 1px 6px;
+}
+
+message-reactions:dir(rtl) .toggle {
+  padding: 1px 6px 1px 0;
 }
 
 message-reactions .reaction-key {
@@ -651,7 +655,6 @@ message-reactions .reaction-key.emoji{
 
 message-reactions .reaction-count {
   font-size: 0.8em;
-  padding-right: 6px;
 }
 
 .reaction-chooser {

@@ -21,6 +21,7 @@
             </child>
             <child>
               <object class="GtkLabel" id="reaction_count">
+                <property name="margin-end">6</property>
                 <style>
                   <class name="reaction-count"/>
                 </style>
