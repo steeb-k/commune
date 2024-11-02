@@ -5,6 +5,7 @@
     <child>
       <object class="GtkBox" id="content">
         <property name="spacing">6</property>
+        <property name="margin-end">6</property>
         <child>
           <object class="Avatar" id="avatar">
             <property name="size">24</property>

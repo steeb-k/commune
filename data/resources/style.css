@@ -145,7 +145,6 @@ scrolledwindow.card > textview {
 inline-pill {
   border-radius: 9999px;
   background-color: color-mix(in srgb, var(--view-fg-color) 10%, transparent);
-  padding-right: 6px;
   transition-property: outline, outline-width, outline-offset, outline-color;
   transition-duration: 300ms;
   animation-timing-function: ease-in-out;
