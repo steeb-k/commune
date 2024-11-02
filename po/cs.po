@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-25 07:47+0000\n"
-"PO-Revision-Date: 2024-09-29 17:18+0200\n"
+"POT-Creation-Date: 2024-11-02 12:37+0000\n"
+"PO-Revision-Date: 2024-11-02 13:46+0100\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -162,15 +162,15 @@ msgstr "Přid_at účet"
 msgid "Account Settings"
 msgstr "Nastavení účtu"
 
-#: src/application.rs:212
+#: src/application.rs:275
 msgid "The Fractal Team"
 msgstr "Tým Fractal"
 
-#: src/application.rs:218
+#: src/application.rs:281
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Tým Fractal"
 
-#: src/application.rs:232
+#: src/application.rs:295
 msgid "translator-credits"
 msgstr ""
 "Marek Černocký <marek@manet.cz>\n"
@@ -178,11 +178,11 @@ msgstr ""
 "Daniel Rusek <mail@asciiwolf.com>"
 
 #. This can't be added via the builder
-#: src/application.rs:236
+#: src/application.rs:299
 msgid "Name by"
 msgstr "Pojmenoval"
 
-#: src/application.rs:351
+#: src/application.rs:414
 msgid "Session not found"
 msgstr "Sezení nebylo nalezeno"
 
@@ -192,10 +192,11 @@ msgstr "Potvrdit změnu"
 
 #: src/components/action_button.ui:52 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:142
-#: src/session/view/account_settings/user_sessions_page/mod.ui:83
+#: src/session/view/account_settings/user_sessions_page/mod.ui:79
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
 #: src/session/view/content/room_history/mod.ui:197
 msgid "Try Again"
 msgstr "Zkusit znovu"
@@ -218,35 +219,36 @@ msgid "Warning"
 msgstr "Varování"
 
 #: src/components/action_button.ui:126 src/error_page.ui:10
-#: src/session/view/account_settings/user_sessions_page/mod.ui:78
 #: src/session/view/content/room_details/invite_subpage/mod.ui:136
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
 #: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:69
 msgid "Error"
 msgstr "Chyba"
 
-#: src/components/avatar/editable.rs:489
+#: src/components/avatar/editable.rs:506
 msgid "Images"
 msgstr "Obrázky"
 
-#: src/components/avatar/editable.rs:494
+#: src/components/avatar/editable.rs:511
 msgid "Choose Avatar"
 msgstr "Výběr avataru"
 
-#: src/components/avatar/editable.rs:496
+#: src/components/avatar/editable.rs:513
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "Vybrat"
 
-#: src/components/avatar/editable.rs:510
+#: src/components/avatar/editable.rs:527
 msgid "Could not open avatar file"
 msgstr "Nezdařilo se otevřít soubor avataru"
 
-#: src/components/avatar/editable.rs:531
+#: src/components/avatar/editable.rs:548
 msgid "The chosen file is not an image"
 msgstr "Vybraný soubor není obrázek"
 
-#: src/components/avatar/editable.rs:537
+#: src/components/avatar/editable.rs:554
 msgid "Could not determine the type of the chosen file"
 msgstr "Nezdařilo se určit typ zvoleného souboru"
 
@@ -258,12 +260,12 @@ msgstr "Odebrat avatar"
 msgid "Select New Avatar"
 msgstr "Výbrat nový avatar"
 
-#: src/components/crypto/identity_setup_view.rs:400
+#: src/components/crypto/identity_setup_view.rs:403
 #: src/identity_verification_view/cancelled_page.rs:189
 msgid "Could not send a new verification request"
 msgstr "Nezdařilo se odeslat nový požadavek na ověření"
 
-#: src/components/crypto/identity_setup_view.rs:451
+#: src/components/crypto/identity_setup_view.rs:454
 msgid "Could not create the crypto identity"
 msgstr "Nezdařilo se vytvořit šifrovací identitu"
 
@@ -298,9 +300,9 @@ msgstr "Obnovit účet"
 #: src/components/crypto/identity_setup_view.ui:262
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
-#: src/components/crypto/recovery_setup_view.ui:513
-#: src/session/view/account_settings/security_page/mod.rs:249
-#: src/session/view/account_settings/security_page/mod.rs:317
+#: src/components/crypto/recovery_setup_view.ui:515
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "Resetovat"
 
@@ -335,7 +337,7 @@ msgstr "Nastavit"
 #: src/components/crypto/identity_setup_view.ui:200
 #: src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
-#: src/session/view/account_settings/security_page/mod.rs:252
+#: src/session/view/account_settings/security_page/mod.rs:263
 msgid "Reset Crypto Identity"
 msgstr "Resetovat šifrovací identitu"
 
@@ -352,11 +354,11 @@ msgid "To proceed, you will also need to reset your account recovery key."
 msgstr ""
 "Abyste mohli pokračovat, budete také muset resetovat klíč pro obnovení účtu."
 
-#: src/components/crypto/recovery_setup_view.rs:178
+#: src/components/crypto/recovery_setup_view.rs:181
 msgid "Invalidates the verifications of all users and sessions"
 msgstr "Zruší platnost ověření všech uživatelů a sezení"
 
-#: src/components/crypto/recovery_setup_view.rs:183
+#: src/components/crypto/recovery_setup_view.rs:186
 msgid ""
 "Required because the crypto identity in the recovery data is incomplete. "
 "Invalidates the verifications of all users and sessions."
@@ -364,11 +366,11 @@ msgstr ""
 "Vyžadováno, protože šifrovací identita v datech pro obnovení není úplná. "
 "Zruší platnost ověření všech uživatelů a sezení."
 
-#: src/components/crypto/recovery_setup_view.rs:193
+#: src/components/crypto/recovery_setup_view.rs:196
 msgid "You might not be able to read your past encrypted messages anymore"
 msgstr "Možná již nebudete moci číst své dřívější zašifrované zprávy"
 
-#: src/components/crypto/recovery_setup_view.rs:198
+#: src/components/crypto/recovery_setup_view.rs:201
 msgid ""
 "Required because the backup is not set up properly. You might not be able to "
 "read your past encrypted messages anymore."
@@ -376,7 +378,7 @@ msgstr ""
 "Vyžadováno, protože záloha není správně nastavena. Možná již nebudete moci "
 "číst své dřívější zašifrované zprávy."
 
-#: src/components/crypto/recovery_setup_view.rs:216
+#: src/components/crypto/recovery_setup_view.rs:219
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
@@ -384,7 +386,7 @@ msgstr ""
 "Tento klíč pro obnovení uložte na bezpečném místě. Budete jej potřebovat pro "
 "obnovení účtu, pokud ztratíte přístup ke všem svým sezením."
 
-#: src/components/crypto/recovery_setup_view.rs:218
+#: src/components/crypto/recovery_setup_view.rs:221
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
@@ -392,28 +394,29 @@ msgstr ""
 "Přístupovou frázi si zapamatujte nebo ji uložte na bezpečném místě. Budete "
 "ji potřebovat pro obnovení účtu, pokud ztratíte přístup ke všem svým sezením."
 
-#: src/components/crypto/recovery_setup_view.rs:299
+#: src/components/crypto/recovery_setup_view.rs:302
 msgid "The recovery passphrase or key is invalid"
 msgstr "Zadaná přístupová fráze nebo klíč pro obnovení jsou neplatné"
 
-#: src/components/crypto/recovery_setup_view.rs:302
+#: src/components/crypto/recovery_setup_view.rs:305
 msgid "Could not access recovery data"
 msgstr "Nezdařilo se získat přístup k datům pro obnovení"
 
-#: src/components/crypto/recovery_setup_view.rs:358
+#: src/components/crypto/recovery_setup_view.rs:361
 msgid "Could not reset the crypto identity"
 msgstr "Nezdařilo se resetovat šifrovací identitu"
 
-#: src/components/crypto/recovery_setup_view.rs:382
-#: src/components/crypto/recovery_setup_view.rs:407
+#: src/components/crypto/recovery_setup_view.rs:413
+#: src/components/crypto/recovery_setup_view.rs:422
+#: src/components/crypto/recovery_setup_view.rs:448
 msgid "Could not reset account recovery"
 msgstr "Nezdařilo se resetovat obnovení účtu"
 
-#: src/components/crypto/recovery_setup_view.rs:442
+#: src/components/crypto/recovery_setup_view.rs:483
 msgid "Could not reset account recovery key"
 msgstr "Nezdařilo se resetovat obnovovací klíč účtu"
 
-#: src/components/crypto/recovery_setup_view.rs:480
+#: src/components/crypto/recovery_setup_view.rs:521
 msgid "Could not enable account recovery"
 msgstr "Obnovení účtu se nezdařilo aktivovat"
 
@@ -434,8 +437,8 @@ msgid "Recovery Passphrase or Key"
 msgstr "Přístupová fráze nebo klíč pro obnovení"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/account_settings/security_page/mod.rs:348
+#: src/session/view/sidebar/mod.rs:317
 msgid "Recover"
 msgstr "Obnovit"
 
@@ -515,21 +518,24 @@ msgid "Copy Recovery Key"
 msgstr "Kopírovat obnovovací klíč"
 
 #: src/components/crypto/recovery_setup_view.ui:408
-#: src/components/crypto/recovery_setup_view.ui:493
-msgid "OK"
-msgstr "Budiž"
+#: src/components/crypto/recovery_setup_view.ui:494
+#: src/identity_verification_view/cancelled_page.ui:52
+#: src/identity_verification_view/completed_page.ui:48
+#: src/identity_verification_view/room_left_page.ui:44
+msgid "_Done"
+msgstr "_Hotovo"
 
-#: src/components/crypto/recovery_setup_view.ui:430
-#: src/components/crypto/recovery_setup_view.ui:457
-#: src/session/view/account_settings/security_page/mod.rs:332
+#: src/components/crypto/recovery_setup_view.ui:431
+#: src/components/crypto/recovery_setup_view.ui:458
+#: src/session/view/account_settings/security_page/mod.rs:343
 msgid "Account Recovery Incomplete"
 msgstr "Obnovení účtu nekompletní"
 
-#: src/components/crypto/recovery_setup_view.ui:468
+#: src/components/crypto/recovery_setup_view.ui:469
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr "Obnova byla úspěšná, ale data pro obnovu nebyla úplná."
 
-#: src/components/crypto/recovery_setup_view.ui:476
+#: src/components/crypto/recovery_setup_view.ui:477
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
@@ -537,7 +543,7 @@ msgstr ""
 "Chcete-li to vyřešit, měli byste resetovat obnovení ze sezení, které "
 "obsahuje všechna data, a pokusit se toto sezení obnovit znovu."
 
-#: src/components/crypto/recovery_setup_view.ui:484
+#: src/components/crypto/recovery_setup_view.ui:485
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
@@ -545,7 +551,7 @@ msgstr ""
 "Všimněte si, že obnovení účtu může mít v jiných klientech Matrix jiný název, "
 "například „záloha klíče“ nebo „zabezpečená záloha“."
 
-#: src/components/crypto/recovery_setup_view.ui:504
+#: src/components/crypto/recovery_setup_view.ui:506
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Případně můžete resetovat Obnovení účtu"
 
@@ -582,7 +588,7 @@ msgstr "P_otvrdit"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:225
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:997
+#: src/session/view/content/room_history/mod.rs:843
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Zobrazit"
@@ -632,7 +638,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:1000
+#: src/session/view/content/room_history/mod.rs:846
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Vstoupit"
@@ -692,11 +698,11 @@ msgstr "Opustit"
 #: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:1021
+#: src/session/view/content/room_details/general_page.rs:1118
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:896
-#: src/session/view/content/room_history/item_row.rs:950
+#: src/session/view/content/room_history/item_row.rs:875
+#: src/session/view/content/room_history/item_row.rs:929
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -761,7 +767,7 @@ msgstr ""
 "nebude moci znovu připojit, dokud jej někdo znovu nepozve."
 
 #: src/components/dialogs/message_dialogs.rs:170
-#: src/components/user_page.rs:417
+#: src/components/user_page.rs:416
 msgid "Revoke Invite"
 msgstr "Zrušit pozvání"
 
@@ -778,7 +784,7 @@ msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Opravdu chcete odepřít přístup uživateli {user_id}?"
 
 #: src/components/dialogs/message_dialogs.rs:186
-#: src/components/user_page.rs:418
+#: src/components/user_page.rs:417
 msgid "Deny Access"
 msgstr "Zamítnout přístup"
 
@@ -811,7 +817,7 @@ msgstr ""
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
 #: src/components/dialogs/message_dialogs.rs:208
-#: src/components/user_page.rs:420
+#: src/components/user_page.rs:419
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "Vykopnout"
@@ -844,7 +850,7 @@ msgstr[2] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:897
+#: src/session/view/content/room_history/item_row.rs:876
 msgid "Remove"
 msgstr "Odebrat"
 
@@ -866,7 +872,7 @@ msgstr ""
 "místnosti."
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:932
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Reason (optional)"
 msgstr "Důvod (volitelný)"
 
@@ -924,31 +930,31 @@ msgstr "Povýšit"
 msgid "User Profile"
 msgstr "Uživatelský profil"
 
-#: src/components/offline_banner.rs:103
+#: src/components/offline_banner.rs:102
 msgid "Offline"
 msgstr "Offline"
 
-#: src/components/offline_banner.rs:111
+#: src/components/offline_banner.rs:109
 msgid "No network connection"
 msgstr "Žádné připojení k síti"
 
-#: src/components/offline_banner.rs:115
+#: src/components/offline_banner.rs:112
 msgid "No Internet connection"
 msgstr "Žádné připojení k Internetu"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:176
 msgid "Image not Viewable"
 msgstr "Obrázek nelze zobrazit"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:177
 msgid "Audio Clip not Playable"
 msgstr "Zvukový klip nelze přehrát"
 
-#: src/components/media/content_viewer.rs:179
+#: src/components/media/content_viewer.rs:178
 msgid "Video not Playable"
 msgstr "Video nelze přehrát"
 
-#: src/components/media/content_viewer.rs:180
+#: src/components/media/content_viewer.rs:179
 msgid "File not Viewable"
 msgstr "Soubor nelze zobrazit"
 
@@ -971,7 +977,7 @@ msgstr "Informovat celou místnost"
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:71
 msgid "Custom"
 msgstr "Vlastní"
 
@@ -979,95 +985,95 @@ msgstr "Vlastní"
 msgid "Confirm Custom Role"
 msgstr "Potvrdit vlastní roli"
 
-#: src/components/user_page.rs:277
+#: src/components/user_page.rs:276
 #: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID uživatele Matrixu bylo zkopírováno do schránky"
 
-#: src/components/user_page.rs:299
+#: src/components/user_page.rs:298
 msgid "Open Direct Chat"
 msgstr "Otevřít přímou konverzaci"
 
-#: src/components/user_page.rs:301
+#: src/components/user_page.rs:300
 msgid "Create Direct Chat"
 msgstr "Vytvořit přímou konverzaci"
 
-#: src/components/user_page.rs:325
+#: src/components/user_page.rs:324
 #: src/session/view/content/room_history/sender_avatar/mod.rs:534
 #: src/session/view/create_dm_dialog/mod.rs:202
 msgid "Could not create a new Direct Chat"
 msgstr "Nezdařilo se vytvořit novou přímou konverzaci"
 
-#: src/components/user_page.rs:358
+#: src/components/user_page.rs:357
 msgid "In {room_name}"
 msgstr "V místnosti {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:369
+#: src/components/user_page.rs:368
 msgctxt "member"
 msgid "Invited"
 msgstr "Pozván"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:374
+#: src/components/user_page.rs:373
 msgctxt "member"
 msgid "Banned"
 msgstr "Zablokován"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:379
+#: src/components/user_page.rs:378
 msgctxt "member"
 msgid "Knocked"
 msgstr "Zaklepal"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:384
+#: src/components/user_page.rs:383
 msgctxt "member"
 msgid "Unknown"
 msgstr "Neznámý"
 
-#: src/components/user_page.rs:405
+#: src/components/user_page.rs:404
 msgid "Allow Access"
 msgstr "Povolit přístup"
 
-#: src/components/user_page.rs:505
+#: src/components/user_page.rs:504
 msgid "Could not change the role"
 msgstr "Nezdařilo se změnit roli"
 
-#: src/components/user_page.rs:527
+#: src/components/user_page.rs:526
 #: src/session/view/content/room_history/sender_avatar/mod.rs:558
 msgid "Could not invite user"
 msgstr "Nezdařilo se pozvat uživatele"
 
-#: src/components/user_page.rs:561
+#: src/components/user_page.rs:560
 #: src/session/view/content/room_history/sender_avatar/mod.rs:591
 msgid "Could not revoke invite of user"
 msgstr "Nezdařilo se odvolat pozvání uživatele"
 
-#: src/components/user_page.rs:562
+#: src/components/user_page.rs:561
 #: src/session/view/content/room_history/sender_avatar/mod.rs:592
 msgid "Could not deny access to user"
 msgstr "Zamítnutí přístupu uživateli se nezdařilo"
 
-#: src/components/user_page.rs:563
+#: src/components/user_page.rs:562
 #: src/session/view/content/room_history/sender_avatar/mod.rs:593
 msgid "Could not kick user"
 msgstr "Vykopnutí uživatele se nezdařilo"
 
-#: src/components/user_page.rs:609
+#: src/components/user_page.rs:608
 #: src/session/view/content/room_history/sender_avatar/mod.rs:678
 msgid "Could not ban user"
 msgstr "Zablokování uživatele se nezdařilo"
 
-#: src/components/user_page.rs:637
+#: src/components/user_page.rs:636
 #: src/session/view/content/room_history/sender_avatar/mod.rs:698
 msgid "Could not unban user"
 msgstr "Odblokování uživatele se nezdařilo"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:685
+#: src/components/user_page.rs:684
 #: src/session/view/content/room_history/sender_avatar/mod.rs:752
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
@@ -1075,44 +1081,44 @@ msgstr[0] "Nezdařilo se odstranit 1 zprávu odeslanou uživatelem"
 msgstr[1] "Nezdařilo se odstranit {n} zprávy odeslané uživatelem"
 msgstr[2] "Nezdařilo se odstranit {n} zpráv odeslaných uživatelem"
 
-#: src/components/user_page.rs:702
+#: src/components/user_page.rs:701
 msgid "Identity verified"
 msgstr "Identita ověřena"
 
-#: src/components/user_page.rs:709
+#: src/components/user_page.rs:708
 msgid "Identity not verified"
 msgstr "Identita nebyla ověřena"
 
-#: src/components/user_page.rs:725
+#: src/components/user_page.rs:724
 msgid "Could not start user verification"
 msgstr "Spuštění ověření uživatele se nezdařilo"
 
-#: src/components/user_page.rs:751
+#: src/components/user_page.rs:750
 msgid "Ignored"
 msgstr "Ignorován"
 
-#: src/components/user_page.rs:753
+#: src/components/user_page.rs:752
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Přestaňte ignorovat"
 
-#: src/components/user_page.rs:756
+#: src/components/user_page.rs:755
 msgid "Not Ignored"
 msgstr "Neignorován"
 
-#: src/components/user_page.rs:757
+#: src/components/user_page.rs:756
 msgid "Ignore"
 msgstr "Ignorovat"
 
-#: src/components/user_page.rs:774
+#: src/components/user_page.rs:773
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
 #: src/session/view/content/room_history/sender_avatar/mod.rs:777
 msgid "Could not stop ignoring user"
 msgstr "Ignorování uživatele se nezdařilo zrušit"
 
-#: src/components/user_page.rs:777 src/session/view/content/invite.rs:302
+#: src/components/user_page.rs:776 src/session/view/content/invite.rs:301
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:617
+#: src/session/view/sidebar/row.rs:760
 msgid "Could not ignore user"
 msgstr "Ignorování uživatele se nezdařilo"
 
@@ -1147,9 +1153,9 @@ msgstr "Zabezpečení"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:268
+#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:310
 msgid "Verify"
 msgstr "Ověřit"
 
@@ -1231,7 +1237,7 @@ msgid "Could Not Initialize Session"
 msgstr "Nezdařilo se inicializovat sezení"
 
 #: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:296
+#: src/session/model/notifications/mod.rs:311
 msgid "Login Request From Another Session"
 msgstr "Žádost o přihlášení z jiného sezení"
 
@@ -1243,7 +1249,7 @@ msgstr "Ověřte nové sezení z aktuálního sezení."
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
 #: src/identity_verification_view/scan_qr_code_page.rs:179
-#: src/session/model/notifications/mod.rs:227
+#: src/session/model/notifications/mod.rs:248
 msgid "Verification Request"
 msgstr "Požadavek na ověření"
 
@@ -1310,16 +1316,10 @@ msgstr "Chyba ověření"
 msgid "Send New Request"
 msgstr "Odeslat nový požadavek"
 
-#: src/identity_verification_view/cancelled_page.ui:52
-#: src/identity_verification_view/completed_page.ui:48
-#: src/identity_verification_view/room_left_page.ui:44
-msgid "Dismiss"
-msgstr "Zavřít"
-
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
 #: src/identity_verification_view/scan_qr_code_page.rs:174
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:74
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:76
 msgid "Verify Session"
 msgstr "Ověřit sezení"
 
@@ -1867,121 +1867,119 @@ msgstr ""
 "Nezdařilo se získat přístup k výchozí kolekci. Ujistěte se, že byla "
 "vytvořena klíčenka a nastavena jako výchozí."
 
-#: src/session/model/session.rs:982
+#: src/session/model/session.rs:579
 msgid "Could not log the session out"
 msgstr "Odhlášení sezení se nezdařilo"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:231
+#: src/session/model/notifications/mod.rs:252
 msgid "{user} sent a verification request"
 msgstr "Uživatel {user} odeslal požadavek na ověření"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:300
+#: src/session/model/notifications/mod.rs:315
 msgid "Verify your new session “{name}”"
 msgstr "Ověřte vaše nové sezení „{name}“"
 
-#: src/session/model/room/join_rule.rs:281
+#: src/session/model/room/join_rule.rs:249
 msgid "Only invited users, and users can knock"
 msgstr "Klepat mohou pouze pozvaní uživatelé a uživatelé"
 
-#: src/session/model/room/join_rule.rs:283
+#: src/session/model/room/join_rule.rs:251
 msgid "Only invited users"
 msgstr "Pouze pozvaní uživatelé"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:297
+#: src/session/model/room/join_rule.rs:265
 msgid "Members of {room}, and users can knock"
 msgstr "Členové {room} a uživatelé mohou zaklepat"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:304
+#: src/session/model/room/join_rule.rs:272
 msgid "Members of {room}"
 msgstr "Členové místnosti {room}"
 
-#: src/session/model/room/join_rule.rs:309
+#: src/session/model/room/join_rule.rs:277
 msgid "Any registered user"
 msgstr "Jakýkoli registrovaný uživatel"
 
-#: src/session/model/room/join_rule.rs:310
-#: src/session/view/content/room_details/general_page.rs:925
+#: src/session/model/room/join_rule.rs:278
+#: src/session/view/content/room_details/general_page.rs:1022
 msgid "Unsupported rule"
 msgstr "Nepodporované pravidlo"
 
-#: src/session/model/room/mod.rs:1338
+#: src/session/model/room/mod.rs:397
 msgid "Empty Room (was {user})"
 msgstr "Prázdná místnost (byla {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1341
+#: src/session/model/room/mod.rs:400
 msgid "Empty Room"
 msgstr "Prázdná místnost"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1351
+#: src/session/model/room/mod.rs:410
 msgid "Unknown"
 msgstr "Neznámý"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:71
+#: src/session/model/room/permissions.rs:69
 msgid "Default"
 msgstr "Výchozí"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:72
 msgid "Moderator"
 msgstr "Moderátor"
 
-#: src/session/model/room/permissions.rs:75
+#: src/session/model/room/permissions.rs:73
 msgid "Admin"
 msgstr "Správce"
 
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:77
+#: src/session/model/room/permissions.rs:75
 msgid "Muted"
 msgstr "Ztišen"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:614
-msgid "Could not join room {room_name}. Try again later."
-msgstr ""
-"Nezdařilo se připojit k místnosti {room_name}. Zkuste to později znovu."
+#: src/session/model/room_list/mod.rs:405
+msgid "Could not join room {room_name}"
+msgstr "Nezdařilo se připojit k místnosti {room_name}"
 
-#: src/session/model/sidebar_data/category/category_type.rs:29
+#: src/session/model/sidebar_data/section/name.rs:64
 msgid "Verifications"
 msgstr "Ověření"
 
-#: src/session/model/sidebar_data/category/category_type.rs:30
+#: src/session/model/sidebar_data/section/name.rs:65
 #: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "Pozván"
 
-#: src/session/model/sidebar_data/category/category_type.rs:31
+#: src/session/model/sidebar_data/section/name.rs:66
 msgid "Favorites"
 msgstr "Oblíbené"
 
-#: src/session/model/sidebar_data/category/category_type.rs:32
+#: src/session/model/sidebar_data/section/name.rs:67
 msgid "Rooms"
 msgstr "Místnosti"
 
-#: src/session/model/sidebar_data/category/category_type.rs:33
+#: src/session/model/sidebar_data/section/name.rs:68
 msgid "Low Priority"
 msgstr "Nízká priorita"
 
-#: src/session/model/sidebar_data/category/category_type.rs:34
+#: src/session/model/sidebar_data/section/name.rs:69
 msgid "Historical"
 msgstr "Historické"
 
-#: src/session/model/sidebar_data/icon_item.rs:30
+#: src/session/model/sidebar_data/icon_item.rs:32
 msgid "Explore"
 msgstr "Procházet"
 
-#: src/session/model/sidebar_data/icon_item.rs:31
+#: src/session/model/sidebar_data/icon_item.rs:33
 msgid "Forget Room"
 msgstr "Zapomenout místnost"
 
@@ -2077,7 +2075,7 @@ msgstr ""
 "Abyste potvrdili, že jej opravdu chcete deaktivovat, zadejte své uživatelské "
 "ID Matrixu:"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:86
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:87
 msgid ""
 "The crypto identity and account recovery are not set up properly. If this is "
 "your last connected session and you have no recent local backup of your "
@@ -2087,7 +2085,7 @@ msgstr ""
 "vaše poslední připojené sezení a nemáte žádnou nedávnou místní zálohu vašich "
 "šifrovacích klíčů, nebudete moci obnovit svůj účet."
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:94
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:95
 msgid ""
 "This is your last connected session. Make sure that you can still access "
 "your recovery key or passphrase, or to backup your encryption keys before "
@@ -2099,7 +2097,7 @@ msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 #: src/session/view/account_settings/general_page/mod.ui:104
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
 msgid "Log Out"
 msgstr "Odhlásit se"
 
@@ -2203,7 +2201,7 @@ msgid "Name"
 msgstr "Název"
 
 #: src/session/view/account_settings/general_page/mod.ui:68
-#: src/session/view/content/room_details/general_page.ui:244
+#: src/session/view/content/room_details/general_page.ui:282
 msgid "Advanced Information"
 msgstr "Upřesňující informace"
 
@@ -2256,7 +2254,7 @@ msgid "Could not add notification keyword"
 msgstr "Nezdařilo se přidat klíčové slovo pro oznámení"
 
 #: src/session/view/account_settings/notifications_page.ui:5
-#: src/session/view/content/room_details/general_page.ui:113
+#: src/session/view/content/room_details/general_page.ui:136
 msgid "Notifications"
 msgstr "Oznámení"
 
@@ -2400,7 +2398,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Importovat šifrovací klíče z…"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233
-#: src/utils/matrix/media_message.rs:191
+#: src/utils/matrix/media_message.rs:183
 msgid "Could not access file"
 msgstr "Nezdařilo se získat přístup k souboru"
 
@@ -2449,75 +2447,75 @@ msgstr "Soubor"
 msgid "Choose…"
 msgstr "Vybrat…"
 
-#: src/session/view/account_settings/security_page/mod.rs:220
+#: src/session/view/account_settings/security_page/mod.rs:231
 msgid "No Crypto Identity"
 msgstr "Žádná šifrovací identita"
 
-#: src/session/view/account_settings/security_page/mod.rs:222
+#: src/session/view/account_settings/security_page/mod.rs:233
 msgid "Verifying your own devices or other users is not possible"
 msgstr "Ověření vlastních zařízení nebo jiných uživatelů není možné"
 
-#: src/session/view/account_settings/security_page/mod.rs:225
-#: src/session/view/account_settings/security_page/mod.rs:298
-#: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
+#: src/session/view/account_settings/security_page/mod.rs:236
+#: src/session/view/account_settings/security_page/mod.rs:309
+#: src/session/view/content/room_details/general_page.rs:1119
+#: src/session/view/sidebar/mod.rs:308 src/session/view/sidebar/mod.rs:314
 msgid "Enable"
 msgstr "Povolit"
 
-#: src/session/view/account_settings/security_page/mod.rs:228
+#: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
 msgstr "Povolit šifrovací identitu"
 
-#: src/session/view/account_settings/security_page/mod.rs:244
+#: src/session/view/account_settings/security_page/mod.rs:255
 msgid "Crypto Identity Enabled"
 msgstr "Šifrovací identita povolena"
 
-#: src/session/view/account_settings/security_page/mod.rs:246
+#: src/session/view/account_settings/security_page/mod.rs:257
 msgid "The crypto identity exists and this device is verified"
 msgstr "Šifrovací identita existuje a toto zařízení je ověřeno"
 
-#: src/session/view/account_settings/security_page/mod.rs:263
+#: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "Šifrovací identita neúplná"
 
-#: src/session/view/account_settings/security_page/mod.rs:265
+#: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Šifrovací identita existuje, ale toto zařízení není ověřeno"
 
-#: src/session/view/account_settings/security_page/mod.rs:271
+#: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
 msgstr "Ověřit toto sezení"
 
-#: src/session/view/account_settings/security_page/mod.rs:293
+#: src/session/view/account_settings/security_page/mod.rs:304
 msgid "Account Recovery Disabled"
 msgstr "Obnovení účtu zakázáno"
 
-#: src/session/view/account_settings/security_page/mod.rs:295
+#: src/session/view/account_settings/security_page/mod.rs:306
 msgid ""
 "Enable recovery to be able to restore your account without another device"
 msgstr "Povolte obnovení, abyste mohli obnovit svůj účet bez dalšího zařízení"
 
-#: src/session/view/account_settings/security_page/mod.rs:301
+#: src/session/view/account_settings/security_page/mod.rs:312
 msgid "Enable Account Recovery"
 msgstr "Povolit obnovení účtu"
 
-#: src/session/view/account_settings/security_page/mod.rs:312
+#: src/session/view/account_settings/security_page/mod.rs:323
 msgid "Account Recovery Enabled"
 msgstr "Obnovení účtu povoleno"
 
-#: src/session/view/account_settings/security_page/mod.rs:314
+#: src/session/view/account_settings/security_page/mod.rs:325
 msgid "Your signing keys and encryption keys are synchronized"
 msgstr "Vaše podpisové klíče a šifrovací klíče jsou synchronizovány"
 
-#: src/session/view/account_settings/security_page/mod.rs:320
+#: src/session/view/account_settings/security_page/mod.rs:331
 msgid "Reset Account Recovery Key"
 msgstr "Resetovat klíč obnovení účtu"
 
-#: src/session/view/account_settings/security_page/mod.rs:334
+#: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Obnovit pro synchronizaci podpisových klíčů a šifrovacích klíčů"
 
-#: src/session/view/account_settings/security_page/mod.rs:340
+#: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
 msgstr "Obnovit data účtu"
 
@@ -2586,46 +2584,42 @@ msgstr ""
 msgid "Sessions"
 msgstr "Sezení"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:36
-#: src/session/view/account_settings/user_sessions_page/mod.ui:40
+#: src/session/view/account_settings/user_sessions_page/mod.ui:9
+#: src/session/view/account_settings/user_sessions_page/mod.ui:13
 msgid "Current Session"
 msgstr "Současné sezení"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:51
-#: src/session/view/account_settings/user_sessions_page/mod.ui:55
+#: src/session/view/account_settings/user_sessions_page/mod.ui:24
+#: src/session/view/account_settings/user_sessions_page/mod.ui:48
 msgid "Other Active Sessions"
 msgstr "Další aktivní sezení"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:79
+#: src/session/view/account_settings/user_sessions_page/mod.ui:70
 msgid "Could not load the list of connected devices"
 msgstr "Nezdařilo se načíst seznam připojených zařízení"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:113
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:112
 msgid "Disconnect Session"
 msgstr "Odpojit sezení"
-
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:166
-msgid "Could not disconnect device “{device_name}”"
-msgstr "Nezdařilo se odpojit zařízení „{device_name}“"
 
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:214
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:171
 msgid "Last seen at %H:%M"
 msgstr "Naposledy online v %H:%M"
 
 #. Translators: Time in 12h format, i.e. "11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:219
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:176
 msgid "Last seen at %I:%M %p"
 msgstr "Naposledy online v %I:%M %p"
 
 #. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:186
 #, no-c-format
 msgid "Last seen yesterday at %H:%M"
 msgstr "Naposledy online včera v %H:%M"
@@ -2634,7 +2628,7 @@ msgstr "Naposledy online včera v %H:%M"
 #. PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:236
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:193
 #, no-c-format
 msgid "Last seen yesterday at %I:%M %p"
 msgstr "Naposledy online včera v %I:%M %p"
@@ -2643,7 +2637,7 @@ msgstr "Naposledy online včera v %I:%M %p"
 #. format, i.e. "Last seen Monday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:204
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Naposledy online v %A, %H:%M"
@@ -2652,7 +2646,7 @@ msgstr "Naposledy online v %A, %H:%M"
 #. "Last seen Monday at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:254
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:211
 #, no-c-format
 msgid "Last seen %A at %I:%M %p"
 msgstr "Naposledy online v %A, %I:%M %p"
@@ -2661,7 +2655,7 @@ msgstr "Naposledy online v %A, %I:%M %p"
 #. seen February 3 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:220
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Naposledy online %-e. %B, %H:%M"
@@ -2670,7 +2664,7 @@ msgstr "Naposledy online %-e. %B, %H:%M"
 #. seen February 3 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:270
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:227
 #, no-c-format
 msgid "Last seen %B %-e at %I:%M %p"
 msgstr "Naposledy online %-e. %B, %I:%M %p"
@@ -2679,7 +2673,7 @@ msgstr "Naposledy online %-e. %B, %I:%M %p"
 #. seen February 3 2015 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:235
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Naposledy online %-e. %B, %Y v %H:%M"
@@ -2688,10 +2682,14 @@ msgstr "Naposledy online %-e. %B, %Y v %H:%M"
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:285
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:242
 #, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
 msgstr "Naposledy online %-e. %B, %Y v %I:%M %p"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:294
+msgid "Could not disconnect device “{device_name}”"
+msgstr "Nezdařilo se odpojit zařízení „{device_name}“"
 
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
@@ -2750,21 +2748,19 @@ msgstr "Uživatel {user_name} ({user_id}) vás pozval"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:249
-msgid "Could not accept invitation for {room}. Try again later."
-msgstr ""
-"Nezdařilo se přijmout pozvání do místnosti {room}. Zkuste to později znovu."
+#: src/session/view/content/invite.rs:248 src/session/view/sidebar/row.rs:715
+msgid "Could not accept invitation for {room}"
+msgstr "Nezdařilo se přijmout pozvání do místnosti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:289
-msgid "Could not decline invitation for {room}. Try again later."
-msgstr ""
-"Nezdařilo se odmítnout pozvání do místnosti {room}. Zkuste to později znovu."
+#: src/session/view/content/invite.rs:288 src/session/view/sidebar/row.rs:705
+msgid "Could not decline invitation for {room}"
+msgstr "Nezdařilo se odmítnout pozvání do místnosti {room}"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:99
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "Pozvat"
@@ -2823,7 +2819,7 @@ msgid "Remove “{address}”"
 msgstr "Odebrat „{address}“"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:623
+#: src/session/view/content/room_details/general_page.rs:720
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "Hlavní adresa"
@@ -2891,7 +2887,7 @@ msgid "Edit Room Addresses"
 msgstr "Upravit adresy místnosti"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
-#: src/session/view/content/room_details/general_page.ui:147
+#: src/session/view/content/room_details/general_page.ui:170
 msgid "Public Addresses"
 msgstr "Veřejné adresy"
 
@@ -2987,7 +2983,7 @@ msgstr "Popis"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:156
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
-#: src/utils/matrix/media_message.rs:166
+#: src/utils/matrix/media_message.rs:158
 msgid "Save"
 msgstr "Uložit"
 
@@ -2995,7 +2991,8 @@ msgstr "Uložit"
 msgid "Save Description"
 msgstr "Uložit popis"
 
-#: src/session/view/content/room_details/general_page.rs:501
+#: src/session/view/content/room_details/general_page.rs:462
+#: src/session/view/content/room_details/general_page.rs:508
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
@@ -3003,75 +3000,75 @@ msgstr[0] "Člen"
 msgstr[1] "Členové"
 msgstr[2] "Členů"
 
-#: src/session/view/content/room_details/general_page.rs:577
+#: src/session/view/content/room_details/general_page.rs:674
 msgid "Could not change notifications setting"
 msgstr "Nezdařilo se změnit nastavení oznámení"
 
-#: src/session/view/content/room_details/general_page.rs:618
-#: src/session/view/content/room_details/general_page.rs:657
+#: src/session/view/content/room_details/general_page.rs:715
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Copy address"
 msgstr "Kopírovat adresu"
 
-#: src/session/view/content/room_details/general_page.rs:619
-#: src/session/view/content/room_details/general_page.rs:658
+#: src/session/view/content/room_details/general_page.rs:716
+#: src/session/view/content/room_details/general_page.rs:755
 msgid "Address copied to clipboard"
 msgstr "Adresa byla zkopírována do schránky"
 
-#: src/session/view/content/room_details/general_page.rs:700
+#: src/session/view/content/room_details/general_page.rs:797
 msgid "Room link copied to clipboard"
 msgstr "Odkaz na místnost byl zkopírován do schránky"
 
-#: src/session/view/content/room_details/general_page.rs:753
+#: src/session/view/content/room_details/general_page.rs:850
 msgid "Could not change who can join"
 msgstr "Nezdařilo se změnit, kdo se může připojit"
 
-#: src/session/view/content/room_details/general_page.rs:801
+#: src/session/view/content/room_details/general_page.rs:898
 msgid "Could not change guest access"
 msgstr "Nezdařilo se změnit přístup hosta"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:818
+#: src/session/view/content/room_details/general_page.rs:915
 msgid "Publish in the {homeserver} directory"
 msgstr "Zveřejnit v adresáři místností serveru {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:895
+#: src/session/view/content/room_details/general_page.rs:992
 msgid "Could not publish room in directory"
 msgstr "Nezdařilo se zveřejnit místnost v adresáři"
 
-#: src/session/view/content/room_details/general_page.rs:897
+#: src/session/view/content/room_details/general_page.rs:994
 msgid "Could not unpublish room from directory"
 msgstr "Nezdařilo se zrušit zveřejnění místnosti v adresáři"
 
-#: src/session/view/content/room_details/general_page.rs:918
-#: src/session/view/content/room_details/general_page.ui:230
+#: src/session/view/content/room_details/general_page.rs:1015
+#: src/session/view/content/room_details/general_page.ui:268
 msgid "Anyone, even if they are not in the room"
 msgstr "Kdokoli, i když není v této místnosti"
 
-#: src/session/view/content/room_details/general_page.rs:921
-#: src/session/view/content/room_details/general_page.ui:231
+#: src/session/view/content/room_details/general_page.rs:1018
+#: src/session/view/content/room_details/general_page.ui:269
 msgid "Members only, since this option was selected"
 msgstr "Pouze pro členy, protože tato možnost byla vybrána"
 
-#: src/session/view/content/room_details/general_page.rs:923
-#: src/session/view/content/room_details/general_page.ui:233
+#: src/session/view/content/room_details/general_page.rs:1020
+#: src/session/view/content/room_details/general_page.ui:271
 msgid "Members only, since they were invited"
 msgstr "Pouze pro členy, protože byli pozváni"
 
-#: src/session/view/content/room_details/general_page.rs:924
-#: src/session/view/content/room_details/general_page.ui:232
+#: src/session/view/content/room_details/general_page.rs:1021
+#: src/session/view/content/room_details/general_page.ui:270
 msgid "Members only, since they joined the room"
 msgstr "Pouze pro členy, protože se připojili k místnosti"
 
-#: src/session/view/content/room_details/general_page.rs:972
+#: src/session/view/content/room_details/general_page.rs:1069
 msgid "Could not change who can read history"
 msgstr "Nezdařilo se změnit, kdo může číst historii"
 
-#: src/session/view/content/room_details/general_page.rs:1016
+#: src/session/view/content/room_details/general_page.rs:1113
 msgid "Enable Encryption?"
 msgstr "Povolit šifrování?"
 
-#: src/session/view/content/room_details/general_page.rs:1017
+#: src/session/view/content/room_details/general_page.rs:1114
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3079,25 +3076,25 @@ msgstr ""
 "Povolení šifrování zabrání novým členům číst historii před příchodem. Toto "
 "nelze později zakázat."
 
-#: src/session/view/content/room_details/general_page.rs:1032
+#: src/session/view/content/room_details/general_page.rs:1129
 msgid "Could not enable encryption"
 msgstr "Šifrování se nezdařilo aktivovat"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1058
+#: src/session/view/content/room_details/general_page.rs:1155
 msgid "Federated"
 msgstr "Federované"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1061
+#: src/session/view/content/room_details/general_page.rs:1158
 msgid "Not federated"
 msgstr "Není federované"
 
-#: src/session/view/content/room_details/general_page.rs:1091
+#: src/session/view/content/room_details/general_page.rs:1188
 msgid "Room upgraded successfully"
 msgstr "Místnost byla úspěšně vylepšena"
 
-#: src/session/view/content/room_details/general_page.rs:1095
+#: src/session/view/content/room_details/general_page.rs:1192
 msgid "Could not upgrade room"
 msgstr "Nezdařilo se vylepšit místnost"
 
@@ -3111,121 +3108,126 @@ msgid "Edit Details"
 msgstr "Upravit podrobnosti"
 
 #: src/session/view/content/room_details/general_page.ui:89
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
+msgid "There are no members in this room"
+msgstr "V této místnosti nejsou žádní členové"
+
+#: src/session/view/content/room_details/general_page.ui:112
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
 msgstr "Média"
 
-#: src/session/view/content/room_details/general_page.ui:96
+#: src/session/view/content/room_details/general_page.ui:119
 msgid "Files"
 msgstr "Soubory"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page.ui:104
+#: src/session/view/content/room_details/general_page.ui:127
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:94
 msgid "Audio"
 msgstr "Zvuk"
 
-#: src/session/view/content/room_details/general_page.ui:114
+#: src/session/view/content/room_details/general_page.ui:137
 msgid "Which messages trigger notifications in this room"
 msgstr "Které zprávy spouštějí oznámení v této místnosti"
 
-#: src/session/view/content/room_details/general_page.ui:117
+#: src/session/view/content/room_details/general_page.ui:140
 msgid "Use Global Setting"
 msgstr "Použít globální nastavení"
 
-#: src/session/view/content/room_details/general_page.ui:124
+#: src/session/view/content/room_details/general_page.ui:147
 msgid "All Messages"
 msgstr "Všechny zprávy"
 
-#: src/session/view/content/room_details/general_page.ui:131
+#: src/session/view/content/room_details/general_page.ui:154
 msgid "Only Mentions and Keywords"
 msgstr "Pouze zmínky a klíčová slova"
 
-#: src/session/view/content/room_details/general_page.ui:138
+#: src/session/view/content/room_details/general_page.ui:161
 msgid "Disable Notifications"
 msgstr "Zakázat oznámení"
 
 #. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page.ui:151
+#: src/session/view/content/room_details/general_page.ui:181
 msgctxt "room details"
 msgid "Edit"
 msgstr "Upravit"
 
-#: src/session/view/content/room_details/general_page.ui:155
+#: src/session/view/content/room_details/general_page.ui:185
 msgid "Edit Public Addresses"
 msgstr "Upravit veřejné adresy"
 
-#: src/session/view/content/room_details/general_page.ui:164
+#: src/session/view/content/room_details/general_page.ui:194
 msgid "This room has no public addresses"
 msgstr "Tato místnost nemá žádné veřejné adresy"
 
-#: src/session/view/content/room_details/general_page.ui:180
+#: src/session/view/content/room_details/general_page.ui:211
 msgid "Copy Room Link"
 msgstr "Kopírovat odkaz na místnost"
 
-#: src/session/view/content/room_details/general_page.ui:190
+#: src/session/view/content/room_details/general_page.ui:221
 msgid "Access and Visibility"
 msgstr "Přístup a viditelnost"
 
-#: src/session/view/content/room_details/general_page.ui:193
+#: src/session/view/content/room_details/general_page.ui:231
 msgid "Who Can Join"
 msgstr "Kdo se může připojit"
 
-#: src/session/view/content/room_details/general_page.ui:197
+#: src/session/view/content/room_details/general_page.ui:235
 msgid "Only Invited Users"
 msgstr "Pouze pozvaní uživatelé"
 
-#: src/session/view/content/room_details/general_page.ui:198
+#: src/session/view/content/room_details/general_page.ui:236
 msgid "Any Registered User"
 msgstr "Jakýkoli registrovaný uživatel"
 
-#: src/session/view/content/room_details/general_page.ui:214
+#: src/session/view/content/room_details/general_page.ui:252
 msgid "Allow Guests"
 msgstr "Povolit hosty"
 
-#: src/session/view/content/room_details/general_page.ui:215
+#: src/session/view/content/room_details/general_page.ui:253
 msgid "Guests are Matrix users without a registered account"
 msgstr "Hosté jsou uživatelé Matrixu bez registrovaného účtu"
 
-#: src/session/view/content/room_details/general_page.ui:226
+#: src/session/view/content/room_details/general_page.ui:264
 msgid "Who Can Read History"
 msgstr "Kdo může číst historii"
 
-#: src/session/view/content/room_details/general_page.ui:247
+#: src/session/view/content/room_details/general_page.ui:285
 msgid "Matrix Room ID"
 msgstr "ID místnosti Matrixu"
 
-#: src/session/view/content/room_details/general_page.ui:254
+#: src/session/view/content/room_details/general_page.ui:292
 msgid "Copy Matrix Room ID"
 msgstr "Kopírovat ID místnosti Matrixu"
 
-#: src/session/view/content/room_details/general_page.ui:255
+#: src/session/view/content/room_details/general_page.ui:293
 msgid "Matrix room ID copied to clipboard"
 msgstr "ID místnosti Matrixu bylo zkopírováno do schránky"
 
-#: src/session/view/content/room_details/general_page.ui:260
+#: src/session/view/content/room_details/general_page.ui:298
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Povolit šifrování"
 
-#: src/session/view/content/room_details/general_page.ui:271
+#: src/session/view/content/room_details/general_page.ui:309
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Oprávnění"
 
-#: src/session/view/content/room_details/general_page.ui:279
+#: src/session/view/content/room_details/general_page.ui:324
 msgid "Room Version"
 msgstr "Verze místnosti"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page.ui:291
+#: src/session/view/content/room_details/general_page.ui:336
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "Vylepšení"
 
-#: src/session/view/content/room_details/general_page.ui:304
+#: src/session/view/content/room_details/general_page.ui:349
 msgid "Federation"
 msgstr "Federace"
 
@@ -3289,7 +3291,7 @@ msgstr "Otevřít soubor"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:164
+#: src/utils/matrix/media_message.rs:156
 msgid "Save File"
 msgstr "Uložit soubor"
 
@@ -3336,17 +3338,11 @@ msgstr "Zablokován"
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
 #: src/session/view/content/room_details/invite_subpage/mod.rs:239
-msgid "Could not invite {user} to {room}. Try again later."
-msgid_plural "Could not invite {n} users to {room}. Try again later."
-msgstr[0] ""
-"Nezdařilo se pozvat uživatele {user} do místnosti {room}. Zkuste to později "
-"znovu."
-msgstr[1] ""
-"Nezdařilo se pozvat {n} uživatele do místnosti {room}. Zkuste to později "
-"znovu."
-msgstr[2] ""
-"Nezdařilo se pozvat {n} uživatelů do místnosti {room}. Zkuste to později "
-"znovu."
+msgid "Could not invite {user} to {room}"
+msgid_plural "Could not invite {n} users to {room}"
+msgstr[0] "Nezdařilo se pozvat uživatele {user} do místnosti {room}"
+msgstr[1] "Nezdařilo se pozvat {n} uživatele do místnosti {room}"
+msgstr[2] "Nezdařilo se pozvat {n} uživatelů do místnosti {room}"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:4
 msgid "Invite New Members"
@@ -3390,16 +3386,12 @@ msgstr "Při hledání shod došlo k chybě"
 msgid "Searching for Users"
 msgstr "Vyhledávání uživatelů"
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:170
-msgid "Could not load the full list of room members"
-msgstr "Nezdařilo se načíst úplný seznam členů místnosti"
-
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#: src/session/view/content/room_details/member_row.ui:45
 msgid "Identity Verified"
 msgstr "Identita ověřena"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
@@ -3408,7 +3400,7 @@ msgstr[1] "Pozváni"
 msgstr[2] "Pozváno"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
@@ -3416,26 +3408,46 @@ msgstr[0] "Zablokován"
 msgstr[1] "Zablokováni"
 msgstr[2] "Zablokováno"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:286
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] "Pozvaný člen místnosti"
 msgstr[1] "Pozvaní členové místnosti"
 msgstr[2] "Pozvaných členů místnosti"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:288
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] "Zablokovaný člen místnosti"
 msgstr[1] "Zablokovaní členové místnosti"
 msgstr[2] "Zablokovaných členů místnosti"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:289
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Člen místnosti"
 msgstr[1] "Členové místnosti"
 msgstr[2] "Členů místnosti"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:330
+msgid "No Invited Room Members"
+msgstr "Žádní členové pozvaní do místnosti"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:331
+msgid "There are no invited members in this room"
+msgstr "V této místnosti nejsou žádní pozvaní členové"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:335
+msgid "No Banned Room Members"
+msgstr "Žádní zablokovaní členové místnosti"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:336
+msgid "There are no banned members in this room"
+msgstr "V této místnosti nejsou žádní zablokovaní členové"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:340
+msgid "No Room Members"
+msgstr "Žádní členové místnosti"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3451,7 +3463,12 @@ msgstr "Přepnout vyhledávání členů místnosti"
 msgid "Search for room members"
 msgstr "hledat členy místnosti"
 
-#: src/session/view/content/room_details/members_page/mod.rs:90
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
+#: src/session/view/content/room_details/membership_lists.rs:186
+msgid "Could not load the full list of room members"
+msgstr "Nezdařilo se načíst úplný seznam členů místnosti"
+
+#: src/session/view/content/room_details/mod.rs:132
 msgid "The user is not in the room members list anymore"
 msgstr "Uživatel již není v seznamu členů místnosti"
 
@@ -3614,6 +3631,30 @@ msgstr ""
 msgid "{version} (unstable)"
 msgstr "{version} (nestabilní)"
 
+#: src/session/view/content/room_history/divider_row.rs:59
+msgid "This is the start of the visible history"
+msgstr "Toto je začátek viditelné historie"
+
+#. Translators: This is a date format in the day divider without the
+#. year. For example, "Friday, May 5".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/divider_row.rs:72
+msgid "%A, %B %-e"
+msgstr "%A, %-e. %B"
+
+#. Translators: This is a date format in the day divider with the
+#. year. For ex. "Friday, May 5, 2023".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/divider_row.rs:78
+msgid "%A, %B %-e, %Y"
+msgstr "%A, %-e. %B %Y"
+
+#: src/session/view/content/room_history/divider_row.rs:85
+msgid "New Messages"
+msgstr "Nové zprávy"
+
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
 #: src/session/view/content/room_history/event_actions.ui:98
@@ -3703,67 +3744,43 @@ msgstr "_Kopírovat miniaturu"
 msgid "Rep_ort"
 msgstr "Nah_lásit"
 
-#: src/session/view/content/room_history/item_row.rs:340
-msgid "This is the start of the visible history"
-msgstr "Toto je začátek viditelné historie"
-
-#. Translators: This is a date format in the day divider without the
-#. year. For example, "Friday, May 5".
-#. Please use `-` before specifiers that add spaces on single
-#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:380
-msgid "%A, %B %-e"
-msgstr "%A, %-e. %B"
-
-#. Translators: This is a date format in the day divider with the
-#. year. For ex. "Friday, May 5, 2023".
-#. Please use `-` before specifiers that add spaces on single
-#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:386
-msgid "%A, %B %-e, %Y"
-msgstr "%A, %-e. %B %Y"
-
-#: src/session/view/content/room_history/item_row.rs:392
-msgid "New Messages"
-msgstr "Nové zprávy"
-
-#: src/session/view/content/room_history/item_row.rs:544
+#: src/session/view/content/room_history/item_row.rs:521
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "Odkaz na zprávu byl zkopírován do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:681
-#: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/item_row.rs:769
-#: src/session/view/content/room_history/item_row.rs:847
+#: src/session/view/content/room_history/item_row.rs:658
+#: src/session/view/content/room_history/item_row.rs:711
+#: src/session/view/content/room_history/item_row.rs:746
+#: src/session/view/content/room_history/item_row.rs:826
 msgid "Text copied to clipboard"
 msgstr "Text byl zkopírován do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:789
+#: src/session/view/content/room_history/item_row.rs:766
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatura byla zkopírována do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:890
+#: src/session/view/content/room_history/item_row.rs:869
 msgid "Remove Message?"
 msgstr "Smazat zprávu?"
 
-#: src/session/view/content/room_history/item_row.rs:892
+#: src/session/view/content/room_history/item_row.rs:871
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Opravdu chcete odstranit tuto zprávu? Toto nelze vrátit zpět."
 
-#: src/session/view/content/room_history/item_row.rs:906
+#: src/session/view/content/room_history/item_row.rs:885
 msgid "Could not remove message"
 msgstr "Zprávu se nezdařilo odstranit"
 
-#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:896
 msgid "Could not toggle reaction"
 msgstr "Reakci se nezdařilo přepnout"
 
-#: src/session/view/content/room_history/item_row.rs:943
+#: src/session/view/content/room_history/item_row.rs:922
 msgid "Report Event?"
 msgstr "Nahlásit událost?"
 
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:924
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3774,15 +3791,15 @@ msgstr ""
 "redigovaná."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:952
+#: src/session/view/content/room_history/item_row.rs:931
 msgid "Report"
 msgstr "Nahlásit"
 
-#: src/session/view/content/room_history/item_row.rs:970
+#: src/session/view/content/room_history/item_row.rs:949
 msgid "Could not report event"
 msgstr "Nezdařilo se nahlásit událost"
 
-#: src/session/view/content/room_history/item_row.rs:988
+#: src/session/view/content/room_history/item_row.rs:965
 msgid "Could not discard message"
 msgstr "Zprávu se nezdařilo smazat"
 
@@ -3819,7 +3836,7 @@ msgstr "Nepodporovaná událost"
 msgid "File: {filename}"
 msgstr "Soubor: {filename}"
 
-#: src/session/view/content/room_history/message_row/location.rs:102
+#: src/session/view/content/room_history/message_row/location.rs:103
 msgid "Location is invalid and cannot be displayed"
 msgstr "Poloha je neplatná a nelze ji zobrazit"
 
@@ -3883,32 +3900,32 @@ msgstr "V odpovědi"
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:302
+#: src/session/view/content/room_history/message_row/visual_media.rs:315
 msgid "Image: {filename}"
 msgstr "Obrázek: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:305
+#: src/session/view/content/room_history/message_row/visual_media.rs:318
 msgid "Sticker: {filename}"
 msgstr "Nálepka: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:308
+#: src/session/view/content/room_history/message_row/visual_media.rs:321
 msgid "Video: {filename}"
 msgstr "Video: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:313
+#: src/session/view/content/room_history/message_row/visual_media.rs:326
 msgid "Image"
 msgstr "Obrázek"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:314
+#: src/session/view/content/room_history/message_row/visual_media.rs:327
 msgid "Sticker"
 msgstr "Nálepka"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:315
+#: src/session/view/content/room_history/message_row/visual_media.rs:328
 msgid "Video"
 msgstr "Video"
 
 #: src/session/view/content/room_history/message_row/visual_media.rs:404
-#: src/utils/media/image.rs:800
+#: src/utils/media/image/mod.rs:800
 msgid "Could not retrieve media"
 msgstr "Nezdařilo se získat média"
 
@@ -3926,80 +3943,80 @@ msgstr "Automatické dokončování zmínky o členovi místnosti"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:432
+#: src/session/view/content/room_history/message_toolbar/mod.rs:438
 msgid "Reply to {user}"
 msgstr "Odpovědět uživateli {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:444
+#: src/session/view/content/room_history/message_toolbar/mod.rs:450
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Úprava"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:620
+#: src/session/view/content/room_history/message_toolbar/mod.rs:634
 msgid "Could not send reply"
 msgstr "Nezdařilo se odeslat odpověď"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:635
+#: src/session/view/content/room_history/message_toolbar/mod.rs:649
 msgid "Could not send edit"
 msgstr "Nezdařilo se odeslat úpravu"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:646
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "Could not send message"
 msgstr "Zprávu se nezdařilo odeslat"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:688
+#: src/session/view/content/room_history/message_toolbar/mod.rs:706
 msgid "Your Location"
 msgstr "Vaše poloha"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:749
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Poloha uživatele {geo_uri} v {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:771
+#: src/session/view/content/room_history/message_toolbar/mod.rs:789
 msgid "Could not send location"
 msgstr "Nezdařilo se odeslat polohu"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:778
+#: src/session/view/content/room_history/message_toolbar/mod.rs:796
 msgid "The location request has been cancelled"
 msgstr "Požadavek na polohu byl zrušen"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:779
+#: src/session/view/content/room_history/message_toolbar/mod.rs:797
 msgid "The location services are disabled"
 msgstr "Služby určování polohy jsou zakázány"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:780
+#: src/session/view/content/room_history/message_toolbar/mod.rs:798
 msgid "Could not retrieve current location"
 msgstr "Nezdařilo se načíst aktuální polohu"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:816
+#: src/session/view/content/room_history/message_toolbar/mod.rs:834
 msgid "Could not send file"
 msgstr "Nezdařilo se odeslat soubor"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:883
 msgid "Select File"
 msgstr "Vybrat soubor"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:859
+#: src/session/view/content/room_history/message_toolbar/mod.rs:885
 msgid "Select"
 msgstr "Vybrat"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:900
 msgid "Could not open file"
 msgstr "Nezdařilo se otevřít soubor"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:893
+#: src/session/view/content/room_history/message_toolbar/mod.rs:927
 msgid "Error reading file"
 msgstr "Chyba při čtení souboru"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:953
+#: src/session/view/content/room_history/message_toolbar/mod.rs:987
 msgid "Error getting image from clipboard"
 msgstr "Chyba při získávání obrázku ze schránky"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:970
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1004
 msgid "Error getting file from clipboard"
 msgstr "Chyba při získávání souboru ze schránky"
 
@@ -4057,39 +4074,47 @@ msgstr "%-e. %B v %l:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e. %B v %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:358
+#: src/session/view/content/room_history/mod.rs:360
 msgid "Error getting file from drop"
 msgstr "Chyba při získávání přetaženého souboru"
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:595
-msgid "Could not leave {room}"
-msgstr "Nezdařilo se opustit místnost {room}"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:631
-#: src/session/view/sidebar/row.rs:628
-msgid "Could not forget {room}"
-msgstr "Nezdařilo se zapomenout místnost {room}"
-
-#: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:434
-msgid "Context Menu"
-msgstr "Kontextová nabídka"
-
-#: src/session/view/content/room_history/mod.rs:823
-msgid "Sender Context Menu"
-msgstr "Kontextová nabídka odesílatele"
-
-#: src/session/view/content/room_history/mod.rs:995
-#: src/session/view/content/room_history/mod.rs:999
+#: src/session/view/content/room_history/mod.rs:841
+#: src/session/view/content/room_history/mod.rs:845
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "K dispozici je novější verze této místnosti"
 
-#: src/session/view/content/room_history/mod.rs:1002
+#: src/session/view/content/room_history/mod.rs:848
 msgid "This room was closed"
 msgstr "Tato místnost byla uzavřena"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/content/room_history/mod.rs:873
+#: src/session/view/sidebar/row.rs:738
+msgid "Could not leave {room}"
+msgstr "Nezdařilo se opustit místnost {room}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/view/content/room_history/mod.rs:892
+#: src/session/view/sidebar/row.rs:727
+msgid "Could not join {room}"
+msgstr "Nezdařilo se připojit k místnosti {room}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/content/room_history/mod.rs:909
+#: src/session/view/sidebar/row.rs:771
+msgid "Could not forget {room}"
+msgstr "Nezdařilo se zapomenout místnost {room}"
+
+#: src/session/view/content/room_history/mod.rs:1008
+#: src/session/view/sidebar/mod.rs:426
+msgid "Context Menu"
+msgstr "Kontextová nabídka"
+
+#: src/session/view/content/room_history/mod.rs:1028
+msgid "Sender Context Menu"
+msgstr "Kontextová nabídka odesílatele"
 
 #: src/session/view/content/room_history/mod.ui:6
 msgid "Room _Details"
@@ -4185,7 +4210,7 @@ msgstr "Nabídka místnosti"
 msgid "Could Not Load Room"
 msgstr "Nezdařilo se načíst místnost"
 
-#: src/session/view/content/room_history/mod.ui:227
+#: src/session/view/content/room_history/mod.ui:226
 msgid "Scroll to Bottom"
 msgstr "Posunout dolů"
 
@@ -4436,19 +4461,19 @@ msgstr "Uživatel {user} odstranil svůj avatar."
 msgid "{user} changed their avatar."
 msgstr "Uživatel {user} změnil svůj avatar."
 
-#: src/session/view/content/room_history/title.ui:9
+#: src/session/view/content/room_history/title.ui:10
 msgid "Open Room Details"
 msgstr "Otevřít podrobnosti o místnosti"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:142
+#: src/session/view/content/room_history/typing_row.rs:135
 msgid "{user} is typing…"
 msgstr "Uživatel {user} píše…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:149
+#: src/session/view/content/room_history/typing_row.rs:142
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} člen píše…"
@@ -4661,76 +4686,19 @@ msgstr "Nemůže být později zakázáno"
 msgid "_Create Room"
 msgstr "_Vytvořit místnost"
 
-#. Translators: This is an action to join a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:115
-msgid "Join Room as Favorite"
-msgstr "Vstoupit do místnosti jako oblíbené"
-
-#: src/session/view/sidebar/category_row.rs:116
-msgid "Join Room"
-msgstr "Vstoupit do místnosti"
-
-#. Translators: This is an action to join a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:119
-msgid "Join Room as Low Priority"
-msgstr "Vstoupit do místnosti jako s nízkou prioritou"
-
-#: src/session/view/sidebar/category_row.rs:120
-msgid "Reject Invite"
-msgstr "Odmítnout pozvání"
-
-#: src/session/view/sidebar/category_row.rs:124
-#: src/session/view/sidebar/category_row.rs:137
-msgid "Move to Rooms"
-msgstr "Přesunout do Místností"
-
-#: src/session/view/sidebar/category_row.rs:125
-#: src/session/view/sidebar/category_row.rs:131
-msgid "Move to Low Priority"
-msgstr "Přesunout do nízké priority"
-
-#: src/session/view/sidebar/category_row.rs:126
-#: src/session/view/sidebar/category_row.rs:132
-#: src/session/view/sidebar/category_row.rs:138
-msgid "Leave Room"
-msgstr "Opustit místnost"
-
-#: src/session/view/sidebar/category_row.rs:130
-#: src/session/view/sidebar/category_row.rs:136
-msgid "Move to Favorites"
-msgstr "Přesunout do Oblíbených"
-
-#. Translators: This is an action to rejoin a room and put it in the "Favorites"
-#. section.
-#: src/session/view/sidebar/category_row.rs:144
-msgid "Rejoin Room as Favorite"
-msgstr "Znovu vstoupit do místnosti jako oblíbené"
-
-#: src/session/view/sidebar/category_row.rs:145
-msgid "Rejoin Room"
-msgstr "Znovu vstoupit do místnosti"
-
-#. Translators: This is an action to rejoin a room and put it in the "Low
-#. Priority" section.
-#: src/session/view/sidebar/category_row.rs:148
-msgid "Rejoin Room as Low Priority"
-msgstr "Znovu vstoupit do místnosti jako s nízkou prioritou"
-
-#: src/session/view/sidebar/mod.rs:322
+#: src/session/view/sidebar/mod.rs:308
 msgid "No crypto identity"
 msgstr "Žádná šifrovací identita"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:310
 msgid "Crypto identity incomplete"
 msgstr "Šifrovací identita je neúplná"
 
-#: src/session/view/sidebar/mod.rs:328
+#: src/session/view/sidebar/mod.rs:314
 msgid "Account recovery disabled"
 msgstr "Obnovení účtu je zakázáno"
 
-#: src/session/view/sidebar/mod.rs:331
+#: src/session/view/sidebar/mod.rs:317
 msgid "Account recovery incomplete"
 msgstr "Obnovení účtu je nekompletní"
 
@@ -4755,8 +4723,8 @@ msgid "_About Fractal"
 msgstr "O _aplikaci Fractal"
 
 #: src/session/view/sidebar/mod.ui:37
-msgid "_Reject"
-msgstr "_Odmítnout"
+msgid "Dec_line"
+msgstr "Odmít_nout"
 
 #: src/session/view/sidebar/mod.ui:44
 msgid "_Mark as Read"
@@ -4813,14 +4781,14 @@ msgstr "Umožňuje navigaci mezi místnostmi"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:286
+#: src/session/view/sidebar/room_row.rs:266
 msgid "Direct chat with {name}"
 msgstr "Přímá konverzace s {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:298
+#: src/session/view/sidebar/room_row.rs:278
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "1 oznámení"
@@ -4828,26 +4796,87 @@ msgstr[1] "{count} oznámení"
 msgstr[2] "{count} oznámení"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:607
+#: src/session/view/sidebar/row.rs:747
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "Přesun místnosti {room} z {previous_category} do {new_category} se nezdařil"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:644
+#: src/session/view/sidebar/row.rs:787
 msgid "Could not mark {room} as direct chat"
 msgstr "Nezdařilo se označit {room} jako přímý chat"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:649
+#: src/session/view/sidebar/row.rs:792
 msgid "Could not unmark {room} as direct chat"
 msgstr "Nezdařilo se zrušit označení {room} jako přímého chatu"
 
-#: src/session_list/mod.rs:269
+#. Translators: This is an action to join a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:113
+msgid "Join Room as Favorite"
+msgstr "Vstoupit do místnosti jako oblíbené"
+
+#: src/session/view/sidebar/section_row.rs:114
+msgid "Join Room"
+msgstr "Vstoupit do místnosti"
+
+#. Translators: This is an action to join a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:117
+msgid "Join Room as Low Priority"
+msgstr "Vstoupit do místnosti jako s nízkou prioritou"
+
+#: src/session/view/sidebar/section_row.rs:118
+msgid "Reject Invite"
+msgstr "Odmítnout pozvání"
+
+#: src/session/view/sidebar/section_row.rs:122
+#: src/session/view/sidebar/section_row.rs:135
+msgid "Move to Rooms"
+msgstr "Přesunout do Místností"
+
+#: src/session/view/sidebar/section_row.rs:123
+#: src/session/view/sidebar/section_row.rs:129
+msgid "Move to Low Priority"
+msgstr "Přesunout do nízké priority"
+
+#: src/session/view/sidebar/section_row.rs:124
+#: src/session/view/sidebar/section_row.rs:130
+#: src/session/view/sidebar/section_row.rs:136
+msgid "Leave Room"
+msgstr "Opustit místnost"
+
+#: src/session/view/sidebar/section_row.rs:128
+#: src/session/view/sidebar/section_row.rs:134
+msgid "Move to Favorites"
+msgstr "Přesunout do Oblíbených"
+
+#. Translators: This is an action to rejoin a room and put it in the "Favorites"
+#. section.
+#: src/session/view/sidebar/section_row.rs:142
+msgid "Rejoin Room as Favorite"
+msgstr "Znovu vstoupit do místnosti jako oblíbené"
+
+#: src/session/view/sidebar/section_row.rs:143
+msgid "Rejoin Room"
+msgstr "Znovu vstoupit do místnosti"
+
+#. Translators: This is an action to rejoin a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/section_row.rs:146
+msgid "Rejoin Room as Low Priority"
+msgstr "Znovu vstoupit do místnosti jako s nízkou prioritou"
+
+#: src/session_list/mod.rs:230 src/session_list/mod.rs:267
 msgid "Could not restore previous sessions"
 msgstr "Nezdařilo se obnovit předchozí sezení"
+
+#: src/session_list/mod.rs:268
+msgid "An unexpected error happened while accessing the data directory"
+msgstr "Při přístupu k adresáři dat došlo k neočekávané chybě"
 
 #: src/shortcuts.ui:11
 msgctxt "shortcut window"
@@ -4943,7 +4972,7 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Nezdařilo se otevřít úložiště."
 
-#: src/utils/matrix/media_message.rs:183
+#: src/utils/matrix/media_message.rs:175
 msgid "Could not save file"
 msgstr "Nezdařilo se uložit soubor"
 
@@ -4985,11 +5014,11 @@ msgstr "Uživatel {user} vás pozval"
 msgid "Could not generate unique session ID"
 msgstr "Nepodařilo se vygenerovat jedinečné ID sezení"
 
-#: src/utils/media/image.rs:801
+#: src/utils/media/image/mod.rs:801
 msgid "Image format not supported"
 msgstr "Formát obrázku není podporován"
 
-#: src/utils/media/image.rs:802
+#: src/utils/media/image/mod.rs:803
 msgid "An unexpected error occurred"
 msgstr "Došlo k neočekávané chybě"
 
@@ -5016,6 +5045,15 @@ msgstr "soubor"
 #: src/window.ui:60
 msgid "Session"
 msgstr "Sezení"
+
+#~ msgid "OK"
+#~ msgstr "Budiž"
+
+#~ msgid "Dismiss"
+#~ msgstr "Zavřít"
+
+#~ msgid "_Reject"
+#~ msgstr "_Odmítnout"
 
 #~ msgid "Authenticate via Browser"
 #~ msgstr "Ověřit pomocí prohlížeče"
