@@ -405,7 +405,8 @@
                             <child>
                               <object class="GtkButton" id="success_confirm_btn">
                                 <property name="can-shrink">True</property>
-                                <property name="label" translatable="yes">OK</property>
+                                <property name="label" translatable="yes">_Done</property>
+                                <property name="use-underline">True</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="emit_completed" swapped="yes" />
                                 <style>
@@ -490,7 +491,8 @@
                             <child>
                               <object class="GtkButton" id="incomplete_confirm_btn">
                                 <property name="can-shrink">True</property>
-                                <property name="label" translatable="yes">OK</property>
+                                <property name="label" translatable="yes">_Done</property>
+                                <property name="use-underline">True</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="emit_completed" swapped="yes" />
                                 <style>
