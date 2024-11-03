@@ -139,7 +139,7 @@ impl MessageText {
         &self,
         formatted: Option<FormattedBody>,
         body: String,
-        sender: Member,
+        sender: &Member,
         room: &Room,
         format: ContentFormat,
         detect_at_room: bool,
@@ -149,7 +149,7 @@ impl MessageText {
         if let Some(formatted) = formatted.filter(formatted_body_is_html).map(|f| f.body) {
             if !self.original_text_changed(&body)
                 && !self.format_changed(format)
-                && !self.sender_changed(&sender)
+                && !self.sender_changed(sender)
             {
                 return;
             }
@@ -176,7 +176,7 @@ impl MessageText {
                         obj.update_emote(&room, &sender.disambiguated_name());
                     }
                 ));
-                self.imp().sender.set(&sender, vec![handler]);
+                self.imp().sender.set(sender, vec![handler]);
 
                 return;
             }
@@ -184,7 +184,7 @@ impl MessageText {
 
         if !self.original_text_changed(&body)
             && !self.format_changed(format)
-            && !self.sender_changed(&sender)
+            && !self.sender_changed(sender)
         {
             return;
         }
@@ -207,7 +207,7 @@ impl MessageText {
                 obj.update_emote(&room, &sender.disambiguated_name());
             }
         ));
-        self.imp().sender.set(&sender, vec![handler]);
+        self.imp().sender.set(sender, vec![handler]);
     }
 
     fn update_emote(&self, room: &Room, sender_name: &str) {
@@ -282,12 +282,12 @@ impl MessageText {
         };
 
         let ellipsize = self.format() == ContentFormat::Ellipsized;
-        pills.iter().for_each(|p| {
-            if !p.source().is_some_and(|s| s.is::<AtRoom>()) {
+        for pill in &pills {
+            if !pill.source().is_some_and(|s| s.is::<AtRoom>()) {
                 // Show the profile on click.
-                p.set_activatable(true);
+                pill.set_activatable(true);
             }
-        });
+        }
 
         let child = if let Some(child) = self.child().and_downcast::<LabelWithWidgets>() {
             child

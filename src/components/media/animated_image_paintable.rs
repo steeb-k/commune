@@ -44,16 +44,18 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map(|f| f.height())
-                .unwrap_or_else(|| self.image_loader().info().height) as i32
+                .map_or_else(|| self.image_loader().info().height, |f| f.height())
+                .try_into()
+                .unwrap_or(i32::MAX)
         }
 
         fn intrinsic_width(&self) -> i32 {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map(|f| f.width())
-                .unwrap_or_else(|| self.image_loader().info().width) as i32
+                .map_or_else(|| self.image_loader().info().width, |f| f.width())
+                .try_into()
+                .unwrap_or(i32::MAX)
         }
 
         fn snapshot(&self, snapshot: &gdk::Snapshot, width: f64, height: f64) {
@@ -76,8 +78,8 @@ mod imp {
             let snapshot = gtk::Snapshot::new();
             self.snapshot(
                 snapshot.upcast_ref(),
-                self.intrinsic_width() as f64,
-                self.intrinsic_height() as f64,
+                self.intrinsic_width().into(),
+                self.intrinsic_height().into(),
             );
 
             snapshot

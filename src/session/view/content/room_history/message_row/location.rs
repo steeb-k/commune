@@ -68,7 +68,7 @@ mod imp {
                 width
             };
             self.overlay
-                .size_allocate(&gtk::Allocation::new(0, 0, width, height), baseline)
+                .size_allocate(&gtk::Allocation::new(0, 0, width, height), baseline);
         }
     }
 }

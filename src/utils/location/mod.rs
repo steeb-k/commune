@@ -127,6 +127,7 @@ impl<O: IsA<Location>> LocationExt for O {
 /// Overriding a method from this Trait overrides also its behavior in
 /// `LocationExt`.
 #[allow(async_fn_in_trait)]
+#[allow(clippy::unused_async)]
 pub trait LocationImpl: ObjectImpl {
     /// Whether the location API is available.
     fn is_available(&self) -> bool {

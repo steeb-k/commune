@@ -107,7 +107,7 @@ mod imp {
             ));
 
             if let Some(binding) = self.item_binding.take() {
-                binding.unbind()
+                binding.unbind();
             }
         }
     }
@@ -130,8 +130,8 @@ mod imp {
         }
 
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if session == self.session.upgrade() {
+        fn set_session(&self, session: Option<&Session>) {
+            if session == self.session.upgrade().as_ref() {
                 return;
             }
             let obj = self.obj();
@@ -140,7 +140,7 @@ mod imp {
                 binding.unbind();
             }
 
-            if let Some(session) = &session {
+            if let Some(session) = session {
                 let item_binding = session
                     .sidebar_list_model()
                     .selection_model()
@@ -152,7 +152,7 @@ mod imp {
                 self.item_binding.replace(Some(item_binding));
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             obj.notify_session();
         }
 

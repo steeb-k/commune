@@ -138,7 +138,7 @@ impl ChangePasswordSubpage {
 
         let validity = validate_password(&password);
 
-        progress.set_value(validity.progress as f64 / 20.0);
+        progress.set_value(f64::from(validity.progress) / 20.0);
         if validity.progress == 100 {
             revealer.set_reveal_child(false);
             entry.add_css_class("success");

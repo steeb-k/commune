@@ -42,9 +42,9 @@ impl Deref for BoxedVerificationRequest {
 
 #[glib::flags(name = "VerificationSupportedMethods")]
 pub enum VerificationSupportedMethods {
-    SAS = 0b00000001,
-    QR_SHOW = 0b00000010,
-    QR_SCAN = 0b00000100,
+    SAS = 0b0000_0001,
+    QR_SHOW = 0b0000_0010,
+    QR_SCAN = 0b0000_0100,
 }
 
 impl<'a> From<&'a [VerificationMethod]> for VerificationSupportedMethods {
@@ -245,7 +245,7 @@ mod imp {
     impl IdentityVerification {
         /// Set the SDK's verification request.
         fn set_request(&self, request: BoxedVerificationRequest) {
-            self.request.set(request.clone()).unwrap();
+            let request = self.request.get_or_init(|| request);
 
             let Ok(datetime) = glib::DateTime::now_local() else {
                 error!("Could not get current GDateTime");
@@ -365,11 +365,11 @@ mod imp {
         fn display_name(&self) -> String {
             let user = self.user.obj();
 
-            if !user.is_own_user() {
-                user.display_name()
-            } else {
+            if user.is_own_user() {
                 // TODO: give this request a name based on the device
                 "Login Request".to_string()
+            } else {
+                user.display_name()
             }
         }
 
@@ -517,7 +517,7 @@ impl IdentityVerification {
             VerificationRequestState::Created { .. } => {}
             VerificationRequestState::Requested { their_methods, .. } => {
                 let our_methods = load_supported_verification_methods().await;
-                let supported_methods = intersect_methods(our_methods, their_methods);
+                let supported_methods = intersect_methods(our_methods, &their_methods);
 
                 if supported_methods.is_empty() {
                     imp.set_state(VerificationState::NoSupportedMethods);
@@ -530,7 +530,7 @@ impl IdentityVerification {
                 our_methods,
                 ..
             } => {
-                let mut supported_methods = intersect_methods(our_methods, their_methods);
+                let mut supported_methods = intersect_methods(our_methods, &their_methods);
 
                 // Remove the reciprocate method, it's not a flow in itself.
                 let reciprocate_idx = supported_methods
@@ -584,12 +584,12 @@ impl IdentityVerification {
             VerificationRequestState::Done => {
                 imp.set_state(VerificationState::Done);
             }
-            VerificationRequestState::Cancelled(info) => self.handle_cancelled_state(info),
+            VerificationRequestState::Cancelled(info) => self.handle_cancelled_state(&info),
         }
     }
 
     /// Handle when the request was cancelled.
-    fn handle_cancelled_state(&self, cancel_info: CancelInfo) {
+    fn handle_cancelled_state(&self, cancel_info: &CancelInfo) {
         debug!("Verification was cancelled: {cancel_info:?}");
         let cancel_code = cancel_info.cancel_code();
 
@@ -643,7 +643,7 @@ impl IdentityVerification {
             return Err(());
         };
         let our_methods = load_supported_verification_methods().await;
-        let methods = intersect_methods(our_methods, their_methods);
+        let methods = intersect_methods(our_methods, &their_methods);
 
         let handle = spawn_tokio!(async move { request.accept_with_methods(methods).await });
 
@@ -730,7 +730,7 @@ impl IdentityVerification {
                     .await;
             }
             Verification::QrV1(qr_verification) => {
-                self.handle_qr_verification_state(qr_verification.state())
+                self.handle_qr_verification_state(qr_verification.state());
             }
             _ => unreachable!(),
         }
@@ -741,12 +741,12 @@ impl IdentityVerification {
         let imp = self.imp();
 
         match state {
-            QrVerificationState::Started => {}
+            QrVerificationState::Started
+            | QrVerificationState::Confirmed
+            | QrVerificationState::Reciprocated => {}
             QrVerificationState::Scanned => imp.set_state(VerificationState::QrConfirm),
-            QrVerificationState::Confirmed => {}
-            QrVerificationState::Reciprocated => {}
             QrVerificationState::Done { .. } => imp.set_state(VerificationState::Done),
-            QrVerificationState::Cancelled(info) => self.handle_cancelled_state(info),
+            QrVerificationState::Cancelled(info) => self.handle_cancelled_state(&info),
         }
     }
 
@@ -766,7 +766,7 @@ impl IdentityVerification {
         let imp = self.imp();
 
         match state {
-            SasState::Created { .. } => {}
+            SasState::Created { .. } | SasState::Accepted { .. } | SasState::Confirmed => {}
             SasState::Started { .. } => {
                 let handle = spawn_tokio!(async move { sas_verification.accept().await });
                 if let Err(error) = handle.await.unwrap() {
@@ -774,14 +774,12 @@ impl IdentityVerification {
                     imp.set_state(VerificationState::Error);
                 }
             }
-            SasState::Accepted { .. } => {}
             SasState::KeysExchanged { .. } => {
                 self.emit_by_name::<()>("sas-data-changed", &[]);
                 imp.set_state(VerificationState::SasConfirm);
             }
-            SasState::Confirmed => {}
             SasState::Done { .. } => imp.set_state(VerificationState::Done),
-            SasState::Cancelled(info) => self.handle_cancelled_state(info),
+            SasState::Cancelled(info) => self.handle_cancelled_state(&info),
         }
     }
 
@@ -1096,7 +1094,7 @@ impl IdentityVerification {
 /// Get the intersection or our methods and their methods.
 fn intersect_methods(
     our_methods: Vec<VerificationMethod>,
-    their_methods: Vec<VerificationMethod>,
+    their_methods: &[VerificationMethod],
 ) -> Vec<VerificationMethod> {
     let mut supported_methods = our_methods;
 

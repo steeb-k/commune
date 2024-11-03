@@ -63,7 +63,7 @@ mod imp {
             self.reactions
                 .borrow()
                 .as_ref()
-                .map(|reactions| reactions.len())
+                .map(IndexMap::len)
                 .unwrap_or_default() as u32
         }
 

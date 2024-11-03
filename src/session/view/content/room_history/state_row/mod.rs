@@ -70,7 +70,7 @@ mod imp {
 
             match event.content() {
                 TimelineItemContent::MembershipChange(membership_change) => {
-                    obj.update_with_membership_change(&membership_change, &event.sender_id())
+                    obj.update_with_membership_change(&membership_change, &event.sender_id());
                 }
                 TimelineItemContent::ProfileChange(profile_change) => obj
                     .update_with_profile_change(
@@ -78,7 +78,7 @@ mod imp {
                         &event.sender().disambiguated_name(),
                     ),
                 TimelineItemContent::OtherState(other_state) => {
-                    obj.update_with_other_state(&event, &other_state)
+                    obj.update_with_other_state(&event, &other_state);
                 }
                 _ => unreachable!(),
             }
@@ -147,7 +147,7 @@ impl StateRow {
                 if let Some(child) = content.child().and_downcast::<gtk::Label>() {
                     child.set_text(&message);
                 } else {
-                    content.set_child(Some(&text(message)));
+                    content.set_child(Some(&text(&message)));
                 };
             }
             WidgetType::Creation(widget) => content.set_child(Some(&widget)),
@@ -155,6 +155,7 @@ impl StateRow {
         }
     }
 
+    /// Update this row for the given membership change.
     fn update_with_membership_change(
         &self,
         membership_change: &RoomMembershipChange,
@@ -168,46 +169,8 @@ impl StateRow {
             FullStateEventContent::Redacted(_) => membership_change.user_id().to_string(),
         };
 
-        // Fallback to showing the membership when we don't know / don't want to show
-        // the change.
         let supported_membership_change =
-            match membership_change.change().unwrap_or(MembershipChange::None) {
-                MembershipChange::Joined => MembershipChange::Joined,
-                MembershipChange::Left => MembershipChange::Left,
-                MembershipChange::Banned => MembershipChange::Banned,
-                MembershipChange::Unbanned => MembershipChange::Unbanned,
-                MembershipChange::Kicked => MembershipChange::Kicked,
-                MembershipChange::Invited => MembershipChange::Invited,
-                MembershipChange::KickedAndBanned => MembershipChange::KickedAndBanned,
-                MembershipChange::InvitationAccepted => MembershipChange::InvitationAccepted,
-                MembershipChange::InvitationRejected => MembershipChange::InvitationRejected,
-                MembershipChange::InvitationRevoked => MembershipChange::InvitationRevoked,
-                MembershipChange::Knocked => MembershipChange::Knocked,
-                MembershipChange::KnockAccepted => MembershipChange::KnockAccepted,
-                MembershipChange::KnockRetracted => MembershipChange::KnockRetracted,
-                MembershipChange::KnockDenied => MembershipChange::KnockDenied,
-                _ => {
-                    let membership = match membership_change.content() {
-                        FullStateEventContent::Original { content, .. } => &content.membership,
-                        FullStateEventContent::Redacted(content) => &content.membership,
-                    };
-
-                    match membership {
-                        MembershipState::Ban => MembershipChange::Banned,
-                        MembershipState::Invite => MembershipChange::Invited,
-                        MembershipState::Join => MembershipChange::Joined,
-                        MembershipState::Knock => MembershipChange::Knocked,
-                        MembershipState::Leave => {
-                            if membership_change.user_id() == sender {
-                                MembershipChange::Left
-                            } else {
-                                MembershipChange::Kicked
-                            }
-                        }
-                        _ => MembershipChange::NotImplemented,
-                    }
-                }
-            };
+            Self::to_supported_membership_change(membership_change, sender);
 
         let message = match supported_membership_change {
             MembershipChange::Joined => {
@@ -303,8 +266,55 @@ impl StateRow {
         if let Some(child) = content.child().and_downcast::<gtk::Label>() {
             child.set_text(&message);
         } else {
-            content.set_child(Some(&text(message)));
+            content.set_child(Some(&text(&message)));
         };
+    }
+
+    /// Convert a received membership change to a supported membership change.
+    ///
+    /// This is used to fallback to showing the membership when we do not know
+    /// or do not want to show the change.
+    fn to_supported_membership_change(
+        membership_change: &RoomMembershipChange,
+        sender: &UserId,
+    ) -> MembershipChange {
+        match membership_change.change().unwrap_or(MembershipChange::None) {
+            MembershipChange::Joined => MembershipChange::Joined,
+            MembershipChange::Left => MembershipChange::Left,
+            MembershipChange::Banned => MembershipChange::Banned,
+            MembershipChange::Unbanned => MembershipChange::Unbanned,
+            MembershipChange::Kicked => MembershipChange::Kicked,
+            MembershipChange::Invited => MembershipChange::Invited,
+            MembershipChange::KickedAndBanned => MembershipChange::KickedAndBanned,
+            MembershipChange::InvitationAccepted => MembershipChange::InvitationAccepted,
+            MembershipChange::InvitationRejected => MembershipChange::InvitationRejected,
+            MembershipChange::InvitationRevoked => MembershipChange::InvitationRevoked,
+            MembershipChange::Knocked => MembershipChange::Knocked,
+            MembershipChange::KnockAccepted => MembershipChange::KnockAccepted,
+            MembershipChange::KnockRetracted => MembershipChange::KnockRetracted,
+            MembershipChange::KnockDenied => MembershipChange::KnockDenied,
+            _ => {
+                let membership = match membership_change.content() {
+                    FullStateEventContent::Original { content, .. } => &content.membership,
+                    FullStateEventContent::Redacted(content) => &content.membership,
+                };
+
+                match membership {
+                    MembershipState::Ban => MembershipChange::Banned,
+                    MembershipState::Invite => MembershipChange::Invited,
+                    MembershipState::Join => MembershipChange::Joined,
+                    MembershipState::Knock => MembershipChange::Knocked,
+                    MembershipState::Leave => {
+                        if membership_change.user_id() == sender {
+                            MembershipChange::Left
+                        } else {
+                            MembershipChange::Kicked
+                        }
+                    }
+                    _ => MembershipChange::NotImplemented,
+                }
+            }
+        }
     }
 
     fn update_with_profile_change(&self, profile_change: &MemberProfileChange, display_name: &str) {
@@ -377,7 +387,7 @@ impl StateRow {
         if let Some(child) = content.child().and_downcast::<gtk::Label>() {
             child.set_text(&message);
         } else {
-            content.set_child(Some(&text(message)));
+            content.set_child(Some(&text(&message)));
         };
     }
 }
@@ -388,8 +398,9 @@ enum WidgetType {
     Tombstone(StateTombstone),
 }
 
-fn text(label: String) -> gtk::Label {
-    let child = gtk::Label::new(Some(&label));
+/// Construct a `GtkLabel` for the given text.
+fn text(label: &str) -> gtk::Label {
+    let child = gtk::Label::new(Some(label));
     child.set_css_classes(&["event-content", "dim-label"]);
     child.set_wrap(true);
     child.set_wrap_mode(gtk::pango::WrapMode::WordChar);

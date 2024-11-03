@@ -212,24 +212,23 @@ impl HistoryViewerTimeline {
         });
 
         match handle.await.expect("task was not aborted") {
-            Ok(events) => match events.end {
-                Some(end_token) => {
+            Ok(events) => {
+                if let Some(end_token) = events.end {
                     *imp.last_token.lock().await = end_token;
 
-                    let events: Vec<HistoryViewerEvent> = events
+                    let events = events
                         .chunk
                         .into_iter()
-                        .filter_map(|event| HistoryViewerEvent::try_new(&room, event))
+                        .filter_map(|event| HistoryViewerEvent::try_new(&room, &event))
                         .collect();
 
                     imp.append(events);
                     true
-                }
-                None => {
+                } else {
                     imp.set_state(TimelineState::Complete);
                     false
                 }
-            },
+            }
             Err(error) => {
                 error!("Could not load history viewer timeline events: {error}");
                 imp.set_state(TimelineState::Error);

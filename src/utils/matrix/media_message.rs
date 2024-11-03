@@ -349,7 +349,7 @@ impl VisualMediaMessage {
     ///
     /// Shows a dialog to the user to select a file on the system.
     pub async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
-        MediaMessage::from(self).save_to_file(client, parent).await
+        MediaMessage::from(self).save_to_file(client, parent).await;
     }
 }
 

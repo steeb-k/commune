@@ -78,7 +78,7 @@ mod imp {
                 Some(&AccountSettingsSubpage::static_variant_type()),
                 |obj, _, param| {
                     let subpage = param
-                        .and_then(|variant| variant.get::<AccountSettingsSubpage>())
+                        .and_then(glib::Variant::get::<AccountSettingsSubpage>)
                         .expect("The parameter should be a valid subpage name");
 
                     obj.show_subpage(subpage);

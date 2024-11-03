@@ -74,7 +74,7 @@ pub(super) fn widget_for_html_nodes(
             }
             NodeGroup::Block(block_node) => {
                 let Some(widget) =
-                    widget_for_html_block(block_node, config, add_ellipsis, sender_name)
+                    widget_for_html_block(&block_node, config, add_ellipsis, sender_name)
                 else {
                     continue;
                 };
@@ -113,7 +113,8 @@ pub(super) fn widget_for_html_nodes(
         .build();
 
     for (row, child) in children.into_iter().enumerate() {
-        grid.attach(&child, 0, row as i32, 1, 1);
+        let row = row.try_into().unwrap_or(i32::MAX);
+        grid.attach(&child, 0, row, 1, 1);
     }
 
     Some(grid.upcast())
@@ -177,12 +178,12 @@ fn label_for_inline_html(
     }
 
     if let Some(widgets) = widgets {
-        widgets.iter().for_each(|p| {
-            if !p.source().is_some_and(|s| s.is::<AtRoom>()) {
+        for pill in &widgets {
+            if !pill.source().is_some_and(|s| s.is::<AtRoom>()) {
                 // Show the profile on click.
-                p.set_activatable(true);
+                pill.set_activatable(true);
             }
-        });
+        }
         let w = LabelWithWidgets::with_label_and_widgets(&text, widgets);
         w.set_use_markup(true);
         w.set_ellipsize(config.ellipsize);
@@ -201,7 +202,7 @@ fn label_for_inline_html(
 
 /// Create a widget for the given HTML block node.
 fn widget_for_html_block(
-    node: NodeRef,
+    node: &NodeRef,
     config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
@@ -283,8 +284,9 @@ fn widget_for_list(
 
         let bullet = list_type.bullet(pos);
 
-        grid.attach(&bullet, 0, pos as i32, 1, 1);
-        grid.attach(&w, 1, pos as i32, 1, 1);
+        let row = pos.try_into().unwrap_or(i32::MAX);
+        grid.attach(&bullet, 0, row, 1, 1);
+        grid.attach(&w, 1, row, 1, 1);
 
         if config.ellipsize {
             break;
@@ -315,7 +317,10 @@ impl ListType {
         match self {
             ListType::Unordered => bullet.set_label("•"),
             ListType::Ordered { start } => {
-                bullet.set_label(&format!("{}.", *start + position as i64))
+                bullet.set_label(&format!(
+                    "{}.",
+                    *start + i64::try_from(position).unwrap_or(i64::MAX)
+                ));
             }
         }
 
@@ -461,9 +466,7 @@ fn widget_for_details_summary(
                 )
             })
         }) {
-            if let Some(widget) =
-                widget_for_html_block(node.clone(), config, add_ellipsis, &mut None)
-            {
+            if let Some(widget) = widget_for_html_block(node, config, add_ellipsis, &mut None) {
                 return Some(widget);
             }
         }

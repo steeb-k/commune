@@ -113,10 +113,10 @@ mod imp {
 
     impl IgnoredUsersSubpage {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
+        fn set_session(&self, session: Option<&Session>) {
             let prev_session = self.session.upgrade();
 
-            if prev_session == session {
+            if prev_session.as_ref() == session {
                 return;
             }
 
@@ -126,7 +126,7 @@ mod imp {
                 }
             }
 
-            let ignored_users = session.as_ref().map(|s| s.ignored_users());
+            let ignored_users = session.map(Session::ignored_users);
             if let Some(ignored_users) = &ignored_users {
                 let items_changed_handler = ignored_users.connect_items_changed(clone!(
                     #[weak(rename_to = imp)]
@@ -140,7 +140,7 @@ mod imp {
             }
 
             self.filtered_model.set_model(ignored_users.as_ref());
-            self.session.set(session.as_ref());
+            self.session.set(session);
 
             self.obj().notify_session();
             self.update_visible_page();

@@ -394,9 +394,9 @@ impl RoomAliases {
                     .is_some_and(|e| e.status_code == StatusCode::NOT_FOUND)
                 {
                     return Err(AddAltAliasError::NotRegistered);
-                } else {
-                    return Err(AddAltAliasError::Other);
                 }
+
+                return Err(AddAltAliasError::Other);
             }
         }
 

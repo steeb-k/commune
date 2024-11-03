@@ -104,21 +104,12 @@ mod imp {
                 }
             ));
 
-            // Search filter.
-            fn search_string(member: Member) -> String {
-                format!(
-                    "{} {} {} {}",
-                    member.display_name(),
-                    member.user_id(),
-                    member.role(),
-                    member.power_level(),
-                )
-            }
-
             let user_expr = gtk::ClosureExpression::new::<String>(
                 &[] as &[gtk::Expression],
                 closure!(|item: Option<glib::Object>| {
-                    item.and_downcast().map(search_string).unwrap_or_default()
+                    item.and_downcast_ref()
+                        .map(Member::search_string)
+                        .unwrap_or_default()
                 }),
             );
             let search_filter = gtk::StringFilter::builder()
@@ -208,14 +199,14 @@ mod imp {
 
     impl PermissionsAddMembersSubpage {
         /// Set the permissions of the room.
-        fn set_permissions(&self, permissions: Option<Permissions>) {
-            if self.permissions.upgrade() == permissions {
+        fn set_permissions(&self, permissions: Option<&Permissions>) {
+            if self.permissions.upgrade().as_ref() == permissions {
                 return;
             }
 
-            self.permissions.set(permissions.as_ref());
+            self.permissions.set(permissions);
 
-            if let Some(permissions) = &permissions {
+            if let Some(permissions) = permissions {
                 self.power_level_filter.set_filter_func(clone!(
                     #[weak]
                     permissions,
@@ -236,15 +227,13 @@ mod imp {
             }
 
             let members = permissions
-                .as_ref()
-                .and_then(|p| p.room())
+                .and_then(Permissions::room)
                 .map(|r| r.get_or_create_members());
             self.filtered_model.set_model(members.as_ref());
 
             self.power_level_combo.set_selected_power_level(
                 permissions
-                    .as_ref()
-                    .map(|p| p.default_power_level())
+                    .map(Permissions::default_power_level)
                     .unwrap_or_default(),
             );
             self.power_level_combo.set_permissions(permissions);
@@ -254,12 +243,12 @@ mod imp {
         }
 
         /// Set the list of members with custom power levels.
-        fn set_privileged_members(&self, members: Option<PrivilegedMembers>) {
-            if self.privileged_members.upgrade() == members {
+        fn set_privileged_members(&self, members: Option<&PrivilegedMembers>) {
+            if self.privileged_members.upgrade().as_ref() == members {
                 return;
             }
 
-            self.privileged_members.set(members.as_ref());
+            self.privileged_members.set(members);
             self.obj().notify_privileged_members();
         }
 

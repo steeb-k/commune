@@ -86,7 +86,7 @@ mod imp {
             if let Some(child) = child.downcast_ref::<gtk::Widget>() {
                 self.obj().append_child(child);
             } else {
-                self.parent_add_child(builder, child, type_)
+                self.parent_add_child(builder, child, type_);
             }
         }
     }
@@ -195,7 +195,7 @@ impl LabelWithWidgets {
 
         imp.widgets
             .borrow_mut()
-            .append(&mut widgets.into_iter().map(|w| w.upcast()).collect());
+            .append(&mut widgets.into_iter().map(Cast::upcast).collect());
 
         for child in imp.widgets.borrow().iter() {
             child.set_parent(self);

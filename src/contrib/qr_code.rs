@@ -84,7 +84,7 @@ pub(crate) mod imp {
         }
 
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
-            let stride = self.obj().block_size() as i32;
+            let stride = i32::try_from(self.obj().block_size()).expect("block size fits into i32");
 
             let minimum = match orientation {
                 gtk::Orientation::Horizontal => self.data.borrow().width * stride,
@@ -181,29 +181,7 @@ impl TryFrom<&[u8]> for QRCodeData {
     type Error = qrcode::types::QrError;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        let code = qrcode::QrCode::new(data)?;
-        let items = code
-            .render::<char>()
-            .quiet_zone(false)
-            .module_dimensions(1, 1)
-            .build()
-            .split('\n')
-            .map(|line| {
-                line.chars()
-                    .map(|c| !c.is_whitespace())
-                    .collect::<Vec<bool>>()
-            })
-            .collect::<Vec<Vec<bool>>>();
-
-        let height = items.len() as i32;
-        let width = items.len() as i32;
-        let data = Self {
-            width,
-            height,
-            items,
-        };
-
-        Ok(data)
+        Ok(qrcode::QrCode::new(data)?.into())
     }
 }
 
@@ -222,11 +200,13 @@ impl From<qrcode::QrCode> for QRCodeData {
             })
             .collect::<Vec<Vec<bool>>>();
 
-        let height = items.len() as i32;
-        let width = items.len() as i32;
+        let size = items
+            .len()
+            .try_into()
+            .expect("count of items fits into i32");
         Self {
-            width,
-            height,
+            width: size,
+            height: size,
             items,
         }
     }

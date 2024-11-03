@@ -184,10 +184,7 @@ mod imp {
                 obj,
                 move |entry| {
                     entry.stop_signal_emission_by_name("copy-clipboard");
-
-                    spawn!(async move {
-                        obj.copy_buffer_selection_to_clipboard().await;
-                    });
+                    obj.copy_buffer_selection_to_clipboard();
                 }
             ));
             self.message_entry.connect_cut_clipboard(clone!(
@@ -195,15 +192,8 @@ mod imp {
                 obj,
                 move |entry| {
                     entry.stop_signal_emission_by_name("cut-clipboard");
-
-                    spawn!(clone!(
-                        #[weak]
-                        entry,
-                        async move {
-                            obj.copy_buffer_selection_to_clipboard().await;
-                            entry.buffer().delete_selection(true, true);
-                        }
-                    ));
+                    obj.copy_buffer_selection_to_clipboard();
+                    entry.buffer().delete_selection(true, true);
                 }
             ));
 
@@ -267,9 +257,9 @@ mod imp {
 
     impl MessageToolbar {
         /// Set the room currently displayed.
-        fn set_room(&self, room: Option<Room>) {
+        fn set_room(&self, room: Option<&Room>) {
             let old_room = self.room.upgrade();
-            if old_room == room {
+            if old_room.as_ref() == room {
                 return;
             }
             let obj = self.obj();
@@ -280,7 +270,7 @@ mod imp {
                 }
             }
 
-            if let Some(room) = &room {
+            if let Some(room) = room {
                 let send_message_permission_handler =
                     room.permissions().connect_can_send_message_notify(clone!(
                         #[weak(rename_to = imp)]
@@ -293,7 +283,7 @@ mod imp {
                     .replace(Some(send_message_permission_handler));
             }
 
-            self.room.set(room.as_ref());
+            self.room.set(room);
 
             self.send_message_permission_updated();
             self.message_entry.grab_focus();
@@ -336,7 +326,7 @@ mod imp {
             self.composer_states
                 .borrow_mut()
                 .entry(
-                    room.and_then(|r| r.session())
+                    room.and_then(Room::session)
                         .map(|s| s.session_id().to_owned()),
                 )
                 .or_default()
@@ -411,7 +401,7 @@ mod imp {
 
             match composer_state.related_to() {
                 Some(RelationInfo::Reply(info)) => {
-                    self.update_for_reply(info);
+                    self.update_for_reply(&info);
                 }
                 Some(RelationInfo::Edit(_)) => {
                     self.update_for_edit();
@@ -421,7 +411,7 @@ mod imp {
         }
 
         /// Update the displayed related event for the given reply.
-        fn update_for_reply(&self, info: RepliedToInfo) {
+        fn update_for_reply(&self, info: &RepliedToInfo) {
             let Some(room) = self.room.upgrade() else {
                 return;
             };
@@ -438,7 +428,7 @@ mod imp {
                 .set_label(Some(gettext_f("Reply to {user}", &[("user", "<widget>")])));
 
             self.related_event_content
-                .update_for_related_event(info, sender);
+                .update_for_related_event(info, &sender);
             self.related_event_content.set_visible(true);
         }
 
@@ -485,7 +475,7 @@ impl MessageToolbar {
     }
 
     /// Set the event to reply to.
-    pub fn set_reply_to(&self, event: Event) {
+    pub fn set_reply_to(&self, event: &Event) {
         let imp = self.imp();
         if !imp.can_compose_message() {
             return;
@@ -503,7 +493,7 @@ impl MessageToolbar {
     }
 
     /// Set the event to edit.
-    pub fn set_edit(&self, event: Event) {
+    pub fn set_edit(&self, event: &Event) {
         let imp = self.imp();
         if !imp.can_compose_message() {
             return;
@@ -539,86 +529,11 @@ impl MessageToolbar {
             return;
         };
 
-        let composer_state = self.current_composer_state();
-        let buffer = composer_state.buffer();
-        let (start_iter, end_iter) = buffer.bounds();
-        let body_len = end_iter.offset() as usize;
-
-        let is_markdown = self.markdown_enabled();
-        let mut has_rich_mentions = false;
-        let mut plain_body = String::with_capacity(body_len);
-        // formatted_body is Markdown if is_markdown is true, and HTML if false.
-        let mut formatted_body = String::with_capacity(body_len);
-        let mut mentions = Mentions::new();
-
-        let split_message = MessageBufferParser::new(&composer_state, start_iter, end_iter);
-        for chunk in split_message {
-            match chunk {
-                MessageBufferChunk::Text(text) => {
-                    plain_body.push_str(&text);
-                    formatted_body.push_str(&text);
-                }
-                MessageBufferChunk::Mention(source) => match Mention::from_source(&source).await {
-                    Mention::Rich { name, uri, user_id } => {
-                        has_rich_mentions = true;
-                        plain_body.push_str(&name);
-                        if is_markdown {
-                            let _ = write!(formatted_body, "[{name}]({uri})");
-                        } else {
-                            let _ = write!(formatted_body, "<a href=\"{uri}\">{name}</a>");
-                        };
-
-                        if let Some(user_id) = user_id {
-                            mentions.user_ids.insert(user_id);
-                        }
-                    }
-                    Mention::AtRoom => {
-                        plain_body.push_str(AT_ROOM);
-                        formatted_body.push_str(AT_ROOM);
-
-                        mentions.room = true;
-                    }
-                },
-            }
-        }
-
-        let is_emote = plain_body.starts_with("/me ");
-        if is_emote {
-            plain_body.replace_range(.."/me ".len(), "");
-            formatted_body.replace_range(.."/me ".len(), "");
-        }
-
-        if plain_body.trim().is_empty() {
-            // Don't send empty message.
+        let Some(content) = self.text_message_to_send().await else {
             return;
-        }
-
-        let html_body = if is_markdown {
-            FormattedBody::markdown(formatted_body).map(|b| b.body)
-        } else if has_rich_mentions {
-            // Already formatted with HTML.
-            Some(formatted_body)
-        } else {
-            None
         };
 
-        let mut content = if is_emote {
-            MessageType::Emote(if let Some(html_body) = html_body {
-                EmoteMessageEventContent::html(plain_body, html_body)
-            } else {
-                EmoteMessageEventContent::plain(plain_body)
-            })
-            .into()
-        } else if let Some(html_body) = html_body {
-            RoomMessageEventContentWithoutRelation::text_html(plain_body, html_body)
-        } else {
-            RoomMessageEventContentWithoutRelation::text_plain(plain_body)
-        };
-
-        // To avoid triggering legacy pushrules, we must always include the mentions,
-        // even if they are empty.
-        content = content.add_mentions(mentions);
-
+        let composer_state = self.current_composer_state();
         let matrix_timeline = room.timeline().matrix_timeline();
 
         // Send event depending on relation.
@@ -664,6 +579,92 @@ impl MessageToolbar {
 
         // Clear the composer state.
         composer_state.clear();
+    }
+
+    /// The text message to send, if any.
+    async fn text_message_to_send(&self) -> Option<RoomMessageEventContentWithoutRelation> {
+        let composer_state = self.current_composer_state();
+        let buffer = composer_state.buffer();
+        let (start_iter, end_iter) = buffer.bounds();
+        let body_len = end_iter.offset().try_into().unwrap_or_default();
+
+        let markdown_enabled = self.markdown_enabled();
+        let mut has_rich_mentions = false;
+        let mut plain_body = String::with_capacity(body_len);
+        // This is Markdown if markdown is enabled, otherwise it is HTML.
+        let mut formatted_body = String::with_capacity(body_len);
+        let mut mentions = Mentions::new();
+
+        let split_message = MessageBufferParser::new(&composer_state, start_iter, end_iter);
+        for chunk in split_message {
+            match chunk {
+                MessageBufferChunk::Text(text) => {
+                    plain_body.push_str(&text);
+                    formatted_body.push_str(&text);
+                }
+                MessageBufferChunk::Mention(source) => match Mention::from_source(&source).await {
+                    Mention::Rich { name, uri, user_id } => {
+                        has_rich_mentions = true;
+                        plain_body.push_str(&name);
+                        if markdown_enabled {
+                            let _ = write!(formatted_body, "[{name}]({uri})");
+                        } else {
+                            let _ = write!(formatted_body, "<a href=\"{uri}\">{name}</a>");
+                        };
+
+                        if let Some(user_id) = user_id {
+                            mentions.user_ids.insert(user_id);
+                        }
+                    }
+                    Mention::AtRoom => {
+                        plain_body.push_str(AT_ROOM);
+                        formatted_body.push_str(AT_ROOM);
+
+                        mentions.room = true;
+                    }
+                },
+            }
+        }
+
+        // Remove the command of the emote.
+        let is_emote = plain_body.starts_with("/me ");
+        if is_emote {
+            plain_body.replace_range(.."/me ".len(), "");
+            formatted_body.replace_range(.."/me ".len(), "");
+        }
+
+        if plain_body.trim().is_empty() {
+            // Do not send empty message.
+            return None;
+        }
+
+        let html_body = if markdown_enabled {
+            FormattedBody::markdown(formatted_body).map(|b| b.body)
+        } else if has_rich_mentions {
+            // Already formatted with HTML.
+            Some(formatted_body)
+        } else {
+            None
+        };
+
+        let mut content = if is_emote {
+            MessageType::Emote(if let Some(html_body) = html_body {
+                EmoteMessageEventContent::html(plain_body, html_body)
+            } else {
+                EmoteMessageEventContent::plain(plain_body)
+            })
+            .into()
+        } else if let Some(html_body) = html_body {
+            RoomMessageEventContentWithoutRelation::text_html(plain_body, html_body)
+        } else {
+            RoomMessageEventContentWithoutRelation::text_plain(plain_body)
+        };
+
+        // To avoid triggering legacy pushrules, we must always include the mentions,
+        // even if they are empty.
+        content = content.add_mentions(mentions);
+
+        Some(content)
     }
 
     /// Open the emoji chooser in the message entry.
@@ -747,9 +748,9 @@ impl MessageToolbar {
 
                     if response == gtk::ResponseType::Ok {
                         break;
-                    } else {
-                        return;
                     }
+
+                    return;
                 }
             };
         }
@@ -786,7 +787,7 @@ impl MessageToolbar {
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not send location: {error}");
-            toast!(self, gettext("Could not send location"))
+            toast!(self, gettext("Could not send location"));
         }
     }
 
@@ -1036,14 +1037,18 @@ impl MessageToolbar {
 
     // Copy the selection in the message entry to the clipboard while replacing
     // mentions.
-    async fn copy_buffer_selection_to_clipboard(&self) {
+    fn copy_buffer_selection_to_clipboard(&self) {
         let buffer = self.imp().message_entry.buffer();
         let Some((start, end)) = buffer.selection_bounds() else {
             return;
         };
 
         let composer_state = self.current_composer_state();
-        let body_len = end.offset().saturating_sub(start.offset()) as usize;
+        let body_len = end
+            .offset()
+            .saturating_sub(start.offset())
+            .try_into()
+            .unwrap_or_default();
         let mut body = String::with_capacity(body_len);
 
         let split_message = MessageBufferParser::new(&composer_state, start, end);
@@ -1060,8 +1065,7 @@ impl MessageToolbar {
                             room.aliases()
                                 .alias()
                                 .as_ref()
-                                .map(AsRef::as_ref)
-                                .unwrap_or_else(|| room.room_id().as_ref()),
+                                .map_or_else(|| room.room_id().as_ref(), AsRef::as_ref),
                         );
                     } else if source.is::<AtRoom>() {
                         body.push_str(AT_ROOM);

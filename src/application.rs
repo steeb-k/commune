@@ -31,15 +31,15 @@ enum NetworkState {
 impl NetworkState {
     /// Construct the network state with the given network monitor.
     fn with_monitor(monitor: &gio::NetworkMonitor) -> Self {
-        if !monitor.is_network_available() {
-            Self::Unavailable
-        } else {
+        if monitor.is_network_available() {
             Self::Available(monitor.connectivity())
+        } else {
+            Self::Unavailable
         }
     }
 
     /// Log this network state.
-    fn log(&self) {
+    fn log(self) {
         match self {
             Self::Unavailable => {
                 info!("Network is unavailable");
@@ -158,7 +158,7 @@ mod imp {
                 warn!("Trying to open several URIs, only the first one will be processed");
             }
 
-            if let Some(uri) = files.first().map(|f| f.uri()) {
+            if let Some(uri) = files.first().map(FileExt::uri) {
                 self.obj().process_uri(&uri);
             } else {
                 debug!("No URI to open");
@@ -239,7 +239,7 @@ impl Application {
             gio::ActionEntry::builder("show-room")
                 .parameter_type(Some(&intent::ShowRoomPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
-                    let Some(payload) = v.and_then(|v| v.get::<intent::ShowRoomPayload>()) else {
+                    let Some(payload) = v.and_then(glib::Variant::get::<intent::ShowRoomPayload>) else {
                         error!("Triggered `show-room` action without the proper payload");
                         return;
                     };
@@ -251,7 +251,7 @@ impl Application {
             gio::ActionEntry::builder("show-identity-verification")
                 .parameter_type(Some(&intent::ShowIdentityVerificationPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
-                    let Some(payload) = v.and_then(|v| v.get::<intent::ShowIdentityVerificationPayload>()) else {
+                    let Some(payload) = v.and_then(glib::Variant::get::<intent::ShowIdentityVerificationPayload>) else {
                         error!("Triggered `show-identity-verification` action without the proper payload");
                         return;
                     };
@@ -526,7 +526,7 @@ impl AppProfile {
     }
 
     /// Whether this `AppProfile` should use the `.devel` CSS class on windows.
-    pub fn should_use_devel_class(&self) -> bool {
+    pub fn should_use_devel_class(self) -> bool {
         matches!(self, Self::Devel)
     }
 }

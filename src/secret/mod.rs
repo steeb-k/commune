@@ -31,7 +31,7 @@ pub use self::unimplemented::{restore_sessions, store_session};
 use crate::{
     prelude::*,
     spawn_tokio,
-    utils::{data_dir_path, DataType},
+    utils::{data_dir_path, matrix::ClientSetupError, DataType},
 };
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.
@@ -89,7 +89,7 @@ impl StoredSession {
     ///
     /// Returns an error if we failed to generate a unique session ID for the
     /// new session.
-    pub fn with_login_data(homeserver: Url, data: MatrixSession) -> Result<Self, ()> {
+    pub fn with_login_data(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
         let MatrixSession {
             meta: SessionMeta { user_id, device_id },
             tokens: MatrixSessionTokens { access_token, .. },
@@ -116,7 +116,7 @@ impl StoredSession {
         }
 
         let Some(id) = id else {
-            return Err(());
+            return Err(ClientSetupError::NoSessionId);
         };
 
         let passphrase = thread_rng()

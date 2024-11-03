@@ -120,7 +120,7 @@ impl SessionList {
             .list
             .borrow()
             .values()
-            .any(|s| s.is::<NewSession>())
+            .any(ObjectExt::is::<NewSession>)
     }
 
     /// Whether at least one session is ready.
@@ -187,9 +187,9 @@ impl SessionList {
             .imp()
             .list
             .borrow_mut()
-            .insert_full(session.session_id().to_owned(), session);
+            .insert_full(session.session_id(), session);
 
-        let removed = if replaced.is_some() { 1 } else { 0 };
+        let removed = replaced.is_some().into();
 
         self.items_changed(index as u32, removed, 1);
 
@@ -284,7 +284,7 @@ impl SessionList {
                     "Restoring previous session {} for user {}",
                     stored_session.id, stored_session.user_id,
                 );
-                self.insert(NewSession::new(stored_session.clone()));
+                self.insert(NewSession::new(&stored_session));
 
                 spawn!(
                     glib::Priority::DEFAULT_IDLE,
@@ -292,7 +292,7 @@ impl SessionList {
                         #[weak(rename_to = obj)]
                         self,
                         async move {
-                            obj.restore_stored_session(stored_session).await;
+                            obj.restore_stored_session(&stored_session).await;
                         }
                     )
                 );
@@ -304,7 +304,7 @@ impl SessionList {
             }
         }
 
-        self.set_state(LoadingState::Ready)
+        self.set_state(LoadingState::Ready);
     }
 
     /// The list of directories in the data directory.
@@ -340,7 +340,7 @@ impl SessionList {
     }
 
     /// Restore a stored session.
-    async fn restore_stored_session(&self, session_info: StoredSession) {
+    async fn restore_stored_session(&self, session_info: &StoredSession) {
         let settings = self.settings().get_or_create(&session_info.id);
         match Session::restore(session_info.clone(), settings).await {
             Ok(session) => {

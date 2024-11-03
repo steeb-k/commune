@@ -261,6 +261,7 @@ mod imp {
             self.init_timeline();
             self.join_rule.init(&obj);
             self.set_up_typing();
+            self.watch_send_queue();
 
             spawn!(
                 glib::Priority::DEFAULT_IDLE,
@@ -298,17 +299,6 @@ mod imp {
                 )
             );
 
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.watch_send_queue().await;
-                    }
-                )
-            );
-
             if let Some(RoomMetainfo {
                 latest_activity,
                 is_read,
@@ -327,8 +317,8 @@ mod imp {
         }
 
         /// Set the current session
-        fn set_session(&self, session: Session) {
-            self.session.set(Some(&session));
+        fn set_session(&self, session: &Session) {
+            self.session.set(Some(session));
 
             let own_member = Member::new(&self.obj(), session.user_id().clone());
             self.own_member
@@ -487,7 +477,7 @@ mod imp {
                     AvatarUriSource::Room,
                     None,
                     None,
-                )))
+                )));
             }
         }
 
@@ -578,7 +568,7 @@ mod imp {
                 .inviter
                 .borrow()
                 .as_ref()
-                .is_some_and(|i| i.is_ignored())
+                .is_some_and(Member::is_ignored)
             {
                 self.set_category(RoomCategory::Ignored);
                 return;
@@ -752,7 +742,7 @@ mod imp {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().handle_member_event(event);
+                                obj.imp().handle_member_event(&event);
                             }
                         });
                     });
@@ -764,7 +754,7 @@ mod imp {
         }
 
         /// Handle a member event received via sync
-        fn handle_member_event(&self, event: SyncRoomMemberEvent) {
+        fn handle_member_event(&self, event: &SyncRoomMemberEvent) {
             let user_id = event.state_key();
 
             if let Some(members) = self.members.upgrade() {
@@ -994,7 +984,7 @@ mod imp {
                 self,
                 move |_| {
                     spawn!(glib::Priority::DEFAULT_IDLE, async move {
-                        imp.handle_read_change_trigger().await
+                        imp.handle_read_change_trigger().await;
                     });
                 }
             ));
@@ -1070,7 +1060,9 @@ mod imp {
                 return;
             }
 
-            if !self.is_read.get() {
+            if self.is_read.get() {
+                self.set_notification_count(0);
+            } else {
                 let counts = self.matrix_room().unread_notification_counts();
 
                 if counts.highlight_count > 0 {
@@ -1079,8 +1071,6 @@ mod imp {
                     highlight = HighlightFlags::BOLD;
                 }
                 self.set_notification_count(counts.notification_count);
-            } else {
-                self.set_notification_count(0);
             }
 
             self.set_highlight(highlight);
@@ -1164,8 +1154,7 @@ mod imp {
         fn federated(&self) -> bool {
             self.matrix_room()
                 .create_content()
-                .map(|c| c.federate)
-                .unwrap_or_default()
+                .is_some_and(|c| c.federate)
         }
 
         /// Start listening to typing events.
@@ -1330,7 +1319,9 @@ mod imp {
             changes: impl Iterator<Item = &'a AmbiguityChange>,
         ) {
             // Use a set to make sure we update members only once.
-            let user_ids = changes.flat_map(|c| c.user_ids()).collect::<HashSet<_>>();
+            let user_ids = changes
+                .flat_map(AmbiguityChange::user_ids)
+                .collect::<HashSet<_>>();
 
             if let Some(members) = self.members.upgrade() {
                 for user_id in user_ids {
@@ -1347,7 +1338,7 @@ mod imp {
         }
 
         /// Watch errors in the send queue to try to handle them.
-        async fn watch_send_queue(&self) {
+        fn watch_send_queue(&self) {
             let matrix_room = self.matrix_room().clone();
 
             let room_weak = glib::SendWeakRef::from(self.obj().downgrade());
@@ -1696,7 +1687,7 @@ impl Room {
         });
 
         match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not set the room category: {error}");
 
@@ -1765,7 +1756,7 @@ impl Room {
 
         spawn!(glib::Priority::DEFAULT_IDLE, async move {
             match handle.await.expect("task was not aborted") {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(error) => error!("Could not send typing notification: {error}"),
             };
         });
@@ -1889,7 +1880,7 @@ impl Room {
             .enumerate()
         {
             match result {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(error) => {
                     error!("Could not invite user with ID {}: {error}", user_ids[index],);
                     failed_invites.push(&*user_ids[index]);
@@ -1931,7 +1922,7 @@ impl Room {
             .enumerate()
         {
             match result {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(error) => {
                     error!("Could not kick user with ID {}: {error}", users[index].0);
                     failed_kicks.push(&*users[index].0);
@@ -1973,7 +1964,7 @@ impl Room {
             .enumerate()
         {
             match result {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(error) => {
                     error!("Could not ban user with ID {}: {error}", users[index].0);
                     failed_bans.push(&*users[index].0);
@@ -2015,7 +2006,7 @@ impl Room {
             .enumerate()
         {
             match result {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(error) => {
                     error!("Could not unban user with ID {}: {error}", users[index].0);
                     failed_unbans.push(&*users[index].0);
@@ -2041,7 +2032,7 @@ impl Room {
         let handle = spawn_tokio!(async move { matrix_room.enable_encryption().await });
 
         match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not enabled room encryption: {error}");
                 Err(())
@@ -2060,7 +2051,7 @@ impl Room {
         let handle = spawn_tokio!(async move { matrix_room.forget().await });
 
         match handle.await.expect("task was not aborted") {
-            Ok(_) => {
+            Ok(()) => {
                 self.emit_by_name::<()>("room-forgotten", &[]);
                 Ok(())
             }
@@ -2094,7 +2085,7 @@ impl Room {
 
     /// Update the successor of this room.
     pub fn update_successor(&self) {
-        self.imp().update_successor()
+        self.imp().update_successor();
     }
 
     /// Connect to the signal emitted when the room was forgotten.

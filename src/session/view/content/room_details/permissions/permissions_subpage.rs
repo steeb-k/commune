@@ -209,6 +209,7 @@ mod imp {
         }
 
         /// Compute whether the user changed the permissions.
+        #[allow(clippy::too_many_lines)]
         pub(super) fn compute_changed(&self) -> bool {
             let Some(privileged_members) = self.privileged_members.get() else {
                 return false;
@@ -228,12 +229,11 @@ mod imp {
                 return true;
             }
 
-            let redact_own = power_levels
-                .events
-                .get(&TimelineEventType::RoomRedaction)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(events_default);
+            let redact_own = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomRedaction,
+                events_default,
+            );
             if self.redact_own_row.selected_power_level() != redact_own {
                 return true;
             }
@@ -253,92 +253,74 @@ mod imp {
                 return true;
             }
 
-            let name = power_levels
-                .events
-                .get(&TimelineEventType::RoomName)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let name =
+                event_power_level(&power_levels, &TimelineEventType::RoomName, state_default);
             if self.name_row.selected_power_level() != name {
                 return true;
             }
 
-            let topic = power_levels
-                .events
-                .get(&TimelineEventType::RoomTopic)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let topic =
+                event_power_level(&power_levels, &TimelineEventType::RoomTopic, state_default);
             if self.topic_row.selected_power_level() != topic {
                 return true;
             }
 
-            let avatar = power_levels
-                .events
-                .get(&TimelineEventType::RoomAvatar)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let avatar =
+                event_power_level(&power_levels, &TimelineEventType::RoomAvatar, state_default);
             if self.avatar_row.selected_power_level() != avatar {
                 return true;
             }
 
-            let aliases = power_levels
-                .events
-                .get(&TimelineEventType::RoomCanonicalAlias)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let aliases = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomCanonicalAlias,
+                state_default,
+            );
             if self.aliases_row.selected_power_level() != aliases {
                 return true;
             }
 
-            let history_visibility = power_levels
-                .events
-                .get(&TimelineEventType::RoomHistoryVisibility)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let history_visibility = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomHistoryVisibility,
+                state_default,
+            );
             if self.history_visibility_row.selected_power_level() != history_visibility {
                 return true;
             }
 
-            let encryption = power_levels
-                .events
-                .get(&TimelineEventType::RoomEncryption)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let encryption = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomEncryption,
+                state_default,
+            );
             if self.encryption_row.selected_power_level() != encryption {
                 return true;
             }
 
-            let pl = power_levels
-                .events
-                .get(&TimelineEventType::RoomPowerLevels)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let pl = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomPowerLevels,
+                state_default,
+            );
             if self.power_levels_row.selected_power_level() != pl {
                 return true;
             }
 
-            let server_acl = power_levels
-                .events
-                .get(&TimelineEventType::RoomServerAcl)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let server_acl = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomServerAcl,
+                state_default,
+            );
             if self.server_acl_row.selected_power_level() != server_acl {
                 return true;
             }
 
-            let upgrade = power_levels
-                .events
-                .get(&TimelineEventType::RoomTombstone)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let upgrade = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomTombstone,
+                state_default,
+            );
             if self.upgrade_row.selected_power_level() != upgrade {
                 return true;
             }
@@ -377,12 +359,11 @@ mod imp {
             self.messages_row
                 .set_read_only(!editable || own_pl < events_default);
 
-            let redact_own = power_levels
-                .events
-                .get(&TimelineEventType::RoomRedaction)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(events_default);
+            let redact_own = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomRedaction,
+                events_default,
+            );
             self.redact_own_row.set_selected_power_level(redact_own);
             self.redact_own_row
                 .set_read_only(!editable || own_pl < redact_own);
@@ -417,90 +398,72 @@ mod imp {
             let own_pl = permissions.own_power_level();
             let state_default = self.state_row.selected_power_level();
 
-            let name = power_levels
-                .events
-                .get(&TimelineEventType::RoomName)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let name =
+                event_power_level(&power_levels, &TimelineEventType::RoomName, state_default);
             self.name_row.set_selected_power_level(name);
             self.name_row.set_read_only(!editable || own_pl < name);
 
-            let topic = power_levels
-                .events
-                .get(&TimelineEventType::RoomTopic)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let topic =
+                event_power_level(&power_levels, &TimelineEventType::RoomTopic, state_default);
             self.topic_row.set_selected_power_level(topic);
             self.topic_row.set_read_only(!editable || own_pl < topic);
 
-            let avatar = power_levels
-                .events
-                .get(&TimelineEventType::RoomAvatar)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let avatar =
+                event_power_level(&power_levels, &TimelineEventType::RoomAvatar, state_default);
             self.avatar_row.set_selected_power_level(avatar);
             self.avatar_row.set_read_only(!editable || own_pl < avatar);
 
-            let aliases = power_levels
-                .events
-                .get(&TimelineEventType::RoomCanonicalAlias)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let aliases = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomCanonicalAlias,
+                state_default,
+            );
             self.aliases_row.set_selected_power_level(aliases);
             self.aliases_row
                 .set_read_only(!editable || own_pl < aliases);
 
-            let history_visibility = power_levels
-                .events
-                .get(&TimelineEventType::RoomHistoryVisibility)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let history_visibility = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomHistoryVisibility,
+                state_default,
+            );
             self.history_visibility_row
                 .set_selected_power_level(history_visibility);
             self.history_visibility_row
                 .set_read_only(!editable || own_pl < history_visibility);
 
-            let encryption = power_levels
-                .events
-                .get(&TimelineEventType::RoomEncryption)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let encryption = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomEncryption,
+                state_default,
+            );
             self.encryption_row.set_selected_power_level(encryption);
             self.encryption_row
                 .set_read_only(!editable || own_pl < encryption);
 
-            let pl = power_levels
-                .events
-                .get(&TimelineEventType::RoomPowerLevels)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let pl = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomPowerLevels,
+                state_default,
+            );
             self.power_levels_row.set_selected_power_level(pl);
             self.power_levels_row
                 .set_read_only(!editable || own_pl < pl);
 
-            let server_acl = power_levels
-                .events
-                .get(&TimelineEventType::RoomServerAcl)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let server_acl = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomServerAcl,
+                state_default,
+            );
             self.server_acl_row.set_selected_power_level(server_acl);
             self.server_acl_row
                 .set_read_only(!editable || own_pl < server_acl);
 
-            let upgrade = power_levels
-                .events
-                .get(&TimelineEventType::RoomTombstone)
-                .copied()
-                .map(Into::into)
-                .unwrap_or(state_default);
+            let upgrade = event_power_level(
+                &power_levels,
+                &TimelineEventType::RoomTombstone,
+                state_default,
+            );
             self.upgrade_row.set_selected_power_level(upgrade);
             self.upgrade_row
                 .set_read_only(!editable || own_pl < upgrade);
@@ -860,4 +823,18 @@ fn set_event_power_level(
             .events
             .insert(event_type, Int::new_saturating(value));
     }
+}
+
+/// Get the necessary power level for the given event type in the given power
+/// levels.
+fn event_power_level(
+    power_levels: &RoomPowerLevels,
+    event_type: &TimelineEventType,
+    default: i64,
+) -> i64 {
+    power_levels
+        .events
+        .get(event_type)
+        .copied()
+        .map_or(default, Into::into)
 }

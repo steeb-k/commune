@@ -73,11 +73,11 @@ mod imp {
 
     impl RemoteRoom {
         /// Set the current session.
-        fn set_session(&self, session: Session) {
-            self.session.set(Some(&session));
+        fn set_session(&self, session: &Session) {
+            self.session.set(Some(session));
 
             self.obj().avatar_data().set_image(Some(AvatarImage::new(
-                &session,
+                session,
                 AvatarUriSource::Room,
                 None,
                 None,

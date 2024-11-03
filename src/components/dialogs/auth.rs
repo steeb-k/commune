@@ -176,7 +176,7 @@ impl AuthDialog {
                 .flows
                 .iter()
                 .filter(|flow| flow.stages.starts_with(&uiaa_info.completed))
-                .flat_map(|flow| flow.stages.get(stage_nr))
+                .filter_map(|flow| flow.stages.get(stage_nr))
                 .collect();
 
             let uiaa_session = uiaa_info.session;
@@ -216,7 +216,7 @@ impl AuthDialog {
         match stage {
             AuthType::Password => Some(self.perform_password_stage(uiaa_session.clone()).await),
             AuthType::Sso => Some(self.perform_fallback(uiaa_session.clone(), stage).await),
-            AuthType::Dummy => Some(self.perform_dummy_stage(uiaa_session.clone())),
+            AuthType::Dummy => Some(Ok(Self::perform_dummy_stage(uiaa_session.clone()))),
             // TODO implement other authentication types
             // See: https://gitlab.gnome.org/World/fractal/-/issues/835
             _ => None,
@@ -254,10 +254,8 @@ impl AuthDialog {
     }
 
     /// Performs the dummy stage.
-    fn perform_dummy_stage(&self, uiaa_session: Option<String>) -> Result<AuthData, AuthError> {
-        Ok(AuthData::Dummy(
-            assign!(Dummy::new(), { session: uiaa_session }),
-        ))
+    fn perform_dummy_stage(uiaa_session: Option<String>) -> AuthData {
+        AuthData::Dummy(assign!(Dummy::new(), { session: uiaa_session }))
     }
 
     /// Performs a web-based fallback for the given stage.

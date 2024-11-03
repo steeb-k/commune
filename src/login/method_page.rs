@@ -138,7 +138,7 @@ impl LoginMethodPage {
                     "domain_name",
                     &format!("<span segment=\"word\">{domain}</span>"),
                 )],
-            ))
+            ));
         } else {
             title.set_markup(&gettext("Log in"));
         }
@@ -152,16 +152,13 @@ impl LoginMethodPage {
         let imp = self.imp();
 
         let login_types = login.login_types().0;
-        let sso_login = match login_types.into_iter().find_map(|t| match t {
+        let Some(sso_login) = login_types.into_iter().find_map(|t| match t {
             LoginType::Sso(sso) => Some(sso),
             _ => None,
-        }) {
-            Some(sso) => sso,
-            None => {
-                imp.sso_idp_box.set_visible(false);
-                imp.more_sso_btn.set_visible(false);
-                return;
-            }
+        }) else {
+            imp.sso_idp_box.set_visible(false);
+            imp.more_sso_btn.set_visible(false);
+            return;
         };
 
         self.clean_idp_box();

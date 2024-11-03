@@ -445,7 +445,7 @@ impl CryptoIdentitySetupView {
             .await;
 
         match result {
-            Ok(_) => self.emit_completed(CryptoIdentitySetupNextStep::CompleteRecovery),
+            Ok(()) => self.emit_completed(CryptoIdentitySetupNextStep::CompleteRecovery),
             Err(AuthError::UserCancelled) => {
                 debug!("User cancelled authentication for cross-signing bootstrap");
             }

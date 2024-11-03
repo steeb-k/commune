@@ -85,7 +85,7 @@ mod imp {
                 return;
             }
 
-            let n_items_before = old_model.map(|model| model.n_items()).unwrap_or(0);
+            let n_items_before = old_model.map_or(0, |model| model.n_items());
             self.model.disconnect_signals();
 
             if let Some(model) = model {

@@ -89,10 +89,8 @@ mod imp {
 
     impl InviteSubpage {
         /// Set the room users will be invited to.
-        fn set_room(&self, room: Room) {
-            let obj = self.obj();
-
-            let invite_list = self.invite_list.get_or_init(|| InviteList::new(&room));
+        fn set_room(&self, room: &Room) {
+            let invite_list = self.invite_list.get_or_init(|| InviteList::new(room));
             invite_list.connect_invitee_added(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -130,8 +128,8 @@ mod imp {
             self.list_view
                 .set_model(Some(&gtk::NoSelection::new(Some(invite_list.clone()))));
 
-            self.room.set(Some(&room));
-            obj.notify_room();
+            self.room.set(Some(room));
+            self.obj().notify_room();
         }
 
         /// Update the view for the current state of the list.

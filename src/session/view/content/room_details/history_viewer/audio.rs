@@ -251,6 +251,6 @@ impl AudioHistoryViewer {
     /// Load more items in this viewer.
     #[template_callback]
     async fn load_more_items(&self) {
-        self.imp().load_more_items().await
+        self.imp().load_more_items().await;
     }
 }

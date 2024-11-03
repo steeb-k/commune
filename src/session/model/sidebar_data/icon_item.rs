@@ -17,8 +17,8 @@ pub enum SidebarIconItemType {
 }
 
 impl SidebarIconItemType {
-    /// The icon name for this item type.
-    pub fn icon_name(&self) -> &'static str {
+    /// The name of the icon for this item type.
+    pub fn icon_name(self) -> &'static str {
         match self {
             Self::Explore => "explore-symbolic",
             Self::Forget => "user-trash-symbolic",

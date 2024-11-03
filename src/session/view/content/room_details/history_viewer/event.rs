@@ -30,8 +30,7 @@ impl HistoryViewerEventType {
         let event_type = match msgtype {
             MessageType::Audio(_) => Self::Audio,
             MessageType::File(_) => Self::File,
-            MessageType::Image(_) => Self::Media,
-            MessageType::Video(_) => Self::Media,
+            MessageType::Image(_) | MessageType::Video(_) => Self::Media,
             _ => return None,
         };
 
@@ -88,7 +87,7 @@ glib::wrapper! {
 impl HistoryViewerEvent {
     /// Constructs a new `HistoryViewerEvent` with the given event, if it is
     /// viewable in one of the history viewers.
-    pub fn try_new(room: &Room, event: TimelineEvent) -> Option<Self> {
+    pub fn try_new(room: &Room, event: &TimelineEvent) -> Option<Self> {
         let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
             SyncMessageLikeEvent::Original(mut message_event),
         ))) = event.raw().deserialize()

@@ -178,7 +178,7 @@ mod imp {
                             .and_then(|room| {
                                 room.timeline().event_by_key(&EventKey::EventId(event_id))
                             })
-                            .and_downcast()
+                            .and_downcast_ref()
                         {
                             obj.message_toolbar().set_reply_to(event);
                         }
@@ -199,7 +199,7 @@ mod imp {
                             .and_then(|room| {
                                 room.timeline().event_by_key(&EventKey::EventId(event_id))
                             })
-                            .and_downcast()
+                            .and_downcast_ref()
                         {
                             obj.message_toolbar().set_edit(event);
                         }
@@ -326,13 +326,13 @@ mod imp {
             ));
         }
 
-        /// Whether the GtkListView is scrolled at the bottom.
+        /// Whether the list view is scrolled at the bottom.
         pub(super) fn is_at_bottom(&self) -> bool {
             let adj = self
                 .listview
                 .vadjustment()
                 .expect("GtkListView has a vadjustment");
-            adj.value() + adj.page_size() == adj.upper()
+            (adj.value() + adj.page_size() - adj.upper()).abs() < 0.0001
         }
 
         /// Initialize the drop target.
@@ -390,6 +390,7 @@ mod imp {
         }
 
         /// Set the room currently displayed.
+        #[allow(clippy::too_many_lines)]
         fn set_room(&self, room: Option<Room>) {
             if self.room.obj() == room {
                 return;

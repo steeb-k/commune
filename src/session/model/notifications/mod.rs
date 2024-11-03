@@ -87,7 +87,6 @@ impl Notifications {
 
     /// Helper method to create notification
     fn send_notification(
-        &self,
         id: &str,
         title: &str,
         body: &str,
@@ -169,9 +168,9 @@ impl Notifications {
             }
         };
 
-        let sender_name = sender
-            .as_ref()
-            .map(|member| {
+        let sender_name = sender.as_ref().map_or_else(
+            || sender_id.localpart().to_owned(),
+            |member| {
                 let name = member.name();
 
                 if member.name_ambiguous() {
@@ -179,15 +178,12 @@ impl Notifications {
                 } else {
                     name.to_owned()
                 }
-            })
-            .unwrap_or_else(|| sender_id.localpart().to_owned());
+            },
+        );
 
-        let body = match get_event_body(&event, &sender_name, session.user_id(), !is_direct) {
-            Some(body) => body,
-            None => {
-                debug!("Received notification for event of unexpected type {event:?}",);
-                return;
-            }
+        let Some(body) = get_event_body(&event, &sender_name, session.user_id(), !is_direct) else {
+            debug!("Received notification for event of unexpected type {event:?}",);
+            return;
         };
 
         let room_id = room.room_id().to_owned();
@@ -207,7 +203,7 @@ impl Notifications {
             format!("{session_id}//{room_id}//{random_id}")
         };
 
-        self.send_notification(
+        Self::send_notification(
             &id,
             &room.display_name(),
             &body,
@@ -261,7 +257,7 @@ impl Notifications {
         let icon = user.avatar_data().as_notification_icon();
 
         let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
-        self.send_notification(
+        Self::send_notification(
             &id,
             &title,
             &body,
@@ -323,7 +319,7 @@ impl Notifications {
 
         let id = format!("{session_id}//{other_device_id}//{flow_id}");
 
-        self.send_notification(
+        Self::send_notification(
             &id,
             &title,
             &body,

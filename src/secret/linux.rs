@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::Path};
 
 use gettextrs::gettext;
 use oo7::{Item, Keyring};
-use ruma::{OwnedDeviceId, UserId};
+use ruma::UserId;
 use thiserror::Error;
 use tokio::fs;
 use tracing::{debug, error, info};
@@ -114,7 +114,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
 
                 sessions.push(session);
             }
-            Err(LinuxSecretError::InvalidField) => {
+            Err(LinuxSecretError::Field(LinuxSecretFieldError::Invalid)) => {
                 // We already log the specific errors for this.
             }
             Err(error) => {
@@ -187,7 +187,7 @@ async fn log_out_session(session: StoredSession) {
                 }
             }
             Err(error) => {
-                error!("Could not build client to log out session: {error}")
+                error!("Could not build client to log out session: {error}");
             }
         }
     })
@@ -200,71 +200,24 @@ impl StoredSession {
     async fn try_from_secret_item(item: Item) -> Result<Self, LinuxSecretError> {
         let attributes = item.attributes().await?;
 
-        let version = match attributes.get(keys::VERSION) {
-            Some(string) => match string.parse::<u8>() {
-                Ok(version) => version,
-                Err(error) => {
-                    error!("Could not parse version in stored session: {error}");
-                    return Err(LinuxSecretError::InvalidField);
-                }
-            },
-            None => {
-                return Err(LinuxSecretError::MissingField("version"));
-            }
-        };
+        let version = parse_attribute(&attributes, keys::VERSION, str::parse::<u8>)?;
         if version > CURRENT_VERSION {
             return Err(LinuxSecretError::UnsupportedVersion(version));
         }
 
-        let homeserver = match attributes.get(keys::HOMESERVER) {
-            Some(string) => match Url::parse(string) {
-                Ok(homeserver) => homeserver,
-                Err(error) => {
-                    error!("Could not parse homeserver in stored session: {error}");
-                    return Err(LinuxSecretError::InvalidField);
-                }
-            },
-            None => {
-                return Err(LinuxSecretError::MissingField("homeserver"));
-            }
-        };
-        let user_id = match attributes.get(keys::USER) {
-            Some(string) => match UserId::parse(string) {
-                Ok(user_id) => user_id,
-                Err(error) => {
-                    error!("Could not parse user ID in stored session: {error}");
-                    return Err(LinuxSecretError::InvalidField);
-                }
-            },
-            None => {
-                return Err(LinuxSecretError::MissingField("user ID"));
-            }
-        };
-        let device_id = match attributes.get(keys::DEVICE_ID) {
-            Some(string) => OwnedDeviceId::from(string.as_str()),
-            None => {
-                return Err(LinuxSecretError::MissingField("device ID"));
-            }
-        };
+        let homeserver = parse_attribute(&attributes, keys::HOMESERVER, Url::parse)?;
+        let user_id = parse_attribute(&attributes, keys::USER, |s| UserId::parse(s))?;
+        let device_id = get_attribute(&attributes, keys::DEVICE_ID)?.as_str().into();
         let id = if version <= 5 {
-            match attributes.get(keys::DB_PATH) {
-                Some(string) => Path::new(string)
-                    .iter()
-                    .next_back()
-                    .and_then(|s| s.to_str())
-                    .expect("Session ID in db-path should be valid UTF-8")
-                    .to_owned(),
-                None => {
-                    return Err(LinuxSecretError::MissingField("database path"));
-                }
-            }
+            let string = get_attribute(&attributes, keys::DB_PATH)?;
+            Path::new(string)
+                .iter()
+                .next_back()
+                .and_then(|s| s.to_str())
+                .expect("Session ID in db-path should be valid UTF-8")
+                .to_owned()
         } else {
-            match attributes.get(keys::ID) {
-                Some(string) => string.clone(),
-                None => {
-                    return Err(LinuxSecretError::MissingField("session ID"));
-                }
-            }
+            get_attribute(&attributes, keys::ID)?.clone()
         };
         let secret = match item.secret().await {
             Ok(secret) => {
@@ -273,7 +226,7 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error}");
-                            return Err(LinuxSecretError::InvalidField);
+                            return Err(LinuxSecretFieldError::Invalid.into());
                         }
                     }
                 } else {
@@ -281,14 +234,14 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error:?}");
-                            return Err(LinuxSecretError::InvalidField);
+                            return Err(LinuxSecretFieldError::Invalid.into());
                         }
                     }
                 }
             }
             Err(error) => {
                 error!("Could not get secret in stored session: {error}");
-                return Err(LinuxSecretError::InvalidField);
+                return Err(LinuxSecretFieldError::Invalid.into());
             }
         };
 
@@ -367,6 +320,56 @@ impl StoredSession {
     }
 }
 
+/// Get the attribute with the given key in the given map.
+fn get_attribute<'a>(
+    attributes: &'a HashMap<String, String>,
+    key: &'static str,
+) -> Result<&'a String, LinuxSecretFieldError> {
+    attributes
+        .get(key)
+        .ok_or(LinuxSecretFieldError::Missing(key))
+}
+
+/// Parse the attribute with the given key, using the given parsing function in
+/// the given map.
+fn parse_attribute<F, V, E>(
+    attributes: &HashMap<String, String>,
+    key: &'static str,
+    parse: F,
+) -> Result<V, LinuxSecretFieldError>
+where
+    F: FnOnce(&str) -> Result<V, E>,
+    E: std::fmt::Display,
+{
+    let string = get_attribute(attributes, key)?;
+    match parse(string) {
+        Ok(value) => Ok(value),
+        Err(error) => {
+            error!("Could not parse {key} in stored session: {error}");
+            Err(LinuxSecretFieldError::Invalid)
+        }
+    }
+}
+
+/// Any error that can happen when retrieving an attribute from the secret
+/// backends on Linux.
+#[derive(Debug, Error)]
+pub enum LinuxSecretFieldError {
+    /// An attribute is missing.
+    ///
+    /// This should only happen if for some reason we get an item from a
+    /// different application.
+    #[error("Could not find {0} in stored session")]
+    Missing(&'static str),
+
+    /// An invalid attribute was found.
+    ///
+    /// This should only happen if for some reason we get an item from a
+    /// different application.
+    #[error("Invalid field in stored session")]
+    Invalid,
+}
+
 /// Remove the item with the given attributes from the secret backend.
 async fn delete_item_with_attributes(
     attributes: &impl oo7::AsAttributes,
@@ -402,21 +405,14 @@ pub enum LinuxSecretError {
         attributes: HashMap<String, String>,
     },
 
-    /// An attribute is missing.
+    /// An error occurred while retrieving a field of the session.
     ///
     /// This should only happen if for some reason we get an item from a
     /// different application.
-    #[error("Could not find {0} in stored session")]
-    MissingField(&'static str),
+    #[error(transparent)]
+    Field(#[from] LinuxSecretFieldError),
 
-    /// An invalid session was found.
-    ///
-    /// This should only happen if for some reason we get an item from a
-    /// different application.
-    #[error("Invalid field in stored session")]
-    InvalidField,
-
-    /// An error occurred interacting with the secret backend.
+    /// An error occurred while interacting with the secret backend.
     #[error(transparent)]
     Oo7(#[from] oo7::Error),
 }

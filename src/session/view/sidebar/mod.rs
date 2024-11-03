@@ -114,12 +114,9 @@ mod imp {
                 #[weak]
                 obj,
                 move |_, item| {
-                    let item = match item.downcast_ref::<gtk::ListItem>() {
-                        Some(item) => item,
-                        None => {
-                            error!("List item factory did not receive a list item: {item:?}");
-                            return;
-                        }
+                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {item:?}");
+                        return;
                     };
                     let row = Row::new(&obj);
                     item.set_child(Some(&row));
@@ -247,8 +244,8 @@ mod imp {
         }
 
         /// Set the list model of the sidebar.
-        fn set_list_model(&self, list_model: Option<SidebarListModel>) {
-            if self.list_model.upgrade() == list_model {
+        fn set_list_model(&self, list_model: Option<&SidebarListModel>) {
+            if self.list_model.upgrade().as_ref() == list_model {
                 return;
             }
             let obj = self.obj();
@@ -257,7 +254,7 @@ mod imp {
                 expr_watch.unwatch();
             }
 
-            if let Some(list_model) = &list_model {
+            if let Some(list_model) = list_model {
                 let expr_watch = expression::normalize_string(
                     self.room_search_entry.property_expression("text"),
                 )
@@ -265,13 +262,13 @@ mod imp {
                 self.expr_watch.replace(Some(expr_watch));
             }
 
-            self.list_model.set(list_model.as_ref());
+            self.list_model.set(list_model);
             obj.notify_list_model();
         }
 
         /// Update the security banner.
         fn update_security_banner(&self) {
-            let Some(session) = self.user.borrow().as_ref().map(|u| u.session()) else {
+            let Some(session) = self.user.borrow().as_ref().map(User::session) else {
                 return;
             };
 

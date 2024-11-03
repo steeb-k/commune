@@ -17,7 +17,8 @@ use crate::{session::model::Room, spawn, spawn_tokio};
 
 const ROOMS_METAINFO_KEY: &str = "rooms_metainfo";
 
-/// The rooms metainfo that allow to restore the RoomList in its previous state.
+/// The rooms metainfo that allow to restore the [`RoomList`] in its previous
+/// state.
 #[derive(Debug, Default, Clone)]
 pub struct RoomListMetainfo(Rc<RoomListMetainfoInner>);
 
@@ -128,7 +129,7 @@ pub struct RoomListMetainfoInner {
     /// This list is kept to avoid queuing the same room several times in a row
     /// while we wait for the async operation to finish.
     pending_rooms_metainfo_updates: RefCell<HashSet<OwnedRoomId>>,
-    /// The parent RoomList|.
+    /// The parent `RoomList`.
     room_list: glib::WeakRef<RoomList>,
 }
 

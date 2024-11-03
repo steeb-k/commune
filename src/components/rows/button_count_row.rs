@@ -49,12 +49,12 @@ mod imp {
         }
 
         /// Set the count to display.
-        fn set_count(&self, count: String) {
+        fn set_count(&self, count: &str) {
             if self.count() == count {
                 return;
             }
 
-            self.count_label.set_label(&count);
+            self.count_label.set_label(count);
             self.obj().notify_count();
         }
     }

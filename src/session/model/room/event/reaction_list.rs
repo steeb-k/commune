@@ -72,7 +72,7 @@ impl ReactionList {
     }
 
     /// Update the reaction list with the given reactions.
-    pub fn update(&self, new_reactions: ReactionsByKeyBySender) {
+    pub fn update(&self, new_reactions: &ReactionsByKeyBySender) {
         let reactions = &self.imp().reactions;
 
         let changed = {

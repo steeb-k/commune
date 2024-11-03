@@ -177,7 +177,7 @@ mod imp {
 
     impl Permissions {
         /// Initialize the room.
-        pub(super) fn init_own_member(&self, own_member: Member) {
+        pub(super) fn init_own_member(&self, own_member: &Member) {
             own_member.connect_membership_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -206,7 +206,7 @@ mod imp {
             let handle = spawn_tokio!(async move { matrix_room_clone.room_power_levels().await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(power_levels) => self.update_power_levels(power_levels),
+                Ok(power_levels) => self.update_power_levels(&power_levels),
                 Err(error) => {
                     error!("Could not load room power levels: {error}");
                 }
@@ -221,7 +221,7 @@ mod imp {
                         ctx.spawn(async move {
                             spawn!(async move {
                                 if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_power_levels(event.power_levels());
+                                    obj.imp().update_power_levels(&event.power_levels());
                                 }
                             });
                         });
@@ -250,13 +250,13 @@ mod imp {
         }
 
         /// Update the power levels with the given data.
-        fn update_power_levels(&self, power_levels: RoomPowerLevels) {
+        fn update_power_levels(&self, power_levels: &RoomPowerLevels) {
             self.power_levels.replace(power_levels.clone());
             self.permissions_changed();
 
             if let Some(room) = self.room.upgrade() {
                 if let Some(members) = room.members() {
-                    members.update_power_levels(&power_levels);
+                    members.update_power_levels(power_levels);
                 } else {
                     let own_member = room.own_member();
                     let own_user_id = own_member.user_id();
@@ -484,7 +484,7 @@ impl Permissions {
         let imp = self.imp();
 
         imp.room.set(Some(room));
-        imp.init_own_member(room.own_member());
+        imp.init_own_member(&room.own_member());
         imp.init_power_levels().await;
     }
 

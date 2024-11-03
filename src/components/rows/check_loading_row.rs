@@ -91,6 +91,7 @@ mod imp {
 
     impl CheckLoadingRow {
         /// Set the target value of the action of the button.
+        #[allow(clippy::needless_pass_by_value)] // glib::Properties macro does not work with ref.
         fn set_action_target(&self, value: Option<glib::Variant>) {
             self.set_action_target_value(value.as_ref());
         }

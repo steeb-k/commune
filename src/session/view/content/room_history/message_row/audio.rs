@@ -144,9 +144,9 @@ impl MessageAudio {
 
     /// Convenience method to set the state to `Error` with the given error
     /// message.
-    fn set_error(&self, error: String) {
+    fn set_error(&self, error: &str) {
         self.set_state(LoadingState::Error);
-        self.imp().state_error.set_tooltip_text(Some(&error));
+        self.imp().state_error.set_tooltip_text(Some(error));
     }
 
     /// Display the given `audio` message.
@@ -172,11 +172,11 @@ impl MessageAudio {
                 async move {
                     match message.into_tmp_file(&client).await {
                         Ok(file) => {
-                            obj.display_file(file);
+                            obj.display_file(&file);
                         }
                         Err(error) => {
                             warn!("Could not retrieve audio file: {error}");
-                            obj.set_error(gettext("Could not retrieve audio file"));
+                            obj.set_error(&gettext("Could not retrieve audio file"));
                         }
                     }
                 }
@@ -184,8 +184,8 @@ impl MessageAudio {
         );
     }
 
-    fn display_file(&self, file: gio::File) {
-        let media_file = gtk::MediaFile::for_file(&file);
+    fn display_file(&self, file: &gio::File) {
+        let media_file = gtk::MediaFile::for_file(file);
 
         media_file.connect_error_notify(clone!(
             #[weak(rename_to = obj)]
@@ -193,7 +193,7 @@ impl MessageAudio {
             move |media_file| {
                 if let Some(error) = media_file.error() {
                     warn!("Error reading audio file: {error}");
-                    obj.set_error(gettext("Error reading audio file"));
+                    obj.set_error(&gettext("Error reading audio file"));
                 }
             }
         ));

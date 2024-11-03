@@ -96,9 +96,10 @@ mod imp {
                 return;
             };
 
-            let (new_width, new_height) = match aspect <= image_aspect {
-                true => (height * image_aspect, height), // Mobile view
-                false => (width, width / image_aspect),  // Landscape
+            let (new_width, new_height) = if aspect <= image_aspect {
+                (height * image_aspect, height) // Mobile view
+            } else {
+                (width, width / image_aspect) // Landscape
             };
 
             let p = graphene::Point::new(
@@ -133,7 +134,7 @@ impl LinuxCameraPaintable {
 
         let mut src_builder =
             gst::ElementFactory::make("pipewiresrc").property("fd", fd.as_raw_fd());
-        if let Some(node_id) = streams.first().map(|s| s.node_id()) {
+        if let Some(node_id) = streams.first().map(camera::Stream::node_id) {
             src_builder = src_builder.property("path", node_id.to_string());
         }
         let pipewire_src = src_builder.build().unwrap();
@@ -188,7 +189,7 @@ impl LinuxCameraPaintable {
                 if let gst::MessageView::Error(err) = msg.view() {
                     error!(
                         "Error from {:?}: {} ({:?})",
-                        err.src().map(|s| s.path_string()),
+                        err.src().map(GstObjectExt::path_string),
                         err.error(),
                         err.debug()
                     );

@@ -130,7 +130,7 @@ impl FileRow {
             }
         } else {
             // Otherwise save the file.
-            self.save_file().await
+            self.save_file().await;
         }
     }
 
@@ -170,7 +170,7 @@ impl FileRow {
             let imp = self.imp();
 
             imp.file.replace(Some(file));
-            imp.update_button()
+            imp.update_button();
         }
     }
 }

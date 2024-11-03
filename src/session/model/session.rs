@@ -253,8 +253,7 @@ glib::wrapper! {
 impl Session {
     /// Create a new session.
     pub async fn new(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::with_login_data(homeserver, data)
-            .map_err(|_| ClientSetupError::NoSessionId)?;
+        let stored_session = StoredSession::with_login_data(homeserver, data)?;
         let settings = Application::default()
             .session_list()
             .settings()
@@ -323,7 +322,7 @@ impl Session {
             client
                 .send_queue()
                 .respawn_tasks_for_rooms_with_unsent_events()
-                .await
+                .await;
         });
 
         self.set_state(SessionState::InitialSync);

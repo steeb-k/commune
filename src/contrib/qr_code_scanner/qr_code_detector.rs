@@ -91,7 +91,9 @@ mod imp {
                         width: frame.width(),
                         width_stride: 1,
                         height: frame.height(),
-                        height_stride: frame.plane_stride()[0] as usize,
+                        height_stride: frame.plane_stride()[0]
+                            .try_into()
+                            .expect("stride is a positive integer"),
                     },
                     color_hint: Some(image::ColorType::L8),
                 };
@@ -156,9 +158,7 @@ where
         }
     }
 
-    Err(error
-        .map(|e| e.into())
-        .unwrap_or_else(|| DecodingError::Header.into()))
+    Err(error.map_or_else(|| DecodingError::Header.into(), Into::into))
 }
 
 /// All possible errors when decoding a QR Code.

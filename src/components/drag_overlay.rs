@@ -90,7 +90,7 @@ mod imp {
 
         /// Set the child of this `DragOverlay`.
         pub fn set_child(&self, child: Option<&gtk::Widget>) {
-            self.overlay.set_child(child)
+            self.overlay.set_child(child);
         }
 
         /// Set the [`gtk::DropTarget`] of this `DragOverlay`.

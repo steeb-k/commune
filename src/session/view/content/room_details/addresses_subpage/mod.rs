@@ -207,7 +207,7 @@ mod imp {
         }
 
         /// Set the room users will be invited to.
-        fn set_room(&self, room: Room) {
+        fn set_room(&self, room: &Room) {
             let aliases = room.aliases();
 
             let aliases_changed_handler = aliases.connect_changed(clone!(
@@ -220,7 +220,7 @@ mod imp {
             self.aliases_changed_handler
                 .replace(Some(aliases_changed_handler));
 
-            self.room.set(Some(&room));
+            self.room.set(Some(room));
 
             self.obj().notify_room();
             self.update_public_addresses();
@@ -295,10 +295,11 @@ mod imp {
             self.public_addresses_list.set_sensitive(true);
 
             // Reset the rows loading state.
-            for i in 0..self.public_addresses().n_items() {
+            let n_items = i32::try_from(self.public_addresses().n_items()).unwrap_or(i32::MAX);
+            for i in 0..n_items {
                 let Some(row) = self
                     .public_addresses_list
-                    .row_at_index(i as i32)
+                    .row_at_index(i)
                     .and_downcast::<RemovableRow>()
                 else {
                     break;
@@ -362,16 +363,16 @@ mod imp {
 
                 let address = String::from(item.string());
 
-                if !local_aliases.remove(&address) {
-                    self.local_addresses.remove(i);
-                } else {
+                if local_aliases.remove(&address) {
                     i += 1;
+                } else {
+                    self.local_addresses.remove(i);
                 }
             }
 
             // If there are new aliases in the list, append them.
             if !local_aliases.is_empty() {
-                let new_aliases = local_aliases.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+                let new_aliases = local_aliases.iter().map(String::as_str).collect::<Vec<_>>();
                 self.local_addresses
                     .splice(self.local_addresses.n_items(), 0, &new_aliases);
             }

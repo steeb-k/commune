@@ -124,7 +124,7 @@ impl PublicRoomList {
     }
 
     /// Search the given term on the given server.
-    pub fn search(&self, search_term: Option<String>, server: Server) {
+    pub fn search(&self, search_term: Option<String>, server: &Server) {
         let imp = self.imp();
         let network = Some(server.network());
         let server = server.server();
@@ -147,7 +147,7 @@ impl PublicRoomList {
         let session = self.session().unwrap();
         let room_list = session.room_list();
 
-        imp.next_batch.replace(response.next_batch.to_owned());
+        imp.next_batch.replace(response.next_batch);
         imp.total_room_count_estimate
             .replace(response.total_room_count_estimate.map(Into::into));
 
@@ -186,7 +186,7 @@ impl PublicRoomList {
         };
 
         if added > 0 {
-            self.items_changed(position as u32, removed as u32, added as u32);
+            self.items_changed(position as u32, removed, added as u32);
         }
         self.set_request_sent(false);
     }
@@ -194,14 +194,14 @@ impl PublicRoomList {
     /// Whether this is the response for the latest request that was sent.
     fn is_valid_response(
         &self,
-        search_term: Option<String>,
-        server: Option<String>,
-        network: Option<String>,
+        search_term: Option<&str>,
+        server: Option<&str>,
+        network: Option<&str>,
     ) -> bool {
         let imp = self.imp();
-        *imp.search_term.borrow() == search_term
-            && *imp.server.borrow() == server
-            && *imp.network.borrow() == network
+        imp.search_term.borrow().as_deref() == search_term
+            && imp.server.borrow().as_deref() == server
+            && imp.network.borrow().as_deref() == network
     }
 
     pub fn load_public_rooms(&self, clear: bool) {
@@ -264,12 +264,16 @@ impl PublicRoomList {
                 self,
                 async move {
                     // If the search term changed we ignore the response
-                    if obj.is_valid_response(current_search_term, current_server, current_network) {
+                    if obj.is_valid_response(
+                        current_search_term.as_deref(),
+                        current_server.as_deref(),
+                        current_network.as_deref(),
+                    ) {
                         match handle.await.unwrap() {
                             Ok(response) => obj.handle_public_rooms_response(response),
                             Err(error) => {
                                 obj.set_request_sent(false);
-                                error!("Error loading public rooms: {error}")
+                                error!("Error loading public rooms: {error}");
                             }
                         }
                     }

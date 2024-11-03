@@ -88,7 +88,7 @@ mod imp {
             };
 
             let progress = self.animation.get().unwrap().value();
-            if progress == 1.0 {
+            if (progress - 1.0).abs() < 0.0001 {
                 // The transition progress is at 100%, so just show the child
                 obj.snapshot_child(&child, snapshot);
                 return;
@@ -128,8 +128,8 @@ mod imp {
 
                     source_widget_texture.snapshot(
                         snapshot,
-                        obj.width() as f64,
-                        obj.height() as f64,
+                        obj.width().into(),
+                        obj.height().into(),
                     );
                     snapshot.pop();
 
@@ -138,8 +138,8 @@ mod imp {
                 } else if progress <= 0.0 {
                     source_widget_texture.snapshot(
                         snapshot,
-                        obj.width() as f64,
-                        obj.height() as f64,
+                        obj.width().into(),
+                        obj.height().into(),
                     );
                 }
             } else {
@@ -238,8 +238,8 @@ fn render_widget_to_texture(widget: &impl IsA<gtk::Widget>) -> Option<gdk::Textu
 
     widget_paintable.snapshot(
         &snapshot,
-        widget_paintable.intrinsic_width() as f64,
-        widget_paintable.intrinsic_height() as f64,
+        widget_paintable.intrinsic_width().into(),
+        widget_paintable.intrinsic_height().into(),
     );
 
     let node = snapshot.to_node()?;

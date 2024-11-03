@@ -198,6 +198,7 @@ mod imp {
 
     impl GeneralPage {
         /// Set the presented room.
+        #[allow(clippy::too_many_lines)]
         fn set_room(&self, room: &Room) {
             let obj = self.obj();
 
@@ -501,7 +502,7 @@ mod imp {
                 // the one provided by the homeserver. The homeserver is usually right, except
                 // when we just joined a room, where it will be 0 for a while.
                 let joined_members_count =
-                    server_joined_members_count.max(joined_members_count as u64);
+                    server_joined_members_count.max(joined_members_count.into());
                 self.members_row.set_count(joined_members_count.to_string());
 
                 let n = joined_members_count.try_into().unwrap_or(u32::MAX);

@@ -74,12 +74,12 @@ mod imp {
         }
 
         /// Set the child widget.
-        fn set_child(&self, child: Option<gtk::Widget>) {
-            if self.child() == child {
+        fn set_child(&self, child: Option<&gtk::Widget>) {
+            if self.child().as_ref() == child {
                 return;
             }
 
-            self.child_bin.set_child(child.as_ref());
+            self.child_bin.set_child(child);
             self.obj().notify_child();
         }
     }

@@ -1,6 +1,7 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use matrix_sdk::crypto::CancelInfo;
 use ruma::events::key::verification::cancel::CancelCode;
 
 use crate::{
@@ -132,7 +133,7 @@ impl CancelledPage {
         let cancel_info = verification.cancel_info();
         let imp = self.imp();
 
-        let message = match cancel_info.as_ref().map(|c| c.cancel_code()) {
+        let message = match cancel_info.as_ref().map(CancelInfo::cancel_code) {
             Some(CancelCode::User) => {
                 if verification.is_self_verification() {
                     gettext("The verification was cancelled from the other session.")
@@ -187,7 +188,7 @@ impl CancelledPage {
 
         if verification.restart().await.is_err() {
             toast!(self, gettext("Could not send a new verification request"));
-            self.reset()
+            self.reset();
         }
     }
 

@@ -117,7 +117,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     }
 
     /// Append the given inline node by converting it to Pango markup.
-    fn append_node(&mut self, node: NodeRef, should_linkify: bool) {
+    fn append_node(&mut self, node: &NodeRef, should_linkify: bool) {
         match node.data() {
             NodeData::Element(data) => {
                 let data = data.to_matrix();
@@ -143,14 +143,14 @@ impl<'a> InlineHtmlBuilder<'a> {
                         let mut has_opening_tag = false;
 
                         if let Some(uri) = &anchor.href {
-                            has_opening_tag = self.append_link_opening_tag_from_anchor_uri(uri)
+                            has_opening_tag = self.append_link_opening_tag_from_anchor_uri(uri);
                         }
 
                         // Always render the children.
                         for node in node.children() {
                             // Don't try to linkify text if we render the element, it does not make
                             // sense to nest links.
-                            self.append_node(node, !has_opening_tag && should_linkify);
+                            self.append_node(&node, !has_opening_tag && should_linkify);
                         }
 
                         if has_opening_tag {
@@ -222,7 +222,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// Append the given inline nodes, converted to Pango markup.
     fn append_nodes(&mut self, nodes: impl IntoIterator<Item = NodeRef>, should_linkify: bool) {
         for node in nodes {
-            self.append_node(node, should_linkify);
+            self.append_node(&node, should_linkify);
 
             if self.truncated {
                 // Stop as soon as the string is truncated.
@@ -297,7 +297,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     ///
     /// Returns `true` if the text was ellipsized.
     fn append_nodes_text(&mut self, nodes: impl IntoIterator<Item = NodeRef>) {
-        for node in nodes.into_iter() {
+        for node in nodes {
             match node.data() {
                 NodeData::Text(t) => {
                     let borrowed_t = t.borrow();

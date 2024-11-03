@@ -21,7 +21,7 @@ impl TemplateCallbacks {
 
     /// Returns `true` when the given `Option<glib::Object>` is `Some`.
     #[template_callback]
-    pub fn object_is_some(obj: Option<glib::Object>) -> bool {
+    pub fn object_is_some(obj: Option<&glib::Object>) -> bool {
         obj.is_some()
     }
 

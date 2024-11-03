@@ -310,7 +310,9 @@ mod imp {
         fn avatar_dimensions(&self) -> ImageDimensions {
             let scale_factor = self.obj().scale_factor();
             let avatar_size = self.temp_avatar.size();
-            let size = (avatar_size * scale_factor) as u32;
+            let size = (avatar_size * scale_factor)
+                .try_into()
+                .expect("size and scale factor are positive integers");
 
             ImageDimensions {
                 width: size,

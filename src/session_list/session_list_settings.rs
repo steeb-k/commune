@@ -39,7 +39,7 @@ impl SessionListSettings {
         glib::Object::new()
     }
 
-    /// Load these settings from the GSettings.
+    /// Load these settings from the application settings.
     pub fn load(&self) {
         let serialized = Application::default().settings().string("sessions");
 
@@ -66,7 +66,7 @@ impl SessionListSettings {
                     needs_update = true;
                 }
 
-                let session = SessionSettings::restore(&session_id, stored_session);
+                let session = SessionSettings::restore(&session_id, &stored_session);
                 (session_id, session)
             })
             .collect();
@@ -78,7 +78,7 @@ impl SessionListSettings {
         }
     }
 
-    /// Save the settings in the GSettings.
+    /// Save these settings in the application settings.
     pub fn save(&self) {
         let stored_sessions = self
             .imp()

@@ -49,7 +49,7 @@ mod imp {
                 let buffer = obj.imp().source_view.buffer();
                 let (start_iter, end_iter) = buffer.bounds();
                 clipboard.set_text(&buffer.text(&start_iter, &end_iter, true));
-                toast!(obj, gettext("Source copied to clipboard"))
+                toast!(obj, gettext("Source copied to clipboard"));
             });
         }
 

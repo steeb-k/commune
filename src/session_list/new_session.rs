@@ -46,9 +46,9 @@ glib::wrapper! {
 
 impl NewSession {
     /// Constructs a new `NewSession` with the given info.
-    pub fn new(stored_session: StoredSession) -> Self {
+    pub fn new(stored_session: &StoredSession) -> Self {
         glib::Object::builder()
-            .property("info", &stored_session)
+            .property("info", stored_session)
             .build()
     }
 }

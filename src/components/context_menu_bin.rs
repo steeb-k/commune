@@ -22,7 +22,7 @@ mod imp {
 
     pub(super) fn context_menu_bin_menu_opened(this: &super::ContextMenuBin) {
         let klass = this.class();
-        (klass.as_ref().menu_opened)(this)
+        (klass.as_ref().menu_opened)(this);
     }
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
@@ -60,7 +60,7 @@ mod imp {
             klass.set_layout_manager_type::<gtk::BinLayout>();
 
             klass.install_action("context-menu.activate", None, |obj, _, _| {
-                obj.open_menu_at(0, 0)
+                obj.open_menu_at(0, 0);
             });
             klass.add_binding_action(
                 gdk::Key::F10,
@@ -289,7 +289,7 @@ impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     }
 
     fn menu_opened(&self) {
-        imp::context_menu_bin_menu_opened(self.upcast_ref())
+        imp::context_menu_bin_menu_opened(self.upcast_ref());
     }
 }
 
@@ -326,5 +326,5 @@ where
     T::Type: IsA<ContextMenuBin>,
 {
     let this = this.downcast_ref::<T::Type>().unwrap();
-    this.imp().menu_opened()
+    this.imp().menu_opened();
 }

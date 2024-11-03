@@ -80,7 +80,7 @@ pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Er
 
     let raw_size = info.size();
     let size = if raw_size >= 0 {
-        Some(raw_size as u32)
+        Some(raw_size.try_into().unwrap_or(u32::MAX))
     } else {
         None
     };
@@ -97,7 +97,7 @@ pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Er
     ))
 }
 
-/// Load information for the given file with GStreamer.
+/// Load information for the given media file.
 async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::DiscovererInfo> {
     let timeout = gst::ClockTime::from_seconds(15);
     let discoverer = gst_pbutils::Discoverer::new(timeout).ok()?;

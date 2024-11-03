@@ -21,7 +21,7 @@ use ruma::{
         room::message::MessageType, AnySyncMessageLikeEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncMessageLikeEvent, SyncStateEvent,
     },
-    OwnedEventId, UserId,
+    OwnedEventId, RoomVersionId, UserId,
 };
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -189,65 +189,7 @@ mod imp {
             let handle = spawn_tokio!(async move {
                 matrix_room
                     .timeline_builder()
-                    .event_filter(|any, room_version| {
-                        // Make sure we do not show events that cannot be shown.
-                        if !default_event_filter(any, room_version) {
-                            return false;
-                        }
-
-                        // Only show events we want.
-                        match any {
-                            AnySyncTimelineEvent::MessageLike(msg) => match msg {
-                                AnySyncMessageLikeEvent::RoomMessage(
-                                    SyncMessageLikeEvent::Original(ev),
-                                ) => {
-                                    matches!(
-                                        ev.content.msgtype,
-                                        MessageType::Audio(_)
-                                            | MessageType::Emote(_)
-                                            | MessageType::File(_)
-                                            | MessageType::Image(_)
-                                            | MessageType::Location(_)
-                                            | MessageType::Notice(_)
-                                            | MessageType::ServerNotice(_)
-                                            | MessageType::Text(_)
-                                            | MessageType::Video(_)
-                                    )
-                                }
-                                AnySyncMessageLikeEvent::Sticker(
-                                    SyncMessageLikeEvent::Original(_),
-                                )
-                                | AnySyncMessageLikeEvent::RoomEncrypted(
-                                    SyncMessageLikeEvent::Original(_),
-                                ) => true,
-                                _ => false,
-                            },
-                            AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(
-                                SyncStateEvent::Original(member_event),
-                            )) => {
-                                // Do not show member events if the content that we support has not
-                                // changed. This avoids duplicate "user has joined" events in the
-                                // timeline which are confusing and wrong.
-                                !member_event.unsigned.prev_content.as_ref().is_some_and(
-                                    |prev_content| {
-                                        prev_content.membership == member_event.content.membership
-                                            && prev_content.displayname
-                                                == member_event.content.displayname
-                                            && prev_content.avatar_url
-                                                == member_event.content.avatar_url
-                                    },
-                                )
-                            }
-                            AnySyncTimelineEvent::State(state) => matches!(
-                                state,
-                                AnySyncStateEvent::RoomMember(_)
-                                    | AnySyncStateEvent::RoomCreate(_)
-                                    | AnySyncStateEvent::RoomEncryption(_)
-                                    | AnySyncStateEvent::RoomThirdPartyInvite(_)
-                                    | AnySyncStateEvent::RoomTombstone(_)
-                            ),
-                        }
-                    })
+                    .event_filter(show_in_timeline)
                     .add_failed_to_parse(false)
                     .build()
                     .await
@@ -323,6 +265,7 @@ mod imp {
         }
 
         /// Update this `Timeline` with the given diff.
+        #[allow(clippy::too_many_lines)]
         fn update(&self, diff: VectorDiff<Arc<SdkTimelineItem>>) {
             let Some(room) = self.room.upgrade() else {
                 return;
@@ -405,15 +348,15 @@ mod imp {
                     let pos = index as u32;
                     let prev_item = sdk_items.item(pos).and_downcast::<TimelineItem>().unwrap();
 
-                    let item = if !prev_item.try_update_with(&value) {
+                    let item = if prev_item.try_update_with(&value) {
+                        prev_item
+                    } else {
                         self.remove_item(&prev_item);
                         let item = self.create_item(&value);
 
                         sdk_items.splice(pos, 1, &[item.clone()]);
 
                         item
-                    } else {
-                        prev_item
                     };
 
                     // The item's header visibility might have changed.
@@ -482,14 +425,14 @@ mod imp {
                 sdk_items
                     .item(pos - 1)
                     .and_downcast::<TimelineItem>()
-                    .filter(|item| item.can_hide_header())
+                    .filter(TimelineItem::can_hide_header)
                     .and_then(|item| item.event_sender_id())
             } else {
                 None
             };
 
             // Update the headers of changed events plus the first event after them.
-            for current_pos in pos..pos + nb + 1 {
+            for current_pos in pos..=pos + nb {
                 let Some(current) = sdk_items.item(current_pos).and_downcast::<TimelineItem>()
                 else {
                     break;
@@ -590,7 +533,7 @@ mod imp {
             match state {
                 TimelineState::Loading => start_items.splice(0, removed, &[VirtualItem::spinner()]),
                 TimelineState::Complete => {
-                    start_items.splice(0, removed, &[VirtualItem::timeline_start()])
+                    start_items.splice(0, removed, &[VirtualItem::timeline_start()]);
                 }
                 _ => start_items.remove_all(),
             }
@@ -639,7 +582,7 @@ mod imp {
                 .await;
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let fut = stream.for_each(move |_| {
+            let fut = stream.for_each(move |()| {
                 let obj_weak = obj_weak.clone();
                 let room_id = room_id.clone();
                 async move {
@@ -844,5 +787,60 @@ impl Timeline {
                 f(&obj);
             }),
         )
+    }
+}
+
+/// Whether the given event should be shown in the timeline.
+fn show_in_timeline(any: &AnySyncTimelineEvent, room_version: &RoomVersionId) -> bool {
+    // Make sure we do not show events that cannot be shown.
+    if !default_event_filter(any, room_version) {
+        return false;
+    }
+
+    // Only show events we want.
+    match any {
+        AnySyncTimelineEvent::MessageLike(msg) => match msg {
+            AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(ev)) => {
+                matches!(
+                    ev.content.msgtype,
+                    MessageType::Audio(_)
+                        | MessageType::Emote(_)
+                        | MessageType::File(_)
+                        | MessageType::Image(_)
+                        | MessageType::Location(_)
+                        | MessageType::Notice(_)
+                        | MessageType::ServerNotice(_)
+                        | MessageType::Text(_)
+                        | MessageType::Video(_)
+                )
+            }
+            AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
+            | AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Original(_)) => true,
+            _ => false,
+        },
+        AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(SyncStateEvent::Original(
+            member_event,
+        ))) => {
+            // Do not show member events if the content that we support has not
+            // changed. This avoids duplicate "user has joined" events in the
+            // timeline which are confusing and wrong.
+            !member_event
+                .unsigned
+                .prev_content
+                .as_ref()
+                .is_some_and(|prev_content| {
+                    prev_content.membership == member_event.content.membership
+                        && prev_content.displayname == member_event.content.displayname
+                        && prev_content.avatar_url == member_event.content.avatar_url
+                })
+        }
+        AnySyncTimelineEvent::State(state) => matches!(
+            state,
+            AnySyncStateEvent::RoomMember(_)
+                | AnySyncStateEvent::RoomCreate(_)
+                | AnySyncStateEvent::RoomEncryption(_)
+                | AnySyncStateEvent::RoomThirdPartyInvite(_)
+                | AnySyncStateEvent::RoomTombstone(_)
+        ),
     }
 }

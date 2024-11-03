@@ -60,7 +60,7 @@ glib::wrapper! {
 impl Camera {
     /// Create a new `Camera`.
     ///
-    /// Use `Camera::default()` to get a shared GObject.
+    /// Use `Camera::default()` to get a shared object.
     fn new() -> Self {
         #[cfg(target_os = "linux")]
         let obj = linux::LinuxCamera::new().upcast();
@@ -107,6 +107,7 @@ impl<O: IsA<Camera>> CameraExt for O {
 /// Overriding a method from this Trait overrides also its behavior in
 /// `CameraExt`.
 #[allow(async_fn_in_trait)]
+#[allow(clippy::unused_async)]
 pub trait CameraImpl: ObjectImpl {
     /// Whether any cameras are available.
     async fn has_cameras(&self) -> bool {

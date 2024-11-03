@@ -178,9 +178,7 @@ impl InviteList {
 
         let imp = self.imp();
 
-        let search_term = if let Some(search_term) = self.search_term() {
-            search_term
-        } else {
+        let Some(search_term) = self.search_term() else {
             // Do nothing for no search term, but reset state when currently loading.
             if self.state() == InviteListState::Loading {
                 imp.set_state(InviteListState::Initial);
@@ -250,7 +248,9 @@ impl InviteList {
             .filter(|user_id| !results.iter().any(|item| item.user_id == *user_id));
         let search_term_user = search_term_user_id.clone().map(SearchUser::new);
 
-        let new_len = results.len() + search_term_user.is_some() as usize;
+        let new_len = results
+            .len()
+            .saturating_add(search_term_user.is_some().into());
         if new_len == 0 {
             imp.set_state(InviteListState::NoMatching);
             self.clear_list();
@@ -355,9 +355,9 @@ impl InviteList {
     /// Update the list of invitees for the current state of the item.
     fn update_invitees_for_item(&self, item: &InviteItem) {
         if item.is_invitee() && item.can_invite() {
-            self.add_invitee(item.clone());
+            self.add_invitee(item);
         } else {
-            self.remove_invitee(item.user().user_id())
+            self.remove_invitee(item.user().user_id());
         }
     }
 
@@ -372,7 +372,7 @@ impl InviteList {
     }
 
     /// Add the given item as an invitee.
-    pub fn add_invitee(&self, item: InviteItem) {
+    fn add_invitee(&self, item: &InviteItem) {
         let had_invitees = self.has_invitees();
 
         item.set_is_invitee(true);

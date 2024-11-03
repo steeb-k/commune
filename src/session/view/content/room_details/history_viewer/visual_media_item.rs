@@ -12,7 +12,7 @@ use crate::{
 };
 
 /// The default size requested by a thumbnail.
-const THUMBNAIL_SIZE: i32 = 300;
+const THUMBNAIL_SIZE: u32 = 300;
 
 mod imp {
     use std::cell::RefCell;
@@ -103,7 +103,7 @@ mod imp {
                 .event
                 .borrow()
                 .as_ref()
-                .and_then(|e| e.visual_media_message())
+                .and_then(HistoryViewerEvent::visual_media_message)
             else {
                 return;
             };
@@ -151,7 +151,7 @@ mod imp {
                 .event
                 .borrow()
                 .as_ref()
-                .and_then(|e| e.room())
+                .and_then(HistoryViewerEvent::room)
                 .and_then(|r| r.session())
             else {
                 return;
@@ -159,8 +159,8 @@ mod imp {
 
             let client = session.client();
 
-            let scale_factor = self.obj().scale_factor();
-            let size = (THUMBNAIL_SIZE * scale_factor) as u32;
+            let scale_factor = u32::try_from(self.obj().scale_factor()).unwrap_or(1);
+            let size = THUMBNAIL_SIZE * scale_factor;
             let dimensions = ImageDimensions {
                 width: size,
                 height: size,

@@ -112,8 +112,8 @@ mod imp {
 
     impl JoinRoomDialog {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            self.session.set(session.as_ref());
+        fn set_session(&self, session: Option<&Session>) {
+            self.session.set(session);
 
             let obj = self.obj();
             obj.notify_session();

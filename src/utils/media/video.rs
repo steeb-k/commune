@@ -118,7 +118,7 @@ async fn generate_video_thumbnail(file: &gio::File) -> Option<Thumbnail> {
     thumbnail.ok().transpose().ok().flatten()
 }
 
-/// Create a GStreamer pipeline to get a thumbnail of the first frame.
+/// Create a pipeline to get a thumbnail of the first frame.
 fn create_thumbnailer_pipeline(
     uri: &str,
     sender: Arc<Mutex<Option<ThumbnailResultSender>>>,
@@ -199,7 +199,7 @@ fn create_thumbnailer_pipeline(
                         width: frame.width(),
                         width_stride: 4, // 4 bytes from pixel to pixel
                         height: frame.height(),
-                        height_stride: frame.plane_stride()[0] as usize, // stride from line to line
+                        height_stride: frame.plane_stride()[0].try_into().unwrap_or_default(), // stride from line to line
                     },
                     color_hint: Some(image::ColorType::Rgb8),
                 };
@@ -213,8 +213,8 @@ fn create_thumbnailer_pipeline(
 
                 // Reduce the dimensions if the thumbnail is bigger than the wanted size.
                 let dimensions = ImageDimensions {
-                    width: frame.width() * info.par().numer() as u32,
-                    height: frame.height() * info.par().denom() as u32,
+                    width: frame.width() * u32::try_from(info.par().numer()).unwrap_or_default(),
+                    height: frame.height() * u32::try_from(info.par().denom()).unwrap_or_default(),
                 };
 
                 let thumbnail = if let Some(target_dimensions) = dimensions.resize_for_thumbnail() {

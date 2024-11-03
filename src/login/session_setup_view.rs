@@ -136,7 +136,7 @@ mod imp {
                             CryptoIdentitySetupNextStep::None => imp.obj().emit_completed(),
                             CryptoIdentitySetupNextStep::EnableRecovery => imp.check_recovery(true),
                             CryptoIdentitySetupNextStep::CompleteRecovery => {
-                                imp.check_recovery(false)
+                                imp.check_recovery(false);
                             }
                         }
                     }

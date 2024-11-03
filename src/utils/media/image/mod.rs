@@ -55,8 +55,8 @@ const WEBP_DEFAULT_QUALITY: f32 = 60.0;
 const THUMBNAIL_MAX_FILESIZE_THRESHOLD: u32 = 1024 * 1024;
 /// The dimension threshold in pixels before we start to generate a thumbnail.
 ///
-/// If the original image is larger than thumbnail_dimensions + threshold, we
-/// assume it's worth it to generate a thumbnail.
+/// If the original image is larger than the thumbnail dimensions + threshold,
+/// we assume it is worth it to generate a thumbnail.
 const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 
 /// Get an image loader for the given file.
@@ -162,8 +162,7 @@ impl ImageInfoLoader {
         self.into_first_frame()
             .await
             .and_then(|f| f.dimensions())
-            .map(Into::into)
-            .unwrap_or_else(default_base_image_info)
+            .map_or_else(default_base_image_info, Into::into)
     }
 
     /// Load the information for this image and try to generate a thumbnail
@@ -177,9 +176,7 @@ impl ImageInfoLoader {
         };
 
         let dimensions = frame.dimensions();
-        let info = dimensions
-            .map(Into::into)
-            .unwrap_or_else(default_base_image_info);
+        let info = dimensions.map_or_else(default_base_image_info, Into::into);
 
         if !filesize_is_too_big(filesize)
             && !dimensions
@@ -360,12 +357,12 @@ impl ImageDimensions {
     ///
     /// Returns `true` if either `width` or `height` is bigger than or equal to
     /// the given dimensions.
-    fn is_bigger_than(&self, other: ImageDimensions) -> bool {
+    fn is_bigger_than(self, other: ImageDimensions) -> bool {
         self.width >= other.width || self.height >= other.height
     }
 
     /// Whether these dimensions should be resized to generate a thumbnail.
-    fn should_resize_for_thumbnail(&self, thumbnail_dimensions: ImageDimensions) -> bool {
+    fn should_resize_for_thumbnail(self, thumbnail_dimensions: ImageDimensions) -> bool {
         self.is_bigger_than(thumbnail_dimensions.increase_by(THUMBNAIL_DIMENSIONS_THRESHOLD))
     }
 
@@ -380,8 +377,8 @@ impl ImageDimensions {
     /// while preserving the aspect ratio of these dimensions and respecting
     /// the given strategy.
     fn resize(self, requested_dimensions: ImageDimensions, strategy: ResizeStrategy) -> Self {
-        let w_ratio = self.width as f64 / requested_dimensions.width as f64;
-        let h_ratio = self.height as f64 / requested_dimensions.height as f64;
+        let w_ratio = f64::from(self.width) / f64::from(requested_dimensions.width);
+        let h_ratio = f64::from(self.height) / f64::from(requested_dimensions.height);
 
         let resize_from_width = match strategy {
             // The largest ratio wins so the frame fits into the requested dimensions.
@@ -390,11 +387,12 @@ impl ImageDimensions {
             ResizeStrategy::Cover => w_ratio < h_ratio,
         };
 
+        #[allow(clippy::cast_sign_loss)] // We need to convert the f64 to a u32.
         let (width, height) = if resize_from_width {
-            let new_height = self.height as f64 / w_ratio;
+            let new_height = f64::from(self.height) / w_ratio;
             (requested_dimensions.width, new_height as u32)
         } else {
-            let new_width = self.width as f64 / h_ratio;
+            let new_width = f64::from(self.width) / h_ratio;
             (new_width as u32, requested_dimensions.height)
         };
 

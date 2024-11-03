@@ -162,4 +162,16 @@ impl MemberPowerLevel {
 
         Some((self.user().user_id().clone(), Int::new_saturating(pl)))
     }
+
+    /// The string to use to search for this member.
+    pub(crate) fn search_string(&self) -> String {
+        let user = self.user();
+        format!(
+            "{} {} {} {}",
+            user.display_name(),
+            user.user_id(),
+            self.role(),
+            self.power_level(),
+        )
+    }
 }

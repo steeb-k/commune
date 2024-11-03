@@ -232,7 +232,7 @@ mod imp {
                     }
                 ));
 
-                self.membership_room.set(room, vec![display_name_handler])
+                self.membership_room.set(room, vec![display_name_handler]);
             }
 
             self.obj().notify_membership_room();

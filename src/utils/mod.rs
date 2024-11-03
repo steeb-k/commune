@@ -55,6 +55,7 @@ pub fn data_dir_path(data_type: DataType) -> PathBuf {
 }
 
 /// The type of data.
+#[derive(Debug, Clone, Copy)]
 pub enum DataType {
     /// Data that should not be deleted.
     Persistent,
@@ -79,7 +80,7 @@ pub async fn timeout_future<T>(
 
     match future::select(fut, timeout).await {
         Either::Left((x, _)) => Ok(x),
-        _ => Err(TimeoutFuture::Timeout),
+        Either::Right(_) => Err(TimeoutFuture::Timeout),
     }
 }
 
@@ -158,7 +159,7 @@ impl<T: ObjectType> BoundObject<T> {
     pub fn disconnect_signals(&self) {
         if let Some(inner) = self.inner.take() {
             for signal_handler_id in inner.signal_handler_ids {
-                inner.obj.disconnect(signal_handler_id)
+                inner.obj.disconnect(signal_handler_id);
             }
         }
     }
@@ -227,7 +228,7 @@ impl<T: ObjectType> BoundObjectWeakRef<T> {
 
         if let Some(obj) = self.weak_obj.upgrade() {
             for signal_handler_id in signal_handler_ids {
-                obj.disconnect(signal_handler_id)
+                obj.disconnect(signal_handler_id);
             }
         }
 
@@ -308,7 +309,7 @@ impl<T: ObjectType> Drop for BoundConstructOnlyObject<T> {
 
         if let Some(obj) = self.obj.get() {
             for signal_handler_id in signal_handler_ids {
-                obj.disconnect(signal_handler_id)
+                obj.disconnect(signal_handler_id);
             }
         }
     }
@@ -406,7 +407,7 @@ impl<T> AsyncAction<T> {
     pub fn as_value(&self) -> Option<&T> {
         match self {
             Self::Set(value) => Some(value),
-            _ => None,
+            Self::Remove => None,
         }
     }
 }
@@ -449,7 +450,7 @@ impl<T> Drop for TokioDrop<T> {
         let _guard = RUNTIME.enter();
 
         if let Some(inner) = self.0.take() {
-            drop(inner)
+            drop(inner);
         }
     }
 }
@@ -470,9 +471,10 @@ impl<T> glib::property::PropertySet for TokioDrop<T> {
     type SetValue = T;
 
     fn set(&self, v: Self::SetValue) {
-        if self.set(v).is_err() {
-            panic!("TokioDrop value was already set");
-        }
+        assert!(
+            self.set(v).is_ok(),
+            "TokioDrop value was already initialized"
+        );
     }
 }
 

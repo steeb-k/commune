@@ -4,12 +4,6 @@ use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*};
 use super::{crop_circle::CropCircle, Avatar, AvatarData};
 use crate::utils::BoundObject;
 
-/// Compute the overlap according to the child's size.
-fn overlap(for_size: i32) -> i32 {
-    // Make the overlap a little less than half the size of the avatar.
-    (for_size as f64 / 2.5) as i32
-}
-
 pub type ExtractAvatarDataFn = dyn Fn(&glib::Object) -> AvatarData + 'static;
 
 mod imp {
@@ -24,7 +18,7 @@ mod imp {
         pub children: RefCell<Vec<CropCircle>>,
         /// The size of the avatars.
         #[property(get, set = Self::set_avatar_size, explicit_notify)]
-        pub avatar_size: Cell<i32>,
+        pub avatar_size: Cell<u32>,
         /// The spacing between the avatars.
         #[property(get, set = Self::set_spacing, explicit_notify)]
         pub spacing: Cell<u32>,
@@ -69,33 +63,37 @@ mod imp {
             let avatar_size = self.avatar_size.get();
 
             if orientation == gtk::Orientation::Vertical {
-                return (avatar_size, avatar_size, -1, -1);
+                let size = avatar_size.try_into().unwrap_or(i32::MAX);
+                return (size, size, -1, -1);
             }
 
-            let n_children = self.children.borrow().len() as i32;
-            let overlap = overlap(avatar_size);
-            let spacing = self.spacing.get() as i32;
+            let n_children = u32::try_from(self.children.borrow().len())
+                .expect("count of children fits into u32");
+            let overlap = self.overlap();
+            let spacing = self.spacing.get();
 
             // The last avatar has no overlap.
-            let mut size = (n_children - 1) * (avatar_size - overlap + spacing);
+            let mut size =
+                n_children.saturating_sub(1) * avatar_size.saturating_sub(overlap + spacing);
             size += avatar_size;
 
+            let size = size.try_into().unwrap_or(i32::MAX);
             (size, size, -1, -1)
         }
 
         fn size_allocate(&self, _width: i32, _height: i32, _baseline: i32) {
-            let mut next_pos = 0;
-            let avatar_size = self.avatar_size.get();
-            let overlap = overlap(avatar_size);
-            let spacing = self.spacing.get() as i32;
+            let avatar_size = i32::try_from(self.avatar_size.get()).unwrap_or(i32::MAX);
+            let overlap = i32::try_from(self.overlap()).expect("overlap fits into i32");
+            let spacing = i32::try_from(self.spacing.get()).expect("spacing fits into i32");
 
+            let distance_between_centers = (avatar_size - overlap).saturating_add(spacing);
+
+            let mut x = 0;
             for child in self.children.borrow().iter() {
-                let x = next_pos;
-
                 let allocation = gdk::Rectangle::new(x, 0, avatar_size, avatar_size);
                 child.size_allocate(&allocation, -1);
 
-                next_pos += avatar_size - overlap + spacing;
+                x = x.saturating_add(distance_between_centers);
             }
         }
     }
@@ -109,7 +107,7 @@ mod imp {
 
     impl OverlappingAvatars {
         /// Set the size of the avatars.
-        fn set_avatar_size(&self, size: i32) {
+        fn set_avatar_size(&self, size: u32) {
             if self.avatar_size.get() == size {
                 return;
             }
@@ -118,9 +116,10 @@ mod imp {
             self.avatar_size.set(size);
 
             // Update the sizes of the avatars.
-            let overlap = overlap(size);
+            let size = i32::try_from(size).unwrap_or(i32::MAX);
+            let overlap = self.overlap();
             for child in self.children.borrow().iter() {
-                child.set_cropped_width(overlap as u32);
+                child.set_cropped_width(overlap);
 
                 if let Some(avatar) = child.child().and_downcast::<Avatar>() {
                     avatar.set_size(size);
@@ -129,6 +128,14 @@ mod imp {
             obj.queue_resize();
 
             obj.notify_avatar_size();
+        }
+
+        /// Compute the avatars overlap according to their size.
+        #[allow(clippy::cast_sign_loss)] // The result can only be positive.
+        pub(super) fn overlap(&self) -> u32 {
+            let avatar_size = self.avatar_size.get();
+            // Make the overlap a little less than half the size of the avatar.
+            (f64::from(avatar_size) / 2.5) as u32
         }
 
         /// Set the spacing between the avatars.
@@ -218,7 +225,7 @@ impl OverlappingAvatars {
             #[weak(rename_to = obj)]
             self,
             move |model, position, removed, added| {
-                obj.handle_items_changed(model, position, removed, added)
+                obj.handle_items_changed(model, position, removed, added);
             }
         ));
 
@@ -228,7 +235,7 @@ impl OverlappingAvatars {
         imp.extract_avatar_data_fn
             .replace(Some(Box::new(extract_avatar_data_fn)));
 
-        self.handle_items_changed(&model, 0, 0, model.n_items())
+        self.handle_items_changed(&model, 0, 0, model.n_items());
     }
 
     fn handle_items_changed(
@@ -249,8 +256,8 @@ impl OverlappingAvatars {
         let extract_avatar_data_fn_borrow = imp.extract_avatar_data_fn.borrow();
         let extract_avatar_data_fn = extract_avatar_data_fn_borrow.as_ref().unwrap();
 
-        let avatar_size = self.avatar_size();
-        let cropped_width = overlap(avatar_size) as u32;
+        let avatar_size = i32::try_from(self.avatar_size()).unwrap_or(i32::MAX);
+        let cropped_width = imp.overlap();
 
         while removed > 0 {
             if position as usize >= children.len() {

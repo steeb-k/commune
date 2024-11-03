@@ -95,7 +95,7 @@ mod imp {
                 "win.open-account-settings",
                 Some(&String::static_variant_type()),
                 |obj, _, variant| {
-                    if let Some(session_id) = variant.and_then(|v| v.get::<String>()) {
+                    if let Some(session_id) = variant.and_then(glib::Variant::get::<String>) {
                         obj.open_account_settings(&session_id);
                     }
                 },

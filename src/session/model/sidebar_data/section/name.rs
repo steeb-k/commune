@@ -44,7 +44,7 @@ impl SidebarSectionName {
     }
 
     /// Convert this `SidebarSectionName` to a `RoomCategory`, if possible.
-    pub fn as_room_category(&self) -> Option<RoomCategory> {
+    pub fn into_room_category(self) -> Option<RoomCategory> {
         let category = match self {
             Self::VerificationRequest => return None,
             Self::Invited => RoomCategory::Invited,

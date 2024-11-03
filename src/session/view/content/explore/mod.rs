@@ -113,13 +113,13 @@ mod imp {
 
     impl Explore {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if session == self.session.upgrade() {
+        fn set_session(&self, session: Option<&Session>) {
+            if session == self.session.upgrade().as_ref() {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(session) = &session {
+            if let Some(session) = session {
                 let public_room_list = PublicRoomList::new(session);
                 self.listview
                     .set_model(Some(&gtk::NoSelection::new(Some(public_room_list.clone()))));
@@ -144,7 +144,7 @@ mod imp {
                 obj.update_visible_child();
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             obj.notify_session();
         }
     }
@@ -199,9 +199,12 @@ impl Explore {
     fn trigger_search(&self) {
         let imp = self.imp();
         if let Some(public_room_list) = &*imp.public_room_list.borrow() {
-            let text = imp.search_entry.text().as_str().to_string();
-            let server = imp.servers_popover.selected_server().unwrap();
-            public_room_list.search(Some(text), server);
+            let text = imp.search_entry.text().into();
+            let server = imp
+                .servers_popover
+                .selected_server()
+                .expect("a server is selected");
+            public_room_list.search(Some(text), &server);
         };
     }
 }

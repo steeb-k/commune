@@ -28,7 +28,7 @@ mod imp {
     impl ObjectImpl for ExpressionListModel {
         fn dispose(&self) {
             for watch in self.watches.take().iter().flatten() {
-                watch.unwatch()
+                watch.unwatch();
             }
         }
     }
@@ -37,8 +37,7 @@ mod imp {
         fn item_type(&self) -> glib::Type {
             self.model
                 .obj()
-                .map(|m| m.item_type())
-                .unwrap_or_else(glib::Object::static_type)
+                .map_or_else(glib::Object::static_type, |m| m.item_type())
         }
 
         fn n_items(&self) -> u32 {

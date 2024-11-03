@@ -41,8 +41,7 @@ mod imp {
                 "members.show-membership-list",
                 Some(&Membership::static_variant_type()),
                 |obj, _, param| {
-                    let Some(membership) = param.and_then(|variant| variant.get::<Membership>())
-                    else {
+                    let Some(membership) = param.and_then(glib::Variant::get::<Membership>) else {
                         return;
                     };
 

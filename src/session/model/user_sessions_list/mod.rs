@@ -3,6 +3,7 @@ use std::cmp;
 use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::{IndexMap, IndexSet};
+use matrix_sdk::encryption::identities::UserDevices;
 use ruma::OwnedUserId;
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -86,7 +87,7 @@ mod imp {
                     session,
                     UserSessionData::DeviceId(session.device_id().clone()),
                 );
-                self.set_current_session(Some(current_session))
+                self.set_current_session(Some(current_session));
             }
 
             spawn!(clone!(
@@ -223,7 +224,7 @@ mod imp {
                 .chain(
                     crypto_sessions
                         .iter()
-                        .flat_map(|s| s.keys())
+                        .flat_map(UserDevices::keys)
                         .map(ToOwned::to_owned),
                 )
                 .collect::<IndexSet<_>>();
@@ -243,7 +244,7 @@ mod imp {
 
                     Some(UserSession::new(&session, data))
                 })
-                .partition::<Vec<_>, _>(|s| s.is_current());
+                .partition::<Vec<_>, _>(UserSession::is_current);
 
             if let Some(current) = current.into_iter().next() {
                 self.set_current_session(Some(current));

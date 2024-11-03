@@ -49,10 +49,10 @@ mod imp {
 
     impl ServerList {
         /// Set the current session.
-        fn set_session(&self, session: Session) {
+        fn set_session(&self, session: &Session) {
             let obj = self.obj();
 
-            self.session.set(Some(&session));
+            self.session.set(Some(session));
 
             let user_id = session.user_id();
             self.list.replace(vec![Server::with_default_server(
@@ -124,7 +124,7 @@ impl ServerList {
                     })
                 });
 
-        self.imp().list.borrow_mut().extend(protocols_servers)
+        self.imp().list.borrow_mut().extend(protocols_servers);
     }
 
     /// Whether this list contains the given Matrix server.

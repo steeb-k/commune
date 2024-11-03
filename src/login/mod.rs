@@ -286,7 +286,7 @@ impl Login {
 
     /// Set the Matrix client.
     fn set_client(&self, client: Option<Client>) {
-        let homeserver = client.as_ref().map(|client| client.homeserver());
+        let homeserver = client.as_ref().map(Client::homeserver);
 
         self.set_homeserver_url(homeserver);
         self.imp().client.replace(client);

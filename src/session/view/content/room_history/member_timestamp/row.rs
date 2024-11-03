@@ -71,13 +71,13 @@ mod imp {
 
     impl MemberTimestampRow {
         /// Set the `MemberTimestamp` presented by this row.
-        fn set_data(&self, data: Option<MemberTimestamp>) {
-            if self.data.upgrade() == data {
+        fn set_data(&self, data: Option<&MemberTimestamp>) {
+            if self.data.upgrade().as_ref() == data {
                 return;
             }
             let obj = self.obj();
 
-            self.data.set(data.as_ref());
+            self.data.set(data);
             obj.notify_data();
 
             obj.update_timestamp();
@@ -106,7 +106,8 @@ impl MemberTimestampRow {
             return;
         };
 
-        let datetime = glib::DateTime::from_unix_utc(timestamp as i64)
+        let timestamp = timestamp.try_into().unwrap_or(i64::MAX);
+        let datetime = glib::DateTime::from_unix_utc(timestamp)
             .and_then(|t| t.to_local())
             .unwrap();
 

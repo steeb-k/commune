@@ -383,7 +383,7 @@ impl NotificationsSettings {
         let list = &self.imp().keywords_list;
         let mut diverges_at = None;
 
-        let keywords = keywords.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        let keywords = keywords.iter().map(String::as_str).collect::<Vec<_>>();
         let new_len = keywords.len() as u32;
         let old_len = list.n_items();
 
@@ -412,7 +412,7 @@ impl NotificationsSettings {
         };
 
         let additions = &keywords[pos as usize..];
-        list.splice(pos, old_len.saturating_sub(pos), additions)
+        list.splice(pos, old_len.saturating_sub(pos), additions);
     }
 
     /// Remove a keyword from the list.

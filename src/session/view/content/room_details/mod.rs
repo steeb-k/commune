@@ -102,7 +102,7 @@ mod imp {
                 Some(&String::static_variant_type()),
                 |obj, _, param| {
                     let subpage = param
-                        .and_then(|variant| variant.get::<SubpageName>())
+                        .and_then(glib::Variant::get::<SubpageName>)
                         .expect("The parameter should be a valid subpage name");
 
                     obj.imp().show_subpage(subpage, false);
@@ -114,7 +114,7 @@ mod imp {
                 Some(&String::static_variant_type()),
                 |obj, _, param| {
                     let Some(user_id) = param
-                        .and_then(|variant| variant.get::<String>())
+                        .and_then(glib::Variant::get::<String>)
                         .and_then(|s| UserId::parse(s).ok())
                     else {
                         return;
@@ -173,11 +173,11 @@ mod imp {
     impl RoomDetails {
         /// Set the room to show the details for.
         fn set_room(&self, room: Room) {
-            self.room.set(room.clone()).expect("room is uninitialized");
+            let room = self.room.get_or_init(|| room);
 
             // Initialize the media history viewers timeline.
             self.timeline
-                .set(HistoryViewerTimeline::new(&room))
+                .set(HistoryViewerTimeline::new(room))
                 .expect("timeline is uninitialized");
 
             // Keep a strong reference to members list.
@@ -187,7 +187,7 @@ mod imp {
             // Initialize the general page.
             let general_page = self
                 .general_page
-                .get_or_init(|| GeneralPage::new(&room, &self.membership_lists));
+                .get_or_init(|| GeneralPage::new(room, &self.membership_lists));
             self.obj().add(general_page);
         }
 

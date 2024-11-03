@@ -158,14 +158,14 @@ impl MessageContent {
                             reply.related_content(),
                             replied_to_content.clone(),
                             ContentFormat::Compact,
-                            replied_to_sender,
+                            &replied_to_sender,
                             replied_to_detect_at_room,
                         );
                         build_content(
                             reply.content(),
                             event.content(),
                             ContentFormat::Natural,
-                            event.sender(),
+                            &event.sender(),
                             detect_at_room,
                         );
                         self.set_child(Some(&reply));
@@ -181,13 +181,13 @@ impl MessageContent {
             self,
             event.content(),
             format,
-            event.sender(),
+            &event.sender(),
             detect_at_room,
         );
     }
 
     /// Update this widget to present the given related event.
-    pub fn update_for_related_event(&self, info: RepliedToInfo, sender: Member) {
+    pub fn update_for_related_event(&self, info: &RepliedToInfo, sender: &Member) {
         let ReplyContent::Message(message) = info.content() else {
             return;
         };
@@ -208,14 +208,14 @@ fn build_content(
     parent: &impl IsA<adw::Bin>,
     content: TimelineItemContent,
     format: ContentFormat,
-    sender: Member,
+    sender: &Member,
     detect_at_room: bool,
 ) {
     let room = sender.room();
 
     match content {
         TimelineItemContent::Message(message) => {
-            build_message_content(parent, &message, format, sender, detect_at_room)
+            build_message_content(parent, &message, format, sender, detect_at_room);
         }
         TimelineItemContent::Sticker(sticker) => {
             build_media_message_content(
@@ -265,7 +265,7 @@ fn build_message_content(
     parent: &impl IsA<adw::Bin>,
     message: &Message,
     format: ContentFormat,
-    sender: Member,
+    sender: &Member,
     detect_at_room: bool,
 ) {
     let room = sender.room();

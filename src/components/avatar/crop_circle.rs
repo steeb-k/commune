@@ -77,7 +77,12 @@ mod imp {
             let mut x = (width + child_size.width()) / 2;
 
             if self.is_cropped.get() {
-                x = x.saturating_sub(self.cropped_width.get() as i32);
+                let cropped_width = self
+                    .cropped_width
+                    .get()
+                    .try_into()
+                    .expect("width fits into an i32");
+                x = x.saturating_sub(cropped_width);
             }
 
             let transform = gsk::Transform::new().translate(&graphene::Point::new(x as f32, 0.0));

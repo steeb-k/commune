@@ -7,7 +7,7 @@ use gtk::{
 use tracing::error;
 
 use super::{MemberPowerLevel, PermissionsMemberRow, PrivilegedMembers};
-use crate::{prelude::*, session::model::User, utils::expression};
+use crate::{session::model::User, utils::expression};
 
 mod imp {
     use std::{cell::Cell, marker::PhantomData};
@@ -62,21 +62,12 @@ mod imp {
             // GtkSearchBar.
             self.search_bar.connect_entry(&*self.search_entry);
 
-            fn search_string(member: MemberPowerLevel) -> String {
-                let user = member.user();
-                format!(
-                    "{} {} {} {}",
-                    user.display_name(),
-                    user.user_id(),
-                    member.role(),
-                    member.power_level(),
-                )
-            }
-
             let user_expr = gtk::ClosureExpression::new::<String>(
                 &[] as &[gtk::Expression],
                 closure!(|item: Option<glib::Object>| {
-                    item.and_downcast().map(search_string).unwrap_or_default()
+                    item.and_downcast_ref()
+                        .map(MemberPowerLevel::search_string)
+                        .unwrap_or_default()
                 }),
             );
             let search_filter = gtk::StringFilter::builder()
@@ -154,12 +145,12 @@ mod imp {
         }
 
         /// Set the list used for this view.
-        fn set_list(&self, list: Option<PrivilegedMembers>) {
-            if self.list() == list {
+        fn set_list(&self, list: Option<&PrivilegedMembers>) {
+            if self.list().as_ref() == list {
                 return;
             }
 
-            self.filtered_model.set_model(list.as_ref());
+            self.filtered_model.set_model(list);
             self.obj().notify_list();
         }
 

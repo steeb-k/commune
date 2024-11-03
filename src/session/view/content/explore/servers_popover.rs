@@ -82,12 +82,12 @@ mod imp {
 
     impl ExploreServersPopover {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if session == self.session.upgrade() {
+        fn set_session(&self, session: Option<&Session>) {
+            if session == self.session.upgrade().as_ref() {
                 return;
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             self.obj().notify_session();
         }
     }
@@ -144,7 +144,7 @@ impl ExploreServersPopover {
                 f(
                     &obj,
                     row.and_then(|row| row.downcast_ref::<ExploreServerRow>())
-                        .and_then(|row| row.server()),
+                        .and_then(ExploreServerRow::server),
                 );
             }
         ))
@@ -164,7 +164,7 @@ impl ExploreServersPopover {
     /// Update the state of the action to add a server according to the current
     /// state.
     fn update_add_server_state(&self) {
-        self.action_set_enabled("explore-servers-popover.add-server", self.can_add_server())
+        self.action_set_enabled("explore-servers-popover.add-server", self.can_add_server());
     }
 
     /// Add the server currently in the text entry.
@@ -182,11 +182,10 @@ impl ExploreServersPopover {
         imp.server_entry.set_text("");
 
         server_list.add_custom_matrix_server(server.into());
-        imp.listbox.select_row(
-            imp.listbox
-                .row_at_index(server_list.n_items() as i32 - 1)
-                .as_ref(),
-        );
+
+        let index = i32::try_from(server_list.n_items()).unwrap_or(i32::MAX);
+        let row = imp.listbox.row_at_index(index - 1);
+        imp.listbox.select_row(row.as_ref());
     }
 
     /// Remove the given server.

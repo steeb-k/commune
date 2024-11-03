@@ -159,8 +159,9 @@ mod imp {
             let (is_empty, state) = self
                 .user_sessions
                 .obj()
-                .map(|s| (s.is_empty(), s.loading_state()))
-                .unwrap_or((true, LoadingState::Loading));
+                .map_or((true, LoadingState::Loading), |s| {
+                    (s.is_empty(), s.loading_state())
+                });
 
             let page = if is_empty {
                 match state {

@@ -70,10 +70,10 @@ mod imp {
 
     impl AcceptRequestPage {
         /// Set the current identity verification.
-        fn set_verification(&self, verification: Option<IdentityVerification>) {
+        fn set_verification(&self, verification: Option<&IdentityVerification>) {
             let prev_verification = self.verification.upgrade();
 
-            if prev_verification == verification {
+            if prev_verification.as_ref() == verification {
                 return;
             }
             let obj = self.obj();
@@ -86,7 +86,7 @@ mod imp {
                 }
             }
 
-            if let Some(verification) = &verification {
+            if let Some(verification) = verification {
                 let display_name_handler = verification.user().connect_display_name_notify(clone!(
                     #[weak]
                     obj,
@@ -98,7 +98,7 @@ mod imp {
                     .replace(Some(display_name_handler));
             }
 
-            self.verification.set(verification.as_ref());
+            self.verification.set(verification);
             obj.update_labels();
             obj.notify_verification();
         }

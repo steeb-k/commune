@@ -84,7 +84,7 @@ mod imp {
 
     impl MessageReaction {
         /// Set the reaction group to display.
-        fn set_group(&self, group: ReactionGroup) {
+        fn set_group(&self, group: &ReactionGroup) {
             let obj = self.obj();
             let key = group.key();
             self.reaction_key.set_label(&key);
@@ -116,9 +116,9 @@ mod imp {
                 obj,
                 move |group, pos, removed, added| obj.items_changed(group, pos, removed, added)
             ));
-            obj.items_changed(&group, 0, self.list.n_items(), group.n_items());
+            obj.items_changed(group, 0, self.list.n_items(), group.n_items());
 
-            self.group.set(&group, vec![items_changed_handler_id]);
+            self.group.set(group, vec![items_changed_handler_id]);
         }
 
         /// Set the members list of the room of the reaction.
@@ -219,7 +219,7 @@ impl MessageReaction {
             )
         });
 
-        imp.button.set_tooltip_text(text.as_deref())
+        imp.button.set_tooltip_text(text.as_deref());
     }
 
     fn update_member_tooltip(&self, member: &Member) {

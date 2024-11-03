@@ -99,7 +99,12 @@ mod imp {
 
     impl ContextMenuBinImpl for Row {
         fn menu_opened(&self) {
-            if !self.item.borrow().as_ref().is_some_and(|i| i.is::<Room>()) {
+            if !self
+                .item
+                .borrow()
+                .as_ref()
+                .is_some_and(glib::Object::is::<Room>)
+            {
                 // No context menu.
                 return;
             }
@@ -264,7 +269,7 @@ mod imp {
                 Some(room.category())
             } else {
                 item.downcast_ref::<SidebarSection>()
-                    .and_then(|section| section.name().as_room_category())
+                    .and_then(|section| section.name().into_room_category())
             }
         }
 
@@ -272,9 +277,10 @@ mod imp {
         /// row, if any.
         pub(super) fn item_type(&self) -> Option<SidebarIconItemType> {
             let borrowed_item = self.item.borrow();
-            let item = borrowed_item.as_ref()?;
-            item.downcast_ref::<SidebarIconItem>()
-                .map(|i| i.item_type())
+            borrowed_item
+                .as_ref()?
+                .downcast_ref::<SidebarIconItem>()
+                .map(SidebarIconItem::item_type)
         }
 
         /// Whether this has a room context menu.
@@ -306,6 +312,7 @@ mod imp {
         }
 
         /// An action group with the available room actions.
+        #[allow(clippy::too_many_lines)]
         fn room_actions(&self) -> Option<gio::SimpleActionGroup> {
             let room = self.room()?;
 
@@ -525,8 +532,8 @@ mod imp {
                         .item
                         .borrow()
                         .as_ref()
-                        .and_then(|o| o.downcast_ref::<SidebarSection>())
-                        .is_some_and(|section| section.is_empty())
+                        .and_then(glib::Object::downcast_ref)
+                        .is_some_and(SidebarSection::is_empty)
                     {
                         obj.add_css_class("drop-empty");
                     } else {

@@ -144,8 +144,8 @@ mod imp {
         }
 
         /// Set the tooltip text of the button of the default state.
-        fn set_default_state_tooltip_text(&self, text: Option<String>) {
-            self.button_default.set_tooltip_text(text.as_deref());
+        fn set_default_state_tooltip_text(&self, text: Option<&str>) {
+            self.button_default.set_tooltip_text(text);
         }
     }
 }
@@ -172,7 +172,7 @@ impl ActionButton {
             imp.button_default.remove_css_class(&class);
         }
 
-        for class in classes.iter() {
+        for class in classes {
             imp.button_default.add_css_class(class);
         }
 

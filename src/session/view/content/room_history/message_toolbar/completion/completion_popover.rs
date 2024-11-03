@@ -143,10 +143,10 @@ mod imp {
             // `RoomHistory` should have a strong reference to the list so we can use
             // `get_or_create_members()`.
             self.member_list
-                .set_members(room.map(|r| r.get_or_create_members()));
+                .set_members(room.map(Room::get_or_create_members));
 
             self.room_list
-                .set_rooms(room.and_then(|r| r.session()).map(|s| s.room_list()));
+                .set_rooms(room.and_then(Room::session).map(|s| s.room_list()));
 
             self.room.set(room);
         }
@@ -209,9 +209,9 @@ mod imp {
                 if matches!(key, gdk::Key::Tab) {
                     obj.update_completion(true);
                     return glib::Propagation::Stop;
-                } else {
-                    return glib::Propagation::Proceed;
                 }
+
+                return glib::Propagation::Proceed;
             }
 
             if matches!(key, gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab) {
@@ -317,46 +317,50 @@ impl CompletionPopover {
         // - `trigger`: character used to trigger the popover, usually the first
         //   character of the corresponding ID.
 
-        #[derive(Default)]
-        struct SearchContext {
-            localpart: String,
-            is_outside_ascii: bool,
-            has_id_separator: bool,
-            server_name: ServerNameContext,
-            has_port_separator: bool,
-            port: String,
+        let (word_start, word_end) = self.cursor_word_boundaries(trigger)?;
+
+        let mut term_start = word_start;
+        let term_start_char = term_start.char();
+        let is_room = term_start_char == ROOM_ALIAS_SIGIL;
+
+        // Remove the starting sigil for searching.
+        if matches!(term_start_char, USER_ID_SIGIL | ROOM_ALIAS_SIGIL) {
+            term_start.forward_cursor_position();
         }
 
-        #[derive(Default)]
-        enum ServerNameContext {
-            Ipv6(String),
-            // According to the Matrix spec definition, the IPv4 grammar is a
-            // subset of the domain name grammar.
-            Ipv4OrDomain(String),
-            #[default]
-            Unknown,
+        let term = self.view().buffer().text(&term_start, &word_end, true);
+
+        // If the cursor jumped to another word, abort the completion.
+        if let Some((_, _, prev_term)) = self.current_word() {
+            if !term.contains(&prev_term.term) && !prev_term.term.contains(term.as_str()) {
+                return None;
+            }
         }
 
-        fn is_possible_word_char(c: char) -> bool {
-            c.is_alphanumeric()
-                || matches!(
-                    c,
-                    '.' | '_'
-                        | '='
-                        | '-'
-                        | '/'
-                        | ':'
-                        | '['
-                        | ']'
-                        | USER_ID_SIGIL
-                        | ROOM_ALIAS_SIGIL
-                )
-        }
+        let target = if is_room {
+            SearchTermTarget::Room
+        } else {
+            SearchTermTarget::Member
+        };
+        let term = SearchTerm {
+            target,
+            term: term.into(),
+        };
 
+        Some((word_start, word_end, term))
+    }
+
+    /// Find the word boundaries for the current cursor position.
+    ///
+    /// If trigger is `true`, the search term will not look for `@` at the start
+    /// of the word.
+    ///
+    /// Returns a `(start, end)` tuple.
+    fn cursor_word_boundaries(&self, trigger: bool) -> Option<(gtk::TextIter, gtk::TextIter)> {
         let buffer = self.view().buffer();
         let cursor = buffer.iter_at_mark(&buffer.get_insert());
-
         let mut word_start = cursor;
+
         // Search for the beginning of the word.
         while word_start.backward_cursor_position() {
             let c = word_start.char();
@@ -378,28 +382,22 @@ impl CompletionPopover {
         let mut word_end = word_start;
         while word_end.forward_cursor_position() {
             let c = word_end.char();
-            if !ctx.has_id_separator {
-                // Localpart or display name.
-                if !ctx.is_outside_ascii
-                    && (c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '=' | '-' | '/'))
-                {
-                    ctx.localpart.push(c);
-                } else if c.is_alphanumeric() {
-                    ctx.is_outside_ascii = true;
-                } else if !ctx.is_outside_ascii && c == ':' {
-                    ctx.has_id_separator = true;
-                } else {
-                    break;
-                }
-            } else {
+            if ctx.has_id_separator {
                 // The server name of an ID.
-                if !ctx.has_port_separator {
+                if ctx.has_port_separator {
+                    // The port number
+                    if ctx.port.len() <= 5 && c.is_ascii_digit() {
+                        ctx.port.push(c);
+                    } else {
+                        break;
+                    }
+                } else {
                     // An IPv6 address, IPv4 address, or a domain name.
                     if matches!(ctx.server_name, ServerNameContext::Unknown) {
                         if c == '[' {
-                            ctx.server_name = ServerNameContext::Ipv6(c.into())
+                            ctx.server_name = ServerNameContext::Ipv6(c.into());
                         } else if c.is_alphanumeric() {
-                            ctx.server_name = ServerNameContext::Ipv4OrDomain(c.into())
+                            ctx.server_name = ServerNameContext::Ipv4OrDomain(c.into());
                         } else {
                             break;
                         }
@@ -428,54 +426,34 @@ impl CompletionPopover {
                     } else {
                         break;
                     }
+                }
+            } else {
+                // Localpart or display name.
+                if !ctx.is_outside_ascii
+                    && (c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '=' | '-' | '/'))
+                {
+                    ctx.localpart.push(c);
+                } else if c.is_alphanumeric() {
+                    ctx.is_outside_ascii = true;
+                } else if !ctx.is_outside_ascii && c == ':' {
+                    ctx.has_id_separator = true;
                 } else {
-                    // The port number
-                    if ctx.port.len() <= 5 && c.is_ascii_digit() {
-                        ctx.port.push(c);
-                    } else {
-                        break;
-                    }
+                    break;
                 }
             }
         }
 
+        // It the cursor is not at the word, there is no need for completion.
         if cursor != word_end && !cursor.in_range(&word_start, &word_end) {
             return None;
         }
 
+        // If we are in markdown that would be escaped, there is no need for completion.
         if self.in_escaped_markdown(&word_start, &word_end) {
             return None;
         }
 
-        let mut term_start = word_start;
-        let term_start_char = term_start.char();
-        let is_room = term_start_char == ROOM_ALIAS_SIGIL;
-
-        // Remove the starting sigil for searching.
-        if matches!(term_start_char, USER_ID_SIGIL | ROOM_ALIAS_SIGIL) {
-            term_start.forward_cursor_position();
-        }
-
-        let term = buffer.text(&term_start, &word_end, true);
-
-        // If the cursor jumped to another word, abort the completion.
-        if let Some((_, _, prev_term)) = self.current_word() {
-            if !term.contains(&prev_term.term) && !prev_term.term.contains(term.as_str()) {
-                return None;
-            }
-        }
-
-        let target = if is_room {
-            SearchTermTarget::Room
-        } else {
-            SearchTermTarget::Member
-        };
-        let term = SearchTerm {
-            target,
-            term: term.into(),
-        };
-
-        Some((word_start, word_end, term))
+        Some((word_start, word_end))
     }
 
     /// Check if the text is in markdown that would be escaped.
@@ -498,8 +476,8 @@ impl CompletionPopover {
 
         // Find the word string slice indexes, because GtkTextIter only gives us
         // the char offset but the parser gives us indexes.
-        let word_start_offset = word_start.offset() as usize;
-        let word_end_offset = word_end.offset() as usize;
+        let word_start_offset = usize::try_from(word_start.offset()).unwrap_or_default();
+        let word_end_offset = usize::try_from(word_end.offset()).unwrap_or_default();
         let mut word_start_index = 0;
         let mut word_end_index = 0;
         if word_start_offset != 0 && word_end_offset != 0 {
@@ -600,7 +578,7 @@ impl CompletionPopover {
         {
             self.select_row_at_index(Some(0));
         }
-        <Self as PopoverExt>::popup(self)
+        <Self as PopoverExt>::popup(self);
     }
 
     /// Update the location where the popover is pointing to.
@@ -629,8 +607,8 @@ impl CompletionPopover {
         if let Some(row) = idx.map(|idx| &imp.rows[idx]) {
             // Make sure the row is visible.
             let row_bounds = row.compute_bounds(&*imp.list).unwrap();
-            let lower = row_bounds.top_left().y() as f64;
-            let upper = row_bounds.bottom_left().y() as f64;
+            let lower = row_bounds.top_left().y().into();
+            let upper = row_bounds.bottom_left().y().into();
             imp.list.adjustment().unwrap().clamp_page(lower, upper);
 
             imp.list.select_row(Some(row));
@@ -734,4 +712,35 @@ enum SearchTermTarget {
     Member,
     /// A room.
     Room,
+}
+
+/// The context for a search.
+#[derive(Default)]
+struct SearchContext {
+    localpart: String,
+    is_outside_ascii: bool,
+    has_id_separator: bool,
+    server_name: ServerNameContext,
+    has_port_separator: bool,
+    port: String,
+}
+
+/// The context for a server name.
+#[derive(Default)]
+enum ServerNameContext {
+    Ipv6(String),
+    // According to the Matrix spec definition, the IPv4 grammar is a
+    // subset of the domain name grammar.
+    Ipv4OrDomain(String),
+    #[default]
+    Unknown,
+}
+
+/// Whether the given char can be counted as a word char.
+fn is_possible_word_char(c: char) -> bool {
+    c.is_alphanumeric()
+        || matches!(
+            c,
+            '.' | '_' | '=' | '-' | '/' | ':' | '[' | ']' | USER_ID_SIGIL | ROOM_ALIAS_SIGIL
+        )
 }

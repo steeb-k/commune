@@ -81,17 +81,17 @@ mod imp {
 
     impl RoomCreation {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if self.session.upgrade() == session {
+        fn set_session(&self, session: Option<&Session>) {
+            if self.session.upgrade().as_ref() == session {
                 return;
             }
 
-            if let Some(session) = &session {
+            if let Some(session) = session {
                 let server_name = session.user_id().server_name();
                 self.room_address.set_suffix_text(format!(":{server_name}"));
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             self.obj().notify_session();
         }
     }
@@ -172,13 +172,13 @@ impl RoomCreation {
             }
             Err(error) => {
                 error!("Could not create a new room: {error}");
-                self.handle_error(error);
+                self.handle_error(&error);
             }
         };
     }
 
     /// Display the error that occurred during creation.
-    fn handle_error(&self, error: Error) {
+    fn handle_error(&self, error: &Error) {
         let imp = self.imp();
 
         imp.create_button.set_is_loading(false);

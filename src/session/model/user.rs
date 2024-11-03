@@ -17,7 +17,7 @@ use crate::{
 
 #[glib::flags(name = "UserActions")]
 pub enum UserActions {
-    VERIFY = 0b00000001,
+    VERIFY = 0b0000_0001,
 }
 
 impl Default for UserActions {
@@ -97,7 +97,7 @@ mod imp {
 
         /// Set the ID of this user.
         pub fn set_user_id(&self, user_id: OwnedUserId) {
-            self.user_id.set(user_id.clone()).unwrap();
+            let user_id = self.user_id.get_or_init(|| user_id);
 
             let obj = self.obj();
             obj.set_name(None);
@@ -105,15 +105,15 @@ mod imp {
                 .sync_create()
                 .build();
 
-            let session = self.session.get().unwrap();
-            self.is_own_user.set(*session.user_id() == user_id);
+            let session = self.session.get().expect("session is initialized");
+            self.is_own_user.set(session.user_id() == user_id);
 
             let ignored_users = session.ignored_users();
             let ignored_handler = ignored_users.connect_items_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |ignored_users, _, _, _| {
-                    let user_id = imp.user_id.get().unwrap();
+                    let user_id = imp.user_id.get().expect("user ID is initialized");
                     let is_ignored = ignored_users.contains(user_id);
 
                     if imp.is_ignored.get() != is_ignored {
@@ -122,7 +122,7 @@ mod imp {
                     }
                 }
             ));
-            self.is_ignored.set(ignored_users.contains(&user_id));
+            self.is_ignored.set(ignored_users.contains(user_id));
             self.ignored_handler.replace(Some(ignored_handler));
 
             obj.init_is_verified();

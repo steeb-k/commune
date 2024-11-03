@@ -249,7 +249,7 @@ impl PrivilegedMembers {
             .list
             .borrow()
             .values()
-            .filter_map(|member| member.to_parts())
+            .filter_map(MemberPowerLevel::to_parts)
             .collect()
     }
 }

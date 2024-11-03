@@ -146,7 +146,7 @@ mod imp {
 
         /// Whether this device is verified.
         fn verified(&self) -> bool {
-            self.data().crypto().is_some_and(|d| d.is_verified())
+            self.data().crypto().is_some_and(CryptoDevice::is_verified)
         }
     }
 }

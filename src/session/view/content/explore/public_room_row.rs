@@ -245,18 +245,17 @@ impl PublicRoomRow {
             }
         } else if let Some(matrix_public_room) = public_room.matrix_public_room() {
             // Prefer the alias as we are sure the server can find the room that way.
-            let (room_id, via) = matrix_public_room
-                .canonical_alias
-                .clone()
-                .map(|id| (id.into(), vec![]))
-                .unwrap_or_else(|| {
+            let (room_id, via) = matrix_public_room.canonical_alias.clone().map_or_else(
+                || {
                     let id = matrix_public_room.room_id.clone().into();
                     let via = ServerName::parse(public_room.server())
                         .ok()
                         .into_iter()
                         .collect();
                     (id, via)
-                });
+                },
+                |id| (id.into(), vec![]),
+            );
 
             spawn!(clone!(
                 #[weak(rename_to = obj)]

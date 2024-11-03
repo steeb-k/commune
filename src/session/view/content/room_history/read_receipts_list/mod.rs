@@ -104,7 +104,7 @@ mod imp {
             self.avatar_list
                 .bind_model(Some(self.list.clone()), |item| {
                     item.downcast_ref::<MemberTimestamp>()
-                        .and_then(|m| m.member())
+                        .and_then(MemberTimestamp::member)
                         .map(|m| m.avatar_data().clone())
                         .unwrap()
                 });
@@ -271,7 +271,7 @@ impl ReadReceiptsList {
             )
         });
 
-        self.set_tooltip_text(text.as_deref())
+        self.set_tooltip_text(text.as_deref());
     }
 
     fn update_member_tooltip(&self, member: &Member) {

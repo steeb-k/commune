@@ -91,7 +91,7 @@ mod imp {
         fn dispose(&self) {
             if let Some(entry) = self.entry.obj() {
                 if let Some(controller) = self.entry_controller.take() {
-                    entry.remove_controller(&controller)
+                    entry.remove_controller(&controller);
                 }
             }
 
@@ -116,7 +116,7 @@ mod imp {
 
             if let Some(entry) = prev_entry {
                 if let Some(controller) = self.entry_controller.take() {
-                    entry.remove_controller(&controller)
+                    entry.remove_controller(&controller);
                 }
 
                 obj.unparent();
@@ -305,7 +305,9 @@ impl CompletionPopover {
 
         let imp = self.imp();
 
-        if let Some(row) = idx.and_then(|idx| imp.list.row_at_index(idx as i32)) {
+        if let Some(row) =
+            idx.and_then(|idx| imp.list.row_at_index(idx.try_into().unwrap_or(i32::MAX)))
+        {
             imp.list.select_row(Some(&row));
         } else {
             imp.list.select_row(None::<&gtk::ListBoxRow>);

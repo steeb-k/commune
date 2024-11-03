@@ -212,7 +212,7 @@ mod imp {
             }
 
             self.invited_is_empty.set(is_empty);
-            let position = self.has_loading_row() as u32;
+            let position = self.has_loading_row().into();
 
             let has_invite_row = self.has_membership_item_at(Membership::Invite, position);
             if is_empty && has_invite_row {
@@ -245,8 +245,8 @@ mod imp {
 
             self.banned_is_empty.set(is_empty);
 
-            let mut position = self.has_loading_row() as u32;
-            position += self.has_membership_item_at(Membership::Invite, position) as u32;
+            let mut position = u32::from(self.has_loading_row());
+            position += u32::from(self.has_membership_item_at(Membership::Invite, position));
 
             let has_ban_row = self.has_membership_item_at(Membership::Ban, position);
             if is_empty && has_ban_row {

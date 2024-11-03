@@ -255,7 +255,7 @@ mod imp {
             let prev_latest_edit_raw = self.latest_edit_raw();
             let had_source = self.has_source();
 
-            self.reactions.update(item.reactions().clone());
+            self.reactions.update(item.reactions());
             obj.update_read_receipts(item.read_receipts());
 
             self.item.replace(Some(item));
@@ -344,7 +344,7 @@ mod imp {
 
         /// Set the room that contains this `Event`.
         fn set_room(&self, room: Room) {
-            self.room.set(room.clone()).unwrap();
+            let room = self.room.get_or_init(|| room);
 
             if let Some(session) = room.session() {
                 self.reactions.set_user(session.user().clone());
@@ -534,8 +534,8 @@ impl Event {
     /// The event ID of this `Event`, if it has been received from the server.
     pub fn event_id(&self) -> Option<OwnedEventId> {
         match self.key() {
+            EventKey::TransactionId(_) => None,
             EventKey::EventId(event_id) => Some(event_id),
-            _ => None,
         }
     }
 
@@ -543,7 +543,7 @@ impl Event {
     pub fn transaction_id(&self) -> Option<OwnedTransactionId> {
         match self.key() {
             EventKey::TransactionId(txn_id) => Some(txn_id),
-            _ => None,
+            EventKey::EventId(_) => None,
         }
     }
 
@@ -733,10 +733,10 @@ impl Event {
             .collect::<Vec<_>>();
         read_receipts.splice(0, old_count, &new_read_receipts);
 
-        let had_read_receipts = old_count > 0;
+        let prev_has_read_receipts = old_count > 0;
         let has_read_receipts = new_count > 0;
 
-        if had_read_receipts != has_read_receipts {
+        if prev_has_read_receipts != has_read_receipts {
             self.notify_has_read_receipts();
         }
     }

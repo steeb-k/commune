@@ -49,13 +49,12 @@ mod imp {
             });
             let abort_handle = handle.abort_handle();
 
-            match timeout_future(Duration::from_secs(1), handle).await {
-                Ok(is_present) => is_present.expect("The task should not have been aborted"),
-                Err(_) => {
-                    abort_handle.abort();
-                    error!("Could not check whether system has cameras: the request timed out");
-                    false
-                }
+            if let Ok(is_present) = timeout_future(Duration::from_secs(1), handle).await {
+                is_present.expect("The task should not have been aborted")
+            } else {
+                abort_handle.abort();
+                error!("Could not check whether system has cameras: the request timed out");
+                false
             }
         }
 
@@ -70,8 +69,8 @@ mod imp {
             let handle = spawn_tokio!(async move { camera::request().await });
             let abort_handle = handle.abort_handle();
 
-            match timeout_future(Duration::from_secs(1), handle).await {
-                Ok(tokio_res) => match tokio_res.expect("The task should not have been aborted") {
+            if let Ok(tokio_res) = timeout_future(Duration::from_secs(1), handle).await {
+                match tokio_res.expect("The task should not have been aborted") {
                     Ok(Some((fd, streams))) => {
                         let paintable = LinuxCameraPaintable::new(fd, streams).await;
                         self.paintable.set(Some(&paintable));
@@ -86,13 +85,12 @@ mod imp {
                         error!("Could not request access to cameras: {error}");
                         None
                     }
-                },
-                Err(_) => {
-                    // Error because we reached the timeout.
-                    abort_handle.abort();
-                    error!("Could not request access to cameras: the request timed out");
-                    None
                 }
+            } else {
+                // Error because we reached the timeout.
+                abort_handle.abort();
+                error!("Could not request access to cameras: the request timed out");
+                None
             }
         }
     }

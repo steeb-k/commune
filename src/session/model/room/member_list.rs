@@ -60,7 +60,7 @@ mod imp {
 
     impl MemberList {
         /// Set the room these members belong to.
-        fn set_room(&self, room: Room) {
+        fn set_room(&self, room: &Room) {
             let obj = self.obj();
 
             let own_member = room.own_member();
@@ -74,7 +74,7 @@ mod imp {
                     .insert(member.user_id().clone(), member);
             }
 
-            self.room.set(Some(&room));
+            self.room.set(Some(room));
             obj.notify_room();
 
             spawn!(
@@ -188,9 +188,9 @@ impl MemberList {
         }
     }
 
-    /// Updates members with the given RoomMember values.
+    /// Updates members with the given SDK room member structs.
     ///
-    /// If some of the values do not correspond to existing members, new members
+    /// If some of the new members do not correspond to existing members, they
     /// are created.
     fn update_from_room_members(&self, new_members: &[matrix_sdk::room::RoomMember]) {
         let Some(room) = self.room() else {
@@ -206,9 +206,9 @@ impl MemberList {
         }
         let num_members_added = members.len().saturating_sub(prev_len);
 
-        // We can't have the mut borrow active when members are updated or items_changed
-        // is emitted because that will probably cause reads of the members
-        // field.
+        // We cannot have the mut borrow active when members are updated or
+        // items_changed is emitted because that will probably cause reads of
+        // the members field.
         std::mem::drop(members);
 
         {
@@ -293,14 +293,14 @@ impl MemberList {
         }
     }
 
-    /// Returns the Membership of a given UserId.
+    /// Returns the membership of the member with the given ID.
     ///
-    /// If the user has no Membership, Membership::Leave will be returned
+    /// If the member is not found, `Membership::Leave` is returned.
     pub fn get_membership(&self, user_id: &UserId) -> Membership {
         self.imp()
             .members
             .borrow()
             .get(user_id)
-            .map_or(Membership::Leave, |member| member.membership())
+            .map_or(Membership::Leave, Member::membership)
     }
 }

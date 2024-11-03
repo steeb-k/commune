@@ -718,14 +718,11 @@ impl UserPage {
 
         self.action_set_enabled("user-page.verify-user", false);
         imp.verify_button.set_is_loading(true);
-        let verification = match user.verify_identity().await {
-            Ok(verification) => verification,
-            Err(()) => {
-                toast!(self, gettext("Could not start user verification"));
-                self.action_set_enabled("user-page.verify-user", true);
-                imp.verify_button.set_is_loading(false);
-                return;
-            }
+        let Ok(verification) = user.verify_identity().await else {
+            toast!(self, gettext("Could not start user verification"));
+            self.action_set_enabled("user-page.verify-user", true);
+            imp.verify_button.set_is_loading(false);
+            return;
         };
 
         let Some(parent_window) = self.root().and_downcast::<gtk::Window>() else {

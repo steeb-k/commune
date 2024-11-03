@@ -140,7 +140,7 @@ mod imp {
 
         /// Set the name of this section.
         fn set_name(&self, name: SidebarSectionName) {
-            if let Some(room_category) = name.as_room_category() {
+            if let Some(room_category) = name.into_room_category() {
                 self.filter.set_room_category(room_category);
             }
 
@@ -182,11 +182,11 @@ mod imp {
             let model = self.model();
             let session = model
                 .downcast_ref::<RoomList>()
-                .and_then(|l| l.session())
+                .and_then(RoomList::session)
                 .or_else(|| {
                     model
                         .downcast_ref::<VerificationList>()
-                        .and_then(|l| l.session())
+                        .and_then(VerificationList::session)
                 })?;
             Some(session.settings())
         }
@@ -216,7 +216,7 @@ impl SidebarSection {
         }
 
         source_category
-            .zip(self.name().as_room_category())
+            .zip(self.name().into_room_category())
             .is_some_and(|(source_category, target_category)| {
                 source_category.can_change_to(target_category)
             })

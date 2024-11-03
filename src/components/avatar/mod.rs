@@ -153,14 +153,14 @@ mod imp {
 
         /// Update the size of the image for this avatar.
         fn update_image_size(&self) {
-            let Some(image) = self.data.borrow().as_ref().and_then(|d| d.image()) else {
+            let Some(image) = self.data.borrow().as_ref().and_then(AvatarData::image) else {
                 return;
             };
             let obj = self.obj();
 
             if obj.is_mapped() {
                 let needed_size = self.size() * obj.scale_factor();
-                image.set_needed_size(needed_size as u32);
+                image.set_needed_size(u32::try_from(needed_size).unwrap_or_default());
             }
         }
 
@@ -172,7 +172,7 @@ mod imp {
                 .data
                 .borrow()
                 .as_ref()
-                .and_then(|d| d.image())
+                .and_then(AvatarData::image)
                 .and_then(|i| i.paintable())
                 .and_downcast::<AnimatedImagePaintable>()
             else {

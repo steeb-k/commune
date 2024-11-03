@@ -65,12 +65,12 @@ mod imp {
         }
 
         /// Set the tooltip text of the add button.
-        fn set_add_button_tooltip_text(&self, tooltip_text: Option<glib::GString>) {
-            if self.add_button_tooltip_text() == tooltip_text {
+        fn set_add_button_tooltip_text(&self, tooltip_text: Option<&str>) {
+            if self.add_button_tooltip_text().as_deref() == tooltip_text {
                 return;
             }
 
-            self.add_button.set_tooltip_text(tooltip_text.as_deref());
+            self.add_button.set_tooltip_text(tooltip_text);
             self.obj().notify_add_button_tooltip_text();
         }
 

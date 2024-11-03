@@ -54,20 +54,20 @@ mod imp {
 
     impl AccountSwitcherPopover {
         /// Set the model containing the logged-in sessions selection.
-        fn set_session_selection(&self, selection: Option<gtk::SingleSelection>) {
-            if selection == self.session_selection.obj() {
+        fn set_session_selection(&self, selection: Option<&gtk::SingleSelection>) {
+            if selection == self.session_selection.obj().as_ref() {
                 return;
             }
             let obj = self.obj();
 
             self.session_selection.disconnect_signals();
 
-            self.sessions.bind_model(selection.as_ref(), |session| {
+            self.sessions.bind_model(selection, |session| {
                 let row = SessionItemRow::new(session.downcast_ref().unwrap());
                 row.upcast()
             });
 
-            if let Some(selection) = &selection {
+            if let Some(selection) = selection {
                 let selected_handler = selection.connect_selected_item_notify(clone!(
                     #[weak]
                     obj,
@@ -103,16 +103,15 @@ impl AccountSwitcherPopover {
 
     /// Select the given row in the session list.
     #[template_callback]
-    fn select_row(&self, row: gtk::ListBoxRow) {
+    fn select_row(&self, row: &gtk::ListBoxRow) {
         self.popdown();
 
         let Some(selection) = self.session_selection() else {
             return;
         };
 
-        // The index is -1 when it is not in a GtkListBox, but we just got it from the
-        // GtkListBox so we can safely assume it's a valid u32.
-        selection.set_selected(row.index() as u32);
+        let index = row.index().try_into().expect("selected row has an index");
+        selection.set_selected(index);
     }
 
     /// Update the selected item in the session list.
@@ -123,8 +122,11 @@ impl AccountSwitcherPopover {
         let new_selected = if selected == gtk::INVALID_LIST_POSITION {
             None
         } else {
+            let index = selected
+                .try_into()
+                .expect("item index always fits into i32");
             imp.sessions
-                .row_at_index(selected as i32)
+                .row_at_index(index)
                 .and_downcast::<SessionItemRow>()
         };
 

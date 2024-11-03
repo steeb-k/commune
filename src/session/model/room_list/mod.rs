@@ -45,7 +45,7 @@ mod imp {
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
-        /// The rooms metainfo that allow to restore the RoomList in its
+        /// The rooms metainfo that allow to restore this `RoomList` from its
         /// previous state.
         ///
         /// This is in a Mutex because updating the data in the store is async
@@ -306,18 +306,16 @@ impl RoomList {
         let mut new_rooms = HashMap::new();
 
         for (room_id, left_room) in rooms.leave {
-            let room = match self.get(&room_id) {
-                Some(room) => room,
-                None => match client.get_room(&room_id) {
-                    Some(matrix_room) => new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone(),
-                    None => {
-                        warn!("Could not find left room {room_id}");
-                        continue;
-                    }
-                },
+            let room = if let Some(room) = self.get(&room_id) {
+                room
+            } else if let Some(matrix_room) = client.get_room(&room_id) {
+                new_rooms
+                    .entry(room_id.clone())
+                    .or_insert_with(|| Room::new(&session, matrix_room, None))
+                    .clone()
+            } else {
+                warn!("Could not find left room {room_id}");
+                continue;
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -325,18 +323,16 @@ impl RoomList {
         }
 
         for (room_id, joined_room) in rooms.join {
-            let room = match self.get(&room_id) {
-                Some(room) => room,
-                None => match client.get_room(&room_id) {
-                    Some(matrix_room) => new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone(),
-                    None => {
-                        warn!("Could not find joined room {room_id}");
-                        continue;
-                    }
-                },
+            let room = if let Some(room) = self.get(&room_id) {
+                room
+            } else if let Some(matrix_room) = client.get_room(&room_id) {
+                new_rooms
+                    .entry(room_id.clone())
+                    .or_insert_with(|| Room::new(&session, matrix_room, None))
+                    .clone()
+            } else {
+                warn!("Could not find joined room {room_id}");
+                continue;
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -345,18 +341,16 @@ impl RoomList {
         }
 
         for (room_id, _invited_room) in rooms.invite {
-            let room = match self.get(&room_id) {
-                Some(room) => room,
-                None => match client.get_room(&room_id) {
-                    Some(matrix_room) => new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone(),
-                    None => {
-                        warn!("Could not find invited room {room_id}");
-                        continue;
-                    }
-                },
+            let room = if let Some(room) = self.get(&room_id) {
+                room
+            } else if let Some(matrix_room) = client.get_room(&room_id) {
+                new_rooms
+                    .entry(room_id.clone())
+                    .or_insert_with(|| Room::new(&session, matrix_room, None))
+                    .clone()
+            } else {
+                warn!("Could not find invited room {room_id}");
+                continue;
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -426,8 +420,7 @@ impl RoomList {
 
     /// Get the room with the given identifier, if it is joined.
     pub fn joined_room(&self, identifier: &RoomOrAliasId) -> Option<Room> {
-        self.get_by_identifier(identifier)
-            .filter(|room| room.is_joined())
+        self.get_by_identifier(identifier).filter(Room::is_joined)
     }
 
     /// Add a room that was tombstoned but for which we haven't joined the

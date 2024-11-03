@@ -222,12 +222,12 @@ mod imp {
 
     impl SessionView {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if self.session.upgrade() == session {
+        fn set_session(&self, session: Option<&Session>) {
+            if self.session.upgrade().as_ref() == session {
                 return;
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             self.obj().notify_session();
         }
     }
@@ -241,7 +241,7 @@ glib::wrapper! {
 
 impl SessionView {
     /// Create a new session view.
-    pub async fn new() -> Self {
+    pub fn new() -> Self {
         glib::Object::new()
     }
 
@@ -324,37 +324,35 @@ impl SessionView {
         let room_list = session.room_list().snapshot();
         let current_room = self.selected_room();
 
-        /// The order in which rooms are selected
-        ///
-        /// Returns None if the room should never be selected.
-        ///
-        /// First by category, then by notification count so DMs are backlogged
-        /// before group chats, and finally by recency.
-        fn score_for_room(room: &Room) -> Option<(u8, u64, u64)> {
-            if room.is_read() {
-                return None;
-            }
-            let category = match room.category() {
-                RoomCategory::Invited => 5,
-                RoomCategory::Favorite => 4,
-                RoomCategory::Normal => 3,
-                RoomCategory::LowPriority => 2,
-                RoomCategory::Left => 1,
-                RoomCategory::Ignored | RoomCategory::Outdated | RoomCategory::Space => {
-                    return None
-                }
-            };
-            Some((category, room.notification_count(), room.latest_activity()))
-        }
-
         if let Some((unread_room, _score)) = room_list
             .into_iter()
             .filter(|room| Some(room) != current_room.as_ref())
-            .filter_map(|room| score_for_room(&room).map(|score| (room, score)))
-            .max_by_key(|&(ref _room, score)| score)
+            .filter_map(|room| Self::score_for_unread_room(&room).map(|score| (room, score)))
+            .max_by_key(|(_room, score)| *score)
         {
             self.select_room(Some(unread_room));
         }
+    }
+
+    /// The score to determine the order in which unread rooms are selected.
+    ///
+    /// First by category, then by notification count so DMs are selected
+    /// before group chats, and finally by recency.
+    ///
+    /// Returns `None` if the room should never be selected.
+    fn score_for_unread_room(room: &Room) -> Option<(u8, u64, u64)> {
+        if room.is_read() {
+            return None;
+        }
+        let category = match room.category() {
+            RoomCategory::Invited => 5,
+            RoomCategory::Favorite => 4,
+            RoomCategory::Normal => 3,
+            RoomCategory::LowPriority => 2,
+            RoomCategory::Left => 1,
+            RoomCategory::Ignored | RoomCategory::Outdated | RoomCategory::Space => return None,
+        };
+        Some((category, room.notification_count(), room.latest_activity()))
     }
 
     /// Select the identity verification with the given key in this view.
@@ -379,7 +377,7 @@ impl SessionView {
         room_search.set_search_mode(!room_search.is_search_mode());
     }
 
-    /// Returns the parent GtkWindow containing this widget.
+    /// Returns the ancestor window containing this widget.
     fn parent_window(&self) -> Option<Window> {
         self.root().and_downcast()
     }

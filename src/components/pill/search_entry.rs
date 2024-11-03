@@ -82,7 +82,7 @@ mod imp {
                             .child_anchor()
                             .and_then(|a| a.widgets().first().cloned())
                             .and_downcast_ref::<Pill>()
-                            .and_then(|p| p.source())
+                            .and_then(Pill::source)
                         {
                             let removed = obj
                                 .imp()

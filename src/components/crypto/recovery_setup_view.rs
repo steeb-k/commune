@@ -283,7 +283,7 @@ impl CryptoRecoverySetupView {
         let handle = spawn_tokio!(async move { recovery.recover(&key).await });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 // Even if recovery was successful, the recovery data may not have been
                 // complete. Because the SDK uses multiple threads, we are only
                 // sure of the SDK's recovery state at this point, not the Session's.
@@ -351,7 +351,7 @@ impl CryptoRecoverySetupView {
             .await;
 
         match result {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(AuthError::UserCancelled) => {
                 debug!("User cancelled authentication for cross-signing bootstrap");
                 Err(())
@@ -385,7 +385,9 @@ impl CryptoRecoverySetupView {
         let (backups_are_enabled, backup_exists_on_server) = spawn_tokio!(async move {
             let backups_are_enabled = backups.are_enabled().await;
 
-            let backup_exists_on_server = if !backups_are_enabled {
+            let backup_exists_on_server = if backups_are_enabled {
+                true
+            } else {
                 // Let's use up-to-date data instead of relying on the last time that we updated it.
                 match backups.exists_on_server().await {
                     Ok(exists) => exists,
@@ -395,8 +397,6 @@ impl CryptoRecoverySetupView {
                         true
                     }
                 }
-            } else {
-                true
             };
 
             (backups_are_enabled, backup_exists_on_server)

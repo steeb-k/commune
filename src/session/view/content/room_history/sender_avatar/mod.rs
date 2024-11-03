@@ -528,12 +528,11 @@ impl SenderAvatar {
         } else {
             toast!(self, &gettext("Creating a new Direct Chat…"));
 
-            match sender.get_or_create_direct_chat().await {
-                Ok(room) => room,
-                Err(_) => {
-                    toast!(self, &gettext("Could not create a new Direct Chat"));
-                    return;
-                }
+            if let Ok(room) = sender.get_or_create_direct_chat().await {
+                room
+            } else {
+                toast!(self, &gettext("Could not create a new Direct Chat"));
+                return;
             }
         };
 
@@ -622,24 +621,20 @@ impl SenderAvatar {
             permissions.default_power_level()
         };
 
-        match permissions
+        if permissions
             .set_user_power_level(user_id, new_power_level)
             .await
+            .is_ok()
         {
-            Ok(_) => {
-                if mute {
-                    toast!(self, gettext("Member muted"));
-                } else {
-                    toast!(self, gettext("Member unmuted"));
-                }
+            if mute {
+                toast!(self, gettext("Member muted"));
+            } else {
+                toast!(self, gettext("Member unmuted"));
             }
-            Err(_) => {
-                if mute {
-                    toast!(self, gettext("Could not mute member"));
-                } else {
-                    toast!(self, gettext("Could not unmute member"));
-                }
-            }
+        } else if mute {
+            toast!(self, gettext("Could not mute member"));
+        } else {
+            toast!(self, gettext("Could not unmute member"));
         }
     }
 

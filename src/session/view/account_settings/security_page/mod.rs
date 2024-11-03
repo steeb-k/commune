@@ -97,10 +97,10 @@ mod imp {
 
     impl SecurityPage {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
+        fn set_session(&self, session: Option<&Session>) {
             let prev_session = self.session.upgrade();
 
-            if prev_session == session {
+            if prev_session.as_ref() == session {
                 return;
             }
             let obj = self.obj();
@@ -119,7 +119,7 @@ mod imp {
                 binding.unbind();
             }
 
-            if let Some(session) = &session {
+            if let Some(session) = session {
                 let ignored_users = session.ignored_users();
                 let ignored_users_count_handler = ignored_users.connect_items_changed(clone!(
                     #[weak(rename_to = imp)]
@@ -187,7 +187,7 @@ mod imp {
                 ]);
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
 
             obj.update_crypto_identity();
             obj.update_recovery();

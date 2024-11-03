@@ -46,7 +46,7 @@ mod imp {
 
     impl StateTombstone {
         /// Set the room this event belongs to.
-        fn set_room(&self, room: Room) {
+        fn set_room(&self, room: &Room) {
             let obj = self.obj();
 
             let successor_handler = room.connect_successor_id_string_notify(clone!(
@@ -65,10 +65,10 @@ mod imp {
                     obj.update_button_label(room);
                 }
             ));
-            obj.update_button_label(&room);
+            obj.update_button_label(room);
 
             self.room
-                .set(&room, vec![successor_handler, successor_room_handler]);
+                .set(room, vec![successor_handler, successor_room_handler]);
         }
     }
 }

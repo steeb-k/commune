@@ -174,7 +174,7 @@ impl DmUserList {
                 }
 
                 let mut users: Vec<DmUser> = vec![];
-                for item in response.results.into_iter() {
+                for item in response.results {
                     let user = DmUser::new(
                         &session,
                         item.user_id,
@@ -197,10 +197,12 @@ impl DmUserList {
                     users.push(user);
                 }
 
-                match users.is_empty() {
-                    true => self.set_state(DmUserListState::NoMatching),
-                    false => self.set_state(DmUserListState::Matching),
-                }
+                let state = if users.is_empty() {
+                    DmUserListState::NoMatching
+                } else {
+                    DmUserListState::Matching
+                };
+                self.set_state(state);
                 self.set_list(users);
             }
             Err(error) => {

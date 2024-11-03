@@ -115,7 +115,7 @@ mod imp {
             // In case this is a property that's automatically added for Editable
             // implementations.
             if !self.delegate_set_property(id, value, pspec) {
-                self.derived_set_property(id, value, pspec)
+                self.derived_set_property(id, value, pspec);
             }
         }
 
@@ -216,12 +216,12 @@ mod imp {
         }
 
         /// Set the placeholder text of the entry.
-        fn set_placeholder_text(&self, text: Option<glib::GString>) {
-            if self.placeholder_text() == text {
+        fn set_placeholder_text(&self, text: Option<&str>) {
+            if self.placeholder_text().as_deref() == text {
                 return;
             }
 
-            self.text.set_placeholder_text(text.as_deref());
+            self.text.set_placeholder_text(text);
 
             self.update_accessible_description();
             self.obj().notify_placeholder_text();
@@ -238,12 +238,12 @@ mod imp {
         }
 
         /// Set the prefix text of the entry.
-        fn set_prefix_text(&self, text: glib::GString) {
+        fn set_prefix_text(&self, text: &str) {
             if self.prefix_text() == text {
                 return;
             }
 
-            self.entry_prefix_label.set_label(&text);
+            self.entry_prefix_label.set_label(text);
             self.obj().notify_prefix_text();
         }
 
@@ -253,12 +253,12 @@ mod imp {
         }
 
         /// Set the suffix text of the entry.
-        fn set_suffix_text(&self, text: glib::GString) {
+        fn set_suffix_text(&self, text: &str) {
             if self.suffix_text() == text {
                 return;
             }
 
-            self.entry_suffix_label.set_label(&text);
+            self.entry_suffix_label.set_label(text);
             self.obj().notify_suffix_text();
         }
 
@@ -295,12 +295,12 @@ mod imp {
         }
 
         /// Set the tooltip text of the add button.
-        fn set_add_button_tooltip_text(&self, tooltip_text: Option<glib::GString>) {
-            if self.add_button_tooltip_text() == tooltip_text {
+        fn set_add_button_tooltip_text(&self, tooltip_text: Option<&str>) {
+            if self.add_button_tooltip_text().as_deref() == tooltip_text {
                 return;
             }
 
-            self.add_button.set_tooltip_text(tooltip_text.as_deref());
+            self.add_button.set_tooltip_text(tooltip_text);
             self.obj().notify_add_button_tooltip_text();
         }
 
@@ -353,7 +353,7 @@ mod imp {
             obj.notify_is_loading();
         }
 
-        /// Update the accessible_description.
+        /// Update the accessible description.
         fn update_accessible_description(&self) {
             let description = self
                 .accessible_description

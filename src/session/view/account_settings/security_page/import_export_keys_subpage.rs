@@ -113,7 +113,7 @@ mod imp {
             self.file_path
                 .borrow()
                 .as_ref()
-                .and_then(|file| file.path())
+                .and_then(gio::File::path)
                 .map(|path| path.to_string_lossy().to_string())
         }
     }
@@ -318,7 +318,7 @@ impl ImportExportKeysSubpage {
                 encryption
                     .export_room_keys(file_path, passphrase.as_str(), |_| true)
                     .await
-                    .map(|_| 0usize)
+                    .map(|()| 0usize)
                     .map_err::<Box<dyn std::error::Error + Send>, _>(|error| Box::new(error))
             } else {
                 encryption
@@ -334,13 +334,14 @@ impl ImportExportKeysSubpage {
                 if is_export {
                     toast!(self, gettext("Room encryption keys exported successfully"));
                 } else {
+                    let n = nb.try_into().unwrap_or(u32::MAX);
                     toast!(
                         self,
                         ngettext_f(
                             "Imported 1 room encryption key",
                             "Imported {n} room encryption keys",
-                            nb as u32,
-                            &[("n", &nb.to_string())]
+                            n,
+                            &[("n", &n.to_string())]
                         )
                     );
                 }

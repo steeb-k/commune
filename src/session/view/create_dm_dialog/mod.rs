@@ -77,13 +77,13 @@ mod imp {
 
     impl CreateDmDialog {
         /// Set the current session.
-        pub(super) fn set_session(&self, session: Option<Session>) {
-            if self.session.upgrade() == session {
+        pub(super) fn set_session(&self, session: Option<&Session>) {
+            if self.session.upgrade().as_ref() == session {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(session) = &session {
+            if let Some(session) = session {
                 let user_list = DmUserList::new(session);
 
                 // We don't need to disconnect this signal since the `DmUserList` will be
@@ -116,7 +116,7 @@ mod imp {
                 self.list_box.unbind_model();
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
             obj.notify_session();
         }
     }
@@ -155,10 +155,10 @@ impl CreateDmDialog {
     }
 
     #[template_callback]
-    fn row_activated_cb(&self, row: gtk::ListBoxRow) {
+    fn row_activated_cb(&self, row: &gtk::ListBoxRow) {
         let Some(user) = row
             .downcast_ref::<PillSourceRow>()
-            .and_then(|r| r.source())
+            .and_then(PillSourceRow::source)
             .and_downcast::<User>()
         else {
             return;
@@ -189,19 +189,16 @@ impl CreateDmDialog {
             return;
         };
 
-        match user.get_or_create_direct_chat().await {
-            Ok(room) => {
-                let Some(window) = parent.root().and_downcast::<Window>() else {
-                    return;
-                };
+        if let Ok(room) = user.get_or_create_direct_chat().await {
+            let Some(window) = parent.root().and_downcast::<Window>() else {
+                return;
+            };
 
-                window.session_view().select_room(Some(room));
-                self.close();
-            }
-            Err(_) => {
-                self.show_error(&gettext("Could not create a new Direct Chat"));
-                self.imp().search_entry.set_sensitive(true);
-            }
+            window.session_view().select_room(Some(room));
+            self.close();
+        } else {
+            self.show_error(&gettext("Could not create a new Direct Chat"));
+            self.imp().search_entry.set_sensitive(true);
         }
     }
 }

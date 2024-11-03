@@ -33,7 +33,7 @@ pub enum RoomCategory {
 
 impl RoomCategory {
     /// Check whether this `RoomCategory` can be changed to the given category.
-    pub fn can_change_to(&self, category: Self) -> bool {
+    pub fn can_change_to(self, category: Self) -> bool {
         match self {
             Self::Invited => {
                 matches!(
@@ -58,7 +58,7 @@ impl RoomCategory {
     }
 
     /// Whether this `RoomCategory` corresponds to the given state.
-    pub fn is_state(&self, state: RoomState) -> bool {
+    pub fn is_state(self, state: RoomState) -> bool {
         match self {
             RoomCategory::Invited | RoomCategory::Ignored => state == RoomState::Invited,
             RoomCategory::Favorite

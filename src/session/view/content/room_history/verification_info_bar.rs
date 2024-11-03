@@ -113,10 +113,10 @@ mod imp {
 
     impl VerificationInfoBar {
         /// Set the identity verification presented by this info bar.
-        fn set_verification(&self, verification: Option<IdentityVerification>) {
+        fn set_verification(&self, verification: Option<&IdentityVerification>) {
             let prev_verification = self.verification.obj();
 
-            if prev_verification == verification {
+            if prev_verification.as_ref() == verification {
                 return;
             }
 
@@ -127,7 +127,7 @@ mod imp {
             }
             self.verification.disconnect_signals();
 
-            if let Some(verification) = &verification {
+            if let Some(verification) = verification {
                 let user_handler = verification.user().connect_display_name_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,

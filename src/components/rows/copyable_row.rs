@@ -100,12 +100,12 @@ mod imp {
         }
 
         /// Set the tooltip text of the copy button.
-        fn set_copy_button_tooltip_text(&self, tooltip_text: Option<glib::GString>) {
-            if self.copy_button_tooltip_text() == tooltip_text {
+        fn set_copy_button_tooltip_text(&self, tooltip_text: Option<&str>) {
+            if self.copy_button_tooltip_text().as_deref() == tooltip_text {
                 return;
             }
 
-            self.copy_button.set_tooltip_text(tooltip_text.as_deref());
+            self.copy_button.set_tooltip_text(tooltip_text);
             self.obj().notify_copy_button_tooltip_text();
         }
 

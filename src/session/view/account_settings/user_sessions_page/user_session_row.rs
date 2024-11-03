@@ -126,7 +126,7 @@ mod imp {
                 .user_session
                 .borrow()
                 .as_ref()
-                .and_then(|s| s.last_seen_ts())
+                .and_then(UserSession::last_seen_ts)
             else {
                 return;
             };
@@ -284,7 +284,7 @@ impl UserSessionRow {
         imp.disconnect_button.set_is_loading(true);
 
         match user_session.delete(self).await {
-            Ok(_) => self.set_visible(false),
+            Ok(()) => self.set_visible(false),
             Err(AuthError::UserCancelled) => {}
             Err(_) => {
                 let device_name = user_session.display_name();

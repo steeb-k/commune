@@ -99,11 +99,10 @@ mod imp {
             if self.notifications_enabled() == enabled {
                 return;
             }
-            let obj = self.obj();
 
             self.stored_settings.borrow_mut().notifications_enabled = enabled;
-            obj.save();
-            obj.notify_notifications_enabled();
+            super::SessionSettings::save();
+            self.obj().notify_notifications_enabled();
         }
 
         /// Whether public read receipts are enabled for this session.
@@ -116,13 +115,12 @@ mod imp {
             if self.public_read_receipts_enabled() == enabled {
                 return;
             }
-            let obj = self.obj();
 
             self.stored_settings
                 .borrow_mut()
                 .public_read_receipts_enabled = enabled;
-            obj.save();
-            obj.notify_public_read_receipts_enabled();
+            super::SessionSettings::save();
+            self.obj().notify_public_read_receipts_enabled();
         }
 
         /// Whether typing notifications are enabled for this session.
@@ -135,11 +133,10 @@ mod imp {
             if self.typing_enabled() == enabled {
                 return;
             }
-            let obj = self.obj();
 
             self.stored_settings.borrow_mut().typing_enabled = enabled;
-            obj.save();
-            obj.notify_typing_enabled();
+            super::SessionSettings::save();
+            self.obj().notify_typing_enabled();
         }
     }
 }
@@ -160,19 +157,19 @@ impl SessionSettings {
 
     /// Restore existing `SessionSettings` with the given session ID and stored
     /// settings.
-    pub fn restore(session_id: &str, stored_settings: StoredSessionSettings) -> Self {
+    pub fn restore(session_id: &str, stored_settings: &StoredSessionSettings) -> Self {
         glib::Object::builder()
             .property("session-id", session_id)
-            .property("stored-settings", &stored_settings)
+            .property("stored-settings", stored_settings)
             .build()
     }
 
-    /// Save the settings in the GSettings.
-    fn save(&self) {
+    /// Save these settings in the application settings.
+    fn save() {
         Application::default().session_list().settings().save();
     }
 
-    /// Delete the settings from the GSettings.
+    /// Delete the settings from the application settings.
     pub fn delete(&self) {
         Application::default()
             .session_list()
@@ -199,7 +196,7 @@ impl SessionSettings {
             .stored_settings
             .borrow_mut()
             .explore_custom_servers = servers;
-        self.save();
+        Self::save();
     }
 
     /// Whether the section with the given name is expanded.
@@ -218,7 +215,7 @@ impl SessionSettings {
             .borrow_mut()
             .sections_expanded
             .set_section_expanded(section_name, expanded);
-        self.save();
+        Self::save();
     }
 }
 

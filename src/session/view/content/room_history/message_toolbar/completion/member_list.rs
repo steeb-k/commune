@@ -182,7 +182,7 @@ mod imp {
                 }
             }
 
-            if let Some(room) = members.as_ref().and_then(|m| m.room()) {
+            if let Some(room) = members.as_ref().and_then(MemberList::room) {
                 let room_handler = room.connect_is_direct_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,

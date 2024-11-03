@@ -76,10 +76,10 @@ mod imp {
 
     impl SasPage {
         /// Set the current identity verification.
-        fn set_verification(&self, verification: Option<IdentityVerification>) {
+        fn set_verification(&self, verification: Option<&IdentityVerification>) {
             let prev_verification = self.verification.obj();
 
-            if prev_verification == verification {
+            if prev_verification.as_ref() == verification {
                 return;
             }
             let obj = self.obj();
@@ -93,7 +93,7 @@ mod imp {
             }
             self.verification.disconnect_signals();
 
-            if let Some(verification) = &verification {
+            if let Some(verification) = verification {
                 let display_name_handler = verification.user().connect_display_name_notify(clone!(
                     #[weak]
                     obj,
@@ -218,8 +218,7 @@ impl SasPage {
             for (index, emoji) in emoji_list.iter().enumerate() {
                 let emoji_name = emoji_i18n
                     .get(emoji.description)
-                    .map(String::as_str)
-                    .unwrap_or(emoji.description);
+                    .map_or(emoji.description, String::as_str);
                 let emoji_widget = SasEmoji::new(emoji.symbol, emoji_name);
 
                 if index < 4 {

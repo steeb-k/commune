@@ -29,10 +29,10 @@ pub fn paintable_as_notification_icon(
     paintable: &gdk::Paintable,
     helper_widget: &gtk::Widget,
 ) -> Result<gdk::Texture, glib::Error> {
-    let img_width = paintable.intrinsic_width() as f64;
-    let img_height = paintable.intrinsic_height() as f64;
+    let img_width = f64::from(paintable.intrinsic_width());
+    let img_height = f64::from(paintable.intrinsic_height());
 
-    let mut icon_size = (NOTIFICATION_ICON_SIZE * helper_widget.scale_factor()) as f64;
+    let mut icon_size = f64::from(NOTIFICATION_ICON_SIZE * helper_widget.scale_factor());
     let mut snap_width = img_width;
     let mut snap_height = img_height;
     let mut x_pos = 0.0;

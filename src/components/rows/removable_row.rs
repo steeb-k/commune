@@ -71,12 +71,12 @@ mod imp {
         }
 
         /// Set the tooltip text of the remove button.
-        fn set_remove_button_tooltip_text(&self, tooltip_text: Option<glib::GString>) {
-            if self.remove_button_tooltip_text() == tooltip_text {
+        fn set_remove_button_tooltip_text(&self, tooltip_text: Option<&str>) {
+            if self.remove_button_tooltip_text().as_deref() == tooltip_text {
                 return;
             }
 
-            self.remove_button.set_tooltip_text(tooltip_text.as_deref());
+            self.remove_button.set_tooltip_text(tooltip_text);
             self.obj().notify_remove_button_tooltip_text();
         }
 

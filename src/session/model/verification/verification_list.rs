@@ -213,10 +213,10 @@ impl VerificationList {
         }
 
         let other_user_id = request.other_user_id().to_owned();
-        let member = room
-            .members()
-            .map(|l| l.get_or_create(other_user_id.clone()))
-            .unwrap_or_else(|| Member::new(&room, other_user_id.clone()));
+        let member = room.members().map_or_else(
+            || Member::new(&room, other_user_id.clone()),
+            |l| l.get_or_create(other_user_id.clone()),
+        );
 
         // Ensure the member is up-to-date.
         let matrix_room = room.matrix_room().clone();
@@ -277,7 +277,7 @@ impl VerificationList {
 
         let (pos, _) = imp.list.borrow_mut().insert_full(key, verification);
 
-        self.items_changed(pos as u32, 0, 1)
+        self.items_changed(pos as u32, 0, 1);
     }
 
     /// Remove the verification with the given key.

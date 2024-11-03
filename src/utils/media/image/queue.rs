@@ -132,7 +132,7 @@ impl ImageRequestQueue {
     /// Retry the request with the given ID.
     ///
     /// If `lower_limit` is `true`, we will also lower the limit of the queue.
-    async fn retry_request(&self, request_id: ImageRequestId, lower_limit: bool) {
+    async fn retry_request(&self, request_id: &ImageRequestId, lower_limit: bool) {
         self.inner
             .lock()
             .await
@@ -261,8 +261,8 @@ impl ImageRequestQueueInner {
     /// Retry the request with the given ID.
     ///
     /// If `lower_limit` is `true`, we will also lower the limit of the queue.
-    fn retry_request(&mut self, request_id: ImageRequestId, lower_limit: bool) {
-        self.ongoing.remove(&request_id);
+    fn retry_request(&mut self, request_id: &ImageRequestId, lower_limit: bool) {
+        self.ongoing.remove(request_id);
 
         if lower_limit {
             // Only one request at a time until the problem is likely fixed.
@@ -271,7 +271,7 @@ impl ImageRequestQueueInner {
 
         let is_limit_reached = self.is_limit_reached();
 
-        match self.requests.get_mut(&request_id) {
+        match self.requests.get_mut(request_id) {
             Some(request) => {
                 request.retries_count += 1;
 
@@ -394,10 +394,10 @@ impl ImageRequest {
 
     /// Whether we can retry a request with the given retries count and after
     /// the given error.
-    fn can_retry(retries_count: u8, error: &ImageError) -> bool {
+    fn can_retry(retries_count: u8, error: ImageError) -> bool {
         // Retry if we have not the max retry count && if it's a glycin error.
         // We assume that the download requests have already been retried by the client.
-        retries_count < MAX_REQUEST_RETRY_COUNT && *error == ImageError::Unknown
+        retries_count < MAX_REQUEST_RETRY_COUNT && error == ImageError::Unknown
     }
 
     /// Spawn this request.
@@ -429,7 +429,7 @@ impl ImageRequest {
             };
 
             let result = data.await;
-            let duration = Instant::now() - start_time;
+            let duration = start_time.elapsed();
             trace!(
                 "Request {request_id} took {} ms, result: {result:?}",
                 duration.as_millis()
@@ -447,12 +447,12 @@ impl ImageRequest {
             if let Some(error) = result
                 .as_ref()
                 .err()
-                .filter(|error| Self::can_retry(retries_count, error))
+                .filter(|error| Self::can_retry(retries_count, **error))
             {
                 // Lower the limit of the queue if it is an I/O error, usually it means that glycin cannot spawn a sandbox.
                 let lower_limit = *error == ImageError::Io;
                 IMAGE_QUEUE
-                    .retry_request(request_id.clone(), lower_limit)
+                    .retry_request(&request_id, lower_limit)
                     .await;
                 return;
             }

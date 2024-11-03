@@ -2,7 +2,6 @@
     html_logo_url = "https://gitlab.gnome.org/World/fractal/-/raw/main/data/icons/org.gnome.Fractal.svg?inline=false",
     html_favicon_url = "https://gitlab.gnome.org/World/fractal/-/raw/main/data/icons/org.gnome.Fractal-symbolic.svg?inline=false"
 )]
-#![allow(clippy::new_without_default)]
 
 mod account_chooser_dialog;
 mod account_switcher;

@@ -96,7 +96,7 @@ mod imp {
                 let user = session.user();
 
                 if let Some(handler) = self.avatar_uri_handler.take() {
-                    user.avatar_data().image().unwrap().disconnect(handler)
+                    user.avatar_data().image().unwrap().disconnect(handler);
                 }
                 if let Some(handler) = self.display_name_handler.take() {
                     user.disconnect(handler);
@@ -123,7 +123,7 @@ mod imp {
                     #[weak]
                     obj,
                     move |avatar_image| {
-                        obj.user_avatar_changed(avatar_image.uri());
+                        obj.user_avatar_changed(avatar_image.uri().as_ref());
                     }
                 ));
             self.avatar_uri_handler.replace(Some(avatar_uri_handler));
@@ -132,7 +132,7 @@ mod imp {
                 #[weak]
                 obj,
                 move |user| {
-                    obj.user_display_name_changed(user.display_name());
+                    obj.user_display_name_changed(&user.display_name());
                 }
             ));
             self.display_name_handler
@@ -189,11 +189,11 @@ impl GeneralPage {
     }
 
     /// Update the view when the user's avatar changed.
-    fn user_avatar_changed(&self, uri: Option<OwnedMxcUri>) {
+    fn user_avatar_changed(&self, uri: Option<&OwnedMxcUri>) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_avatar.borrow().as_ref() {
-            if uri.as_ref() != action.as_value() {
+            if uri != action.as_value() {
                 // This is not the change we expected, maybe another device did a change too.
                 // Let's wait for another change.
                 return;
@@ -257,13 +257,13 @@ impl GeneralPage {
             spawn_tokio!(async move { client.account().set_avatar_url(Some(&uri_clone)).await });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 // If the user is in no rooms, we won't receive the update via sync, so change
                 // the avatar manually if this request succeeds before the avatar is updated.
                 // Because this action can finish in user_avatar_changed, we must only act if
                 // this is still the current action.
                 if weak_action.is_ongoing() {
-                    session.user().set_avatar_url(Some(uri))
+                    session.user().set_avatar_url(Some(uri));
                 }
             }
             Err(error) => {
@@ -313,13 +313,13 @@ impl GeneralPage {
         let handle = spawn_tokio!(async move { client.account().set_avatar_url(None).await });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 // If the user is in no rooms, we won't receive the update via sync, so change
                 // the avatar manually if this request succeeds before the avatar is updated.
                 // Because this action can finish in avatar_changed, we must only act if this is
                 // still the current action.
                 if weak_action.is_ongoing() {
-                    session.user().set_avatar_url(None)
+                    session.user().set_avatar_url(None);
                 }
             }
             Err(error) => {
@@ -356,11 +356,11 @@ impl GeneralPage {
     }
 
     /// Update the view when the user's display name changed.
-    fn user_display_name_changed(&self, name: String) {
+    fn user_display_name_changed(&self, name: &str) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_display_name.borrow().as_ref() {
-            if action.as_value() == Some(&name) {
+            if action.as_value().map(String::as_str) == Some(name) {
                 // This is not the change we expected, maybe another device did a change too.
                 // Let's wait for another change.
                 return;
@@ -416,7 +416,7 @@ impl GeneralPage {
         });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 // If the user is in no rooms, we won't receive the update via sync, so change
                 // the avatar manually if this request succeeds before the avatar is updated.
                 // Because this action can finish in user_display_name_changed, we must only act

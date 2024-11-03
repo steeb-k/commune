@@ -186,7 +186,7 @@ impl SidebarItemList {
         self.imp()
             .list()
             .get(index)
-            .map(|item| item.inner_item())
+            .map(SidebarItem::inner_item)
             .and_downcast()
     }
 }

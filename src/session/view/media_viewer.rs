@@ -207,7 +207,7 @@ mod imp {
 
     impl WidgetImpl for MediaViewer {
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
-            let swipe_y_offset = -height as f64 * self.swipe_progress.get();
+            let swipe_y_offset = -f64::from(height) * self.swipe_progress.get();
             let allocation = gtk::Allocation::new(0, swipe_y_offset as i32, width, height);
             self.toolbar_view.size_allocate(&allocation, baseline);
         }
@@ -236,7 +236,7 @@ mod imp {
         }
 
         fn distance(&self) -> f64 {
-            self.obj().height() as f64
+            self.obj().height().into()
         }
 
         fn progress(&self) -> f64 {

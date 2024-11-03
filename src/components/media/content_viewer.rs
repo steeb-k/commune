@@ -21,7 +21,7 @@ pub enum ContentType {
 }
 
 impl ContentType {
-    pub fn icon_name(&self) -> &'static str {
+    pub fn icon_name(self) -> &'static str {
         match self {
             ContentType::Image => "image-symbolic",
             ContentType::Audio => "audio-symbolic",
@@ -236,7 +236,7 @@ impl MediaContentViewer {
 
         let content_type: ContentType = file_info
             .as_ref()
-            .and_then(|info| info.content_type())
+            .and_then(gio::FileInfo::content_type)
             .and_then(|content_type| gio::content_type_get_mime_type(&content_type))
             .and_then(|mime| mime.split('/').next().map(Into::into))
             .unwrap_or_default();
@@ -286,7 +286,7 @@ impl MediaContentViewer {
                 self.show_viewer();
                 return;
             }
-            _ => {}
+            ContentType::Unknown => {}
         }
 
         self.show_fallback(content_type);

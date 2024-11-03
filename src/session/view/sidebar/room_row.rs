@@ -280,7 +280,7 @@ impl RoomRow {
                 room.notification_count() as u32,
                 &[("count", &room.notification_count().to_string())],
             );
-            format!("{} {}", name, count)
+            format!("{name} {count}")
         } else {
             name
         }

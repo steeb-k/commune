@@ -76,7 +76,7 @@ mod imp {
 
             self.expression.replace(expression);
             if let Some(change) = change {
-                obj.changed(change)
+                obj.changed(change);
             }
             obj.notify_expression();
         }
@@ -98,7 +98,7 @@ mod imp {
 
             self.room_category.set(category);
             if let Some(change) = change {
-                obj.changed(change)
+                obj.changed(change);
             }
             obj.notify_room_category();
         }

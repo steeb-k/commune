@@ -168,7 +168,7 @@ mod imp {
 
                 self.media.allocate(width, height, baseline, None);
             } else {
-                self.media.allocate(width, height, baseline, None)
+                self.media.allocate(width, height, baseline, None);
             }
         }
 
@@ -309,7 +309,13 @@ impl MessageVisualMedia {
     fn build(&self, media_message: VisualMediaMessage, session: &Session) {
         let filename = media_message.filename();
 
-        let accessible_label = if !filename.is_empty() {
+        let accessible_label = if filename.is_empty() {
+            match &media_message {
+                VisualMediaMessage::Image(_) => gettext("Image"),
+                VisualMediaMessage::Sticker(_) => gettext("Sticker"),
+                VisualMediaMessage::Video(_) => gettext("Video"),
+            }
+        } else {
             match &media_message {
                 VisualMediaMessage::Image(_) => {
                     gettext_f("Image: {filename}", &[("filename", &filename)])
@@ -320,12 +326,6 @@ impl MessageVisualMedia {
                 VisualMediaMessage::Video(_) => {
                     gettext_f("Video: {filename}", &[("filename", &filename)])
                 }
-            }
-        } else {
-            match &media_message {
-                VisualMediaMessage::Image(_) => gettext("Image"),
-                VisualMediaMessage::Sticker(_) => gettext("Sticker"),
-                VisualMediaMessage::Video(_) => gettext("Video"),
             }
         };
         self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
@@ -357,8 +357,10 @@ impl MessageVisualMedia {
                 let scale_factor = self.scale_factor();
                 let settings = ThumbnailSettings {
                     dimensions: ImageDimensions {
-                        width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32),
-                        height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32),
+                        width: u32::try_from(MAX_THUMBNAIL_WIDTH * scale_factor)
+                            .unwrap_or_default(),
+                        height: u32::try_from(MAX_THUMBNAIL_HEIGHT * scale_factor)
+                            .unwrap_or_default(),
                     },
                     method: Method::Scale,
                     animated: true,
@@ -416,7 +418,7 @@ impl MessageVisualMedia {
                     child
                 };
                 child.set_compact(self.compact());
-                child.play_media_file(file)
+                child.play_media_file(file);
             }
         };
 

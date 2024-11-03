@@ -86,10 +86,10 @@ mod imp {
 
     impl ChooseMethodPage {
         /// Set the current identity verification.
-        fn set_verification(&self, verification: Option<IdentityVerification>) {
+        fn set_verification(&self, verification: Option<&IdentityVerification>) {
             let prev_verification = self.verification.obj();
 
-            if prev_verification == verification {
+            if prev_verification.as_ref() == verification {
                 return;
             }
             let obj = self.obj();
@@ -103,7 +103,7 @@ mod imp {
             }
             self.verification.disconnect_signals();
 
-            if let Some(verification) = &verification {
+            if let Some(verification) = verification {
                 let display_name_handler = verification.user().connect_display_name_notify(clone!(
                     #[weak]
                     obj,
@@ -195,10 +195,10 @@ impl ChooseMethodPage {
         if !qr_code_visible {
             if has_several_options {
                 imp.instructions
-                    .set_label(&gettext("Select a verification method to proceed."))
+                    .set_label(&gettext("Select a verification method to proceed."));
             } else {
                 imp.instructions
-                    .set_label(&gettext("Click on the verification method to proceed."))
+                    .set_label(&gettext("Click on the verification method to proceed."));
             }
         }
 

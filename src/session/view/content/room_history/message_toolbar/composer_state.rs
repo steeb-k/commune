@@ -122,11 +122,10 @@ mod imp {
                 .related_to
                 .borrow()
                 .as_ref()
-                .map(|r| r.as_draft_type())
-                .unwrap_or(ComposerDraftType::NewMessage);
+                .map_or(ComposerDraftType::NewMessage, RelationInfo::as_draft_type);
 
             let (start, end) = self.buffer.bounds();
-            let body_len = end.offset() as usize;
+            let body_len = end.offset().try_into().unwrap_or_default();
             let mut plain_text = String::with_capacity(body_len);
 
             let split_message = MessageBufferParser::new(&obj, start, end);
@@ -145,8 +144,7 @@ mod imp {
                                 room.aliases()
                                     .alias()
                                     .as_ref()
-                                    .map(AsRef::as_ref)
-                                    .unwrap_or_else(|| room.room_id().as_ref()),
+                                    .map_or_else(|| room.room_id().as_ref(), AsRef::as_ref),
                             );
                         } else if source.is::<AtRoom>() {
                             plain_text.push_str(AT_ROOM);
@@ -488,7 +486,7 @@ impl ComposerState {
         };
 
         // Try to detect `@room` mentions.
-        let can_contain_at_room = message.mentions().map(|m| m.room).unwrap_or(true);
+        let can_contain_at_room = message.mentions().map_or(true, |m| m.room);
         if room.permissions().can_notify_room() && can_contain_at_room {
             if let Some(start) = find_at_room(&text) {
                 let pill = room.at_room().to_pill();
@@ -523,7 +521,7 @@ impl ComposerState {
             }
 
             if pos != text.len() {
-                buffer.insert(&mut iter, &text[pos..])
+                buffer.insert(&mut iter, &text[pos..]);
             }
         }
 
@@ -629,13 +627,14 @@ impl<'a> DraftMention<'a> {
             let room_list = session.room_list();
 
             match RoomOrAliasId::parse(s) {
-                Ok(identifier) => match room_list.get_by_identifier(&identifier) {
-                    Some(room) => Self::Source(room.upcast()),
-                    None => {
+                Ok(identifier) => {
+                    if let Some(room) = room_list.get_by_identifier(&identifier) {
+                        Self::Source(room.upcast())
+                    } else {
                         warn!("Could not find room `{s}` from serialized mention");
                         Self::Text(s)
                     }
-                },
+                }
                 Err(error) => {
                     error!(
                         "Could not parse room identifier `{s}` from serialized mention: {error}"

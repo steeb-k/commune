@@ -181,13 +181,10 @@ mod imp {
         }
 
         /// Set the global notifications setting, as a string.
-        fn set_global_setting(&self, default: String) {
-            let default = match default.parse::<NotificationsGlobalSetting>() {
-                Ok(default) => default,
-                Err(_) => {
-                    error!("Invalid value to set global default notifications setting: {default}");
-                    return;
-                }
+        fn set_global_setting(&self, default: &str) {
+            let Ok(default) = default.parse::<NotificationsGlobalSetting>() else {
+                error!("Invalid value to set global default notifications setting: {default}");
+                return;
             };
 
             let obj = self.obj();
@@ -451,7 +448,7 @@ impl NotificationsPage {
 
             if let Some(keyword) = keyword_obj
                 .downcast_ref::<gtk::StringObject>()
-                .map(|o| o.string())
+                .map(gtk::StringObject::string)
             {
                 if keyword.to_lowercase() == text {
                     return false;

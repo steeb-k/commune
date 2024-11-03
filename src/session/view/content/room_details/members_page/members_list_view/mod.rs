@@ -99,20 +99,12 @@ mod imp {
             // GtkSearchBear.
             self.search_bar.connect_entry(&*self.search_entry);
 
-            fn search_string(member: Member) -> String {
-                format!(
-                    "{} {} {} {}",
-                    member.display_name(),
-                    member.user_id(),
-                    member.role(),
-                    member.power_level(),
-                )
-            }
-
             let member_expr = gtk::ClosureExpression::new::<String>(
                 &[] as &[gtk::Expression],
                 closure!(|item: Option<glib::Object>| {
-                    item.and_downcast().map(search_string).unwrap_or_default()
+                    item.and_downcast_ref()
+                        .map(Member::search_string)
+                        .unwrap_or_default()
                 }),
             );
             let search_filter = gtk::StringFilter::builder()

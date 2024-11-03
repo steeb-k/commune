@@ -120,17 +120,27 @@ mod imp {
     impl ObjectImpl for RoomVersion {}
 
     impl RoomVersion {
+        /// The ID of this version.
+        pub(super) fn id(&self) -> &RoomVersionId {
+            self.id.get().expect("id is initialized")
+        }
+
+        /// The stability of this version.
+        fn stability(&self) -> &RoomVersionStability {
+            self.stability.get().expect("stability is initialized")
+        }
+
         /// The string used to display this version.
         fn display_string(&self) -> String {
-            let id = self.id.get().unwrap();
-            let stability = self.stability.get().unwrap();
+            let id = self.id();
+            let stability = self.stability();
 
-            if *stability != RoomVersionStability::Stable {
+            if *stability == RoomVersionStability::Stable {
+                id.to_string()
+            } else {
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name.
                 gettext_f("{version} (unstable)", &[("version", id.as_str())])
-            } else {
-                id.to_string()
             }
         }
     }
@@ -154,12 +164,7 @@ impl RoomVersion {
     }
 
     /// The ID of this version.
-    pub fn id(&self) -> &RoomVersionId {
-        self.imp().id.get().unwrap()
-    }
-
-    /// The stability of this version.
-    pub fn stability(&self) -> &RoomVersionStability {
-        self.imp().stability.get().unwrap()
+    pub(crate) fn id(&self) -> &RoomVersionId {
+        self.imp().id()
     }
 }

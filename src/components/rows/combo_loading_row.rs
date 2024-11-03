@@ -167,7 +167,8 @@ mod imp {
             let obj = self.obj();
 
             obj.set_subtitle(string.as_deref().unwrap_or_default());
-            self.selected_string.replace(string.clone());
+            self.selected_string.replace(string);
+
             self.update_selected();
             obj.notify_selected_string();
         }

@@ -195,7 +195,7 @@ mod imp {
 
             // Keep a strong reference to the members list.
             self.room_members
-                .replace(room.as_ref().map(|r| r.get_or_create_members()));
+                .replace(room.as_ref().map(Room::get_or_create_members));
             self.room.replace(room);
 
             obj.notify_room();
@@ -273,27 +273,24 @@ impl Invite {
 
         let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
 
-        let closed = match room.set_category(RoomCategory::Left).await {
-            Ok(_) => {
-                // A room where we were invited is usually empty so just close it.
-                let _ = self.activate_action("session.close-room", None);
-                true
-            }
-            Err(_) => {
-                toast!(
-                    self,
-                    gettext(
-                        // Translators: Do NOT translate the content between '{' and '}', this
-                        // is a variable name.
-                        "Could not decline invitation for {room}",
-                    ),
-                    @room,
-                );
+        let closed = if room.set_category(RoomCategory::Left).await.is_ok() {
+            // A room where we were invited is usually empty so just close it.
+            let _ = self.activate_action("session.close-room", None);
+            true
+        } else {
+            toast!(
+                self,
+                gettext(
+                    // Translators: Do NOT translate the content between '{' and '}', this
+                    // is a variable name.
+                    "Could not decline invitation for {room}",
+                ),
+                @room,
+            );
 
-                imp.decline_requests.borrow_mut().remove(&room);
-                self.reset();
-                false
-            }
+            imp.decline_requests.borrow_mut().remove(&room);
+            self.reset();
+            false
         };
 
         if let Some(inviter) = ignored_inviter {

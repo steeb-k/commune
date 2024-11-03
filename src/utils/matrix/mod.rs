@@ -42,6 +42,7 @@ use crate::{
 
 /// The result of a password validation.
 #[derive(Debug, Default, Clone, Copy)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct PasswordValidity {
     /// Whether the password includes at least one lowercase letter.
     pub has_lowercase: bool,
@@ -162,10 +163,10 @@ pub fn get_event_body(
         AnySyncOrStrippedTimelineEvent::Sync(AnySyncTimelineEvent::MessageLike(message)) => {
             get_message_event_body(message, sender_name, show_sender)
         }
+        AnySyncOrStrippedTimelineEvent::Sync(_) => None,
         AnySyncOrStrippedTimelineEvent::Stripped(state) => {
             get_stripped_state_event_body(state, sender_name, own_user)
         }
-        _ => None,
     }
 }
 
@@ -485,13 +486,13 @@ impl MatrixIdUri {
                     .map(Pill::new)
                     .or_else(|| Some(Pill::new(&RemoteRoom::new(&session, room_uri))))
             }
-            MatrixIdUri::User(user_id) => {
+            Self::User(user_id) => {
                 // We should have a strong reference to the list wherever we show a user pill,
                 // so we can use `get_or_create_members()`.
                 let user = room.get_or_create_members().get_or_create(user_id);
                 Some(Pill::new(&user))
             }
-            _ => None,
+            Self::Event(_) => None,
         }
     }
 }
@@ -502,7 +503,7 @@ impl TryFrom<&MatrixUri> for MatrixIdUri {
     fn try_from(uri: &MatrixUri) -> Result<Self, Self::Error> {
         // We ignore the action, because we always offer to join a room or DM a user.
         Self::try_from_parts(uri.id().clone(), uri.via())
-            .map_err(|_| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
     }
 }
 
@@ -519,7 +520,7 @@ impl TryFrom<&MatrixToUri> for MatrixIdUri {
 
     fn try_from(uri: &MatrixToUri) -> Result<Self, Self::Error> {
         Self::try_from_parts(uri.id().clone(), uri.via())
-            .map_err(|_| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
     }
 }
 

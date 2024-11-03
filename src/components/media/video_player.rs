@@ -68,7 +68,7 @@ mod imp {
                     move |_, message| {
                         match PlayMessage::parse(message) {
                             Ok(PlayMessage::DurationChanged { duration }) => {
-                                obj.duration_changed(duration)
+                                obj.duration_changed(duration);
                             }
                             Ok(PlayMessage::Warning { error, .. }) => {
                                 warn!("Warning playing video: {error}");
@@ -135,10 +135,13 @@ impl VideoPlayer {
 
     /// Set the file to display.
     pub fn play_media_file(&self, file: gio::File) {
-        self.imp().file.replace(Some(file.clone()));
+        let uri = file.uri();
+
+        self.imp().file.replace(Some(file));
         self.duration_changed(None);
+
         let player = self.player();
-        player.set_uri(Some(file.uri().as_ref()));
+        player.set_uri(Some(uri.as_ref()));
         player.set_audio_track_enabled(false);
     }
 

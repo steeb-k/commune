@@ -44,7 +44,7 @@ mod imp {
     impl BinImpl for AudioPlayer {}
 
     impl AudioPlayer {
-        /// Set the media_file to play.
+        /// Set the media file to play.
         fn set_media_file(&self, media_file: Option<gtk::MediaFile>) {
             if self.media_file.obj() == media_file {
                 return;
@@ -58,7 +58,7 @@ mod imp {
                 if self.autoplay.get() {
                     let prepared_handler = media_file.connect_prepared_notify(|media_file| {
                         if media_file.is_prepared() {
-                            media_file.play()
+                            media_file.play();
                         }
                     });
                     handlers.push(prepared_handler);

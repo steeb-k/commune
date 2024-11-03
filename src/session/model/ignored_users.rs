@@ -63,12 +63,12 @@ mod imp {
 
     impl IgnoredUsers {
         /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            if self.session.upgrade() == session {
+        fn set_session(&self, session: Option<&Session>) {
+            if self.session.upgrade().as_ref() == session {
                 return;
             }
 
-            self.session.set(session.as_ref());
+            self.session.set(session);
 
             self.init();
             self.obj().notify_session();
@@ -223,7 +223,7 @@ impl IgnoredUsers {
             spawn_tokio!(async move { client.account().ignore_user(&user_id_clone).await });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 let (pos, added) = self.imp().list.borrow_mut().insert_full(user_id.clone());
 
                 if added {
@@ -255,7 +255,7 @@ impl IgnoredUsers {
             spawn_tokio!(async move { client.account().unignore_user(&user_id_clone).await });
 
         match handle.await.unwrap() {
-            Ok(_) => {
+            Ok(()) => {
                 let removed = self.imp().list.borrow_mut().shift_remove_full(user_id);
 
                 if let Some((pos, _)) = removed {

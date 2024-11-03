@@ -150,7 +150,7 @@ glib::wrapper! {
 impl LinuxLocation {
     /// Create a new `LinuxLocation`.
     ///
-    /// Use `LinuxLocation::default()` to get a shared GObject.
+    /// Use `LinuxLocation::default()` to get a shared object.
     pub fn new() -> Self {
         glib::Object::new()
     }

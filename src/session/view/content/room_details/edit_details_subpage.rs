@@ -106,7 +106,7 @@ mod imp {
                         #[weak]
                         avatar_data,
                         move || {
-                            imp.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
+                            imp.avatar_changed(avatar_data.image().and_then(|i| i.uri()).as_ref());
                         }
                     ),
                 );
@@ -116,14 +116,14 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 move |room| {
-                    imp.name_changed(room.name());
+                    imp.name_changed(room.name().as_deref());
                 }
             ));
             let topic_handler = room.connect_topic_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |room| {
-                    imp.topic_changed(room.topic());
+                    imp.topic_changed(room.topic().as_deref());
                 }
             ));
 
@@ -132,9 +132,9 @@ mod imp {
         }
 
         /// Handle when we receive an avatar URI change from the homeserver.
-        fn avatar_changed(&self, uri: Option<OwnedMxcUri>) {
+        fn avatar_changed(&self, uri: Option<&OwnedMxcUri>) {
             if let Some(action) = self.changing_avatar.borrow().as_ref() {
-                if uri.as_ref() != action.as_value() {
+                if uri != action.as_value() {
                     // This is not the change we expected, maybe another device did a change too.
                     // Let's wait for another change.
                     return;
@@ -302,9 +302,9 @@ mod imp {
         }
 
         /// Handle when we receive a name change from the homeserver.
-        fn name_changed(&self, name: Option<String>) {
+        fn name_changed(&self, name: Option<&str>) {
             if let Some(action) = self.changing_name.borrow().as_ref() {
-                if name.as_ref() != action.as_value() {
+                if name != action.as_value().map(String::as_str) {
                     // This is not the change we expected, maybe another device did a change too.
                     // Let's wait for another change.
                     return;
@@ -330,7 +330,7 @@ mod imp {
 
             let text = Some(self.name_entry_row.text()).filter(|t| !t.is_empty());
             // Do not send text if it has just more whitespaces at the beginning or end.
-            let trimmed_text = text.as_deref().map(|t| t.trim()).filter(|t| !t.is_empty());
+            let trimmed_text = text.as_deref().map(str::trim).filter(|t| !t.is_empty());
 
             let name = room.name();
             name.as_deref() != text.as_deref() && name.as_deref() != trimmed_text
@@ -409,13 +409,13 @@ mod imp {
         }
 
         /// Handle when we receive a topic change from the homeserver.
-        fn topic_changed(&self, topic: Option<String>) {
+        fn topic_changed(&self, topic: Option<&str>) {
             // It is not possible to remove a topic so we process the empty string as
             // `None`. We need to cancel that here.
             let topic = topic.unwrap_or_default();
 
             if let Some(action) = self.changing_topic.borrow().as_ref() {
-                if Some(&topic) != action.as_value() {
+                if Some(topic) != action.as_value().map(String::as_str) {
                     // This is not the change we expected, maybe another device did a change too.
                     // Let's wait for another change.
                     return;
@@ -443,7 +443,7 @@ mod imp {
             let text = Some(self.topic_buffer.text(&start_iter, &end_iter, false))
                 .filter(|t| !t.is_empty());
             // Do not send text if it has just more whitespaces at the beginning or end.
-            let trimmed_text = text.as_deref().map(|t| t.trim()).filter(|t| !t.is_empty());
+            let trimmed_text = text.as_deref().map(str::trim).filter(|t| !t.is_empty());
 
             let topic = room.topic();
             topic.as_deref() != text.as_deref() && topic.as_deref() != trimmed_text

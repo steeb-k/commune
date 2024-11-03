@@ -60,13 +60,13 @@ mod imp {
 
     impl AccountChooserDialog {
         /// Set the list of logged-in sessions.
-        fn set_session_list(&self, session_list: SessionList) {
-            self.accounts.bind_model(Some(&session_list), |session| {
+        fn set_session_list(&self, session_list: &SessionList) {
+            self.accounts.bind_model(Some(session_list), |session| {
                 let row = AccountRow::new(session.downcast_ref().unwrap());
                 row.upcast()
             });
 
-            self.session_list.set(Some(&session_list));
+            self.session_list.set(Some(session_list));
         }
     }
 }
@@ -99,11 +99,12 @@ impl AccountChooserDialog {
 
     /// Select the given row in the session list.
     #[template_callback]
-    fn select_row(&self, row: gtk::ListBoxRow) {
+    fn select_row(&self, row: &gtk::ListBoxRow) {
         if let Some(sender) = self.imp().sender.take() {
-            // The index is -1 when it is not in a GtkListBox, but we just got it from the
-            // GtkListBox so we can safely assume it's a valid u32.
-            let index = row.index() as u32;
+            let index = row
+                .index()
+                .try_into()
+                .expect("selected row should have an index");
 
             let session_id = self
                 .session_list()

@@ -121,7 +121,7 @@ mod imp {
 
             match media_message.into_tmp_file(&client).await {
                 Ok(file) => {
-                    self.set_media_file(file);
+                    self.set_media_file(&file);
                 }
                 Err(error) => {
                     warn!("Could not retrieve audio file: {error}");
@@ -130,8 +130,8 @@ mod imp {
         }
 
         /// Set the media file to play.
-        fn set_media_file(&self, file: gio::File) {
-            let media_file = gtk::MediaFile::for_file(&file);
+        fn set_media_file(&self, file: &gio::File) {
+            let media_file = gtk::MediaFile::for_file(file);
 
             media_file.connect_error_notify(|media_file| {
                 if let Some(error) = media_file.error() {

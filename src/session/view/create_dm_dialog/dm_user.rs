@@ -36,12 +36,12 @@ mod imp {
 
     impl DmUser {
         /// Set the direct chat with this user.
-        fn set_direct_chat(&self, direct_chat: Option<Room>) {
-            if self.direct_chat.upgrade() == direct_chat {
+        fn set_direct_chat(&self, direct_chat: Option<&Room>) {
+            if self.direct_chat.upgrade().as_ref() == direct_chat {
                 return;
             }
 
-            self.direct_chat.set(direct_chat.as_ref());
+            self.direct_chat.set(direct_chat);
             self.obj().notify_direct_chat();
         }
     }

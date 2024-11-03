@@ -35,8 +35,8 @@ pub enum Membership {
 }
 
 impl Membership {
-    /// Get the icon name that represents this membership.
-    pub fn icon_name(&self) -> &'static str {
+    /// Get the name of the icon that represents this membership.
+    pub fn icon_name(self) -> &'static str {
         match self {
             Self::Invite => "user-add-symbolic",
             Self::Ban => "blocked-symbolic",
@@ -260,6 +260,17 @@ impl Member {
         self.room().permissions().user_is_allowed_to(
             self.user_id(),
             PowerLevelAction::TriggerNotification(NotificationPowerLevelType::Room),
+        )
+    }
+
+    /// The string to use to search for this member.
+    pub(crate) fn search_string(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.display_name(),
+            self.user_id(),
+            self.role(),
+            self.power_level(),
         )
     }
 }

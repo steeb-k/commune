@@ -58,8 +58,8 @@ mod imp {
 
     impl TypingRow {
         /// Set the list of members that are currently typing.
-        fn set_list(&self, list: Option<TypingList>) {
-            if self.list.obj() == list {
+        fn set_list(&self, list: Option<&TypingList>) {
+            if self.list.obj().as_ref() == list {
                 return;
             }
             let obj = self.obj();
@@ -68,7 +68,7 @@ mod imp {
 
             self.list.disconnect_signals();
 
-            if let Some(list) = &list {
+            if let Some(list) = list {
                 let items_changed_handler_id = list.connect_items_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,

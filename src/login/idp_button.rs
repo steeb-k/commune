@@ -21,7 +21,7 @@ pub enum IdpBrand {
 
 impl IdpBrand {
     /// The icon name of this brand, according to the current theme.
-    pub fn icon(&self) -> &'static str {
+    pub fn icon(self) -> &'static str {
         let dark = adw::StyleManager::default().is_dark();
         match self {
             IdpBrand::Apple => {
@@ -123,7 +123,7 @@ mod imp {
                 // The brand is something like Facebook, Apple, GitHub…
                 "Log in with {brand}",
                 &[("brand", &self.brand.get().to_string())],
-            )))
+            )));
         }
     }
 
