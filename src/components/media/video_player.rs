@@ -111,6 +111,13 @@ mod imp {
 
             self.player.set_uri(Some(uri.as_ref()));
             self.player.set_audio_track_enabled(false);
+
+            if self.obj().is_mapped() {
+                self.player.play();
+            } else {
+                // Pause, unlike stop, loads the info of the video.
+                self.player.pause();
+            }
         }
 
         /// Handle a message from the player.
