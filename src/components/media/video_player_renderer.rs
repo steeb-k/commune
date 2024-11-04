@@ -1,7 +1,5 @@
-use adw::subclass::prelude::*;
-use gst_gtk::PaintableSink;
-use gst_play::{subclass::prelude::*, Play, PlayVideoRenderer};
-use gtk::{gdk, glib, prelude::*};
+use gst_play::{prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib};
 
 mod imp {
     use std::{cell::OnceCell, marker::PhantomData};
@@ -12,44 +10,45 @@ mod imp {
     #[properties(wrapper_type = super::VideoPlayerRenderer)]
     pub struct VideoPlayerRenderer {
         /// The sink to use to display the video.
-        pub sink: OnceCell<PaintableSink>,
-        /// The [`gdk::Paintable`] to render the video into.
+        sink: OnceCell<gst_gtk::PaintableSink>,
+        /// The [`gdk::Paintable`] where the video is rendered.
         #[property(get = Self::paintable)]
-        pub paintable: PhantomData<gdk::Paintable>,
+        paintable: PhantomData<gdk::Paintable>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for VideoPlayerRenderer {
         const NAME: &'static str = "VideoPlayerRenderer";
         type Type = super::VideoPlayerRenderer;
-        type Interfaces = (PlayVideoRenderer,);
+        type Interfaces = (gst_play::PlayVideoRenderer,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for VideoPlayerRenderer {
-        fn constructed(&self) {
-            self.sink.set(PaintableSink::new(None)).unwrap();
-        }
-    }
+    impl ObjectImpl for VideoPlayerRenderer {}
 
     impl PlayVideoRendererImpl for VideoPlayerRenderer {
-        fn create_video_sink(&self, _player: &Play) -> gst::Element {
-            self.sink.get().unwrap().clone().upcast()
+        fn create_video_sink(&self, _player: &gst_play::Play) -> gst::Element {
+            self.sink().clone().upcast()
         }
     }
 
     impl VideoPlayerRenderer {
-        /// The [`gdk::Paintable`] to render the video into.
+        /// The sink to use to display the video.
+        fn sink(&self) -> &gst_gtk::PaintableSink {
+            self.sink.get_or_init(|| gst_gtk::PaintableSink::new(None))
+        }
+
+        /// The [`gdk::Paintable`] where the video is rendered.
         fn paintable(&self) -> gdk::Paintable {
-            self.sink.get().unwrap().property("paintable")
+            self.sink().property("paintable")
         }
     }
 }
 
 glib::wrapper! {
-    /// A widget displaying a video media file.
+    /// A `GstPlayVideoRenderer` that renders to a `GdkPaintable`.
     pub struct VideoPlayerRenderer(ObjectSubclass<imp::VideoPlayerRenderer>)
-        @implements PlayVideoRenderer;
+        @implements gst_play::PlayVideoRenderer;
 }
 
 impl VideoPlayerRenderer {

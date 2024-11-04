@@ -407,7 +407,7 @@ mod imp {
                         child
                     };
                     child.set_compact(self.compact.get());
-                    child.play_media_file(file);
+                    child.play_video_file(file);
                 }
             };
 

@@ -1,7 +1,5 @@
-use adw::subclass::prelude::*;
-use gst::{bus::BusWatchGuard, ClockTime};
-use gst_play::{Play as GstPlay, PlayMessage};
-use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::{error, warn};
 
 use super::video_player_renderer::VideoPlayerRenderer;
@@ -17,21 +15,18 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/media/video_player.ui")]
     #[properties(wrapper_type = super::VideoPlayer)]
     pub struct VideoPlayer {
-        /// Whether this player should be displayed in a compact format.
-        #[property(get, set = Self::set_compact, explicit_notify)]
-        pub compact: Cell<bool>,
-        pub duration_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
-        pub video: TemplateChild<gtk::Picture>,
+        video: TemplateChild<gtk::Picture>,
         #[template_child]
-        pub timestamp: TemplateChild<gtk::Label>,
-        /// The [`GstPlay`] for the video.
+        timestamp: TemplateChild<gtk::Label>,
         #[template_child]
-        #[property(get = Self::player, type = GstPlay)]
-        pub player: TemplateChild<GstPlay>,
-        pub bus_guard: OnceCell<BusWatchGuard>,
+        player: TemplateChild<gst_play::Play>,
         /// The file that is currently played.
-        pub file: RefCell<Option<gio::File>>,
+        file: RefCell<Option<gio::File>>,
+        /// Whether the player is displayed in its compact form.
+        #[property(get, set = Self::set_compact, explicit_notify)]
+        compact: Cell<bool>,
+        bus_guard: OnceCell<gst::bus::BusWatchGuard>,
     }
 
     #[glib::object_subclass]
@@ -55,35 +50,27 @@ mod imp {
     impl ObjectImpl for VideoPlayer {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             let bus_guard = self
                 .player
                 .message_bus()
                 .add_watch_local(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     #[upgrade_or]
                     glib::ControlFlow::Break,
                     move |_, message| {
-                        match PlayMessage::parse(message) {
-                            Ok(PlayMessage::DurationChanged { duration }) => {
-                                obj.duration_changed(duration);
-                            }
-                            Ok(PlayMessage::Warning { error, .. }) => {
-                                warn!("Warning playing video: {error}");
-                            }
-                            Ok(PlayMessage::Error { error, .. }) => {
-                                error!("Error playing video: {error}");
-                            }
-                            _ => {}
+                        if let Ok(message) = gst_play::PlayMessage::parse(message) {
+                            imp.handle_message(message);
                         }
 
                         glib::ControlFlow::Continue
                     }
                 ))
-                .unwrap();
-            self.bus_guard.set(bus_guard).unwrap();
+                .expect("adding message bus watch succeeds");
+            self.bus_guard
+                .set(bus_guard)
+                .expect("bus guard is uninitialized");
         }
 
         fn dispose(&self) {
@@ -106,9 +93,6 @@ mod imp {
     impl BinImpl for VideoPlayer {}
 
     impl VideoPlayer {
-        fn player(&self) -> GstPlay {
-            self.player.clone()
-        }
         /// Set whether this player should be displayed in a compact format.
         fn set_compact(&self, compact: bool) {
             if self.compact.get() == compact {
@@ -118,11 +102,64 @@ mod imp {
             self.compact.set(compact);
             self.obj().notify_compact();
         }
+
+        /// Set the video file to play.
+        pub(super) fn play_video_file(&self, file: gio::File) {
+            let uri = file.uri();
+            self.file.replace(Some(file));
+            self.duration_changed(None);
+
+            self.player.set_uri(Some(uri.as_ref()));
+            self.player.set_audio_track_enabled(false);
+        }
+
+        /// Handle a message from the player.
+        fn handle_message(&self, message: gst_play::PlayMessage) {
+            match message {
+                gst_play::PlayMessage::DurationChanged { duration } => {
+                    self.duration_changed(duration);
+                }
+                gst_play::PlayMessage::Warning { error, .. } => {
+                    warn!("Warning playing video: {error}");
+                }
+                gst_play::PlayMessage::Error { error, .. } => {
+                    error!("Error playing video: {error}");
+                }
+                _ => {}
+            }
+        }
+
+        /// Handle when the duration changed.
+        fn duration_changed(&self, duration: Option<gst::ClockTime>) {
+            if let Some(duration) = duration {
+                let mut time = duration.seconds();
+
+                let sec = time % 60;
+                time -= sec;
+                let min = (time % (60 * 60)) / 60;
+                time -= min * 60;
+                let hour = time / (60 * 60);
+
+                let label = if hour > 0 {
+                    // FIXME: Find how to localize this.
+                    // hour:minutes:seconds
+                    format!("{hour}:{min:02}:{sec:02}")
+                } else {
+                    // FIXME: Find how to localize this.
+                    // minutes:seconds
+                    format!("{min:02}:{sec:02}")
+                };
+
+                self.timestamp.set_label(&label);
+            }
+
+            self.timestamp.set_visible(duration.is_some());
+        }
     }
 }
 
 glib::wrapper! {
-    /// A widget to preview a video media file without controls or sound.
+    /// A widget to preview a video file without controls or sound.
     pub struct VideoPlayer(ObjectSubclass<imp::VideoPlayer>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -133,40 +170,8 @@ impl VideoPlayer {
         glib::Object::new()
     }
 
-    /// Set the file to display.
-    pub fn play_media_file(&self, file: gio::File) {
-        let uri = file.uri();
-
-        self.imp().file.replace(Some(file));
-        self.duration_changed(None);
-
-        let player = self.player();
-        player.set_uri(Some(uri.as_ref()));
-        player.set_audio_track_enabled(false);
-    }
-
-    fn duration_changed(&self, duration: Option<ClockTime>) {
-        let label = if let Some(duration) = duration {
-            let mut time = duration.seconds();
-
-            let sec = time % 60;
-            time -= sec;
-            let min = (time % (60 * 60)) / 60;
-            time -= min * 60;
-            let hour = time / (60 * 60);
-
-            if hour > 0 {
-                // FIXME: Find how to localize this.
-                // hour:minutes:seconds
-                format!("{hour}:{min:02}:{sec:02}")
-            } else {
-                // FIXME: Find how to localize this.
-                // minutes:seconds
-                format!("{min:02}:{sec:02}")
-            }
-        } else {
-            "--:--".to_owned()
-        };
-        self.imp().timestamp.set_label(&label);
+    /// Set the video file to play.
+    pub(crate) fn play_video_file(&self, file: gio::File) {
+        self.imp().play_video_file(file);
     }
 }
