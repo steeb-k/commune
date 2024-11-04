@@ -17,7 +17,10 @@ use crate::{
     spawn,
     utils::{
         matrix::VisualMediaMessage,
-        media::image::{ImageDimensions, ImageRequestPriority, ThumbnailSettings},
+        media::{
+            image::{ImageRequestPriority, ThumbnailSettings},
+            FrameDimensions,
+        },
         CountedRef, LoadingState,
     },
 };
@@ -282,12 +285,20 @@ mod imp {
             session: &Session,
             format: ContentFormat,
         ) {
-            let (width, height) = media_message.dimensions().unzip();
+            let dimensions: Option<FrameDimensions> = media_message.dimensions();
             let filename = media_message.filename();
             let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
 
-            self.set_width(width.and_then(|w| w.try_into().ok()).unwrap_or(-1));
-            self.set_height(height.and_then(|h| h.try_into().ok()).unwrap_or(-1));
+            self.set_width(
+                dimensions
+                    .and_then(|d| d.width.try_into().ok())
+                    .unwrap_or(-1),
+            );
+            self.set_height(
+                dimensions
+                    .and_then(|d| d.height.try_into().ok())
+                    .unwrap_or(-1),
+            );
             self.set_compact(compact);
 
             let accessible_label = if filename.is_empty() {
@@ -333,9 +344,11 @@ mod imp {
                     let scale_factor = self.obj().scale_factor();
 
                     let settings = ThumbnailSettings {
-                        dimensions: ImageDimensions {
-                            width: u32::try_from(MAX_WIDTH * scale_factor).unwrap_or_default(),
-                            height: u32::try_from(MAX_HEIGHT * scale_factor).unwrap_or_default(),
+                        dimensions: FrameDimensions {
+                            width: u32::try_from(MAX_WIDTH.saturating_mul(scale_factor))
+                                .unwrap_or_default(),
+                            height: u32::try_from(MAX_HEIGHT.saturating_mul(scale_factor))
+                                .unwrap_or_default(),
                         },
                         method: Method::Scale,
                         animated: true,

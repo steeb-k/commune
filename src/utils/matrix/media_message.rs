@@ -1,15 +1,12 @@
 use gettextrs::gettext;
 use gtk::{gio, prelude::*};
 use matrix_sdk::Client;
-use ruma::{
-    events::{
-        room::message::{
-            AudioMessageEventContent, FileMessageEventContent, FormattedBody,
-            ImageMessageEventContent, MessageType, VideoMessageEventContent,
-        },
-        sticker::StickerEventContent,
+use ruma::events::{
+    room::message::{
+        AudioMessageEventContent, FileMessageEventContent, FormattedBody, ImageMessageEventContent,
+        MessageType, VideoMessageEventContent,
     },
-    UInt,
+    sticker::StickerEventContent,
 };
 use tracing::{debug, error};
 
@@ -22,7 +19,7 @@ use crate::{
                 Image, ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
                 ThumbnailSettings,
             },
-            MediaFileError,
+            FrameDimensions, MediaFileError,
         },
         save_data_to_tmp_file,
     },
@@ -249,14 +246,13 @@ impl VisualMediaMessage {
     }
 
     /// The dimensions of the media, if any.
-    ///
-    /// Returns a `(width, height)` tuple.
-    pub fn dimensions(&self) -> Option<(UInt, UInt)> {
-        match self {
-            Self::Image(c) => c.info.as_ref().and_then(|i| i.width.zip(i.height)),
-            Self::Video(c) => c.info.as_ref().and_then(|i| i.width.zip(i.height)),
-            Self::Sticker(c) => c.info.width.zip(c.info.height),
-        }
+    pub fn dimensions(&self) -> Option<FrameDimensions> {
+        let (width, height) = match self {
+            Self::Image(c) => c.info.as_ref().map(|i| (i.width, i.height))?,
+            Self::Video(c) => c.info.as_ref().map(|i| (i.width, i.height))?,
+            Self::Sticker(c) => (c.info.width, c.info.height),
+        };
+        FrameDimensions::from_options(width, height)
     }
 
     /// Fetch a thumbnail of the media with the given client and thumbnail

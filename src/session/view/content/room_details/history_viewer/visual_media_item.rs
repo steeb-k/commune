@@ -7,7 +7,10 @@ use crate::{
     utils::{
         add_activate_binding_action,
         matrix::VisualMediaMessage,
-        media::image::{ImageDimensions, ImageRequestPriority, ThumbnailSettings},
+        media::{
+            image::{ImageRequestPriority, ThumbnailSettings},
+            FrameDimensions,
+        },
     },
 };
 
@@ -161,7 +164,7 @@ mod imp {
 
             let scale_factor = u32::try_from(self.obj().scale_factor()).unwrap_or(1);
             let size = THUMBNAIL_SIZE * scale_factor;
-            let dimensions = ImageDimensions {
+            let dimensions = FrameDimensions {
                 width: size,
                 height: size,
             };

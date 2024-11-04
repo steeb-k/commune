@@ -26,17 +26,13 @@ mod queue;
 
 pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
 
-use super::MediaFileError;
+use super::{FrameDimensions, MediaFileError};
 use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
 
-/// The default width of a generated thumbnail.
-const THUMBNAIL_DEFAULT_WIDTH: u32 = 800;
-/// The default height of a generated thumbnail.
-const THUMBNAIL_DEFAULT_HEIGHT: u32 = 600;
-/// The default dimensions of a generated thumbnail.
-const THUMBNAIL_DEFAULT_DIMENSIONS: ImageDimensions = ImageDimensions {
-    width: THUMBNAIL_DEFAULT_WIDTH,
-    height: THUMBNAIL_DEFAULT_HEIGHT,
+/// The maximum dimensions of a generated thumbnail.
+const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: 800,
+    height: 600,
 };
 /// The content type of SVG.
 const SVG_CONTENT_TYPE: &str = "image/svg+xml";
@@ -44,19 +40,20 @@ const SVG_CONTENT_TYPE: &str = "image/svg+xml";
 const WEBP_CONTENT_TYPE: &str = "image/webp";
 /// The default WebP quality used for a generated thumbnail.
 const WEBP_DEFAULT_QUALITY: f32 = 60.0;
-/// The maximum file size threshold in bytes for generating a thumbnail.
+/// The maximum file size threshold in bytes for requesting or generating a
+/// thumbnail.
 ///
 /// If the file size of the original image is larger than this, we assume it is
-/// worth it to generate a thumbnail, even if its dimensions are smaller than
-/// wanted. This is particularly helpful for some image formats that can take up
-/// a lot of space.
+/// worth it to request or generate a thumbnail, even if its dimensions are
+/// smaller than wanted. This is particularly helpful for some image formats
+/// that can take up a lot of space.
 ///
 /// This is 1MB.
 const THUMBNAIL_MAX_FILESIZE_THRESHOLD: u32 = 1024 * 1024;
-/// The dimension threshold in pixels before we start to generate a thumbnail.
+/// The size threshold in pixels for requesting or generating a thumbnail.
 ///
-/// If the original image is larger than the thumbnail dimensions + threshold,
-/// we assume it is worth it to generate a thumbnail.
+/// If the original image is larger than dimensions + threshold, we assume it is
+/// worth it to request or generate a thumbnail.
 const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 
 /// Get an image loader for the given file.
@@ -78,14 +75,14 @@ async fn image_loader(file: gio::File) -> Result<glycin::Image<'static>, glycin:
 /// To show the image at its natural size, set it to `None`.
 async fn load_image(
     file: gio::File,
-    request_dimensions: Option<ImageDimensions>,
+    request_dimensions: Option<FrameDimensions>,
 ) -> Result<Image, glycin::ErrorCtx> {
     let image_loader = image_loader(file).await?;
 
     let frame_request = request_dimensions.map(|request| {
         let image_info = image_loader.info();
 
-        let original_dimensions = ImageDimensions {
+        let original_dimensions = FrameDimensions {
             width: image_info.width,
             height: image_info.height,
         };
@@ -179,8 +176,7 @@ impl ImageInfoLoader {
         let info = dimensions.map_or_else(default_base_image_info, Into::into);
 
         if !filesize_is_too_big(filesize)
-            && !dimensions
-                .is_some_and(|d| d.should_resize_for_thumbnail(THUMBNAIL_DEFAULT_DIMENSIONS))
+            && !dimensions.is_some_and(|d| d.needs_thumbnail(THUMBNAIL_MAX_DIMENSIONS))
         {
             // It is not worth it to generate a thumbnail.
             return (info, None);
@@ -214,7 +210,7 @@ enum Frame {
 
 impl Frame {
     /// The dimensions of the frame.
-    fn dimensions(&self) -> Option<ImageDimensions> {
+    fn dimensions(&self) -> Option<FrameDimensions> {
         let (width, height) = match self {
             Self::Glycin(frame) => (frame.width(), frame.height()),
             Self::Texture(downloader) => {
@@ -226,7 +222,7 @@ impl Frame {
             }
         };
 
-        Some(ImageDimensions { width, height })
+        Some(FrameDimensions { width, height })
     }
 
     /// Whether the memory format of the frame is supported by the image crate.
@@ -272,7 +268,10 @@ impl Frame {
         }
 
         let image = DynamicImage::from_decoder(self).ok()?;
-        let thumbnail = image.thumbnail(THUMBNAIL_DEFAULT_WIDTH, THUMBNAIL_DEFAULT_HEIGHT);
+        let thumbnail = image.thumbnail(
+            THUMBNAIL_MAX_DIMENSIONS.width,
+            THUMBNAIL_MAX_DIMENSIONS.height,
+        );
 
         prepare_thumbnail_for_sending(thumbnail)
     }
@@ -280,7 +279,7 @@ impl Frame {
 
 impl ImageDecoder for Frame {
     fn dimensions(&self) -> (u32, u32) {
-        let (width, height) = self.dimensions().map(|d| (d.width, d.height)).unzip();
+        let (width, height) = self.dimensions().map(|s| (s.width, s.height)).unzip();
         (width.unwrap_or(0), height.unwrap_or(0))
     }
 
@@ -333,106 +332,43 @@ impl ImageDecoder for Frame {
     }
 }
 
-/// Dimensions of an image.
-#[derive(Debug, Clone, Copy)]
-pub struct ImageDimensions {
-    /// The width of the image.
-    pub width: u32,
-    /// The height of the image.
-    pub height: u32,
-}
+/// Extensions to `FrameDimensions` for computing thumbnail dimensions.
+impl FrameDimensions {
+    /// Whether we should generate or request a thumbnail for these dimensions,
+    /// given the wanted thumbnail dimensions.
+    pub(super) fn needs_thumbnail(self, thumbnail_dimensions: FrameDimensions) -> bool {
+        self.ge(thumbnail_dimensions.increase_by(THUMBNAIL_DIMENSIONS_THRESHOLD))
+    }
 
-impl ImageDimensions {
-    /// Construct an `ImageDimensions` from the given optional values.
+    /// Downscale these dimensions for a thumbnail while preserving the aspect
+    /// ratio.
     ///
-    /// Returns `None` if either of the values are `None`.
-    fn from_options(width: Option<u32>, height: Option<u32>) -> Option<Self> {
-        Some(Self {
-            width: width?,
-            height: height?,
-        })
-    }
-
-    /// Whether these dimensions are bigger than the given dimensions.
-    ///
-    /// Returns `true` if either `width` or `height` is bigger than or equal to
-    /// the given dimensions.
-    fn is_bigger_than(self, other: ImageDimensions) -> bool {
-        self.width >= other.width || self.height >= other.height
-    }
-
-    /// Whether these dimensions should be resized to generate a thumbnail.
-    fn should_resize_for_thumbnail(self, thumbnail_dimensions: ImageDimensions) -> bool {
-        self.is_bigger_than(thumbnail_dimensions.increase_by(THUMBNAIL_DIMENSIONS_THRESHOLD))
-    }
-
-    /// Increase both these dimensions by the given value.
-    const fn increase_by(mut self, value: u32) -> Self {
-        self.width = self.width.saturating_add(value);
-        self.height = self.height.saturating_add(value);
-        self
-    }
-
-    /// Compute the new dimensions for resizing to the requested dimensions
-    /// while preserving the aspect ratio of these dimensions and respecting
-    /// the given strategy.
-    fn resize(self, requested_dimensions: ImageDimensions, strategy: ResizeStrategy) -> Self {
-        let w_ratio = f64::from(self.width) / f64::from(requested_dimensions.width);
-        let h_ratio = f64::from(self.height) / f64::from(requested_dimensions.height);
-
-        let resize_from_width = match strategy {
-            // The largest ratio wins so the frame fits into the requested dimensions.
-            ResizeStrategy::Contain => w_ratio > h_ratio,
-            // The smallest ratio wins so the frame fills the requested dimensions.
-            ResizeStrategy::Cover => w_ratio < h_ratio,
-        };
-
-        #[allow(clippy::cast_sign_loss)] // We need to convert the f64 to a u32.
-        let (width, height) = if resize_from_width {
-            let new_height = f64::from(self.height) / w_ratio;
-            (requested_dimensions.width, new_height as u32)
-        } else {
-            let new_width = f64::from(self.width) / h_ratio;
-            (new_width as u32, requested_dimensions.height)
-        };
-
-        Self { width, height }
-    }
-
-    /// Compute the dimensions for a thumbnail while preserving the aspect ratio
-    /// of these dimensions.
-    ///
-    /// Returns `None` if these dimensions are smaller than the wanted
-    /// dimensions.
-    pub(super) fn resize_for_thumbnail(self) -> Option<Self> {
-        let thumbnail_dimensions = THUMBNAIL_DEFAULT_DIMENSIONS;
-
-        if !self.should_resize_for_thumbnail(thumbnail_dimensions) {
+    /// Returns `None` if these dimensions are smaller than the dimensions of a
+    /// thumbnail.
+    pub(super) fn downscale_for_thumbnail(self) -> Option<Self> {
+        if !self.needs_thumbnail(THUMBNAIL_MAX_DIMENSIONS) {
+            // We do not need to generate a thumbnail.
             return None;
         }
 
-        Some(self.resize(thumbnail_dimensions, ResizeStrategy::Contain))
+        Some(self.scale_to_fit(THUMBNAIL_MAX_DIMENSIONS, gtk::ContentFit::ScaleDown))
     }
 
     /// Convert these dimensions to a request for the image loader with the
     /// requested dimensions.
-    fn to_image_loader_request(
-        self,
-        requested_dimensions: ImageDimensions,
-    ) -> glycin::FrameRequest {
-        let resized_dimensions = self.resize(requested_dimensions, ResizeStrategy::Cover);
-        glycin::FrameRequest::new().scale(resized_dimensions.width, resized_dimensions.height)
+    fn to_image_loader_request(self, requested: Self) -> glycin::FrameRequest {
+        let scaled = self.scale_to_fit(requested, gtk::ContentFit::Cover);
+        glycin::FrameRequest::new().scale(scaled.width, scaled.height)
     }
 }
 
-impl From<ImageDimensions> for BaseImageInfo {
-    fn from(value: ImageDimensions) -> Self {
-        let ImageDimensions { width, height } = value;
+impl From<FrameDimensions> for BaseImageInfo {
+    fn from(value: FrameDimensions) -> Self {
+        let FrameDimensions { width, height } = value;
         BaseImageInfo {
             height: Some(height.into()),
             width: Some(width.into()),
-            size: None,
-            blurhash: None,
+            ..default_base_image_info()
         }
     }
 }
@@ -445,23 +381,6 @@ fn default_base_image_info() -> BaseImageInfo {
         size: None,
         blurhash: None,
     }
-}
-
-/// The strategy to use when computing the new dimensions for resizing an image
-/// while maintaining its aspect ratio.
-#[derive(Debug, Clone, Copy)]
-pub enum ResizeStrategy {
-    /// The image is scaled to fit completely within the new dimensions.
-    ///
-    /// This is useful if we do not want the image to be cropped to fit inside
-    /// maximum dimensions.
-    Contain,
-    /// The image is sized to maintain its aspect ratio while filling the new
-    /// dimensions.
-    ///
-    /// This is useful if we want the image to be cropped to fit inside the new
-    /// dimensions.
-    Cover,
 }
 
 /// Prepare the given thumbnail to send it.
@@ -517,8 +436,8 @@ pub struct ThumbnailDownloader<'a> {
 impl<'a> ThumbnailDownloader<'a> {
     /// Download the thumbnail of the media.
     ///
-    /// This might not return a thumbnail at the requested size, depending on
-    /// the sources and the homeserver.
+    /// This might not return a thumbnail at the requested dimensions, depending
+    /// on the sources and the homeserver.
     pub async fn download(
         self,
         client: Client,
@@ -531,9 +450,7 @@ impl<'a> ThumbnailDownloader<'a> {
         let source = if let Some(alt) = self.alt {
             if !self.main.can_be_thumbnailed()
                 && (filesize_is_too_big(self.main.filesize())
-                    || alt
-                        .dimensions()
-                        .is_some_and(|d| d.is_bigger_than(settings.dimensions)))
+                    || alt.dimensions().is_some_and(|s| s.ge(settings.dimensions)))
             {
                 // Use the alternative source to save bandwidth.
                 alt
@@ -587,7 +504,7 @@ impl<'a> ImageSource<'a> {
     fn should_thumbnail(
         &self,
         prefer_thumbnail: bool,
-        thumbnail_dimensions: ImageDimensions,
+        thumbnail_dimensions: FrameDimensions,
     ) -> bool {
         if !self.can_be_thumbnailed() {
             return false;
@@ -599,7 +516,7 @@ impl<'a> ImageSource<'a> {
             return true;
         }
 
-        dimensions.is_some_and(|d| d.should_resize_for_thumbnail(thumbnail_dimensions))
+        dimensions.is_some_and(|d| d.needs_thumbnail(thumbnail_dimensions))
             || filesize_is_too_big(self.filesize())
     }
 
@@ -620,11 +537,11 @@ impl<'a> ImageSource<'a> {
 
     /// The filesize of this source.
     fn filesize(&self) -> Option<u32> {
-        self.info.and_then(|i| i.size)
+        self.info.and_then(|i| i.filesize)
     }
 
     /// The dimensions of this source.
-    fn dimensions(&self) -> Option<ImageDimensions> {
+    fn dimensions(&self) -> Option<FrameDimensions> {
         self.info.and_then(|i| i.dimensions)
     }
 }
@@ -688,22 +605,19 @@ impl<'a> From<&'a OwnedMxcUri> for MediaSource<'a> {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ImageSourceInfo<'a> {
     /// The dimensions of the image.
-    dimensions: Option<ImageDimensions>,
+    dimensions: Option<FrameDimensions>,
     /// The MIME type of the image.
     mimetype: Option<&'a str>,
     /// The file size of the image.
-    size: Option<u32>,
+    filesize: Option<u32>,
 }
 
 impl<'a> From<&'a ImageInfo> for ImageSourceInfo<'a> {
     fn from(value: &'a ImageInfo) -> Self {
         Self {
-            dimensions: ImageDimensions::from_options(
-                value.width.and_then(|u| u.try_into().ok()),
-                value.height.and_then(|u| u.try_into().ok()),
-            ),
+            dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
-            size: value.size.and_then(|u| u.try_into().ok()),
+            filesize: value.size.and_then(|u| u.try_into().ok()),
         }
     }
 }
@@ -711,12 +625,9 @@ impl<'a> From<&'a ImageInfo> for ImageSourceInfo<'a> {
 impl<'a> From<&'a ThumbnailInfo> for ImageSourceInfo<'a> {
     fn from(value: &'a ThumbnailInfo) -> Self {
         Self {
-            dimensions: ImageDimensions::from_options(
-                value.width.and_then(|u| u.try_into().ok()),
-                value.height.and_then(|u| u.try_into().ok()),
-            ),
+            dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
-            size: value.size.and_then(|u| u.try_into().ok()),
+            filesize: value.size.and_then(|u| u.try_into().ok()),
         }
     }
 }
@@ -724,12 +635,9 @@ impl<'a> From<&'a ThumbnailInfo> for ImageSourceInfo<'a> {
 impl<'a> From<&'a AvatarImageInfo> for ImageSourceInfo<'a> {
     fn from(value: &'a AvatarImageInfo) -> Self {
         Self {
-            dimensions: ImageDimensions::from_options(
-                value.width.and_then(|u| u.try_into().ok()),
-                value.height.and_then(|u| u.try_into().ok()),
-            ),
+            dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
-            size: value.size.and_then(|u| u.try_into().ok()),
+            filesize: value.size.and_then(|u| u.try_into().ok()),
         }
     }
 }
@@ -737,8 +645,8 @@ impl<'a> From<&'a AvatarImageInfo> for ImageSourceInfo<'a> {
 /// The settings for downloading a thumbnail.
 #[derive(Debug, Clone)]
 pub struct ThumbnailSettings {
-    /// The resquested dimensions of the thumbnail.
-    pub dimensions: ImageDimensions,
+    /// The requested dimensions of the thumbnail.
+    pub dimensions: FrameDimensions,
     /// The method to use to resize the thumbnail.
     pub method: Method,
     /// Whether to request an animated thumbnail.

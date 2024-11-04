@@ -16,7 +16,10 @@ use crate::{
     toast,
     utils::{
         expression,
-        media::image::{ImageDimensions, ImageError, IMAGE_QUEUE},
+        media::{
+            image::{ImageError, IMAGE_QUEUE},
+            FrameDimensions,
+        },
         BoundObject, BoundObjectWeakRef, CountedRef,
     },
 };
@@ -307,14 +310,14 @@ mod imp {
         }
 
         /// The dimensions of the avatar in this widget.
-        fn avatar_dimensions(&self) -> ImageDimensions {
+        fn avatar_dimensions(&self) -> FrameDimensions {
             let scale_factor = self.obj().scale_factor();
             let avatar_size = self.temp_avatar.size();
             let size = (avatar_size * scale_factor)
                 .try_into()
                 .expect("size and scale factor are positive integers");
 
-            ImageDimensions {
+            FrameDimensions {
                 width: size,
                 height: size,
             }

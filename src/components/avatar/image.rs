@@ -12,9 +12,11 @@ use ruma::{
 use crate::{
     session::model::Session,
     spawn,
-    utils::media::image::{
-        ImageDimensions, ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
-        ThumbnailSettings,
+    utils::media::{
+        image::{
+            ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader, ThumbnailSettings,
+        },
+        FrameDimensions,
     },
 };
 
@@ -189,7 +191,7 @@ mod imp {
             let info = self.info();
 
             let needed_size = self.needed_size.get();
-            let dimensions = ImageDimensions {
+            let dimensions = FrameDimensions {
                 width: needed_size,
                 height: needed_size,
             };

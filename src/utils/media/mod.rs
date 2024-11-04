@@ -6,6 +6,7 @@ use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
 use matrix_sdk::attachment::BaseAudioInfo;
 use mime::Mime;
+use ruma::UInt;
 
 pub mod image;
 pub mod video;
@@ -142,4 +143,77 @@ pub enum MediaFileError {
     Sdk(#[from] matrix_sdk::Error),
     /// An error occurred when writing the media to a file.
     File(#[from] glib::Error),
+}
+
+/// The dimensions of a frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FrameDimensions {
+    /// The width of the frame.
+    pub width: u32,
+    /// The height of the frame.
+    pub height: u32,
+}
+
+impl FrameDimensions {
+    /// Construct a `FrameDimensions` from the given optional dimensions.
+    pub(crate) fn from_options(width: Option<UInt>, height: Option<UInt>) -> Option<Self> {
+        Some(Self {
+            width: width?.try_into().ok()?,
+            height: height?.try_into().ok()?,
+        })
+    }
+
+    /// Whether these dimensions are greater than or equal to the given
+    /// dimensions.
+    ///
+    /// Returns `true` if either `width` or `height` is bigger than or equal to
+    /// the one in the other dimensions.
+    pub(crate) fn ge(self, other: Self) -> bool {
+        self.width >= other.width || self.height >= other.height
+    }
+
+    /// Increase both of these dimensions by the given value.
+    pub(crate) const fn increase_by(mut self, value: u32) -> Self {
+        self.width = self.width.saturating_add(value);
+        self.height = self.height.saturating_add(value);
+        self
+    }
+
+    /// Scale these dimensions to fit into the requested dimensions while
+    /// preserving the aspect ratio and respecting the given content fit.
+    pub(crate) fn scale_to_fit(self, requested: Self, content_fit: gtk::ContentFit) -> Self {
+        let w_ratio = f64::from(self.width) / f64::from(requested.width);
+        let h_ratio = f64::from(self.height) / f64::from(requested.height);
+
+        let resize_from_width = match content_fit {
+            // The largest ratio wins so the frame fits into the requested dimensions.
+            gtk::ContentFit::Contain | gtk::ContentFit::ScaleDown => w_ratio > h_ratio,
+            // The smallest ratio wins so the frame fills the requested dimensions.
+            gtk::ContentFit::Cover => w_ratio < h_ratio,
+            // We just return the requested dimensions since we do not care about the ratio.
+            _ => return requested,
+        };
+        let downscale_only = content_fit == gtk::ContentFit::ScaleDown;
+
+        #[allow(clippy::cast_sign_loss)] // We need to convert the f64 to a u32.
+        let (width, height) = if resize_from_width {
+            if downscale_only && w_ratio <= 1.0 {
+                // We do not want to upscale.
+                return self;
+            }
+
+            let new_height = f64::from(self.height) / w_ratio;
+            (requested.width, new_height as u32)
+        } else {
+            if downscale_only && h_ratio <= 1.0 {
+                // We do not want to upscale.
+                return self;
+            }
+
+            let new_width = f64::from(self.width) / h_ratio;
+            (new_width as u32, requested.height)
+        };
+
+        Self { width, height }
+    }
 }

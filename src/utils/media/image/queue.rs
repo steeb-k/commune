@@ -19,10 +19,13 @@ use tokio::{
 };
 use tracing::{debug, trace, warn};
 
-use super::{load_image, Image, ImageDimensions, ImageError};
+use super::{load_image, Image, ImageError};
 use crate::{
     spawn_tokio,
-    utils::{media::MediaFileError, save_data_to_tmp_file},
+    utils::{
+        media::{FrameDimensions, MediaFileError},
+        save_data_to_tmp_file,
+    },
 };
 
 /// The default image request queue.
@@ -95,7 +98,7 @@ impl ImageRequestQueue {
         &self,
         client: Client,
         settings: MediaRequest,
-        dimensions: Option<ImageDimensions>,
+        dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
         let inner = self.inner.clone();
@@ -116,7 +119,7 @@ impl ImageRequestQueue {
     pub async fn add_file_request(
         &self,
         file: gio::File,
-        dimensions: Option<ImageDimensions>,
+        dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
         let inner = self.inner.clone();
         spawn_tokio!(async move { inner.lock().await.add_file_request(file, dimensions) })
@@ -191,7 +194,7 @@ impl ImageRequestQueueInner {
         &mut self,
         client: Client,
         settings: MediaRequest,
-        dimensions: Option<ImageDimensions>,
+        dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
         let data = DownloadRequestData {
@@ -225,7 +228,7 @@ impl ImageRequestQueueInner {
     fn add_file_request(
         &mut self,
         file: gio::File,
-        dimensions: Option<ImageDimensions>,
+        dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
         let data = FileRequestData { file, dimensions };
         let request_id = data.request_id();
@@ -501,7 +504,7 @@ struct DownloadRequestData {
     /// The settings of the request.
     settings: MediaRequest,
     /// The dimensions to request.
-    dimensions: Option<ImageDimensions>,
+    dimensions: Option<FrameDimensions>,
 }
 
 impl DownloadRequestData {
@@ -543,7 +546,7 @@ struct FileRequestData {
     /// The image file to load.
     file: gio::File,
     /// The dimensions to request.
-    dimensions: Option<ImageDimensions>,
+    dimensions: Option<FrameDimensions>,
 }
 
 impl FileRequestData {
