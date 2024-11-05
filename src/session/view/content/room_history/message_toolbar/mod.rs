@@ -931,7 +931,7 @@ impl MessageToolbar {
         };
 
         let dialog = AttachmentDialog::new(&file_info.filename);
-        dialog.set_file(&file);
+        dialog.set_file(file.clone());
 
         if dialog.response_future(self).await != gtk::ResponseType::Ok {
             return;

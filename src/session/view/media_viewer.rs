@@ -375,7 +375,7 @@ mod imp {
 
             match message.into_tmp_file(&client).await {
                 Ok(file) => {
-                    self.media.view_file(file);
+                    self.media.view_file(file).await;
                 }
                 Err(error) => {
                     warn!("Could not retrieve media file: {error}");

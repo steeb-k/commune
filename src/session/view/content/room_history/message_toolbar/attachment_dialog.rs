@@ -1,9 +1,9 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{gdk, gio, glib, CompositeTemplate};
+use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
-use crate::components::MediaContentViewer;
+use crate::{components::MediaContentViewer, spawn};
 
 mod imp {
     use std::cell::RefCell;
@@ -107,10 +107,17 @@ impl AttachmentDialog {
     }
 
     /// Set the file to preview.
-    pub fn set_file(&self, file: &gio::File) {
+    pub fn set_file(&self, file: gio::File) {
         let imp = self.imp();
-        imp.media.view_file(file.clone());
-        imp.set_loading(false);
+
+        spawn!(clone!(
+            #[weak]
+            imp,
+            async move {
+                imp.media.view_file(file).await;
+                imp.set_loading(false);
+            }
+        ));
     }
 
     /// Create an attachment dialog to preview and send a location.
