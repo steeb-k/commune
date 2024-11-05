@@ -3,6 +3,7 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::{error, warn};
 
 use super::video_player_renderer::VideoPlayerRenderer;
+use crate::utils::LoadingState;
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -26,6 +27,11 @@ mod imp {
         /// Whether the player is displayed in its compact form.
         #[property(get, set = Self::set_compact, explicit_notify)]
         compact: Cell<bool>,
+        /// The state of the video in this player.
+        #[property(get, builder(LoadingState::default()))]
+        state: Cell<LoadingState>,
+        /// The current error, if any.
+        pub(super) error: RefCell<Option<glib::Error>>,
         bus_guard: OnceCell<gst::bus::BusWatchGuard>,
     }
 
@@ -81,7 +87,11 @@ mod imp {
     impl WidgetImpl for VideoPlayer {
         fn map(&self) {
             self.parent_map();
-            self.player.play();
+
+            // Avoid more errors in the logs.
+            if self.state.get() != LoadingState::Error {
+                self.player.play();
+            }
         }
 
         fn unmap(&self) {
@@ -103,11 +113,23 @@ mod imp {
             self.obj().notify_compact();
         }
 
+        /// Set the state of the media.
+        fn set_state(&self, state: LoadingState) {
+            if self.state.get() == state {
+                return;
+            }
+
+            self.state.set(state);
+            self.obj().notify_state();
+        }
+
         /// Set the video file to play.
         pub(super) fn play_video_file(&self, file: gio::File) {
             let uri = file.uri();
             self.file.replace(Some(file));
+
             self.duration_changed(None);
+            self.set_state(LoadingState::Loading);
 
             self.player.set_uri(Some(uri.as_ref()));
             self.player.set_audio_track_enabled(false);
@@ -123,6 +145,15 @@ mod imp {
         /// Handle a message from the player.
         fn handle_message(&self, message: gst_play::PlayMessage) {
             match message {
+                gst_play::PlayMessage::StateChanged { state } => {
+                    if matches!(
+                        state,
+                        gst_play::PlayState::Playing | gst_play::PlayState::Paused
+                    ) {
+                        // Files that fail to play go from `Buffering` to `Stopped`.
+                        self.set_state(LoadingState::Ready);
+                    }
+                }
                 gst_play::PlayMessage::DurationChanged { duration } => {
                     self.duration_changed(duration);
                 }
@@ -131,6 +162,8 @@ mod imp {
                 }
                 gst_play::PlayMessage::Error { error, .. } => {
                     error!("Error playing video: {error}");
+                    self.error.replace(Some(error));
+                    self.set_state(LoadingState::Error);
                 }
                 _ => {}
             }
@@ -180,5 +213,10 @@ impl VideoPlayer {
     /// Set the video file to play.
     pub(crate) fn play_video_file(&self, file: gio::File) {
         self.imp().play_video_file(file);
+    }
+
+    /// The current error, if any.
+    pub(crate) fn error(&self) -> Option<glib::Error> {
+        self.imp().error.borrow().clone()
     }
 }

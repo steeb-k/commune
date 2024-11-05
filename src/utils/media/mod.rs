@@ -163,6 +163,22 @@ impl FrameDimensions {
         })
     }
 
+    /// Get the dimension for the given orientation.
+    pub(crate) fn dimension_for_orientation(self, orientation: gtk::Orientation) -> u32 {
+        match orientation {
+            gtk::Orientation::Vertical => self.height,
+            _ => self.width,
+        }
+    }
+
+    /// Get the dimension for the other orientation than the given one.
+    pub(crate) fn dimension_for_other_orientation(self, orientation: gtk::Orientation) -> u32 {
+        match orientation {
+            gtk::Orientation::Vertical => self.width,
+            _ => self.height,
+        }
+    }
+
     /// Whether these dimensions are greater than or equal to the given
     /// dimensions.
     ///
@@ -176,6 +192,13 @@ impl FrameDimensions {
     pub(crate) const fn increase_by(mut self, value: u32) -> Self {
         self.width = self.width.saturating_add(value);
         self.height = self.height.saturating_add(value);
+        self
+    }
+
+    /// Scale these dimensions with the given factor.
+    pub(crate) const fn scale(mut self, factor: u32) -> Self {
+        self.width = self.width.saturating_mul(factor);
+        self.height = self.height.saturating_mul(factor);
         self
     }
 

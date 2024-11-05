@@ -25,18 +25,23 @@ use crate::{
     },
 };
 
-/// The width to use for the media until we know its size.
-const FALLBACK_WIDTH: i32 = 480;
-/// The height to use for the media until we know its size.
-const FALLBACK_HEIGHT: i32 = 360;
-/// The maximum width of the media in the room history.
-const MAX_WIDTH: i32 = 600;
-/// The maximum height of the media in the room history.
-const MAX_HEIGHT: i32 = 400;
-/// The maximum width of the media in its compact form.
-const MAX_COMPACT_WIDTH: i32 = 75;
-/// The maximum height of the media in its compact form.
-const MAX_COMPACT_HEIGHT: i32 = 50;
+/// The dimensions to use for the media until we know its size.
+const FALLBACK_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: 480,
+    height: 360,
+};
+/// The maximum dimensions allowed for the media.
+const MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: 600,
+    height: 400,
+};
+/// The maximum dimensions allowed for the media in its compact form.
+const MAX_COMPACT_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: 75,
+    height: 50,
+};
+/// The name of the media stack page.
+const MEDIA_PAGE: &str = "media";
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -52,17 +57,15 @@ mod imp {
     #[properties(wrapper_type = super::MessageVisualMedia)]
     pub struct MessageVisualMedia {
         #[template_child]
-        media: TemplateChild<gtk::Overlay>,
+        overlay: TemplateChild<gtk::Overlay>,
         #[template_child]
-        overlay_error: TemplateChild<gtk::Image>,
+        stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        overlay_spinner: TemplateChild<adw::Spinner>,
-        /// The intended display width of the media.
-        #[property(get, default = -1, minimum = -1)]
-        width: Cell<i32>,
-        /// The intended display height of the media.
-        #[property(get, default = -1, minimum = -1)]
-        height: Cell<i32>,
+        spinner: TemplateChild<adw::Spinner>,
+        #[template_child]
+        error: TemplateChild<gtk::Image>,
+        /// The supposed dimensions of the media.
+        dimensions: Cell<Option<FrameDimensions>>,
         /// The loading state of the media.
         #[property(get, builder(LoadingState::default()))]
         state: Cell<LoadingState>,
@@ -80,7 +83,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("message-visual-media");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
@@ -94,69 +97,73 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for MessageVisualMedia {
         fn dispose(&self) {
-            self.media.unparent();
+            self.overlay.unparent();
         }
     }
 
     impl WidgetImpl for MessageVisualMedia {
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
-            let original_width = self.width.get();
-            let original_height = self.height.get();
-            let compact = self.compact.get();
-
-            let (max_width, max_height) = if compact {
-                (MAX_COMPACT_WIDTH, MAX_COMPACT_HEIGHT)
+            // Get the maximum size for the current state.
+            let max_size = if self.compact.get() {
+                MAX_COMPACT_DIMENSIONS
             } else {
-                (MAX_WIDTH, MAX_HEIGHT)
+                MAX_DIMENSIONS
+            };
+            let max = max_size.dimension_for_orientation(orientation);
+            let max_for_size = i32::try_from(max_size.dimension_for_other_orientation(orientation))
+                .unwrap_or(i32::MAX);
+
+            // Limit for_size to the max.
+            let for_size = if for_size == -1 {
+                // -1 means unlimited.
+                max_for_size
+            } else {
+                for_size.min(max_for_size)
             };
 
-            // -1 means illimited size, and we know we cannot go bigger than the max.
-            let for_size = if for_size == -1 {
-                if orientation == gtk::Orientation::Vertical {
-                    max_height
-                } else {
-                    max_width
+            // Use the size measured by the media child when we can, it is the natural size
+            // of the media.
+            if self.stack.visible_child_name().as_deref() == Some(MEDIA_PAGE) {
+                if let Some(child) = self.media_child::<gtk::Widget>() {
+                    // Get the intrinsic size of the media to avoid upscaling it. It is the size
+                    // returned by GtkPicture when for_size is -1.
+                    let other_orientation = if orientation == gtk::Orientation::Vertical {
+                        gtk::Orientation::Horizontal
+                    } else {
+                        gtk::Orientation::Vertical
+                    };
+                    let (_, intrinsic_for_size, ..) = child.measure(other_orientation, -1);
+
+                    let (_, nat, ..) = child.measure(orientation, for_size.min(intrinsic_for_size));
+
+                    if nat != 0 {
+                        // Limit the returned size to the max.
+                        return (0, nat.min(max.try_into().unwrap_or(i32::MAX)), -1, -1);
+                    }
+                }
+            }
+
+            // Limit the wanted size to the max size.
+            let for_size = u32::try_from(for_size).unwrap_or(0);
+            let wanted_size = if orientation == gtk::Orientation::Vertical {
+                FrameDimensions {
+                    width: for_size,
+                    height: max,
                 }
             } else {
-                for_size
+                FrameDimensions {
+                    width: max,
+                    height: for_size,
+                }
             };
 
-            let (original, max, fallback, original_other, max_other) =
-                if orientation == gtk::Orientation::Vertical {
-                    (
-                        original_height,
-                        max_height,
-                        FALLBACK_HEIGHT,
-                        original_width,
-                        max_width,
-                    )
-                } else {
-                    (
-                        original_width,
-                        max_width,
-                        FALLBACK_WIDTH,
-                        original_height,
-                        max_height,
-                    )
-                };
+            // Use the size from the info or the fallback size.
+            let media_size = self.dimensions.get().unwrap_or(FALLBACK_DIMENSIONS);
+            let nat = media_size
+                .scale_to_fit(wanted_size, gtk::ContentFit::ScaleDown)
+                .dimension_for_orientation(orientation);
 
-            // Limit other side to max size.
-            let other = for_size.min(max_other);
-
-            let nat = if original > 0 {
-                // We don't want the paintable to be upscaled.
-                let other = other.min(original_other);
-                other * original / original_other
-            } else if let Some(child) = self.media.child() {
-                // Get the natural size of the data.
-                child.measure(orientation, other).1
-            } else {
-                fallback
-            };
-
-            // Limit this side to max size.
-            let size = nat.min(max);
-            (0, size, -1, -1)
+            (0, nat.try_into().unwrap_or(i32::MAX), -1, -1)
         }
 
         fn request_mode(&self) -> gtk::SizeRequestMode {
@@ -164,21 +171,7 @@ mod imp {
         }
 
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
-            if let Some(child) = self.media.child() {
-                // We need to allocate just enough width to the child so it doesn't expand.
-                let original_width = self.width.get();
-                let original_height = self.height.get();
-                let width = if original_height > 0 && original_width > 0 {
-                    height * original_width / original_height
-                } else {
-                    // Get the natural width of the media data.
-                    child.measure(gtk::Orientation::Horizontal, height).1
-                };
-
-                self.media.allocate(width, height, baseline, None);
-            } else {
-                self.media.allocate(width, height, baseline, None);
-            }
+            self.overlay.allocate(width, height, baseline, None);
         }
 
         fn map(&self) {
@@ -192,30 +185,22 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl MessageVisualMedia {
         /// The media child of the given type, if any.
         pub(super) fn media_child<T: IsA<gtk::Widget>>(&self) -> Option<T> {
-            self.media.child().and_downcast()
+            self.stack.child_by_name(MEDIA_PAGE).and_downcast()
         }
 
-        /// Set the intended display width of the media.
-        fn set_width(&self, width: i32) {
-            if self.width.get() == width {
-                return;
+        /// Set the media child.
+        ///
+        /// Removes the previous media child if one was set.
+        fn set_media_child(&self, child: &impl IsA<gtk::Widget>) {
+            if let Some(prev_child) = self.stack.child_by_name(MEDIA_PAGE) {
+                self.stack.remove(&prev_child);
             }
 
-            self.width.set(width);
-            self.obj().notify_width();
-        }
-
-        /// Set the intended display height of the media.
-        fn set_height(&self, height: i32) {
-            if self.height.get() == height {
-                return;
-            }
-
-            self.height.set(height);
-            self.obj().notify_height();
+            self.stack.add_named(child, Some(MEDIA_PAGE));
         }
 
         /// Set the state of the media.
@@ -226,16 +211,18 @@ mod imp {
 
             match state {
                 LoadingState::Loading | LoadingState::Initial => {
-                    self.overlay_spinner.set_visible(true);
-                    self.overlay_error.set_visible(false);
+                    self.stack.set_visible_child_name("placeholder");
+                    self.spinner.set_visible(true);
+                    self.error.set_visible(false);
                 }
                 LoadingState::Ready => {
-                    self.overlay_spinner.set_visible(false);
-                    self.overlay_error.set_visible(false);
+                    self.stack.set_visible_child_name(MEDIA_PAGE);
+                    self.spinner.set_visible(false);
+                    self.error.set_visible(false);
                 }
                 LoadingState::Error => {
-                    self.overlay_spinner.set_visible(false);
-                    self.overlay_error.set_visible(true);
+                    self.spinner.set_visible(false);
+                    self.error.set_visible(true);
                 }
             }
 
@@ -270,9 +257,9 @@ mod imp {
             self.compact.set(compact);
 
             if compact {
-                self.media.add_css_class("compact");
+                self.overlay.add_css_class("compact");
             } else {
-                self.media.remove_css_class("compact");
+                self.overlay.remove_css_class("compact");
             }
 
             self.obj().notify_compact();
@@ -285,22 +272,12 @@ mod imp {
             session: &Session,
             format: ContentFormat,
         ) {
-            let dimensions: Option<FrameDimensions> = media_message.dimensions();
-            let filename = media_message.filename();
-            let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
+            self.dimensions.set(media_message.dimensions());
 
-            self.set_width(
-                dimensions
-                    .and_then(|d| d.width.try_into().ok())
-                    .unwrap_or(-1),
-            );
-            self.set_height(
-                dimensions
-                    .and_then(|d| d.height.try_into().ok())
-                    .unwrap_or(-1),
-            );
+            let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
             self.set_compact(compact);
 
+            let filename = media_message.filename();
             let accessible_label = if filename.is_empty() {
                 match &media_message {
                     VisualMediaMessage::Image(_) => gettext("Image"),
@@ -332,87 +309,124 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.build_inner(media_message, client).await;
+                        match &media_message {
+                            VisualMediaMessage::Image(_) | VisualMediaMessage::Sticker(_) => {
+                                imp.build_image(&media_message, client).await;
+                            }
+                            VisualMediaMessage::Video(_) => {
+                                imp.build_video(media_message, &client).await;
+                            }
+                        }
+
+                        imp.update_animated_paintable_state();
                     }
                 )
             );
         }
 
-        async fn build_inner(&self, media_message: VisualMediaMessage, client: Client) {
-            match &media_message {
-                VisualMediaMessage::Image(_) | VisualMediaMessage::Sticker(_) => {
-                    let scale_factor = self.obj().scale_factor();
+        /// Build the content for the image in the given media message.
+        async fn build_image(&self, media_message: &VisualMediaMessage, client: Client) {
+            let scale_factor = self.obj().scale_factor().try_into().unwrap_or(1);
 
-                    let settings = ThumbnailSettings {
-                        dimensions: FrameDimensions {
-                            width: u32::try_from(MAX_WIDTH.saturating_mul(scale_factor))
-                                .unwrap_or_default(),
-                            height: u32::try_from(MAX_HEIGHT.saturating_mul(scale_factor))
-                                .unwrap_or_default(),
-                        },
-                        method: Method::Scale,
-                        animated: true,
-                        prefer_thumbnail: false,
-                    };
+            let settings = ThumbnailSettings {
+                dimensions: MAX_DIMENSIONS.scale(scale_factor),
+                method: Method::Scale,
+                animated: true,
+                prefer_thumbnail: false,
+            };
 
-                    let image = match media_message
-                        .thumbnail(client, settings, ImageRequestPriority::Default)
-                        .await
-                    {
-                        Ok(Some(image)) => image,
-                        Ok(None) => unreachable!("Image messages should always have a fallback"),
-                        Err(error) => {
-                            self.overlay_error
-                                .set_tooltip_text(Some(&error.to_string()));
-                            self.set_state(LoadingState::Error);
-
-                            return;
-                        }
-                    };
-
-                    let child = if let Some(child) = self.media_child::<gtk::Picture>() {
-                        child
-                    } else {
-                        let child = gtk::Picture::new();
-                        self.media.set_child(Some(&child));
-                        child
-                    };
-                    child.set_paintable(Some(&gdk::Paintable::from(image)));
-
-                    child.set_tooltip_text(Some(&media_message.filename()));
-                    if matches!(&media_message, VisualMediaMessage::Sticker(_)) {
-                        self.media.remove_css_class("opaque-bg");
-                    } else {
-                        self.media.add_css_class("opaque-bg");
-                    }
-                }
-                VisualMediaMessage::Video(_) => {
-                    let file = match media_message.into_tmp_file(&client).await {
-                        Ok(file) => file,
-                        Err(error) => {
-                            warn!("Could not retrieve video: {error}");
-                            self.overlay_error
-                                .set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                            self.set_state(LoadingState::Error);
-
-                            return;
-                        }
-                    };
-
-                    let child = if let Some(child) = self.media_child::<VideoPlayer>() {
-                        child
-                    } else {
-                        let child = VideoPlayer::new();
-                        self.media.set_child(Some(&child));
-                        child
-                    };
-                    child.set_compact(self.compact.get());
-                    child.play_video_file(file);
+            let image = match media_message
+                .thumbnail(client, settings, ImageRequestPriority::Default)
+                .await
+            {
+                Ok(Some(image)) => image,
+                Ok(None) => unreachable!("Image messages should always have a fallback"),
+                Err(error) => {
+                    self.set_error(&error.to_string());
+                    return;
                 }
             };
 
-            self.update_animated_paintable_state();
+            let child = if let Some(child) = self.media_child::<gtk::Picture>() {
+                child
+            } else {
+                let child = gtk::Picture::builder()
+                    .content_fit(gtk::ContentFit::ScaleDown)
+                    .build();
+                self.set_media_child(&child);
+                child
+            };
+            child.set_paintable(Some(&gdk::Paintable::from(image)));
+
+            child.set_tooltip_text(Some(&media_message.filename()));
+            if matches!(&media_message, VisualMediaMessage::Sticker(_)) {
+                self.overlay.remove_css_class("opaque-bg");
+            } else {
+                self.overlay.add_css_class("opaque-bg");
+            }
+
             self.set_state(LoadingState::Ready);
+        }
+
+        /// Build the content for the video in the given media message.
+        async fn build_video(&self, media_message: VisualMediaMessage, client: &Client) {
+            let file = match media_message.into_tmp_file(client).await {
+                Ok(file) => file,
+                Err(error) => {
+                    warn!("Could not retrieve video: {error}");
+                    self.set_error(&gettext("Could not retrieve media"));
+                    return;
+                }
+            };
+
+            let child = if let Some(child) = self.media_child::<VideoPlayer>() {
+                child
+            } else {
+                let child = VideoPlayer::new();
+                child.connect_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |player| {
+                        imp.video_state_changed(player);
+                    }
+                ));
+                self.set_media_child(&child);
+                child
+            };
+
+            child.set_compact(self.compact.get());
+            child.play_video_file(file);
+        }
+
+        /// Set the given error message for this media.
+        fn set_error(&self, message: &str) {
+            self.error.set_tooltip_text(Some(message));
+            self.set_state(LoadingState::Error);
+        }
+
+        /// Handle when the state of the video changed.
+        fn video_state_changed(&self, player: &VideoPlayer) {
+            match player.state() {
+                LoadingState::Initial | LoadingState::Loading => {
+                    self.set_state(LoadingState::Loading);
+                }
+                LoadingState::Ready => self.set_state(LoadingState::Ready),
+                LoadingState::Error => {
+                    let error = player.error();
+                    self.set_error(
+                        error
+                            .map(|e| e.to_string())
+                            .as_deref()
+                            .unwrap_or("Unexpected error"),
+                    );
+                }
+            }
+        }
+
+        /// Handle when the media was clicked.
+        #[template_callback]
+        fn handle_clicked(&self) {
+            let _ = self.obj().activate_action("message-row.show-media", None);
         }
     }
 }
@@ -423,16 +437,10 @@ glib::wrapper! {
         @extends gtk::Widget, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl MessageVisualMedia {
     /// Create a new visual media message.
     pub(crate) fn new() -> Self {
         glib::Object::new()
-    }
-
-    #[template_callback]
-    fn handle_release(&self) {
-        let _ = self.activate_action("message-row.show-media", None);
     }
 
     /// Display the given visual media message.
