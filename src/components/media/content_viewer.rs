@@ -146,24 +146,28 @@ mod imp {
         }
 
         /// View the given file.
-        pub(super) async fn view_file(&self, file: gio::File) {
+        pub(super) async fn view_file(&self, file: gio::File, content_type: Option<ContentType>) {
             self.set_visible_child("loading");
 
-            let file_info = file
-                .query_info_future(
-                    gio::FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                    gio::FileQueryInfoFlags::NONE,
-                    glib::Priority::DEFAULT,
-                )
-                .await
-                .ok();
+            let content_type = if let Some(content_type) = content_type {
+                content_type
+            } else {
+                let file_info = file
+                    .query_info_future(
+                        gio::FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                        gio::FileQueryInfoFlags::NONE,
+                        glib::Priority::DEFAULT,
+                    )
+                    .await
+                    .ok();
 
-            let content_type: ContentType = file_info
-                .as_ref()
-                .and_then(gio::FileInfo::content_type)
-                .and_then(|content_type| gio::content_type_get_mime_type(&content_type))
-                .and_then(|mime| mime.split('/').next().map(Into::into))
-                .unwrap_or_default();
+                file_info
+                    .as_ref()
+                    .and_then(gio::FileInfo::content_type)
+                    .and_then(|content_type| gio::content_type_get_mime_type(&content_type))
+                    .and_then(|mime| mime.split('/').next().map(Into::into))
+                    .unwrap_or_default()
+            };
 
             match content_type {
                 ContentType::Image => {
@@ -306,8 +310,10 @@ impl MediaContentViewer {
     }
 
     /// View the given file.
-    pub(crate) async fn view_file(&self, file: gio::File) {
-        self.imp().view_file(file).await;
+    ///
+    /// If the content type is not provided, it will be guessed from the file.
+    pub(crate) async fn view_file(&self, file: gio::File, content_type: Option<ContentType>) {
+        self.imp().view_file(file, content_type).await;
     }
 
     /// View the given location as a geo URI.

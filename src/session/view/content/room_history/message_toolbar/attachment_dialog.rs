@@ -114,7 +114,7 @@ impl AttachmentDialog {
             #[weak]
             imp,
             async move {
-                imp.media.view_file(file).await;
+                imp.media.view_file(file, None).await;
                 imp.set_loading(false);
             }
         ));

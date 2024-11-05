@@ -369,22 +369,18 @@ mod imp {
                 return;
             };
 
+            let content_type = match &message {
+                VisualMediaMessage::Image(_) | VisualMediaMessage::Sticker(_) => ContentType::Image,
+                VisualMediaMessage::Video(_) => ContentType::Video,
+            };
+
             let client = session.client();
-
-            let is_video = matches!(message, VisualMediaMessage::Video(_));
-
             match message.into_tmp_file(&client).await {
                 Ok(file) => {
-                    self.media.view_file(file).await;
+                    self.media.view_file(file, Some(content_type)).await;
                 }
                 Err(error) => {
                     warn!("Could not retrieve media file: {error}");
-
-                    let content_type = if is_video {
-                        ContentType::Video
-                    } else {
-                        ContentType::Image
-                    };
                     self.media.show_fallback(content_type);
                 }
             }
