@@ -2,6 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::closure_local, graphene};
 use tracing::warn;
 
+/// The duration of the animation, in ms.
 const ANIMATION_DURATION: u32 = 250;
 
 mod imp {
@@ -19,12 +20,14 @@ mod imp {
     pub struct ScaleRevealer {
         /// Whether the child is revealed.
         #[property(get, set = Self::set_reveal_child, explicit_notify)]
-        pub reveal_child: Cell<bool>,
+        reveal_child: Cell<bool>,
         /// The source widget this revealer is transitioning from.
         #[property(get, set = Self::set_source_widget, explicit_notify, nullable)]
-        pub source_widget: glib::WeakRef<gtk::Widget>,
-        pub source_widget_texture: RefCell<Option<gdk::Texture>>,
-        pub animation: OnceCell<adw::TimedAnimation>,
+        source_widget: glib::WeakRef<gtk::Widget>,
+        /// A snapshot of the source widget as a `GdkTexture`.
+        source_widget_texture: RefCell<Option<gdk::Texture>>,
+        /// The API to keep track of the animation.
+        animation: OnceCell<adw::TimedAnimation>,
     }
 
     #[glib::object_subclass]
@@ -45,11 +48,13 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            // Initialize the animation.
             let obj = self.obj();
             let target = adw::CallbackAnimationTarget::new(clone!(
                 #[weak]
                 obj,
                 move |_| {
+                    // Redraw the widget.
                     obj.queue_draw();
                 }
             ));
@@ -57,10 +62,10 @@ mod imp {
 
             animation.set_easing(adw::Easing::EaseOutQuart);
             animation.connect_done(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to =imp)]
+                self,
                 move |_| {
-                    let imp = obj.imp();
+                    let obj = imp.obj();
 
                     if !imp.reveal_child.get() {
                         if let Some(source_widget) = imp.source_widget.upgrade() {
@@ -75,7 +80,9 @@ mod imp {
                 }
             ));
 
-            self.animation.set(animation).unwrap();
+            self.animation
+                .set(animation)
+                .expect("animation is uninitialized");
             obj.set_visible(false);
         }
     }
@@ -87,9 +94,9 @@ mod imp {
                 return;
             };
 
-            let progress = self.animation.get().unwrap().value();
+            let progress = self.animation().value();
             if (progress - 1.0).abs() < 0.0001 {
-                // The transition progress is at 100%, so just show the child
+                // The transition progress is at 100%, so just show the child.
                 obj.snapshot_child(&child, snapshot);
                 return;
             }
@@ -118,33 +125,25 @@ mod imp {
             snapshot.translate(&graphene::Point::new(x, y));
             snapshot.scale(x_scale, y_scale);
 
-            let source_widget_texture_ref = self.source_widget_texture.borrow();
-
-            if let Some(source_widget_texture) = source_widget_texture_ref.as_ref() {
-                if progress > 0.0 {
-                    // We're in the middle of the cross fade transition, so...
-                    // do the cross fade transition.
-                    snapshot.push_cross_fade(progress);
-
-                    source_widget_texture.snapshot(
-                        snapshot,
-                        obj.width().into(),
-                        obj.height().into(),
-                    );
-                    snapshot.pop();
-
-                    obj.snapshot_child(&child, snapshot);
-                    snapshot.pop();
-                } else if progress <= 0.0 {
-                    source_widget_texture.snapshot(
-                        snapshot,
-                        obj.width().into(),
-                        obj.height().into(),
-                    );
-                }
-            } else {
-                warn!("The source widget texture is None, using child snapshot as fallback");
+            let borrowed_source_widget_texture = self.source_widget_texture.borrow();
+            let Some(source_widget_texture) = borrowed_source_widget_texture.as_ref() else {
+                warn!("Revealer animation failed: no source widget texture, using child snapshot as fallback");
                 obj.snapshot_child(&child, snapshot);
+                return;
+            };
+
+            if progress > 0.0 {
+                // We are in the middle of the transition, so do the cross fade transition.
+                snapshot.push_cross_fade(progress);
+
+                source_widget_texture.snapshot(snapshot, obj.width().into(), obj.height().into());
+                snapshot.pop();
+
+                obj.snapshot_child(&child, snapshot);
+                snapshot.pop();
+            } else if progress <= 0.0 {
+                // We are at the beginning of the transition, show the source widget.
+                source_widget_texture.snapshot(snapshot, obj.width().into(), obj.height().into());
             }
         }
     }
@@ -152,6 +151,11 @@ mod imp {
     impl BinImpl for ScaleRevealer {}
 
     impl ScaleRevealer {
+        /// The API to keep track of the animation.
+        fn animation(&self) -> &adw::TimedAnimation {
+            self.animation.get().expect("animation is initialized")
+        }
+
         /// Set whether the child should be revealed or not.
         ///
         /// This will start the scale animation.
@@ -161,7 +165,7 @@ mod imp {
             }
             let obj = self.obj();
 
-            let animation = self.animation.get().unwrap();
+            let animation = self.animation();
             animation.set_value_from(animation.value());
 
             if reveal_child {
@@ -215,7 +219,11 @@ impl ScaleRevealer {
         glib::Object::new()
     }
 
-    pub fn connect_transition_done<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    /// Connect to the signal emitted when the transition is done.
+    pub(crate) fn connect_transition_done<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
         self.connect_closure(
             "transition-done",
             true,
@@ -232,8 +240,9 @@ impl Default for ScaleRevealer {
     }
 }
 
+/// Render the given widget to a `GdkTexture`.
 fn render_widget_to_texture(widget: &impl IsA<gtk::Widget>) -> Option<gdk::Texture> {
-    let widget_paintable = gtk::WidgetPaintable::new(Some(widget.as_ref()));
+    let widget_paintable = gtk::WidgetPaintable::new(Some(widget));
     let snapshot = gtk::Snapshot::new();
 
     widget_paintable.snapshot(
