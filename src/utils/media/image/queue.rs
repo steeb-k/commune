@@ -8,14 +8,14 @@ use std::{
 };
 
 use futures_util::future::BoxFuture;
-use gtk::{gio, glib, prelude::*};
+use gtk::glib;
 use matrix_sdk::{
     media::{MediaRequest, UniqueKey},
     Client,
 };
 use tokio::{
     sync::{broadcast, Mutex as AsyncMutex},
-    task::{spawn_blocking, AbortHandle},
+    task::AbortHandle,
 };
 use tracing::{debug, trace, warn};
 
@@ -24,7 +24,7 @@ use crate::{
     spawn_tokio,
     utils::{
         media::{FrameDimensions, MediaFileError},
-        save_data_to_tmp_file,
+        save_data_to_tmp_file, File,
     },
 };
 
@@ -118,7 +118,7 @@ impl ImageRequestQueue {
     /// same request.
     pub async fn add_file_request(
         &self,
-        file: gio::File,
+        file: File,
         dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
         let inner = self.inner.clone();
@@ -227,7 +227,7 @@ impl ImageRequestQueueInner {
     /// same request.
     fn add_file_request(
         &mut self,
-        file: gio::File,
+        file: File,
         dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
         let data = FileRequestData { file, dimensions };
@@ -515,7 +515,7 @@ impl DownloadRequestData {
 }
 
 impl IntoFuture for DownloadRequestData {
-    type Output = Result<gio::File, MediaFileError>;
+    type Output = Result<File, MediaFileError>;
     type IntoFuture = BoxFuture<'static, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -532,9 +532,7 @@ impl IntoFuture for DownloadRequestData {
                 }
             };
 
-            let file = spawn_blocking(move || save_data_to_tmp_file(&data))
-                .await
-                .expect("task was not aborted")?;
+            let file = save_data_to_tmp_file(data).await?;
             Ok(file)
         })
     }
@@ -544,7 +542,7 @@ impl IntoFuture for DownloadRequestData {
 #[derive(Clone)]
 struct FileRequestData {
     /// The image file to load.
-    file: gio::File,
+    file: File,
     /// The dimensions to request.
     dimensions: Option<FrameDimensions>,
 }

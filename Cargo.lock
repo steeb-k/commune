@@ -1386,6 +1386,7 @@ dependencies = [
  "serde_json",
  "sourceview5",
  "strum",
+ "tempfile",
  "thiserror",
  "tld",
  "tokio",

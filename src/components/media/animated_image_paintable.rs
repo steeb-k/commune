@@ -4,7 +4,10 @@ use glycin::{Frame, Image};
 use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
 use tracing::error;
 
-use crate::{spawn, spawn_tokio, utils::CountedRef};
+use crate::{
+    spawn, spawn_tokio,
+    utils::{CountedRef, File},
+};
 
 mod imp {
     use std::{
@@ -18,6 +21,8 @@ mod imp {
     pub struct AnimatedImagePaintable {
         /// The image loader.
         image_loader: OnceCell<Arc<Image<'static>>>,
+        /// The file of the image.
+        file: OnceCell<File>,
         /// The current frame that is displayed.
         pub(super) current_frame: RefCell<Option<Arc<Frame>>>,
         /// The next frame of the animation, if any.
@@ -97,7 +102,13 @@ mod imp {
         }
 
         /// Initialize the image.
-        pub(super) fn init(&self, image_loader: Arc<Image<'static>>, first_frame: Arc<Frame>) {
+        pub(super) fn init(
+            &self,
+            file: File,
+            image_loader: Arc<Image<'static>>,
+            first_frame: Arc<Frame>,
+        ) {
+            self.file.set(file).expect("file is uninitialized");
             self.image_loader
                 .set(image_loader)
                 .expect("image loader is uninitialized");
@@ -220,10 +231,14 @@ glib::wrapper! {
 impl AnimatedImagePaintable {
     /// Construct an `AnimatedImagePaintable` with the given loader and first
     /// frame.
-    pub(crate) fn new(image_loader: Arc<Image<'static>>, first_frame: Arc<Frame>) -> Self {
+    pub(crate) fn new(
+        file: File,
+        image_loader: Arc<Image<'static>>,
+        first_frame: Arc<Frame>,
+    ) -> Self {
         let obj = glib::Object::new::<Self>();
 
-        obj.imp().init(image_loader, first_frame);
+        obj.imp().init(file, image_loader, first_frame);
 
         obj
     }

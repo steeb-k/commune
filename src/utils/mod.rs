@@ -14,12 +14,12 @@ pub mod string;
 pub mod template_callbacks;
 
 use std::{
-    borrow::Cow,
     cell::{Cell, OnceCell, RefCell},
-    fmt,
-    path::PathBuf,
+    fmt, fs,
+    io::{self, Write},
+    path::{Path, PathBuf},
     rc::{Rc, Weak},
-    sync::LazyLock,
+    sync::{Arc, LazyLock},
 };
 
 use futures_util::{
@@ -28,6 +28,7 @@ use futures_util::{
 };
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use regex::Regex;
+use tempfile::NamedTempFile;
 
 pub use self::{
     dummy_object::DummyObject,
@@ -35,21 +36,16 @@ pub use self::{
     location::{Location, LocationError, LocationExt},
     single_item_list_model::SingleItemListModel,
 };
-use crate::{AppProfile, GETTEXT_PACKAGE, PROFILE, RUNTIME};
+use crate::{PROFILE, RUNTIME};
 
 /// The path of the directory where data should be stored, depending on its
 /// type.
 pub fn data_dir_path(data_type: DataType) -> PathBuf {
-    let dir_name = match PROFILE {
-        AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
-        _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{PROFILE}")),
-    };
-
     let mut path = match data_type {
         DataType::Persistent => glib::user_data_dir(),
         DataType::Cache => glib::user_cache_dir(),
     };
-    path.push(dir_name.as_ref());
+    path.push(PROFILE.dir_name().as_ref());
 
     path
 }
@@ -520,18 +516,77 @@ pub fn add_activate_binding_action<T: WidgetClassExt>(klass: &mut T, action: &st
     }
 }
 
-/// Save the given data to a temporary file.
-pub fn save_data_to_tmp_file(data: &[u8]) -> Result<gio::File, glib::Error> {
-    let (file, _) = gio::File::new_tmp(None::<String>)?;
-    file.replace_contents(
-        data,
-        None,
-        false,
-        gio::FileCreateFlags::REPLACE_DESTINATION,
-        gio::Cancellable::NONE,
-    )?;
+/// A wrapper around several sources of files.
+#[derive(Debug, Clone)]
+pub enum File {
+    /// A `GFile`.
+    Gio(gio::File),
+    /// A temporary file.
+    ///
+    /// When all strong references to this file are destroyed, the file will be
+    /// destroyed too.
+    Temp(Arc<NamedTempFile>),
+}
 
-    Ok(file)
+impl File {
+    /// The path to the file.
+    pub(crate) fn path(&self) -> Option<PathBuf> {
+        match self {
+            Self::Gio(file) => file.path(),
+            Self::Temp(file) => Some(file.path().to_owned()),
+        }
+    }
+
+    /// Get a `GFile` for this file.
+    pub(crate) fn as_gfile(&self) -> gio::File {
+        match self {
+            Self::Gio(file) => file.clone(),
+            Self::Temp(file) => gio::File::for_path(file.path()),
+        }
+    }
+}
+
+impl From<gio::File> for File {
+    fn from(value: gio::File) -> Self {
+        Self::Gio(value)
+    }
+}
+
+impl From<NamedTempFile> for File {
+    fn from(value: NamedTempFile) -> Self {
+        Self::Temp(value.into())
+    }
+}
+
+/// The directory where to put temporary files.
+static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
+    let mut dir = glib::user_runtime_dir();
+    dir.push(PROFILE.dir_name().as_ref());
+    dir.into_boxed_path()
+});
+
+/// Save the given data to a temporary file.
+///
+/// When all strong references to the returned file are destroyed, the file will
+/// be destroyed too.
+pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io::Error> {
+    RUNTIME
+        .spawn_blocking(move || {
+            let dir = TMP_DIR.as_ref();
+            if !dir.exists() {
+                if let Err(error) = fs::create_dir(dir) {
+                    if !matches!(error.kind(), io::ErrorKind::AlreadyExists) {
+                        return Err(error);
+                    }
+                }
+            }
+            let mut file = NamedTempFile::new_in(dir)?;
+            file.write_all(&data)?;
+
+            Ok(file.into())
+        })
+        .await
+        .expect("task was not aborted")
 }
 
 /// A counted reference.

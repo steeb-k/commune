@@ -1,11 +1,14 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
-use gtk::{gio, glib, CompositeTemplate};
+use gtk::{glib, CompositeTemplate};
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, spawn, utils::matrix::MediaMessage};
+use crate::{
+    gettext_f, spawn,
+    utils::{matrix::MediaMessage, File},
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -23,6 +26,9 @@ mod imp {
         /// The audio event.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
+        /// The media file.
+        file: RefCell<Option<File>>,
+        /// The API for the media file.
         pub media_file: RefCell<Option<gtk::MediaFile>>,
         #[template_child]
         pub play_button: TemplateChild<gtk::Button>,
@@ -95,6 +101,7 @@ mod imp {
             }
 
             self.event.replace(event);
+            self.file.take();
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
@@ -121,7 +128,7 @@ mod imp {
 
             match media_message.into_tmp_file(&client).await {
                 Ok(file) => {
-                    self.set_media_file(&file);
+                    self.set_media_file(file);
                 }
                 Err(error) => {
                     warn!("Could not retrieve audio file: {error}");
@@ -130,8 +137,8 @@ mod imp {
         }
 
         /// Set the media file to play.
-        fn set_media_file(&self, file: &gio::File) {
-            let media_file = gtk::MediaFile::for_file(file);
+        fn set_media_file(&self, file: File) {
+            let media_file = gtk::MediaFile::for_file(&file.as_gfile());
 
             media_file.connect_error_notify(|media_file| {
                 if let Some(error) = media_file.error() {
@@ -149,6 +156,7 @@ mod imp {
                 }
             ));
 
+            self.file.replace(Some(file));
             self.media_file.replace(Some(media_file));
         }
     }

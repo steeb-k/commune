@@ -21,7 +21,7 @@ use crate::{
             },
             FrameDimensions, MediaFileError,
         },
-        save_data_to_tmp_file,
+        save_data_to_tmp_file, File,
     },
 };
 
@@ -128,9 +128,9 @@ impl MediaMessage {
     /// temporary file.
     ///
     /// Returns an error if something occurred while fetching the content.
-    pub async fn into_tmp_file(self, client: &Client) -> Result<gio::File, MediaFileError> {
+    pub async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
         let data = self.into_content(client).await?;
-        Ok(save_data_to_tmp_file(&data)?)
+        Ok(save_data_to_tmp_file(data).await?)
     }
 
     /// Save the content of the media to a file selected by the user.
@@ -337,7 +337,7 @@ impl VisualMediaMessage {
     ///
     /// Returns an error if something occurred while fetching the content or
     /// saving the content to a file.
-    pub async fn into_tmp_file(self, client: &Client) -> Result<gio::File, MediaFileError> {
+    pub async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
         MediaMessage::from(self).into_tmp_file(client).await
     }
 

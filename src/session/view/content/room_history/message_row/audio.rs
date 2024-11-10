@@ -1,7 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gio,
     glib::{self, clone},
     CompositeTemplate,
 };
@@ -13,7 +12,7 @@ use crate::{
     gettext_f,
     session::model::Session,
     spawn,
-    utils::{matrix::MediaMessage, LoadingState},
+    utils::{matrix::MediaMessage, File, LoadingState},
 };
 
 mod imp {
@@ -32,6 +31,8 @@ mod imp {
         /// The filename of the audio file.
         #[property(get)]
         pub filename: RefCell<Option<String>>,
+        /// The media file.
+        pub(super) file: RefCell<Option<File>>,
         /// The state of the audio file.
         #[property(get, builder(LoadingState::default()))]
         pub state: Cell<LoadingState>,
@@ -151,6 +152,7 @@ impl MessageAudio {
 
     /// Display the given `audio` message.
     pub fn audio(&self, message: MediaMessage, session: &Session, format: ContentFormat) {
+        self.imp().file.take();
         self.set_filename(Some(message.filename()));
 
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
@@ -172,7 +174,7 @@ impl MessageAudio {
                 async move {
                     match message.into_tmp_file(&client).await {
                         Ok(file) => {
-                            obj.display_file(&file);
+                            obj.display_file(file);
                         }
                         Err(error) => {
                             warn!("Could not retrieve audio file: {error}");
@@ -184,8 +186,8 @@ impl MessageAudio {
         );
     }
 
-    fn display_file(&self, file: &gio::File) {
-        let media_file = gtk::MediaFile::for_file(file);
+    fn display_file(&self, file: File) {
+        let media_file = gtk::MediaFile::for_file(&file.as_gfile());
 
         media_file.connect_error_notify(clone!(
             #[weak(rename_to = obj)]
@@ -198,7 +200,9 @@ impl MessageAudio {
             }
         ));
 
-        self.imp().player.set_media_file(Some(media_file));
+        let imp = self.imp();
+        imp.file.replace(Some(file));
+        imp.player.set_media_file(Some(media_file));
         self.set_state(LoadingState::Ready);
     }
 }

@@ -27,7 +27,7 @@ mod queue;
 pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
 
 use super::{FrameDimensions, MediaFileError};
-use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
+use crate::{components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX};
 
 /// The maximum dimensions of a generated thumbnail.
 const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
@@ -74,10 +74,10 @@ async fn image_loader(file: gio::File) -> Result<glycin::Image<'static>, glycin:
 /// Set `request_dimensions` if the image will be shown at specific dimensions.
 /// To show the image at its natural size, set it to `None`.
 async fn load_image(
-    file: gio::File,
+    file: File,
     request_dimensions: Option<FrameDimensions>,
 ) -> Result<Image, glycin::ErrorCtx> {
-    let image_loader = image_loader(file).await?;
+    let image_loader = image_loader(file.as_gfile()).await?;
 
     let frame_request = request_dimensions.map(|request| {
         let image_info = image_loader.info();
@@ -97,6 +97,7 @@ async fn load_image(
             image_loader.next_frame().await?
         };
         Ok(Image {
+            file,
             loader: image_loader.into(),
             first_frame: first_frame.into(),
         })
@@ -108,6 +109,8 @@ async fn load_image(
 /// An image that was just loaded.
 #[derive(Clone)]
 pub struct Image {
+    /// The file of the image.
+    file: File,
     /// The image loader.
     loader: Arc<glycin::Image<'static>>,
     /// The first frame of the image.
@@ -123,7 +126,7 @@ impl fmt::Debug for Image {
 impl From<Image> for gdk::Paintable {
     fn from(value: Image) -> Self {
         if value.first_frame.delay().is_some() {
-            AnimatedImagePaintable::new(value.loader, value.first_frame).upcast()
+            AnimatedImagePaintable::new(value.file, value.loader, value.first_frame).upcast()
         } else {
             value.first_frame.texture().upcast()
         }

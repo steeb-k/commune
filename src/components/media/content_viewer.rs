@@ -7,7 +7,7 @@ use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
-    utils::{media::image::IMAGE_QUEUE, CountedRef},
+    utils::{media::image::IMAGE_QUEUE, CountedRef, File},
 };
 
 /// The types of content supported by the [`MediaContentViewer`].
@@ -69,6 +69,8 @@ mod imp {
         /// Whether to play the media content automatically.
         #[property(get, construct_only)]
         autoplay: Cell<bool>,
+        /// The current media file.
+        file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
     }
 
@@ -110,6 +112,8 @@ mod imp {
 
         /// Show the fallback message for the given content type.
         pub(super) fn show_fallback(&self, content_type: ContentType) {
+            self.file.take();
+
             let title = match content_type {
                 ContentType::Image => gettext("Image not Viewable"),
                 ContentType::Audio => gettext("Audio Clip not Playable"),
@@ -128,6 +132,7 @@ mod imp {
         /// [`MediaContentViewer::view_file()`].
         pub(super) fn view_image(&self, image: &gdk::Paintable) {
             self.set_visible_child("loading");
+            self.file.take();
 
             let picture = if let Some(picture) = self.media_child::<gtk::Picture>() {
                 picture
@@ -146,13 +151,15 @@ mod imp {
         }
 
         /// View the given file.
-        pub(super) async fn view_file(&self, file: gio::File, content_type: Option<ContentType>) {
+        pub(super) async fn view_file(&self, file: File, content_type: Option<ContentType>) {
             self.set_visible_child("loading");
+            self.file.replace(Some(file.clone()));
 
             let content_type = if let Some(content_type) = content_type {
                 content_type
             } else {
                 let file_info = file
+                    .as_gfile()
                     .query_info_future(
                         gio::FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
                         gio::FileQueryInfoFlags::NONE,
@@ -191,7 +198,7 @@ mod imp {
                         audio
                     };
 
-                    audio.set_file(Some(&file));
+                    audio.set_file(Some(&file.as_gfile()));
                     self.update_animated_paintable_state();
                     self.set_visible_child("viewer");
                     return;
@@ -209,7 +216,7 @@ mod imp {
                         video
                     };
 
-                    video.set_file(Some(&file));
+                    video.set_file(Some(&file.as_gfile()));
                     self.update_animated_paintable_state();
                     self.set_visible_child("viewer");
                     return;
@@ -312,7 +319,7 @@ impl MediaContentViewer {
     /// View the given file.
     ///
     /// If the content type is not provided, it will be guessed from the file.
-    pub(crate) async fn view_file(&self, file: gio::File, content_type: Option<ContentType>) {
+    pub(crate) async fn view_file(&self, file: File, content_type: Option<ContentType>) {
         self.imp().view_file(file, content_type).await;
     }
 

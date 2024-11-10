@@ -21,7 +21,7 @@ use crate::{
             image::{ImageRequestPriority, ThumbnailSettings},
             FrameDimensions,
         },
-        CountedRef, LoadingState,
+        CountedRef, File, LoadingState,
     },
 };
 
@@ -72,6 +72,8 @@ mod imp {
         /// Whether to display this media in a compact format.
         #[property(get)]
         compact: Cell<bool>,
+        /// The current video file, if any.
+        file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
     }
 
@@ -272,6 +274,7 @@ mod imp {
             session: &Session,
             format: ContentFormat,
         ) {
+            self.file.take();
             self.dimensions.set(media_message.dimensions());
 
             let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
@@ -395,7 +398,8 @@ mod imp {
             };
 
             child.set_compact(self.compact.get());
-            child.play_video_file(file);
+            child.play_video_file(file.as_gfile());
+            self.file.replace(Some(file));
         }
 
         /// Set the given error message for this media.

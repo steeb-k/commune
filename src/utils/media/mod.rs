@@ -142,7 +142,7 @@ pub enum MediaFileError {
     /// An error occurred when downloading the media.
     Sdk(#[from] matrix_sdk::Error),
     /// An error occurred when writing the media to a file.
-    File(#[from] glib::Error),
+    File(#[from] std::io::Error),
 }
 
 /// The dimensions of a frame.

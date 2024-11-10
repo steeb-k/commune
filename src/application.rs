@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{borrow::Cow, cell::RefCell, fmt, rc::Rc};
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
@@ -13,7 +13,7 @@ use crate::{
     system_settings::SystemSettings,
     toast,
     utils::{matrix::MatrixIdUri, BoundObjectWeakRef, LoadingState},
-    Window,
+    Window, GETTEXT_PACKAGE,
 };
 
 /// The key for the current session setting.
@@ -528,6 +528,14 @@ impl AppProfile {
     /// Whether this `AppProfile` should use the `.devel` CSS class on windows.
     pub fn should_use_devel_class(self) -> bool {
         matches!(self, Self::Devel)
+    }
+
+    /// The name of the directory where to put data for this profile.
+    pub fn dir_name(self) -> Cow<'static, str> {
+        match self {
+            AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
+            _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{self}")),
+        }
     }
 }
 
