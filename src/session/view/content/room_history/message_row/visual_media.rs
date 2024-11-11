@@ -421,7 +421,7 @@ mod imp {
                         error
                             .map(|e| e.to_string())
                             .as_deref()
-                            .unwrap_or("Unexpected error"),
+                            .unwrap_or(&gettext("An unexpected error occurred")),
                     );
                 }
             }
