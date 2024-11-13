@@ -69,12 +69,9 @@ mod imp {
 
             let n_children = u32::try_from(self.children.borrow().len())
                 .expect("count of children fits into u32");
-            let overlap = self.overlap();
-            let spacing = self.spacing.get();
 
             // The last avatar has no overlap.
-            let mut size =
-                n_children.saturating_sub(1) * avatar_size.saturating_sub(overlap + spacing);
+            let mut size = n_children.saturating_sub(1) * self.distance_between_centers();
             size += avatar_size;
 
             let size = size.try_into().unwrap_or(i32::MAX);
@@ -83,10 +80,8 @@ mod imp {
 
         fn size_allocate(&self, _width: i32, _height: i32, _baseline: i32) {
             let avatar_size = i32::try_from(self.avatar_size.get()).unwrap_or(i32::MAX);
-            let overlap = i32::try_from(self.overlap()).expect("overlap fits into i32");
-            let spacing = i32::try_from(self.spacing.get()).expect("spacing fits into i32");
-
-            let distance_between_centers = (avatar_size - overlap).saturating_add(spacing);
+            let distance_between_centers = i32::try_from(self.distance_between_centers())
+                .expect("distance between centers fits into i32");
 
             let mut x = 0;
             for child in self.children.borrow().iter() {
@@ -136,6 +131,14 @@ mod imp {
             let avatar_size = self.avatar_size.get();
             // Make the overlap a little less than half the size of the avatar.
             (f64::from(avatar_size) / 2.5) as u32
+        }
+
+        /// Compute the distance between the center of two avatars.
+        fn distance_between_centers(&self) -> u32 {
+            self.avatar_size
+                .get()
+                .saturating_sub(self.overlap())
+                .saturating_add(self.spacing.get())
         }
 
         /// Set the spacing between the avatars.
