@@ -3,7 +3,7 @@
   <menu id="message_menu_model_with_reactions">
     <section>
       <item>
-        <attribute name="custom">reaction-chooser</attribute>
+        <attribute name="custom">quick-reaction-chooser</attribute>
       </item>
     </section>
     <section>

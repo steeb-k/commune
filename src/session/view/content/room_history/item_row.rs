@@ -9,7 +9,7 @@ use tracing::error;
 
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
 use crate::{
-    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser},
+    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     prelude::*,
     session::{
         model::{Event, EventKey, MessageState, Room, TimelineItem, VirtualItem, VirtualItemKind},
@@ -40,7 +40,6 @@ mod imp {
         pub event_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub binding: RefCell<Option<glib::Binding>>,
-        pub reaction_chooser: RefCell<Option<ReactionChooser>>,
         pub emoji_chooser: RefCell<Option<gtk::EmojiChooser>>,
     }
 
@@ -94,45 +93,56 @@ mod imp {
 
     impl ContextMenuBinImpl for ItemRow {
         fn menu_opened(&self) {
-            let obj = self.obj();
+            let Some(room_history) = self.room_history.upgrade() else {
+                return;
+            };
 
+            let obj = self.obj();
             let Some(event) = self.item.borrow().clone().and_downcast::<Event>() else {
                 obj.set_popover(None);
                 return;
             };
-            let Some(action_group) = self.action_group.borrow().clone() else {
+            if self.action_group.borrow().is_none() {
+                // There are no possible actions.
                 obj.set_popover(None);
                 return;
             };
 
-            let Some(room_history) = obj.room_history() else {
-                return;
-            };
             let popover = room_history.item_context_menu().to_owned();
             room_history.enable_sticky_mode(false);
 
             obj.add_css_class("has-open-popup");
 
-            let cell: Rc<RefCell<Option<glib::signal::SignalHandlerId>>> =
-                Rc::new(RefCell::new(None));
-            let signal_id = popover.connect_closed(clone!(
+            let closed_handler_cell: Rc<RefCell<Option<glib::signal::SignalHandlerId>>> =
+                Rc::default();
+            let quick_reaction_chooser_handler_cell: Rc<
+                RefCell<Option<glib::signal::SignalHandlerId>>,
+            > = Rc::default();
+            let closed_handler = popover.connect_closed(clone!(
                 #[weak]
                 obj,
-                #[strong]
-                cell,
                 #[weak]
                 room_history,
+                #[strong]
+                closed_handler_cell,
+                #[strong]
+                quick_reaction_chooser_handler_cell,
                 move |popover| {
                     room_history.enable_sticky_mode(true);
 
                     obj.remove_css_class("has-open-popup");
 
-                    if let Some(signal_id) = cell.take() {
-                        popover.disconnect(signal_id);
+                    if let Some(handler) = closed_handler_cell.take() {
+                        popover.disconnect(handler);
+                    }
+                    if let Some(handler) = quick_reaction_chooser_handler_cell.take() {
+                        room_history
+                            .item_quick_reaction_chooser()
+                            .disconnect(handler);
                     }
                 }
             ));
-            cell.replace(Some(signal_id));
+            closed_handler_cell.replace(Some(closed_handler));
 
             if let Some(event) = event
                 .downcast_ref::<Event>()
@@ -151,22 +161,23 @@ mod imp {
                 }
 
                 if can_send_reaction {
-                    let reaction_chooser = room_history.item_reaction_chooser();
-                    reaction_chooser.set_reactions(Some(event.reactions()));
-                    popover.add_child(reaction_chooser, "reaction-chooser");
+                    let quick_reaction_chooser = room_history.item_quick_reaction_chooser();
+                    quick_reaction_chooser.set_reactions(Some(event.reactions()));
+                    popover.add_child(quick_reaction_chooser, "quick-reaction-chooser");
 
                     // Open emoji chooser
-                    action_group.add_action_entries([gio::ActionEntry::builder("more-reactions")
-                        .activate(clone!(
+                    let quick_reaction_chooser_handler = quick_reaction_chooser
+                        .connect_more_reactions_activated(clone!(
                             #[weak]
                             obj,
                             #[weak]
                             popover,
-                            move |_, _, _| {
-                                obj.show_emoji_chooser(&popover);
+                            move |_| {
+                                obj.show_reactions_chooser(&popover);
                             }
-                        ))
-                        .build()]);
+                        ));
+                    quick_reaction_chooser_handler_cell
+                        .replace(Some(quick_reaction_chooser_handler));
                 }
             } else {
                 let menu_model = event_state_menu_model();
@@ -447,7 +458,8 @@ impl ItemRow {
         self.remove_css_class("highlight");
     }
 
-    fn show_emoji_chooser(&self, popover: &gtk::PopoverMenu) {
+    /// Replace the given popover with an emoji chooser for reactions.
+    fn show_reactions_chooser(&self, popover: &gtk::PopoverMenu) {
         let (_, rectangle) = popover.pointing_to();
 
         let emoji_chooser = gtk::EmojiChooser::builder()
@@ -459,8 +471,7 @@ impl ItemRow {
             #[weak(rename_to = obj)]
             self,
             move |_, emoji| {
-                obj.activate_action("event.toggle-reaction", Some(&emoji.to_variant()))
-                    .unwrap();
+                let _ = obj.activate_action("event.toggle-reaction", Some(&emoji.to_variant()));
             }
         ));
         emoji_chooser.connect_closed(|emoji_chooser| {

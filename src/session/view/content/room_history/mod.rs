@@ -27,7 +27,7 @@ use self::{
 };
 use super::{room_details, RoomDetails};
 use crate::{
-    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser},
+    components::{confirm_leave_room_dialog, DragOverlay, QuickReactionChooser},
     prelude::*,
     session::model::{
         Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline,
@@ -87,7 +87,7 @@ mod imp {
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
         pub(super) item_context_menu: OnceCell<gtk::PopoverMenu>,
-        pub(super) item_reaction_chooser: ReactionChooser,
+        pub(super) item_quick_reaction_chooser: QuickReactionChooser,
         pub(super) sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The room currently displayed.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
@@ -1012,8 +1012,8 @@ impl RoomHistory {
     }
 
     /// The reaction chooser for the item rows.
-    pub fn item_reaction_chooser(&self) -> &ReactionChooser {
-        &self.imp().item_reaction_chooser
+    pub fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
+        &self.imp().item_quick_reaction_chooser
     }
 
     /// The context menu for the sender avatars.
