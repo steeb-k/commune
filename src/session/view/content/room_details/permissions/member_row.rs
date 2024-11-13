@@ -25,13 +25,13 @@ mod imp {
         #[template_child]
         arrow_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub popover: TemplateChild<PowerLevelSelectionPopover>,
+        popover: TemplateChild<PowerLevelSelectionPopover>,
         /// The permissions of the room.
         #[property(get, set = Self::set_permissions, construct_only)]
-        pub permissions: OnceCell<Permissions>,
+        permissions: OnceCell<Permissions>,
         /// The room member presented by this row.
         #[property(get, set = Self::set_member, explicit_notify, nullable)]
-        pub member: BoundObject<MemberPowerLevel>,
+        member: BoundObject<MemberPowerLevel>,
     }
 
     #[glib::object_subclass]
@@ -45,12 +45,12 @@ mod imp {
             RoleBadge::ensure_type();
 
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("permissions-member-row");
 
             klass.install_action("permissions-member.activate", None, |obj, _, _| {
-                obj.activate_row();
+                obj.imp().activate_row();
             });
 
             add_activate_binding_action(klass, "permissions-member.activate");
@@ -78,6 +78,7 @@ mod imp {
 
     impl BoxImpl for PermissionsMemberRow {}
 
+    #[gtk::template_callbacks]
     impl PermissionsMemberRow {
         /// Set the permissions of the room.
         fn set_permissions(&self, permissions: Permissions) {
@@ -145,6 +146,42 @@ mod imp {
 
             self.arrow_box.set_opacity(editable.into());
         }
+
+        /// The row was activated.
+        #[template_callback]
+        fn activate_row(&self) {
+            let Some(member) = self.member.obj() else {
+                return;
+            };
+
+            if member.editable() {
+                self.popover.popup();
+            }
+        }
+
+        /// The popover's visibility changed.
+        #[template_callback]
+        fn popover_visible(&self) {
+            let obj = self.obj();
+            let is_visible = self.popover.is_visible();
+
+            if is_visible {
+                obj.add_css_class("has-open-popup");
+            } else {
+                obj.remove_css_class("has-open-popup");
+            }
+        }
+
+        /// The popover's selected power level changed.
+        #[template_callback]
+        fn power_level_changed(&self) {
+            let Some(member) = self.member.obj() else {
+                return;
+            };
+
+            let pl = self.popover.selected_power_level();
+            member.set_power_level(pl);
+        }
     }
 }
 
@@ -154,46 +191,10 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl PermissionsMemberRow {
     pub fn new(permissions: &Permissions) -> Self {
         glib::Object::builder()
             .property("permissions", permissions)
             .build()
-    }
-
-    /// The row was activated.
-    #[template_callback]
-    fn activate_row(&self) {
-        let Some(member) = self.member() else {
-            return;
-        };
-
-        if member.editable() {
-            self.imp().popover.popup();
-        }
-    }
-
-    /// The popover's visibility changed.
-    #[template_callback]
-    fn popover_visible(&self) {
-        let is_visible = self.imp().popover.is_visible();
-
-        if is_visible {
-            self.add_css_class("has-open-popup");
-        } else {
-            self.remove_css_class("has-open-popup");
-        }
-    }
-
-    /// The popover's selected power level changed.
-    #[template_callback]
-    fn power_level_changed(&self) {
-        let Some(member) = self.member() else {
-            return;
-        };
-
-        let pl = self.imp().popover.selected_power_level();
-        member.set_power_level(pl);
     }
 }

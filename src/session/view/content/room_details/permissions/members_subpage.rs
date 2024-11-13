@@ -23,18 +23,18 @@ mod imp {
     #[properties(wrapper_type = super::PermissionsMembersSubpage)]
     pub struct PermissionsMembersSubpage {
         #[template_child]
-        pub search_bar: TemplateChild<gtk::SearchBar>,
+        search_bar: TemplateChild<gtk::SearchBar>,
         #[template_child]
-        pub search_entry: TemplateChild<gtk::SearchEntry>,
+        search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
-        pub filtered_model: gtk::FilterListModel,
+        list_view: TemplateChild<gtk::ListView>,
+        filtered_model: gtk::FilterListModel,
         /// The list used for this view.
         #[property(get = Self::list, set = Self::set_list, explicit_notify, nullable)]
-        pub list: PhantomData<Option<PrivilegedMembers>>,
+        list: PhantomData<Option<PrivilegedMembers>>,
         /// Whether our own user can change the power levels in this room.
         #[property(get, set = Self::set_editable, explicit_notify)]
-        pub editable: Cell<bool>,
+        editable: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -56,7 +56,6 @@ mod imp {
     impl ObjectImpl for PermissionsMembersSubpage {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             // Needed because the GtkSearchEntry is not the direct child of the
             // GtkSearchBar.
@@ -112,14 +111,14 @@ mod imp {
 
             let factory = gtk::SignalListItemFactory::new();
             factory.connect_setup(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, item| {
                     let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
                         error!("List item factory did not receive a list item: {item:?}");
                         return;
                     };
-                    let Some(permissions) = obj.list().and_then(|l| l.permissions()) else {
+                    let Some(permissions) = imp.list().and_then(|l| l.permissions()) else {
                         return;
                     };
                     let row = PermissionsMemberRow::new(&permissions);
