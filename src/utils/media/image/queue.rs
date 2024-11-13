@@ -4,7 +4,7 @@ use std::{
     future::IntoFuture,
     path::PathBuf,
     sync::{Arc, LazyLock, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use futures_util::future::BoxFuture;
@@ -17,7 +17,7 @@ use tokio::{
     sync::{broadcast, Mutex as AsyncMutex},
     task::AbortHandle,
 };
-use tracing::{debug, trace, warn};
+use tracing::{debug, warn};
 
 use super::{load_image, Image, ImageError};
 use crate::{
@@ -149,15 +149,6 @@ impl ImageRequestQueue {
 }
 
 impl ImageRequestQueueInner {
-    /// Print the stats of the queue.
-    fn print_stats(&self) {
-        trace!(
-            "{} ongoing requests, {} total requests",
-            self.ongoing.len(),
-            self.requests.len()
-        );
-    }
-
     /// Whether we have reache the current limit of concurrent requests.
     fn is_limit_reached(&self) -> bool {
         self.ongoing.len() >= self.limit
@@ -170,7 +161,6 @@ impl ImageRequestQueueInner {
             // Spawn the request right away.
             self.ongoing.insert(request_id.clone());
             request.spawn();
-            trace!("Request {request_id} spawned");
         } else {
             // Queue the request.
             let queue = if request.priority == ImageRequestPriority::Default {
@@ -180,10 +170,8 @@ impl ImageRequestQueueInner {
             };
 
             queue.push_back(request_id.clone());
-            trace!("Request {request_id} queued");
         }
         self.requests.insert(request_id, request);
-        self.print_stats();
     }
 
     /// Add a request to download an image.
@@ -207,10 +195,6 @@ impl ImageRequestQueueInner {
         // If the request already exists, use the existing one.
         if let Some(request) = self.requests.get(&request_id) {
             let result_receiver = request.result_sender.subscribe();
-            trace!(
-                "Added receiver for {request_id}, new receiver count: {}",
-                request.result_sender.receiver_count()
-            );
             return ImageRequestHandle::new(result_receiver);
         }
 
@@ -236,10 +220,6 @@ impl ImageRequestQueueInner {
         // If the request already exists, use the existing one.
         if let Some(request) = self.requests.get(&request_id) {
             let result_receiver = request.result_sender.subscribe();
-            trace!(
-                "Added receiver for {request_id}, new receiver count: {}",
-                request.result_sender.receiver_count()
-            );
             return ImageRequestHandle::new(result_receiver);
         }
 
@@ -293,7 +273,6 @@ impl ImageRequestQueueInner {
                     // Re-spawn the request right away.
                     self.ongoing.insert(request_id.clone());
                     request.spawn();
-                    trace!("Request {request_id} spawned");
                 } else {
                     // Queue the request.
                     let queue = if request.priority == ImageRequestPriority::Default {
@@ -303,12 +282,11 @@ impl ImageRequestQueueInner {
                     };
 
                     queue.push_back(request_id.clone());
-                    trace!("Request {request_id} queued");
                 }
             }
             None => {
                 // This should not happen.
-                trace!("Could not find request {request_id} to retry");
+                warn!("Could not find request {request_id} to retry");
             }
         }
 
@@ -322,7 +300,6 @@ impl ImageRequestQueueInner {
         self.queue_default.retain(|id| id != request_id);
         self.queue_low.retain(|id| id != request_id);
         self.requests.remove(request_id);
-        trace!("Request {request_id} removed");
 
         self.spawn_next();
     }
@@ -336,26 +313,22 @@ impl ImageRequestQueueInner {
                 .or_else(|| self.queue_low.pop_front())
             else {
                 // No request to spawn.
-                self.print_stats();
                 return;
             };
             let Some(request) = self.requests.get(&request_id) else {
                 // The queues and requests are out of sync, this should not happen.
-                trace!("Missing image request {request_id}");
+                warn!("Missing image request {request_id}");
                 continue;
             };
 
             self.ongoing.insert(request_id.clone());
             request.spawn();
-            trace!("Request {request_id} spawned");
         }
 
         // If there are no ongoing requests, restore the limit to its default value.
         if self.ongoing.is_empty() {
             self.limit = DEFAULT_QUEUE_LIMIT;
         }
-
-        self.print_stats();
     }
 }
 
@@ -413,7 +386,6 @@ impl ImageRequest {
 
         let abort_handle = spawn_tokio!(async move {
             let request_id = data.request_id();
-            let start_time = Instant::now();
 
             let stalled_timeout_source_clone = stalled_timeout_source.clone();
             let request_id_clone = request_id.clone();
@@ -432,11 +404,6 @@ impl ImageRequest {
             };
 
             let result = data.await;
-            let duration = start_time.elapsed();
-            trace!(
-                "Request {request_id} took {} ms, result: {result:?}",
-                duration.as_millis()
-            );
 
             // Cancel the timeout.
             if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.take()) {
@@ -461,10 +428,9 @@ impl ImageRequest {
             }
 
             // Send the result.
-            match result_sender.send(result) {
-                Ok(_) => trace!("Request result of {request_id} sent"),
-                Err(error) => trace!("Failed to send result of {request_id}: {error}"),
-            };
+            if let Err(error) = result_sender.send(result) {
+                warn!("Could not send result of image request {request_id}: {error}");
+            }
             IMAGE_QUEUE.remove_request(&request_id).await;
         }).abort_handle();
 
@@ -487,10 +453,9 @@ impl Drop for ImageRequest {
             let request_id = self.data.request_id();
             let result_sender = self.result_sender.clone();
             spawn_tokio!(async move {
-                match result_sender.send(Err(ImageError::Aborted)) {
-                    Ok(_) => trace!("Request {request_id} was aborted"),
-                    Err(error) => trace!("Failed to abort request {request_id}: {error}"),
-                };
+                if let Err(error) = result_sender.send(Err(ImageError::Aborted)) {
+                    warn!("Could not abort image request {request_id}: {error}");
+                }
             });
         }
     }
