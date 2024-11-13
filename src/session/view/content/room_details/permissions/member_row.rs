@@ -64,7 +64,18 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for PermissionsMemberRow {}
 
-    impl WidgetImpl for PermissionsMemberRow {}
+    impl WidgetImpl for PermissionsMemberRow {
+        fn focus(&self, _direction_type: gtk::DirectionType) -> bool {
+            // Regardless of the direction, we can only focus this widget and no children.
+            let obj = self.obj();
+            if obj.is_focus() {
+                false
+            } else {
+                obj.grab_focus()
+            }
+        }
+    }
+
     impl BoxImpl for PermissionsMemberRow {}
 
     impl PermissionsMemberRow {
