@@ -4,7 +4,8 @@ use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*};
 use super::{crop_circle::CropCircle, Avatar, AvatarData};
 use crate::utils::BoundObject;
 
-pub type ExtractAvatarDataFn = dyn Fn(&glib::Object) -> AvatarData + 'static;
+/// Function to extract the avatar data from a supported `GObject`.
+type ExtractAvatarDataFn = dyn Fn(&glib::Object) -> AvatarData + 'static;
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -15,23 +16,23 @@ mod imp {
     #[properties(wrapper_type = super::OverlappingAvatars)]
     pub struct OverlappingAvatars {
         /// The children containing the avatars.
-        pub children: RefCell<Vec<CropCircle>>,
+        children: RefCell<Vec<CropCircle>>,
         /// The size of the avatars.
         #[property(get, set = Self::set_avatar_size, explicit_notify)]
-        pub avatar_size: Cell<u32>,
+        avatar_size: Cell<u32>,
         /// The spacing between the avatars.
         #[property(get, set = Self::set_spacing, explicit_notify)]
-        pub spacing: Cell<u32>,
+        spacing: Cell<u32>,
         /// The maximum number of avatars to display.
         ///
         /// `0` means that all avatars are displayed.
         #[property(get, set = Self::set_max_avatars, explicit_notify)]
-        pub max_avatars: Cell<u32>,
+        max_avatars: Cell<u32>,
         /// The list model that is bound, if any.
-        pub bound_model: BoundObject<gio::ListModel>,
+        bound_model: BoundObject<gio::ListModel>,
         /// The method used to extract `AvatarData` from the items of the list
         /// model, if any.
-        pub extract_avatar_data_fn: RefCell<Option<Box<ExtractAvatarDataFn>>>,
+        extract_avatar_data_fn: RefCell<Option<Box<ExtractAvatarDataFn>>>,
     }
 
     #[glib::object_subclass]
@@ -127,7 +128,7 @@ mod imp {
 
         /// Compute the avatars overlap according to their size.
         #[allow(clippy::cast_sign_loss)] // The result can only be positive.
-        pub(super) fn overlap(&self) -> u32 {
+        fn overlap(&self) -> u32 {
             let avatar_size = self.avatar_size.get();
             // Make the overlap a little less than half the size of the avatar.
             (f64::from(avatar_size) / 2.5) as u32
@@ -185,11 +186,103 @@ mod imp {
                 let diff = model.n_items() - old_max_avatars;
                 if diff > 0 {
                     // We could have more children, create them.
-                    obj.handle_items_changed(&model, old_max_avatars, 0, diff);
+                    self.handle_items_changed(&model, old_max_avatars, 0, diff);
                 }
             }
 
             obj.notify_max_avatars();
+        }
+
+        /// Bind a `ListModel` to this list.
+        pub(super) fn bind_model<P: Fn(&glib::Object) -> AvatarData + 'static>(
+            &self,
+            model: Option<gio::ListModel>,
+            extract_avatar_data_fn: P,
+        ) {
+            self.bound_model.disconnect_signals();
+            for child in self.children.take() {
+                child.unparent();
+            }
+            self.extract_avatar_data_fn.take();
+
+            let Some(model) = model else {
+                return;
+            };
+
+            let signal_handler_id = model.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |model, position, removed, added| {
+                    imp.handle_items_changed(model, position, removed, added);
+                }
+            ));
+
+            self.bound_model.set(model.clone(), vec![signal_handler_id]);
+            self.extract_avatar_data_fn
+                .replace(Some(Box::new(extract_avatar_data_fn)));
+
+            self.handle_items_changed(&model, 0, 0, model.n_items());
+        }
+
+        fn handle_items_changed(
+            &self,
+            model: &impl IsA<gio::ListModel>,
+            position: u32,
+            mut removed: u32,
+            added: u32,
+        ) {
+            let max_avatars = self.max_avatars.get();
+            if max_avatars != 0 && position >= max_avatars {
+                // No changes here.
+                return;
+            }
+
+            let mut children = self.children.borrow_mut();
+            let extract_avatar_data_fn_borrow = self.extract_avatar_data_fn.borrow();
+            let extract_avatar_data_fn = extract_avatar_data_fn_borrow.as_ref().unwrap();
+
+            let avatar_size = i32::try_from(self.avatar_size.get()).unwrap_or(i32::MAX);
+            let cropped_width = self.overlap();
+
+            while removed > 0 {
+                if position as usize >= children.len() {
+                    break;
+                }
+
+                let child = children.remove(position as usize);
+                child.unparent();
+                removed -= 1;
+            }
+
+            let obj = self.obj();
+
+            for i in position..(position + added) {
+                if max_avatars != 0 && i >= max_avatars {
+                    break;
+                }
+
+                let item = model.item(i).unwrap();
+                let avatar_data = extract_avatar_data_fn(&item);
+
+                let avatar = Avatar::new();
+                avatar.set_data(Some(avatar_data));
+                avatar.set_size(avatar_size);
+
+                let child = CropCircle::new();
+                child.set_child(Some(avatar));
+                child.set_cropped_width(cropped_width);
+                child.set_parent(&*obj);
+
+                children.insert(i as usize, child);
+            }
+
+            // Make sure that only the last avatar is not cropped.
+            let last_pos = children.len().saturating_sub(1);
+            for (i, child) in children.iter().enumerate() {
+                child.set_is_cropped(i != last_pos);
+            }
+
+            obj.queue_resize();
         }
     }
 }
@@ -207,97 +300,12 @@ impl OverlappingAvatars {
     }
 
     /// Bind a `ListModel` to this list.
-    pub fn bind_model<P: Fn(&glib::Object) -> AvatarData + 'static>(
+    pub(crate) fn bind_model<P: Fn(&glib::Object) -> AvatarData + 'static>(
         &self,
         model: Option<impl IsA<gio::ListModel>>,
         extract_avatar_data_fn: P,
     ) {
-        let imp = self.imp();
-
-        imp.bound_model.disconnect_signals();
-        for child in imp.children.take() {
-            child.unparent();
-        }
-        imp.extract_avatar_data_fn.take();
-
-        let Some(model) = model else {
-            return;
-        };
-
-        let signal_handler_id = model.connect_items_changed(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |model, position, removed, added| {
-                obj.handle_items_changed(model, position, removed, added);
-            }
-        ));
-
-        imp.bound_model
-            .set(model.clone().upcast(), vec![signal_handler_id]);
-
-        imp.extract_avatar_data_fn
-            .replace(Some(Box::new(extract_avatar_data_fn)));
-
-        self.handle_items_changed(&model, 0, 0, model.n_items());
-    }
-
-    fn handle_items_changed(
-        &self,
-        model: &impl IsA<gio::ListModel>,
-        position: u32,
-        mut removed: u32,
-        added: u32,
-    ) {
-        let max_avatars = self.max_avatars();
-        if max_avatars != 0 && position >= max_avatars {
-            // No changes here.
-            return;
-        }
-
-        let imp = self.imp();
-        let mut children = imp.children.borrow_mut();
-        let extract_avatar_data_fn_borrow = imp.extract_avatar_data_fn.borrow();
-        let extract_avatar_data_fn = extract_avatar_data_fn_borrow.as_ref().unwrap();
-
-        let avatar_size = i32::try_from(self.avatar_size()).unwrap_or(i32::MAX);
-        let cropped_width = imp.overlap();
-
-        while removed > 0 {
-            if position as usize >= children.len() {
-                break;
-            }
-
-            let child = children.remove(position as usize);
-            child.unparent();
-            removed -= 1;
-        }
-
-        for i in position..(position + added) {
-            if max_avatars != 0 && i >= max_avatars {
-                break;
-            }
-
-            let item = model.item(i).unwrap();
-            let avatar_data = extract_avatar_data_fn(&item);
-
-            let avatar = Avatar::new();
-            avatar.set_data(Some(avatar_data));
-            avatar.set_size(avatar_size);
-
-            let child = CropCircle::new();
-            child.set_child(Some(avatar));
-            child.set_cropped_width(cropped_width);
-            child.set_parent(self);
-
-            children.insert(i as usize, child);
-        }
-
-        // Make sure that only the last avatar is not cropped.
-        let last_pos = children.len().saturating_sub(1);
-        for (i, child) in children.iter().enumerate() {
-            child.set_is_cropped(i != last_pos);
-        }
-
-        self.queue_resize();
+        self.imp()
+            .bind_model(model.and_upcast(), extract_avatar_data_fn);
     }
 }
