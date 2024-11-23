@@ -10,8 +10,8 @@ use gtk::{
 };
 use matrix_sdk::{
     deserialized_responses::AmbiguityChange, event_handler::EventHandlerDropGuard,
-    room::Room as MatrixRoom, send_queue::RoomSendQueueUpdate, DisplayName, Result as MatrixResult,
-    RoomInfo, RoomMemberships, RoomState,
+    room::Room as MatrixRoom, send_queue::RoomSendQueueUpdate, Result as MatrixResult,
+    RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     api::client::{
@@ -377,17 +377,17 @@ mod imp {
 
             let mut display_name = if let Some(sdk_display_name) = sdk_display_name {
                 match sdk_display_name {
-                    DisplayName::Named(s)
-                    | DisplayName::Calculated(s)
-                    | DisplayName::Aliased(s) => s,
-                    // Translators: This is the name of a room that is empty but had another
-                    // user before. Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    DisplayName::EmptyWas(s) => {
+                    RoomDisplayName::Named(s)
+                    | RoomDisplayName::Calculated(s)
+                    | RoomDisplayName::Aliased(s) => s,
+                    RoomDisplayName::EmptyWas(s) => {
+                        // Translators: This is the name of a room that is empty but had another
+                        // user before. Do NOT translate the content between
+                        // '{' and '}', this is a variable name.
                         gettext_f("Empty Room (was {user})", &[("user", &s)])
                     }
                     // Translators: This is the name of a room without other users.
-                    DisplayName::Empty => gettext("Empty Room"),
+                    RoomDisplayName::Empty => gettext("Empty Room"),
                 }
             } else {
                 Default::default()
@@ -1702,10 +1702,9 @@ impl Room {
     /// Toggle the `key` reaction on the given related event in this room.
     pub async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
         let timeline = self.timeline().matrix_timeline();
-        let event_timeline_id = event.timeline_id();
+        let identifier = event.identifier();
 
-        let handle =
-            spawn_tokio!(async move { timeline.toggle_reaction(&event_timeline_id, &key).await });
+        let handle = spawn_tokio!(async move { timeline.toggle_reaction(&identifier, &key).await });
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             error!("Could not toggle reaction: {error}");

@@ -11,7 +11,6 @@ use matrix_sdk::{
     matrix_auth::{MatrixSession, MatrixSessionTokens},
     Client, ClientBuildError, SessionMeta,
 };
-use matrix_sdk_ui::timeline::{Message, TimelineItemContent};
 use ruma::{
     events::{
         room::{member::MembershipState, message::MessageType},
@@ -29,6 +28,7 @@ use ruma::{
 };
 use thiserror::Error;
 
+pub mod ext_traits;
 mod media_message;
 
 pub use self::media_message::{MediaMessage, VisualMediaMessage};
@@ -651,32 +651,4 @@ pub enum MatrixIdUriParseError {
     /// Unsupported Matrix ID.
     #[error("unsupported Matrix ID: {0:?}")]
     UnsupportedId(MatrixId),
-}
-
-/// Helper trait for types possibly containing an `@room` mention.
-pub trait AtMentionExt {
-    /// Whether this event might contain an `@room` mention.
-    ///
-    /// This means that either it doesn't have intentional mentions, or it has
-    /// intentional mentions and `room` is set to `true`.
-    fn can_contain_at_room(&self) -> bool;
-}
-
-impl AtMentionExt for TimelineItemContent {
-    fn can_contain_at_room(&self) -> bool {
-        match self {
-            TimelineItemContent::Message(msg) => msg.can_contain_at_room(),
-            _ => false,
-        }
-    }
-}
-
-impl AtMentionExt for Message {
-    fn can_contain_at_room(&self) -> bool {
-        let Some(mentions) = self.mentions() else {
-            return true;
-        };
-
-        mentions.room
-    }
 }

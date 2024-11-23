@@ -237,7 +237,7 @@ impl GeneralPage {
         let client = session.client();
         let client_clone = client.clone();
         let handle =
-            spawn_tokio!(async move { client_clone.media().upload(&info.mime, data).await });
+            spawn_tokio!(async move { client_clone.media().upload(&info.mime, data, None).await });
 
         let uri = match handle.await.unwrap() {
             Ok(res) => res.content_uri,

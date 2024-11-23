@@ -7,7 +7,7 @@ use gtk::{gdk, gio, prelude::*};
 use image::{ColorType, DynamicImage, ImageDecoder, ImageResult};
 use matrix_sdk::{
     attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
-    media::{MediaFormat, MediaRequest, MediaThumbnailSettings, MediaThumbnailSize},
+    media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
     Client,
 };
 use ruma::{
@@ -466,7 +466,7 @@ impl<'a> ThumbnailDownloader<'a> {
 
         if source.should_thumbnail(settings.prefer_thumbnail, settings.dimensions) {
             // Try to get a thumbnail.
-            let request = MediaRequest {
+            let request = MediaRequestParameters {
                 source: source.source.to_common_media_source(),
                 format: MediaFormat::Thumbnail(settings.into()),
             };
@@ -480,7 +480,7 @@ impl<'a> ThumbnailDownloader<'a> {
         }
 
         // Fallback to downloading the full source.
-        let request = MediaRequest {
+        let request = MediaRequestParameters {
             source: source.source.to_common_media_source(),
             format: MediaFormat::File,
         };
@@ -674,11 +674,9 @@ impl From<ThumbnailSettings> for MediaThumbnailSettings {
         } = value;
 
         MediaThumbnailSettings {
-            size: MediaThumbnailSize {
-                method,
-                width: dimensions.width.into(),
-                height: dimensions.height.into(),
-            },
+            method,
+            width: dimensions.width.into(),
+            height: dimensions.height.into(),
             animated,
         }
     }

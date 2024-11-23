@@ -195,7 +195,8 @@ mod imp {
                 return;
             };
             let client = session.client();
-            let handle = spawn_tokio!(async move { client.media().upload(&info.mime, data).await });
+            let handle =
+                spawn_tokio!(async move { client.media().upload(&info.mime, data, None).await });
 
             let uri = match handle.await.unwrap() {
                 Ok(res) => res.content_uri,

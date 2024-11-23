@@ -16,6 +16,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, graphene::Point, CompositeTemplate};
 use matrix_sdk::ruma::EventId;
+use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
 use tracing::{error, warn};
 
@@ -30,8 +31,7 @@ use crate::{
     components::{confirm_leave_room_dialog, DragOverlay, QuickReactionChooser},
     prelude::*,
     session::model::{
-        Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline,
-        TimelineState,
+        Event, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline, TimelineState,
     },
     spawn, toast,
     utils::{template_callbacks::TemplateCallbacks, BoundObject},
@@ -157,9 +157,9 @@ mod imp {
 
             klass.install_action(
                 "room-history.scroll-to-event",
-                Some(&EventKey::static_variant_type()),
+                Some(&TimelineEventItemId::static_variant_type()),
                 |obj, _, v| {
-                    if let Some(event_key) = v.and_then(EventKey::from_variant) {
+                    if let Some(event_key) = v.and_then(TimelineEventItemId::from_variant) {
                         obj.imp().scroll_to_event(&event_key);
                     }
                 },
@@ -176,7 +176,8 @@ mod imp {
                         if let Some(event) = obj
                             .room()
                             .and_then(|room| {
-                                room.timeline().event_by_key(&EventKey::EventId(event_id))
+                                room.timeline()
+                                    .event_by_identifier(&TimelineEventItemId::EventId(event_id))
                             })
                             .and_downcast_ref()
                         {
@@ -197,7 +198,8 @@ mod imp {
                         if let Some(event) = obj
                             .room()
                             .and_then(|room| {
-                                room.timeline().event_by_key(&EventKey::EventId(event_id))
+                                room.timeline()
+                                    .event_by_identifier(&TimelineEventItemId::EventId(event_id))
                             })
                             .and_downcast_ref()
                         {
@@ -677,8 +679,8 @@ mod imp {
             ));
         }
 
-        /// Scroll to the event with the given key.
-        fn scroll_to_event(&self, key: &EventKey) {
+        /// Scroll to the event with the given identifier.
+        fn scroll_to_event(&self, key: &TimelineEventItemId) {
             let Some(room) = self.room.obj() else {
                 return;
             };

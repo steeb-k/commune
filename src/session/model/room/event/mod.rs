@@ -1,10 +1,8 @@
-use std::{borrow::Cow, fmt};
-
 use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
-    RepliedToEvent, TimelineDetails, TimelineItemContent,
+    RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent, TimelineUniqueId,
 };
 use ruma::{
     events::{
@@ -13,7 +11,7 @@ use ruma::{
         AnySyncTimelineEvent, Mentions, TimelineEventType,
     },
     serde::Raw,
-    EventId, MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
+    MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
     OwnedUserId,
 };
 use serde::{de::IgnoredAny, Deserialize};
@@ -35,51 +33,6 @@ use crate::{
     spawn_tokio,
     utils::matrix::{raw_eq, MediaMessage, VisualMediaMessage},
 };
-
-/// The unique key to identify an event in a room.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum EventKey {
-    /// This is the local echo of the event, the key is its transaction ID.
-    TransactionId(OwnedTransactionId),
-
-    /// This is the remote echo of the event, the key is its event ID.
-    EventId(OwnedEventId),
-}
-
-impl fmt::Display for EventKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            EventKey::TransactionId(txn_id) => write!(f, "transaction_id:{txn_id}"),
-            EventKey::EventId(event_id) => write!(f, "event_id:{event_id}"),
-        }
-    }
-}
-
-impl StaticVariantType for EventKey {
-    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
-        Cow::Borrowed(glib::VariantTy::STRING)
-    }
-}
-
-impl ToVariant for EventKey {
-    fn to_variant(&self) -> glib::Variant {
-        self.to_string().to_variant()
-    }
-}
-
-impl FromVariant for EventKey {
-    fn from_variant(variant: &glib::Variant) -> Option<Self> {
-        let s = variant.str()?;
-
-        if let Some(s) = s.strip_prefix("transaction_id:") {
-            Some(EventKey::TransactionId(s.into()))
-        } else if let Some(s) = s.strip_prefix("event_id:") {
-            EventId::parse(s).ok().map(EventKey::EventId)
-        } else {
-            None
-        }
-    }
-}
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "MessageState")]
@@ -147,9 +100,8 @@ mod imp {
         /// server, as a string.
         #[property(get = Self::event_id_string)]
         pub event_id_string: PhantomData<Option<String>>,
-        /// The ID of this `Event` in the SDK timeline.
-        #[property(get = Self::timeline_id, type = String)]
-        pub timeline_id: RefCell<Option<String>>,
+        /// The unique local ID of this `Event` in the SDK timeline.
+        timeline_id: RefCell<Option<TimelineUniqueId>>,
         /// The ID of the sender of this `Event`, as a string.
         #[property(get = Self::sender_id_string)]
         pub sender_id_string: PhantomData<String>,
@@ -227,7 +179,7 @@ mod imp {
 
     impl TimelineItemImpl for Event {
         fn id(&self) -> String {
-            format!("Event::{}", self.obj().key())
+            format!("Event::{:?}", self.identifier())
         }
 
         fn can_hide_header(&self) -> bool {
@@ -245,7 +197,7 @@ mod imp {
 
     impl Event {
         /// Set the underlying SDK timeline item of this `Event`.
-        pub fn set_item(&self, item: EventTimelineItem, timeline_id: &str) {
+        pub fn set_item(&self, item: EventTimelineItem, timeline_id: TimelineUniqueId) {
             let obj = self.obj();
 
             let prev_raw = self.raw();
@@ -259,7 +211,7 @@ mod imp {
             obj.update_read_receipts(item.read_receipts());
 
             self.item.replace(Some(item));
-            self.timeline_id.replace(Some(timeline_id.to_owned()));
+            self.timeline_id.replace(Some(timeline_id));
 
             if !raw_eq(prev_raw.as_ref(), self.raw().as_ref()) {
                 obj.notify_source();
@@ -288,7 +240,6 @@ mod imp {
 
             obj.update_state();
             obj.emit_by_name::<()>("item-changed", &[]);
-            obj.notify_timeline_id();
         }
 
         /// The raw JSON source for this `Event`, if it has been echoed back
@@ -325,12 +276,21 @@ mod imp {
                 .map(ToString::to_string)
         }
 
-        /// The ID of this `Event` in the SDK timeline.
-        fn timeline_id(&self) -> String {
+        /// The unique local ID of this `Event` in the SDK timeline.
+        pub(super) fn timeline_id(&self) -> TimelineUniqueId {
             self.timeline_id
                 .borrow()
                 .clone()
                 .expect("event should always have timeline ID after construction")
+        }
+
+        /// The unique global key of this `Event` in the timeline.
+        pub(super) fn identifier(&self) -> TimelineEventItemId {
+            self.item
+                .borrow()
+                .as_ref()
+                .expect("event should always have item after construction")
+                .identifier()
         }
 
         /// The ID of the sender of this `Event`, as a string.
@@ -463,12 +423,12 @@ glib::wrapper! {
 
 impl Event {
     /// Create a new `Event` with the given SDK timeline item.
-    pub fn new(item: EventTimelineItem, timeline_id: &str, room: &Room) -> Self {
+    pub fn new(item: EventTimelineItem, timeline_id: &TimelineUniqueId, room: &Room) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
-        obj.imp().set_item(item, timeline_id);
+        obj.imp().set_item(item, timeline_id.clone());
 
         obj
     }
@@ -476,18 +436,22 @@ impl Event {
     /// Try to update this `Event` with the given SDK timeline item.
     ///
     /// Returns `true` if the update succeeded.
-    pub fn try_update_with(&self, item: &EventTimelineItem, timeline_id: &str) -> bool {
-        match &self.key() {
-            EventKey::TransactionId(txn_id)
+    pub fn try_update_with(
+        &self,
+        item: &EventTimelineItem,
+        timeline_id: &TimelineUniqueId,
+    ) -> bool {
+        match &self.identifier() {
+            TimelineEventItemId::TransactionId(txn_id)
                 if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
             {
-                self.imp().set_item(item.clone(), timeline_id);
+                self.imp().set_item(item.clone(), timeline_id.clone());
                 return true;
             }
-            EventKey::EventId(event_id)
+            TimelineEventItemId::EventId(event_id)
                 if !item.is_local_echo() && item.event_id() == Some(event_id) =>
             {
-                self.imp().set_item(item.clone(), timeline_id);
+                self.imp().set_item(item.clone(), timeline_id.clone());
                 return true;
             }
             _ => {}
@@ -507,43 +471,46 @@ impl Event {
         self.imp().raw()
     }
 
-    /// The unique key of this `Event` in the timeline.
-    pub fn key(&self) -> EventKey {
-        let item_ref = self.imp().item.borrow();
-        let item = item_ref.as_ref().unwrap();
-        if item.is_local_echo() {
-            EventKey::TransactionId(item.transaction_id().unwrap().to_owned())
-        } else {
-            EventKey::EventId(item.event_id().unwrap().to_owned())
-        }
+    /// The unique local ID of this `Event` in the SDK timeline.
+    pub fn timeline_id(&self) -> TimelineUniqueId {
+        self.imp().timeline_id()
     }
 
-    /// Whether the given key matches this `Event`.
+    /// The unique global identifier of this `Event` in the timeline.
+    pub fn identifier(&self) -> TimelineEventItemId {
+        self.imp().identifier()
+    }
+
+    /// Whether the given identifier matches this `Event`.
     ///
     /// The result can be different from comparing two `EventKey`s because an
     /// event can have a transaction ID and an event ID.
-    pub fn matches_key(&self, key: &EventKey) -> bool {
+    pub fn matches_identifier(&self, identifier: &TimelineEventItemId) -> bool {
         let item_ref = self.imp().item.borrow();
         let item = item_ref.as_ref().unwrap();
-        match key {
-            EventKey::TransactionId(txn_id) => item.transaction_id().is_some_and(|id| id == txn_id),
-            EventKey::EventId(event_id) => item.event_id().is_some_and(|id| id == event_id),
+        match identifier {
+            TimelineEventItemId::TransactionId(txn_id) => {
+                item.transaction_id().is_some_and(|id| id == txn_id)
+            }
+            TimelineEventItemId::EventId(event_id) => {
+                item.event_id().is_some_and(|id| id == event_id)
+            }
         }
     }
 
     /// The event ID of this `Event`, if it has been received from the server.
     pub fn event_id(&self) -> Option<OwnedEventId> {
-        match self.key() {
-            EventKey::TransactionId(_) => None,
-            EventKey::EventId(event_id) => Some(event_id),
+        match self.identifier() {
+            TimelineEventItemId::TransactionId(_) => None,
+            TimelineEventItemId::EventId(event_id) => Some(event_id),
         }
     }
 
     /// The transaction ID of this `Event`, if it is still pending.
     pub fn transaction_id(&self) -> Option<OwnedTransactionId> {
-        match self.key() {
-            EventKey::TransactionId(txn_id) => Some(txn_id),
-            EventKey::EventId(_) => None,
+        match self.identifier() {
+            TimelineEventItemId::TransactionId(txn_id) => Some(txn_id),
+            TimelineEventItemId::EventId(_) => None,
         }
     }
 
@@ -774,7 +741,7 @@ impl Event {
         let event_id = self.reply_to_id()?;
         self.room()
             .timeline()
-            .event_by_key(&EventKey::EventId(event_id))
+            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
     }
 
     /// Fetch missing details for this event.

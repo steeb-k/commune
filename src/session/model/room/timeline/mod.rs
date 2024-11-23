@@ -13,7 +13,8 @@ use gtk::{
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
-        default_event_filter, RoomExt, Timeline as SdkTimeline, TimelineItem as SdkTimelineItem,
+        default_event_filter, RoomExt, Timeline as SdkTimeline, TimelineEventItemId,
+        TimelineItem as SdkTimelineItem,
     },
 };
 use ruma::{
@@ -30,7 +31,7 @@ pub use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
-use super::{Event, EventKey, Room};
+use super::{Event, Room};
 use crate::{prelude::*, spawn, spawn_tokio};
 
 /// The possible states of the timeline.
@@ -82,8 +83,9 @@ mod imp {
         /// The `GListModel` containing all the timeline items.
         #[property(get)]
         items: gtk::FlattenListModel,
-        /// A Hashmap linking `EventKey` to corresponding `Event`
-        pub(super) event_map: RefCell<HashMap<EventKey, Event>>,
+        /// A Hashmap linking a `TimelineEventItemId` to the corresponding
+        /// `Event`.
+        pub(super) event_map: RefCell<HashMap<TimelineEventItemId, Event>>,
         /// The state of the timeline.
         #[property(get, builder(TimelineState::default()))]
         state: Cell<TimelineState>,
@@ -464,7 +466,7 @@ mod imp {
             if let Some(event) = item.downcast_ref::<Event>() {
                 self.event_map
                     .borrow_mut()
-                    .insert(event.key(), event.clone());
+                    .insert(event.identifier(), event.clone());
 
                 // Keep track of the activity of the sender.
                 if event.counts_as_unread() {
@@ -485,7 +487,7 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
-                self.event_map.borrow_mut().remove(&event.key());
+                self.event_map.borrow_mut().remove(&event.identifier());
 
                 if event.is_room_create_event() {
                     self.set_has_room_create(false);
@@ -666,16 +668,17 @@ impl Timeline {
         }
     }
 
-    /// Get the event with the given key from this `Timeline`.
+    /// Get the event with the given identifier from this `Timeline`.
     ///
     /// Use this method if you are sure the event has already been received.
     /// Otherwise use `fetch_event_by_id`.
-    pub(crate) fn event_by_key(&self, key: &EventKey) -> Option<Event> {
-        self.imp().event_map.borrow().get(key).cloned()
+    pub(crate) fn event_by_identifier(&self, identifier: &TimelineEventItemId) -> Option<Event> {
+        self.imp().event_map.borrow().get(identifier).cloned()
     }
 
-    /// Get the position of the event with the given key in this `Timeline`.
-    pub(crate) fn find_event_position(&self, key: &EventKey) -> Option<usize> {
+    /// Get the position of the event with the given identifier in this
+    /// `Timeline`.
+    pub(crate) fn find_event_position(&self, identifier: &TimelineEventItemId) -> Option<usize> {
         for (pos, item) in self
             .items()
             .iter::<glib::Object>()
@@ -687,7 +690,7 @@ impl Timeline {
             };
 
             if let Some(event) = item.downcast_ref::<Event>() {
-                if event.key() == *key {
+                if event.identifier() == *identifier {
                     return Some(pos);
                 }
             }

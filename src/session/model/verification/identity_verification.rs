@@ -431,24 +431,25 @@ impl IdentityVerification {
 
     /// The ID of the other device that is being verified.
     pub fn other_device_id(&self) -> Option<OwnedDeviceId> {
-        let verification = match self.request().state() {
+        let request_state = self.request().state();
+        let other_device_data = match &request_state {
             VerificationRequestState::Requested {
-                other_device_id, ..
+                other_device_data, ..
             }
             | VerificationRequestState::Ready {
-                other_device_id, ..
-            } => return Some(other_device_id),
-            VerificationRequestState::Transitioned { verification } => verification,
+                other_device_data, ..
+            } => other_device_data,
+            VerificationRequestState::Transitioned { verification } => match verification {
+                Verification::SasV1(sas) => sas.other_device(),
+                Verification::QrV1(qr) => qr.other_device(),
+                _ => None?,
+            },
             VerificationRequestState::Created { .. }
             | VerificationRequestState::Done
-            | VerificationRequestState::Cancelled(_) => return None,
+            | VerificationRequestState::Cancelled(_) => None?,
         };
 
-        match verification {
-            Verification::SasV1(sas) => Some(sas.other_device().device_id().to_owned()),
-            Verification::QrV1(qr) => Some(qr.other_device().device_id().to_owned()),
-            _ => None,
-        }
+        Some(other_device_data.device_id().to_owned())
     }
 
     /// Set whether this request was accepted.

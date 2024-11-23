@@ -5,7 +5,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{ComposerDraft, ComposerDraftType};
-use matrix_sdk_ui::timeline::{Message, RepliedToInfo};
+use matrix_sdk_ui::timeline::{Message, RepliedToInfo, TimelineEventItemId};
 use ruma::{
     events::room::message::{MessageFormat, MessageType},
     OwnedEventId, RoomOrAliasId, UserId,
@@ -17,7 +17,7 @@ use super::{MessageBufferChunk, MessageBufferParser};
 use crate::{
     components::{AtRoom, Pill, PillSource},
     prelude::*,
-    session::model::{EventKey, Member, Room},
+    session::model::{Member, Room},
     spawn, spawn_tokio,
     utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
 };
@@ -569,11 +569,11 @@ pub enum RelationInfo {
 }
 
 impl RelationInfo {
-    /// The unique key of the related event.
-    pub fn key(&self) -> EventKey {
+    /// The unique global identifier of the related event.
+    pub fn identifier(&self) -> TimelineEventItemId {
         match self {
-            RelationInfo::Reply(info) => EventKey::EventId(info.event_id().to_owned()),
-            RelationInfo::Edit(event_id) => EventKey::EventId(event_id.clone()),
+            RelationInfo::Reply(info) => TimelineEventItemId::EventId(info.event_id().to_owned()),
+            RelationInfo::Edit(event_id) => TimelineEventItemId::EventId(event_id.clone()),
         }
     }
 

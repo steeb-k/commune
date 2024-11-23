@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
-use matrix_sdk_ui::timeline::TimelineItemContent;
+use matrix_sdk_ui::timeline::{TimelineEventItemId, TimelineItemContent};
 use ruma::events::room::message::MessageType;
 use tracing::error;
 
@@ -12,7 +12,7 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     prelude::*,
     session::{
-        model::{Event, EventKey, MessageState, Room, TimelineItem, VirtualItem, VirtualItemKind},
+        model::{Event, MessageState, Room, TimelineItem, VirtualItem, VirtualItemKind},
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, spawn_tokio, toast,
@@ -222,14 +222,22 @@ mod imp {
                 obj,
                 move |composer_state| {
                     obj.update_for_related_event(
-                        composer_state.related_to().map(|i| i.key()).as_ref(),
+                        composer_state
+                            .related_to()
+                            .map(|info| info.identifier())
+                            .as_ref(),
                     );
                 }
             ));
             self.composer_state
                 .set(composer_state, vec![composer_state_handler]);
 
-            obj.update_for_related_event(composer_state.related_to().map(|i| i.key()).as_ref());
+            obj.update_for_related_event(
+                composer_state
+                    .related_to()
+                    .map(|info| info.identifier())
+                    .as_ref(),
+            );
         }
 
         /// Set the [`TimelineItem`] presented by this row.
@@ -483,11 +491,13 @@ impl ItemRow {
         emoji_chooser.popup();
     }
 
-    /// Update this row for the related event with the given key.
-    fn update_for_related_event(&self, related_event_id: Option<&EventKey>) {
+    /// Update this row for the related event with the given identifier.
+    fn update_for_related_event(&self, related_event_id: Option<&TimelineEventItemId>) {
         let event = self.item().and_downcast::<Event>();
 
-        if event.is_some_and(|event| related_event_id.is_some_and(|key| event.matches_key(key))) {
+        if event.is_some_and(|event| {
+            related_event_id.is_some_and(|identifier| event.matches_identifier(identifier))
+        }) {
             self.add_css_class("selected");
         } else {
             self.remove_css_class("selected");
@@ -979,8 +989,8 @@ impl ItemRow {
         };
 
         let matrix_timeline = event.room().timeline().matrix_timeline();
-        let event_item = event.item();
-        let handle = spawn_tokio!(async move { matrix_timeline.redact(&event_item, None).await });
+        let identifier = event.identifier();
+        let handle = spawn_tokio!(async move { matrix_timeline.redact(&identifier, None).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not discard local event: {error}");

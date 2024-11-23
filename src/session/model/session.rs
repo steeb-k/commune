@@ -321,7 +321,7 @@ impl Session {
         spawn_tokio!(async move {
             client
                 .send_queue()
-                .respawn_tasks_for_rooms_with_unsent_events()
+                .respawn_tasks_for_rooms_with_unsent_requests()
                 .await;
         });
 

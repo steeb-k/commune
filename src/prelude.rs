@@ -8,7 +8,7 @@ pub use crate::{
     session_list::SessionInfoExt,
     user_facing_error::UserFacingError,
     utils::{
-        matrix::AtMentionExt,
+        matrix::ext_traits::*,
         string::{StrExt, StrMutExt},
         LocationExt,
     },

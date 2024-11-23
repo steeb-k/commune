@@ -10,7 +10,7 @@ use std::{
 use futures_util::future::BoxFuture;
 use gtk::glib;
 use matrix_sdk::{
-    media::{MediaRequest, UniqueKey},
+    media::{MediaRequestParameters, UniqueKey},
     Client,
 };
 use tokio::{
@@ -97,7 +97,7 @@ impl ImageRequestQueue {
     pub async fn add_download_request(
         &self,
         client: Client,
-        settings: MediaRequest,
+        settings: MediaRequestParameters,
         dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
@@ -181,7 +181,7 @@ impl ImageRequestQueueInner {
     fn add_download_request(
         &mut self,
         client: Client,
-        settings: MediaRequest,
+        settings: MediaRequestParameters,
         dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
@@ -467,7 +467,7 @@ struct DownloadRequestData {
     /// The Matrix client to use to make the request.
     client: Client,
     /// The settings of the request.
-    settings: MediaRequest,
+    settings: MediaRequestParameters,
     /// The dimensions to request.
     dimensions: Option<FrameDimensions>,
 }

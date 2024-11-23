@@ -554,7 +554,8 @@ impl MessageToolbar {
                 let handle = spawn_tokio!(async move {
                     let full_content = matrix_room
                         .make_edit_event(&event_id, EditedContent::RoomMessage(content))
-                        .await?;
+                        .await
+                        .map_err(matrix_sdk_ui::timeline::EditError::from)?;
                     let send_queue = matrix_room.send_queue();
                     send_queue.send(full_content).await?;
                     Ok::<(), matrix_sdk_ui::timeline::Error>(())
@@ -1014,7 +1015,7 @@ impl MessageToolbar {
         if let Some(related_to) = self.current_composer_state().related_to() {
             self.activate_action(
                 "room-history.scroll-to-event",
-                Some(&related_to.key().to_variant()),
+                Some(&related_to.identifier().to_variant()),
             )
             .unwrap();
         }

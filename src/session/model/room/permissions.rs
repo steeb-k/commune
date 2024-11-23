@@ -203,7 +203,7 @@ mod imp {
             let matrix_room = room.matrix_room();
 
             let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move { matrix_room_clone.room_power_levels().await });
+            let handle = spawn_tokio!(async move { matrix_room_clone.power_levels().await });
 
             match handle.await.expect("task was not aborted") {
                 Ok(power_levels) => self.update_power_levels(&power_levels),
