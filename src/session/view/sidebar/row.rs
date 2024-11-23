@@ -6,9 +6,8 @@ use tracing::error;
 
 use super::{IconItemRow, RoomRow, Sidebar, SidebarSectionRow, VerificationRow};
 use crate::{
-    components::{
-        confirm_leave_room_dialog, ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl,
-    },
+    components::{confirm_leave_room_dialog, ContextMenuBin},
+    prelude::*,
     session::model::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
         SidebarIconItemType, SidebarSection, User,

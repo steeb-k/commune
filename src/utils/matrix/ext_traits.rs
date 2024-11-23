@@ -3,13 +3,21 @@
 use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
-use matrix_sdk_ui::timeline::{Message, TimelineEventItemId, TimelineItemContent};
+use matrix_sdk_ui::timeline::{
+    AnyOtherFullStateEventContent, EventTimelineItem, Message, TimelineEventItemId,
+    TimelineItemContent,
+};
+use ruma::{
+    events::{room::message::MessageType, AnySyncTimelineEvent},
+    serde::Raw,
+};
+use serde::Deserialize;
 
 /// Helper trait for types possibly containing an `@room` mention.
-pub trait AtMentionExt {
+pub(crate) trait AtMentionExt {
     /// Whether this event might contain an `@room` mention.
     ///
-    /// This means that either it doesn't have intentional mentions, or it has
+    /// This means that either it does not have intentional mentions, or it has
     /// intentional mentions and `room` is set to `true`.
     fn can_contain_at_room(&self) -> bool;
 }
@@ -34,7 +42,7 @@ impl AtMentionExt for Message {
 }
 
 /// Extension trait for [`TimelineEventItemId`].
-pub trait TimelineEventItemIdExt: Sized {
+pub(crate) trait TimelineEventItemIdExt: Sized {
     /// The type used to represent a [`TimelineEventItemId`] as a `GVariant`.
     fn static_variant_type() -> Cow<'static, glib::VariantTy>;
 
@@ -70,4 +78,103 @@ impl TimelineEventItemIdExt for TimelineEventItemId {
             None
         }
     }
+}
+
+/// Extension trait for [`TimelineItemContent`].
+pub(crate) trait TimelineItemContentExt {
+    /// Whether this content can count as an unread message.
+    ///
+    /// This follows the algorithm in [MSC2654], excluding events that we do not
+    /// show in the timeline.
+    ///
+    /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
+    fn counts_as_unread(&self) -> bool;
+
+    /// Whether we can show the header for this content.
+    fn can_show_header(&self) -> bool;
+
+    /// Whether this content is edited.
+    fn is_edited(&self) -> bool;
+}
+
+impl TimelineItemContentExt for TimelineItemContent {
+    fn counts_as_unread(&self) -> bool {
+        match self {
+            TimelineItemContent::Message(message) => {
+                !matches!(message.msgtype(), MessageType::Notice(_))
+            }
+            TimelineItemContent::Sticker(_) => true,
+            TimelineItemContent::OtherState(state) => matches!(
+                state.content(),
+                AnyOtherFullStateEventContent::RoomTombstone(_)
+            ),
+            _ => false,
+        }
+    }
+
+    fn can_show_header(&self) -> bool {
+        match self {
+            TimelineItemContent::Message(message) => {
+                matches!(
+                    message.msgtype(),
+                    MessageType::Audio(_)
+                        | MessageType::File(_)
+                        | MessageType::Image(_)
+                        | MessageType::Location(_)
+                        | MessageType::Notice(_)
+                        | MessageType::Text(_)
+                        | MessageType::Video(_)
+                )
+            }
+            TimelineItemContent::Sticker(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_edited(&self) -> bool {
+        match self {
+            TimelineItemContent::Message(msg) => msg.is_edited(),
+            _ => false,
+        }
+    }
+}
+
+/// Extension trait for [`EventTimelineItem`].
+pub(crate) trait EventTimelineItemExt {
+    /// The JSON source for the latest edit of this item, if any.
+    fn latest_edit_raw(&self) -> Option<Raw<AnySyncTimelineEvent>>;
+}
+
+impl EventTimelineItemExt for EventTimelineItem {
+    /// The JSON source for the latest edit of this event, if any.
+    fn latest_edit_raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
+        if let Some(raw) = self.latest_edit_json() {
+            return Some(raw.clone());
+        }
+
+        self.original_json()?
+            .get_field::<RawUnsigned>("unsigned")
+            .ok()
+            .flatten()?
+            .relations?
+            .replace
+    }
+}
+
+/// Raw unsigned event data.
+///
+/// Used as a fallback to get the JSON of the latest edit.
+#[derive(Debug, Clone, Deserialize)]
+struct RawUnsigned {
+    #[serde(rename = "m.relations")]
+    relations: Option<RawBundledRelations>,
+}
+
+/// Raw bundled event relations.
+///
+/// Used as a fallback to get the JSON of the latest edit.
+#[derive(Debug, Clone, Deserialize)]
+struct RawBundledRelations {
+    #[serde(rename = "m.replace")]
+    replace: Option<Raw<AnySyncTimelineEvent>>,
 }

@@ -1,18 +1,17 @@
+use std::sync::Arc;
+
 use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
-    RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent, TimelineUniqueId,
+    RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
     events::{
-        receipt::Receipt,
-        room::message::{MessageType, OriginalSyncRoomMessageEvent},
-        AnySyncTimelineEvent, Mentions, TimelineEventType,
+        receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent, TimelineEventType,
     },
     serde::Raw,
-    MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
-    OwnedUserId,
+    MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedUserId,
 };
 use serde::{de::IgnoredAny, Deserialize};
 use tracing::{debug, error};
@@ -34,6 +33,7 @@ use crate::{
     utils::matrix::{raw_eq, MediaMessage, VisualMediaMessage},
 };
 
+/// The possible states of a message.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "MessageState")]
 pub enum MessageState {
@@ -54,10 +54,12 @@ pub enum MessageState {
     Edited,
 }
 
-/// A user's read receipt.
+/// The read receipt of a user.
 #[derive(Clone, Debug)]
 pub struct UserReadReceipt {
+    /// The ID of the user.
     pub user_id: OwnedUserId,
+    /// The data of the receipt.
     pub receipt: Receipt,
 }
 
@@ -75,87 +77,91 @@ mod imp {
     #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::Event)]
     pub struct Event {
-        /// The underlying SDK timeline item.
-        pub item: RefCell<Option<EventTimelineItem>>,
-        /// The room containing this `Event`.
+        /// The room containing this event.
         #[property(get, set = Self::set_room, construct_only)]
-        pub room: OnceCell<Room>,
-        /// The reactions on this event.
-        #[property(get)]
-        pub reactions: ReactionList,
-        /// The read receipts on this event.
-        #[property(get)]
-        pub read_receipts: gio::ListStore,
-        /// The state of this event.
-        #[property(get, builder(MessageState::default()))]
-        pub state: Cell<MessageState>,
-        /// The pretty-formatted JSON source for this `Event`, if it has
-        /// been echoed back by the server.
+        room: OnceCell<Room>,
+        /// The underlying SDK timeline item.
+        item: RefCell<Option<Arc<EventTimelineItem>>>,
+        /// The global permanent ID of this event, if it has been received from
+        /// the server, as a string.
+        #[property(get = Self::event_id_string)]
+        event_id_string: PhantomData<Option<String>>,
+        /// The ID of the sender of this event, as a string.
+        #[property(get = Self::sender_id_string)]
+        sender_id_string: PhantomData<String>,
+        /// The timestamp of this event, as a `GDateTime`.
+        #[property(get = Self::timestamp)]
+        timestamp: PhantomData<glib::DateTime>,
+        /// The formatted timestamp of this event.
+        #[property(get = Self::formatted_timestamp)]
+        formatted_timestamp: PhantomData<String>,
+        /// The pretty-formatted JSON source, if it has been echoed back by the
+        /// server.
         #[property(get = Self::source)]
-        pub source: PhantomData<Option<String>>,
+        source: PhantomData<Option<String>>,
         /// Whether we have the JSON source of this event.
         #[property(get = Self::has_source)]
-        pub has_source: PhantomData<bool>,
-        /// The event ID of this `Event`, if it has been received from the
-        /// server, as a string.
-        #[property(get = Self::event_id_string)]
-        pub event_id_string: PhantomData<Option<String>>,
-        /// The unique local ID of this `Event` in the SDK timeline.
-        timeline_id: RefCell<Option<TimelineUniqueId>>,
-        /// The ID of the sender of this `Event`, as a string.
-        #[property(get = Self::sender_id_string)]
-        pub sender_id_string: PhantomData<String>,
-        /// The timestamp of this `Event`.
-        #[property(get = Self::timestamp)]
-        pub timestamp: PhantomData<glib::DateTime>,
-        /// The full formatted timestamp of this `Event`.
-        #[property(get = Self::timestamp_full)]
-        pub timestamp_full: PhantomData<String>,
-        /// Whether this `Event` was edited.
+        has_source: PhantomData<bool>,
+        /// The state of this event.
+        #[property(get, builder(MessageState::default()))]
+        state: Cell<MessageState>,
+        /// Whether this event was edited.
         #[property(get = Self::is_edited)]
-        pub is_edited: PhantomData<bool>,
+        is_edited: PhantomData<bool>,
         /// The pretty-formatted JSON source for the latest edit of this
-        /// `Event`, if any.
+        /// event.
+        ///
+        /// This string is empty if the event is not edited.
         #[property(get = Self::latest_edit_source)]
-        pub latest_edit_source: PhantomData<String>,
-        /// The ID for the latest edit of this `Event`.
+        latest_edit_source: PhantomData<String>,
+        /// The ID for the latest edit of this event, as a string.
+        ///
+        /// This string is empty if the event is not edited.
         #[property(get = Self::latest_edit_event_id_string)]
-        pub latest_edit_event_id_string: PhantomData<String>,
-        /// The timestamp for the latest edit of this `Event`, if any.
+        latest_edit_event_id_string: PhantomData<String>,
+        /// The timestamp for the latest edit of this event, as a `GDateTime`,
+        /// if any.
         #[property(get = Self::latest_edit_timestamp)]
-        pub latest_edit_timestamp: PhantomData<Option<glib::DateTime>>,
-        /// The full formatted timestamp for the latest edit of this `Event`.
-        #[property(get = Self::latest_edit_timestamp_full)]
-        pub latest_edit_timestamp_full: PhantomData<String>,
-        /// Whether this `Event` should be highlighted.
+        latest_edit_timestamp: PhantomData<Option<glib::DateTime>>,
+        /// The formatted timestamp for the latest edit of this event.
+        ///
+        /// This string is empty if the event is not edited.
+        #[property(get = Self::latest_edit_formatted_timestamp)]
+        latest_edit_formatted_timestamp: PhantomData<String>,
+        /// Whether this event should be highlighted.
         #[property(get = Self::is_highlighted)]
-        pub is_highlighted: PhantomData<bool>,
+        is_highlighted: PhantomData<bool>,
+        /// The reactions on this event.
+        #[property(get)]
+        reactions: ReactionList,
+        /// The read receipts on this event.
+        #[property(get)]
+        read_receipts: gio::ListStore,
         /// Whether this event has any read receipt.
         #[property(get = Self::has_read_receipts)]
-        pub has_read_receipts: PhantomData<bool>,
+        has_read_receipts: PhantomData<bool>,
     }
 
     impl Default for Event {
         fn default() -> Self {
             Self {
-                item: Default::default(),
                 room: Default::default(),
-                reactions: Default::default(),
-                read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
-                state: Default::default(),
-                source: Default::default(),
-                has_source: Default::default(),
+                item: Default::default(),
                 event_id_string: Default::default(),
-                timeline_id: Default::default(),
                 sender_id_string: Default::default(),
                 timestamp: Default::default(),
-                timestamp_full: Default::default(),
+                formatted_timestamp: Default::default(),
+                source: Default::default(),
+                has_source: Default::default(),
+                state: Default::default(),
                 is_edited: Default::default(),
                 latest_edit_source: Default::default(),
                 latest_edit_event_id_string: Default::default(),
                 latest_edit_timestamp: Default::default(),
-                latest_edit_timestamp_full: Default::default(),
+                latest_edit_formatted_timestamp: Default::default(),
                 is_highlighted: Default::default(),
+                reactions: Default::default(),
+                read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
                 has_read_receipts: Default::default(),
             }
         }
@@ -183,11 +189,11 @@ mod imp {
         }
 
         fn can_hide_header(&self) -> bool {
-            content_can_show_header(&self.obj().content())
+            self.item().content().can_show_header()
         }
 
         fn event_sender_id(&self) -> Option<OwnedUserId> {
-            Some(self.obj().sender_id())
+            Some(self.sender_id())
         }
 
         fn selectable(&self) -> bool {
@@ -196,113 +202,7 @@ mod imp {
     }
 
     impl Event {
-        /// Set the underlying SDK timeline item of this `Event`.
-        pub fn set_item(&self, item: EventTimelineItem, timeline_id: TimelineUniqueId) {
-            let obj = self.obj();
-
-            let prev_raw = self.raw();
-            let prev_event_id = self.event_id_string();
-            let was_edited = self.is_edited();
-            let was_highlighted = self.is_highlighted();
-            let prev_latest_edit_raw = self.latest_edit_raw();
-            let had_source = self.has_source();
-
-            self.reactions.update(item.reactions());
-            obj.update_read_receipts(item.read_receipts());
-
-            self.item.replace(Some(item));
-            self.timeline_id.replace(Some(timeline_id));
-
-            if !raw_eq(prev_raw.as_ref(), self.raw().as_ref()) {
-                obj.notify_source();
-            }
-            if self.event_id_string() != prev_event_id {
-                obj.notify_event_id_string();
-            }
-            if self.is_edited() != was_edited {
-                obj.notify_is_edited();
-            }
-            if self.is_highlighted() != was_highlighted {
-                obj.notify_is_highlighted();
-            }
-            if !raw_eq(
-                prev_latest_edit_raw.as_ref(),
-                self.latest_edit_raw().as_ref(),
-            ) {
-                obj.notify_latest_edit_source();
-                obj.notify_latest_edit_event_id_string();
-                obj.notify_latest_edit_timestamp();
-                obj.notify_latest_edit_timestamp_full();
-            }
-            if self.has_source() != had_source {
-                obj.notify_has_source();
-            }
-
-            obj.update_state();
-            obj.emit_by_name::<()>("item-changed", &[]);
-        }
-
-        /// The raw JSON source for this `Event`, if it has been echoed back
-        /// by the server.
-        pub fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
-            self.item.borrow().as_ref()?.original_json().cloned()
-        }
-
-        /// The pretty-formatted JSON source for this `Event`, if it has
-        /// been echoed back by the server.
-        fn source(&self) -> Option<String> {
-            self.item
-                .borrow()
-                .as_ref()?
-                .original_json()
-                .map(raw_to_pretty_string)
-        }
-
-        /// Whether we have the JSON source of this event.
-        fn has_source(&self) -> bool {
-            self.item
-                .borrow()
-                .as_ref()
-                .is_some_and(|i| i.original_json().is_some())
-        }
-
-        /// The event ID of this `Event`, if it has been received from the
-        /// server, as a string.
-        fn event_id_string(&self) -> Option<String> {
-            self.item
-                .borrow()
-                .as_ref()?
-                .event_id()
-                .map(ToString::to_string)
-        }
-
-        /// The unique local ID of this `Event` in the SDK timeline.
-        pub(super) fn timeline_id(&self) -> TimelineUniqueId {
-            self.timeline_id
-                .borrow()
-                .clone()
-                .expect("event should always have timeline ID after construction")
-        }
-
-        /// The unique global key of this `Event` in the timeline.
-        pub(super) fn identifier(&self) -> TimelineEventItemId {
-            self.item
-                .borrow()
-                .as_ref()
-                .expect("event should always have item after construction")
-                .identifier()
-        }
-
-        /// The ID of the sender of this `Event`, as a string.
-        fn sender_id_string(&self) -> String {
-            self.item
-                .borrow()
-                .as_ref()
-                .map(|i| i.sender().to_string())
-                .unwrap_or_default()
-        }
-
-        /// Set the room that contains this `Event`.
+        /// Set the room that contains this event.
         fn set_room(&self, room: Room) {
             let room = self.room.get_or_init(|| room);
 
@@ -311,55 +211,192 @@ mod imp {
             }
         }
 
-        /// The timestamp of this `Event`.
+        /// Set the underlying SDK timeline item.
+        pub(super) fn set_item(&self, item: EventTimelineItem) {
+            let obj = self.obj();
+
+            let item = Arc::new(item);
+            let prev_item = self.item.replace(Some(item.clone()));
+
+            self.reactions.update(item.reactions());
+            self.update_read_receipts(item.read_receipts());
+
+            let prev_source = prev_item.as_ref().and_then(|i| i.original_json());
+            let source = item.original_json();
+            if !raw_eq(prev_source, source) {
+                obj.notify_source();
+            }
+            if prev_source.is_some() != source.is_some() {
+                obj.notify_has_source();
+            }
+
+            if prev_item.as_ref().and_then(|i| i.event_id()) != item.event_id() {
+                obj.notify_event_id_string();
+            }
+            if prev_item
+                .as_ref()
+                .is_some_and(|i| i.content().is_edited() != item.content().is_edited())
+            {
+                obj.notify_is_edited();
+            }
+            if prev_item
+                .as_ref()
+                .is_some_and(|i| i.is_highlighted() != item.is_highlighted())
+            {
+                obj.notify_is_highlighted();
+            }
+            if !raw_eq(
+                prev_item
+                    .as_ref()
+                    .and_then(|i| i.latest_edit_raw())
+                    .as_ref(),
+                item.latest_edit_raw().as_ref(),
+            ) {
+                obj.notify_latest_edit_source();
+                obj.notify_latest_edit_event_id_string();
+                obj.notify_latest_edit_timestamp();
+                obj.notify_latest_edit_formatted_timestamp();
+            }
+
+            self.update_state();
+            obj.emit_by_name::<()>("item-changed", &[]);
+        }
+
+        /// The underlying SDK timeline item.
+        pub(super) fn item(&self) -> Arc<EventTimelineItem> {
+            self.item
+                .borrow()
+                .clone()
+                .expect("event should have timeline item after construction")
+        }
+
+        /// The global permanent or temporary identifier of this event.
+        pub(super) fn identifier(&self) -> TimelineEventItemId {
+            self.item().identifier()
+        }
+
+        /// The global permanent ID of this event, if it has been received from
+        /// the server.
+        pub(super) fn event_id(&self) -> Option<OwnedEventId> {
+            self.item().event_id().map(ToOwned::to_owned)
+        }
+
+        /// The global permanent ID of this event, if it has been received from
+        /// the server, as a string.
+        fn event_id_string(&self) -> Option<String> {
+            self.item().event_id().map(ToString::to_string)
+        }
+
+        /// The ID of the sender of this event.
+        pub(super) fn sender_id(&self) -> OwnedUserId {
+            self.item().sender().to_owned()
+        }
+
+        /// The ID of the sender of this event, as a string.
+        fn sender_id_string(&self) -> String {
+            self.item().sender().to_string()
+        }
+
+        /// The timestamp of this event, as the number of milliseconds
+        /// since Unix Epoch.
+        pub(super) fn origin_server_ts(&self) -> MilliSecondsSinceUnixEpoch {
+            self.item().timestamp()
+        }
+
+        /// The timestamp of this event, as a `GDateTime`.
         fn timestamp(&self) -> glib::DateTime {
-            let ts = self.obj().origin_server_ts();
+            let ts = self.origin_server_ts();
 
             glib::DateTime::from_unix_utc(ts.as_secs().into())
                 .and_then(|t| t.to_local())
-                .unwrap()
+                .expect("constructing GDateTime from timestamp should work")
         }
 
-        /// The full formatted timestamp of this `Event`.
-        fn timestamp_full(&self) -> String {
+        /// The formatted timestamp of this event.
+        fn formatted_timestamp(&self) -> String {
             self.timestamp()
                 .format("%c")
                 .map(Into::into)
                 .unwrap_or_default()
         }
 
-        /// Whether this `Event` was edited.
-        fn is_edited(&self) -> bool {
-            let item_ref = self.item.borrow();
-            let Some(item) = item_ref.as_ref() else {
-                return false;
-            };
+        /// The raw JSON source, if it has been echoed back by the server.
+        pub(super) fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
+            self.item().original_json().cloned()
+        }
+
+        /// The pretty-formatted JSON source, if it has been echoed back by the
+        /// server.
+        fn source(&self) -> Option<String> {
+            self.item().original_json().map(raw_to_pretty_string)
+        }
+
+        /// Whether we have the JSON source.
+        fn has_source(&self) -> bool {
+            self.item().original_json().is_some()
+        }
+
+        /// Compute the current state of this event.
+        fn compute_state(&self) -> MessageState {
+            let item = self.item();
+
+            if let Some(send_state) = item.send_state() {
+                match send_state {
+                    EventSendState::NotSentYet => return MessageState::Sending,
+                    EventSendState::SendingFailed {
+                        error,
+                        is_recoverable,
+                    } => {
+                        if !matches!(
+                            self.state.get(),
+                            MessageState::PermanentError | MessageState::RecoverableError,
+                        ) {
+                            error!("Could not send message: {error}");
+                        }
+
+                        let new_state = if *is_recoverable {
+                            MessageState::RecoverableError
+                        } else {
+                            MessageState::PermanentError
+                        };
+
+                        return new_state;
+                    }
+                    EventSendState::Sent { .. } => {}
+                }
+            }
 
             match item.content() {
-                TimelineItemContent::Message(msg) => msg.is_edited(),
-                _ => false,
+                TimelineItemContent::Message(msg) if msg.is_edited() => MessageState::Edited,
+                _ => MessageState::None,
             }
         }
 
-        /// The JSON source for the latest edit of this `Event`, if any.
+        /// Update the state of this event.
+        fn update_state(&self) {
+            let state = self.compute_state();
+
+            if self.state.get() == state {
+                return;
+            }
+
+            self.state.set(state);
+            self.obj().notify_state();
+        }
+
+        /// Whether this event was edited.
+        fn is_edited(&self) -> bool {
+            self.item().content().is_edited()
+        }
+
+        /// The JSON source for the latest edit of this event, if any.
         fn latest_edit_raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
-            let borrowed_item = self.item.borrow();
-            let item = borrowed_item.as_ref()?;
-
-            if let Some(raw) = item.latest_edit_json() {
-                return Some(raw.clone());
-            }
-
-            item.original_json()?
-                .get_field::<RawUnsigned>("unsigned")
-                .ok()
-                .flatten()?
-                .relations?
-                .replace
+            self.item().latest_edit_raw()
         }
 
-        /// The pretty-formatted JSON source for the latest edit of this
-        /// `Event`.
+        /// The pretty-formatted JSON source for the latest edit of this event.
+        ///
+        /// This string is empty if the event is not edited.
         fn latest_edit_source(&self) -> String {
             self.latest_edit_raw()
                 .as_ref()
@@ -368,6 +405,8 @@ mod imp {
         }
 
         /// The ID of the latest edit of this `Event`.
+        ///
+        /// This string is empty if the event is not edited.
         fn latest_edit_event_id_string(&self) -> String {
             self.latest_edit_raw()
                 .as_ref()
@@ -375,7 +414,8 @@ mod imp {
                 .unwrap_or_default()
         }
 
-        /// The timestamp of the latest edit of this `Event`, if any.
+        /// The timestamp of the latest edit of this `Event`, as a `GDateTime`,
+        /// if any.
         fn latest_edit_timestamp(&self) -> Option<glib::DateTime> {
             self.latest_edit_raw()
                 .as_ref()
@@ -387,12 +427,12 @@ mod imp {
                 .map(|ts| {
                     glib::DateTime::from_unix_utc(ts.as_secs().into())
                         .and_then(|t| t.to_local())
-                        .unwrap()
+                        .expect("constructing GDateTime from timestamp should work")
                 })
         }
 
-        /// The full formatted timestamp of the latest edit of this `Event`.
-        fn latest_edit_timestamp_full(&self) -> String {
+        /// The formatted timestamp of the latest edit of this `Event`.
+        fn latest_edit_formatted_timestamp(&self) -> String {
             self.latest_edit_timestamp()
                 .and_then(|d| d.format("%c").ok())
                 .map(Into::into)
@@ -401,12 +441,54 @@ mod imp {
 
         /// Whether this `Event` should be highlighted.
         fn is_highlighted(&self) -> bool {
-            let item_ref = self.item.borrow();
-            let Some(item) = item_ref.as_ref() else {
-                return false;
-            };
+            self.item().is_highlighted()
+        }
 
-            item.is_highlighted()
+        /// Update the read receipts list with the given receipts.
+        fn update_read_receipts(&self, new_read_receipts: &IndexMap<OwnedUserId, Receipt>) {
+            let old_count = self.read_receipts.n_items();
+            let new_count = new_read_receipts.len() as u32;
+
+            if old_count == new_count {
+                let mut is_all_same = true;
+                for (i, new_user_id) in new_read_receipts.keys().enumerate() {
+                    let Some(old_receipt) = self
+                        .read_receipts
+                        .item(i as u32)
+                        .and_downcast::<glib::BoxedAnyObject>()
+                    else {
+                        is_all_same = false;
+                        break;
+                    };
+
+                    if old_receipt.borrow::<UserReadReceipt>().user_id != *new_user_id {
+                        is_all_same = false;
+                        break;
+                    }
+                }
+
+                if is_all_same {
+                    return;
+                }
+            }
+
+            let new_read_receipts = new_read_receipts
+                .into_iter()
+                .map(|(user_id, receipt)| {
+                    glib::BoxedAnyObject::new(UserReadReceipt {
+                        user_id: user_id.clone(),
+                        receipt: receipt.clone(),
+                    })
+                })
+                .collect::<Vec<_>>();
+            self.read_receipts.splice(0, old_count, &new_read_receipts);
+
+            let prev_has_read_receipts = old_count > 0;
+            let has_read_receipts = new_count > 0;
+
+            if prev_has_read_receipts != has_read_receipts {
+                self.obj().notify_has_read_receipts();
+            }
         }
 
         /// Whether this event has any read receipt.
@@ -417,41 +499,39 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// GObject representation of a Matrix room event.
+    /// A Matrix room event.
     pub struct Event(ObjectSubclass<imp::Event>) @extends TimelineItem;
 }
 
 impl Event {
-    /// Create a new `Event` with the given SDK timeline item.
-    pub fn new(item: EventTimelineItem, timeline_id: &TimelineUniqueId, room: &Room) -> Self {
+    /// Create a new `Event` in the given room with the given SDK timeline item.
+    pub fn new(item: EventTimelineItem, room: &Room) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
-        obj.imp().set_item(item, timeline_id.clone());
+        obj.imp().set_item(item);
 
         obj
     }
 
-    /// Try to update this `Event` with the given SDK timeline item.
+    /// Try to update this event with the given SDK timeline item.
     ///
     /// Returns `true` if the update succeeded.
-    pub fn try_update_with(
-        &self,
-        item: &EventTimelineItem,
-        timeline_id: &TimelineUniqueId,
-    ) -> bool {
+    pub(crate) fn try_update_with(&self, item: &EventTimelineItem) -> bool {
+        let imp = self.imp();
+
         match &self.identifier() {
             TimelineEventItemId::TransactionId(txn_id)
                 if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
             {
-                self.imp().set_item(item.clone(), timeline_id.clone());
+                imp.set_item(item.clone());
                 return true;
             }
             TimelineEventItemId::EventId(event_id)
                 if !item.is_local_echo() && item.event_id() == Some(event_id) =>
             {
-                self.imp().set_item(item.clone(), timeline_id.clone());
+                imp.set_item(item.clone());
                 return true;
             }
             _ => {}
@@ -461,33 +541,21 @@ impl Event {
     }
 
     /// The underlying SDK timeline item.
-    pub fn item(&self) -> EventTimelineItem {
-        self.imp().item.borrow().clone().unwrap()
+    pub(crate) fn item(&self) -> Arc<EventTimelineItem> {
+        self.imp().item()
     }
 
-    /// The raw JSON source for this `Event`, if it has been echoed back
-    /// by the server.
-    pub fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
-        self.imp().raw()
-    }
-
-    /// The unique local ID of this `Event` in the SDK timeline.
-    pub fn timeline_id(&self) -> TimelineUniqueId {
-        self.imp().timeline_id()
-    }
-
-    /// The unique global identifier of this `Event` in the timeline.
-    pub fn identifier(&self) -> TimelineEventItemId {
+    /// The global permanent or temporary identifier of this event.
+    pub(crate) fn identifier(&self) -> TimelineEventItemId {
         self.imp().identifier()
     }
 
-    /// Whether the given identifier matches this `Event`.
+    /// Whether the given identifier matches this event.
     ///
-    /// The result can be different from comparing two `EventKey`s because an
-    /// event can have a transaction ID and an event ID.
-    pub fn matches_identifier(&self, identifier: &TimelineEventItemId) -> bool {
-        let item_ref = self.imp().item.borrow();
-        let item = item_ref.as_ref().unwrap();
+    /// The result can be different from comparing two [`TimelineEventItemId`]s
+    /// because an event can have a transaction ID and an event ID.
+    pub(crate) fn matches_identifier(&self, identifier: &TimelineEventItemId) -> bool {
+        let item = self.item();
         match identifier {
             TimelineEventItemId::TransactionId(txn_id) => {
                 item.transaction_id().is_some_and(|id| id == txn_id)
@@ -498,285 +566,87 @@ impl Event {
         }
     }
 
-    /// The event ID of this `Event`, if it has been received from the server.
-    pub fn event_id(&self) -> Option<OwnedEventId> {
-        match self.identifier() {
-            TimelineEventItemId::TransactionId(_) => None,
-            TimelineEventItemId::EventId(event_id) => Some(event_id),
-        }
+    /// The permanent global ID of this event, if it has been received from the
+    /// server.
+    pub(crate) fn event_id(&self) -> Option<OwnedEventId> {
+        self.imp().event_id()
     }
 
-    /// The transaction ID of this `Event`, if it is still pending.
-    pub fn transaction_id(&self) -> Option<OwnedTransactionId> {
-        match self.identifier() {
-            TimelineEventItemId::TransactionId(txn_id) => Some(txn_id),
-            TimelineEventItemId::EventId(_) => None,
-        }
+    /// The ID of the sender of this event.
+    pub(crate) fn sender_id(&self) -> OwnedUserId {
+        self.imp().sender_id()
     }
 
-    /// The user ID of the sender of this `Event`.
-    pub fn sender_id(&self) -> OwnedUserId {
-        self.imp()
-            .item
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .sender()
-            .to_owned()
-    }
-
-    /// The sender of this `Event`.
+    /// The sender of this event.
     ///
     /// This should only be called when the event's room members list is
     /// available, otherwise it will be created on every call.
-    pub fn sender(&self) -> Member {
+    pub(crate) fn sender(&self) -> Member {
         self.room()
             .get_or_create_members()
             .get_or_create(self.sender_id())
     }
 
-    /// The timestamp of this `Event` as the number of milliseconds
-    /// since Unix Epoch, if it has been echoed back by the server.
-    ///
-    /// Otherwise it's the local time when this event was created.
-    pub fn origin_server_ts(&self) -> MilliSecondsSinceUnixEpoch {
-        self.imp().item.borrow().as_ref().unwrap().timestamp()
+    /// The timestamp of this event, as the number of milliseconds
+    /// since Unix Epoch.
+    pub(crate) fn origin_server_ts(&self) -> MilliSecondsSinceUnixEpoch {
+        self.imp().origin_server_ts()
     }
 
-    /// The timestamp of this `Event` as a `u64`, if it has been echoed back by
-    /// the server.
-    ///
-    /// Otherwise it's the local time when this event was created.
-    pub fn origin_server_ts_u64(&self) -> u64 {
-        self.origin_server_ts().get().into()
+    /// The raw JSON source for this event, if it has been echoed back
+    /// by the server.
+    pub(crate) fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
+        self.imp().raw()
     }
 
-    /// Whether this `Event` is redacted.
-    pub fn is_redacted(&self) -> bool {
-        matches!(
-            self.imp().item.borrow().as_ref().unwrap().content(),
-            TimelineItemContent::RedactedMessage
-        )
+    /// The content of this event.
+    pub(crate) fn content(&self) -> TimelineItemContent {
+        self.item().content().clone()
     }
 
-    /// The content to display for this `Event`.
-    pub fn content(&self) -> TimelineItemContent {
-        self.imp().item.borrow().as_ref().unwrap().content().clone()
-    }
-
-    /// The message of this `Event`, if any.
-    pub fn message(&self) -> Option<MessageType> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(msg) => Some(msg.msgtype().clone()),
-            _ => None,
-        }
-    }
-
-    /// The media message of this `Event`, if any.
-    pub fn media_message(&self) -> Option<MediaMessage> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(msg) => MediaMessage::from_message(msg.msgtype()),
-            _ => None,
-        }
-    }
-
-    /// The visual media message of this `Event`, if any.
-    pub fn visual_media_message(&self) -> Option<VisualMediaMessage> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(msg) => VisualMediaMessage::from_message(msg.msgtype()),
-            _ => None,
-        }
-    }
-
-    /// The mentions from this message, if any.
-    pub fn mentions(&self) -> Option<Mentions> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(msg) => msg.mentions().cloned(),
-            _ => None,
-        }
-    }
-
-    /// Whether this event might contain an `@room` mention.
-    ///
-    /// This means that either it doesn't have intentional mentions, or it has
-    /// intentional mentions and `room` is set to `true`.
-    pub fn can_contain_at_room(&self) -> bool {
-        self.imp()
-            .item
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .content()
-            .can_contain_at_room()
-    }
-
-    /// Compute the current state of this `Event`.
-    fn compute_state(&self) -> MessageState {
-        let item_ref = self.imp().item.borrow();
-        let Some(item) = item_ref.as_ref() else {
-            return MessageState::None;
-        };
-
-        if let Some(send_state) = item.send_state() {
-            match send_state {
-                EventSendState::NotSentYet => return MessageState::Sending,
-                EventSendState::SendingFailed {
-                    error,
-                    is_recoverable,
-                } => {
-                    if !matches!(
-                        self.state(),
-                        MessageState::PermanentError | MessageState::RecoverableError,
-                    ) {
-                        error!("Could not send message: {error}");
-                    }
-
-                    let new_state = if *is_recoverable {
-                        MessageState::RecoverableError
-                    } else {
-                        MessageState::PermanentError
-                    };
-
-                    return new_state;
-                }
-                EventSendState::Sent { .. } => {}
-            }
-        }
-
-        match item.content() {
-            TimelineItemContent::Message(msg) if msg.is_edited() => MessageState::Edited,
-            _ => MessageState::None,
-        }
-    }
-
-    /// Update the state of this `Event`.
-    fn update_state(&self) {
-        let state = self.compute_state();
-
-        if self.state() == state {
-            return;
-        }
-
-        self.imp().state.set(state);
-        self.notify_state();
-    }
-
-    /// Update the read receipts list with the given receipts.
-    fn update_read_receipts(&self, new_read_receipts: &IndexMap<OwnedUserId, Receipt>) {
-        let read_receipts = &self.imp().read_receipts;
-        let old_count = read_receipts.n_items();
-        let new_count = new_read_receipts.len() as u32;
-
-        if old_count == new_count {
-            let mut is_all_same = true;
-            for (i, new_user_id) in new_read_receipts.keys().enumerate() {
-                let Some(old_receipt) = read_receipts
-                    .item(i as u32)
-                    .and_downcast::<glib::BoxedAnyObject>()
-                else {
-                    is_all_same = false;
-                    break;
-                };
-
-                if old_receipt.borrow::<UserReadReceipt>().user_id != *new_user_id {
-                    is_all_same = false;
-                    break;
-                }
-            }
-
-            if is_all_same {
-                return;
-            }
-        }
-
-        let new_read_receipts = new_read_receipts
-            .into_iter()
-            .map(|(user_id, receipt)| {
-                glib::BoxedAnyObject::new(UserReadReceipt {
-                    user_id: user_id.clone(),
-                    receipt: receipt.clone(),
-                })
-            })
-            .collect::<Vec<_>>();
-        read_receipts.splice(0, old_count, &new_read_receipts);
-
-        let prev_has_read_receipts = old_count > 0;
-        let has_read_receipts = new_count > 0;
-
-        if prev_has_read_receipts != has_read_receipts {
-            self.notify_has_read_receipts();
-        }
-    }
-
-    /// Get the ID of the event this `Event` replies to, if any.
-    pub fn reply_to_id(&self) -> Option<OwnedEventId> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(message) => {
-                message.in_reply_to().map(|d| d.event_id.clone())
-            }
-            _ => None,
-        }
-    }
-
-    /// Whether this `Event` is a reply to another event.
-    pub fn is_reply(&self) -> bool {
-        self.reply_to_id().is_some()
-    }
-
-    /// Get the details of the event this `Event` replies to, if any.
-    ///
-    /// Returns `None(_)` if this event is not a reply.
-    pub fn reply_to_event_content(&self) -> Option<TimelineDetails<Box<RepliedToEvent>>> {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(message) => message.in_reply_to().map(|d| d.event.clone()),
-            _ => None,
-        }
-    }
-
-    /// Get the event this `Event` replies to, if any.
-    ///
-    /// Returns `None(_)` if this event is not a reply or if the event was not
-    /// found locally.
-    pub fn reply_to_event(&self) -> Option<Event> {
-        let event_id = self.reply_to_id()?;
-        self.room()
-            .timeline()
-            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
-    }
-
-    /// Fetch missing details for this event.
-    ///
-    /// This is a no-op if called for a local event.
-    pub async fn fetch_missing_details(&self) -> Result<(), TimelineError> {
-        let Some(event_id) = self.event_id() else {
-            return Ok(());
-        };
-
-        let timeline = self.room().timeline().matrix_timeline();
-        spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
-            .await
-            .unwrap()
-    }
-
-    /// Whether this `Event` is considered a message.
-    pub fn is_message(&self) -> bool {
+    /// Whether this event contains a message.
+    pub(crate) fn is_message(&self) -> bool {
         matches!(
             self.content(),
             TimelineItemContent::Message(_) | TimelineItemContent::Sticker(_)
         )
     }
 
-    /// Deserialize this `Event` as an `OriginalSyncRoomMessageEvent`, if
-    /// possible.
-    pub fn as_message(&self) -> Option<OriginalSyncRoomMessageEvent> {
-        self.raw()?
-            .deserialize_as::<OriginalSyncRoomMessageEvent>()
-            .ok()
+    /// The message of this event, if any.
+    pub(crate) fn message(&self) -> Option<MessageType> {
+        match self.item().content() {
+            TimelineItemContent::Message(msg) => Some(msg.msgtype().clone()),
+            _ => None,
+        }
+    }
+
+    /// The media message of this event, if any.
+    pub(crate) fn media_message(&self) -> Option<MediaMessage> {
+        match self.item().content() {
+            TimelineItemContent::Message(msg) => MediaMessage::from_message(msg.msgtype()),
+            _ => None,
+        }
+    }
+
+    /// The visual media message of this event, if any.
+    pub(crate) fn visual_media_message(&self) -> Option<VisualMediaMessage> {
+        match self.item().content() {
+            TimelineItemContent::Message(msg) => VisualMediaMessage::from_message(msg.msgtype()),
+            _ => None,
+        }
+    }
+
+    /// Whether this event might contain an `@room` mention.
+    ///
+    /// This means that either it does not have intentional mentions, or it has
+    /// intentional mentions and `room` is set to `true`.
+    pub(crate) fn can_contain_at_room(&self) -> bool {
+        self.item().content().can_contain_at_room()
     }
 
     /// Whether this is an `m.room.create` event.
-    pub fn is_room_create_event(&self) -> bool {
-        match self.content() {
+    pub(crate) fn is_room_create_event(&self) -> bool {
+        match self.item().content() {
             TimelineItemContent::OtherState(other_state) => matches!(
                 other_state.content(),
                 AnyOtherFullStateEventContent::RoomCreate(_)
@@ -785,10 +655,44 @@ impl Event {
         }
     }
 
+    /// Get the ID of the event this event replies to, if any.
+    pub(crate) fn reply_to_id(&self) -> Option<OwnedEventId> {
+        match self.item().content() {
+            TimelineItemContent::Message(message) => {
+                message.in_reply_to().map(|d| d.event_id.clone())
+            }
+            _ => None,
+        }
+    }
+
+    /// Get the details of the event this event replies to, if any.
+    ///
+    /// Returns `None(_)` if this event is not a reply.
+    pub(crate) fn reply_to_event_content(&self) -> Option<TimelineDetails<Box<RepliedToEvent>>> {
+        match self.item().content() {
+            TimelineItemContent::Message(message) => message.in_reply_to().map(|d| d.event.clone()),
+            _ => None,
+        }
+    }
+
+    /// Fetch missing details for this event.
+    ///
+    /// This is a no-op if called for a local event.
+    pub(crate) async fn fetch_missing_details(&self) -> Result<(), TimelineError> {
+        let Some(event_id) = self.event_id() else {
+            return Ok(());
+        };
+
+        let timeline = self.room().timeline().matrix_timeline();
+        spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Whether this event can be redacted.
     ///
     /// This uses the raw JSON to redact even events that failed to deserialize.
-    pub fn is_redactable(&self) -> bool {
+    pub(crate) fn is_redactable(&self) -> bool {
         let Some(raw) = self.raw() else {
             // Events without raw JSON are already redacted events, and events that are not
             // sent yet, we can ignore them.
@@ -830,26 +734,22 @@ impl Event {
     /// show in the timeline.
     ///
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
-    pub fn counts_as_unread(&self) -> bool {
-        count_as_unread(self.imp().item.borrow().as_ref().unwrap().content())
+    pub(crate) fn counts_as_unread(&self) -> bool {
+        self.item().content().counts_as_unread()
     }
 
     /// The `matrix.to` URI representation for this event.
     ///
     /// Returns `None` if we don't have the ID of the event.
-    pub async fn matrix_to_uri(&self) -> Option<MatrixToUri> {
+    pub(crate) async fn matrix_to_uri(&self) -> Option<MatrixToUri> {
         Some(self.room().matrix_to_event_uri(self.event_id()?).await)
     }
 
-    /// The `matrix:` URI representation for this event.
-    ///
-    /// Returns `None` if we don't have the ID of the event.
-    pub async fn matrix_uri(&self) -> Option<MatrixUri> {
-        Some(self.room().matrix_event_uri(self.event_id()?).await)
-    }
-
     /// Listen to the signal emitted when the SDK item changed.
-    pub fn connect_item_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_item_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
         self.connect_closure(
             "item-changed",
             true,
@@ -860,46 +760,6 @@ impl Event {
     }
 }
 
-/// Whether the given event can count as an unread message.
-///
-/// This follows the algorithm in [MSC2654], excluding events that we don't
-/// show in the timeline.
-///
-/// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
-pub fn count_as_unread(content: &TimelineItemContent) -> bool {
-    match content {
-        TimelineItemContent::Message(message) => {
-            !matches!(message.msgtype(), MessageType::Notice(_))
-        }
-        TimelineItemContent::Sticker(_) => true,
-        TimelineItemContent::OtherState(state) => matches!(
-            state.content(),
-            AnyOtherFullStateEventContent::RoomTombstone(_)
-        ),
-        _ => false,
-    }
-}
-
-/// Whether we can show the header for the given content.
-pub fn content_can_show_header(content: &TimelineItemContent) -> bool {
-    match content {
-        TimelineItemContent::Message(message) => {
-            matches!(
-                message.msgtype(),
-                MessageType::Audio(_)
-                    | MessageType::File(_)
-                    | MessageType::Image(_)
-                    | MessageType::Location(_)
-                    | MessageType::Notice(_)
-                    | MessageType::Text(_)
-                    | MessageType::Video(_)
-            )
-        }
-        TimelineItemContent::Sticker(_) => true,
-        _ => false,
-    }
-}
-
 /// Convert raw JSON to a pretty-formatted JSON string.
 fn raw_to_pretty_string<T>(raw: &Raw<T>) -> String {
     // We have to convert it to a Value, because a RawValue cannot be
@@ -907,24 +767,6 @@ fn raw_to_pretty_string<T>(raw: &Raw<T>) -> String {
     let json = serde_json::to_value(raw).unwrap();
 
     serde_json::to_string_pretty(&json).unwrap()
-}
-
-/// Raw unsigned event data.
-///
-/// Used as a fallback to get the latest edit's JSON.
-#[derive(Debug, Clone, Deserialize)]
-struct RawUnsigned {
-    #[serde(rename = "m.relations")]
-    relations: Option<RawBundledRelations>,
-}
-
-/// Raw bundled event relations.
-///
-/// Used as a fallback to get the latest edit's JSON.
-#[derive(Debug, Clone, Deserialize)]
-struct RawBundledRelations {
-    #[serde(rename = "m.replace")]
-    replace: Option<Raw<AnySyncTimelineEvent>>,
 }
 
 /// List of events that should not be redacted to avoid bricking a room.

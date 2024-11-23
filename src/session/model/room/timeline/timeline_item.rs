@@ -136,9 +136,7 @@ impl TimelineItem {
     /// Constructs the proper child type.
     pub fn new(item: &SdkTimelineItem, room: &Room) -> Self {
         match item.kind() {
-            TimelineItemKind::Event(event) => {
-                Event::new(event.clone(), item.unique_id(), room).upcast()
-            }
+            TimelineItemKind::Event(event) => Event::new(event.clone(), room).upcast(),
             TimelineItemKind::Virtual(item) => VirtualItem::new(item).upcast(),
         }
     }
@@ -150,7 +148,7 @@ impl TimelineItem {
         match item.kind() {
             TimelineItemKind::Event(new_event) => {
                 if let Some(event) = self.downcast_ref::<Event>() {
-                    return event.try_update_with(new_event, item.unique_id());
+                    return event.try_update_with(new_event);
                 }
             }
             TimelineItemKind::Virtual(_item) => {

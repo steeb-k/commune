@@ -103,7 +103,7 @@
                                         <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Timestamp</property>
                                         <binding name="subtitle">
-                                          <lookup name="timestamp-full">
+                                          <lookup name="formatted-timestamp">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
@@ -170,7 +170,7 @@
                                         <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Timestamp</property>
                                         <binding name="subtitle">
-                                          <lookup name="latest-edit-timestamp-full">
+                                          <lookup name="latest-edit-formatted-timestamp">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>

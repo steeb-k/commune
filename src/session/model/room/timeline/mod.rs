@@ -472,7 +472,7 @@ mod imp {
                 if event.counts_as_unread() {
                     if let Some(members) = room.members() {
                         let member = members.get_or_create(event.sender_id());
-                        member.set_latest_activity(event.origin_server_ts_u64());
+                        member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                     }
                 }
 

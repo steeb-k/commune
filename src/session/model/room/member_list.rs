@@ -234,7 +234,7 @@ impl MemberList {
 
                 let member = imp.members.borrow().get(&event.sender_id()).cloned();
                 if let Some(member) = member {
-                    member.set_latest_activity(event.origin_server_ts_u64());
+                    member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                 }
             }
         }

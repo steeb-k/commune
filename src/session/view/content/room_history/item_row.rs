@@ -9,7 +9,7 @@ use tracing::error;
 
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
 use crate::{
-    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    components::ContextMenuBin,
     prelude::*,
     session::{
         model::{Event, MessageState, Room, TimelineItem, VirtualItem, VirtualItemKind},

@@ -2074,7 +2074,7 @@ impl Room {
 
         for event in events {
             if event.counts_as_unread() {
-                latest_activity = latest_activity.max(event.origin_server_ts_u64());
+                latest_activity = latest_activity.max(event.origin_server_ts().get().into());
                 break;
             }
         }

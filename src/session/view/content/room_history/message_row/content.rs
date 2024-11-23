@@ -13,7 +13,7 @@ use super::{
 };
 use crate::{
     prelude::*,
-    session::model::{content_can_show_header, Event, Member, Room, Session},
+    session::model::{Event, Member, Room, Session},
     spawn,
     utils::matrix::MediaMessage,
 };
@@ -150,9 +150,7 @@ impl MessageContent {
                             && replied_to_sender.can_notify_room();
 
                         let reply = MessageReply::new();
-                        reply.set_show_related_content_header(content_can_show_header(
-                            replied_to_content,
-                        ));
+                        reply.set_show_related_content_header(replied_to_content.can_show_header());
                         reply.set_related_content_sender(replied_to_sender.upcast_ref());
                         build_content(
                             reply.related_content(),
