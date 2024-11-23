@@ -25,7 +25,7 @@ use ruma::{
             member::SyncRoomMemberEvent,
         },
     },
-    EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
+    EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
@@ -327,7 +327,7 @@ mod imp {
         }
 
         /// The ID of this room.
-        pub fn room_id(&self) -> &RoomId {
+        pub(super) fn room_id(&self) -> &RoomId {
             self.matrix_room().room_id()
         }
 
@@ -1421,6 +1421,7 @@ glib::wrapper! {
 }
 
 impl Room {
+    /// Create a new `Room` for the given session, with the given room API.
     pub fn new(session: &Session, matrix_room: MatrixRoom, metainfo: Option<RoomMetainfo>) -> Self {
         let this = glib::Object::builder::<Self>()
             .property("session", session)
@@ -1431,12 +1432,12 @@ impl Room {
     }
 
     /// The room API of the SDK.
-    pub fn matrix_room(&self) -> &MatrixRoom {
+    pub(crate) fn matrix_room(&self) -> &MatrixRoom {
         self.imp().matrix_room()
     }
 
     /// The ID of this room.
-    pub fn room_id(&self) -> &RoomId {
+    pub(crate) fn room_id(&self) -> &RoomId {
         self.imp().room_id()
     }
 
@@ -1448,29 +1449,24 @@ impl Room {
         format!("{} ({})", self.display_name(), self.room_id())
     }
 
-    /// The state of the room.
-    pub fn state(&self) -> RoomState {
-        self.matrix_room().state()
-    }
-
     /// Whether this room is joined.
-    pub fn is_joined(&self) -> bool {
+    pub(crate) fn is_joined(&self) -> bool {
         self.own_member().membership() == Membership::Join
     }
 
     /// The ID of the predecessor of this room, if this room is an upgrade to a
     /// previous room.
-    pub fn predecessor_id(&self) -> Option<&OwnedRoomId> {
+    pub(crate) fn predecessor_id(&self) -> Option<&OwnedRoomId> {
         self.imp().predecessor_id.get()
     }
 
     /// The ID of the successor of this Room, if this room was upgraded.
-    pub fn successor_id(&self) -> Option<&RoomId> {
+    pub(crate) fn successor_id(&self) -> Option<&RoomId> {
         self.imp().successor_id.get().map(std::ops::Deref::deref)
     }
 
     /// The `matrix.to` URI representation for this room.
-    pub async fn matrix_to_uri(&self) -> MatrixToUri {
+    pub(crate) async fn matrix_to_uri(&self) -> MatrixToUri {
         let matrix_room = self.matrix_room().clone();
 
         let handle = spawn_tokio!(async move { matrix_room.matrix_to_permalink().await });
@@ -1487,26 +1483,8 @@ impl Room {
         self.room_id().matrix_to_uri()
     }
 
-    /// The `matrix:` URI representation for this room.
-    pub async fn matrix_uri(&self) -> MatrixUri {
-        let matrix_room = self.matrix_room().clone();
-
-        let handle = spawn_tokio!(async move { matrix_room.matrix_permalink(false).await });
-        match handle.await.expect("task was not aborted") {
-            Ok(permalink) => {
-                return permalink;
-            }
-            Err(error) => {
-                error!("Could not get room event permalink: {error}");
-            }
-        }
-
-        // Fallback to using just the room ID, without routing.
-        self.room_id().matrix_uri(false)
-    }
-
     /// The `matrix.to` URI representation for the given event in this room.
-    pub async fn matrix_to_event_uri(&self, event_id: OwnedEventId) -> MatrixToUri {
+    pub(crate) async fn matrix_to_event_uri(&self, event_id: OwnedEventId) -> MatrixToUri {
         let matrix_room = self.matrix_room().clone();
 
         let event_id_clone = event_id.clone();
@@ -1527,28 +1505,8 @@ impl Room {
         self.room_id().matrix_to_event_uri(event_id)
     }
 
-    /// The `matrix:` URI representation for the given event in this room.
-    pub async fn matrix_event_uri(&self, event_id: OwnedEventId) -> MatrixUri {
-        let matrix_room = self.matrix_room().clone();
-
-        let event_id_clone = event_id.clone();
-        let handle =
-            spawn_tokio!(async move { matrix_room.matrix_event_permalink(event_id_clone).await });
-        match handle.await.expect("task was not aborted") {
-            Ok(permalink) => {
-                return permalink;
-            }
-            Err(error) => {
-                error!("Could not get room event permalink: {error}");
-            }
-        }
-
-        // Fallback to using just the room ID, without routing.
-        self.room_id().matrix_event_uri(event_id)
-    }
-
     /// Constructs an `AtRoom` for this room.
-    pub fn at_room(&self) -> AtRoom {
+    pub(crate) fn at_room(&self) -> AtRoom {
         let at_room = AtRoom::new(self.room_id().to_owned());
 
         // Bind the avatar image so it always looks the same.
@@ -1563,7 +1521,7 @@ impl Room {
     /// Get or create the list of members of this room.
     ///
     /// This creates the [`MemberList`] if no strong reference to it exists.
-    pub fn get_or_create_members(&self) -> MemberList {
+    pub(crate) fn get_or_create_members(&self) -> MemberList {
         let members = &self.imp().members;
         if let Some(list) = members.upgrade() {
             list
@@ -1575,35 +1533,13 @@ impl Room {
         }
     }
 
-    /// Ensure the direct user of this room is an active member.
-    ///
-    /// If there is supposed to be a direct user in this room but they have left
-    /// it, re-invite them.
-    ///
-    /// This is a noop if there is no supposed direct user or if the user is
-    /// already an active member.
-    pub async fn ensure_direct_user(&self) -> Result<(), ()> {
-        let Some(member) = self.direct_member() else {
-            warn!("Cannot ensure direct user in a room without direct target");
-            return Ok(());
-        };
-
-        if self.matrix_room().active_members_count() == 2 {
-            return Ok(());
-        }
-
-        self.invite(&[member.user_id().clone()])
-            .await
-            .map_err(|_| ())
-    }
-
     /// Set the category of this room.
     ///
     /// This makes the necessary to propagate the category to the homeserver.
     ///
     /// Note: Rooms can't be moved to the invite category and they can't be
     /// moved once they are upgraded.
-    pub async fn set_category(&self, category: RoomCategory) -> MatrixResult<()> {
+    pub(crate) async fn set_category(&self, category: RoomCategory) -> MatrixResult<()> {
         let previous_category = self.category();
 
         if previous_category == category {
@@ -1700,7 +1636,7 @@ impl Room {
     }
 
     /// Toggle the `key` reaction on the given related event in this room.
-    pub async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
+    pub(crate) async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
         let timeline = self.timeline().matrix_timeline();
         let identifier = event.identifier();
 
@@ -1715,7 +1651,11 @@ impl Room {
     }
 
     /// Send the given receipt.
-    pub async fn send_receipt(&self, receipt_type: ApiReceiptType, position: ReceiptPosition) {
+    pub(crate) async fn send_receipt(
+        &self,
+        receipt_type: ApiReceiptType,
+        position: ReceiptPosition,
+    ) {
         let Some(session) = self.session() else {
             return;
         };
@@ -1744,7 +1684,7 @@ impl Room {
     }
 
     /// Send a typing notification for this room, with the given typing state.
-    pub fn send_typing_notification(&self, is_typing: bool) {
+    pub(crate) fn send_typing_notification(&self, is_typing: bool) {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return;
@@ -1765,7 +1705,7 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the redactions are successful, otherwise
     /// returns the list of events that could not be redacted.
-    pub async fn redact<'a>(
+    pub(crate) async fn redact<'a>(
         &self,
         events: &'a [OwnedEventId],
         reason: Option<String>,
@@ -1812,7 +1752,7 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the reports are sent successfully, otherwise
     /// returns the list of event IDs that could not be reported.
-    pub async fn report_events<'a>(
+    pub(crate) async fn report_events<'a>(
         &self,
         events: &'a [(OwnedEventId, Option<String>)],
     ) -> Result<(), Vec<&'a EventId>> {
@@ -1855,7 +1795,10 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the invites are sent successfully, otherwise
     /// returns the list of users who could not be invited.
-    pub async fn invite<'a>(&self, user_ids: &'a [OwnedUserId]) -> Result<(), Vec<&'a UserId>> {
+    pub(crate) async fn invite<'a>(
+        &self,
+        user_ids: &'a [OwnedUserId],
+    ) -> Result<(), Vec<&'a UserId>> {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             error!("Can’t invite users, because this room isn’t a joined room");
@@ -1900,7 +1843,7 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the kicks are sent successfully, otherwise
     /// returns the list of users who could not be kicked.
-    pub async fn kick<'a>(
+    pub(crate) async fn kick<'a>(
         &self,
         users: &'a [(OwnedUserId, Option<String>)],
     ) -> Result<(), Vec<&'a UserId>> {
@@ -1942,7 +1885,7 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the bans are sent successfully, otherwise
     /// returns the list of users who could not be banned.
-    pub async fn ban<'a>(
+    pub(crate) async fn ban<'a>(
         &self,
         users: &'a [(OwnedUserId, Option<String>)],
     ) -> Result<(), Vec<&'a UserId>> {
@@ -1984,7 +1927,7 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the unbans are sent successfully, otherwise
     /// returns the list of users who could not be unbanned.
-    pub async fn unban<'a>(
+    pub(crate) async fn unban<'a>(
         &self,
         users: &'a [(OwnedUserId, Option<String>)],
     ) -> Result<(), Vec<&'a UserId>> {
@@ -2021,7 +1964,7 @@ impl Room {
     }
 
     /// Enable encryption for this room.
-    pub async fn enable_encryption(&self) -> Result<(), ()> {
+    pub(crate) async fn enable_encryption(&self) -> Result<(), ()> {
         if self.is_encrypted() {
             // Nothing to do.
             return Ok(());
@@ -2040,7 +1983,7 @@ impl Room {
     }
 
     /// Forget a room that is left.
-    pub async fn forget(&self) -> MatrixResult<()> {
+    pub(crate) async fn forget(&self) -> MatrixResult<()> {
         if self.category() != RoomCategory::Left {
             warn!("Cannot forget a room that is not left");
             return Ok(());
@@ -2062,7 +2005,10 @@ impl Room {
     }
 
     /// Handle room member name ambiguity changes.
-    pub fn handle_ambiguity_changes<'a>(&self, changes: impl Iterator<Item = &'a AmbiguityChange>) {
+    pub(crate) fn handle_ambiguity_changes<'a>(
+        &self,
+        changes: impl Iterator<Item = &'a AmbiguityChange>,
+    ) {
         self.imp().handle_ambiguity_changes(changes);
     }
 
@@ -2083,12 +2029,15 @@ impl Room {
     }
 
     /// Update the successor of this room.
-    pub fn update_successor(&self) {
+    pub(crate) fn update_successor(&self) {
         self.imp().update_successor();
     }
 
     /// Connect to the signal emitted when the room was forgotten.
-    pub fn connect_room_forgotten<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_room_forgotten<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
         self.connect_closure(
             "room-forgotten",
             true,
@@ -2142,7 +2091,7 @@ impl From<HistoryVisibilityValue> for HistoryVisibility {
 
 /// The position of the receipt to send.
 #[derive(Debug, Clone)]
-pub enum ReceiptPosition {
+pub(crate) enum ReceiptPosition {
     /// We are at the end of the timeline (bottom of the view).
     End,
     /// We are at the event with the given ID.
