@@ -12,11 +12,11 @@ mod imp {
 
     #[repr(C)]
     pub struct TimelineItemClass {
-        pub parent_class: glib::object::ObjectClass,
-        pub id: fn(&super::TimelineItem) -> String,
-        pub selectable: fn(&super::TimelineItem) -> bool,
-        pub can_hide_header: fn(&super::TimelineItem) -> bool,
-        pub event_sender_id: fn(&super::TimelineItem) -> Option<OwnedUserId>,
+        parent_class: glib::object::ObjectClass,
+        pub(super) id: fn(&super::TimelineItem) -> String,
+        pub(super) selectable: fn(&super::TimelineItem) -> bool,
+        pub(super) can_hide_header: fn(&super::TimelineItem) -> bool,
+        pub(super) event_sender_id: fn(&super::TimelineItem) -> Option<OwnedUserId>,
     }
 
     unsafe impl ClassStruct for TimelineItemClass {
@@ -50,27 +50,27 @@ mod imp {
         ///
         /// For debugging purposes.
         #[property(get = Self::id)]
-        pub id: PhantomData<String>,
+        id: PhantomData<String>,
         /// Whether this `TimelineItem` is selectable.
         ///
         /// Defaults to `false`.
         #[property(get = Self::selectable)]
-        pub selectable: PhantomData<bool>,
+        selectable: PhantomData<bool>,
         /// Whether this `TimelineItem` should show its header.
         ///
         /// Defaults to `false`.
         #[property(get, set = Self::set_show_header, explicit_notify)]
-        pub show_header: Cell<bool>,
+        show_header: Cell<bool>,
         /// Whether this `TimelineItem` is allowed to hide its header.
         ///
         /// Defaults to `false`.
         #[property(get = Self::can_hide_header)]
-        pub can_hide_header: PhantomData<bool>,
+        can_hide_header: PhantomData<bool>,
         /// If this is a Matrix event, the sender of the event.
         ///
         /// Defaults to `None`.
         #[property(get = Self::event_sender_id)]
-        pub event_sender_id: PhantomData<Option<String>>,
+        event_sender_id: PhantomData<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -88,19 +88,19 @@ mod imp {
         /// A unique ID for this `TimelineItem`.
         ///
         /// For debugging purposes.
-        pub fn id(&self) -> String {
+        fn id(&self) -> String {
             imp::timeline_item_id(&self.obj())
         }
 
         /// Whether this `TimelineItem` is selectable.
         ///
         /// Defaults to `false`.
-        pub fn selectable(&self) -> bool {
+        fn selectable(&self) -> bool {
             imp::timeline_item_selectable(&self.obj())
         }
 
         /// Set whether this `TimelineItem` should show its header.
-        pub fn set_show_header(&self, show: bool) {
+        fn set_show_header(&self, show: bool) {
             if self.show_header.get() == show {
                 return;
             }
@@ -112,14 +112,14 @@ mod imp {
         /// Whether this `TimelineItem` is allowed to hide its header.
         ///
         /// Defaults to `false`.
-        pub fn can_hide_header(&self) -> bool {
+        fn can_hide_header(&self) -> bool {
             imp::timeline_item_can_hide_header(&self.obj())
         }
 
         /// If this is a Matrix event, the sender of the event.
         ///
         /// Defaults to `None`.
-        pub fn event_sender_id(&self) -> Option<String> {
+        fn event_sender_id(&self) -> Option<String> {
             imp::timeline_item_event_sender_id(&self.obj()).map(Into::into)
         }
     }
@@ -144,7 +144,7 @@ impl TimelineItem {
     /// Try to update this `TimelineItem` with the given SDK timeline item.
     ///
     /// Returns `true` if the update succeeded.
-    pub fn try_update_with(&self, item: &SdkTimelineItem) -> bool {
+    pub(crate) fn try_update_with(&self, item: &SdkTimelineItem) -> bool {
         match item.kind() {
             TimelineItemKind::Event(new_event) => {
                 if let Some(event) = self.downcast_ref::<Event>() {
@@ -166,39 +166,34 @@ impl TimelineItem {
 ///
 /// To override the behavior of these methods, override the corresponding method
 /// of `TimelineItemImpl`.
-pub trait TimelineItemExt: 'static {
+#[allow(dead_code)]
+pub(crate) trait TimelineItemExt: 'static {
     /// A unique ID for this `TimelineItem`.
     ///
     /// For debugging purposes.
-    #[allow(dead_code)]
     fn id(&self) -> String;
 
     /// Whether this `TimelineItem` is selectable.
     ///
     /// Defaults to `false`.
-    #[allow(dead_code)]
     fn selectable(&self) -> bool;
 
     /// Whether this `TimelineItem` should show its header.
     ///
     /// Defaults to `false`.
-    #[allow(dead_code)]
     fn show_header(&self) -> bool;
 
     /// Set whether this `TimelineItem` should show its header.
-    #[allow(dead_code)]
     fn set_show_header(&self, show: bool);
 
     /// Whether this `TimelineItem` is allowed to hide its header.
     ///
     /// Defaults to `false`.
-    #[allow(dead_code)]
     fn can_hide_header(&self) -> bool;
 
     /// If this is a Matrix event, the sender of the event.
     ///
     /// Defaults to `None`.
-    #[allow(dead_code)]
     fn event_sender_id(&self) -> Option<OwnedUserId>;
 }
 
@@ -233,7 +228,7 @@ impl<O: IsA<TimelineItem>> TimelineItemExt for O {
 ///
 /// Overriding a method from this Trait overrides also its behavior in
 /// `TimelineItemExt`.
-pub trait TimelineItemImpl: ObjectImpl {
+pub(crate) trait TimelineItemImpl: ObjectImpl {
     fn id(&self) -> String;
 
     fn selectable(&self) -> bool {

@@ -27,8 +27,8 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tracing::error;
 
-pub use self::{
-    timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
+pub(crate) use self::{
+    timeline_item::{TimelineItem, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
 use super::{Event, Room};
