@@ -31,6 +31,7 @@ impl VirtualItemKind {
     }
 }
 
+/// A boxed [`VirtualItemKind`].
 #[derive(Clone, Debug, Default, PartialEq, Eq, glib::Boxed)]
 #[boxed_type(name = "BoxedVirtualItemKind")]
 pub struct BoxedVirtualItemKind(VirtualItemKind);
@@ -53,7 +54,7 @@ mod imp {
     pub struct VirtualItem {
         /// The kind of virtual item.
         #[property(get, set, construct)]
-        pub kind: RefCell<BoxedVirtualItemKind>,
+        kind: RefCell<BoxedVirtualItemKind>,
     }
 
     #[glib::object_subclass]
@@ -98,28 +99,28 @@ impl VirtualItem {
     }
 
     /// Create a spinner virtual item.
-    pub fn spinner() -> Self {
+    pub(crate) fn spinner() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::Spinner.boxed())
             .build()
     }
 
     /// Create a typing virtual item.
-    pub fn typing() -> Self {
+    pub(crate) fn typing() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::Typing.boxed())
             .build()
     }
 
     /// Create a timeline start virtual item.
-    pub fn timeline_start() -> Self {
+    pub(crate) fn timeline_start() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::TimelineStart.boxed())
             .build()
     }
 
     /// Create a new messages virtual item.
-    pub fn new_messages() -> Self {
+    pub(crate) fn new_messages() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::NewMessages.boxed())
             .build()
@@ -132,7 +133,7 @@ impl VirtualItem {
     /// current local time.
     ///
     /// Panics if an error occurred when accessing the current local time.
-    pub fn day_divider_with_timestamp(timestamp: MilliSecondsSinceUnixEpoch) -> Self {
+    pub(crate) fn day_divider_with_timestamp(timestamp: MilliSecondsSinceUnixEpoch) -> Self {
         let date = glib::DateTime::from_unix_utc(timestamp.as_secs().into())
             .or_else(|_| glib::DateTime::now_utc())
             .expect("We should be able to get the current time");
