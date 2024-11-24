@@ -648,6 +648,7 @@ impl ItemRow {
                     self,
                     move |_, _, variant| {
                         let Some(key) = variant.unwrap().get::<String>() else {
+                            error!("Could not parse reaction to toggle");
                             return;
                         };
 
@@ -664,17 +665,27 @@ impl ItemRow {
                 // Reply.
                 gio::ActionEntry::builder("reply")
                     .activate(clone!(
-                        #[weak]
-                        event,
                         #[weak(rename_to = obj)]
                         self,
                         move |_, _, _| {
-                            if let Some(event_id) = event.event_id() {
-                                let _ = obj.activate_action(
+                            let Some(event) = obj.item().and_downcast::<Event>() else {
+                                error!("Could not reply to timeline item that is not an event");
+                                return;
+                            };
+                            let Some(event_id) = event.event_id() else {
+                                error!("Event to reply to does not have an event ID");
+                                return;
+                            };
+
+                            if obj
+                                .activate_action(
                                     "room-history.reply",
                                     Some(&event_id.as_str().to_variant()),
-                                );
-                            }
+                                )
+                                .is_err()
+                            {
+                                error!("Could not activate `room-history.reply` action");
+                            };
                         }
                     ))
                     .build(),
@@ -701,17 +712,10 @@ impl ItemRow {
                 if has_event_id && is_from_own_user && permissions.can_send_message() {
                     action_group.add_action_entries([gio::ActionEntry::builder("edit")
                         .activate(clone!(
-                            #[weak]
-                            event,
                             #[weak(rename_to = obj)]
                             self,
                             move |_, _, _| {
-                                if let Some(event_id) = event.event_id() {
-                                    let _ = obj.activate_action(
-                                        "room-history.edit",
-                                        Some(&event_id.as_str().to_variant()),
-                                    );
-                                }
+                                obj.edit_message();
                             }
                         ))
                         .build()]);
@@ -723,10 +727,8 @@ impl ItemRow {
                     .activate(clone!(
                         #[weak(rename_to = obj)]
                         self,
-                        #[weak]
-                        event,
                         move |_, _, _| {
-                            obj.save_event_file(event);
+                            obj.save_file();
                         }
                     ))
                     .build()]);
@@ -739,9 +741,12 @@ impl ItemRow {
                     .activate(clone!(
                         #[weak(rename_to = obj)]
                         self,
-                        #[weak]
-                        event,
                         move |_, _, _| {
+                            let Some(event) = obj.item().and_downcast::<Event>() else {
+                                error!("Could not copy text of timeline item that is not an event");
+                                return;
+                            };
+
                             let display_name = event.sender().display_name();
                             let message = format!("{display_name} {}", message.body);
                             obj.clipboard().set_text(&message);
@@ -754,17 +759,10 @@ impl ItemRow {
                 if has_event_id && is_from_own_user && permissions.can_send_message() {
                     action_group.add_action_entries([gio::ActionEntry::builder("edit")
                         .activate(clone!(
-                            #[weak]
-                            event,
                             #[weak(rename_to = obj)]
                             self,
                             move |_, _, _| {
-                                if let Some(event_id) = event.event_id() {
-                                    let _ = obj.activate_action(
-                                        "room-history.edit",
-                                        Some(&event_id.as_str().to_variant()),
-                                    );
-                                }
+                                obj.edit_message();
                             }
                         ))
                         .build()]);
@@ -809,10 +807,8 @@ impl ItemRow {
                         .activate(clone!(
                             #[weak(rename_to = obj)]
                             self,
-                            #[weak]
-                            event,
                             move |_, _, _| {
-                                obj.save_event_file(event);
+                                obj.save_file();
                             }
                         ))
                         .build(),
@@ -824,10 +820,8 @@ impl ItemRow {
                     .activate(clone!(
                         #[weak(rename_to = obj)]
                         self,
-                        #[weak]
-                        event,
                         move |_, _, _| {
-                            obj.save_event_file(event);
+                            obj.save_file();
                         }
                     ))
                     .build()]);
@@ -838,10 +832,8 @@ impl ItemRow {
                     .activate(clone!(
                         #[weak(rename_to = obj)]
                         self,
-                        #[weak]
-                        event,
                         move |_, _, _| {
-                            obj.save_event_file(event);
+                            obj.save_file();
                         }
                     ))
                     .build()]);
@@ -868,16 +860,41 @@ impl ItemRow {
         }
     }
 
-    /// Save the media file in the given event.
-    fn save_event_file(&self, event: Event) {
+    /// Edit the message of this row.
+    fn edit_message(&self) {
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            error!("Could not edit timeline item that is not an event");
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            error!("Event to edit does not have an event ID");
+            return;
+        };
+
+        if self
+            .activate_action("room-history.edit", Some(&event_id.as_str().to_variant()))
+            .is_err()
+        {
+            error!("Could not activate `room-history.edit` action");
+        };
+    }
+
+    /// Save the media file of this row.
+    fn save_file(&self) {
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
             async move {
+                let Some(event) = obj.item().and_downcast::<Event>() else {
+                    error!("Could not save file of timeline item that is not an event");
+                    return;
+                };
                 let Some(session) = event.room().session() else {
+                    // Should only happen if the process is being closed.
                     return;
                 };
                 let Some(media_message) = event.media_message() else {
+                    error!("Could not save file for non-media event");
                     return;
                 };
 
@@ -890,9 +907,11 @@ impl ItemRow {
     /// Redact the event of this row.
     async fn redact_message(&self) {
         let Some(event) = self.item().and_downcast::<Event>() else {
+            error!("Could not redact timeline item that is not an event");
             return;
         };
         let Some(event_id) = event.event_id() else {
+            error!("Event to redact does not have an event ID");
             return;
         };
 
@@ -921,6 +940,7 @@ impl ItemRow {
     /// Toggle the reaction with the given key for the event of this row.
     async fn toggle_reaction(&self, key: String) {
         let Some(event) = self.item().and_downcast::<Event>() else {
+            error!("Could not toggle reaction on timeline item that is not an event");
             return;
         };
 
@@ -932,9 +952,11 @@ impl ItemRow {
     /// Report the current event.
     async fn report_event(&self) {
         let Some(event) = self.item().and_downcast::<Event>() else {
+            error!("Could not report timeline item that is not an event");
             return;
         };
         let Some(event_id) = event.event_id() else {
+            error!("Event to report does not have an event ID");
             return;
         };
 
@@ -985,6 +1007,7 @@ impl ItemRow {
     /// Cancel sending the event of this row.
     async fn cancel_send(&self) {
         let Some(event) = self.item().and_downcast::<Event>() else {
+            error!("Could not discard timeline item that is not an event");
             return;
         };
 
