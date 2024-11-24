@@ -159,9 +159,12 @@ mod imp {
                 "room-history.scroll-to-event",
                 Some(&TimelineEventItemId::static_variant_type()),
                 |obj, _, v| {
-                    if let Some(event_key) = v.and_then(TimelineEventItemId::from_variant) {
-                        obj.imp().scroll_to_event(&event_key);
-                    }
+                    let Some(event_key) = v.and_then(TimelineEventItemId::from_variant) else {
+                        error!("Could not parse event identifier to scroll to");
+                        return;
+                    };
+
+                    obj.imp().scroll_to_event(&event_key);
                 },
             );
 
@@ -169,21 +172,23 @@ mod imp {
                 "room-history.reply",
                 Some(&String::static_variant_type()),
                 |obj, _, v| {
-                    if let Some(event_id) = v
+                    let Some(event_id) = v
                         .and_then(String::from_variant)
                         .and_then(|s| EventId::parse(s).ok())
-                    {
-                        if let Some(event) = obj
-                            .room()
-                            .and_then(|room| {
-                                room.timeline()
-                                    .event_by_identifier(&TimelineEventItemId::EventId(event_id))
-                            })
-                            .and_downcast_ref()
-                        {
-                            obj.message_toolbar().set_reply_to(event);
-                        }
-                    }
+                    else {
+                        error!("Could not parse event ID to reply to");
+                        return;
+                    };
+
+                    let Some(event) = obj.room().and_then(|room| {
+                        room.timeline()
+                            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
+                    }) else {
+                        warn!("Could not find event to reply to");
+                        return;
+                    };
+
+                    obj.message_toolbar().set_reply_to(&event);
                 },
             );
 
@@ -191,21 +196,23 @@ mod imp {
                 "room-history.edit",
                 Some(&String::static_variant_type()),
                 |obj, _, v| {
-                    if let Some(event_id) = v
+                    let Some(event_id) = v
                         .and_then(String::from_variant)
                         .and_then(|s| EventId::parse(s).ok())
-                    {
-                        if let Some(event) = obj
-                            .room()
-                            .and_then(|room| {
-                                room.timeline()
-                                    .event_by_identifier(&TimelineEventItemId::EventId(event_id))
-                            })
-                            .and_downcast_ref()
-                        {
-                            obj.message_toolbar().set_edit(event);
-                        }
-                    }
+                    else {
+                        error!("Could not parse event ID to edit");
+                        return;
+                    };
+
+                    let Some(event) = obj.room().and_then(|room| {
+                        room.timeline()
+                            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
+                    }) else {
+                        warn!("Could not find event to edit");
+                        return;
+                    };
+
+                    obj.message_toolbar().set_edit(&event);
                 },
             );
         }
