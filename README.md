@@ -166,7 +166,7 @@ The Fractal Flatpaks use the [Secret **Portal**](https://docs.flatpak.org/en/lat
 to store those secrets. If you are using GNOME this should just work. If you are using a different
 desktop environment or are facing issues, make sure `xdg-desktop-portal` is installed along with a
 service that provides the [Secret portal backend interface](https://docs.flatpak.org/en/latest/portal-api-reference.html#gdbus-org.freedesktop.impl.portal.Secret),
-which is currently only implemented by gnome-keyring.
+like gnome-keyring or KWallet (since version 6.2).
 
 Any version that is not sandboxed relies on software that implements the [Secret **Service** API](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
 to store those secrets. Therefore, you need to have software providing that service on your system,
