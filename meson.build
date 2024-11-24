@@ -45,10 +45,13 @@ dependency('openssl', version: '>= 1.0.1')
 dependency('shumate-1.0', version: '>= 1.0.0')
 dependency('sqlite3', version: '>= 3.24.0')
 
+# Required by glycin crate
+dependency('lcms2', version: '>=2.12.0')
+dependency('libseccomp', version: '>= 2.5.0')
+
 # Linux-only dependencies
 if build_machine.system() == 'linux'
   dependency('libpipewire-0.3', version: '>= 0.3.0')
-  dependency('xdg-desktop-portal', version: '>= 1.14.1')
 endif
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)

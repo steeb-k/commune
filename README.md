@@ -11,8 +11,8 @@ collaboration in large groups, such as free software projects, and will fit all 
 <img
     src="https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png"
     alt="Fractal’s main window"
-    width="885"
-    height="699"
+    width="882"
+    height="672"
 />
 
 Highlights:
@@ -144,6 +144,20 @@ flatpak install --user gnome-nightly org.gnome.Fractal.Devel
 ```
 
 ### Runtime Dependencies
+
+On top of the dependencies required at build time and checked by Meson, Fractal depends on the
+following dependencies at runtime:
+
+* xdg-desktop-portal and its backends: some functionalities are dependant on the following portals,
+  and a permission will be asked when necessary, but Fractal should work without them:
+  * Secret: this portal or a Secret Service is required, see [storing secrets](#storing-secrets).
+  * Camera: scan QR codes during verification.
+  * Location: send the user’s location in a conversation.
+  * Settings: get the 12h/24h time format system preference.
+* glycin: all images are loaded with this library so loaders for the different image formats need to
+  be installed.
+
+#### Storing secrets
 
 Fractal doesn’t store your **password**, but it stores your **access token** and the **passphrase**
 used to encrypt the database and the local cache.
