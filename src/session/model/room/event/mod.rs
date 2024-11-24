@@ -11,7 +11,7 @@ use ruma::{
         receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent, TimelineEventType,
     },
     serde::Raw,
-    MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedUserId,
+    MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
 };
 use serde::{de::IgnoredAny, Deserialize};
 use tracing::{debug, error};
@@ -285,6 +285,12 @@ mod imp {
         /// the server, as a string.
         fn event_id_string(&self) -> Option<String> {
             self.item().event_id().map(ToString::to_string)
+        }
+
+        /// The temporary ID of this event, if it has been sent with this
+        /// session.
+        pub(crate) fn transaction_id(&self) -> Option<OwnedTransactionId> {
+            self.item().transaction_id().map(ToOwned::to_owned)
         }
 
         /// The ID of the sender of this event.
@@ -570,6 +576,11 @@ impl Event {
     /// server.
     pub(crate) fn event_id(&self) -> Option<OwnedEventId> {
         self.imp().event_id()
+    }
+
+    /// The temporary ID of this event, if it has been sent with this session.
+    pub(crate) fn transaction_id(&self) -> Option<OwnedTransactionId> {
+        self.imp().transaction_id()
     }
 
     /// The ID of the sender of this event.

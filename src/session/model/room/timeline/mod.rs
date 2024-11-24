@@ -351,6 +351,14 @@ mod imp {
                     let prev_item = sdk_items.item(pos).and_downcast::<TimelineItem>().unwrap();
 
                     let item = if prev_item.try_update_with(&value) {
+                        if let Some(event) = prev_item.downcast_ref::<Event>() {
+                            // Update the identifier in the event map, in case we switched from a
+                            // transaction ID to an event ID.
+                            self.event_map
+                                .borrow_mut()
+                                .insert(event.identifier(), event.clone());
+                        }
+
                         prev_item
                     } else {
                         self.remove_item(&prev_item);
@@ -487,7 +495,17 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
-                self.event_map.borrow_mut().remove(&event.identifier());
+                // We need to remove both the transaction ID and the event ID.
+                if let Some(txn_id) = event.transaction_id() {
+                    self.event_map
+                        .borrow_mut()
+                        .remove(&TimelineEventItemId::TransactionId(txn_id));
+                }
+                if let Some(event_id) = event.event_id() {
+                    self.event_map
+                        .borrow_mut()
+                        .remove(&TimelineEventItemId::EventId(event_id));
+                }
 
                 if event.is_room_create_event() {
                     self.set_has_room_create(false);
@@ -690,7 +708,7 @@ impl Timeline {
             };
 
             if let Some(event) = item.downcast_ref::<Event>() {
-                if event.identifier() == *identifier {
+                if event.matches_identifier(identifier) {
                     return Some(pos);
                 }
             }
