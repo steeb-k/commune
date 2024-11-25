@@ -21,9 +21,8 @@ $ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 $focus_transition: outline-color 200ms $ease-out-quad,
                    outline-width 200ms $ease-out-quad,
                    outline-offset 200ms $ease-out-quad;
-$button_radius: 6px;
-$card_radius: $button_radius + 6;                   
-$menu_radius: 6px;
+$card_radius: 12px;
+$menu_radius: 9px;
 
 // https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.6.1/src/stylesheet/_drawing.scss
 @mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {
