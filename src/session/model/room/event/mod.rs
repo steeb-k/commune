@@ -529,13 +529,13 @@ impl Event {
 
         match &self.identifier() {
             TimelineEventItemId::TransactionId(txn_id)
-                if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
+                if item.transaction_id().is_some_and(|id| id == txn_id) =>
             {
                 imp.set_item(item.clone());
                 return true;
             }
             TimelineEventItemId::EventId(event_id)
-                if !item.is_local_echo() && item.event_id() == Some(event_id) =>
+                if item.event_id().is_some_and(|id| id == event_id) =>
             {
                 imp.set_item(item.clone());
                 return true;
