@@ -11,13 +11,14 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ReactionList)]
     pub struct ReactionList {
         /// The user of the parent session.
-        pub user: OnceCell<User>,
-
+        #[property(get, set)]
+        user: OnceCell<User>,
         /// The list of reactions grouped by key.
-        pub reactions: RefCell<IndexMap<String, ReactionGroup>>,
+        reactions: RefCell<IndexMap<String, ReactionGroup>>,
     }
 
     #[glib::object_subclass]
@@ -27,6 +28,7 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ReactionList {}
 
     impl ListModelImpl for ReactionList {
@@ -46,12 +48,61 @@ mod imp {
                 .map(|(_key, reaction_group)| reaction_group.clone().upcast())
         }
     }
+
+    impl ReactionList {
+        /// Update the reaction list with the given reactions.
+        pub(super) fn update(&self, new_reactions: &ReactionsByKeyBySender) {
+            let changed = {
+                let old_reactions = self.reactions.borrow();
+
+                old_reactions.len() != new_reactions.len()
+                    || new_reactions
+                        .keys()
+                        .zip(old_reactions.keys())
+                        .any(|(new_key, old_key)| new_key != old_key)
+            };
+
+            if changed {
+                let mut reactions = self.reactions.borrow_mut();
+                let user = self.user.get().expect("user is initialized");
+                let prev_len = reactions.len();
+                let new_len = new_reactions.len();
+
+                *reactions = new_reactions
+                    .iter()
+                    .map(|(key, reactions)| {
+                        let group = ReactionGroup::new(key, user);
+                        group.update(reactions);
+                        (key.clone(), group)
+                    })
+                    .collect();
+
+                // We cannot have the borrow active when items_changed is emitted because that
+                // will probably cause reads of the reactions field.
+                std::mem::drop(reactions);
+
+                self.obj().items_changed(0, prev_len as u32, new_len as u32);
+            } else {
+                let reactions = self.reactions.borrow();
+                for (reactions, group) in new_reactions.values().zip(reactions.values()) {
+                    group.update(reactions);
+                }
+            }
+        }
+
+        /// Get a reaction group by its key.
+        ///
+        /// Returns `None` if no action group was found with this key.
+        pub(super) fn reaction_group_by_key(&self, key: &str) -> Option<ReactionGroup> {
+            self.reactions.borrow().get(key).cloned()
+        }
+    }
 }
 
 glib::wrapper! {
     /// List of all `ReactionGroup`s for an event.
     ///
-    /// Implements `ListModel`. `ReactionGroup`s are sorted in "insertion order".
+    /// Implements `GListModel`. `ReactionGroup`s are sorted in "insertion order".
     pub struct ReactionList(ObjectSubclass<imp::ReactionList>)
         @implements gio::ListModel;
 }
@@ -61,83 +112,16 @@ impl ReactionList {
         glib::Object::new()
     }
 
-    /// The user of the parent session.
-    pub fn user(&self) -> &User {
-        self.imp().user.get().unwrap()
-    }
-
-    /// Set the user of the parent session.
-    pub fn set_user(&self, user: User) {
-        let _ = self.imp().user.set(user);
-    }
-
     /// Update the reaction list with the given reactions.
-    pub fn update(&self, new_reactions: &ReactionsByKeyBySender) {
-        let reactions = &self.imp().reactions;
-
-        let changed = {
-            let old_reactions = reactions.borrow();
-
-            old_reactions.len() != new_reactions.len()
-                || new_reactions
-                    .keys()
-                    .zip(old_reactions.keys())
-                    .any(|(new_key, old_key)| new_key != old_key)
-        };
-
-        if changed {
-            let mut reactions = reactions.borrow_mut();
-            let user = self.user();
-            let prev_len = reactions.len();
-            let new_len = new_reactions.len();
-
-            *reactions = new_reactions
-                .iter()
-                .map(|(key, reactions)| {
-                    let group = ReactionGroup::new(key, user);
-                    group.update(reactions);
-                    (key.clone(), group)
-                })
-                .collect();
-
-            // We can't have the borrow active when items_changed is emitted because that
-            // will probably cause reads of the reactions field.
-            std::mem::drop(reactions);
-
-            self.items_changed(0, prev_len as u32, new_len as u32);
-        } else {
-            let reactions = reactions.borrow();
-            for (reactions, group) in new_reactions.values().zip(reactions.values()) {
-                group.update(reactions);
-            }
-        }
+    pub(crate) fn update(&self, new_reactions: &ReactionsByKeyBySender) {
+        self.imp().update(new_reactions);
     }
 
     /// Get a reaction group by its key.
     ///
     /// Returns `None` if no action group was found with this key.
-    pub fn reaction_group_by_key(&self, key: &str) -> Option<ReactionGroup> {
-        self.imp().reactions.borrow().get(key).cloned()
-    }
-
-    /// Remove a reaction group by its key.
-    pub fn remove_reaction_group(&self, key: &str) {
-        let (pos, ..) = self
-            .imp()
-            .reactions
-            .borrow_mut()
-            .shift_remove_full(key)
-            .unwrap();
-        self.items_changed(pos as u32, 1, 0);
-    }
-
-    /// Removes all reactions.
-    pub fn clear(&self) {
-        let mut reactions = self.imp().reactions.borrow_mut();
-        let len = reactions.len();
-        reactions.clear();
-        std::mem::drop(reactions);
-        self.items_changed(0, len as u32, 0);
+    pub(crate) fn reaction_group_by_key(&self, key: &str) -> Option<ReactionGroup> {
+        self.imp().reaction_group_by_key(key)
     }
 }
 
