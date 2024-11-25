@@ -66,33 +66,33 @@ mod imp {
     pub struct JoinRule {
         /// The room where this join rule apply.
         #[property(get)]
-        pub room: glib::WeakRef<Room>,
-        own_membership_handler: RefCell<Option<glib::SignalHandlerId>>,
-        /// The current join rule.
-        pub matrix_join_rule: RefCell<Option<MatrixJoinRule>>,
+        room: glib::WeakRef<Room>,
+        /// The current join rule from the SDK.
+        matrix_join_rule: RefCell<Option<MatrixJoinRule>>,
         /// The value of the join rule.
         #[property(get, builder(JoinRuleValue::default()))]
-        pub value: Cell<JoinRuleValue>,
+        value: Cell<JoinRuleValue>,
         /// Whether users can knock.
         #[property(get)]
-        pub can_knock: Cell<bool>,
+        can_knock: Cell<bool>,
         /// The string to use to display this join rule.
         ///
         /// This string can contain markup.
         #[property(get)]
-        pub display_name: RefCell<String>,
+        display_name: RefCell<String>,
         /// The room we need to be a member of to match this join rule, if any.
         ///
         /// This can be a `Room` or a `RemoteRoom`.
         // TODO: Support multiple rooms.
         #[property(get)]
-        pub membership_room: BoundObject<PillSource>,
+        membership_room: BoundObject<PillSource>,
         /// Whether our own user can join this room on their own.
         #[property(get)]
-        pub we_can_join: Cell<bool>,
+        we_can_join: Cell<bool>,
         /// Whether anyone can join this room on their own.
         #[property(get)]
-        pub anyone_can_join: Cell<bool>,
+        anyone_can_join: Cell<bool>,
+        own_membership_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -360,7 +360,7 @@ impl JoinRule {
     }
 
     /// Change the value of the join rule.
-    pub async fn set_value(&self, value: JoinRuleValue) -> Result<(), ()> {
+    pub(crate) async fn set_value(&self, value: JoinRuleValue) -> Result<(), ()> {
         let Some(room) = self.room() else {
             return Err(());
         };
@@ -375,7 +375,7 @@ impl JoinRule {
         let matrix_room = room.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(_) => Ok(()),
             Err(error) => {
                 error!("Could not change join rule: {error}");
@@ -385,7 +385,7 @@ impl JoinRule {
     }
 
     /// Connect to the signal emitted when the join rule changed.
-    pub fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "changed",
             true,
