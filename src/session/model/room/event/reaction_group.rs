@@ -30,18 +30,18 @@ mod imp {
     pub struct ReactionGroup {
         /// The user of the parent session.
         #[property(get, construct_only)]
-        pub user: OnceCell<User>,
+        user: OnceCell<User>,
         /// The key of the group.
         #[property(get, construct_only)]
-        pub key: OnceCell<String>,
+        key: OnceCell<String>,
         /// The reactions in the group.
-        pub reactions: RefCell<Option<ReactionsMap>>,
+        reactions: RefCell<Option<ReactionsMap>>,
         /// The number of reactions in this group.
         #[property(get = Self::count)]
-        pub count: PhantomData<u32>,
+        count: PhantomData<u32>,
         /// Whether this group has a reaction from our own user.
-        #[property(get = Self::has_user)]
-        pub has_user: PhantomData<bool>,
+        #[property(get = Self::has_own_user)]
+        has_own_user: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -89,18 +89,57 @@ mod imp {
         }
 
         /// Whether this group has a reaction from our own user.
-        fn has_user(&self) -> bool {
-            let user_id = self.user.get().unwrap().user_id();
+        fn has_own_user(&self) -> bool {
+            let user_id = self.user.get().expect("user is initialized").user_id();
             self.reactions
                 .borrow()
                 .as_ref()
                 .is_some_and(|reactions| reactions.contains_key(user_id))
         }
+
+        /// Update this group with the given reactions.
+        pub(super) fn update(&self, new_reactions: &ReactionsMap) {
+            let prev_has_own_user = self.has_own_user();
+            let prev_count = self.count();
+            let new_count = new_reactions.len() as u32;
+
+            let same_reactions = match self.reactions.borrow().as_ref() {
+                Some(old_reactions) => {
+                    prev_count == new_count
+                        && new_reactions.iter().zip(old_reactions.iter()).all(
+                            |((old_sender_id, old_info), (new_sender_id, new_info))| {
+                                old_sender_id == new_sender_id
+                                    && old_info.timestamp == new_info.timestamp
+                            },
+                        )
+                }
+                // There were no reactions before, now there are, so it is definitely not the same.
+                None => false,
+            };
+            if same_reactions {
+                return;
+            }
+
+            *self.reactions.borrow_mut() = Some(new_reactions.clone());
+
+            let obj = self.obj();
+            obj.items_changed(0, prev_count, new_count);
+
+            if self.count() != prev_count {
+                obj.notify_count();
+            }
+
+            if self.has_own_user() != prev_has_own_user {
+                obj.notify_has_own_user();
+            }
+        }
     }
 }
 
 glib::wrapper! {
-    /// Reactions grouped by a given key. Implements `ListModel`.
+    /// Reactions grouped by a given key.
+    ///
+    /// Implements `GListModel`.
     pub struct ReactionGroup(ObjectSubclass<imp::ReactionGroup>)
         @implements gio::ListModel;
 }
@@ -114,39 +153,7 @@ impl ReactionGroup {
     }
 
     /// Update this group with the given reactions.
-    pub fn update(&self, new_reactions: &ReactionsMap) {
-        let prev_has_user = self.has_user();
-        let prev_count = self.count();
-        let new_count = new_reactions.len() as u32;
-        let reactions = &self.imp().reactions;
-
-        let same_reactions = match reactions.borrow().as_ref() {
-            Some(old_reactions) => {
-                prev_count == new_count
-                    && new_reactions.iter().zip(old_reactions.iter()).all(
-                        |((old_sender_id, old_info), (new_sender_id, new_info))| {
-                            old_sender_id == new_sender_id
-                                && old_info.timestamp == new_info.timestamp
-                        },
-                    )
-            }
-            // There were no reactions before, now there are, so it is definitely not the same.
-            None => false,
-        };
-        if same_reactions {
-            return;
-        }
-
-        *reactions.borrow_mut() = Some(new_reactions.clone());
-
-        self.items_changed(0, prev_count, new_count);
-
-        if self.count() != prev_count {
-            self.notify_count();
-        }
-
-        if self.has_user() != prev_has_user {
-            self.notify_has_user();
-        }
+    pub(crate) fn update(&self, new_reactions: &ReactionsMap) {
+        self.imp().update(new_reactions);
     }
 }

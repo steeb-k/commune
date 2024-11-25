@@ -189,7 +189,7 @@ mod imp {
                             .child_at(reaction_item.column, reaction_item.row)
                             .unwrap();
                         let binding = reaction
-                            .bind_property("has-user", &button, "active")
+                            .bind_property("has-own-user", &button, "active")
                             .sync_create()
                             .build();
                         reaction_bindings.insert(reaction_item.key.to_string(), binding);

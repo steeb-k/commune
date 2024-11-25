@@ -97,7 +97,7 @@ mod imp {
 
             self.button.set_action_target_value(Some(&key.to_variant()));
             group
-                .bind_property("has-user", &*self.button, "active")
+                .bind_property("has-own-user", &*self.button, "active")
                 .sync_create()
                 .build();
             group
