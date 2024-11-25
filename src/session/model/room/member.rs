@@ -36,7 +36,7 @@ pub enum Membership {
 
 impl Membership {
     /// Get the name of the icon that represents this membership.
-    pub fn icon_name(self) -> &'static str {
+    pub(crate) fn icon_name(self) -> &'static str {
         match self {
             Self::Invite => "user-add-symbolic",
             Self::Ban => "blocked-symbolic",
@@ -74,19 +74,19 @@ mod imp {
     pub struct Member {
         /// The room of the member.
         #[property(get, set = Self::set_room, construct_only)]
-        pub room: OnceCell<Room>,
+        room: OnceCell<Room>,
         /// The power level of the member.
         #[property(get, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
-        pub power_level: Cell<PowerLevel>,
+        power_level: Cell<PowerLevel>,
         /// The role of the member.
         #[property(get, builder(MemberRole::default()))]
-        pub role: Cell<MemberRole>,
-        /// This member's membership state.
+        role: Cell<MemberRole>,
+        /// This membership state of the member.
         #[property(get, builder(Membership::default()))]
-        pub membership: Cell<Membership>,
+        membership: Cell<Membership>,
         /// The timestamp of the latest activity of this member.
         #[property(get, set = Self::set_latest_activity, explicit_notify)]
-        pub latest_activity: Cell<u64>,
+        latest_activity: Cell<u64>,
         power_level_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
@@ -117,28 +117,64 @@ mod imp {
     impl Member {
         /// Set the room of the member.
         fn set_room(&self, room: Room) {
-            let obj = self.obj();
+            let room = self.room.get_or_init(|| room);
 
             let default_pl_handler = room
                 .permissions()
                 .connect_default_power_level_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_role();
+                        imp.update_role();
                     }
                 ));
             let mute_pl_handler = room.permissions().connect_mute_power_level_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.update_role();
+                    imp.update_role();
                 }
             ));
             self.power_level_handlers
                 .replace(vec![default_pl_handler, mute_pl_handler]);
+        }
 
-            self.room.set(room).unwrap();
+        /// Set the power level of the member.
+        pub(super) fn set_power_level(&self, power_level: PowerLevel) {
+            if self.power_level.get() == power_level {
+                return;
+            }
+
+            self.power_level.set(power_level);
+            self.update_role();
+            self.obj().notify_power_level();
+        }
+
+        /// Update the role of the member.
+        fn update_role(&self) {
+            let role = self
+                .room
+                .get()
+                .expect("room is initialized")
+                .permissions()
+                .role(self.power_level.get());
+
+            if self.role.get() == role {
+                return;
+            }
+
+            self.role.set(role);
+            self.obj().notify_role();
+        }
+
+        /// Set this membership state of the member.
+        pub(super) fn set_membership(&self, membership: Membership) {
+            if self.membership.get() == membership {
+                return;
+            }
+
+            self.membership.replace(membership);
+            self.obj().notify_membership();
         }
 
         /// Set the timestamp of the latest activity of this member.
@@ -154,7 +190,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A User in the context of a given room.
+    /// A `User` in the context of a given room.
     pub struct Member(ObjectSubclass<imp::Member>) @extends PillSource, User;
 }
 
@@ -172,40 +208,11 @@ impl Member {
 
     /// Set the power level of the member.
     pub(super) fn set_power_level(&self, power_level: PowerLevel) {
-        if self.power_level() == power_level {
-            return;
-        }
-
-        self.imp().power_level.set(power_level);
-        self.update_role();
-        self.notify_power_level();
-    }
-
-    /// Update the role of the member.
-    fn update_role(&self) {
-        let role = self.room().permissions().role(self.power_level());
-
-        if self.role() == role {
-            return;
-        }
-
-        self.imp().role.set(role);
-        self.notify_role();
-    }
-
-    /// Set this member's membership state.
-    fn set_membership(&self, membership: Membership) {
-        if self.membership() == membership {
-            return;
-        }
-
-        let imp = self.imp();
-        imp.membership.replace(membership);
-        self.notify_membership();
+        self.imp().set_power_level(power_level);
     }
 
     /// Update this member with the data from the given SDK's member.
-    pub fn update_from_room_member(&self, member: &RoomMember) {
+    pub(crate) fn update_from_room_member(&self, member: &RoomMember) {
         if member.user_id() != self.user_id() {
             error!("Tried Member update from RoomMember with wrong user ID.");
             return;
@@ -215,14 +222,14 @@ impl Member {
         self.set_is_name_ambiguous(member.name_ambiguous());
         self.avatar_data()
             .image()
-            .unwrap()
+            .expect("image is set")
             .set_uri_and_info(member.avatar_url().map(ToOwned::to_owned), None);
         self.set_power_level(member.power_level());
-        self.set_membership(member.membership().into());
+        self.imp().set_membership(member.membership().into());
     }
 
-    /// Update this member with the SDK's data.
-    pub fn update(&self) {
+    /// Update this member with data from the SDK.
+    pub(crate) fn update(&self) {
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
@@ -239,7 +246,7 @@ impl Member {
         let user_id = self.user_id().clone();
         let handle = spawn_tokio!(async move { matrix_room.get_member_no_sync(&user_id).await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(Some(member)) => self.update_from_room_member(&member),
             Ok(None) => {
                 debug!("Room member {} not found", self.user_id());
@@ -251,12 +258,12 @@ impl Member {
     }
 
     /// The IDs of the events sent by this member that can be redacted.
-    pub fn redactable_events(&self) -> Vec<OwnedEventId> {
+    pub(crate) fn redactable_events(&self) -> Vec<OwnedEventId> {
         self.room().timeline().redactable_events_for(self.user_id())
     }
 
     /// Whether this room member can notify the whole room.
-    pub fn can_notify_room(&self) -> bool {
+    pub(crate) fn can_notify_room(&self) -> bool {
         self.room().permissions().user_is_allowed_to(
             self.user_id(),
             PowerLevelAction::TriggerNotification(NotificationPowerLevelType::Room),
