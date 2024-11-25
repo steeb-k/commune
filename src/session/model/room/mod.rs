@@ -41,7 +41,7 @@ mod permissions;
 mod timeline;
 mod typing_list;
 
-pub use self::{
+pub(crate) use self::{
     aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
     category::RoomCategory,
     event::*,

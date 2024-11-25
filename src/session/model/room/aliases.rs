@@ -185,12 +185,12 @@ impl RoomAliases {
     }
 
     /// Initialize these aliases with the given room.
-    pub fn init(&self, room: &Room) {
+    pub(crate) fn init(&self, room: &Room) {
         self.imp().set_room(room);
     }
 
     /// Update the aliases with the SDK data.
-    pub fn update(&self) {
+    pub(crate) fn update(&self) {
         self.imp().update();
     }
 
@@ -231,14 +231,14 @@ impl RoomAliases {
     }
 
     /// The canonical alias.
-    pub fn canonical_alias(&self) -> Option<OwnedRoomAliasId> {
+    pub(crate) fn canonical_alias(&self) -> Option<OwnedRoomAliasId> {
         self.imp().canonical_alias.borrow().clone()
     }
 
     /// Remove the given canonical alias.
     ///
     /// Checks that the canonical alias is the correct one before proceeding.
-    pub async fn remove_canonical_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
+    pub(crate) async fn remove_canonical_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
         let mut event_content = self
             .canonical_alias_event_content()
             .await?
@@ -269,7 +269,7 @@ impl RoomAliases {
     /// Set the given alias to be the canonical alias.
     ///
     /// Removes the given alias from the alt aliases if it is in the list.
-    pub async fn set_canonical_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
+    pub(crate) async fn set_canonical_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
         let mut event_content = self
             .canonical_alias_event_content()
             .await?
@@ -313,14 +313,14 @@ impl RoomAliases {
     }
 
     /// The other public aliases.
-    pub fn alt_aliases(&self) -> Vec<OwnedRoomAliasId> {
+    pub(crate) fn alt_aliases(&self) -> Vec<OwnedRoomAliasId> {
         self.imp().alt_aliases.borrow().clone()
     }
 
     /// Remove the given alt alias.
     ///
     /// Checks that is in the list of alt aliases before proceeding.
-    pub async fn remove_alt_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
+    pub(crate) async fn remove_alt_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
         let mut event_content = self
             .canonical_alias_event_content()
             .await?
@@ -354,7 +354,10 @@ impl RoomAliases {
     /// Set the given alias to be an alt alias.
     ///
     /// Removes the given alias from the alt aliases if it is in the list.
-    pub async fn add_alt_alias(&self, alias: OwnedRoomAliasId) -> Result<(), AddAltAliasError> {
+    pub(crate) async fn add_alt_alias(
+        &self,
+        alias: OwnedRoomAliasId,
+    ) -> Result<(), AddAltAliasError> {
         let Ok(event_content) = self.canonical_alias_event_content().await else {
             return Err(AddAltAliasError::Other);
         };
@@ -417,13 +420,13 @@ impl RoomAliases {
     ///
     /// This is the canonical alias if there is one, of the first of the alt
     /// aliases.
-    pub fn alias(&self) -> Option<OwnedRoomAliasId> {
+    pub(crate) fn alias(&self) -> Option<OwnedRoomAliasId> {
         self.canonical_alias()
             .or_else(|| self.imp().alt_aliases.borrow().first().cloned())
     }
 
     /// Get the local aliases registered on the homeserver.
-    pub async fn local_aliases(&self) -> Result<Vec<OwnedRoomAliasId>, ()> {
+    pub(crate) async fn local_aliases(&self) -> Result<Vec<OwnedRoomAliasId>, ()> {
         let Some(room) = self.room() else {
             return Err(());
         };
@@ -448,7 +451,7 @@ impl RoomAliases {
     }
 
     /// Unregister the given local alias.
-    pub async fn unregister_local_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
+    pub(crate) async fn unregister_local_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
         let Some(room) = self.room() else {
             return Err(());
         };
@@ -470,7 +473,7 @@ impl RoomAliases {
     }
 
     /// Register the given local alias.
-    pub async fn register_local_alias(
+    pub(crate) async fn register_local_alias(
         &self,
         alias: OwnedRoomAliasId,
     ) -> Result<(), RegisterLocalAliasError> {
@@ -504,7 +507,7 @@ impl RoomAliases {
     }
 
     /// Connect to the signal emitted when the aliases changed.
-    pub fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "changed",
             true,
@@ -523,7 +526,7 @@ impl Default for RoomAliases {
 
 /// All high-level errors that can happen when trying to add an alt alias.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AddAltAliasError {
+pub(crate) enum AddAltAliasError {
     /// The alias is not registered.
     NotRegistered,
     /// The alias is not registered to this room.
@@ -534,7 +537,7 @@ pub enum AddAltAliasError {
 
 /// All high-level errors that can happen when trying to register a local alias.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RegisterLocalAliasError {
+pub(crate) enum RegisterLocalAliasError {
     /// The alias is already registered.
     AlreadyInUse,
     /// An other error occurred.
