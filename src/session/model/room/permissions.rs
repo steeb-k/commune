@@ -93,48 +93,49 @@ mod imp {
     pub struct Permissions {
         /// The room where these permissions apply.
         #[property(get)]
-        pub room: glib::WeakRef<Room>,
+        pub(super) room: glib::WeakRef<Room>,
         /// The source of the power levels information.
-        pub power_levels: RefCell<RoomPowerLevels>,
+        pub(super) power_levels: RefCell<RoomPowerLevels>,
         power_levels_drop_guard: OnceCell<EventHandlerDropGuard>,
         /// Whether our own member is joined.
-        pub is_joined: Cell<bool>,
+        #[property(get)]
+        is_joined: Cell<bool>,
         /// The power level of our own member.
         #[property(get)]
-        pub own_power_level: Cell<PowerLevel>,
+        own_power_level: Cell<PowerLevel>,
         /// The default power level for members.
         #[property(get)]
-        pub default_power_level: Cell<PowerLevel>,
+        default_power_level: Cell<PowerLevel>,
         /// The power level to mute members.
         #[property(get)]
-        pub mute_power_level: Cell<PowerLevel>,
+        mute_power_level: Cell<PowerLevel>,
         /// Whether our own member can change the room's avatar.
         #[property(get)]
-        pub can_change_avatar: Cell<bool>,
+        can_change_avatar: Cell<bool>,
         /// Whether our own member can change the room's name.
         #[property(get)]
-        pub can_change_name: Cell<bool>,
+        can_change_name: Cell<bool>,
         /// Whether our own member can change the room's topic.
         #[property(get)]
-        pub can_change_topic: Cell<bool>,
+        can_change_topic: Cell<bool>,
         /// Whether our own member can invite another user.
         #[property(get)]
-        pub can_invite: Cell<bool>,
+        can_invite: Cell<bool>,
         /// Whether our own member can send a message.
         #[property(get)]
-        pub can_send_message: Cell<bool>,
+        can_send_message: Cell<bool>,
         /// Whether our own member can send a reaction.
         #[property(get)]
-        pub can_send_reaction: Cell<bool>,
+        can_send_reaction: Cell<bool>,
         /// Whether our own member can redact their own event.
         #[property(get)]
-        pub can_redact_own: Cell<bool>,
+        can_redact_own: Cell<bool>,
         /// Whether our own member can redact the event of another user.
         #[property(get)]
-        pub can_redact_other: Cell<bool>,
+        can_redact_other: Cell<bool>,
         /// Whether our own member can notify the whole room.
         #[property(get)]
-        pub can_notify_room: Cell<bool>,
+        can_notify_room: Cell<bool>,
     }
 
     impl Default for Permissions {
@@ -230,7 +231,9 @@ mod imp {
             );
 
             let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-            self.power_levels_drop_guard.set(drop_guard).unwrap();
+            self.power_levels_drop_guard
+                .set(drop_guard)
+                .expect("power levels drop guard is uninitialized");
         }
 
         /// Update whether our own member is joined
@@ -489,12 +492,12 @@ impl Permissions {
     }
 
     /// The source of the power levels information.
-    pub fn power_levels(&self) -> RoomPowerLevels {
+    pub(crate) fn power_levels(&self) -> RoomPowerLevels {
         self.imp().power_levels.borrow().clone()
     }
 
     /// The current [`MemberRole`] for the given power level.
-    pub fn role(&self, power_level: PowerLevel) -> MemberRole {
+    pub(crate) fn role(&self, power_level: PowerLevel) -> MemberRole {
         if power_level >= POWER_LEVEL_ADMIN {
             MemberRole::Administrator
         } else if power_level >= POWER_LEVEL_MOD {
@@ -512,16 +515,16 @@ impl Permissions {
     }
 
     /// Whether our own member is allowed to do the given action.
-    pub fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
+    pub(crate) fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
         self.imp().is_allowed_to(room_action)
     }
 
     /// Whether our own user can do the given action on the user with the given
     /// ID.
-    pub fn can_do_to_user(&self, user_id: &UserId, action: PowerLevelUserAction) -> bool {
+    pub(crate) fn can_do_to_user(&self, user_id: &UserId, action: PowerLevelUserAction) -> bool {
         let imp = self.imp();
 
-        if !imp.is_joined.get() {
+        if !self.is_joined() {
             // We cannot do anything if the member is not joined.
             return false;
         }
@@ -543,7 +546,7 @@ impl Permissions {
     }
 
     /// Set the power level of the room member with the given user ID.
-    pub async fn set_user_power_level(
+    pub(crate) async fn set_user_power_level(
         &self,
         user_id: OwnedUserId,
         power_level: PowerLevel,
@@ -560,7 +563,7 @@ impl Permissions {
                 .await
         });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(_) => Ok(()),
             Err(error) => {
                 error!("Could not set user power level: {error}");
@@ -570,7 +573,7 @@ impl Permissions {
     }
 
     /// Set the power levels.
-    pub async fn set_power_levels(&self, power_levels: RoomPowerLevels) -> Result<(), ()> {
+    pub(crate) async fn set_power_levels(&self, power_levels: RoomPowerLevels) -> Result<(), ()> {
         let Some(room) = self.room() else {
             return Err(());
         };
@@ -581,7 +584,7 @@ impl Permissions {
             matrix_room.send_state_event(event).await
         });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(_) => Ok(()),
             Err(error) => {
                 error!("Failed to set power levels: {error}");
@@ -591,7 +594,11 @@ impl Permissions {
     }
 
     /// Whether the user with the given ID is allowed to do the given action.
-    pub fn user_is_allowed_to(&self, user_id: &UserId, room_action: PowerLevelAction) -> bool {
+    pub(crate) fn user_is_allowed_to(
+        &self,
+        user_id: &UserId,
+        room_action: PowerLevelAction,
+    ) -> bool {
         self.imp()
             .power_levels
             .borrow()
@@ -599,7 +606,7 @@ impl Permissions {
     }
 
     /// Connect to the signal emitted when the permissions changed.
-    pub fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "changed",
             true,
