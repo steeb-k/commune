@@ -11,7 +11,7 @@ mod imp {
     #[properties(wrapper_type = super::TypingList)]
     pub struct TypingList {
         /// The list of members currently typing.
-        pub(super) members: RefCell<Vec<Member>>,
+        members: RefCell<Vec<Member>>,
         /// Whether this list is empty.
         #[property(get, explicit_notify)]
         is_empty: Cell<bool>,
@@ -46,13 +46,33 @@ mod imp {
 
     impl TypingList {
         /// Set whether the list is empty.
-        pub(super) fn set_is_empty(&self, is_empty: bool) {
+        fn set_is_empty(&self, is_empty: bool) {
             if self.is_empty.get() == is_empty {
                 return;
             }
 
             self.is_empty.set(is_empty);
             self.obj().notify_is_empty();
+        }
+
+        /// Update this list with the given list of typing members.
+        pub(super) fn update(&self, new_members: Vec<Member>) {
+            if new_members.is_empty() {
+                self.set_is_empty(true);
+
+                return;
+            }
+
+            let (removed, added) = {
+                let mut members = self.members.borrow_mut();
+                let removed = members.len() as u32;
+                let added = new_members.len() as u32;
+                *members = new_members;
+                (removed, added)
+            };
+
+            self.obj().items_changed(0, removed, added);
+            self.set_is_empty(false);
         }
     }
 }
@@ -71,24 +91,7 @@ impl TypingList {
 
     /// Update this list with the given list of typing members.
     pub(super) fn update(&self, new_members: Vec<Member>) {
-        let imp = self.imp();
-
-        if new_members.is_empty() {
-            imp.set_is_empty(true);
-
-            return;
-        }
-
-        let (removed, added) = {
-            let mut members = imp.members.borrow_mut();
-            let removed = members.len() as u32;
-            let added = new_members.len() as u32;
-            *members = new_members;
-            (removed, added)
-        };
-
-        self.items_changed(0, removed, added);
-        imp.set_is_empty(false);
+        self.imp().update(new_members);
     }
 }
 
