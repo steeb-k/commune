@@ -149,7 +149,7 @@ impl LogOutSubpage {
             imp.try_again_button.set_is_loading(true);
         }
 
-        if let Err(error) = session.logout().await {
+        if let Err(error) = session.log_out().await {
             if is_logout_page {
                 imp.stack.set_visible_child_name("failed");
             } else {

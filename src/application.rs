@@ -424,19 +424,17 @@ impl Application {
             } else {
                 // Wait for the session to be ready.
                 let cell = Rc::new(RefCell::new(Some(intent)));
-                let handler = session.connect_state_notify(clone!(
+                let handler = session.connect_ready(clone!(
                     #[weak(rename_to = obj)]
                     self,
                     #[strong]
                     cell,
-                    move |session| {
-                        if session.state() == SessionState::Ready {
-                            obj.imp().intent_handler.disconnect_signals();
+                    move |_| {
+                        obj.imp().intent_handler.disconnect_signals();
 
-                            if let Some(intent) = cell.take() {
-                                obj.present_main_window()
-                                    .process_session_intent_ready(intent);
-                            }
+                        if let Some(intent) = cell.take() {
+                            obj.present_main_window()
+                                .process_session_intent_ready(intent);
                         }
                     }
                 ));

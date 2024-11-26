@@ -119,7 +119,7 @@ impl DeactivateAccountSubpage {
                     if let Some(window) = self.root().and_downcast_ref::<gtk::Window>() {
                         toast!(window, gettext("Account successfully deactivated"));
                     }
-                    session.handle_logged_out();
+                    session.clean_up().await;
                 }
                 self.activate_action("account-settings.close", None)
                     .unwrap();

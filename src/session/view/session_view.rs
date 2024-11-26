@@ -77,7 +77,7 @@ mod imp {
 
             klass.install_action_async("session.logout", None, |obj, _, _| async move {
                 if let Some(session) = obj.session() {
-                    if let Err(error) = session.logout().await {
+                    if let Err(error) = session.log_out().await {
                         toast!(obj, error);
                     }
                 }

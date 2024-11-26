@@ -12,9 +12,8 @@ use matrix_sdk::{config::SyncSettings, matrix_auth::MatrixSession, sync::SyncRes
 use ruma::{
     api::client::{
         error::ErrorKind,
-        filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+        filter::{FilterDefinition, RoomFilter},
         search::search_events::v3::UserProfile,
-        session::logout,
     },
     assign,
 };
@@ -80,7 +79,7 @@ mod imp {
         user: OnceCell<User>,
         /// The current state of the session.
         #[property(get, builder(SessionState::default()))]
-        pub(super) state: Cell<SessionState>,
+        state: Cell<SessionState>,
         /// Whether this session has a connection to the homeserver.
         #[property(get)]
         is_homeserver_reachable: Cell<bool>,
@@ -89,7 +88,7 @@ mod imp {
         is_offline: Cell<bool>,
         /// The current settings for this session.
         #[property(get, construct_only)]
-        pub(super) settings: OnceCell<SessionSettings>,
+        settings: OnceCell<SessionSettings>,
         /// The notifications API for this session.
         #[property(get)]
         notifications: Notifications,
@@ -102,12 +101,12 @@ mod imp {
         /// Information about security for this session.
         #[property(get)]
         security: SessionSecurity,
-        pub sync_handle: RefCell<Option<AbortHandle>>,
-        pub network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
+        sync_handle: RefCell<Option<AbortHandle>>,
+        network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
         /// The number of missed synchonizations in a row.
         ///
         /// Capped at `MISSED_SYNC_MAX_COUNT - 1`.
-        pub missed_sync_count: Cell<u8>,
+        missed_sync_count: Cell<u8>,
     }
 
     #[glib::object_subclass]
@@ -154,7 +153,7 @@ mod imp {
 
     impl SessionInfoImpl for Session {
         fn avatar_data(&self) -> AvatarData {
-            self.obj().user().avatar_data().clone()
+            self.user().avatar_data().clone()
         }
     }
 
@@ -166,9 +165,9 @@ mod imp {
 
         /// The list model of the sidebar.
         fn sidebar_list_model(&self) -> SidebarListModel {
-            let obj = self.obj();
             self.sidebar_list_model
                 .get_or_init(|| {
+                    let obj = self.obj();
                     let item_list =
                         SidebarItemList::new(&RoomList::new(&obj), &VerificationList::new(&obj));
                     SidebarListModel::new(&item_list)
@@ -176,12 +175,38 @@ mod imp {
                 .clone()
         }
 
+        /// The room list of this session.
+        pub(super) fn room_list(&self) -> RoomList {
+            self.sidebar_list_model().item_list().room_list()
+        }
+
+        /// The verification list of this session.
+        pub(super) fn verification_list(&self) -> VerificationList {
+            self.sidebar_list_model().item_list().verification_list()
+        }
+
         /// The user of the session.
         fn user(&self) -> User {
-            let obj = self.obj();
             self.user
-                .get_or_init(|| User::new(&obj, obj.info().user_id.clone()))
+                .get_or_init(|| {
+                    let obj = self.obj();
+                    User::new(&obj, obj.info().user_id.clone())
+                })
                 .clone()
+        }
+
+        /// Set the current state of the session.
+        fn set_state(&self, state: SessionState) {
+            let old_state = self.state.get();
+
+            if old_state == SessionState::LoggedOut || old_state == state {
+                // The session should be dismissed when it has been logged out, so
+                // we do not accept anymore state changes.
+                return;
+            }
+
+            self.state.set(state);
+            self.obj().notify_state();
         }
 
         /// Update whether the homeserver is reachable.
@@ -191,7 +216,8 @@ mod imp {
 
             let is_homeserver_reachable = if monitor.is_network_available() {
                 let homeserver = obj.homeserver();
-                let address = gio::NetworkAddress::parse_uri(homeserver.as_ref(), 80).unwrap();
+                let address = gio::NetworkAddress::parse_uri(homeserver.as_ref(), 80)
+                    .expect("url is parsed successfully");
 
                 match monitor.can_reach_future(&address).await {
                     Ok(()) => true,
@@ -216,7 +242,7 @@ mod imp {
 
             if is_homeserver_reachable {
                 // Restart the sync loop.
-                obj.sync();
+                self.sync();
             } else {
                 self.set_offline(true);
             }
@@ -241,6 +267,252 @@ mod imp {
             self.is_offline.set(is_offline);
             self.obj().notify_is_offline();
         }
+
+        /// Finish initialization of this session.
+        pub(super) async fn prepare(&self) {
+            spawn!(
+                glib::Priority::LOW,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        // First, load the profile from the cache, it will be quicker.
+                        imp.init_user_profile().await;
+                        // Then, check if the profile changed.
+                        imp.update_user_profile().await;
+                    }
+                )
+            );
+            self.update_homeserver_reachable().await;
+
+            self.room_list().load().await;
+            self.verification_list().init();
+            self.security.set_session(Some(&*self.obj()));
+
+            let client = self.client().clone();
+            spawn_tokio!(async move {
+                client
+                    .send_queue()
+                    .respawn_tasks_for_rooms_with_unsent_requests()
+                    .await;
+            });
+
+            self.set_state(SessionState::InitialSync);
+            self.sync();
+
+            debug!("A new session was prepared");
+        }
+
+        /// Start syncing the Matrix client.
+        fn sync(&self) {
+            if self.state.get() < SessionState::InitialSync || !self.is_homeserver_reachable.get() {
+                return;
+            }
+
+            let client = self.client().clone();
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+
+            let handle = spawn_tokio!(async move {
+                // TODO: only create the filter once and reuse it in the future
+                let filter = assign!(FilterDefinition::default(), {
+                    room: assign!(RoomFilter::with_lazy_loading(), {
+                        include_leave: true,
+                    }),
+                });
+
+                let sync_settings = SyncSettings::new()
+                    .timeout(Duration::from_secs(30))
+                    .filter(filter.into());
+
+                let mut sync_stream = Box::pin(client.sync_stream(sync_settings).await);
+                while let Some(response) = sync_stream.next().await {
+                    let obj_weak = obj_weak.clone();
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().handle_sync_response(response).await;
+                            }
+                        });
+                    });
+                }
+            })
+            .abort_handle();
+
+            self.sync_handle.replace(Some(handle));
+        }
+
+        /// Handle the response received via sync.
+        async fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
+            debug!("Received sync response");
+
+            match response {
+                Ok(response) => {
+                    self.room_list().handle_room_updates(response.rooms);
+
+                    if self.state.get() < SessionState::Ready {
+                        self.set_state(SessionState::Ready);
+                        self.init_notifications();
+                    }
+
+                    self.set_offline(false);
+                    self.missed_sync_count.set(0);
+                }
+                Err(error) => {
+                    if let Some(ErrorKind::UnknownToken { .. }) = error.client_api_error_kind() {
+                        self.clean_up().await;
+                    } else {
+                        let missed_sync_count = self.missed_sync_count.get() + 1;
+
+                        if missed_sync_count >= MISSED_SYNC_MAX_COUNT {
+                            self.set_offline(true);
+                        } else {
+                            self.missed_sync_count.set(missed_sync_count);
+                        }
+                    }
+                    error!("Could not perform sync: {error}");
+                }
+            }
+        }
+
+        /// Load the cached profile of the user of this session.
+        async fn init_user_profile(&self) {
+            let client = self.client().clone();
+            let handle = spawn_tokio!(async move {
+                client
+                    .store()
+                    .get_custom_value(SESSION_PROFILE_KEY.as_bytes())
+                    .await
+            });
+
+            let profile = match handle.await.expect("task was not aborted") {
+                Ok(Some(bytes)) => match serde_json::from_slice::<UserProfile>(&bytes) {
+                    Ok(profile) => profile,
+                    Err(error) => {
+                        error!("Failed to deserialize session profile: {error}");
+                        return;
+                    }
+                },
+                Ok(None) => return,
+                Err(error) => {
+                    error!("Could not load cached session profile: {error}");
+                    return;
+                }
+            };
+
+            let user = self.user();
+            user.set_name(profile.displayname);
+            user.set_avatar_url(profile.avatar_url);
+        }
+
+        /// Update the profile of this session’s user.
+        ///
+        /// Fetches the updated profile and updates the local data.
+        async fn update_user_profile(&self) {
+            let client = self.client().clone();
+            let client_clone = client.clone();
+            let handle =
+                spawn_tokio!(async move { client_clone.account().fetch_user_profile().await });
+
+            let profile = match handle.await.expect("task was not aborted") {
+                Ok(res) => {
+                    let mut profile = UserProfile::new();
+                    profile.displayname = res.displayname;
+                    profile.avatar_url = res.avatar_url;
+
+                    profile
+                }
+                Err(error) => {
+                    error!("Could not fetch session profile: {error}");
+                    return;
+                }
+            };
+
+            let user = self.user();
+
+            if Some(user.display_name()) == profile.displayname
+                && user
+                    .avatar_data()
+                    .image()
+                    .is_some_and(|i| i.uri() == profile.avatar_url)
+            {
+                // Nothing to update.
+                return;
+            }
+
+            // Serialize first for caching to avoid a clone.
+            let value = serde_json::to_vec(&profile);
+
+            // Update the profile for the UI.
+            user.set_name(profile.displayname);
+            user.set_avatar_url(profile.avatar_url);
+
+            // Update the cache.
+            let value = match value {
+                Ok(value) => value,
+                Err(error) => {
+                    error!("Failed to serialize session profile: {error}");
+                    return;
+                }
+            };
+
+            let handle = spawn_tokio!(async move {
+                client
+                    .store()
+                    .set_custom_value(SESSION_PROFILE_KEY.as_bytes(), value)
+                    .await
+            });
+
+            if let Err(error) = handle.await.expect("task was not aborted") {
+                error!("Could not cache session profile: {error}");
+            };
+        }
+
+        /// Start listening to notifications.
+        fn init_notifications(&self) {
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let client = self.client().clone();
+
+            spawn_tokio!(async move {
+                client
+                    .register_notification_handler(move |notification, room, _| {
+                        let obj_weak = obj_weak.clone();
+                        async move {
+                            let ctx = glib::MainContext::default();
+                            ctx.spawn(async move {
+                                spawn!(async move {
+                                    if let Some(obj) = obj_weak.upgrade() {
+                                        obj.notifications().show_push(notification, room).await;
+                                    }
+                                });
+                            });
+                        }
+                    })
+                    .await;
+            });
+        }
+
+        /// Clean up this session after it was logged out.
+        ///
+        /// This should only be called if the session has been logged out
+        /// without calling `Session::log_out`.
+        pub(super) async fn clean_up(&self) {
+            self.set_state(SessionState::LoggedOut);
+
+            if let Some(handle) = self.sync_handle.take() {
+                handle.abort();
+            }
+
+            if let Some(settings) = self.settings.get() {
+                settings.delete();
+            }
+
+            self.obj().info().clone().delete().await;
+
+            self.notifications.clear();
+
+            debug!("The logged out session was cleaned up");
+        }
     }
 }
 
@@ -263,7 +535,7 @@ impl Session {
     }
 
     /// Restore a stored session.
-    pub async fn restore(
+    pub(crate) async fn restore(
         stored_session: StoredSession,
         settings: SessionSettings,
     ) -> Result<Self, ClientSetupError> {
@@ -273,7 +545,7 @@ impl Session {
                 async move { matrix::client_with_stored_session(stored_session_clone).await }
             )
             .await
-            .unwrap()?;
+            .expect("task was not aborted")?;
 
         Ok(glib::Object::builder()
             .property("info", &stored_session)
@@ -282,231 +554,55 @@ impl Session {
             .build())
     }
 
-    /// Set the current state of the session.
-    fn set_state(&self, state: SessionState) {
-        let old_state = self.state();
-
-        if old_state == SessionState::LoggedOut || old_state == state {
-            // The session should be dismissed when it has been logged out, so
-            // we don't accept anymore state changes.
-            return;
-        }
-
-        self.imp().state.set(state);
-        self.notify_state();
-    }
-
     /// Finish initialization of this session.
-    pub async fn prepare(&self) {
-        spawn!(
-            glib::Priority::LOW,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                async move {
-                    // First, load the profile from the cache, it will be quicker.
-                    obj.init_user_profile().await;
-                    // Then, check if the profile changed.
-                    obj.update_user_profile().await;
-                }
-            )
-        );
-        self.imp().update_homeserver_reachable().await;
-
-        self.room_list().load().await;
-        self.verification_list().init();
-        self.security().set_session(Some(self));
-
-        let client = self.client();
-        spawn_tokio!(async move {
-            client
-                .send_queue()
-                .respawn_tasks_for_rooms_with_unsent_requests()
-                .await;
-        });
-
-        self.set_state(SessionState::InitialSync);
-        self.sync();
-
-        debug!("A new session was prepared");
-    }
-
-    /// Start syncing the Matrix client.
-    fn sync(&self) {
-        if self.state() < SessionState::InitialSync || !self.is_homeserver_reachable() {
-            return;
-        }
-
-        let client = self.client();
-        let session_weak: glib::SendWeakRef<Session> = self.downgrade().into();
-
-        let handle = spawn_tokio!(async move {
-            // TODO: only create the filter once and reuse it in the future
-            let room_event_filter = assign!(RoomEventFilter::default(), {
-                lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
-            });
-            let filter = assign!(FilterDefinition::default(), {
-                room: assign!(RoomFilter::empty(), {
-                    include_leave: true,
-                    state: room_event_filter,
-                }),
-            });
-
-            let sync_settings = SyncSettings::new()
-                .timeout(Duration::from_secs(30))
-                .filter(filter.into());
-
-            let mut sync_stream = Box::pin(client.sync_stream(sync_settings).await);
-            while let Some(response) = sync_stream.next().await {
-                let session_weak = session_weak.clone();
-                let ctx = glib::MainContext::default();
-                ctx.spawn(async move {
-                    if let Some(session) = session_weak.upgrade() {
-                        session.handle_sync_response(response);
-                    }
-                });
-            }
-        })
-        .abort_handle();
-
-        self.imp().sync_handle.replace(Some(handle));
-    }
-
-    /// Start listening to notifications.
-    pub async fn init_notifications(&self) {
-        let obj_weak = glib::SendWeakRef::from(self.downgrade());
-        let client = self.client();
-        spawn_tokio!(async move {
-            client
-                .register_notification_handler(move |notification, room, _| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.notifications().show_push(notification, room).await;
-                                }
-                            });
-                        });
-                    }
-                })
-                .await;
-        })
-        .await
-        .unwrap();
+    pub(crate) async fn prepare(&self) {
+        self.imp().prepare().await;
     }
 
     /// The room list of this session.
-    pub fn room_list(&self) -> RoomList {
-        self.sidebar_list_model().item_list().room_list()
+    pub(crate) fn room_list(&self) -> RoomList {
+        self.imp().room_list()
     }
 
     /// The verification list of this session.
-    pub fn verification_list(&self) -> VerificationList {
-        self.sidebar_list_model().item_list().verification_list()
-    }
-
-    /// Load the cached profile of this session’s user.
-    async fn init_user_profile(&self) {
-        let client = self.client();
-        let handle = spawn_tokio!(async move {
-            client
-                .store()
-                .get_custom_value(SESSION_PROFILE_KEY.as_bytes())
-                .await
-        });
-
-        let profile = match handle.await.unwrap() {
-            Ok(Some(bytes)) => match serde_json::from_slice::<UserProfile>(&bytes) {
-                Ok(profile) => profile,
-                Err(error) => {
-                    error!("Failed to deserialize session profile: {error}");
-                    return;
-                }
-            },
-            Ok(None) => return,
-            Err(error) => {
-                error!("Could not load cached session profile: {error}");
-                return;
-            }
-        };
-
-        let user = self.user();
-
-        user.set_name(profile.displayname);
-        user.set_avatar_url(profile.avatar_url);
-    }
-
-    /// Update the profile of this session’s user.
-    ///
-    /// Fetches the updated profile and updates the local data.
-    async fn update_user_profile(&self) {
-        let client = self.client();
-        let client_clone = client.clone();
-        let handle = spawn_tokio!(async move { client_clone.account().fetch_user_profile().await });
-
-        let profile = match handle.await.unwrap() {
-            Ok(res) => {
-                let mut profile = UserProfile::new();
-                profile.displayname = res.displayname;
-                profile.avatar_url = res.avatar_url;
-
-                profile
-            }
-            Err(error) => {
-                error!("Could not fetch session profile: {error}");
-                return;
-            }
-        };
-
-        let user = self.user();
-
-        if Some(user.display_name()) == profile.displayname
-            && user
-                .avatar_data()
-                .image()
-                .is_some_and(|i| i.uri() == profile.avatar_url)
-        {
-            // Nothing to update.
-            return;
-        }
-
-        // Serialize first for caching to avoid a clone.
-        let value = serde_json::to_vec(&profile);
-
-        // Update the profile for the UI.
-        user.set_name(profile.displayname);
-        user.set_avatar_url(profile.avatar_url);
-
-        // Update the cache.
-        let value = match value {
-            Ok(value) => value,
-            Err(error) => {
-                error!("Failed to serialize session profile: {error}");
-                return;
-            }
-        };
-
-        let handle = spawn_tokio!(async move {
-            client
-                .store()
-                .set_custom_value(SESSION_PROFILE_KEY.as_bytes(), value)
-                .await
-        });
-
-        if let Err(error) = handle.await.unwrap() {
-            error!("Could not cache session profile: {error}");
-        };
+    pub(crate) fn verification_list(&self) -> VerificationList {
+        self.imp().verification_list()
     }
 
     /// The Matrix client.
-    pub fn client(&self) -> Client {
+    pub(crate) fn client(&self) -> Client {
         self.imp().client().clone()
     }
 
+    /// Log out of this session.
+    pub(crate) async fn log_out(&self) -> Result<(), String> {
+        debug!("The session is about to be logged out");
+
+        let client = self.client();
+        let handle = spawn_tokio!(async move { client.matrix_auth().logout().await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => {
+                self.imp().clean_up().await;
+                Ok(())
+            }
+            Err(error) => {
+                error!("Could not log the session out: {error}");
+                Err(gettext("Could not log the session out"))
+            }
+        }
+    }
+
+    /// Clean up this session after it was logged out.
+    ///
+    /// This should only be called if the session has been logged out without
+    /// calling `Session::log_out`.
+    pub(crate) async fn clean_up(&self) {
+        self.imp().clean_up().await;
+    }
+
     /// Connect to the signal emitted when this session is logged out.
-    pub fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_state_notify(move |obj| {
             if obj.state() == SessionState::LoggedOut {
                 f(obj);
@@ -515,108 +611,11 @@ impl Session {
     }
 
     /// Connect to the signal emitted when this session is ready.
-    pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    pub(crate) fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_state_notify(move |obj| {
             if obj.state() == SessionState::Ready {
                 f(obj);
             }
         })
-    }
-
-    /// Handle the response received via sync.
-    fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
-        debug!("Received sync response");
-        let imp = self.imp();
-
-        match response {
-            Ok(response) => {
-                self.room_list().handle_room_updates(response.rooms);
-
-                if self.state() < SessionState::Ready {
-                    self.set_state(SessionState::Ready);
-                }
-
-                imp.set_offline(false);
-                imp.missed_sync_count.set(0);
-            }
-            Err(error) => {
-                if let Some(ErrorKind::UnknownToken { .. }) = error.client_api_error_kind() {
-                    self.handle_logged_out();
-                } else {
-                    let missed_sync_count = imp.missed_sync_count.get() + 1;
-
-                    if missed_sync_count >= MISSED_SYNC_MAX_COUNT {
-                        imp.set_offline(true);
-                    } else {
-                        imp.missed_sync_count.set(missed_sync_count);
-                    }
-                }
-                error!("Could not perform sync: {error}");
-            }
-        }
-    }
-
-    /// Log out of this session.
-    pub async fn logout(&self) -> Result<(), String> {
-        debug!("The session is about to be logged out");
-
-        let client = self.client();
-        let handle = spawn_tokio!(async move {
-            let request = logout::v3::Request::new();
-            client.send(request, None).await
-        });
-
-        match handle.await.unwrap() {
-            Ok(_) => {
-                self.clean_up().await;
-
-                Ok(())
-            }
-            Err(error) => {
-                error!("Could not log the session out: {error}");
-
-                Err(gettext("Could not log the session out"))
-            }
-        }
-    }
-
-    /// Handle that the session has been logged out.
-    ///
-    /// This should only be called if the session has been logged out without
-    /// `Session::logout`.
-    pub fn handle_logged_out(&self) {
-        // TODO: Show error screen. See: https://gitlab.gnome.org/World/fractal/-/issues/901
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(
-                #[strong(rename_to = obj)]
-                self,
-                async move {
-                    obj.clean_up().await;
-                }
-            )
-        );
-    }
-
-    /// Clean up this session after it was logged out.
-    pub async fn clean_up(&self) {
-        let imp = self.imp();
-
-        self.set_state(SessionState::LoggedOut);
-
-        if let Some(handle) = imp.sync_handle.take() {
-            handle.abort();
-        }
-
-        if let Some(settings) = imp.settings.get() {
-            settings.delete();
-        }
-
-        self.info().clone().delete().await;
-
-        self.notifications().clear();
-
-        debug!("The logged out session was cleaned up");
     }
 }

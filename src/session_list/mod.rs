@@ -157,23 +157,6 @@ impl SessionList {
         let session = session.upcast();
 
         if let Some(session) = session.downcast_ref::<Session>() {
-            // Start listening to notifications when the session is ready.
-            if session.state() == SessionState::Ready {
-                spawn!(clone!(
-                    #[weak]
-                    session,
-                    async move { session.init_notifications().await }
-                ));
-            } else {
-                session.connect_ready(|session| {
-                    spawn!(clone!(
-                        #[weak]
-                        session,
-                        async move { session.init_notifications().await }
-                    ));
-                });
-            }
-
             session.connect_logged_out(clone!(
                 #[weak(rename_to = obj)]
                 self,

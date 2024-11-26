@@ -305,7 +305,7 @@ impl Login {
     fn drop_session(&self) {
         if let Some(session) = self.imp().session.take() {
             spawn!(async move {
-                let _ = session.logout().await;
+                let _ = session.log_out().await;
             });
         }
     }
