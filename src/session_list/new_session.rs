@@ -11,7 +11,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct NewSession {
         /// The data for the avatar representation for this session.
-        pub avatar_data: OnceCell<AvatarData>,
+        avatar_data: OnceCell<AvatarData>,
     }
 
     #[glib::object_subclass]

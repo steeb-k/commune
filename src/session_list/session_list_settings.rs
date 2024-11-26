@@ -16,7 +16,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct SessionListSettings {
         /// The settings of the sessions.
-        pub sessions: RefCell<IndexMap<String, SessionSettings>>,
+        pub(super) sessions: RefCell<IndexMap<String, SessionSettings>>,
     }
 
     #[glib::object_subclass]
@@ -40,7 +40,7 @@ impl SessionListSettings {
     }
 
     /// Load these settings from the application settings.
-    pub fn load(&self) {
+    pub(crate) fn load(&self) {
         let serialized = Application::default().settings().string("sessions");
 
         let stored_sessions =
@@ -79,7 +79,7 @@ impl SessionListSettings {
     }
 
     /// Save these settings in the application settings.
-    pub fn save(&self) {
+    pub(crate) fn save(&self) {
         let stored_sessions = self
             .imp()
             .sessions
@@ -97,7 +97,7 @@ impl SessionListSettings {
     }
 
     /// Get or create the settings for the session with the given ID.
-    pub fn get_or_create(&self, session_id: &str) -> SessionSettings {
+    pub(crate) fn get_or_create(&self, session_id: &str) -> SessionSettings {
         let sessions = &self.imp().sessions;
 
         if let Some(session) = sessions.borrow().get(session_id) {
@@ -114,13 +114,13 @@ impl SessionListSettings {
     }
 
     /// Remove the settings of the session with the given ID.
-    pub fn remove(&self, session_id: &str) {
+    pub(crate) fn remove(&self, session_id: &str) {
         self.imp().sessions.borrow_mut().shift_remove(session_id);
         self.save();
     }
 
     /// Get the list of session IDs stored in these settings.
-    pub fn session_ids(&self) -> IndexSet<String> {
+    pub(crate) fn session_ids(&self) -> IndexSet<String> {
         self.imp().sessions.borrow().keys().cloned().collect()
     }
 }

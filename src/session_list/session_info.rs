@@ -11,8 +11,8 @@ mod imp {
 
     #[repr(C)]
     pub struct SessionInfoClass {
-        pub parent_class: glib::object::ObjectClass,
-        pub avatar_data: fn(&super::SessionInfo) -> AvatarData,
+        parent_class: glib::object::ObjectClass,
+        pub(super) avatar_data: fn(&super::SessionInfo) -> AvatarData,
     }
 
     unsafe impl ClassStruct for SessionInfoClass {
@@ -29,22 +29,22 @@ mod imp {
     pub struct SessionInfo {
         /// The Matrix session's info.
         #[property(get, construct_only)]
-        pub info: OnceCell<StoredSession>,
+        info: OnceCell<StoredSession>,
         /// The Matrix session's user ID, as a string.
         #[property(get = Self::user_id_string)]
-        pub user_id_string: PhantomData<String>,
+        user_id_string: PhantomData<String>,
         /// The Matrix session's homeserver, as a string.
         #[property(get = Self::homeserver_string)]
-        pub homeserver_string: PhantomData<String>,
+        homeserver_string: PhantomData<String>,
         /// The Matrix session's device ID, as a string.
         #[property(get = Self::device_id_string)]
-        pub device_id_string: PhantomData<String>,
+        device_id_string: PhantomData<String>,
         /// The local session's ID.
         #[property(get = Self::session_id)]
-        pub session_id: PhantomData<String>,
+        session_id: PhantomData<String>,
         /// The avatar data to represent this session.
         #[property(get = Self::avatar_data)]
-        pub avatar_data: PhantomData<AvatarData>,
+        avatar_data: PhantomData<AvatarData>,
     }
 
     #[glib::object_subclass]
@@ -60,8 +60,8 @@ mod imp {
 
     impl SessionInfo {
         /// The Matrix session's info.
-        pub fn info(&self) -> &StoredSession {
-            self.info.get().unwrap()
+        pub(super) fn info(&self) -> &StoredSession {
+            self.info.get().expect("info is initialized")
         }
 
         /// The Matrix session's user ID, as a string.

@@ -29,9 +29,9 @@ mod imp {
     pub struct FailedSession {
         /// The error encountered when initializing the session.
         #[property(get, construct_only)]
-        pub error: OnceCell<BoxedClientSetupError>,
+        error: OnceCell<BoxedClientSetupError>,
         /// The data for the avatar representation for this session.
-        pub avatar_data: OnceCell<AvatarData>,
+        avatar_data: OnceCell<AvatarData>,
     }
 
     #[glib::object_subclass]
