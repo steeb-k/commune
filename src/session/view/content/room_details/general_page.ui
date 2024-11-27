@@ -177,13 +177,22 @@
         </binding>
         <child type="header-suffix">
           <object class="GtkButton" id="edit_addresses_button">
-            <!-- Translators: In this string, 'Edit' is a verb. -->
-            <property name="label" translatable="yes" context="room details">Edit</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'addresses'</property>
             <accessibility>
               <property name="description" translatable="yes">Edit Public Addresses</property>
             </accessibility>
+            <style>
+              <class name="flat"/>
+            </style>
+            <child>
+              <object class="AdwButtonContent">
+                <property name="icon-name">edit-symbolic</property>
+                <property name="use-underline">True</property>
+                <!-- Translators: In this string, 'Edit' is a verb. -->
+                <property name="label" translatable="yes" context="room details">_Edit</property>
+              </object>
+            </child>
           </object>
         </child>
         <child>
