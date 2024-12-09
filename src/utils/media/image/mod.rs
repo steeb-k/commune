@@ -501,7 +501,7 @@ pub struct ImageSource<'a> {
     pub info: Option<ImageSourceInfo<'a>>,
 }
 
-impl<'a> ImageSource<'a> {
+impl ImageSource<'_> {
     /// Whether we should try to thumbnail this source for the given requested
     /// dimensions.
     fn should_thumbnail(
@@ -566,7 +566,7 @@ pub enum MediaSource<'a> {
     Uri(&'a OwnedMxcUri),
 }
 
-impl<'a> MediaSource<'a> {
+impl MediaSource<'_> {
     /// Whether this source is encrypted.
     fn is_encrypted(&self) -> bool {
         match self {

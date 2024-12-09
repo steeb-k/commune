@@ -1171,7 +1171,7 @@ impl<'a> MessageBufferParser<'a> {
     }
 }
 
-impl<'a> Iterator for MessageBufferParser<'a> {
+impl Iterator for MessageBufferParser<'_> {
     type Item = MessageBufferChunk;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -169,7 +169,7 @@ impl AuthDialog {
                 }
             };
 
-            self.show_auth_error(&uiaa_info.auth_error);
+            self.show_auth_error(uiaa_info.auth_error.as_ref());
 
             let stage_nr = uiaa_info.completed.len();
             let possible_stages: Vec<&AuthType> = uiaa_info
@@ -181,7 +181,7 @@ impl AuthDialog {
 
             let uiaa_session = uiaa_info.session;
             auth_data = Some(
-                self.perform_next_stage(&uiaa_session, &possible_stages)
+                self.perform_next_stage(uiaa_session, &possible_stages)
                     .await?,
             );
         }
@@ -192,17 +192,17 @@ impl AuthDialog {
     /// Stages that Fractal actually implements are preferred.
     async fn perform_next_stage(
         &self,
-        uiaa_session: &Option<String>,
+        uiaa_session: Option<String>,
         stages: &[&AuthType],
     ) -> Result<AuthData, AuthError> {
         // Default to first stage if non is supported.
         let a_stage = stages.first().ok_or(AuthError::NoStageToChoose)?;
         for stage in stages {
-            if let Some(auth_result) = self.try_perform_stage(uiaa_session, stage).await {
+            if let Some(auth_result) = self.try_perform_stage(uiaa_session.as_ref(), stage).await {
                 return auth_result;
             }
         }
-        self.perform_fallback(uiaa_session.clone(), a_stage).await
+        self.perform_fallback(uiaa_session, a_stage).await
     }
 
     /// Tries to perform the given stage.
@@ -210,13 +210,13 @@ impl AuthDialog {
     /// Returns None if the stage is not implemented by Fractal.
     async fn try_perform_stage(
         &self,
-        uiaa_session: &Option<String>,
+        uiaa_session: Option<&String>,
         stage: &AuthType,
     ) -> Option<Result<AuthData, AuthError>> {
         match stage {
-            AuthType::Password => Some(self.perform_password_stage(uiaa_session.clone()).await),
-            AuthType::Sso => Some(self.perform_fallback(uiaa_session.clone(), stage).await),
-            AuthType::Dummy => Some(Ok(Self::perform_dummy_stage(uiaa_session.clone()))),
+            AuthType::Password => Some(self.perform_password_stage(uiaa_session.cloned()).await),
+            AuthType::Sso => Some(self.perform_fallback(uiaa_session.cloned(), stage).await),
+            AuthType::Dummy => Some(Ok(Self::perform_dummy_stage(uiaa_session.cloned()))),
             // TODO implement other authentication types
             // See: https://gitlab.gnome.org/World/fractal/-/issues/835
             _ => None,
@@ -308,7 +308,7 @@ impl AuthDialog {
         }
     }
 
-    fn show_auth_error(&self, auth_error: &Option<StandardErrorBody>) {
+    fn show_auth_error(&self, auth_error: Option<&StandardErrorBody>) {
         let imp = self.imp();
 
         if let Some(auth_error) = auth_error {
