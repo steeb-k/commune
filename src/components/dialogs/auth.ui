@@ -12,6 +12,7 @@
           <object class="GtkPasswordEntry" id="password">
             <property name="activates-default">True</property>
             <property name="show-peek-icon">True</property>
+            <signal name="changed" handler="update_confirm" swapped="yes" />
           </object>
         </child>
         <child>
