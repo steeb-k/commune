@@ -15,7 +15,7 @@ use crate::{
 /// This supports both leaving a joined room and rejecting an invite.
 ///
 /// Returns `None` if the user did not confirm.
-pub async fn confirm_leave_room_dialog(
+pub(crate) async fn confirm_leave_room_dialog(
     room: &Room,
     parent: &impl IsA<gtk::Widget>,
 ) -> Option<ConfirmLeaveRoomResponse> {
@@ -98,14 +98,14 @@ pub async fn confirm_leave_room_dialog(
 
 /// A response to the dialog to confirm leaving a room
 #[derive(Debug, Default, Clone)]
-pub struct ConfirmLeaveRoomResponse {
+pub(crate) struct ConfirmLeaveRoomResponse {
     /// If the room is an invite, whether the user wants to ignore the inviter.
     pub ignore_inviter: bool,
 }
 
 /// The room member destructive actions that need to be confirmed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RoomMemberDestructiveAction {
+pub(crate) enum RoomMemberDestructiveAction {
     /// Ban the member.
     ///
     /// The value is the number of events that can be redacted for the member.
@@ -250,7 +250,7 @@ impl RoomMemberDestructiveAction {
 /// member.
 ///
 /// Returns `None` if the user did not confirm.
-pub async fn confirm_room_member_destructive_action_dialog(
+pub(crate) async fn confirm_room_member_destructive_action_dialog(
     member: &Member,
     action: RoomMemberDestructiveAction,
     parent: &impl IsA<gtk::Widget>,
@@ -344,7 +344,7 @@ pub async fn confirm_room_member_destructive_action_dialog(
 /// A response to the dialog to confirm a "destructive" action on a room
 /// member.
 #[derive(Debug, Default, Clone)]
-pub struct ConfirmRoomMemberDestructiveActionResponse {
+pub(crate) struct ConfirmRoomMemberDestructiveActionResponse {
     /// The reason of the action.
     pub reason: Option<String>,
     /// Whether we can remove the events.
@@ -352,7 +352,7 @@ pub struct ConfirmRoomMemberDestructiveActionResponse {
 }
 
 /// Show a dialog to confirm muting a room member.
-pub async fn confirm_mute_room_member_dialog(
+pub(crate) async fn confirm_mute_room_member_dialog(
     member: &Member,
     parent: &impl IsA<gtk::Widget>,
 ) -> bool {
@@ -387,7 +387,7 @@ pub async fn confirm_mute_room_member_dialog(
 
 /// Show a dialog to confirm setting the power level of a room member with the
 /// same value as our own.
-pub async fn confirm_set_room_member_power_level_same_as_own_dialog(
+pub(crate) async fn confirm_set_room_member_power_level_same_as_own_dialog(
     member: &Member,
     parent: &impl IsA<gtk::Widget>,
 ) -> bool {

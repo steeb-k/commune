@@ -4,7 +4,7 @@ mod message_dialogs;
 mod toastable;
 mod user_profile;
 
-pub use self::{
+pub(crate) use self::{
     auth::{AuthDialog, AuthError},
     join_room::JoinRoomDialog,
     message_dialogs::*,

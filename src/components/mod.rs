@@ -17,7 +17,7 @@ mod rows;
 mod scale_revealer;
 mod user_page;
 
-pub use self::{
+pub(crate) use self::{
     action_button::{ActionButton, ActionState},
     avatar::*,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
