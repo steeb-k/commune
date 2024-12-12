@@ -13,9 +13,10 @@ mod imp {
     #[properties(wrapper_type = super::ToastableDialog)]
     pub struct ToastableDialog {
         #[template_child]
-        pub toast_overlay: TemplateChild<adw::ToastOverlay>,
+        toast_overlay: TemplateChild<adw::ToastOverlay>,
+        /// The child widget containing the content of this dialog.
         #[property(get = Self::child_content, set = Self::set_child_content, nullable)]
-        pub child_content: PhantomData<Option<gtk::Widget>>,
+        child_content: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -41,12 +42,19 @@ mod imp {
     impl AdwDialogImpl for ToastableDialog {}
 
     impl ToastableDialog {
+        /// The child widget containing the content of this dialog.
         fn child_content(&self) -> Option<gtk::Widget> {
             self.toast_overlay.child()
         }
 
+        /// Set the child widget containing the content of this dialog.
         fn set_child_content(&self, content: Option<&gtk::Widget>) {
             self.toast_overlay.set_child(content);
+        }
+
+        /// Present the given toast in this dialog.
+        pub(super) fn add_toast(&self, toast: adw::Toast) {
+            self.toast_overlay.add_toast(toast);
         }
     }
 }
@@ -83,7 +91,7 @@ impl<O: IsA<ToastableDialog>> ToastableDialogExt for O {
     }
 
     fn add_toast(&self, toast: adw::Toast) {
-        self.upcast_ref().imp().toast_overlay.add_toast(toast);
+        self.upcast_ref().imp().add_toast(toast);
     }
 }
 
