@@ -12,7 +12,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct AtRoom {
         /// The ID of the room currently represented.
-        pub room_id: OnceCell<OwnedRoomId>,
+        room_id: OnceCell<OwnedRoomId>,
     }
 
     #[glib::object_subclass]
@@ -29,6 +29,18 @@ mod imp {
             gettext("Notify the whole room")
         }
     }
+
+    impl AtRoom {
+        /// Set the ID of the room currently represented.
+        pub(super) fn set_room_id(&self, room_id: OwnedRoomId) {
+            self.room_id.set(room_id).expect("room ID is uninitialized");
+        }
+
+        /// The ID of the room currently represented.
+        pub(super) fn room_id(&self) -> &OwnedRoomId {
+            self.room_id.get().expect("room ID is initialized")
+        }
+    }
 }
 
 glib::wrapper! {
@@ -43,13 +55,13 @@ impl AtRoom {
             .property("display-name", "@room")
             .build();
 
-        obj.imp().room_id.set(room_id).unwrap();
+        obj.imp().set_room_id(room_id);
 
         obj
     }
 
     /// The ID of the room currently represented.
     pub fn room_id(&self) -> &OwnedRoomId {
-        self.imp().room_id.get().unwrap()
+        self.imp().room_id()
     }
 }

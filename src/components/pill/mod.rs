@@ -34,17 +34,17 @@ mod imp {
     #[properties(wrapper_type = super::Pill)]
     pub struct Pill {
         #[template_child]
-        pub content: TemplateChild<gtk::Box>,
+        content: TemplateChild<gtk::Box>,
         #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub avatar: TemplateChild<Avatar>,
+        avatar: TemplateChild<Avatar>,
         /// The source of the data displayed by this widget.
         #[property(get, set = Self::set_source, explicit_notify, nullable)]
-        pub source: BoundObject<PillSource>,
+        source: BoundObject<PillSource>,
         /// Whether the pill can be activated.
         #[property(get, set = Self::set_activatable, explicit_notify)]
-        pub activatable: Cell<bool>,
+        activatable: Cell<bool>,
         gesture_click: RefCell<Option<gtk::GestureClick>>,
     }
 
@@ -61,7 +61,7 @@ mod imp {
             klass.set_css_name("inline-pill");
 
             klass.install_action("pill.activate", None, |obj, _, _| {
-                obj.activate();
+                obj.imp().activate();
             });
 
             add_activate_binding_action(klass, "pill.activate");
@@ -178,6 +178,40 @@ mod imp {
 
             self.display_name.set_label(&maybe_ellipsized);
         }
+
+        /// Activate the pill.
+        ///
+        /// This opens a known room or opens the profile of a user or unknown
+        /// room.
+        fn activate(&self) {
+            let Some(source) = self.source.obj() else {
+                return;
+            };
+            let obj = self.obj();
+
+            if let Some(member) = source.downcast_ref::<Member>() {
+                let dialog = UserProfileDialog::new();
+                dialog.set_room_member(member.clone());
+                dialog.present(Some(&*obj));
+            } else if let Some(room) = source.downcast_ref::<Room>() {
+                let Some(session_view) = obj
+                    .ancestor(SessionView::static_type())
+                    .and_downcast::<SessionView>()
+                else {
+                    return;
+                };
+
+                session_view.select_room(Some(room.clone()));
+            } else if let Ok(room) = source.downcast::<RemoteRoom>() {
+                let Some(session) = room.session() else {
+                    return;
+                };
+
+                let dialog = JoinRoomDialog::new(&session);
+                dialog.set_room(room);
+                dialog.present(Some(&*obj));
+            }
+        }
     }
 }
 
@@ -191,37 +225,5 @@ impl Pill {
     /// Create a pill with the given source.
     pub fn new(source: &impl IsA<PillSource>) -> Self {
         glib::Object::builder().property("source", source).build()
-    }
-
-    /// Activate the pill.
-    ///
-    /// This opens a known room or opens the profile of a user or unknown room.
-    fn activate(&self) {
-        let Some(source) = self.source() else {
-            return;
-        };
-
-        if let Some(member) = source.downcast_ref::<Member>() {
-            let dialog = UserProfileDialog::new();
-            dialog.set_room_member(member.clone());
-            dialog.present(Some(self));
-        } else if let Some(room) = source.downcast_ref::<Room>() {
-            let Some(session_view) = self
-                .ancestor(SessionView::static_type())
-                .and_downcast::<SessionView>()
-            else {
-                return;
-            };
-
-            session_view.select_room(Some(room.clone()));
-        } else if let Ok(room) = source.downcast::<RemoteRoom>() {
-            let Some(session) = room.session() else {
-                return;
-            };
-
-            let dialog = JoinRoomDialog::new(&session);
-            dialog.set_room(room);
-            dialog.present(Some(self));
-        }
     }
 }

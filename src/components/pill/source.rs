@@ -10,8 +10,8 @@ mod imp {
 
     #[repr(C)]
     pub struct PillSourceClass {
-        pub parent_class: glib::object::ObjectClass,
-        pub identifier: fn(&super::PillSource) -> String,
+        parent_class: glib::object::ObjectClass,
+        pub(super) identifier: fn(&super::PillSource) -> String,
     }
 
     unsafe impl ClassStruct for PillSourceClass {
@@ -28,22 +28,22 @@ mod imp {
     pub struct PillSource {
         /// A unique identifier for this source.
         #[property(get = Self::identifier)]
-        pub identifier: PhantomData<String>,
+        identifier: PhantomData<String>,
         /// The display name of this source.
         #[property(get = Self::display_name, set = Self::set_display_name, explicit_notify)]
-        pub display_name: PhantomData<String>,
+        display_name: PhantomData<String>,
         /// Whether the display name of this source is ambiguous.
         #[property(get, set = Self::set_name_ambiguous, explicit_notify)]
-        pub is_name_ambiguous: Cell<bool>,
+        is_name_ambiguous: Cell<bool>,
         /// The disambiguated display name of this source.
         ///
         /// This is the name to display in case the identifier does not appear
         /// next to it.
         #[property(get = Self::disambiguated_name)]
-        pub disambiguated_name: PhantomData<String>,
+        disambiguated_name: PhantomData<String>,
         /// The avatar data of this source.
         #[property(get)]
-        pub avatar_data: AvatarData,
+        avatar_data: AvatarData,
     }
 
     #[glib::object_subclass]

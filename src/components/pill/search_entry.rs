@@ -5,10 +5,7 @@ use gtk::{
     CompositeTemplate,
 };
 
-use crate::{
-    components::{Pill, PillSource},
-    prelude::*,
-};
+use crate::components::{Pill, PillSource};
 
 mod imp {
     use std::{cell::RefCell, collections::HashMap, marker::PhantomData, sync::LazyLock};
@@ -22,9 +19,9 @@ mod imp {
     #[properties(wrapper_type = super::PillSearchEntry)]
     pub struct PillSearchEntry {
         #[template_child]
-        pub text_view: TemplateChild<gtk::TextView>,
+        text_view: TemplateChild<gtk::TextView>,
         #[template_child]
-        pub text_buffer: TemplateChild<gtk::TextBuffer>,
+        text_buffer: TemplateChild<gtk::TextBuffer>,
         /// The text of the entry.
         #[property(get = Self::text)]
         text: PhantomData<glib::GString>,
@@ -34,7 +31,7 @@ mod imp {
         /// The pills in the text view.
         ///
         /// A map of pill identifier to anchor of the pill in the text view.
-        pub pills: RefCell<HashMap<String, gtk::TextChildAnchor>>,
+        pills: RefCell<HashMap<String, gtk::TextChildAnchor>>,
     }
 
     #[glib::object_subclass]
@@ -76,6 +73,7 @@ mod imp {
                         return;
                     }
 
+                    // If a pill was removed, emit the corresponding signal.
                     let mut current = *start;
                     loop {
                         if let Some(source) = current
@@ -109,7 +107,7 @@ mod imp {
                 .connect_insert_text(|text_buffer, location, text| {
                     let mut changed = false;
 
-                    // We don't allow adding chars before and between pills
+                    // We do not allow adding chars before and between pills.
                     loop {
                         if location.child_anchor().is_some() {
                             changed = true;
@@ -162,6 +160,61 @@ mod imp {
             self.text_view.set_editable(editable);
             self.obj().notify_editable();
         }
+
+        /// Add a pill for the given source to the entry.
+        pub(super) fn add_pill(&self, source: &PillSource) {
+            let identifier = source.identifier();
+
+            // If the pill already exists, do not insert it again.
+            if self.pills.borrow().contains_key(&identifier) {
+                return;
+            }
+
+            let pill = Pill::new(source);
+            pill.set_margin_start(3);
+            pill.set_margin_end(3);
+
+            let (mut start_iter, mut end_iter) = self.text_buffer.bounds();
+
+            // We don't allow adding chars before and between pills
+            loop {
+                if start_iter.child_anchor().is_some() {
+                    start_iter.forward_char();
+                } else {
+                    break;
+                }
+            }
+
+            self.text_buffer.delete(&mut start_iter, &mut end_iter);
+            let anchor = self.text_buffer.create_child_anchor(&mut start_iter);
+            self.text_view.add_child_at_anchor(&pill, &anchor);
+            self.pills.borrow_mut().insert(identifier, anchor);
+
+            self.text_view.grab_focus();
+        }
+
+        /// Remove the pill with the given identifier.
+        pub(super) fn remove_pill(&self, identifier: &str) {
+            let Some(anchor) = self.pills.borrow_mut().remove(identifier) else {
+                return;
+            };
+
+            if anchor.is_deleted() {
+                // Nothing to do.
+                return;
+            }
+
+            let mut start_iter = self.text_buffer.iter_at_child_anchor(&anchor);
+            let mut end_iter = start_iter;
+            end_iter.forward_char();
+            self.text_buffer.delete(&mut start_iter, &mut end_iter);
+        }
+
+        /// Clear this entry.
+        pub(super) fn clear(&self) {
+            let (mut start, mut end) = self.text_buffer.bounds();
+            self.text_buffer.delete(&mut start, &mut end);
+        }
     }
 }
 
@@ -177,63 +230,18 @@ impl PillSearchEntry {
     }
 
     /// Add a pill for the given source to the entry.
-    pub fn add_pill(&self, source: &impl IsA<PillSource>) {
-        let imp = self.imp();
-        let identifier = source.identifier();
-
-        // If the pill already exists, don't insert it again.
-        if imp.pills.borrow().contains_key(&identifier) {
-            return;
-        }
-
-        let pill = Pill::new(source);
-        pill.set_margin_start(3);
-        pill.set_margin_end(3);
-
-        let (mut start_iter, mut end_iter) = imp.text_buffer.bounds();
-
-        // We don't allow adding chars before and between pills
-        loop {
-            if start_iter.child_anchor().is_some() {
-                start_iter.forward_char();
-            } else {
-                break;
-            }
-        }
-
-        imp.text_buffer.delete(&mut start_iter, &mut end_iter);
-        let anchor = imp.text_buffer.create_child_anchor(&mut start_iter);
-        imp.text_view.add_child_at_anchor(&pill, &anchor);
-        imp.pills.borrow_mut().insert(identifier, anchor);
-
-        imp.text_view.grab_focus();
+    pub(crate) fn add_pill(&self, source: &impl IsA<PillSource>) {
+        self.imp().add_pill(source.upcast_ref());
     }
 
     /// Remove the pill with the given identifier.
-    pub fn remove_pill(&self, identifier: &str) {
-        let imp = self.imp();
-
-        let Some(anchor) = imp.pills.borrow_mut().remove(identifier) else {
-            return;
-        };
-
-        if anchor.is_deleted() {
-            // Nothing to do.
-            return;
-        }
-
-        let text_buffer = &self.imp().text_buffer;
-        let mut start_iter = text_buffer.iter_at_child_anchor(&anchor);
-        let mut end_iter = start_iter;
-        end_iter.forward_char();
-        text_buffer.delete(&mut start_iter, &mut end_iter);
+    pub(crate) fn remove_pill(&self, identifier: &str) {
+        self.imp().remove_pill(identifier);
     }
 
     /// Clear this entry.
-    pub fn clear(&self) {
-        let text_buffer = &self.imp().text_buffer;
-        let (mut start, mut end) = text_buffer.bounds();
-        text_buffer.delete(&mut start, &mut end);
+    pub(crate) fn clear(&self) {
+        self.imp().clear();
     }
 
     /// Connect to the signal emitted when a pill is removed from the entry.

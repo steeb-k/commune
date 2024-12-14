@@ -14,14 +14,14 @@ mod imp {
     #[properties(wrapper_type = super::PillSourceRow)]
     pub struct PillSourceRow {
         #[template_child]
-        pub avatar: TemplateChild<Avatar>,
+        avatar: TemplateChild<Avatar>,
         #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub id: TemplateChild<gtk::Label>,
+        id: TemplateChild<gtk::Label>,
         /// The source of the data displayed by this row.
         #[property(get, set = Self::set_source, explicit_notify, nullable)]
-        pub source: RefCell<Option<PillSource>>,
+        source: RefCell<Option<PillSource>>,
     }
 
     #[glib::object_subclass]
