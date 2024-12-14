@@ -21,14 +21,14 @@ mod imp {
     #[properties(wrapper_type = super::LoadingRow)]
     pub struct LoadingRow {
         #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
+        loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
-        pub error_label: TemplateChild<gtk::Label>,
+        error_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub retry_button: TemplateChild<gtk::Button>,
+        retry_button: TemplateChild<gtk::Button>,
         /// The error message to display.
         #[property(get = Self::error, set = Self::set_error, explicit_notify, nullable)]
-        pub error: PhantomData<Option<glib::GString>>,
+        error: PhantomData<Option<glib::GString>>,
     }
 
     #[glib::object_subclass]

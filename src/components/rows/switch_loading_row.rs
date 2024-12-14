@@ -15,18 +15,18 @@ mod imp {
     #[properties(wrapper_type = super::SwitchLoadingRow)]
     pub struct SwitchLoadingRow {
         #[template_child]
-        pub spinner: TemplateChild<adw::Spinner>,
+        spinner: TemplateChild<adw::Spinner>,
         #[template_child]
-        pub switch: TemplateChild<gtk::Switch>,
+        switch: TemplateChild<gtk::Switch>,
         /// Whether the switch is active.
         #[property(get = Self::is_active, set = Self::set_is_active)]
-        pub is_active: PhantomData<bool>,
+        is_active: PhantomData<bool>,
         /// Whether the row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
         /// Whether the row is read-only.
         #[property(get, set = Self::set_read_only, explicit_notify)]
-        pub read_only: Cell<bool>,
+        read_only: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -122,7 +122,8 @@ mod imp {
 glib::wrapper! {
     /// An `AdwActionRow` with a switch and a loading state.
     pub struct SwitchLoadingRow(ObjectSubclass<imp::SwitchLoadingRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow, @implements gtk::Actionable, gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
+        @implements gtk::Actionable, gtk::Accessible;
 }
 
 impl SwitchLoadingRow {

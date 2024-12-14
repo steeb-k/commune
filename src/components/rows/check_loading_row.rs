@@ -15,18 +15,18 @@ mod imp {
     #[properties(wrapper_type = super::CheckLoadingRow)]
     pub struct CheckLoadingRow {
         #[template_child]
-        pub bin: TemplateChild<LoadingBin>,
+        bin: TemplateChild<LoadingBin>,
         #[template_child]
-        pub check: TemplateChild<gtk::CheckButton>,
+        check: TemplateChild<gtk::CheckButton>,
         /// The action activated by the button.
         #[property(get = Self::action_name, set = Self::set_action_name, override_interface = gtk::Actionable)]
-        pub action_name: PhantomData<Option<glib::GString>>,
+        action_name: PhantomData<Option<glib::GString>>,
         /// The target value of the action of the button.
         #[property(get = Self::action_target_value, set = Self::set_action_target, override_interface = gtk::Actionable)]
-        pub action_target: PhantomData<Option<glib::Variant>>,
+        action_target: PhantomData<Option<glib::Variant>>,
         /// Whether the row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]

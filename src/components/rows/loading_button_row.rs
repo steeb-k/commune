@@ -20,10 +20,10 @@ mod imp {
     #[properties(wrapper_type = super::LoadingButtonRow)]
     pub struct LoadingButtonRow {
         #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
+        loading_bin: TemplateChild<LoadingBin>,
         /// Whether the button row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]

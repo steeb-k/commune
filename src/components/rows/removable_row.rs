@@ -15,23 +15,23 @@ mod imp {
     #[properties(wrapper_type = super::RemovableRow)]
     pub struct RemovableRow {
         #[template_child]
-        pub remove_button: TemplateChild<LoadingButton>,
+        remove_button: TemplateChild<LoadingButton>,
         #[template_child]
-        pub extra_suffix_bin: TemplateChild<adw::Bin>,
+        extra_suffix_bin: TemplateChild<adw::Bin>,
         /// The tooltip text of the remove button.
         #[property(get = Self::remove_button_tooltip_text, set = Self::set_remove_button_tooltip_text, explicit_notify, nullable)]
-        pub remove_button_tooltip_text: PhantomData<Option<glib::GString>>,
+        remove_button_tooltip_text: PhantomData<Option<glib::GString>>,
         /// The accessible label of the remove button.
         #[property(get, set = Self::set_remove_button_accessible_label, explicit_notify, nullable)]
-        pub remove_button_accessible_label: RefCell<Option<String>>,
+        remove_button_accessible_label: RefCell<Option<String>>,
         /// Whether this row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
         /// The extra suffix widget of this row.
         ///
         /// The widget is placed before the remove button.
         #[property(get = Self::extra_suffix, set = Self::set_extra_suffix, explicit_notify, nullable)]
-        pub extra_suffix: PhantomData<Option<gtk::Widget>>,
+        extra_suffix: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -42,7 +42,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -64,6 +64,7 @@ mod imp {
     impl PreferencesRowImpl for RemovableRow {}
     impl ActionRowImpl for RemovableRow {}
 
+    #[gtk::template_callbacks]
     impl RemovableRow {
         /// The tooltip text of the remove button.
         fn remove_button_tooltip_text(&self) -> Option<glib::GString> {
@@ -130,6 +131,12 @@ mod imp {
             self.extra_suffix_bin.set_child(widget);
             self.obj().notify_extra_suffix();
         }
+
+        /// Emit the `remove` signal.
+        #[template_callback]
+        fn remove(&self) {
+            self.obj().emit_by_name::<()>("remove", &[]);
+        }
     }
 }
 
@@ -140,16 +147,9 @@ glib::wrapper! {
         @implements gtk::Actionable, gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl RemovableRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Emit the `remove` signal.
-    #[template_callback]
-    fn remove(&self) {
-        self.emit_by_name::<()>("remove", &[]);
     }
 
     /// Connect to the `remove` signal.

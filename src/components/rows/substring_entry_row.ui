@@ -8,7 +8,7 @@
     </style>
     <child>
       <object class="GtkGestureClick">
-        <signal name="pressed" handler="pressed_cb" swapped="yes"/>
+        <signal name="pressed" handler="pressed" swapped="yes"/>
       </object>
     </child>
     <property name="child">
@@ -55,8 +55,8 @@
                       <relation name="labelled-by">title</relation>
                     </accessibility>
                     <signal name="activate" handler="add" swapped="yes"/>
-                    <signal name="state-flags-changed" handler="text_state_flags_changed_cb" swapped="yes"/>
-                    <signal name="keynav-failed" handler="text_keynav_failed_cb" swapped="yes"/>
+                    <signal name="state-flags-changed" handler="text_state_flags_changed" swapped="yes"/>
+                    <signal name="keynav-failed" handler="text_keynav_failed" swapped="yes"/>
                     <signal name="changed" handler="update_add_button" swapped="yes"/>
                   </object>
                 </child>

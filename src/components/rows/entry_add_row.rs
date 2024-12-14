@@ -15,16 +15,16 @@ mod imp {
     #[properties(wrapper_type = super::EntryAddRow)]
     pub struct EntryAddRow {
         #[template_child]
-        pub add_button: TemplateChild<LoadingButton>,
+        add_button: TemplateChild<LoadingButton>,
         /// The tooltip text of the add button.
         #[property(get = Self::add_button_tooltip_text, set = Self::set_add_button_tooltip_text, explicit_notify, nullable)]
-        pub add_button_tooltip_text: PhantomData<Option<glib::GString>>,
+        add_button_tooltip_text: PhantomData<Option<glib::GString>>,
         /// Whether to prevent the add button from being activated.
         #[property(get, set = Self::set_inhibit_add, explicit_notify)]
-        pub inhibit_add: Cell<bool>,
+        inhibit_add: Cell<bool>,
         /// Whether this row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -35,7 +35,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -58,6 +58,7 @@ mod imp {
     impl ActionRowImpl for EntryAddRow {}
     impl EntryRowImpl for EntryAddRow {}
 
+    #[gtk::template_callbacks]
     impl EntryAddRow {
         /// The tooltip text of the add button.
         fn add_button_tooltip_text(&self) -> Option<glib::GString> {
@@ -82,9 +83,8 @@ mod imp {
 
             self.inhibit_add.set(inhibit);
 
-            let obj = self.obj();
-            obj.update_add_button();
-            obj.notify_inhibit_add();
+            self.update_add_button();
+            self.obj().notify_inhibit_add();
         }
 
         /// Whether this row is loading.
@@ -104,44 +104,43 @@ mod imp {
             obj.set_sensitive(!is_loading);
             obj.notify_is_loading();
         }
+
+        /// Whether the add button can be activated.
+        fn can_add(&self) -> bool {
+            !self.inhibit_add.get() && !self.obj().text().is_empty()
+        }
+
+        /// Update the state of the add button.
+        #[template_callback]
+        fn update_add_button(&self) {
+            self.add_button.set_sensitive(self.can_add());
+        }
+
+        /// Emit the `add` signal.
+        #[template_callback]
+        fn add(&self) {
+            if !self.can_add() {
+                return;
+            }
+
+            self.obj().emit_by_name::<()>("add", &[]);
+        }
     }
 }
 
 glib::wrapper! {
-    /// An `AdwEntryRow` with an "add" button.
+    /// An `AdwEntryRow` with an "Add" button.
     pub struct EntryAddRow(ObjectSubclass<imp::EntryAddRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow, adw::EntryRow,
         @implements gtk::Actionable, gtk::Editable, gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl EntryAddRow {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
-    /// Whether the add button can be activated.
-    fn can_add(&self) -> bool {
-        !self.inhibit_add() && !self.text().is_empty()
-    }
-
-    /// Update the state of the add button.
-    #[template_callback]
-    fn update_add_button(&self) {
-        self.imp().add_button.set_sensitive(self.can_add());
-    }
-
-    /// Emit the `add` signal.
-    #[template_callback]
-    fn add(&self) {
-        if !self.can_add() {
-            return;
-        }
-
-        self.emit_by_name::<()>("add", &[]);
-    }
-
-    /// Connect to the `add` signal.
+    /// Connect to the signal emitted when the "Add" button is activated.
     pub fn connect_add<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "add",

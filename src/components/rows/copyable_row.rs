@@ -30,29 +30,29 @@ mod imp {
     #[properties(wrapper_type = super::CopyableRow)]
     pub struct CopyableRow {
         #[template_child]
-        pub copy_button: TemplateChild<gtk::Button>,
+        copy_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub extra_suffix_bin: TemplateChild<adw::Bin>,
+        extra_suffix_bin: TemplateChild<adw::Bin>,
         /// The tooltip text of the copy button.
         #[property(get = Self::copy_button_tooltip_text, set = Self::set_copy_button_tooltip_text, explicit_notify, nullable)]
-        pub copy_button_tooltip_text: PhantomData<Option<glib::GString>>,
+        copy_button_tooltip_text: PhantomData<Option<glib::GString>>,
         /// The text to show in a toast when the copy button is activated.
         ///
         /// No toast is shown if this is `None`.
         #[property(get, set = Self::set_toast_text, explicit_notify, nullable)]
-        pub toast_text: RefCell<Option<String>>,
+        toast_text: RefCell<Option<String>>,
         /// The main title of this row.
         ///
         /// This is used to decide the field to copy when the button is
         /// activated. Also, if the subtitle is the main title, the `property`
         /// CSS class is added.
         #[property(get, set = Self::set_main_title, explicit_notify, builder(ActionRowMainTitle::default()))]
-        pub main_title: Cell<ActionRowMainTitle>,
+        main_title: Cell<ActionRowMainTitle>,
         /// The extra suffix widget of this row.
         ///
         /// The widget is placed before the remove button.
         #[property(get = Self::extra_suffix, set = Self::set_extra_suffix, explicit_notify, nullable)]
-        pub extra_suffix: PhantomData<Option<gtk::Widget>>,
+        extra_suffix: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -156,7 +156,8 @@ mod imp {
 glib::wrapper! {
     /// An `AdwActionRow` with a button to copy the title or subtitle.
     pub struct CopyableRow(ObjectSubclass<imp::CopyableRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow, @implements gtk::Actionable, gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
+        @implements gtk::Actionable, gtk::Accessible;
 }
 
 impl CopyableRow {

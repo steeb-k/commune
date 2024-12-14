@@ -23,64 +23,64 @@ mod imp {
     #[properties(wrapper_type = super::SubstringEntryRow)]
     pub struct SubstringEntryRow {
         #[template_child]
-        pub header: TemplateChild<gtk::Box>,
+        header: TemplateChild<gtk::Box>,
         #[template_child]
-        pub main_content: TemplateChild<gtk::Box>,
+        main_content: TemplateChild<gtk::Box>,
         #[template_child]
-        pub entry_box: TemplateChild<gtk::Box>,
+        entry_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub text: TemplateChild<gtk::Text>,
+        text: TemplateChild<gtk::Text>,
         #[template_child]
-        pub title: TemplateChild<gtk::Label>,
+        title: TemplateChild<gtk::Label>,
         #[template_child]
-        pub edit_icon: TemplateChild<gtk::Image>,
+        edit_icon: TemplateChild<gtk::Image>,
         #[template_child]
-        pub entry_prefix_label: TemplateChild<gtk::Label>,
+        entry_prefix_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub entry_suffix_label: TemplateChild<gtk::Label>,
+        entry_suffix_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub add_button: TemplateChild<LoadingButton>,
+        add_button: TemplateChild<LoadingButton>,
         /// The input hints of the entry.
         #[property(get = Self::input_hints, set = Self::set_input_hints, explicit_notify)]
-        pub input_hints: PhantomData<gtk::InputHints>,
+        input_hints: PhantomData<gtk::InputHints>,
         /// The input purpose of the entry.
         #[property(get = Self::input_purpose, set = Self::set_input_purpose, explicit_notify, builder(gtk::InputPurpose::FreeForm))]
-        pub input_purpose: PhantomData<gtk::InputPurpose>,
+        input_purpose: PhantomData<gtk::InputPurpose>,
         /// A list of Pango attributes to apply to the text of the entry.
         #[property(get = Self::attributes, set = Self::set_attributes, explicit_notify, nullable)]
-        pub attributes: PhantomData<Option<pango::AttrList>>,
+        attributes: PhantomData<Option<pango::AttrList>>,
         /// The placeholder text of the entry.
         #[property(get = Self::placeholder_text, set = Self::set_placeholder_text, explicit_notify, nullable)]
-        pub placeholder_text: PhantomData<Option<glib::GString>>,
+        placeholder_text: PhantomData<Option<glib::GString>>,
         /// The length of the text of the entry.
         #[property(get = Self::text_length)]
-        pub text_length: PhantomData<u32>,
+        text_length: PhantomData<u32>,
         /// The prefix text of the entry.
         #[property(get = Self::prefix_text, set = Self::set_prefix_text, explicit_notify)]
-        pub prefix_text: PhantomData<glib::GString>,
+        prefix_text: PhantomData<glib::GString>,
         /// The suffix text of the entry.
         #[property(get = Self::suffix_text, set = Self::set_suffix_text, explicit_notify)]
-        pub suffix_text: PhantomData<glib::GString>,
+        suffix_text: PhantomData<glib::GString>,
         /// Set the accessible description of the entry.
         ///
         /// If it is not set, the placeholder text will be used.
         #[property(get, set = Self::set_accessible_description, explicit_notify, nullable)]
-        pub accessible_description: RefCell<Option<String>>,
+        accessible_description: RefCell<Option<String>>,
         /// Whether the add button is hidden.
         #[property(get = Self::hide_add_button, set = Self::set_hide_add_button, explicit_notify)]
-        pub hide_add_button: PhantomData<bool>,
+        hide_add_button: PhantomData<bool>,
         /// The tooltip text of the add button.
         #[property(get = Self::add_button_tooltip_text, set = Self::set_add_button_tooltip_text, explicit_notify, nullable)]
-        pub add_button_tooltip_text: PhantomData<Option<glib::GString>>,
+        add_button_tooltip_text: PhantomData<Option<glib::GString>>,
         /// The accessible label of the add button.
         #[property(get, set = Self::set_add_button_accessible_label, explicit_notify, nullable)]
-        pub add_button_accessible_label: RefCell<Option<String>>,
+        add_button_accessible_label: RefCell<Option<String>>,
         /// Whether to prevent the add button from being activated.
         #[property(get, set = Self::set_inhibit_add, explicit_notify)]
-        pub inhibit_add: Cell<bool>,
+        inhibit_add: Cell<bool>,
         /// Whether this row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -92,7 +92,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -164,6 +164,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl SubstringEntryRow {
         /// The input hints of the entry.
         fn input_hints(&self) -> gtk::InputHints {
@@ -330,9 +331,8 @@ mod imp {
 
             self.inhibit_add.set(inhibit);
 
-            let obj = self.obj();
-            obj.update_add_button();
-            obj.notify_inhibit_add();
+            self.update_add_button();
+            self.obj().notify_inhibit_add();
         }
 
         /// Whether this row is loading.
@@ -369,104 +369,100 @@ mod imp {
                     .reset_property(gtk::AccessibleProperty::Description);
             }
         }
+
+        /// Whether the text input is focused.
+        fn is_text_focused(&self) -> bool {
+            self.text
+                .state_flags()
+                .contains(gtk::StateFlags::FOCUS_WITHIN)
+        }
+
+        /// Update this row when the text input flags changed.
+        #[template_callback]
+        fn text_state_flags_changed(&self) {
+            let obj = self.obj();
+            let editing = self.is_text_focused();
+
+            if editing {
+                obj.add_css_class("focused");
+            } else {
+                obj.remove_css_class("focused");
+            }
+
+            self.edit_icon.set_visible(!editing);
+        }
+
+        /// Handle when the key navigation in the text input failed.
+        #[template_callback]
+        fn text_keynav_failed(&self, direction: gtk::DirectionType) -> bool {
+            if matches!(
+                direction,
+                gtk::DirectionType::Left | gtk::DirectionType::Right
+            ) {
+                return self.obj().child_focus(direction);
+            }
+
+            // gdk::EVENT_PROPAGATE == 0;
+            false
+        }
+
+        /// Handle when this row is pressed.
+        #[template_callback]
+        fn pressed(&self, _n_press: i32, x: f64, y: f64, gesture: &gtk::Gesture) {
+            let obj = self.obj();
+            let picked = obj.pick(x, y, gtk::PickFlags::DEFAULT);
+
+            if picked.is_some_and(|w| {
+                w != *obj || w != *self.header || w != *self.main_content || w != *self.entry_box
+            }) {
+                gesture.set_state(gtk::EventSequenceState::Denied);
+
+                return;
+            }
+
+            self.text.grab_focus_without_selecting();
+
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+        }
+
+        /// Whether we can activate the add button.
+        fn can_add(&self) -> bool {
+            !self.inhibit_add.get() && !self.obj().text().is_empty()
+        }
+
+        /// Update the state of the add button.
+        #[template_callback]
+        fn update_add_button(&self) {
+            self.add_button.set_sensitive(self.can_add());
+        }
+
+        /// Emit the `add` signal.
+        #[template_callback]
+        fn add(&self) {
+            if !self.can_add() {
+                return;
+            }
+
+            self.obj().emit_by_name::<()>("add", &[]);
+        }
     }
 }
 
 glib::wrapper! {
     /// A `AdwPreferencesRow` with an embedded text entry, and a fixed text suffix and prefix.
     ///
-    /// It also has a built-in add button, making it an almost drop-in replacement to `AddEntryRow`.
-    ///
-    /// Inspired from `AdwEntryRow`.
+    /// It also has a built-in "Add" button, making it an almost drop-in replacement to `EntryAddRow`.
     pub struct SubstringEntryRow(ObjectSubclass<imp::SubstringEntryRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow,
         @implements gtk::Editable, gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl SubstringEntryRow {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
-    /// Whether the GtkText is focused.
-    fn is_text_focused(&self) -> bool {
-        let flags = self.imp().text.state_flags();
-        flags.contains(gtk::StateFlags::FOCUS_WITHIN)
-    }
-
-    /// Update this row when the GtkText flags changed.
-    #[template_callback]
-    fn text_state_flags_changed_cb(&self) {
-        let editing = self.is_text_focused();
-
-        if editing {
-            self.add_css_class("focused");
-        } else {
-            self.remove_css_class("focused");
-        }
-
-        self.imp().edit_icon.set_visible(!editing);
-    }
-
-    /// Handle when the key navigation in the GtkText failed.
-    #[template_callback]
-    fn text_keynav_failed_cb(&self, direction: gtk::DirectionType) -> bool {
-        if matches!(
-            direction,
-            gtk::DirectionType::Left | gtk::DirectionType::Right
-        ) {
-            return self.child_focus(direction);
-        }
-
-        // gdk::EVENT_PROPAGATE == 0;
-        false
-    }
-
-    /// Handle when this row is pressed.
-    #[template_callback]
-    fn pressed_cb(&self, _n_press: i32, x: f64, y: f64, gesture: &gtk::Gesture) {
-        let imp = self.imp();
-        let picked = self.pick(x, y, gtk::PickFlags::DEFAULT);
-
-        if picked.is_some_and(|w| {
-            &w != self.upcast_ref::<gtk::Widget>()
-                || &w != imp.header.upcast_ref::<gtk::Widget>()
-                || &w != imp.main_content.upcast_ref::<gtk::Widget>()
-                || &w != imp.entry_box.upcast_ref::<gtk::Widget>()
-        }) {
-            gesture.set_state(gtk::EventSequenceState::Denied);
-
-            return;
-        }
-
-        imp.text.grab_focus_without_selecting();
-
-        gesture.set_state(gtk::EventSequenceState::Claimed);
-    }
-
-    /// Whether we can activate the add button.
-    fn can_add(&self) -> bool {
-        !self.inhibit_add() && !self.text().is_empty()
-    }
-
-    /// Update the state of the add button.
-    #[template_callback]
-    fn update_add_button(&self) {
-        self.imp().add_button.set_sensitive(self.can_add());
-    }
-
-    /// Emit the `add` signal.
-    #[template_callback]
-    fn add(&self) {
-        if !self.can_add() {
-            return;
-        }
-
-        self.emit_by_name::<()>("add", &[]);
-    }
-
-    /// Connect to the `add` signal.
+    /// Connect to the signal emitted when the "Add" button is activated.
     pub fn connect_add<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "add",

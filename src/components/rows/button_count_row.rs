@@ -13,10 +13,10 @@ mod imp {
     #[properties(wrapper_type = super::ButtonCountRow)]
     pub struct ButtonCountRow {
         #[template_child]
-        pub count_label: TemplateChild<gtk::Label>,
+        count_label: TemplateChild<gtk::Label>,
         /// The count that is displayed.
         #[property(get = Self::count, set = Self::set_count, explicit_notify)]
-        pub count: PhantomData<glib::GString>,
+        count: PhantomData<glib::GString>,
     }
 
     #[glib::object_subclass]

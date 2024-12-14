@@ -18,26 +18,26 @@ mod imp {
     #[properties(wrapper_type = super::ComboLoadingRow)]
     pub struct ComboLoadingRow {
         #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
+        loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
-        pub popover: TemplateChild<gtk::Popover>,
+        popover: TemplateChild<gtk::Popover>,
         #[template_child]
-        pub list: TemplateChild<gtk::ListBox>,
+        list: TemplateChild<gtk::ListBox>,
         /// The string model to build the list.
         #[property(get, set = Self::set_string_model, explicit_notify, nullable)]
-        pub string_model: BoundObject<gtk::StringList>,
+        string_model: BoundObject<gtk::StringList>,
         /// The position of the selected string.
         #[property(get, default = gtk::INVALID_LIST_POSITION)]
-        pub selected: Cell<u32>,
+        selected: Cell<u32>,
         /// The selected string.
         #[property(get, set = Self::set_selected_string, explicit_notify, nullable)]
-        pub selected_string: RefCell<Option<String>>,
+        selected_string: RefCell<Option<String>>,
         /// Whether the row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
         /// Whether the row is read-only.
         #[property(get, set = Self::set_read_only, explicit_notify)]
-        pub read_only: Cell<bool>,
+        read_only: Cell<bool>,
         selected_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
@@ -49,7 +49,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::ComboBox);
         }
@@ -74,6 +74,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl ComboLoadingRow {
         /// Set the string model to build the list.
         fn set_string_model(&self, model: Option<gtk::StringList>) {
@@ -230,6 +231,36 @@ mod imp {
             obj.update_property(&[gtk::accessible::Property::ReadOnly(read_only)]);
             obj.notify_read_only();
         }
+
+        /// A row was activated.
+        #[template_callback]
+        fn row_activated(&self, row: &gtk::ListBoxRow) {
+            let Some(string) = row
+                .child()
+                .and_downcast::<gtk::Box>()
+                .and_then(|b| b.first_child())
+                .and_downcast::<gtk::Label>()
+                .map(|l| l.label())
+            else {
+                return;
+            };
+
+            self.popover.popdown();
+            self.set_selected_string(Some(string.into()));
+        }
+
+        /// The popover's visibility changed.
+        #[template_callback]
+        fn popover_visible(&self) {
+            let obj = self.obj();
+            let is_visible = self.popover.is_visible();
+
+            if is_visible {
+                obj.add_css_class("has-open-popup");
+            } else {
+                obj.remove_css_class("has-open-popup");
+            }
+        }
     }
 }
 
@@ -240,38 +271,8 @@ glib::wrapper! {
         @implements gtk::Actionable, gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl ComboLoadingRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// A row was activated.
-    #[template_callback]
-    fn row_activated(&self, row: &gtk::ListBoxRow) {
-        let Some(string) = row
-            .child()
-            .and_downcast::<gtk::Box>()
-            .and_then(|b| b.first_child())
-            .and_downcast::<gtk::Label>()
-            .map(|l| l.label())
-        else {
-            return;
-        };
-
-        self.imp().popover.popdown();
-        self.set_selected_string(Some(string));
-    }
-
-    /// The popover's visibility changed.
-    #[template_callback]
-    fn popover_visible(&self) {
-        let is_visible = self.imp().popover.is_visible();
-
-        if is_visible {
-            self.add_css_class("has-open-popup");
-        } else {
-            self.remove_css_class("has-open-popup");
-        }
     }
 }
