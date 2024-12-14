@@ -9,7 +9,7 @@ lint-metainfo:
     name: "ghcr.io/flathub/flatpak-builder-lint:latest"
     entrypoint: [""]
   variables:
-    METAINFO: ".flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/data/${APP_ID}.metainfo.xml"
+    METAINFO: "${APP_ID}.metainfo.xml"
   script:
     # This tool has extra tests on top of appstreamcli and is required to pass for Flathub.
     - flatpak-builder-lint appstream ${METAINFO}
