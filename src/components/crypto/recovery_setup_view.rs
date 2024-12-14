@@ -55,40 +55,40 @@ mod imp {
     #[properties(wrapper_type = super::CryptoRecoverySetupView)]
     pub struct CryptoRecoverySetupView {
         #[template_child]
-        pub navigation: TemplateChild<adw::NavigationView>,
+        navigation: TemplateChild<adw::NavigationView>,
         #[template_child]
-        pub recover_entry: TemplateChild<adw::PasswordEntryRow>,
+        recover_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub recover_btn: TemplateChild<LoadingButton>,
+        recover_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub reset_page: TemplateChild<adw::NavigationPage>,
+        reset_page: TemplateChild<adw::NavigationPage>,
         #[template_child]
-        pub reset_identity_row: TemplateChild<SwitchLoadingRow>,
+        reset_identity_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
-        pub reset_backup_row: TemplateChild<SwitchLoadingRow>,
+        reset_backup_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
-        pub reset_entry: TemplateChild<adw::PasswordEntryRow>,
+        reset_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub reset_btn: TemplateChild<LoadingButton>,
+        reset_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub enable_entry: TemplateChild<adw::PasswordEntryRow>,
+        enable_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub enable_btn: TemplateChild<LoadingButton>,
+        enable_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub success_description: TemplateChild<gtk::Label>,
+        success_description: TemplateChild<gtk::Label>,
         #[template_child]
-        pub success_key_box: TemplateChild<gtk::Box>,
+        success_key_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub success_key_label: TemplateChild<gtk::Label>,
+        success_key_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub success_key_copy_btn: TemplateChild<gtk::Button>,
+        success_key_copy_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub success_confirm_btn: TemplateChild<gtk::Button>,
+        success_confirm_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub incomplete_confirm_btn: TemplateChild<gtk::Button>,
+        incomplete_confirm_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
     }
 
     #[glib::object_subclass]
@@ -99,7 +99,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("setup-view");
         }
@@ -136,6 +136,7 @@ mod imp {
 
     impl BinImpl for CryptoRecoverySetupView {}
 
+    #[gtk::template_callbacks]
     impl CryptoRecoverySetupView {
         /// The visible page of the view.
         fn visible_page(&self) -> CryptoRecoverySetupPage {
@@ -169,7 +170,7 @@ mod imp {
         }
 
         /// Update the reset page for the current state.
-        pub(super) fn update_reset(&self) {
+        fn update_reset(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -212,7 +213,7 @@ mod imp {
         }
 
         /// Update the success page for the given recovery key.
-        pub(super) fn update_success(&self, key: Option<String>) {
+        fn update_success(&self, key: Option<String>) {
             let has_key = key.is_some();
 
             let description = if has_key {
@@ -227,162 +228,141 @@ mod imp {
             }
             self.success_key_box.set_visible(has_key);
         }
-    }
-}
 
-glib::wrapper! {
-    /// A view with the different flows to use or set up account recovery.
-    pub struct CryptoRecoverySetupView(ObjectSubclass<imp::CryptoRecoverySetupView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
-}
-
-#[gtk::template_callbacks]
-impl CryptoRecoverySetupView {
-    pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
-    }
-
-    /// Set the initial page of this view.
-    pub fn set_initial_page(&self, initial_page: CryptoRecoverySetupInitialPage) {
-        self.imp().set_initial_page(initial_page);
-    }
-
-    /// Focus the proper widget for the current page.
-    #[template_callback]
-    fn grab_focus(&self) {
-        self.imp().grab_focus();
-    }
-
-    /// The content of the recover entry changed.
-    #[template_callback]
-    fn recover_entry_changed(&self) {
-        let imp = self.imp();
-
-        let can_recover = !imp.recover_entry.text().is_empty();
-        imp.recover_btn.set_sensitive(can_recover);
-    }
-
-    /// Recover the data.
-    #[template_callback]
-    async fn recover(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let key = imp.recover_entry.text();
-
-        if key.is_empty() {
-            return;
+        /// Focus the proper widget for the current page.
+        #[template_callback]
+        fn grab_focus(&self) {
+            <Self as WidgetImpl>::grab_focus(self);
         }
 
-        imp.recover_btn.set_is_loading(true);
+        /// The content of the recover entry changed.
+        #[template_callback]
+        fn recover_entry_changed(&self) {
+            let can_recover = !self.recover_entry.text().is_empty();
+            self.recover_btn.set_sensitive(can_recover);
+        }
 
-        let encryption = session.client().encryption();
-        let recovery = encryption.recovery();
-        let handle = spawn_tokio!(async move { recovery.recover(&key).await });
+        /// Recover the data.
+        #[template_callback]
+        async fn recover(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
 
-        match handle.await.unwrap() {
-            Ok(()) => {
-                // Even if recovery was successful, the recovery data may not have been
-                // complete. Because the SDK uses multiple threads, we are only
-                // sure of the SDK's recovery state at this point, not the Session's.
-                if encryption.recovery().state() == SdkRecoveryState::Incomplete {
-                    imp.navigation
-                        .push_by_tag(CryptoRecoverySetupPage::Incomplete.as_ref());
-                } else {
-                    self.emit_completed();
-                }
+            let key = self.recover_entry.text();
+
+            if key.is_empty() {
+                return;
             }
-            Err(error) => {
-                error!("Could not recover account: {error}");
 
-                match error {
-                    RecoveryError::SecretStorage(SecretStorageError::SecretStorageKey(_)) => {
-                        toast!(self, gettext("The recovery passphrase or key is invalid"));
+            self.recover_btn.set_is_loading(true);
+
+            let encryption = session.client().encryption();
+            let recovery = encryption.recovery();
+            let handle = spawn_tokio!(async move { recovery.recover(&key).await });
+
+            match handle.await.unwrap() {
+                Ok(()) => {
+                    // Even if recovery was successful, the recovery data may not have been
+                    // complete. Because the SDK uses multiple threads, we are only
+                    // sure of the SDK's recovery state at this point, not the Session's.
+                    if encryption.recovery().state() == SdkRecoveryState::Incomplete {
+                        self.navigation
+                            .push_by_tag(CryptoRecoverySetupPage::Incomplete.as_ref());
+                    } else {
+                        self.emit_completed();
                     }
-                    _ => {
-                        toast!(self, gettext("Could not access recovery data"));
+                }
+                Err(error) => {
+                    error!("Could not recover account: {error}");
+                    let obj = self.obj();
+
+                    match error {
+                        RecoveryError::SecretStorage(SecretStorageError::SecretStorageKey(_)) => {
+                            toast!(obj, gettext("The recovery passphrase or key is invalid"));
+                        }
+                        _ => {
+                            toast!(obj, gettext("Could not access recovery data"));
+                        }
                     }
                 }
             }
+
+            self.recover_btn.set_is_loading(false);
         }
 
-        imp.recover_btn.set_is_loading(false);
-    }
+        /// Reset recovery and optionally cross-signing and room keys backup.
+        #[template_callback]
+        async fn reset(&self) {
+            self.reset_btn.set_is_loading(true);
 
-    /// Reset recovery and optionally cross-signing and room keys backup.
-    #[template_callback]
-    async fn reset(&self) {
-        let imp = self.imp();
-
-        imp.reset_btn.set_is_loading(true);
-
-        let reset_identity = imp.reset_identity_row.is_active();
-        if reset_identity && self.bootstrap_cross_signing().await.is_err() {
-            imp.reset_btn.set_is_loading(false);
-            return;
-        }
-
-        let passphrase = imp.reset_entry.text();
-
-        let reset_backup = imp.reset_backup_row.is_active();
-        if reset_backup {
-            self.reset_backup_and_recovery(passphrase).await;
-        } else {
-            self.reset_recovery(passphrase).await;
-        }
-
-        imp.reset_btn.set_is_loading(false);
-    }
-
-    /// Reset the cross-signing identity.
-    async fn bootstrap_cross_signing(&self) -> Result<(), ()> {
-        let Some(session) = self.session() else {
-            return Err(());
-        };
-
-        let dialog = AuthDialog::new(&session);
-
-        let result = dialog
-            .authenticate(self, move |client, auth| async move {
-                client.encryption().bootstrap_cross_signing(auth).await
-            })
-            .await;
-
-        match result {
-            Ok(()) => Ok(()),
-            Err(AuthError::UserCancelled) => {
-                debug!("User cancelled authentication for cross-signing bootstrap");
-                Err(())
+            let reset_identity = self.reset_identity_row.is_active();
+            if reset_identity && self.bootstrap_cross_signing().await.is_err() {
+                self.reset_btn.set_is_loading(false);
+                return;
             }
-            Err(error) => {
-                error!("Could not bootstrap cross-signing: {error}");
-                toast!(self, gettext("Could not reset the crypto identity"));
-                Err(())
+
+            let passphrase = self.reset_entry.text();
+
+            let reset_backup = self.reset_backup_row.is_active();
+            if reset_backup {
+                self.reset_backup_and_recovery(passphrase).await;
+            } else {
+                self.reset_recovery(passphrase).await;
+            }
+
+            self.reset_btn.set_is_loading(false);
+        }
+
+        /// Reset the cross-signing identity.
+        async fn bootstrap_cross_signing(&self) -> Result<(), ()> {
+            let Some(session) = self.session.upgrade() else {
+                return Err(());
+            };
+
+            let dialog = AuthDialog::new(&session);
+            let obj = self.obj();
+
+            let result = dialog
+                .authenticate(&*obj, move |client, auth| async move {
+                    client.encryption().bootstrap_cross_signing(auth).await
+                })
+                .await;
+
+            match result {
+                Ok(()) => Ok(()),
+                Err(AuthError::UserCancelled) => {
+                    debug!("User cancelled authentication for cross-signing bootstrap");
+                    Err(())
+                }
+                Err(error) => {
+                    error!("Could not bootstrap cross-signing: {error}");
+                    toast!(obj, gettext("Could not reset the crypto identity"));
+                    Err(())
+                }
             }
         }
-    }
 
-    /// Reset the room keys backup and the account recovery key.
-    async fn reset_backup_and_recovery(&self, passphrase: glib::GString) {
-        let Some(session) = self.session() else {
-            return;
-        };
+        /// Reset the room keys backup and the account recovery key.
+        async fn reset_backup_and_recovery(&self, passphrase: glib::GString) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
 
-        let passphrase = Some(passphrase).filter(|s| !s.is_empty());
-        let has_passphrase = passphrase.is_some();
+            let passphrase = Some(passphrase).filter(|s| !s.is_empty());
+            let has_passphrase = passphrase.is_some();
 
-        let encryption = session.client().encryption();
+            let obj = self.obj();
+            let encryption = session.client().encryption();
 
-        // There is no method to reset the room keys backup, so we need to disable
-        // recovery and re-enable it.
-        // If backups are not enabled locally, we cannot disable recovery, the API will
-        // return an error. If a backup exists on the homeserver but backups are not
-        // enabled locally, we need to delete the backup manually.
-        // In any case, `Recovery::enable` will reset the secret storage.
-        let backups = encryption.backups();
-        let (backups_are_enabled, backup_exists_on_server) = spawn_tokio!(async move {
+            // There is no method to reset the room keys backup, so we need to disable
+            // recovery and re-enable it.
+            // If backups are not enabled locally, we cannot disable recovery, the API will
+            // return an error. If a backup exists on the homeserver but backups are not
+            // enabled locally, we need to delete the backup manually.
+            // In any case, `Recovery::enable` will reset the secret storage.
+            let backups = encryption.backups();
+            let (backups_are_enabled, backup_exists_on_server) = spawn_tokio!(async move {
             let backups_are_enabled = backups.are_enabled().await;
 
             let backup_exists_on_server = if backups_are_enabled {
@@ -404,151 +384,168 @@ impl CryptoRecoverySetupView {
         .await
         .expect("task was not aborted");
 
-        if !backups_are_enabled && backup_exists_on_server {
-            let backups = encryption.backups();
-            let handle = spawn_tokio!(async move { backups.disable_and_delete().await });
+            if !backups_are_enabled && backup_exists_on_server {
+                let backups = encryption.backups();
+                let handle = spawn_tokio!(async move { backups.disable_and_delete().await });
 
-            if let Err(error) = handle.await.expect("task was not aborted") {
-                error!("Could not disable backups: {error}");
-                toast!(self, gettext("Could not reset account recovery"));
-                return;
+                if let Err(error) = handle.await.expect("task was not aborted") {
+                    error!("Could not disable backups: {error}");
+                    toast!(obj, gettext("Could not reset account recovery"));
+                    return;
+                }
+            } else if backups_are_enabled {
+                let recovery = encryption.recovery();
+                let handle = spawn_tokio!(async move { recovery.disable().await });
+
+                if let Err(error) = handle.await.expect("task was not aborted") {
+                    error!("Could not disable recovery: {error}");
+                    toast!(obj, gettext("Could not reset account recovery"));
+                    return;
+                }
             }
-        } else if backups_are_enabled {
+
             let recovery = encryption.recovery();
-            let handle = spawn_tokio!(async move { recovery.disable().await });
+            let handle = spawn_tokio!(async move {
+                let mut enable = recovery.enable();
+                if let Some(passphrase) = passphrase.as_deref() {
+                    enable = enable.with_passphrase(passphrase);
+                }
 
-            if let Err(error) = handle.await.expect("task was not aborted") {
-                error!("Could not disable recovery: {error}");
-                toast!(self, gettext("Could not reset account recovery"));
+                enable.await
+            });
+
+            match handle.await.unwrap() {
+                Ok(key) => {
+                    let key = (!has_passphrase).then_some(key);
+
+                    self.update_success(key);
+                    self.navigation
+                        .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
+                }
+                Err(error) => {
+                    error!("Could not re-enable account recovery: {error}");
+                    toast!(obj, gettext("Could not reset account recovery"));
+                }
+            }
+        }
+
+        /// Reset the account recovery key.
+        async fn reset_recovery(&self, passphrase: glib::GString) {
+            let Some(session) = self.session.upgrade() else {
                 return;
+            };
+
+            let passphrase = Some(passphrase).filter(|s| !s.is_empty());
+            let has_passphrase = passphrase.is_some();
+
+            let recovery = session.client().encryption().recovery();
+            let handle = spawn_tokio!(async move {
+                let mut reset = recovery.reset_key();
+                if let Some(passphrase) = passphrase.as_deref() {
+                    reset = reset.with_passphrase(passphrase);
+                }
+
+                reset.await
+            });
+
+            match handle.await.unwrap() {
+                Ok(key) => {
+                    let key = (!has_passphrase).then_some(key);
+
+                    self.update_success(key);
+                    self.navigation
+                        .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
+                }
+                Err(error) => {
+                    error!("Could not reset account recovery key: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not reset account recovery key"));
+                }
             }
         }
 
-        let recovery = encryption.recovery();
-        let handle = spawn_tokio!(async move {
-            let mut enable = recovery.enable();
-            if let Some(passphrase) = passphrase.as_deref() {
-                enable = enable.with_passphrase(passphrase);
+        /// Enable recovery.
+        #[template_callback]
+        async fn enable(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.enable_btn.set_is_loading(true);
+
+            let passphrase = Some(self.enable_entry.text()).filter(|s| !s.is_empty());
+            let has_passphrase = passphrase.is_some();
+
+            let recovery = session.client().encryption().recovery();
+            let handle = spawn_tokio!(async move {
+                let mut enable = recovery.enable();
+                if let Some(passphrase) = passphrase.as_deref() {
+                    enable = enable.with_passphrase(passphrase);
+                }
+
+                enable.await
+            });
+
+            match handle.await.unwrap() {
+                Ok(key) => {
+                    let key = if has_passphrase { None } else { Some(key) };
+
+                    self.update_success(key);
+                    self.navigation
+                        .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
+                }
+                Err(error) => {
+                    error!("Could not enable account recovery: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not enable account recovery"));
+                }
             }
 
-            enable.await
-        });
-
-        match handle.await.unwrap() {
-            Ok(key) => {
-                let imp = self.imp();
-                let key = (!has_passphrase).then_some(key);
-
-                imp.update_success(key);
-                imp.navigation
-                    .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
-            }
-            Err(error) => {
-                error!("Could not re-enable account recovery: {error}");
-                toast!(self, gettext("Could not reset account recovery"));
-            }
-        }
-    }
-
-    /// Reset the account recovery key.
-    async fn reset_recovery(&self, passphrase: glib::GString) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let passphrase = Some(passphrase).filter(|s| !s.is_empty());
-        let has_passphrase = passphrase.is_some();
-
-        let recovery = session.client().encryption().recovery();
-        let handle = spawn_tokio!(async move {
-            let mut reset = recovery.reset_key();
-            if let Some(passphrase) = passphrase.as_deref() {
-                reset = reset.with_passphrase(passphrase);
-            }
-
-            reset.await
-        });
-
-        match handle.await.unwrap() {
-            Ok(key) => {
-                let imp = self.imp();
-                let key = (!has_passphrase).then_some(key);
-
-                imp.update_success(key);
-                imp.navigation
-                    .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
-            }
-            Err(error) => {
-                error!("Could not reset account recovery key: {error}");
-                toast!(self, gettext("Could not reset account recovery key"));
-            }
-        }
-    }
-
-    /// Enable recovery.
-    #[template_callback]
-    async fn enable(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let imp = self.imp();
-
-        imp.enable_btn.set_is_loading(true);
-
-        let passphrase = Some(imp.enable_entry.text()).filter(|s| !s.is_empty());
-        let has_passphrase = passphrase.is_some();
-
-        let recovery = session.client().encryption().recovery();
-        let handle = spawn_tokio!(async move {
-            let mut enable = recovery.enable();
-            if let Some(passphrase) = passphrase.as_deref() {
-                enable = enable.with_passphrase(passphrase);
-            }
-
-            enable.await
-        });
-
-        match handle.await.unwrap() {
-            Ok(key) => {
-                let key = if has_passphrase { None } else { Some(key) };
-
-                imp.update_success(key);
-                imp.navigation
-                    .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
-            }
-            Err(error) => {
-                error!("Could not enable account recovery: {error}");
-                toast!(self, gettext("Could not enable account recovery"));
-            }
+            self.enable_btn.set_is_loading(false);
         }
 
-        imp.enable_btn.set_is_loading(false);
+        /// Copy the recovery key to the clipboard.
+        #[template_callback]
+        fn copy_key(&self) {
+            let obj = self.obj();
+            let key = self.success_key_label.label();
+
+            let clipboard = obj.clipboard();
+            clipboard.set_text(&key);
+
+            toast!(obj, "Recovery key copied to clipboard");
+        }
+
+        // Emit the `completed` signal.
+        #[template_callback]
+        fn emit_completed(&self) {
+            self.obj().emit_by_name::<()>("completed", &[]);
+        }
+
+        // Show the reset page, after updating it.
+        #[template_callback]
+        fn show_reset(&self) {
+            self.update_reset();
+            self.navigation
+                .push_by_tag(CryptoRecoverySetupPage::Reset.as_ref());
+        }
+    }
+}
+
+glib::wrapper! {
+    /// A view with the different flows to use or set up account recovery.
+    pub struct CryptoRecoverySetupView(ObjectSubclass<imp::CryptoRecoverySetupView>)
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+}
+
+impl CryptoRecoverySetupView {
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
-    /// Copy the recovery key to the clipboard.
-    #[template_callback]
-    fn copy_key(&self) {
-        let key = self.imp().success_key_label.label();
-
-        let clipboard = self.clipboard();
-        clipboard.set_text(&key);
-
-        toast!(self, "Recovery key copied to clipboard");
-    }
-
-    // Emit the `completed` signal.
-    #[template_callback]
-    fn emit_completed(&self) {
-        self.emit_by_name::<()>("completed", &[]);
-    }
-
-    // Show the reset page, after updating it.
-    #[template_callback]
-    fn show_reset(&self) {
-        let imp = self.imp();
-        imp.update_reset();
-        imp.navigation
-            .push_by_tag(CryptoRecoverySetupPage::Reset.as_ref());
+    /// Set the initial page of this view.
+    pub(crate) fn set_initial_page(&self, initial_page: CryptoRecoverySetupInitialPage) {
+        self.imp().set_initial_page(initial_page);
     }
 
     /// Connect to the signal emitted when the recovery was successfully
