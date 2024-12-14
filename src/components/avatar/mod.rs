@@ -27,13 +27,13 @@ mod imp {
     #[properties(wrapper_type = super::Avatar)]
     pub struct Avatar {
         #[template_child]
-        pub avatar: TemplateChild<adw::Avatar>,
+        avatar: TemplateChild<adw::Avatar>,
         /// The [`AvatarData`] displayed by this widget.
         #[property(get, set = Self::set_data, explicit_notify, nullable)]
-        pub data: RefCell<Option<AvatarData>>,
+        data: RefCell<Option<AvatarData>>,
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
-        pub size: PhantomData<i32>,
+        size: PhantomData<i32>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
         image_watches: RefCell<Vec<gtk::ExpressionWatch>>,
     }

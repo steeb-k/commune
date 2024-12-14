@@ -11,16 +11,16 @@ mod imp {
     pub struct CropCircle {
         /// The child widget to crop.
         #[property(get, set = Self::set_child, explicit_notify, nullable)]
-        pub child: RefCell<Option<gtk::Widget>>,
+        child: RefCell<Option<gtk::Widget>>,
         /// Whether the child should be cropped.
         #[property(get, set = Self::set_is_cropped, explicit_notify)]
-        pub is_cropped: Cell<bool>,
+        is_cropped: Cell<bool>,
         /// The width that should be cropped.
         ///
         /// This is the number of pixels from the right edge of the child
         /// widget.
         #[property(get, set = Self::set_cropped_width, explicit_notify)]
-        pub cropped_width: Cell<u32>,
+        cropped_width: Cell<u32>,
         mask: adw::Bin,
     }
 

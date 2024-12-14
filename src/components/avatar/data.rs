@@ -17,10 +17,10 @@ mod imp {
     pub struct AvatarData {
         /// The data of the user-defined image.
         #[property(get, set = Self::set_image, explicit_notify, nullable)]
-        pub image: RefCell<Option<AvatarImage>>,
+        image: RefCell<Option<AvatarImage>>,
         /// The display name used as a fallback for this avatar.
         #[property(get, set = Self::set_display_name, explicit_notify)]
-        pub display_name: RefCell<String>,
+        display_name: RefCell<String>,
     }
 
     #[glib::object_subclass]
@@ -67,14 +67,14 @@ impl AvatarData {
     }
 
     /// Constructs an `AvatarData` with the given image data.
-    pub fn with_image(image: AvatarImage) -> Self {
+    pub(crate) fn with_image(image: AvatarImage) -> Self {
         glib::Object::builder().property("image", image).build()
     }
 
     /// Get this avatar as a notification icon.
     ///
     /// Returns `None` if an error occurred while generating the icon.
-    pub fn as_notification_icon(&self) -> Option<gdk::Texture> {
+    pub(crate) fn as_notification_icon(&self) -> Option<gdk::Texture> {
         let window = Application::default().active_window()?.upcast();
 
         let icon = if let Some(paintable) = self.image().and_then(|i| i.paintable()) {
