@@ -18,37 +18,37 @@ mod imp {
     #[properties(wrapper_type = super::PowerLevelSelectionPopover)]
     pub struct PowerLevelSelectionPopover {
         #[template_child]
-        pub admin_row: TemplateChild<gtk::ListBoxRow>,
+        admin_row: TemplateChild<gtk::ListBoxRow>,
         #[template_child]
-        pub admin_selected: TemplateChild<gtk::Image>,
+        admin_selected: TemplateChild<gtk::Image>,
         #[template_child]
-        pub mod_row: TemplateChild<gtk::ListBoxRow>,
+        mod_row: TemplateChild<gtk::ListBoxRow>,
         #[template_child]
-        pub mod_selected: TemplateChild<gtk::Image>,
+        mod_selected: TemplateChild<gtk::Image>,
         #[template_child]
-        pub default_row: TemplateChild<gtk::ListBoxRow>,
+        default_row: TemplateChild<gtk::ListBoxRow>,
         #[template_child]
-        pub default_pl_label: TemplateChild<gtk::Label>,
+        default_pl_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub default_selected: TemplateChild<gtk::Image>,
+        default_selected: TemplateChild<gtk::Image>,
         #[template_child]
-        pub muted_row: TemplateChild<gtk::ListBoxRow>,
+        muted_row: TemplateChild<gtk::ListBoxRow>,
         #[template_child]
-        pub muted_pl_label: TemplateChild<gtk::Label>,
+        muted_pl_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub muted_selected: TemplateChild<gtk::Image>,
+        muted_selected: TemplateChild<gtk::Image>,
         #[template_child]
-        pub custom_row: TemplateChild<adw::SpinRow>,
+        custom_row: TemplateChild<adw::SpinRow>,
         #[template_child]
-        pub custom_adjustment: TemplateChild<gtk::Adjustment>,
+        custom_adjustment: TemplateChild<gtk::Adjustment>,
         #[template_child]
-        pub custom_confirm: TemplateChild<gtk::Button>,
+        custom_confirm: TemplateChild<gtk::Button>,
         /// The permissions to watch.
         #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
-        pub permissions: BoundObject<Permissions>,
+        permissions: BoundObject<Permissions>,
         /// The selected power level.
         #[property(get, set = Self::set_selected_power_level, explicit_notify)]
-        pub selected_power_level: Cell<PowerLevel>,
+        selected_power_level: Cell<PowerLevel>,
     }
 
     #[glib::object_subclass]
@@ -59,7 +59,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -73,13 +73,13 @@ mod imp {
     impl WidgetImpl for PowerLevelSelectionPopover {}
     impl PopoverImpl for PowerLevelSelectionPopover {}
 
+    #[gtk::template_callbacks]
     impl PowerLevelSelectionPopover {
         /// Set the permissions to watch.
         fn set_permissions(&self, permissions: Option<Permissions>) {
             if self.permissions.obj() == permissions {
                 return;
             }
-            let obj = self.obj();
 
             self.permissions.disconnect_signals();
 
@@ -116,7 +116,7 @@ mod imp {
             }
 
             self.update();
-            obj.notify_permissions();
+            self.obj().notify_permissions();
         }
 
         /// Set the selected power level.
@@ -256,57 +256,54 @@ mod imp {
             self.muted_selected
                 .set_opacity((power_level == permissions.mute_power_level()).into());
         }
+
+        /// The custom value changed.
+        #[template_callback]
+        fn custom_value_changed(&self) {
+            let power_level = self.custom_adjustment.value() as PowerLevel;
+            let can_confirm = power_level != self.selected_power_level.get();
+
+            self.custom_confirm.set_sensitive(can_confirm);
+        }
+
+        /// The custom value was confirmed.
+        #[template_callback]
+        fn custom_value_confirmed(&self) {
+            let power_level = self.custom_adjustment.value() as PowerLevel;
+
+            self.obj().popdown();
+            self.set_selected_power_level(power_level);
+        }
+
+        /// A row was activated.
+        #[template_callback]
+        fn row_activated(&self, row: &gtk::ListBoxRow) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let power_level = match row.index() {
+                0 => POWER_LEVEL_ADMIN,
+                1 => POWER_LEVEL_MOD,
+                2 => permissions.default_power_level(),
+                3 => permissions.mute_power_level(),
+                _ => return,
+            };
+
+            self.obj().popdown();
+            self.set_selected_power_level(power_level);
+        }
     }
 }
 
 glib::wrapper! {
-    /// An `AdwPreferencesRow` behaving like a combo box to select a room member's power level.
+    /// A popover to select a room member's power level.
     pub struct PowerLevelSelectionPopover(ObjectSubclass<imp::PowerLevelSelectionPopover>)
         @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl PowerLevelSelectionPopover {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The custom value changed.
-    #[template_callback]
-    fn custom_value_changed(&self) {
-        let imp = self.imp();
-        let power_level = imp.custom_adjustment.value() as PowerLevel;
-        let can_confirm = power_level != self.selected_power_level();
-
-        imp.custom_confirm.set_sensitive(can_confirm);
-    }
-
-    /// The custom value was confirmed.
-    #[template_callback]
-    fn custom_value_confirmed(&self) {
-        let imp = self.imp();
-        let power_level = imp.custom_adjustment.value() as PowerLevel;
-
-        self.popdown();
-        self.set_selected_power_level(power_level);
-    }
-
-    /// A row was activated.
-    #[template_callback]
-    fn row_activated(&self, row: &gtk::ListBoxRow) {
-        let Some(permissions) = self.permissions() else {
-            return;
-        };
-
-        let power_level = match row.index() {
-            0 => POWER_LEVEL_ADMIN,
-            1 => POWER_LEVEL_MOD,
-            2 => permissions.default_power_level(),
-            3 => permissions.mute_power_level(),
-            _ => return,
-        };
-
-        self.popdown();
-        self.set_selected_power_level(power_level);
     }
 }

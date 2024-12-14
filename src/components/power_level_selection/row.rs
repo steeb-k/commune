@@ -22,37 +22,37 @@ mod imp {
     #[properties(wrapper_type = super::PowerLevelSelectionRow)]
     pub struct PowerLevelSelectionRow {
         #[template_child]
-        pub subtitle_bin: TemplateChild<adw::Bin>,
+        subtitle_bin: TemplateChild<adw::Bin>,
         #[template_child]
-        pub combo_selection_bin: TemplateChild<adw::Bin>,
+        combo_selection_bin: TemplateChild<adw::Bin>,
         #[template_child]
-        pub arrow_box: TemplateChild<gtk::Box>,
+        arrow_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
+        loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
-        pub popover: TemplateChild<PowerLevelSelectionPopover>,
+        popover: TemplateChild<PowerLevelSelectionPopover>,
         #[template_child]
-        pub selected_box: TemplateChild<gtk::Box>,
+        selected_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub selected_level_label: TemplateChild<gtk::Label>,
+        selected_level_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub selected_role_badge: TemplateChild<RoleBadge>,
+        selected_role_badge: TemplateChild<RoleBadge>,
         /// The permissions to watch.
         #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
-        pub permissions: RefCell<Option<Permissions>>,
+        permissions: RefCell<Option<Permissions>>,
         /// The selected power level.
         #[property(get, set = Self::set_selected_power_level, explicit_notify)]
-        pub selected_power_level: Cell<PowerLevel>,
+        selected_power_level: Cell<PowerLevel>,
         /// Whether the selected power level should be displayed in the
         /// subtitle, rather than next to the combo arrow.
         #[property(get, set = Self::set_use_subtitle, explicit_notify)]
-        pub use_subtitle: Cell<bool>,
+        use_subtitle: Cell<bool>,
         /// Whether the row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
         /// Whether the row is read-only.
         #[property(get, set = Self::set_read_only, explicit_notify)]
-        pub read_only: Cell<bool>,
+        read_only: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -63,7 +63,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::ComboBox);
 
@@ -92,6 +92,7 @@ mod imp {
     impl ListBoxRowImpl for PowerLevelSelectionRow {}
     impl PreferencesRowImpl for PowerLevelSelectionRow {}
 
+    #[gtk::template_callbacks]
     impl PowerLevelSelectionRow {
         /// Set the permissions to watch.
         fn set_permissions(&self, permissions: Option<Permissions>) {
@@ -202,6 +203,19 @@ mod imp {
             obj.update_property(&[gtk::accessible::Property::ReadOnly(read_only)]);
             obj.notify_read_only();
         }
+
+        /// The popover's visibility changed.
+        #[template_callback]
+        fn popover_visible(&self) {
+            let obj = self.obj();
+            let is_visible = self.popover.is_visible();
+
+            if is_visible {
+                obj.add_css_class("has-open-popup");
+            } else {
+                obj.remove_css_class("has-open-popup");
+            }
+        }
     }
 }
 
@@ -212,21 +226,8 @@ glib::wrapper! {
         @implements gtk::Actionable, gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl PowerLevelSelectionRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The popover's visibility changed.
-    #[template_callback]
-    fn popover_visible(&self) {
-        let is_visible = self.imp().popover.is_visible();
-
-        if is_visible {
-            self.add_css_class("has-open-popup");
-        } else {
-            self.remove_css_class("has-open-popup");
-        }
     }
 }
