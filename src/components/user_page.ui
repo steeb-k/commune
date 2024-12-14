@@ -88,7 +88,7 @@
                         <child>
                           <object class="LoadingButtonRow" id="direct_chat_button">
                             <property name="is-loading">true</property>
-                            <property name="action-name">user-page.open-direct-chat</property>
+                            <signal name="activated" handler="open_direct_chat" swapped="yes" />
                           </object>
                         </child>
                       </object>
@@ -210,7 +210,7 @@
                                           <object class="LoadingButton" id="verify_button">
                                             <property name="sensitive">False</property>
                                             <property name="content-label" translatable="yes">Verify</property>
-                                            <property name="action-name">user-page.verify-user</property>
+                                            <signal name="clicked" handler="verify_user" swapped="yes" />
                                           </object>
                                         </property>
                                       </object>

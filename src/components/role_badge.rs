@@ -11,13 +11,13 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::RoleBadge)]
     pub struct RoleBadge {
-        pub label: gtk::Label,
+        label: gtk::Label,
         /// The role displayed by this badge.
         #[property(get, set = Self::set_role, explicit_notify, builder(MemberRole::default()))]
-        pub role: Cell<MemberRole>,
+        role: Cell<MemberRole>,
         /// Whether the role displayed by this badge is the default role.
         #[property(get)]
-        pub is_default_role: Cell<bool>,
+        is_default_role: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -35,9 +35,8 @@ mod imp {
     impl ObjectImpl for RoleBadge {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
-            obj.set_child(Some(&self.label));
+            self.obj().set_child(Some(&self.label));
             self.update_badge();
             self.update_is_default_role();
         }

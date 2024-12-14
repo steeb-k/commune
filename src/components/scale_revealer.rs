@@ -220,10 +220,7 @@ impl ScaleRevealer {
     }
 
     /// Connect to the signal emitted when the transition is done.
-    pub(crate) fn connect_transition_done<F: Fn(&Self) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
+    pub fn connect_transition_done<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "transition-done",
             true,

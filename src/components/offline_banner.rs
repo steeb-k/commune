@@ -16,7 +16,7 @@ mod imp {
         banner: adw::Banner,
         /// The session to check.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
-        pub session: BoundObjectWeakRef<Session>,
+        session: BoundObjectWeakRef<Session>,
         monitor_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -122,7 +122,8 @@ mod imp {
 glib::wrapper! {
     /// Banner displaying the state of the connectivity.
     ///
-    /// If a session is set, it watches the offline status of the session, otherwise it watches the network connection with [`gio::NetworkMonitor`].
+    /// If a session is set, it watches the offline status of the session, otherwise it watches the
+    /// network connection with [`gio::NetworkMonitor`].
     pub struct OfflineBanner(ObjectSubclass<imp::OfflineBanner>)
         @extends gtk::Widget, adw::Bin;
 }

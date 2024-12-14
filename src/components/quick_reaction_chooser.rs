@@ -74,13 +74,13 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/quick_reaction_chooser.ui")]
     #[properties(wrapper_type = super::QuickReactionChooser)]
     pub struct QuickReactionChooser {
+        #[template_child]
+        reaction_grid: TemplateChild<gtk::Grid>,
         /// The list of reactions of the event for which this chooser is
         /// presented.
         #[property(get, set = Self::set_reactions, explicit_notify, nullable)]
         reactions: BoundObject<ReactionList>,
         reaction_bindings: RefCell<HashMap<String, glib::Binding>>,
-        #[template_child]
-        reaction_grid: TemplateChild<gtk::Grid>,
     }
 
     #[glib::object_subclass]
@@ -230,7 +230,7 @@ impl QuickReactionChooser {
 
     /// Connect to the signal emitted when the "More reactions" button is
     /// activated.
-    pub(crate) fn connect_more_reactions_activated<F: Fn(&Self) + 'static>(
+    pub fn connect_more_reactions_activated<F: Fn(&Self) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {

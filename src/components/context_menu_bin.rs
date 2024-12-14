@@ -12,8 +12,8 @@ mod imp {
 
     #[repr(C)]
     pub struct ContextMenuBinClass {
-        pub parent_class: glib::object::Class<adw::Bin>,
-        pub menu_opened: fn(&super::ContextMenuBin),
+        parent_class: glib::object::Class<adw::Bin>,
+        pub(super) menu_opened: fn(&super::ContextMenuBin),
     }
 
     unsafe impl ClassStruct for ContextMenuBinClass {
@@ -30,20 +30,20 @@ mod imp {
     #[properties(wrapper_type = super::ContextMenuBin)]
     pub struct ContextMenuBin {
         #[template_child]
-        pub click_gesture: TemplateChild<gtk::GestureClick>,
+        click_gesture: TemplateChild<gtk::GestureClick>,
         #[template_child]
-        pub long_press_gesture: TemplateChild<gtk::GestureLongPress>,
+        long_press_gesture: TemplateChild<gtk::GestureLongPress>,
         /// Whether this widget has a context menu.
         ///
         /// If this is set to `false`, all the actions will be disabled.
         #[property(get, set = Self::set_has_context_menu, explicit_notify)]
-        pub has_context_menu: Cell<bool>,
+        has_context_menu: Cell<bool>,
         /// The popover displaying the context menu.
         #[property(get, set = Self::set_popover, explicit_notify, nullable)]
-        pub popover: BoundObject<gtk::PopoverMenu>,
+        popover: BoundObject<gtk::PopoverMenu>,
         /// The child widget.
         #[property(get, set = Self::set_child, explicit_notify, nullable)]
-        pub child: RefCell<Option<gtk::Widget>>,
+        child: RefCell<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]

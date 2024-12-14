@@ -10,18 +10,18 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::DragOverlay)]
     pub struct DragOverlay {
-        pub overlay: gtk::Overlay,
-        pub revealer: gtk::Revealer,
-        pub status: adw::StatusPage,
+        overlay: gtk::Overlay,
+        revealer: gtk::Revealer,
+        status: adw::StatusPage,
         /// The title of this `DragOverlay`.
         #[property(get = Self::title, set = Self::set_title)]
-        pub title: PhantomData<glib::GString>,
+        title: PhantomData<glib::GString>,
         /// The child of this `DragOverlay`.
         #[property(get = Self::child, set = Self::set_child, nullable)]
-        pub child: PhantomData<Option<gtk::Widget>>,
+        child: PhantomData<Option<gtk::Widget>>,
         /// The [`gtk::DropTarget`] of this `DragOverlay`.
         #[property(get, set = Self::set_drop_target)]
-        pub drop_target: BoundObject<gtk::DropTarget>,
+        drop_target: BoundObject<gtk::DropTarget>,
     }
 
     #[glib::object_subclass]
@@ -72,24 +72,24 @@ mod imp {
 
     impl DragOverlay {
         /// The title of this `DragOverlay`.
-        pub fn title(&self) -> glib::GString {
+        fn title(&self) -> glib::GString {
             self.status.title()
         }
 
         /// Set the title of this `DragOverlay`.
-        pub fn set_title(&self, title: &str) {
+        fn set_title(&self, title: &str) {
             self.status.set_title(title);
             self.obj()
                 .update_property(&[gtk::accessible::Property::Label(title)]);
         }
 
         /// The child of this `DragOverlay`.
-        pub fn child(&self) -> Option<gtk::Widget> {
+        fn child(&self) -> Option<gtk::Widget> {
             self.overlay.child()
         }
 
         /// Set the child of this `DragOverlay`.
-        pub fn set_child(&self, child: Option<&gtk::Widget>) {
+        fn set_child(&self, child: Option<&gtk::Widget>) {
             self.overlay.set_child(child);
         }
 

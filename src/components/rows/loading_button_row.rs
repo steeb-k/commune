@@ -60,7 +60,7 @@ mod imp {
                         #[weak]
                         obj,
                         move |_, row| {
-                            if row == obj.upcast_ref::<gtk::ListBoxRow>() {
+                            if *row == obj {
                                 obj.emit_by_name::<()>("activated", &[]);
                             }
                         }
@@ -87,7 +87,10 @@ mod imp {
             }
 
             self.loading_bin.set_is_loading(loading);
-            self.obj().notify_is_loading();
+
+            let obj = self.obj();
+            obj.set_activatable(!loading);
+            obj.notify_is_loading();
         }
     }
 }

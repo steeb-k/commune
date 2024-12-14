@@ -44,27 +44,27 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/action_button.ui")]
     #[properties(wrapper_type = super::ActionButton)]
     pub struct ActionButton {
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        button_default: TemplateChild<gtk::Button>,
         /// The icon used in the default state.
         #[property(get, set = Self::set_icon_name, explicit_notify)]
-        pub icon_name: RefCell<String>,
-        /// The extra classes applied to the button in the default state.
-        pub extra_classes: RefCell<Vec<String>>,
+        icon_name: RefCell<String>,
+        /// The extra CSS classes applied to the button in the default state.
+        extra_classes: RefCell<Vec<&'static str>>,
         /// The action emitted by the button.
         #[property(get = Self::action_name, set = Self::set_action_name, override_interface = gtk::Actionable)]
-        pub action_name: RefCell<Option<glib::GString>>,
+        action_name: RefCell<Option<glib::GString>>,
         /// The target value of the action of the button.
         #[property(get = Self::action_target_value, set = Self::set_action_target, override_interface = gtk::Actionable)]
-        pub action_target: RefCell<Option<glib::Variant>>,
+        action_target: RefCell<Option<glib::Variant>>,
         /// The state of the button.
         #[property(get, set = Self::set_state, explicit_notify, builder(ActionState::default()))]
-        pub state: Cell<ActionState>,
+        state: Cell<ActionState>,
         /// The tooltip text of the button of the default state.
         #[property(set = Self::set_default_state_tooltip_text)]
-        pub default_state_tooltip_text: PhantomData<Option<String>>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub button_default: TemplateChild<gtk::Button>,
+        default_state_tooltip_text: PhantomData<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -76,7 +76,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("action-button");
         }
@@ -116,6 +116,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl ActionButton {
         /// Set the icon used in the default state.
         fn set_icon_name(&self, icon_name: &str) {
@@ -125,6 +126,27 @@ mod imp {
 
             self.icon_name.replace(icon_name.to_owned());
             self.obj().notify_icon_name();
+        }
+
+        /// Set the extra CSS classes applied to the button in the default
+        /// state.
+        pub(super) fn set_extra_classes(&self, classes: &[&'static str]) {
+            let mut extra_classes = self.extra_classes.borrow_mut();
+
+            if *extra_classes == classes {
+                // Nothing to do.
+                return;
+            }
+
+            for class in extra_classes.drain(..) {
+                self.button_default.remove_css_class(class);
+            }
+
+            for class in classes {
+                self.button_default.add_css_class(class);
+            }
+
+            extra_classes.extend(classes);
         }
 
         /// Set the state of the button.
@@ -147,6 +169,11 @@ mod imp {
         fn set_default_state_tooltip_text(&self, text: Option<&str>) {
             self.button_default.set_tooltip_text(text);
         }
+
+        #[template_callback]
+        fn button_clicked(&self) {
+            self.obj().emit_by_name::<()>("clicked", &[]);
+        }
     }
 }
 
@@ -162,25 +189,12 @@ impl ActionButton {
         glib::Object::new()
     }
 
-    pub fn extra_classes(&self) -> Vec<String> {
-        self.imp().extra_classes.borrow().clone()
+    /// Set the extra CSS classes applied to the button in the default state.
+    pub(crate) fn set_extra_classes(&self, classes: &[&'static str]) {
+        self.imp().set_extra_classes(classes);
     }
 
-    pub fn set_extra_classes(&self, classes: &[&str]) {
-        let imp = self.imp();
-        for class in imp.extra_classes.borrow_mut().drain(..) {
-            imp.button_default.remove_css_class(&class);
-        }
-
-        for class in classes {
-            imp.button_default.add_css_class(class);
-        }
-
-        self.imp()
-            .extra_classes
-            .replace(classes.iter().map(ToString::to_string).collect());
-    }
-
+    /// Connect to the signal emitted when the button is clicked.
     pub fn connect_clicked<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "clicked",
@@ -189,10 +203,5 @@ impl ActionButton {
                 f(&obj);
             }),
         )
-    }
-
-    #[template_callback]
-    fn button_clicked(&self) {
-        self.emit_by_name::<()>("clicked", &[]);
     }
 }
