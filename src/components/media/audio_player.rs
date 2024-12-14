@@ -16,10 +16,10 @@ mod imp {
     pub struct AudioPlayer {
         /// The media file to play.
         #[property(get, set = Self::set_media_file, explicit_notify, nullable)]
-        pub media_file: BoundObject<gtk::MediaFile>,
+        media_file: BoundObject<gtk::MediaFile>,
         /// Whether to play the media automatically.
         #[property(get, set = Self::set_autoplay, explicit_notify)]
-        pub autoplay: Cell<bool>,
+        autoplay: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -98,7 +98,7 @@ impl AudioPlayer {
     ///
     /// This is a convenience method that calls
     /// [`AudioPlayer::set_media_file()`].
-    pub fn set_file(&self, file: Option<&gio::File>) {
+    pub(crate) fn set_file(&self, file: Option<&gio::File>) {
         self.set_media_file(file.map(gtk::MediaFile::for_file));
     }
 }

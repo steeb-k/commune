@@ -28,7 +28,7 @@ pub enum ContentType {
 
 impl ContentType {
     /// The name of the icon to represent this content type.
-    pub fn icon_name(self) -> &'static str {
+    pub(crate) fn icon_name(self) -> &'static str {
         match self {
             ContentType::Image => "image-symbolic",
             ContentType::Audio => "audio-symbolic",

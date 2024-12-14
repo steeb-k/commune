@@ -17,13 +17,13 @@ mod imp {
     #[properties(wrapper_type = super::LocationViewer)]
     pub struct LocationViewer {
         #[template_child]
-        pub map: TemplateChild<shumate::SimpleMap>,
+        map: TemplateChild<shumate::SimpleMap>,
         #[template_child]
-        pub marker_img: TemplateChild<gtk::Image>,
-        pub marker: shumate::Marker,
+        marker_img: TemplateChild<gtk::Image>,
+        marker: shumate::Marker,
         /// Whether to display this location in a compact format.
         #[property(get, set = Self::set_compact, explicit_notify)]
-        pub compact: Cell<bool>,
+        compact: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -74,14 +74,17 @@ mod imp {
 
             self.map.set_map_source(Some(&source));
 
-            let viewport = self.map.viewport().unwrap();
+            let viewport = self.map.viewport().expect("map has a viewport");
             viewport.set_zoom_level(12.0);
             let marker_layer = shumate::MarkerLayer::new(&viewport);
             marker_layer.add_marker(&self.marker);
             self.map.add_overlay_layer(&marker_layer);
 
             // Hide the scale.
-            self.map.scale().unwrap().set_visible(false);
+            self.map
+                .scale()
+                .expect("map has a scale")
+                .set_visible(false);
             self.parent_constructed();
         }
     }
@@ -104,6 +107,27 @@ mod imp {
             self.compact.set(compact);
             self.obj().notify_compact();
         }
+
+        // Move the map viewport to the provided coordinates and draw a marker.
+        pub(super) fn set_location(&self, geo_uri: &GeoUri) {
+            let latitude = geo_uri.latitude();
+            let longitude = geo_uri.longitude();
+
+            self.map
+                .viewport()
+                .expect("map has a viewport")
+                .set_location(latitude, longitude);
+            self.marker.set_location(latitude, longitude);
+
+            self.obj()
+                .update_property(&[gtk::accessible::Property::Description(&gettext_f(
+                    "Location at latitude {latitude} and longitude {longitude}",
+                    &[
+                        ("latitude", &latitude.to_string()),
+                        ("longitude", &longitude.to_string()),
+                    ],
+                ))]);
+        }
     }
 }
 
@@ -120,23 +144,7 @@ impl LocationViewer {
     }
 
     // Move the map viewport to the provided coordinates and draw a marker.
-    pub fn set_location(&self, geo_uri: &GeoUri) {
-        let imp = self.imp();
-        let latitude = geo_uri.latitude();
-        let longitude = geo_uri.longitude();
-
-        imp.map
-            .viewport()
-            .unwrap()
-            .set_location(latitude, longitude);
-        imp.marker.set_location(latitude, longitude);
-
-        self.update_property(&[gtk::accessible::Property::Description(&gettext_f(
-            "Location at latitude {latitude} and longitude {longitude}",
-            &[
-                ("latitude", &latitude.to_string()),
-                ("longitude", &longitude.to_string()),
-            ],
-        ))]);
+    pub(crate) fn set_location(&self, geo_uri: &GeoUri) {
+        self.imp().set_location(geo_uri);
     }
 }
