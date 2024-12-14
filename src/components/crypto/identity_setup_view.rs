@@ -61,23 +61,23 @@ mod imp {
     #[properties(wrapper_type = super::CryptoIdentitySetupView)]
     pub struct CryptoIdentitySetupView {
         #[template_child]
-        pub navigation: TemplateChild<adw::NavigationView>,
+        navigation: TemplateChild<adw::NavigationView>,
         #[template_child]
-        pub send_request_btn: TemplateChild<LoadingButton>,
+        send_request_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub use_recovery_btn: TemplateChild<gtk::Button>,
+        use_recovery_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub verification_page: TemplateChild<IdentityVerificationView>,
+        verification_page: TemplateChild<IdentityVerificationView>,
         #[template_child]
-        pub bootstrap_btn: TemplateChild<LoadingButton>,
+        bootstrap_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub reset_btn: TemplateChild<gtk::Button>,
+        reset_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The ongoing identity verification, if any.
         #[property(get)]
-        pub verification: BoundObjectWeakRef<IdentityVerification>,
+        verification: BoundObjectWeakRef<IdentityVerification>,
         verification_list_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The recovery view.
         recovery_view: OnceCell<CryptoRecoverySetupView>,
@@ -91,7 +91,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("setup-view");
         }
@@ -148,6 +148,7 @@ mod imp {
 
     impl BinImpl for CryptoIdentitySetupView {}
 
+    #[gtk::template_callbacks]
     impl CryptoIdentitySetupView {
         /// The visible page of the view.
         fn visible_page(&self) -> CryptoIdentitySetupPage {
@@ -167,12 +168,11 @@ mod imp {
                     .expect("Session should still have a strong reference");
                 let recovery_view = CryptoRecoverySetupView::new(&session);
 
-                let obj = self.obj();
                 recovery_view.connect_completed(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.emit_completed(CryptoIdentitySetupNextStep::None);
+                        imp.emit_completed(CryptoIdentitySetupNextStep::None);
                     }
                 ));
 
@@ -267,13 +267,12 @@ mod imp {
         /// Set the ongoing identity verification.
         ///
         /// Cancels the previous verification if it's not finished.
-        pub(super) fn set_verification(&self, verification: Option<IdentityVerification>) {
+        fn set_verification(&self, verification: Option<IdentityVerification>) {
             let prev_verification = self.verification.obj();
 
             if prev_verification == verification {
                 return;
             }
-            let obj = self.obj();
 
             if let Some(verification) = prev_verification {
                 if !verification.is_finished() {
@@ -298,13 +297,13 @@ mod imp {
                     }
                 ));
                 let done_handler = verification.connect_done(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     #[upgrade_or]
                     glib::Propagation::Stop,
                     move |verification| {
-                        obj.emit_completed(CryptoIdentitySetupNextStep::EnableRecovery);
-                        obj.imp().set_verification(None);
+                        imp.emit_completed(CryptoIdentitySetupNextStep::EnableRecovery);
+                        imp.set_verification(None);
                         verification.remove_from_list();
 
                         glib::Propagation::Stop
@@ -339,11 +338,11 @@ mod imp {
                     .push_by_tag(CryptoIdentitySetupPage::Verify.as_ref());
             }
 
-            obj.notify_verification();
+            self.obj().notify_verification();
         }
 
         /// Construct the recovery view and wrap it into a navigation page.
-        pub(super) fn recovery_page(
+        fn recovery_page(
             &self,
             initial_page: CryptoRecoverySetupInitialPage,
         ) -> adw::NavigationPage {
@@ -364,6 +363,94 @@ mod imp {
 
             page
         }
+
+        /// Focus the proper widget for the current page.
+        #[template_callback]
+        fn grab_focus(&self) {
+            <Self as WidgetImpl>::grab_focus(self);
+        }
+
+        /// Create a new verification request.
+        #[template_callback]
+        async fn send_request(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.send_request_btn.set_is_loading(true);
+
+            if let Err(()) = session.verification_list().create(None).await {
+                let obj = self.obj();
+                toast!(obj, gettext("Could not send a new verification request"));
+            }
+
+            // On success, the verification should be shown automatically.
+
+            self.send_request_btn.set_is_loading(false);
+        }
+
+        /// Reset cross-signing and optionally recovery.
+        #[template_callback]
+        fn reset(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let can_recover = session.security().recovery_state() != RecoveryState::Disabled;
+
+            if can_recover {
+                let recovery_view = self.recovery_page(CryptoRecoverySetupInitialPage::Reset);
+                self.navigation.push(&recovery_view);
+            } else {
+                self.navigation
+                    .push_by_tag(CryptoIdentitySetupPage::Bootstrap.as_ref());
+            }
+        }
+
+        /// Create a new crypto user identity.
+        #[template_callback]
+        async fn bootstrap_cross_signing(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.bootstrap_btn.set_is_loading(true);
+
+            let obj = self.obj();
+            let dialog = AuthDialog::new(&session);
+
+            let result = dialog
+                .authenticate(&*obj, move |client, auth| async move {
+                    client.encryption().bootstrap_cross_signing(auth).await
+                })
+                .await;
+
+            match result {
+                Ok(()) => self.emit_completed(CryptoIdentitySetupNextStep::CompleteRecovery),
+                Err(AuthError::UserCancelled) => {
+                    debug!("User cancelled authentication for cross-signing bootstrap");
+                }
+                Err(error) => {
+                    error!("Could not bootstrap cross-signing: {error:?}");
+                    toast!(obj, gettext("Could not create the crypto identity",));
+                }
+            }
+
+            self.bootstrap_btn.set_is_loading(false);
+        }
+
+        /// Recover the data.
+        #[template_callback]
+        fn recover(&self) {
+            let recovery_view = self.recovery_page(CryptoRecoverySetupInitialPage::Recover);
+            self.navigation.push(&recovery_view);
+        }
+
+        // Emit the `completed` signal.
+        #[template_callback]
+        fn emit_completed(&self, next: CryptoIdentitySetupNextStep) {
+            self.obj().emit_by_name::<()>("completed", &[&next]);
+        }
     }
 }
 
@@ -373,104 +460,9 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl CryptoIdentitySetupView {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Focus the proper widget for the current page.
-    #[template_callback]
-    fn grab_focus(&self) {
-        self.imp().grab_focus();
-    }
-
-    /// Create a new verification request.
-    #[template_callback]
-    async fn send_request(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        imp.send_request_btn.set_is_loading(true);
-
-        match session.verification_list().create(None).await {
-            Ok(_) => {
-                // The verification should be shown automatically.
-            }
-            Err(()) => {
-                toast!(self, gettext("Could not send a new verification request"));
-            }
-        }
-
-        imp.send_request_btn.set_is_loading(false);
-    }
-
-    /// Reset cross-signing and optionally recovery.
-    #[template_callback]
-    fn reset(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let can_recover = session.security().recovery_state() != RecoveryState::Disabled;
-
-        if can_recover {
-            let recovery_view = imp.recovery_page(CryptoRecoverySetupInitialPage::Reset);
-            imp.navigation.push(&recovery_view);
-        } else {
-            imp.navigation
-                .push_by_tag(CryptoIdentitySetupPage::Bootstrap.as_ref());
-        }
-    }
-
-    /// Create a new crypto user identity.
-    #[template_callback]
-    async fn bootstrap_cross_signing(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        imp.bootstrap_btn.set_is_loading(true);
-
-        let dialog = AuthDialog::new(&session);
-
-        let result = dialog
-            .authenticate(self, move |client, auth| async move {
-                client.encryption().bootstrap_cross_signing(auth).await
-            })
-            .await;
-
-        match result {
-            Ok(()) => self.emit_completed(CryptoIdentitySetupNextStep::CompleteRecovery),
-            Err(AuthError::UserCancelled) => {
-                debug!("User cancelled authentication for cross-signing bootstrap");
-            }
-            Err(error) => {
-                error!("Could not bootstrap cross-signing: {error:?}");
-                toast!(self, gettext("Could not create the crypto identity",));
-            }
-        }
-
-        imp.bootstrap_btn.set_is_loading(false);
-    }
-
-    /// Recover the data.
-    #[template_callback]
-    fn recover(&self) {
-        let imp = self.imp();
-
-        let recovery_view = imp.recovery_page(CryptoRecoverySetupInitialPage::Recover);
-        imp.navigation.push(&recovery_view);
-    }
-
-    // Emit the `completed` signal.
-    #[template_callback]
-    fn emit_completed(&self, next: CryptoIdentitySetupNextStep) {
-        self.emit_by_name::<()>("completed", &[&next]);
     }
 
     /// Connect to the signal emitted when the setup is completed.
