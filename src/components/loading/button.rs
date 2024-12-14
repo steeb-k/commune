@@ -11,22 +11,22 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::LoadingButton)]
     pub struct LoadingButton {
-        pub loading_bin: LoadingBin,
+        loading_bin: LoadingBin,
         /// The label of the content of the button.
         ///
         /// If an icon was set, it is removed.
         #[property(get = Self::content_label, set = Self::set_content_label, explicit_notify)]
-        pub content_label: PhantomData<Option<glib::GString>>,
+        content_label: PhantomData<Option<glib::GString>>,
         /// The name of the icon of the content of the button.
         ///
         /// If a label was set, it is removed.
         #[property(get = Self::content_icon_name, set = Self::set_content_icon_name, explicit_notify)]
-        pub content_icon_name: PhantomData<Option<glib::GString>>,
+        content_icon_name: PhantomData<Option<glib::GString>>,
         /// Whether to display the loading spinner.
         ///
         /// If this is `false`, the text or icon will be displayed.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -155,7 +155,8 @@ mod imp {
 glib::wrapper! {
     /// Button showing either a spinner or a label.
     ///
-    /// Use the `content-label` and `content-icon-name` properties instead of `label` and `icon-name` respectively, otherwise the spinner will not appear.
+    /// Use the `content-label` and `content-icon-name` properties instead of `label` and
+    /// `icon-name` respectively, otherwise the spinner will not appear.
     pub struct LoadingButton(ObjectSubclass<imp::LoadingButton>)
         @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
 }

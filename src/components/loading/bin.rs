@@ -13,15 +13,15 @@ mod imp {
     #[properties(wrapper_type = super::LoadingBin)]
     pub struct LoadingBin {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub child_bin: TemplateChild<adw::Bin>,
+        child_bin: TemplateChild<adw::Bin>,
         /// The child widget.
         #[property(get = Self::child, set = Self::set_child, explicit_notify, nullable)]
-        pub child: PhantomData<Option<gtk::Widget>>,
+        child: PhantomData<Option<gtk::Widget>>,
         /// Whether this is showing the spinner.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
-        pub is_loading: PhantomData<bool>,
+        is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
