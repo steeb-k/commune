@@ -3,7 +3,7 @@ use gst_video::{prelude::*, video_frame::VideoFrameRef, VideoInfo};
 use image::{GenericImage, GenericImageView, Luma};
 use matrix_sdk::encryption::verification::{DecodingError, QrVerificationData};
 use thiserror::Error;
-use tracing::debug;
+use tracing::trace;
 
 use super::*;
 use crate::contrib::qr_code_scanner::camera::Action;
@@ -20,9 +20,9 @@ mod imp {
 
     #[derive(Default)]
     pub struct QrCodeDetector {
-        pub info: Mutex<Option<VideoInfo>>,
-        pub sender: Mutex<Option<mpsc::Sender<Action>>>,
-        pub code: Mutex<Option<QrVerificationData>>,
+        info: Mutex<Option<VideoInfo>>,
+        pub(super) sender: Mutex<Option<mpsc::Sender<Action>>>,
+        code: Mutex<Option<QrVerificationData>>,
     }
 
     #[glib::object_subclass]
@@ -67,6 +67,7 @@ mod imp {
             PAD_TEMPLATES.as_ref()
         }
     }
+
     impl BaseSinkImpl for QrCodeDetector {
         fn set_caps(&self, caps: &gst::Caps) -> Result<(), gst::LoggableError> {
             let video_info = gst_video::VideoInfo::from_caps(caps).unwrap();
@@ -76,6 +77,7 @@ mod imp {
             Ok(())
         }
     }
+
     impl VideoSinkImpl for QrCodeDetector {
         fn show_frame(&self, buffer: &gst::Buffer) -> Result<gst::FlowSuccess, gst::FlowError> {
             let now = std::time::Instant::now();
@@ -113,7 +115,7 @@ mod imp {
                     }
                 }
             }
-            debug!("Spend {}ms to detect qr code", now.elapsed().as_millis());
+            trace!("Spent {}ms to detect qr code", now.elapsed().as_millis());
 
             Ok(gst::FlowSuccess::Ok)
         }
@@ -121,8 +123,10 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct QrCodeDetector(ObjectSubclass<imp::QrCodeDetector>) @extends gst_video::VideoSink, gst_base::BaseSink, gst::Element, gst::Object;
+    pub struct QrCodeDetector(ObjectSubclass<imp::QrCodeDetector>)
+        @extends gst_video::VideoSink, gst_base::BaseSink, gst::Element, gst::Object;
 }
+
 #[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for QrCodeDetector {}
 unsafe impl Sync for QrCodeDetector {}
@@ -136,7 +140,7 @@ impl QrCodeDetector {
 }
 
 // From https://github.com/matrix-org/matrix-rust-sdk/blob/79d13148fbba58db0ff5f62b27e7856cbbbe13c2/crates/matrix-sdk-qrcode/src/utils.rs#L81-L104
-pub(crate) fn decode_qr<I>(image: I) -> Result<QrVerificationData, QrDecodingError>
+fn decode_qr<I>(image: I) -> Result<QrVerificationData, QrDecodingError>
 where
     I: GenericImage<Pixel = Luma<u8>> + GenericImageView<Pixel = Luma<u8>>,
 {
