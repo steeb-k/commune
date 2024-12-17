@@ -1,6 +1,5 @@
 use futures_channel::mpsc;
 use gst_video::{prelude::*, video_frame::VideoFrameRef, VideoInfo};
-use image::{GenericImage, GenericImageView, Luma};
 use matrix_sdk::encryption::verification::{DecodingError, QrVerificationData};
 use thiserror::Error;
 use tracing::trace;
@@ -85,24 +84,7 @@ mod imp {
             if let Some(info) = &*self.info.lock().unwrap() {
                 let frame = VideoFrameRef::from_buffer_ref_readable(buffer, info).unwrap();
 
-                let mut samples = image::FlatSamples::<Vec<u8>> {
-                    samples: frame.plane_data(0).unwrap().to_vec(),
-                    layout: image::flat::SampleLayout {
-                        channels: 1,
-                        channel_stride: 1,
-                        width: frame.width(),
-                        width_stride: 1,
-                        height: frame.height(),
-                        height_stride: frame.plane_stride()[0]
-                            .try_into()
-                            .expect("stride is a positive integer"),
-                    },
-                    color_hint: Some(image::ColorType::L8),
-                };
-
-                let image = samples.as_view_mut::<image::Luma<u8>>().unwrap();
-
-                if let Ok(code) = decode_qr(image) {
+                if let Ok(code) = decode_qr(&frame) {
                     let mut previous_code = self.code.lock().unwrap();
                     if previous_code.as_ref() != Some(&code) {
                         previous_code.replace(code.clone());
@@ -140,11 +122,18 @@ impl QrCodeDetector {
 }
 
 // From https://github.com/matrix-org/matrix-rust-sdk/blob/79d13148fbba58db0ff5f62b27e7856cbbbe13c2/crates/matrix-sdk-qrcode/src/utils.rs#L81-L104
-fn decode_qr<I>(image: I) -> Result<QrVerificationData, QrDecodingError>
-where
-    I: GenericImage<Pixel = Luma<u8>> + GenericImageView<Pixel = Luma<u8>>,
-{
-    let mut image = rqrr::PreparedImage::prepare(image);
+fn decode_qr(
+    frame: &VideoFrameRef<&gst::BufferRef>,
+) -> Result<QrVerificationData, QrDecodingError> {
+    let data = frame.comp_data(0).expect("data is present");
+    let width = frame
+        .comp_stride(0)
+        .try_into()
+        .expect("stride is a positive integer");
+    let height = frame.height() as usize;
+
+    let mut image =
+        rqrr::PreparedImage::prepare_from_greyscale(width, height, |x, y| data[x + (y * width)]);
     let grids = image.detect_grids();
 
     let mut error = None;
