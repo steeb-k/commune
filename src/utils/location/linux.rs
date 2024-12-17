@@ -1,11 +1,8 @@
 //! Linux Location API.
 
-use ashpd::{
-    desktop::{
-        location::{Accuracy, Location as PortalLocation, LocationProxy},
-        Session,
-    },
-    WindowIdentifier,
+use ashpd::desktop::{
+    location::{Accuracy, Location as PortalLocation, LocationProxy},
+    Session,
 };
 use futures_util::{future, stream, FutureExt, Stream, StreamExt, TryFutureExt};
 use geo_uri::GeoUri;
@@ -122,14 +119,13 @@ mod imp {
 
             spawn_tokio!(async move {
                 let (proxy, session) = &*proxy;
-                let identifier = WindowIdentifier::default();
 
                 // We want to be listening for new locations whenever the session is up
                 // otherwise we might lose the first response and will have to wait for a future
                 // update by geoclue.
                 let mut stream = proxy.receive_location_updated().await?;
                 let (_, first_location) = future::try_join(
-                    proxy.start(session, &identifier).into_future(),
+                    proxy.start(session, None).into_future(),
                     stream.next().map(|l| l.ok_or(ashpd::Error::NoResponse)),
                 )
                 .await?;

@@ -540,7 +540,7 @@ mod imp {
 
                         self.set_up_typing();
                     }
-                    RoomState::Left | RoomState::Knocked => {}
+                    RoomState::Left | RoomState::Knocked | RoomState::Banned => {}
                     RoomState::Invited => {
                         spawn!(
                             glib::Priority::DEFAULT_IDLE,
@@ -588,7 +588,7 @@ mod imp {
                     }
                 }
                 RoomState::Invited => RoomCategory::Invited,
-                RoomState::Left | RoomState::Knocked => RoomCategory::Left,
+                RoomState::Left | RoomState::Knocked | RoomState::Banned => RoomCategory::Left,
             };
 
             self.set_category(category);
@@ -877,17 +877,21 @@ mod imp {
         async fn direct_user_id(&self) -> Option<OwnedUserId> {
             let matrix_room = self.matrix_room();
 
-            // Check if the room direct and if there only one target.
-            let direct_targets = matrix_room.direct_targets();
-            if direct_targets.len() != 1 {
-                // It was a direct chat with several users.
+            // Check if the room is direct and if there is only one target.
+            let mut direct_targets = matrix_room
+                .direct_targets()
+                .into_iter()
+                .filter_map(|id| OwnedUserId::try_from(id).ok());
+
+            let Some(direct_target_user_id) = direct_targets.next() else {
+                // It is not a direct chat.
+                return None;
+            };
+
+            if direct_targets.next().is_some() {
+                // It is a direct chat with several users.
                 return None;
             }
-
-            let direct_target_user_id = direct_targets
-                .into_iter()
-                .next()
-                .expect("there is 1 direct target");
 
             // Check that there are still at most 2 members.
             let members_count = matrix_room.active_members_count();
@@ -1132,7 +1136,7 @@ mod imp {
         /// Update the visibility of the history.
         fn update_history_visibility(&self) {
             let matrix_room = self.matrix_room();
-            let visibility = matrix_room.history_visibility().into();
+            let visibility = matrix_room.history_visibility_or_default().into();
 
             if self.history_visibility.get() == visibility {
                 return;

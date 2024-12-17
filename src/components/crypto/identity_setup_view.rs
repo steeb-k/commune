@@ -328,11 +328,11 @@ mod imp {
             self.verification_page.set_verification(verification);
 
             if has_verification
-                && !self
+                && self
                     .navigation
                     .visible_page()
                     .and_then(|p| p.tag())
-                    .is_some_and(|t| t == CryptoIdentitySetupPage::Verify.as_ref())
+                    .is_none_or(|t| t != CryptoIdentitySetupPage::Verify.as_ref())
             {
                 self.navigation
                     .push_by_tag(CryptoIdentitySetupPage::Verify.as_ref());

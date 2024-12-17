@@ -159,10 +159,7 @@ mod imp {
             let obj = self.obj();
 
             if let Some(popover) = prev_popover {
-                if popover
-                    .parent()
-                    .is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>())
-                {
+                if popover.parent().is_some_and(|w| w == *obj) {
                     popover.unparent();
                 }
             }
@@ -176,10 +173,7 @@ mod imp {
                     #[weak]
                     obj,
                     move |popover| {
-                        if !popover
-                            .parent()
-                            .is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>())
-                        {
+                        if popover.parent().is_none_or(|w| w != obj) {
                             obj.imp().popover.disconnect_signals();
                         }
                     }

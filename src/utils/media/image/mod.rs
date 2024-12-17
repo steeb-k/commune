@@ -5,7 +5,7 @@ use std::{error::Error, fmt, str::FromStr, sync::Arc};
 use gettextrs::gettext;
 use gtk::{gdk, gio, graphene, gsk, prelude::*};
 use matrix_sdk::{
-    attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
+    attachment::{BaseImageInfo, Thumbnail},
     media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
     Client,
 };
@@ -396,19 +396,16 @@ impl TextureThumbnailer {
         let encoder = webp::Encoder::new(&data, webp_layout, dimensions.width, dimensions.height);
         let data = encoder.encode(WEBP_DEFAULT_QUALITY).to_vec();
 
+        let size = data.len().try_into().ok()?;
         let content_type =
             mime::Mime::from_str(WEBP_CONTENT_TYPE).expect("content type should be valid");
-
-        let thumbnail_info = BaseThumbnailInfo {
-            width: Some(dimensions.width.into()),
-            height: Some(dimensions.height.into()),
-            size: data.len().try_into().ok(),
-        };
 
         Some(Thumbnail {
             data,
             content_type,
-            info: Some(thumbnail_info),
+            width: dimensions.width.into(),
+            height: dimensions.height.into(),
+            size,
         })
     }
 }
@@ -523,9 +520,10 @@ impl ImageSource<'_> {
     ///   accept to create a thumbnail of those.
     fn can_be_thumbnailed(&self) -> bool {
         !self.source.is_encrypted()
-            && !self
+            && self
                 .info
-                .is_some_and(|i| i.mimetype.is_some_and(|m| m == SVG_CONTENT_TYPE))
+                .and_then(|i| i.mimetype)
+                .is_none_or(|m| m != SVG_CONTENT_TYPE)
     }
 
     /// The filesize of this source.

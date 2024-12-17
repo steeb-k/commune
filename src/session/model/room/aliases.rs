@@ -103,7 +103,7 @@ mod imp {
 
                 // Check if aliases were changed in the current list.
                 for (i, old_alias) in old_aliases.iter().enumerate() {
-                    if !alt_aliases.get(i).is_some_and(|alias| alias == old_alias) {
+                    if alt_aliases.get(i).is_none_or(|alias| alias != old_alias) {
                         pos = Some(i);
                         break;
                     }
@@ -245,7 +245,7 @@ impl RoomAliases {
             .unwrap_or_default();
 
         // Remove the canonical alias, if it is there.
-        if !event_content.alias.take().is_some_and(|a| a == *alias) {
+        if event_content.alias.take().is_none_or(|a| a != *alias) {
             // Nothing to do.
             return Err(());
         }

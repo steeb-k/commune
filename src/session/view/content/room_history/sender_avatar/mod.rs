@@ -403,7 +403,7 @@ mod imp {
                     #[weak]
                     obj,
                     move |popover| {
-                        if !popover.parent().is_some_and(|w| w == obj) {
+                        if popover.parent().is_none_or(|w| w != obj) {
                             let imp = obj.imp();
 
                             imp.popover.disconnect_signals();

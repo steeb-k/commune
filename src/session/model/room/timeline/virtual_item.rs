@@ -93,7 +93,7 @@ impl VirtualItem {
     /// Create a new `VirtualItem` from a virtual timeline item.
     pub fn new(item: &VirtualTimelineItem) -> Self {
         match item {
-            VirtualTimelineItem::DayDivider(ts) => Self::day_divider_with_timestamp(*ts),
+            VirtualTimelineItem::DateDivider(ts) => Self::day_divider_with_timestamp(*ts),
             VirtualTimelineItem::ReadMarker => Self::new_messages(),
         }
     }

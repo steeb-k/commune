@@ -186,7 +186,7 @@ mod imp {
 
         /// Allocate shapes in the Pango layout for the child widgets.
         fn allocate_shapes(&self) {
-            if !self.label.borrow().as_ref().is_some_and(|s| !s.is_empty()) {
+            if self.label.borrow().as_ref().is_none_or(String::is_empty) {
                 // No need to compute shapes if the label is empty.
                 return;
             }

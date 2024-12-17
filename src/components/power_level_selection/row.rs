@@ -166,10 +166,10 @@ mod imp {
         /// Update the position of the selected label.
         fn update_selected_position(&self) {
             if self.use_subtitle.get() {
-                if !self
+                if self
                     .selected_box
                     .parent()
-                    .is_some_and(|p| p == *self.subtitle_bin)
+                    .is_none_or(|p| p != *self.subtitle_bin)
                 {
                     if self.selected_box.parent().is_some() {
                         self.combo_selection_bin.set_child(None::<&gtk::Widget>);
@@ -177,10 +177,10 @@ mod imp {
 
                     self.subtitle_bin.set_child(Some(&*self.selected_box));
                 }
-            } else if !self
+            } else if self
                 .selected_box
                 .parent()
-                .is_some_and(|p| p == *self.combo_selection_bin)
+                .is_none_or(|p| p != *self.combo_selection_bin)
             {
                 if self.selected_box.parent().is_some() {
                     self.subtitle_bin.set_child(None::<&gtk::Widget>);

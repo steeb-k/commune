@@ -572,9 +572,9 @@ impl CompletionPopover {
 
     /// Show the popover.
     fn popup(&self) {
-        if !self
+        if self
             .selected_row_index()
-            .is_some_and(|index| index < self.imp().visible_rows_count())
+            .is_none_or(|index| index >= self.imp().visible_rows_count())
         {
             self.select_row_at_index(Some(0));
         }
