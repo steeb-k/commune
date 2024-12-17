@@ -850,6 +850,15 @@ impl MessageToolbar {
             return;
         }
 
+        let Some(renderer) = self
+            .root()
+            .and_downcast::<gtk::Window>()
+            .and_then(|w| w.renderer())
+        else {
+            error!("Could not get GdkRenderer");
+            return;
+        };
+
         let filename = filename_for_mime(Some(mime::IMAGE_PNG.as_ref()), None);
         let dialog = AttachmentDialog::new(&filename);
         dialog.set_image(&image);
@@ -862,7 +871,7 @@ impl MessageToolbar {
         let filesize = bytes.len().try_into().ok();
 
         let (mut base_info, thumbnail) = ImageInfoLoader::from(image)
-            .load_info_and_thumbnail(filesize)
+            .load_info_and_thumbnail(filesize, &renderer)
             .await;
         base_info.size = filesize.map(Into::into);
 
@@ -922,6 +931,14 @@ impl MessageToolbar {
     }
 
     async fn send_file_inner(&self, file: gio::File) {
+        let Some(renderer) = self
+            .root()
+            .and_downcast::<gtk::Window>()
+            .and_then(|w| w.renderer())
+        else {
+            error!("Could not get GdkRenderer");
+            return;
+        };
         let (bytes, file_info) = match load_file(&file).await {
             Ok(data) => data,
             Err(error) => {
@@ -942,14 +959,14 @@ impl MessageToolbar {
         let (info, thumbnail) = match file_info.mime.type_() {
             mime::IMAGE => {
                 let (mut info, thumbnail) = ImageInfoLoader::from(file)
-                    .load_info_and_thumbnail(file_info.size)
+                    .load_info_and_thumbnail(file_info.size, &renderer)
                     .await;
                 info.size = size;
 
                 (AttachmentInfo::Image(info), thumbnail)
             }
             mime::VIDEO => {
-                let (mut info, thumbnail) = load_video_info(&file).await;
+                let (mut info, thumbnail) = load_video_info(&file, &renderer).await;
                 info.size = size;
                 (AttachmentInfo::Video(info), thumbnail)
             }

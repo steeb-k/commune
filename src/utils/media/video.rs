@@ -5,19 +5,21 @@ use std::sync::{Arc, Mutex};
 use futures_channel::oneshot;
 use gst::prelude::*;
 use gst_video::prelude::*;
-use gtk::{gio, glib, glib::clone, prelude::*};
-use image::GenericImageView;
+use gtk::{gdk, gio, glib, glib::clone, gsk, prelude::*};
 use matrix_sdk::attachment::{BaseVideoInfo, Thumbnail};
 use tracing::warn;
 
-use super::{image::prepare_thumbnail_for_sending, load_gstreamer_media_info, FrameDimensions};
+use super::{image::TextureThumbnailer, load_gstreamer_media_info};
 
 /// A channel sender to send the result of a video thumbnail.
-type ThumbnailResultSender = oneshot::Sender<Result<Thumbnail, ()>>;
+type ThumbnailResultSender = oneshot::Sender<Result<gdk::Texture, ()>>;
 
 /// Load information and try to generate a thumbnail for the video in the given
 /// file.
-pub async fn load_video_info(file: &gio::File) -> (BaseVideoInfo, Option<Thumbnail>) {
+pub async fn load_video_info(
+    file: &gio::File,
+    renderer: &gsk::Renderer,
+) -> (BaseVideoInfo, Option<Thumbnail>) {
     let mut info = BaseVideoInfo {
         duration: None,
         width: None,
@@ -41,13 +43,13 @@ pub async fn load_video_info(file: &gio::File) -> (BaseVideoInfo, Option<Thumbna
         info.height = Some(stream_info.height().into());
     }
 
-    let thumbnail = generate_video_thumbnail(file).await;
+    let thumbnail = generate_video_thumbnail(file, renderer).await;
 
     (info, thumbnail)
 }
 
 /// Generate a thumbnail for the video in the given file.
-async fn generate_video_thumbnail(file: &gio::File) -> Option<Thumbnail> {
+async fn generate_video_thumbnail(file: &gio::File, renderer: &gsk::Renderer) -> Option<Thumbnail> {
     let (sender, receiver) = oneshot::channel();
     let sender = Arc::new(Mutex::new(Some(sender)));
 
@@ -106,13 +108,20 @@ async fn generate_video_thumbnail(file: &gio::File) -> Option<Thumbnail> {
         ))
         .expect("Setting bus watch succeeds");
 
-    let thumbnail = receiver.await;
+    let texture = receiver.await;
 
     // Clean up.
     let _ = pipeline.set_state(gst::State::Null);
     bus.set_flushing(true);
 
-    thumbnail.ok().transpose().ok().flatten()
+    let texture = texture.ok()?.ok()?;
+    let thumbnail = TextureThumbnailer(texture).generate_thumbnail(renderer);
+
+    if thumbnail.is_none() {
+        warn!("Could not generate thumbnail from GdkTexture");
+    }
+
+    thumbnail
 }
 
 /// Create a pipeline to get a thumbnail of the first frame.
@@ -133,7 +142,7 @@ fn create_thumbnailer_pipeline(
         .downcast::<gst_app::AppSink>()
         .expect("Sink element is an appsink");
 
-    // Don't synchronize on the clock, we only want a snapshot asap.
+    // Do not synchronize on the clock, we only want a snapshot asap.
     appsink.set_property("sync", false);
 
     // Tell the appsink what format we want, for simplicity we only accept 8-bit
@@ -186,56 +195,12 @@ fn create_thumbnailer_pipeline(
                         gst::FlowError::Error
                     })?;
 
-                // Create a FlatSamples around the borrowed video frame data from GStreamer with
-                // the correct stride.
-                let img = image::FlatSamples::<&[u8]> {
-                    samples: frame.plane_data(0).unwrap(),
-                    layout: image::flat::SampleLayout {
-                        channels: 3,       // RGB
-                        channel_stride: 1, // 1 byte from component to component
-                        width: frame.width(),
-                        width_stride: 4, // 4 bytes from pixel to pixel
-                        height: frame.height(),
-                        height_stride: frame.plane_stride()[0].try_into().unwrap_or_default(), // stride from line to line
-                    },
-                    color_hint: Some(image::ColorType::Rgb8),
-                };
-
-                let Ok(view) = img.as_view::<image::Rgb<u8>>() else {
-                    warn!("Could not parse frame as view");
-                    send_video_thumbnail_result(&sender, Err(()));
-
-                    return Err(gst::FlowError::Error);
-                };
-
-                // Reduce the dimensions if the thumbnail is bigger than the wanted size.
-                let dimensions = FrameDimensions {
-                    width: frame.width() * u32::try_from(info.par().numer()).unwrap_or_default(),
-                    height: frame.height() * u32::try_from(info.par().denom()).unwrap_or_default(),
-                };
-
-                let thumbnail =
-                    if let Some(target_dimensions) = dimensions.downscale_for_thumbnail() {
-                        image::imageops::thumbnail(
-                            &view,
-                            target_dimensions.width,
-                            target_dimensions.height,
-                        )
-                    } else {
-                        image::ImageBuffer::from_fn(view.width(), view.height(), |x, y| {
-                            view.get_pixel(x, y)
-                        })
-                    };
-
-                // Prepare it.
-                if let Some(thumbnail) = prepare_thumbnail_for_sending(thumbnail.into()) {
-                    send_video_thumbnail_result(&sender, Ok(thumbnail));
-
+                if let Some(texture) = video_frame_to_texture(&frame) {
+                    send_video_thumbnail_result(&sender, Ok(texture));
                     Err(gst::FlowError::Eos)
                 } else {
-                    warn!("Failed to convert video thumbnail");
+                    warn!("Could not convert video frame to GdkTexture");
                     send_video_thumbnail_result(&sender, Err(()));
-
                     Err(gst::FlowError::Error)
                 }
             })
@@ -248,7 +213,7 @@ fn create_thumbnailer_pipeline(
 /// Try to send the given video thumbnail result through the given sender.
 fn send_video_thumbnail_result(
     sender: &Mutex<Option<ThumbnailResultSender>>,
-    result: Result<Thumbnail, ()>,
+    result: Result<gdk::Texture, ()>,
 ) {
     let mut sender = match sender.lock() {
         Ok(sender) => sender,
@@ -263,4 +228,44 @@ fn send_video_thumbnail_result(
             warn!("Failed to send video thumbnail result through channel");
         }
     }
+}
+
+/// Convert the given video frame to a `GdkTexture`.
+fn video_frame_to_texture(
+    frame: &gst_video::VideoFrameRef<&gst::BufferRef>,
+) -> Option<gdk::Texture> {
+    let format = video_format_to_memory_format(frame.format())?;
+    let width = frame.width();
+    let height = frame.height();
+    let rowstride = frame.plane_stride()[0].try_into().ok()?;
+
+    let texture = gdk::MemoryTexture::new(
+        width.try_into().ok()?,
+        height.try_into().ok()?,
+        format,
+        &glib::Bytes::from(frame.plane_data(0).ok()?),
+        rowstride,
+    )
+    .upcast::<gdk::Texture>();
+
+    Some(texture)
+}
+
+/// Convert the given `GstVideoFormat` to a `GdkMemoryFormat`.
+fn video_format_to_memory_format(format: gst_video::VideoFormat) -> Option<gdk::MemoryFormat> {
+    let format = match format {
+        gst_video::VideoFormat::Bgrx => gdk::MemoryFormat::B8g8r8x8,
+        gst_video::VideoFormat::Xrgb => gdk::MemoryFormat::X8r8g8b8,
+        gst_video::VideoFormat::Rgbx => gdk::MemoryFormat::R8g8b8x8,
+        gst_video::VideoFormat::Xbgr => gdk::MemoryFormat::X8b8g8r8,
+        gst_video::VideoFormat::Bgra => gdk::MemoryFormat::B8g8r8a8,
+        gst_video::VideoFormat::Argb => gdk::MemoryFormat::A8r8g8b8,
+        gst_video::VideoFormat::Rgba => gdk::MemoryFormat::R8g8b8a8,
+        gst_video::VideoFormat::Abgr => gdk::MemoryFormat::A8b8g8r8,
+        gst_video::VideoFormat::Rgb => gdk::MemoryFormat::R8g8b8,
+        gst_video::VideoFormat::Bgr => gdk::MemoryFormat::B8g8r8,
+        _ => return None,
+    };
+
+    Some(format)
 }

@@ -3,8 +3,7 @@
 use std::{error::Error, fmt, str::FromStr, sync::Arc};
 
 use gettextrs::gettext;
-use gtk::{gdk, gio, prelude::*};
-use image::{ColorType, DynamicImage, ImageDecoder, ImageResult};
+use gtk::{gdk, gio, graphene, gsk, prelude::*};
 use matrix_sdk::{
     attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
     media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
@@ -21,6 +20,7 @@ use ruma::{
     },
     OwnedMxcUri,
 };
+use tracing::warn;
 
 mod queue;
 
@@ -153,7 +153,7 @@ impl ImageInfoLoader {
                 let handle = spawn_tokio!(async move { image_loader.next_frame().await });
                 Some(Frame::Glycin(handle.await.unwrap().ok()?))
             }
-            Self::Texture(texture) => Some(Frame::Texture(gdk::TextureDownloader::new(&texture))),
+            Self::Texture(texture) => Some(Frame::Texture(texture)),
         }
     }
 
@@ -170,6 +170,7 @@ impl ImageInfoLoader {
     pub async fn load_info_and_thumbnail(
         self,
         filesize: Option<u32>,
+        renderer: &gsk::Renderer,
     ) -> (BaseImageInfo, Option<Thumbnail>) {
         let Some(frame) = self.into_first_frame().await else {
             return (default_base_image_info(), None);
@@ -185,7 +186,7 @@ impl ImageInfoLoader {
             return (info, None);
         }
 
-        let thumbnail = frame.generate_thumbnail();
+        let thumbnail = frame.generate_thumbnail(renderer);
 
         (info, thumbnail)
     }
@@ -204,139 +205,53 @@ impl From<gdk::Texture> for ImageInfoLoader {
 }
 
 /// A frame of an image.
+#[derive(Debug, Clone)]
 enum Frame {
     /// A frame loaded via glycin.
     Glycin(glycin::Frame),
-    /// A downloader for a texture in memory,
-    Texture(gdk::TextureDownloader),
+    /// A texture in memory,
+    Texture(gdk::Texture),
 }
 
 impl Frame {
     /// The dimensions of the frame.
     fn dimensions(&self) -> Option<FrameDimensions> {
-        let (width, height) = match self {
-            Self::Glycin(frame) => (frame.width(), frame.height()),
-            Self::Texture(downloader) => {
-                let texture = downloader.texture();
-                (
-                    texture.width().try_into().ok()?,
-                    texture.height().try_into().ok()?,
-                )
-            }
-        };
-
-        Some(FrameDimensions { width, height })
-    }
-
-    /// Whether the memory format of the frame is supported by the image crate.
-    fn is_memory_format_supported(&self) -> bool {
         match self {
-            Self::Glycin(frame) => {
-                matches!(
-                    frame.memory_format(),
-                    glycin::MemoryFormat::G8
-                        | glycin::MemoryFormat::G8a8
-                        | glycin::MemoryFormat::R8g8b8
-                        | glycin::MemoryFormat::R8g8b8a8
-                        | glycin::MemoryFormat::G16
-                        | glycin::MemoryFormat::G16a16
-                        | glycin::MemoryFormat::R16g16b16
-                        | glycin::MemoryFormat::R16g16b16a16
-                        | glycin::MemoryFormat::R32g32b32Float
-                        | glycin::MemoryFormat::R32g32b32a32Float
-                )
-            }
-            Self::Texture(downloader) => {
-                matches!(
-                    downloader.format(),
-                    gdk::MemoryFormat::G8
-                        | gdk::MemoryFormat::G8a8
-                        | gdk::MemoryFormat::R8g8b8
-                        | gdk::MemoryFormat::R8g8b8a8
-                        | gdk::MemoryFormat::G16
-                        | gdk::MemoryFormat::G16a16
-                        | gdk::MemoryFormat::R16g16b16
-                        | gdk::MemoryFormat::R16g16b16a16
-                        | gdk::MemoryFormat::R32g32b32Float
-                        | gdk::MemoryFormat::R32g32b32a32Float
-                )
-            }
+            Self::Glycin(frame) => Some(FrameDimensions {
+                width: frame.width(),
+                height: frame.height(),
+            }),
+            Self::Texture(texture) => FrameDimensions::with_texture(texture),
         }
     }
 
     /// Generate a thumbnail of this frame.
-    fn generate_thumbnail(self) -> Option<Thumbnail> {
-        if !self.is_memory_format_supported() {
-            return None;
-        }
-
-        let image = DynamicImage::from_decoder(self).ok()?;
-        let thumbnail = image.thumbnail(
-            THUMBNAIL_MAX_DIMENSIONS.width,
-            THUMBNAIL_MAX_DIMENSIONS.height,
-        );
-
-        prepare_thumbnail_for_sending(thumbnail)
-    }
-}
-
-impl ImageDecoder for Frame {
-    fn dimensions(&self) -> (u32, u32) {
-        let (width, height) = self.dimensions().map(|s| (s.width, s.height)).unzip();
-        (width.unwrap_or(0), height.unwrap_or(0))
-    }
-
-    fn color_type(&self) -> ColorType {
-        match self {
-            Self::Glycin(frame) => match frame.memory_format() {
-                glycin::MemoryFormat::G8 => ColorType::L8,
-                glycin::MemoryFormat::G8a8 => ColorType::La8,
-                glycin::MemoryFormat::R8g8b8 => ColorType::Rgb8,
-                glycin::MemoryFormat::R8g8b8a8 => ColorType::Rgba8,
-                glycin::MemoryFormat::G16 => ColorType::L16,
-                glycin::MemoryFormat::G16a16 => ColorType::La16,
-                glycin::MemoryFormat::R16g16b16 => ColorType::Rgb16,
-                glycin::MemoryFormat::R16g16b16a16 => ColorType::Rgba16,
-                glycin::MemoryFormat::R32g32b32Float => ColorType::Rgb32F,
-                glycin::MemoryFormat::R32g32b32a32Float => ColorType::Rgba32F,
-                _ => unimplemented!(),
-            },
-            Self::Texture(downloader) => match downloader.format() {
-                gdk::MemoryFormat::G8 => ColorType::L8,
-                gdk::MemoryFormat::G8a8 => ColorType::La8,
-                gdk::MemoryFormat::R8g8b8 => ColorType::Rgb8,
-                gdk::MemoryFormat::R8g8b8a8 => ColorType::Rgba8,
-                gdk::MemoryFormat::G16 => ColorType::L16,
-                gdk::MemoryFormat::G16a16 => ColorType::La16,
-                gdk::MemoryFormat::R16g16b16 => ColorType::Rgb16,
-                gdk::MemoryFormat::R16g16b16a16 => ColorType::Rgba16,
-                gdk::MemoryFormat::R32g32b32Float => ColorType::Rgb32F,
-                gdk::MemoryFormat::R32g32b32a32Float => ColorType::Rgba32F,
-                _ => unimplemented!(),
-            },
-        }
-    }
-
-    fn read_image(self, buf: &mut [u8]) -> ImageResult<()>
-    where
-        Self: Sized,
-    {
-        let bytes = match &self {
-            Self::Glycin(frame) => frame.buf_bytes(),
-            Self::Texture(texture) => texture.download_bytes().0,
+    fn generate_thumbnail(self, renderer: &gsk::Renderer) -> Option<Thumbnail> {
+        let texture = match self {
+            Self::Glycin(frame) => frame.texture(),
+            Self::Texture(texture) => texture,
         };
-        buf.copy_from_slice(&bytes);
 
-        Ok(())
-    }
+        let thumbnail = TextureThumbnailer(texture).generate_thumbnail(renderer);
 
-    fn read_image_boxed(self: Box<Self>, _buf: &mut [u8]) -> ImageResult<()> {
-        unimplemented!()
+        if thumbnail.is_none() {
+            warn!("Could not generate thumbnail from GdkTexture");
+        }
+
+        thumbnail
     }
 }
 
 /// Extensions to `FrameDimensions` for computing thumbnail dimensions.
 impl FrameDimensions {
+    /// Construct a `FrameDimensions` for the given texture.
+    fn with_texture(texture: &gdk::Texture) -> Option<Self> {
+        Some(Self {
+            width: texture.width().try_into().ok()?,
+            height: texture.height().try_into().ok()?,
+        })
+    }
+
     /// Whether we should generate or request a thumbnail for these dimensions,
     /// given the wanted thumbnail dimensions.
     pub(super) fn needs_thumbnail(self, thumbnail_dimensions: FrameDimensions) -> bool {
@@ -386,41 +301,116 @@ fn default_base_image_info() -> BaseImageInfo {
     }
 }
 
-/// Prepare the given thumbnail to send it.
-pub(super) fn prepare_thumbnail_for_sending(thumbnail: image::DynamicImage) -> Option<Thumbnail> {
-    // Convert to RGB8/RGBA8 since those are the only formats supported by WebP.
-    let thumbnail: DynamicImage = match &thumbnail {
-        DynamicImage::ImageLuma8(_)
-        | DynamicImage::ImageRgb8(_)
-        | DynamicImage::ImageLuma16(_)
-        | DynamicImage::ImageRgb16(_)
-        | DynamicImage::ImageRgb32F(_) => thumbnail.into_rgb8().into(),
-        DynamicImage::ImageLumaA8(_)
-        | DynamicImage::ImageRgba8(_)
-        | DynamicImage::ImageLumaA16(_)
-        | DynamicImage::ImageRgba16(_)
-        | DynamicImage::ImageRgba32F(_) => thumbnail.into_rgba8().into(),
-        _ => return None,
-    };
+/// A thumbnailer for a `GdkTexture`.
+#[derive(Debug, Clone)]
+pub(super) struct TextureThumbnailer(pub(super) gdk::Texture);
 
-    // Encode to WebP.
-    let encoder = webp::Encoder::from_image(&thumbnail).ok()?;
-    let thumbnail_bytes = encoder.encode(WEBP_DEFAULT_QUALITY).to_vec();
+impl TextureThumbnailer {
+    /// Downscale the texture if needed, to send it as a thumbnail.
+    ///
+    /// Returns `None` if the dimensions of the texture are unknown.
+    fn downscale_texture_if_needed(self, renderer: &gsk::Renderer) -> Option<gdk::Texture> {
+        let dimensions = FrameDimensions::with_texture(&self.0)?;
 
-    let thumbnail_content_type =
-        mime::Mime::from_str(WEBP_CONTENT_TYPE).expect("content type should be valid");
+        let texture = if let Some(target_dimensions) = dimensions.downscale_for_thumbnail() {
+            let snapshot = gtk::Snapshot::new();
+            let bounds = graphene::Rect::new(
+                0.0,
+                0.0,
+                target_dimensions.width as f32,
+                target_dimensions.height as f32,
+            );
+            snapshot.append_texture(&self.0, &bounds);
+            let node = snapshot.to_node()?;
+            renderer.render_texture(node, None)
+        } else {
+            self.0
+        };
 
-    let thumbnail_info = BaseThumbnailInfo {
-        width: Some(thumbnail.width().into()),
-        height: Some(thumbnail.height().into()),
-        size: thumbnail_bytes.len().try_into().ok(),
-    };
+        Some(texture)
+    }
 
-    Some(Thumbnail {
-        data: thumbnail_bytes,
-        content_type: thumbnail_content_type,
-        info: Some(thumbnail_info),
-    })
+    /// Convert the given texture memory format to the format needed to make a
+    /// thumbnail.
+    ///
+    /// The WebP encoder only supports RGB and RGBA.
+    ///
+    /// Returns `None` if the format is unknown.
+    fn texture_format_to_thumbnail_format(
+        format: gdk::MemoryFormat,
+    ) -> Option<(gdk::MemoryFormat, webp::PixelLayout)> {
+        match format {
+            gdk::MemoryFormat::B8g8r8a8Premultiplied
+            | gdk::MemoryFormat::A8r8g8b8Premultiplied
+            | gdk::MemoryFormat::R8g8b8a8Premultiplied
+            | gdk::MemoryFormat::B8g8r8a8
+            | gdk::MemoryFormat::A8r8g8b8
+            | gdk::MemoryFormat::R8g8b8a8
+            | gdk::MemoryFormat::R16g16b16a16Premultiplied
+            | gdk::MemoryFormat::R16g16b16a16
+            | gdk::MemoryFormat::R16g16b16a16FloatPremultiplied
+            | gdk::MemoryFormat::R16g16b16a16Float
+            | gdk::MemoryFormat::R32g32b32a32FloatPremultiplied
+            | gdk::MemoryFormat::R32g32b32a32Float
+            | gdk::MemoryFormat::G8a8Premultiplied
+            | gdk::MemoryFormat::G8a8
+            | gdk::MemoryFormat::G16a16Premultiplied
+            | gdk::MemoryFormat::G16a16
+            | gdk::MemoryFormat::A8
+            | gdk::MemoryFormat::A16
+            | gdk::MemoryFormat::A16Float
+            | gdk::MemoryFormat::A32Float
+            | gdk::MemoryFormat::A8b8g8r8Premultiplied
+            | gdk::MemoryFormat::A8b8g8r8 => {
+                Some((gdk::MemoryFormat::R8g8b8a8, webp::PixelLayout::Rgba))
+            }
+            gdk::MemoryFormat::R8g8b8
+            | gdk::MemoryFormat::B8g8r8
+            | gdk::MemoryFormat::R16g16b16
+            | gdk::MemoryFormat::R16g16b16Float
+            | gdk::MemoryFormat::R32g32b32Float
+            | gdk::MemoryFormat::G8
+            | gdk::MemoryFormat::G16
+            | gdk::MemoryFormat::B8g8r8x8
+            | gdk::MemoryFormat::X8r8g8b8
+            | gdk::MemoryFormat::R8g8b8x8
+            | gdk::MemoryFormat::X8b8g8r8 => {
+                Some((gdk::MemoryFormat::R8g8b8, webp::PixelLayout::Rgb))
+            }
+            _ => None,
+        }
+    }
+
+    /// Generate the thumbnail with the given `GskRenderer`.
+    pub(super) fn generate_thumbnail(self, renderer: &gsk::Renderer) -> Option<Thumbnail> {
+        let thumbnail = self.downscale_texture_if_needed(renderer)?;
+        let dimensions = FrameDimensions::with_texture(&thumbnail)?;
+
+        let (downloader_format, webp_layout) =
+            Self::texture_format_to_thumbnail_format(thumbnail.format())?;
+
+        let mut downloader = gdk::TextureDownloader::new(&thumbnail);
+        downloader.set_format(downloader_format);
+        let (data, _) = downloader.download_bytes();
+
+        let encoder = webp::Encoder::new(&data, webp_layout, dimensions.width, dimensions.height);
+        let data = encoder.encode(WEBP_DEFAULT_QUALITY).to_vec();
+
+        let content_type =
+            mime::Mime::from_str(WEBP_CONTENT_TYPE).expect("content type should be valid");
+
+        let thumbnail_info = BaseThumbnailInfo {
+            width: Some(dimensions.width.into()),
+            height: Some(dimensions.height.into()),
+            size: data.len().try_into().ok(),
+        };
+
+        Some(Thumbnail {
+            data,
+            content_type,
+            info: Some(thumbnail_info),
+        })
+    }
 }
 
 /// An API to download a thumbnail for a media.
