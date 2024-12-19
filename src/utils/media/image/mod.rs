@@ -20,7 +20,7 @@ use ruma::{
     },
     OwnedMxcUri,
 };
-use tracing::warn;
+use tracing::{error, warn};
 
 mod queue;
 
@@ -29,10 +29,10 @@ pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
 use super::{FrameDimensions, MediaFileError};
 use crate::{components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX};
 
-/// The maximum dimensions of a generated thumbnail.
-const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
-    width: 800,
-    height: 600,
+/// The maximum dimensions of a thumbnail in the timeline.
+pub const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: 600,
+    height: 400,
 };
 /// The content type of SVG.
 const SVG_CONTENT_TYPE: &str = "image/svg+xml";
@@ -170,7 +170,7 @@ impl ImageInfoLoader {
     pub async fn load_info_and_thumbnail(
         self,
         filesize: Option<u32>,
-        renderer: &gsk::Renderer,
+        widget: &impl IsA<gtk::Widget>,
     ) -> (BaseImageInfo, Option<Thumbnail>) {
         let Some(frame) = self.into_first_frame().await else {
             return (default_base_image_info(), None);
@@ -179,14 +179,29 @@ impl ImageInfoLoader {
         let dimensions = frame.dimensions();
         let info = dimensions.map_or_else(default_base_image_info, Into::into);
 
+        // Generate the same thumbnail dimensions as we will need in the timeline.
+        let scale_factor = widget.scale_factor();
+        let max_thumbnail_dimensions =
+            FrameDimensions::thumbnail_max_dimensions(widget.scale_factor());
+
         if !filesize_is_too_big(filesize)
-            && !dimensions.is_some_and(|d| d.needs_thumbnail(THUMBNAIL_MAX_DIMENSIONS))
+            && !dimensions.is_some_and(|d| d.needs_thumbnail(max_thumbnail_dimensions))
         {
             // It is not worth it to generate a thumbnail.
             return (info, None);
         }
 
-        let thumbnail = frame.generate_thumbnail(renderer);
+        let Some(renderer) = widget
+            .root()
+            .and_downcast::<gtk::Window>()
+            .and_then(|w| w.renderer())
+        else {
+            // We cannot generate a thumbnail.
+            error!("Could not get GdkRenderer");
+            return (info, None);
+        };
+
+        let thumbnail = frame.generate_thumbnail(scale_factor, &renderer);
 
         (info, thumbnail)
     }
@@ -226,13 +241,13 @@ impl Frame {
     }
 
     /// Generate a thumbnail of this frame.
-    fn generate_thumbnail(self, renderer: &gsk::Renderer) -> Option<Thumbnail> {
+    fn generate_thumbnail(self, scale_factor: i32, renderer: &gsk::Renderer) -> Option<Thumbnail> {
         let texture = match self {
             Self::Glycin(frame) => frame.texture(),
             Self::Texture(texture) => texture,
         };
 
-        let thumbnail = TextureThumbnailer(texture).generate_thumbnail(renderer);
+        let thumbnail = TextureThumbnailer(texture).generate_thumbnail(scale_factor, renderer);
 
         if thumbnail.is_none() {
             warn!("Could not generate thumbnail from GdkTexture");
@@ -244,6 +259,12 @@ impl Frame {
 
 /// Extensions to `FrameDimensions` for computing thumbnail dimensions.
 impl FrameDimensions {
+    /// Get the maximum dimensions for a thumbnail with the given scale factor.
+    pub fn thumbnail_max_dimensions(scale_factor: i32) -> Self {
+        let scale_factor = scale_factor.try_into().unwrap_or(1);
+        THUMBNAIL_MAX_DIMENSIONS.scale(scale_factor)
+    }
+
     /// Construct a `FrameDimensions` for the given texture.
     fn with_texture(texture: &gdk::Texture) -> Option<Self> {
         Some(Self {
@@ -258,18 +279,18 @@ impl FrameDimensions {
         self.ge(thumbnail_dimensions.increase_by(THUMBNAIL_DIMENSIONS_THRESHOLD))
     }
 
-    /// Downscale these dimensions for a thumbnail while preserving the aspect
-    /// ratio.
+    /// Downscale these dimensions to fit into the given maximum dimensions
+    /// while preserving the aspect ratio.
     ///
-    /// Returns `None` if these dimensions are smaller than the dimensions of a
-    /// thumbnail.
-    pub(super) fn downscale_for_thumbnail(self) -> Option<Self> {
-        if !self.needs_thumbnail(THUMBNAIL_MAX_DIMENSIONS) {
-            // We do not need to generate a thumbnail.
+    /// Returns `None` if these dimensions are smaller than the maximum
+    /// dimensions.
+    pub(super) fn downscale_for(self, max_dimensions: FrameDimensions) -> Option<Self> {
+        if !self.ge(max_dimensions) {
+            // We do not need to downscale.
             return None;
         }
 
-        Some(self.scale_to_fit(THUMBNAIL_MAX_DIMENSIONS, gtk::ContentFit::ScaleDown))
+        Some(self.scale_to_fit(max_dimensions, gtk::ContentFit::ScaleDown))
     }
 
     /// Convert these dimensions to a request for the image loader with the
@@ -306,13 +327,18 @@ fn default_base_image_info() -> BaseImageInfo {
 pub(super) struct TextureThumbnailer(pub(super) gdk::Texture);
 
 impl TextureThumbnailer {
-    /// Downscale the texture if needed, to send it as a thumbnail.
+    /// Downscale the texture if needed to fit into the given maximum thumbnail
+    /// dimensions.
     ///
     /// Returns `None` if the dimensions of the texture are unknown.
-    fn downscale_texture_if_needed(self, renderer: &gsk::Renderer) -> Option<gdk::Texture> {
+    fn downscale_texture_if_needed(
+        self,
+        max_dimensions: FrameDimensions,
+        renderer: &gsk::Renderer,
+    ) -> Option<gdk::Texture> {
         let dimensions = FrameDimensions::with_texture(&self.0)?;
 
-        let texture = if let Some(target_dimensions) = dimensions.downscale_for_thumbnail() {
+        let texture = if let Some(target_dimensions) = dimensions.downscale_for(max_dimensions) {
             let snapshot = gtk::Snapshot::new();
             let bounds = graphene::Rect::new(
                 0.0,
@@ -381,9 +407,15 @@ impl TextureThumbnailer {
         }
     }
 
-    /// Generate the thumbnail with the given `GskRenderer`.
-    pub(super) fn generate_thumbnail(self, renderer: &gsk::Renderer) -> Option<Thumbnail> {
-        let thumbnail = self.downscale_texture_if_needed(renderer)?;
+    /// Generate the thumbnail for the given scale factor, with the given
+    /// `GskRenderer`.
+    pub(super) fn generate_thumbnail(
+        self,
+        scale_factor: i32,
+        renderer: &gsk::Renderer,
+    ) -> Option<Thumbnail> {
+        let max_thumbnail_dimensions = FrameDimensions::thumbnail_max_dimensions(scale_factor);
+        let thumbnail = self.downscale_texture_if_needed(max_thumbnail_dimensions, renderer)?;
         let dimensions = FrameDimensions::with_texture(&thumbnail)?;
 
         let (downloader_format, webp_layout) =

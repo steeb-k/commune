@@ -18,7 +18,7 @@ use crate::{
     utils::{
         matrix::VisualMediaMessage,
         media::{
-            image::{ImageRequestPriority, ThumbnailSettings},
+            image::{ImageRequestPriority, ThumbnailSettings, THUMBNAIL_MAX_DIMENSIONS},
             FrameDimensions,
         },
         CountedRef, File, LoadingState,
@@ -29,11 +29,6 @@ use crate::{
 const FALLBACK_DIMENSIONS: FrameDimensions = FrameDimensions {
     width: 480,
     height: 360,
-};
-/// The maximum dimensions allowed for the media.
-const MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
-    width: 600,
-    height: 400,
 };
 /// The maximum dimensions allowed for the media in its compact form.
 const MAX_COMPACT_DIMENSIONS: FrameDimensions = FrameDimensions {
@@ -109,7 +104,7 @@ mod imp {
             let max_size = if self.compact.get() {
                 MAX_COMPACT_DIMENSIONS
             } else {
-                MAX_DIMENSIONS
+                THUMBNAIL_MAX_DIMENSIONS
             };
             let max = max_size.dimension_for_orientation(orientation);
             let max_for_size = i32::try_from(max_size.dimension_for_other_orientation(orientation))
@@ -329,10 +324,10 @@ mod imp {
 
         /// Build the content for the image in the given media message.
         async fn build_image(&self, media_message: &VisualMediaMessage, client: Client) {
-            let scale_factor = self.obj().scale_factor().try_into().unwrap_or(1);
+            let scale_factor = self.obj().scale_factor();
 
             let settings = ThumbnailSettings {
-                dimensions: MAX_DIMENSIONS.scale(scale_factor),
+                dimensions: FrameDimensions::thumbnail_max_dimensions(scale_factor),
                 method: Method::Scale,
                 animated: true,
                 prefer_thumbnail: false,

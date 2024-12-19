@@ -5,9 +5,9 @@ use std::sync::{Arc, Mutex};
 use futures_channel::oneshot;
 use gst::prelude::*;
 use gst_video::prelude::*;
-use gtk::{gdk, gio, glib, glib::clone, gsk, prelude::*};
+use gtk::{gdk, gio, glib, glib::clone, prelude::*};
 use matrix_sdk::attachment::{BaseVideoInfo, Thumbnail};
-use tracing::warn;
+use tracing::{error, warn};
 
 use super::{image::TextureThumbnailer, load_gstreamer_media_info};
 
@@ -18,7 +18,7 @@ type ThumbnailResultSender = oneshot::Sender<Result<gdk::Texture, ()>>;
 /// file.
 pub async fn load_video_info(
     file: &gio::File,
-    renderer: &gsk::Renderer,
+    widget: &impl IsA<gtk::Widget>,
 ) -> (BaseVideoInfo, Option<Thumbnail>) {
     let mut info = BaseVideoInfo {
         duration: None,
@@ -43,13 +43,23 @@ pub async fn load_video_info(
         info.height = Some(stream_info.height().into());
     }
 
-    let thumbnail = generate_video_thumbnail(file, renderer).await;
+    let thumbnail = generate_video_thumbnail(file, widget.upcast_ref()).await;
 
     (info, thumbnail)
 }
 
 /// Generate a thumbnail for the video in the given file.
-async fn generate_video_thumbnail(file: &gio::File, renderer: &gsk::Renderer) -> Option<Thumbnail> {
+async fn generate_video_thumbnail(file: &gio::File, widget: &gtk::Widget) -> Option<Thumbnail> {
+    let Some(renderer) = widget
+        .root()
+        .and_downcast::<gtk::Window>()
+        .and_then(|w| w.renderer())
+    else {
+        // We cannot generate a thumbnail.
+        error!("Could not get GdkRenderer");
+        return None;
+    };
+
     let (sender, receiver) = oneshot::channel();
     let sender = Arc::new(Mutex::new(Some(sender)));
 
@@ -115,7 +125,8 @@ async fn generate_video_thumbnail(file: &gio::File, renderer: &gsk::Renderer) ->
     bus.set_flushing(true);
 
     let texture = texture.ok()?.ok()?;
-    let thumbnail = TextureThumbnailer(texture).generate_thumbnail(renderer);
+    let thumbnail =
+        TextureThumbnailer(texture).generate_thumbnail(widget.scale_factor(), &renderer);
 
     if thumbnail.is_none() {
         warn!("Could not generate thumbnail from GdkTexture");
