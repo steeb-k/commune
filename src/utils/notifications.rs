@@ -1,7 +1,7 @@
 use std::hash::Hasher;
 
 use djb_hash::{x33a_u32::X33aU32, HasherU32};
-use gtk::{gdk, glib, graphene, gsk, pango, prelude::*};
+use gtk::{gdk, graphene, gsk, pango, prelude::*};
 
 /// The notification icon size, according to GNOME Shell's code.
 const NOTIFICATION_ICON_SIZE: i32 = 48;
@@ -29,7 +29,7 @@ pub(crate) fn paintable_as_notification_icon(
     paintable: &gdk::Paintable,
     scale_factor: i32,
     renderer: &gsk::Renderer,
-) -> Result<gdk::Texture, glib::Error> {
+) -> gdk::Texture {
     let img_width = f64::from(paintable.intrinsic_width());
     let img_height = f64::from(paintable.intrinsic_height());
 
@@ -84,14 +84,8 @@ pub(crate) fn paintable_as_notification_icon(
     snapshot.pop();
 
     // Render the avatar.
-    renderer.realize(None)?;
-
     let node = snapshot.to_node().unwrap();
-    let texture = renderer.render_texture(node, None);
-
-    renderer.unrealize();
-
-    Ok(texture)
+    renderer.render_texture(node, None)
 }
 
 /// Generate a notification icon from a string.
@@ -102,7 +96,7 @@ pub(crate) fn string_as_notification_icon(
     scale_factor: i32,
     layout: &pango::Layout,
     renderer: &gsk::Renderer,
-) -> Result<gdk::Texture, glib::Error> {
+) -> gdk::Texture {
     // Get the avatar colors from the string hash.
     let mut hasher = X33aU32::new();
     hasher.write(string.as_bytes());
@@ -165,12 +159,6 @@ pub(crate) fn string_as_notification_icon(
     snapshot.append_layout(layout, &gdk::RGBA::parse(colors.0).unwrap());
 
     // Render the avatar.
-    renderer.realize(None)?;
-
     let node = snapshot.to_node().unwrap();
-    let texture = renderer.render_texture(node, None);
-
-    renderer.unrealize();
-
-    Ok(texture)
+    renderer.render_texture(node, None)
 }

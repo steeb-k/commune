@@ -87,18 +87,14 @@ impl AvatarData {
 
         if let Some(image) = self.image() {
             match image.load_small_paintable().await {
-                Ok(Some(paintable)) => match paintable_as_notification_icon(
-                    paintable.upcast_ref(),
-                    scale_factor,
-                    &renderer,
-                ) {
-                    Ok(texture) => return Some(texture),
-                    Err(error) => {
-                        // An error occurred during rendering.
-                        warn!("Could not generate icon for notification: {error}");
-                        return None;
-                    }
-                },
+                Ok(Some(paintable)) => {
+                    let texture = paintable_as_notification_icon(
+                        paintable.upcast_ref(),
+                        scale_factor,
+                        &renderer,
+                    );
+                    return Some(texture);
+                }
                 // No paintable, we will try to generate the fallback.
                 Ok(None) => {}
                 // Could not get the paintable, we will try to generate the fallback.
@@ -114,15 +110,7 @@ impl AvatarData {
             &window.create_pango_layout(None),
             &renderer,
         );
-
-        match texture {
-            Ok(texture) => Some(texture),
-            Err(error) => {
-                // An error occurred during rendering.
-                warn!("Could not generate icon for notification: {error}");
-                None
-            }
-        }
+        Some(texture)
     }
 }
 
