@@ -3,6 +3,7 @@
   <template class="ContentSenderAvatar" parent="GtkWidget">
     <accessibility>
       <property name="description" translatable="yes">Open Sender Context Menu</property>
+      <property name="has-popup">true</property>
     </accessibility>
     <property name="focusable">true</property>
     <property name="valign">start</property>
