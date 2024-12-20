@@ -3,7 +3,7 @@ use std::hash::Hasher;
 use djb_hash::{x33a_u32::X33aU32, HasherU32};
 use gtk::{gdk, glib, graphene, gsk, pango, prelude::*};
 
-/// The notification icon size, according GNOME Shell's code.
+/// The notification icon size, according to GNOME Shell's code.
 const NOTIFICATION_ICON_SIZE: i32 = 48;
 
 /// The colors for avatars, according to libadwaita.
@@ -25,14 +25,15 @@ const AVATAR_COLOR_LIST: [(&str, &str, &str); 14] = [
 ];
 
 /// Generate a notification icon from the given paintable.
-pub fn paintable_as_notification_icon(
+pub(crate) fn paintable_as_notification_icon(
     paintable: &gdk::Paintable,
-    helper_widget: &gtk::Widget,
+    scale_factor: i32,
+    renderer: &gsk::Renderer,
 ) -> Result<gdk::Texture, glib::Error> {
     let img_width = f64::from(paintable.intrinsic_width());
     let img_height = f64::from(paintable.intrinsic_height());
 
-    let mut icon_size = f64::from(NOTIFICATION_ICON_SIZE * helper_widget.scale_factor());
+    let mut icon_size = f64::from(NOTIFICATION_ICON_SIZE * scale_factor);
     let mut snap_width = img_width;
     let mut snap_height = img_height;
     let mut x_pos = 0.0;
@@ -83,7 +84,6 @@ pub fn paintable_as_notification_icon(
     snapshot.pop();
 
     // Render the avatar.
-    let renderer = gsk::GLRenderer::new();
     renderer.realize(None)?;
 
     let node = snapshot.to_node().unwrap();
@@ -97,9 +97,11 @@ pub fn paintable_as_notification_icon(
 /// Generate a notification icon from a string.
 ///
 /// This should match the behavior of `AdwAvatar`.
-pub fn string_as_notification_icon(
+pub(crate) fn string_as_notification_icon(
     string: &str,
-    helper_widget: &gtk::Widget,
+    scale_factor: i32,
+    layout: &pango::Layout,
+    renderer: &gsk::Renderer,
 ) -> Result<gdk::Texture, glib::Error> {
     // Get the avatar colors from the string hash.
     let mut hasher = X33aU32::new();
@@ -107,7 +109,6 @@ pub fn string_as_notification_icon(
     let color_nb = hasher.finish_u32() as usize % AVATAR_COLOR_LIST.len();
     let colors = AVATAR_COLOR_LIST[color_nb];
 
-    let scale_factor = helper_widget.scale_factor();
     let icon_size = (NOTIFICATION_ICON_SIZE * scale_factor) as f32;
     let snapshot = gtk::Snapshot::new();
 
@@ -136,7 +137,7 @@ pub fn string_as_notification_icon(
         .split(char::is_whitespace)
         .filter_map(|s| s.chars().next())
         .collect::<String>();
-    let layout = helper_widget.create_pango_layout(Some(&initials));
+    layout.set_text(&initials);
 
     // Set the proper weight and size.
     if let Some(mut font_description) = layout
@@ -161,10 +162,9 @@ pub fn string_as_notification_icon(
     let pos_y = (icon_size - lay_height as f32 - lay_padding as f32) / 2.0;
     snapshot.translate(&graphene::Point::new(0.0, pos_y));
 
-    snapshot.append_layout(&layout, &gdk::RGBA::parse(colors.0).unwrap());
+    snapshot.append_layout(layout, &gdk::RGBA::parse(colors.0).unwrap());
 
     // Render the avatar.
-    let renderer = gsk::GLRenderer::new();
     renderer.realize(None)?;
 
     let node = snapshot.to_node().unwrap();

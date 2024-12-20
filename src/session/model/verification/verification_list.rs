@@ -252,7 +252,8 @@ impl VerificationList {
         if verification.state() == VerificationState::Requested {
             session
                 .notifications()
-                .show_in_room_identity_verification(&verification);
+                .show_in_room_identity_verification(&verification)
+                .await;
         }
     }
 

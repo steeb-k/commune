@@ -7,13 +7,17 @@ mod editable;
 mod image;
 mod overlapping;
 
+use self::image::AvatarPaintableSize;
 pub use self::{
     data::AvatarData,
     editable::EditableAvatar,
     image::{AvatarImage, AvatarUriSource},
     overlapping::OverlappingAvatars,
 };
-use crate::{components::AnimatedImagePaintable, utils::CountedRef};
+use crate::{
+    components::AnimatedImagePaintable,
+    utils::{BoundObject, BoundObjectWeakRef, CountedRef},
+};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -30,12 +34,15 @@ mod imp {
         avatar: TemplateChild<adw::Avatar>,
         /// The [`AvatarData`] displayed by this widget.
         #[property(get, set = Self::set_data, explicit_notify, nullable)]
-        data: RefCell<Option<AvatarData>>,
+        data: BoundObject<AvatarData>,
+        /// The [`AvatarImage`] watched by this widget.
+        #[property(get)]
+        image: BoundObjectWeakRef<AvatarImage>,
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
         size: PhantomData<i32>,
+        paintable_ref: RefCell<Option<CountedRef>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
-        image_watches: RefCell<Vec<gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -48,6 +55,7 @@ mod imp {
             AvatarImage::ensure_type();
 
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::Img);
         }
@@ -58,19 +66,12 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Avatar {
-        fn dispose(&self) {
-            for watch in self.image_watches.take() {
-                watch.unwatch();
-            }
-        }
-    }
+    impl ObjectImpl for Avatar {}
 
     impl WidgetImpl for Avatar {
         fn map(&self) {
             self.parent_map();
-            self.update_image_size();
-            self.update_animated_paintable_state();
+            self.update_paintable();
         }
 
         fn unmap(&self) {
@@ -88,6 +89,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl Avatar {
         /// The size of the Avatar.
         fn size(&self) -> i32 {
@@ -102,87 +104,141 @@ mod imp {
 
             self.avatar.set_size(size);
 
-            self.update_image_size();
+            self.update_paintable();
             self.obj().notify_size();
         }
 
         /// Set the [`AvatarData`] displayed by this widget.
         fn set_data(&self, data: Option<AvatarData>) {
-            if *self.data.borrow() == data {
+            if self.data.obj() == data {
                 return;
             }
 
-            for watch in self.image_watches.take() {
-                watch.unwatch();
+            self.data.disconnect_signals();
+
+            if let Some(data) = data {
+                let image_handler = data.connect_image_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_image();
+                    }
+                ));
+
+                self.data.set(data, vec![image_handler]);
             }
 
-            if let Some(data) = &data {
-                let image_watch = data.property_expression("image").watch(
-                    None::<&glib::Object>,
-                    clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move || {
-                            imp.update_image_size();
-                        }
-                    ),
-                );
-                let paintable_watch = data
-                    .property_expression("image")
-                    .chain_property::<AvatarImage>("paintable")
-                    .watch(
-                        None::<&glib::Object>,
-                        clone!(
-                            #[weak(rename_to = imp)]
-                            self,
-                            move || {
-                                imp.update_animated_paintable_state();
-                            }
-                        ),
-                    );
-                self.image_watches
-                    .replace(vec![image_watch, paintable_watch]);
-            }
-
-            self.data.replace(data);
-
-            self.update_image_size();
-            self.update_animated_paintable_state();
+            self.update_image();
             self.obj().notify_data();
         }
 
-        /// Update the size of the image for this avatar.
-        fn update_image_size(&self) {
-            let Some(image) = self.data.borrow().as_ref().and_then(AvatarData::image) else {
+        /// Set the [`AvatarImage`] watched by this widget.
+        fn update_image(&self) {
+            let image = self.data.obj().and_then(|data| data.image());
+
+            if self.image.obj() == image {
+                return;
+            }
+
+            self.image.disconnect_signals();
+
+            if let Some(image) = &image {
+                let small_paintable_handler = image.connect_small_paintable_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_paintable();
+                    }
+                ));
+                let big_paintable_handler = image.connect_big_paintable_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_paintable();
+                    }
+                ));
+
+                self.image
+                    .set(image, vec![small_paintable_handler, big_paintable_handler]);
+            }
+
+            self.update_scale_factor();
+            self.update_paintable();
+
+            self.obj().notify_image();
+        }
+
+        /// Whether this avatar needs a small paintable.
+        fn needs_small_paintable(&self) -> bool {
+            AvatarPaintableSize::from(self.size()) == AvatarPaintableSize::Small
+        }
+
+        /// Update the scale factor used to load the paintable.
+        #[template_callback]
+        fn update_scale_factor(&self) {
+            let Some(image) = self.image.obj() else {
                 return;
             };
-            let obj = self.obj();
 
-            if obj.is_mapped() {
-                let needed_size = self.size() * obj.scale_factor();
-                image.set_needed_size(u32::try_from(needed_size).unwrap_or_default());
+            let scale_factor = self.obj().scale_factor().try_into().unwrap_or(1);
+            image.set_scale_factor(scale_factor);
+        }
+
+        /// Update the paintable for this avatar.
+        fn update_paintable(&self) {
+            let _old_paintable_ref = self.paintable_ref.take();
+
+            if !self.obj().is_mapped() {
+                // We do not need a paintable.
+                self.update_animated_paintable_state();
+                return;
             }
+
+            let Some(image) = self.image.obj() else {
+                self.update_animated_paintable_state();
+                return;
+            };
+
+            let (paintable, paintable_ref) = if self.needs_small_paintable() {
+                (image.small_paintable(), image.small_paintable_ref())
+            } else {
+                (
+                    // Fallback to small paintable while the big paintable is loading.
+                    image.big_paintable().or_else(|| image.small_paintable()),
+                    image.big_paintable_ref(),
+                )
+            };
+            self.avatar.set_custom_image(paintable.as_ref());
+            self.paintable_ref.replace(Some(paintable_ref));
+
+            self.update_animated_paintable_state();
         }
 
         /// Update the state of the animated paintable for this avatar.
         fn update_animated_paintable_state(&self) {
-            self.paintable_animation_ref.take();
+            let _old_paintable_animation_ref = self.paintable_animation_ref.take();
 
-            let Some(paintable) = self
-                .data
-                .borrow()
-                .as_ref()
-                .and_then(AvatarData::image)
-                .and_then(|i| i.paintable())
-                .and_downcast::<AnimatedImagePaintable>()
-            else {
+            if !self.obj().is_mapped() {
+                // We do not need to animate the paintable.
+                return;
+            }
+
+            let Some(image) = self.image.obj() else {
                 return;
             };
 
-            if self.obj().is_mapped() {
-                self.paintable_animation_ref
-                    .replace(Some(paintable.animation_ref()));
-            }
+            let paintable = if self.needs_small_paintable() {
+                image.small_paintable()
+            } else {
+                image.big_paintable()
+            };
+
+            let Some(paintable) = paintable.and_downcast::<AnimatedImagePaintable>() else {
+                return;
+            };
+
+            self.paintable_animation_ref
+                .replace(Some(paintable.animation_ref()));
         }
     }
 }

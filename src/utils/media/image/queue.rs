@@ -475,7 +475,7 @@ struct DownloadRequestData {
 impl DownloadRequestData {
     /// The ID of the image request with this data.
     fn request_id(&self) -> ImageRequestId {
-        ImageRequestId::Download(self.settings.source.unique_key())
+        ImageRequestId::Download(self.settings.unique_key())
     }
 }
 

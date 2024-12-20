@@ -194,7 +194,7 @@ impl Notifications {
             room_id: room_id.clone(),
         };
 
-        let icon = room.avatar_data().as_notification_icon();
+        let icon = room.avatar_data().as_notification_icon().await;
 
         let id = if let Some(event_id) = event_id {
             format!("{session_id}//{room_id}//{event_id}")
@@ -220,7 +220,7 @@ impl Notifications {
     }
 
     /// Show a notification for the given in-room identity verification.
-    pub fn show_in_room_identity_verification(&self, verification: &IdentityVerification) {
+    pub async fn show_in_room_identity_verification(&self, verification: &IdentityVerification) {
         // Do not show notifications if they are disabled.
         if !self.enabled() {
             return;
@@ -254,7 +254,7 @@ impl Notifications {
             key: verification.key(),
         };
 
-        let icon = user.avatar_data().as_notification_icon();
+        let icon = user.avatar_data().as_notification_icon().await;
 
         let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
         Self::send_notification(

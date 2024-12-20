@@ -74,18 +74,51 @@ impl AvatarData {
     /// Get this avatar as a notification icon.
     ///
     /// Returns `None` if an error occurred while generating the icon.
-    pub(crate) fn as_notification_icon(&self) -> Option<gdk::Texture> {
-        let window = Application::default().active_window()?.upcast();
-
-        let icon = if let Some(paintable) = self.image().and_then(|i| i.paintable()) {
-            paintable_as_notification_icon(paintable.upcast_ref(), &window)
-        } else {
-            string_as_notification_icon(&self.display_name(), &window)
+    pub(crate) async fn as_notification_icon(&self) -> Option<gdk::Texture> {
+        let Some(window) = Application::default().active_window() else {
+            warn!("Could not generate icon for notification: no active window");
+            return None;
         };
+        let Some(renderer) = window.renderer() else {
+            warn!("Could not generate icon for notification: no renderer");
+            return None;
+        };
+        let scale_factor = window.scale_factor();
 
-        match icon {
-            Ok(icon) => Some(icon),
+        if let Some(image) = self.image() {
+            match image.load_small_paintable().await {
+                Ok(Some(paintable)) => match paintable_as_notification_icon(
+                    paintable.upcast_ref(),
+                    scale_factor,
+                    &renderer,
+                ) {
+                    Ok(texture) => return Some(texture),
+                    Err(error) => {
+                        // An error occurred during rendering.
+                        warn!("Could not generate icon for notification: {error}");
+                        return None;
+                    }
+                },
+                // No paintable, we will try to generate the fallback.
+                Ok(None) => {}
+                // Could not get the paintable, we will try to generate the fallback.
+                Err(error) => {
+                    warn!("Could not generate icon for notification: {error}");
+                }
+            }
+        }
+
+        let texture = string_as_notification_icon(
+            &self.display_name(),
+            scale_factor,
+            &window.create_pango_layout(None),
+            &renderer,
+        );
+
+        match texture {
+            Ok(texture) => Some(texture),
             Err(error) => {
+                // An error occurred during rendering.
                 warn!("Could not generate icon for notification: {error}");
                 None
             }
