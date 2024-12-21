@@ -1,7 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, CompositeTemplate};
-use matrix_sdk::ruma::{api::client::account::deactivate, assign};
 use tracing::error;
 
 use crate::{
@@ -108,8 +107,11 @@ impl DeactivateAccountSubpage {
 
         let result = dialog
             .authenticate(self, move |client, auth| async move {
-                let request = assign!(deactivate::v3::Request::new(), { auth });
-                client.send(request, None).await.map_err(Into::into)
+                client
+                    .account()
+                    .deactivate(None, auth, false)
+                    .await
+                    .map_err(Into::into)
             })
             .await;
 

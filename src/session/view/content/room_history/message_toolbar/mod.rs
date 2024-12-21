@@ -675,12 +675,7 @@ mod imp {
                 return;
             };
 
-            let config = if let Some(thumbnail) = thumbnail {
-                AttachmentConfig::with_thumbnail(thumbnail)
-            } else {
-                AttachmentConfig::new()
-            }
-            .info(info);
+            let config = AttachmentConfig::new().thumbnail(thumbnail).info(info);
 
             let matrix_room = room.matrix_room().clone();
 

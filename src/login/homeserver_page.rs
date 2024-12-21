@@ -4,7 +4,6 @@ use gtk::{self, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::{
     config::RequestConfig, sanitize_server_name, Client, ClientBuildError, ClientBuilder,
 };
-use ruma::api::client::discovery::get_supported_versions;
 use tracing::warn;
 use url::Url;
 
@@ -239,9 +238,9 @@ impl LoginHomeserverPage {
                 .build()
                 .await?;
 
-            client
-                .send(get_supported_versions::Request::new(), None)
-                .await?;
+            // This method calls the `GET /versions` endpoint if it was not called
+            // previously.
+            client.unstable_features().await?;
 
             Ok(client)
         })

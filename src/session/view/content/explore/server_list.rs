@@ -102,7 +102,7 @@ impl ServerList {
         let client = self.session().unwrap().client();
 
         let handle =
-            spawn_tokio!(async move { client.send(get_protocols::v3::Request::new(), None).await });
+            spawn_tokio!(async move { client.send(get_protocols::v3::Request::new()).await });
 
         match handle.await.unwrap() {
             Ok(response) => self.add_protocols(response),

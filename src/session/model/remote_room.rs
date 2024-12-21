@@ -275,7 +275,7 @@ impl RemoteRoom {
             // We are only interested in the single room.
             limit: Some(uint!(1))
         });
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         match handle.await.unwrap() {
             Ok(response) => {

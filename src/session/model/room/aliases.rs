@@ -435,11 +435,10 @@ impl RoomAliases {
         let client = matrix_room.client();
         let room_id = matrix_room.room_id().to_owned();
 
-        let handle = spawn_tokio!(async move {
-            client
-                .send(room::aliases::v3::Request::new(room_id), None)
-                .await
-        });
+        let handle =
+            spawn_tokio!(
+                async move { client.send(room::aliases::v3::Request::new(room_id)).await }
+            );
 
         match handle.await.unwrap() {
             Ok(response) => Ok(response.aliases),
@@ -461,7 +460,7 @@ impl RoomAliases {
         let client = matrix_room.client();
 
         let request = delete_alias::v3::Request::new(alias);
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
@@ -487,7 +486,7 @@ impl RoomAliases {
         let room_id = matrix_room.room_id().to_owned();
 
         let request = create_alias::v3::Request::new(alias, room_id);
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         match handle.await.unwrap() {
             Ok(_) => Ok(()),

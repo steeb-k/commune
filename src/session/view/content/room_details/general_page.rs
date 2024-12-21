@@ -942,7 +942,7 @@ impl GeneralPage {
         let client = matrix_room.client();
         let request = get_room_visibility::v3::Request::new(matrix_room.room_id().to_owned());
 
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         match handle.await.unwrap() {
             Ok(response) => {
@@ -985,7 +985,7 @@ impl GeneralPage {
         let request =
             set_room_visibility::v3::Request::new(matrix_room.room_id().to_owned(), visibility);
 
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not change directory visibility of room: {error}");
@@ -1182,7 +1182,7 @@ impl GeneralPage {
         let client = room.matrix_room().client();
         let request = upgrade_room::v3::Request::new(room.room_id().to_owned(), new_version);
 
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         match handle.await.unwrap() {
             Ok(_) => {

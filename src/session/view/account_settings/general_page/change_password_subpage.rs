@@ -4,10 +4,7 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::ruma::{
-    api::client::{account::change_password, error::ErrorKind},
-    assign,
-};
+use ruma::api::client::error::ErrorKind;
 use tracing::error;
 
 use crate::{
@@ -234,9 +231,11 @@ impl ChangePasswordSubpage {
             .authenticate(self, move |client, auth| {
                 let password = password.clone();
                 async move {
-                    let request =
-                        assign!(change_password::v3::Request::new(password.into()), { auth });
-                    client.send(request, None).await.map_err(Into::into)
+                    client
+                        .account()
+                        .change_password(&password, auth)
+                        .await
+                        .map_err(Into::into)
                 }
             })
             .await;

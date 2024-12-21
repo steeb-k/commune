@@ -291,7 +291,7 @@ impl Notifications {
 
         let client = session.client();
         let request = get_device::v3::Request::new(other_device_id.clone());
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
+        let handle = spawn_tokio!(async move { client.send(request).await });
 
         let display_name = match handle.await.unwrap() {
             Ok(res) => res.device.display_name,

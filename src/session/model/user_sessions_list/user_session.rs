@@ -1,9 +1,6 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::Device as CryptoDevice;
-use ruma::{
-    api::client::device::{delete_device, Device as DeviceData},
-    assign, DeviceId, OwnedDeviceId,
-};
+use ruma::{api::client::device::Device as DeviceData, DeviceId, OwnedDeviceId};
 use tracing::{debug, error};
 
 use crate::{
@@ -182,8 +179,10 @@ impl UserSession {
             .authenticate(parent, move |client, auth| {
                 let device_id = device_id.clone();
                 async move {
-                    let request = assign!(delete_device::v3::Request::new(device_id), { auth });
-                    client.send(request, None).await.map_err(Into::into)
+                    client
+                        .delete_devices(&[device_id], auth)
+                        .await
+                        .map_err(Into::into)
                 }
             })
             .await;
