@@ -16,12 +16,12 @@ mod imp {
     )]
     pub struct AttachmentDialog {
         #[template_child]
-        pub cancel_button: TemplateChild<gtk::Button>,
+        cancel_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub send_button: TemplateChild<gtk::Button>,
+        send_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub media: TemplateChild<MediaContentViewer>,
-        pub sender: RefCell<Option<oneshot::Sender<gtk::ResponseType>>>,
+        media: TemplateChild<MediaContentViewer>,
+        sender: RefCell<Option<oneshot::Sender<gtk::ResponseType>>>,
     }
 
     #[glib::object_subclass]
@@ -32,7 +32,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -66,20 +66,59 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl AttachmentDialog {
         /// Set whether this dialog is loading.
-        pub(super) fn set_loading(&self, loading: bool) {
+        fn set_loading(&self, loading: bool) {
             self.send_button.set_sensitive(!loading);
             self.grab_focus();
         }
 
         /// Sent the given response.
-        pub(super) fn send_response(&self, response: gtk::ResponseType) {
+        fn send_response(&self, response: gtk::ResponseType) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(response).is_err() {
                     error!("Could not send attachment dialog response {response:?}");
                 }
             }
+        }
+
+        /// Set the image to preview.
+        pub(super) fn set_image(&self, image: &gdk::Texture) {
+            self.media.view_image(image);
+            self.set_loading(false);
+        }
+
+        /// Set the file to preview.
+        pub(super) async fn set_file(&self, file: gio::File) {
+            self.media.view_file(file.into(), None).await;
+            self.set_loading(false);
+        }
+
+        /// Set the location to preview.
+        pub(super) fn set_location(&self, geo_uri: &geo_uri::GeoUri) {
+            self.media.view_location(geo_uri);
+            self.set_loading(false);
+        }
+
+        /// Emit the signal that the user wants to send the attachment.
+        #[template_callback]
+        fn send(&self) {
+            self.send_response(gtk::ResponseType::Ok);
+            self.obj().close();
+        }
+
+        /// Present the dialog and wait for the user to select a response.
+        ///
+        /// The response is [`gtk::ResponseType::Ok`] if the user clicked on
+        /// send, otherwise it is [`gtk::ResponseType::Cancel`].
+        pub(super) async fn response_future(&self, parent: &gtk::Widget) -> gtk::ResponseType {
+            let (sender, receiver) = oneshot::channel();
+            self.sender.replace(Some(sender));
+
+            self.obj().present(Some(parent));
+
+            receiver.await.unwrap_or(gtk::ResponseType::Cancel)
         }
     }
 }
@@ -90,7 +129,6 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Dialog;
 }
 
-#[gtk::template_callbacks]
 impl AttachmentDialog {
     /// Create an attachment dialog with the given title.
     ///
@@ -100,50 +138,36 @@ impl AttachmentDialog {
     }
 
     /// Set the image to preview.
-    pub fn set_image(&self, image: &gdk::Texture) {
-        let imp = self.imp();
-        imp.media.view_image(image);
-        imp.set_loading(false);
+    pub(crate) fn set_image(&self, image: &gdk::Texture) {
+        self.imp().set_image(image);
     }
 
     /// Set the file to preview.
-    pub fn set_file(&self, file: gio::File) {
+    pub(crate) fn set_file(&self, file: gio::File) {
         let imp = self.imp();
 
         spawn!(clone!(
             #[weak]
             imp,
             async move {
-                imp.media.view_file(file.into(), None).await;
-                imp.set_loading(false);
+                imp.set_file(file).await;
             }
         ));
     }
 
     /// Create an attachment dialog to preview and send a location.
-    pub fn set_location(&self, geo_uri: &geo_uri::GeoUri) {
-        let imp = self.imp();
-        imp.media.view_location(geo_uri);
-        imp.set_loading(false);
-    }
-
-    /// Emit the signal that the user wants to send the attachment.
-    #[template_callback]
-    fn send(&self) {
-        self.imp().send_response(gtk::ResponseType::Ok);
-        self.close();
+    pub(crate) fn set_location(&self, geo_uri: &geo_uri::GeoUri) {
+        self.imp().set_location(geo_uri);
     }
 
     /// Present the dialog and wait for the user to select a response.
     ///
     /// The response is [`gtk::ResponseType::Ok`] if the user clicked on send,
     /// otherwise it is [`gtk::ResponseType::Cancel`].
-    pub async fn response_future(&self, parent: &impl IsA<gtk::Widget>) -> gtk::ResponseType {
-        let (sender, receiver) = oneshot::channel();
-        self.imp().sender.replace(Some(sender));
-
-        self.present(Some(parent));
-
-        receiver.await.unwrap_or(gtk::ResponseType::Cancel)
+    pub(crate) async fn response_future(
+        &self,
+        parent: &impl IsA<gtk::Widget>,
+    ) -> gtk::ResponseType {
+        self.imp().response_future(parent.upcast_ref()).await
     }
 }

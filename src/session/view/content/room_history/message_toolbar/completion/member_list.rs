@@ -29,10 +29,10 @@ mod imp {
         /// The list model for the `@room` item.
         at_room_model: gio::ListStore,
         /// The search filter.
-        pub search_filter: gtk::StringFilter,
+        search_filter: gtk::StringFilter,
         /// The list of sorted and filtered room members.
         #[property(get)]
-        pub list: gtk::FilterListModel,
+        list: gtk::FilterListModel,
     }
 
     impl Default for CompletionMemberList {
@@ -230,6 +230,11 @@ mod imp {
                 self.at_room_model.remove(0);
             }
         }
+
+        /// Set the search term.
+        pub(super) fn set_search_term(&self, term: Option<&str>) {
+            self.search_filter.set_search(term);
+        }
     }
 }
 
@@ -246,8 +251,8 @@ impl CompletionMemberList {
     }
 
     /// Set the search term.
-    pub fn set_search_term(&self, term: Option<&str>) {
-        self.imp().search_filter.set_search(term);
+    pub(crate) fn set_search_term(&self, term: Option<&str>) {
+        self.imp().set_search_term(term);
     }
 }
 

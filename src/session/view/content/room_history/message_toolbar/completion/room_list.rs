@@ -17,12 +17,12 @@ mod imp {
         #[property(get = Self::rooms, set = Self::set_rooms, explicit_notify, nullable)]
         rooms: PhantomData<Option<RoomList>>,
         /// The room list with expression watches.
-        pub rooms_expr: ExpressionListModel,
+        rooms_expr: ExpressionListModel,
         /// The search filter.
-        pub search_filter: gtk::StringFilter,
+        search_filter: gtk::StringFilter,
         /// The list of sorted and filtered rooms.
         #[property(get)]
-        pub list: gtk::FilterListModel,
+        list: gtk::FilterListModel,
     }
 
     #[glib::object_subclass]
@@ -134,6 +134,11 @@ mod imp {
             self.rooms_expr.set_model(rooms);
             self.obj().notify_rooms();
         }
+
+        /// Set the search term.
+        pub(super) fn set_search_term(&self, term: Option<&str>) {
+            self.search_filter.set_search(term);
+        }
     }
 }
 
@@ -148,8 +153,8 @@ impl CompletionRoomList {
     }
 
     /// Set the search term.
-    pub fn set_search_term(&self, term: Option<&str>) {
-        self.imp().search_filter.set_search(term);
+    pub(crate) fn set_search_term(&self, term: Option<&str>) {
+        self.imp().set_search_term(term);
     }
 }
 

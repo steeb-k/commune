@@ -13,9 +13,9 @@ use ruma::{
 use sourceview::prelude::*;
 use tracing::{error, warn};
 
-use super::{MessageBufferChunk, MessageBufferParser};
+use super::ComposerParser;
 use crate::{
-    components::{AtRoom, Pill, PillSource},
+    components::{Pill, PillSource},
     prelude::*,
     session::model::{Member, Room},
     spawn, spawn_tokio,
@@ -25,9 +25,9 @@ use crate::{
 // The duration in seconds we wait for before saving a change.
 const SAVING_TIMEOUT: u32 = 3;
 /// The start tag to represent a mention in a serialized draft.
-const MENTION_START_TAG: &str = "<org.gnome.fractal.mention>";
+pub(super) const MENTION_START_TAG: &str = "<org.gnome.fractal.mention>";
 /// The end tag to represent a mention in a serialized draft.
-const MENTION_END_TAG: &str = "</org.gnome.fractal.mention>";
+pub(super) const MENTION_END_TAG: &str = "</org.gnome.fractal.mention>";
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData, sync::LazyLock};
@@ -42,23 +42,23 @@ mod imp {
     pub struct ComposerState {
         /// The room associated with this state.
         #[property(get, construct_only, nullable)]
-        pub room: glib::WeakRef<Room>,
+        room: glib::WeakRef<Room>,
         /// The buffer of this state.
         #[property(get)]
-        pub buffer: sourceview::Buffer,
+        buffer: sourceview::Buffer,
         /// The relation of this state.
-        pub related_to: RefCell<Option<RelationInfo>>,
+        related_to: RefCell<Option<RelationInfo>>,
         /// Whether this state has a relation.
         #[property(get = Self::has_relation)]
-        pub has_relation: PhantomData<bool>,
+        has_relation: PhantomData<bool>,
         /// The widgets of this state.
         ///
         /// These are the widgets inserted in the composer.
-        pub widgets: RefCell<Vec<(gtk::Widget, gtk::TextChildAnchor)>>,
+        widgets: RefCell<Vec<(gtk::Widget, gtk::TextChildAnchor)>>,
         /// The current view attached to this state.
-        pub view: glib::WeakRef<sourceview::View>,
+        view: glib::WeakRef<sourceview::View>,
         /// The draft that was saved in the store.
-        pub saved_draft: RefCell<Option<ComposerDraft>>,
+        saved_draft: RefCell<Option<ComposerDraft>>,
         /// The signal handler for the current draft saving timeout.
         draft_timeout: RefCell<Option<glib::SourceId>>,
         /// The lock to prevent multiple draft saving operations at the same
@@ -101,6 +101,51 @@ mod imp {
     }
 
     impl ComposerState {
+        /// Attach this state to the given view.
+        pub(super) fn attach_to_view(&self, view: Option<&sourceview::View>) {
+            self.view.set(view);
+
+            if let Some(view) = view {
+                view.set_buffer(Some(&self.buffer));
+
+                self.update_widgets();
+
+                for (widget, anchor) in &*self.widgets.borrow() {
+                    view.add_child_at_anchor(widget, anchor);
+                }
+            }
+        }
+
+        /// The relation to send with the current message.
+        pub(super) fn related_to(&self) -> Option<RelationInfo> {
+            self.related_to.borrow().clone()
+        }
+
+        /// Set the relation to send with the current message.
+        pub(super) fn set_related_to(&self, related_to: Option<RelationInfo>) {
+            let had_relation = self.has_relation();
+
+            if self
+                .related_to
+                .borrow()
+                .as_ref()
+                .is_some_and(|r| matches!(r, RelationInfo::Edit(_)))
+            {
+                // The user aborted the edit or the edit is done, clean up the entry.
+                self.buffer.set_text("");
+            }
+
+            self.related_to.replace(related_to);
+
+            let obj = self.obj();
+            if self.has_relation() != had_relation {
+                obj.notify_has_relation();
+            }
+
+            obj.emit_by_name::<()>("related-to-changed", &[]);
+            self.trigger_draft_saving();
+        }
+
         /// Whether this state has a relation.
         fn has_relation(&self) -> bool {
             self.related_to.borrow().is_some()
@@ -117,55 +162,7 @@ mod imp {
         ///
         /// Returns `None` if the draft would be empty.
         fn draft(&self) -> Option<ComposerDraft> {
-            let obj = self.obj();
-            let draft_type = self
-                .related_to
-                .borrow()
-                .as_ref()
-                .map_or(ComposerDraftType::NewMessage, RelationInfo::as_draft_type);
-
-            let (start, end) = self.buffer.bounds();
-            let body_len = end.offset().try_into().unwrap_or_default();
-            let mut plain_text = String::with_capacity(body_len);
-
-            let split_message = MessageBufferParser::new(&obj, start, end);
-            for chunk in split_message {
-                match chunk {
-                    MessageBufferChunk::Text(text) => {
-                        plain_text.push_str(&text);
-                    }
-                    MessageBufferChunk::Mention(source) => {
-                        plain_text.push_str(MENTION_START_TAG);
-
-                        if let Some(user) = source.downcast_ref::<Member>() {
-                            plain_text.push_str(user.user_id().as_ref());
-                        } else if let Some(room) = source.downcast_ref::<Room>() {
-                            plain_text.push_str(
-                                room.aliases()
-                                    .alias()
-                                    .as_ref()
-                                    .map_or_else(|| room.room_id().as_ref(), AsRef::as_ref),
-                            );
-                        } else if source.is::<AtRoom>() {
-                            plain_text.push_str(AT_ROOM);
-                        } else {
-                            unreachable!()
-                        };
-
-                        plain_text.push_str(MENTION_END_TAG);
-                    }
-                }
-            }
-
-            if draft_type == ComposerDraftType::NewMessage && plain_text.trim().is_empty() {
-                None
-            } else {
-                Some(ComposerDraft {
-                    plain_text,
-                    html_text: None,
-                    draft_type,
-                })
-            }
+            ComposerParser::new(&self.obj(), None).into_composer_draft()
         }
 
         /// Trigger the timeout for saving the current draft.
@@ -249,6 +246,18 @@ mod imp {
             }
 
             self.widgets.borrow_mut().push((widget, anchor));
+        }
+
+        /// Get the widget at the given anchor, if any.
+        pub(super) fn widget_at_anchor(
+            &self,
+            anchor: &gtk::TextChildAnchor,
+        ) -> Option<gtk::Widget> {
+            self.widgets
+                .borrow()
+                .iter()
+                .find(|(_, a)| a == anchor)
+                .map(|(w, _)| w.clone())
         }
 
         /// Restore the state from the persisted draft.
@@ -356,6 +365,99 @@ mod imp {
             obj.emit_by_name::<()>("related-to-changed", &[]);
             obj.notify_has_relation();
         }
+
+        /// Update the buffer for the given edit source.
+        pub(super) fn set_edit_source(&self, event_id: OwnedEventId, message: &Message) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            // We don't support editing non-text messages.
+            let (text, formatted) = match message.msgtype() {
+                MessageType::Emote(emote) => {
+                    (format!("/me {}", emote.body), emote.formatted.clone())
+                }
+                MessageType::Text(text) => (text.body.clone(), text.formatted.clone()),
+                _ => return,
+            };
+
+            self.set_related_to(Some(RelationInfo::Edit(event_id)));
+
+            // Try to detect rich mentions.
+            let mut mentions = if let Some(html) =
+                formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
+            {
+                let mentions = find_html_mentions(&html, &room);
+                let mut pos = 0;
+                // This is looking for the mention link's inner text in the Markdown
+                // so it is not super reliable: if there is other text that matches
+                // a user's display name in the string it might be replaced instead
+                // of the actual mention.
+                // Short of an HTML to Markdown converter, it won't be a simple task
+                // to locate mentions in Markdown.
+                mentions
+                    .into_iter()
+                    .filter_map(|(pill, s)| {
+                        text[pos..].find(s.as_ref()).map(|index| {
+                            let start = pos + index;
+                            let end = start + s.len();
+                            pos = end;
+                            DetectedMention { pill, start, end }
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
+
+            // Try to detect `@room` mentions.
+            let can_contain_at_room = message.mentions().map_or(true, |m| m.room);
+            if room.permissions().can_notify_room() && can_contain_at_room {
+                if let Some(start) = find_at_room(&text) {
+                    let pill = room.at_room().to_pill();
+                    let end = start + AT_ROOM.len();
+                    mentions.push(DetectedMention { pill, start, end });
+
+                    // Make sure the list is sorted.
+                    mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
+                }
+            }
+
+            if mentions.is_empty() {
+                self.buffer.set_text(&text);
+            } else {
+                // Place the pills instead of the text at the appropriate places in
+                // the GtkSourceView.
+                self.buffer.set_text("");
+
+                let mut pos = 0;
+                let mut iter = self.buffer.iter_at_offset(0);
+
+                for DetectedMention { pill, start, end } in mentions {
+                    if pos != start {
+                        self.buffer.insert(&mut iter, &text[pos..start]);
+                    }
+
+                    self.add_widget(pill, &mut iter);
+
+                    pos = end;
+                }
+
+                if pos != text.len() {
+                    self.buffer.insert(&mut iter, &text[pos..]);
+                }
+            }
+
+            self.trigger_draft_saving();
+        }
+
+        /// Clear this state.
+        pub(super) fn clear(&self) {
+            self.set_related_to(None);
+
+            self.buffer.set_text("");
+            self.widgets.borrow_mut().clear();
+        }
     }
 }
 
@@ -387,160 +489,38 @@ impl ComposerState {
     }
 
     /// Attach this state to the given view.
-    pub fn attach_to_view(&self, view: Option<&sourceview::View>) {
-        let imp = self.imp();
-
-        imp.view.set(view);
-
-        if let Some(view) = view {
-            view.set_buffer(Some(&imp.buffer));
-
-            imp.update_widgets();
-
-            for (widget, anchor) in &*imp.widgets.borrow() {
-                view.add_child_at_anchor(widget, anchor);
-            }
-        }
+    pub(crate) fn attach_to_view(&self, view: Option<&sourceview::View>) {
+        self.imp().attach_to_view(view);
     }
 
     /// Clear this state.
-    pub fn clear(&self) {
-        self.set_related_to(None);
-
-        let imp = self.imp();
-        imp.buffer.set_text("");
-        imp.widgets.borrow_mut().clear();
+    pub(crate) fn clear(&self) {
+        self.imp().clear();
     }
 
     /// The relation to send with the current message.
-    pub fn related_to(&self) -> Option<RelationInfo> {
-        self.imp().related_to.borrow().clone()
+    pub(crate) fn related_to(&self) -> Option<RelationInfo> {
+        self.imp().related_to()
     }
 
     /// Set the relation to send with the current message.
-    pub fn set_related_to(&self, related_to: Option<RelationInfo>) {
-        let imp = self.imp();
-
-        let had_relation = self.has_relation();
-
-        if imp
-            .related_to
-            .borrow()
-            .as_ref()
-            .is_some_and(|r| matches!(r, RelationInfo::Edit(_)))
-        {
-            // The user aborted the edit or the edit is done, clean up the entry.
-            imp.buffer.set_text("");
-        }
-
-        imp.related_to.replace(related_to);
-
-        if self.has_relation() != had_relation {
-            self.notify_has_relation();
-        }
-
-        self.emit_by_name::<()>("related-to-changed", &[]);
-        self.imp().trigger_draft_saving();
+    pub(crate) fn set_related_to(&self, related_to: Option<RelationInfo>) {
+        self.imp().set_related_to(related_to);
     }
 
     /// Update the buffer for the given edit source.
-    pub fn set_edit_source(&self, event_id: OwnedEventId, message: &Message) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        // We don't support editing non-text messages.
-        let (text, formatted) = match message.msgtype() {
-            MessageType::Emote(emote) => (format!("/me {}", emote.body), emote.formatted.clone()),
-            MessageType::Text(text) => (text.body.clone(), text.formatted.clone()),
-            _ => return,
-        };
-
-        self.set_related_to(Some(RelationInfo::Edit(event_id)));
-
-        // Try to detect rich mentions.
-        let mut mentions = if let Some(html) =
-            formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
-        {
-            let mentions = find_html_mentions(&html, &room);
-            let mut pos = 0;
-            // This is looking for the mention link's inner text in the Markdown
-            // so it is not super reliable: if there is other text that matches
-            // a user's display name in the string it might be replaced instead
-            // of the actual mention.
-            // Short of an HTML to Markdown converter, it won't be a simple task
-            // to locate mentions in Markdown.
-            mentions
-                .into_iter()
-                .filter_map(|(pill, s)| {
-                    text[pos..].find(s.as_ref()).map(|index| {
-                        let start = pos + index;
-                        let end = start + s.len();
-                        pos = end;
-                        DetectedMention { pill, start, end }
-                    })
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-
-        // Try to detect `@room` mentions.
-        let can_contain_at_room = message.mentions().map_or(true, |m| m.room);
-        if room.permissions().can_notify_room() && can_contain_at_room {
-            if let Some(start) = find_at_room(&text) {
-                let pill = room.at_room().to_pill();
-                let end = start + AT_ROOM.len();
-                mentions.push(DetectedMention { pill, start, end });
-
-                // Make sure the list is sorted.
-                mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
-            }
-        }
-
-        let buffer = self.buffer();
-
-        if mentions.is_empty() {
-            buffer.set_text(&text);
-        } else {
-            // Place the pills instead of the text at the appropriate places in
-            // the GtkSourceView.
-            buffer.set_text("");
-
-            let mut pos = 0;
-            let mut iter = buffer.iter_at_offset(0);
-
-            for DetectedMention { pill, start, end } in mentions {
-                if pos != start {
-                    buffer.insert(&mut iter, &text[pos..start]);
-                }
-
-                self.add_widget(pill, &mut iter);
-
-                pos = end;
-            }
-
-            if pos != text.len() {
-                buffer.insert(&mut iter, &text[pos..]);
-            }
-        }
-
-        self.imp().trigger_draft_saving();
+    pub(crate) fn set_edit_source(&self, event_id: OwnedEventId, message: &Message) {
+        self.imp().set_edit_source(event_id, message);
     }
 
     /// Add the given widget at the position of the given iter to this state.
-    pub fn add_widget(&self, widget: impl IsA<gtk::Widget>, iter: &mut gtk::TextIter) {
+    pub(crate) fn add_widget(&self, widget: impl IsA<gtk::Widget>, iter: &mut gtk::TextIter) {
         self.imp().add_widget(widget, iter);
     }
 
     /// Get the widget at the given anchor, if any.
-    pub fn widget_at_anchor(&self, anchor: &gtk::TextChildAnchor) -> Option<gtk::Widget> {
-        self.imp()
-            .widgets
-            .borrow()
-            .iter()
-            .find(|(_, a)| a == anchor)
-            .map(|(w, _)| w.clone())
+    pub(crate) fn widget_at_anchor(&self, anchor: &gtk::TextChildAnchor) -> Option<gtk::Widget> {
+        self.imp().widget_at_anchor(anchor)
     }
 
     /// Connect to the signal emitted when the relation changed.
@@ -560,7 +540,7 @@ impl ComposerState {
 
 /// The possible relations to send with a message.
 #[derive(Debug, Clone)]
-pub enum RelationInfo {
+pub(crate) enum RelationInfo {
     /// Send a reply with the given replied to info.
     Reply(RepliedToInfo),
 
@@ -570,7 +550,7 @@ pub enum RelationInfo {
 
 impl RelationInfo {
     /// The unique global identifier of the related event.
-    pub fn identifier(&self) -> TimelineEventItemId {
+    pub(crate) fn identifier(&self) -> TimelineEventItemId {
         match self {
             RelationInfo::Reply(info) => TimelineEventItemId::EventId(info.event_id().to_owned()),
             RelationInfo::Edit(event_id) => TimelineEventItemId::EventId(event_id.clone()),
@@ -578,7 +558,7 @@ impl RelationInfo {
     }
 
     /// Get this `RelationInfo` as a draft type.
-    pub fn as_draft_type(&self) -> ComposerDraftType {
+    pub(crate) fn as_draft_type(&self) -> ComposerDraftType {
         match self {
             Self::Reply(info) => ComposerDraftType::Reply {
                 event_id: info.event_id().to_owned(),

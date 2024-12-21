@@ -74,11 +74,8 @@
                         <property name="halign">end</property>
                         <property name="valign">start</property>
                         <property name="icon-name">close-symbolic</property>
-                        <property name="action-name">message-toolbar.clear-related-event</property>
                         <property name="tooltip-text" translatable="yes">Cancel</property>
-                        <accessibility>
-                          <property name="label" translatable="yes">Cancel</property>
-                        </accessibility>
+                        <signal name="clicked" handler="clear_related_event" swapped="yes" />
                       </object>
                     </child>
                   </object>
@@ -92,22 +89,16 @@
                       <object class="GtkButton">
                         <property name="valign">end</property>
                         <property name="icon-name">attachment-symbolic</property>
-                        <property name="action-name">message-toolbar.select-file</property>
                         <property name="tooltip-text" translatable="yes">Send a File</property>
-                        <accessibility>
-                          <property name="label" translatable="yes">Send a File</property>
-                        </accessibility>
+                        <signal name="clicked" handler="select_file" swapped="yes" />
                       </object>
                     </child>
                     <child>
                       <object class="GtkButton">
                         <property name="valign">end</property>
                         <property name="icon-name">emoji-symbolic</property>
-                        <property name="action-name">message-toolbar.open-emoji</property>
                         <property name="tooltip-text" translatable="yes">Insert an Emoji</property>
-                        <accessibility>
-                          <property name="label" translatable="yes">Insert an Emoji</property>
-                        </accessibility>
+                        <signal name="clicked" handler="open_emoji" swapped="yes" />
                       </object>
                     </child>
                     <child>
@@ -126,11 +117,19 @@
                                 <property name="top-margin">7</property>
                                 <property name="bottom-margin">7</property>
                                 <property name="wrap-mode">word</property>
+                                <signal name="paste-clipboard" handler="paste_from_clipboard" swapped="yes" />
+                                <signal name="copy-clipboard" handler="copy_to_clipboard" swapped="yes" />
+                                <signal name="cut-clipboard" handler="cut_to_clipboard" swapped="yes" />
                                 <accessibility>
                                   <!-- Translators: This is the name of the input widget where messages
                                     are entered before being sent, for accessibility tools. -->
                                   <property name="label" translatable="yes">Message Composer</property>
                                 </accessibility>
+                                <child>
+                                  <object class="GtkEventControllerKey">
+                                    <signal name="key-pressed" handler="key_pressed" swapped="yes"/>
+                                  </object>
+                                </child>
                               </object>
                             </property>
                           </object>
@@ -150,20 +149,17 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="send_button">
                         <property name="valign">end</property>
                         <property name="icon-name">send-symbolic</property>
                         <property name="focus-on-click">False</property>
-                        <property name="action-name">message-toolbar.send-text-message</property>
                         <property name="tooltip-text" translatable="yes">Send Message</property>
+                        <signal name="clicked" handler="send_text_message" swapped="yes" />
                         <style>
                           <class name="suggested-action"/>
                           <class name="circular"/>
                           <class name="send-text-message-button"/>
                         </style>
-                        <accessibility>
-                          <property name="label" translatable="yes">Send Message</property>
-                        </accessibility>
                       </object>
                     </child>
                   </object>
