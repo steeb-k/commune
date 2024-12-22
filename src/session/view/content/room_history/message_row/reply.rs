@@ -17,15 +17,15 @@ mod imp {
     #[properties(wrapper_type = super::MessageReply)]
     pub struct MessageReply {
         #[template_child]
-        pub related_content_sender: TemplateChild<gtk::Label>,
+        related_content_sender: TemplateChild<gtk::Label>,
         #[template_child]
-        pub related_content: TemplateChild<adw::Bin>,
+        related_content: TemplateChild<adw::Bin>,
         #[template_child]
-        pub content: TemplateChild<adw::Bin>,
+        content: TemplateChild<adw::Bin>,
         /// Whether to show the header of the related content.
         #[property(get, set = Self::set_show_related_content_header, explicit_notify)]
-        pub show_related_content_header: Cell<bool>,
-        pub related_display_name_binding: RefCell<Option<glib::Binding>>,
+        show_related_content_header: Cell<bool>,
+        related_display_name_binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]
@@ -65,6 +65,30 @@ mod imp {
             self.show_related_content_header.set(show);
             self.obj().notify_show_related_content_header();
         }
+
+        /// Set the sender of the replied-to event.
+        pub(super) fn set_related_content_sender(&self, user: &User) {
+            if let Some(binding) = self.related_display_name_binding.take() {
+                binding.unbind();
+            }
+
+            let related_display_name_binding = user
+                .bind_property("disambiguated-name", &*self.related_content_sender, "label")
+                .sync_create()
+                .build();
+            self.related_display_name_binding
+                .replace(Some(related_display_name_binding));
+        }
+
+        /// The widget containing the replied-to content.
+        pub(super) fn related_content(&self) -> &adw::Bin {
+            self.related_content.as_ref()
+        }
+
+        /// The widget containing the reply's content.
+        pub(super) fn content(&self) -> &adw::Bin {
+            self.content.as_ref()
+        }
     }
 }
 
@@ -80,28 +104,17 @@ impl MessageReply {
     }
 
     /// Set the sender of the replied-to event.
-    pub fn set_related_content_sender(&self, user: &User) {
-        let imp = self.imp();
-
-        if let Some(binding) = imp.related_display_name_binding.take() {
-            binding.unbind();
-        }
-
-        let related_display_name_binding = user
-            .bind_property("disambiguated-name", &*imp.related_content_sender, "label")
-            .sync_create()
-            .build();
-        imp.related_display_name_binding
-            .replace(Some(related_display_name_binding));
+    pub(crate) fn set_related_content_sender(&self, user: &User) {
+        self.imp().set_related_content_sender(user);
     }
 
     /// The widget containing the replied-to content.
-    pub fn related_content(&self) -> &adw::Bin {
-        self.imp().related_content.as_ref()
+    pub(crate) fn related_content(&self) -> &adw::Bin {
+        self.imp().related_content()
     }
 
     /// The widget containing the reply's content.
-    pub fn content(&self) -> &adw::Bin {
-        self.imp().content.as_ref()
+    pub(crate) fn content(&self) -> &adw::Bin {
+        self.imp().content()
     }
 }

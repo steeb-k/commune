@@ -14,8 +14,8 @@ mod imp {
     pub struct MessageCaption {
         /// The widget displaying the file alongside the caption.
         #[property(get = Self::child, set = Self::set_child, explicit_notify, nullable)]
-        pub child: PhantomData<Option<gtk::Widget>>,
-        pub caption_widget: MessageText,
+        child: PhantomData<Option<gtk::Widget>>,
+        caption_widget: MessageText,
     }
 
     #[glib::object_subclass]
@@ -70,6 +70,24 @@ mod imp {
 
             obj.notify_child();
         }
+
+        /// Set the caption.
+        pub(super) fn set_caption(
+            &self,
+            caption: String,
+            formatted_caption: Option<FormattedBody>,
+            room: &Room,
+            format: ContentFormat,
+            detect_at_room: bool,
+        ) {
+            self.caption_widget.with_markup(
+                formatted_caption,
+                caption,
+                room,
+                format,
+                detect_at_room,
+            );
+        }
     }
 }
 
@@ -85,7 +103,7 @@ impl MessageCaption {
     }
 
     /// Set the caption.
-    pub fn set_caption(
+    pub(crate) fn set_caption(
         &self,
         caption: String,
         formatted_caption: Option<FormattedBody>,
@@ -93,12 +111,7 @@ impl MessageCaption {
         format: ContentFormat,
         detect_at_room: bool,
     ) {
-        self.imp().caption_widget.with_markup(
-            formatted_caption,
-            caption,
-            room,
-            format,
-            detect_at_room,
-        );
+        self.imp()
+            .set_caption(caption, formatted_caption, room, format, detect_at_room);
     }
 }

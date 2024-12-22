@@ -18,11 +18,11 @@ mod imp {
     )]
     pub struct MessageLocation {
         #[template_child]
-        pub overlay: TemplateChild<gtk::Overlay>,
+        overlay: TemplateChild<gtk::Overlay>,
         #[template_child]
-        pub location: TemplateChild<LocationViewer>,
+        location: TemplateChild<LocationViewer>,
         #[template_child]
-        pub overlay_error: TemplateChild<gtk::Image>,
+        overlay_error: TemplateChild<gtk::Image>,
     }
 
     #[glib::object_subclass]
@@ -71,6 +71,38 @@ mod imp {
                 .size_allocate(&gtk::Allocation::new(0, 0, width, height), baseline);
         }
     }
+
+    impl MessageLocation {
+        /// Set the `geo:` URI to display.
+        pub(super) fn set_geo_uri(&self, uri: &str, format: ContentFormat) {
+            let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
+            self.location.set_compact(compact);
+
+            match GeoUri::parse(uri) {
+                Ok(geo_uri) => {
+                    self.location.set_location(&geo_uri);
+                    self.overlay_error.set_visible(false);
+                }
+                Err(error) => {
+                    warn!("Encountered invalid geo URI: {error}");
+                    self.location.set_visible(false);
+                    self.overlay_error.set_tooltip_text(Some(&gettext(
+                        "Location is invalid and cannot be displayed",
+                    )));
+                    self.overlay_error.set_visible(true);
+                }
+            };
+
+            let obj = self.obj();
+            if compact {
+                obj.set_halign(gtk::Align::Start);
+                obj.add_css_class("compact");
+            } else {
+                obj.set_halign(gtk::Align::Fill);
+                obj.remove_css_class("compact");
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -86,32 +118,7 @@ impl MessageLocation {
     }
 
     /// Set the `geo:` URI to display.
-    pub fn set_geo_uri(&self, uri: &str, format: ContentFormat) {
-        let imp = self.imp();
-        let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
-        imp.location.set_compact(compact);
-
-        match GeoUri::parse(uri) {
-            Ok(geo_uri) => {
-                imp.location.set_location(&geo_uri);
-                imp.overlay_error.set_visible(false);
-            }
-            Err(error) => {
-                warn!("Encountered invalid geo URI: {error}");
-                imp.location.set_visible(false);
-                imp.overlay_error.set_tooltip_text(Some(&gettext(
-                    "Location is invalid and cannot be displayed",
-                )));
-                imp.overlay_error.set_visible(true);
-            }
-        };
-
-        if compact {
-            self.set_halign(gtk::Align::Start);
-            self.add_css_class("compact");
-        } else {
-            self.set_halign(gtk::Align::Fill);
-            self.remove_css_class("compact");
-        }
+    pub(crate) fn set_geo_uri(&self, uri: &str, format: ContentFormat) {
+        self.imp().set_geo_uri(uri, format);
     }
 }

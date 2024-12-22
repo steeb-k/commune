@@ -15,7 +15,7 @@ mod imp {
     )]
     pub struct MessageReactionList {
         #[template_child]
-        pub flow_box: TemplateChild<gtk::FlowBox>,
+        flow_box: TemplateChild<gtk::FlowBox>,
     }
 
     #[glib::object_subclass]
@@ -26,6 +26,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_css_name("message-reactions");
         }
 
@@ -37,6 +38,30 @@ mod imp {
     impl ObjectImpl for MessageReactionList {}
     impl WidgetImpl for MessageReactionList {}
     impl BinImpl for MessageReactionList {}
+
+    impl MessageReactionList {
+        /// Set the list of reactions.
+        pub(super) fn set_reaction_list(&self, members: &MemberList, reaction_list: &ReactionList) {
+            self.flow_box.bind_model(
+                Some(reaction_list),
+                clone!(
+                    #[weak]
+                    members,
+                    #[upgrade_or_else]
+                    || { gtk::FlowBoxChild::new().upcast() },
+                    move |obj| {
+                        MessageReaction::new(
+                            members,
+                            obj.clone()
+                                .downcast()
+                                .expect("reaction list item is a reaction group"),
+                        )
+                        .upcast()
+                    }
+                ),
+            );
+        }
+    }
 }
 
 glib::wrapper! {
@@ -50,18 +75,8 @@ impl MessageReactionList {
         glib::Object::new()
     }
 
-    pub fn set_reaction_list(&self, members: &MemberList, reaction_list: &ReactionList) {
-        self.imp().flow_box.bind_model(
-            Some(reaction_list),
-            clone!(
-                #[weak]
-                members,
-                #[upgrade_or_else]
-                || { gtk::FlowBoxChild::new().upcast() },
-                move |obj| {
-                    MessageReaction::new(members, obj.clone().downcast().unwrap()).upcast()
-                }
-            ),
-        );
+    /// Set the list of reactions.
+    pub(crate) fn set_reaction_list(&self, members: &MemberList, reaction_list: &ReactionList) {
+        self.imp().set_reaction_list(members, reaction_list);
     }
 }

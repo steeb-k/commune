@@ -24,10 +24,10 @@ mod imp {
     #[properties(wrapper_type = super::ReactionPopover)]
     pub struct ReactionPopover {
         #[template_child]
-        pub list: TemplateChild<gtk::ListView>,
+        list: TemplateChild<gtk::ListView>,
         /// The reaction senders to display.
         #[property(get, set = Self::set_senders, construct_only)]
-        pub senders: glib::WeakRef<gio::ListStore>,
+        senders: glib::WeakRef<gio::ListStore>,
     }
 
     #[glib::object_subclass]
@@ -56,17 +56,16 @@ mod imp {
     impl ReactionPopover {
         /// Set the reaction senders to display.
         fn set_senders(&self, senders: gio::ListStore) {
-            let obj = self.obj();
-
             self.senders.set(Some(&senders));
             self.list
                 .set_model(Some(&gtk::NoSelection::new(Some(senders))));
             self.list.connect_activate(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, pos| {
-                    let Some(member) = obj
-                        .senders()
+                    let Some(member) = imp
+                        .senders
+                        .upgrade()
                         .and_then(|list| list.item(pos))
                         .and_downcast::<MemberTimestamp>()
                         .and_then(|ts| ts.member())
@@ -74,9 +73,12 @@ mod imp {
                         return;
                     };
 
+                    let obj = imp.obj();
+
                     let dialog = UserProfileDialog::new();
                     dialog.set_room_member(member);
-                    dialog.present(Some(&obj));
+                    dialog.present(Some(&*obj));
+
                     obj.popdown();
                 }
             ));

@@ -22,9 +22,9 @@ mod imp {
     pub struct MessageStateStack {
         /// The state that is currently displayed.
         #[property(get, set = Self::set_state, explicit_notify, builder(MessageState::default()))]
-        pub state: Cell<MessageState>,
+        state: Cell<MessageState>,
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        stack: TemplateChild<gtk::Stack>,
     }
 
     #[glib::object_subclass]
@@ -50,7 +50,7 @@ mod imp {
 
     impl MessageStateStack {
         /// Set the state to display.
-        pub fn set_state(&self, state: MessageState) {
+        fn set_state(&self, state: MessageState) {
             let prev_state = self.state.get();
 
             if prev_state == state {
@@ -58,7 +58,7 @@ mod imp {
             }
 
             let obj = self.obj();
-            let stack = &*self.stack;
+            let stack = &self.stack;
 
             match state {
                 MessageState::None => {

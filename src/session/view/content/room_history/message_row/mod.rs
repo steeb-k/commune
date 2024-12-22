@@ -37,31 +37,31 @@ mod imp {
     #[properties(wrapper_type = super::MessageRow)]
     pub struct MessageRow {
         #[template_child]
-        pub avatar: TemplateChild<SenderAvatar>,
+        avatar: TemplateChild<SenderAvatar>,
         #[template_child]
-        pub header: TemplateChild<gtk::Box>,
+        header: TemplateChild<gtk::Box>,
         #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub timestamp: TemplateChild<gtk::Label>,
+        timestamp: TemplateChild<gtk::Label>,
         #[template_child]
-        pub content: TemplateChild<MessageContent>,
+        content: TemplateChild<MessageContent>,
         #[template_child]
-        pub message_state: TemplateChild<MessageStateStack>,
+        message_state: TemplateChild<MessageStateStack>,
         #[template_child]
-        pub reactions: TemplateChild<MessageReactionList>,
+        reactions: TemplateChild<MessageReactionList>,
         #[template_child]
-        pub read_receipts: TemplateChild<ReadReceiptsList>,
-        pub bindings: RefCell<Vec<glib::Binding>>,
-        pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
+        read_receipts: TemplateChild<ReadReceiptsList>,
+        bindings: RefCell<Vec<glib::Binding>>,
+        system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
-        pub event: BoundObject<Event>,
+        event: BoundObject<Event>,
         /// Whether this item should show its header.
         ///
         /// This is ignored if this event doesn’t have a header.
         #[property(get = Self::show_header, set = Self::set_show_header, explicit_notify)]
-        pub show_header: PhantomData<bool>,
+        show_header: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -74,7 +74,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.install_action("message-row.show-media", None, |obj, _, _| {
-                obj.show_media();
+                obj.imp().show_media();
             });
         }
 
@@ -87,7 +87,6 @@ mod imp {
     impl ObjectImpl for MessageRow {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             self.content.connect_format_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -102,10 +101,10 @@ mod imp {
 
             let system_settings = Application::default().system_settings();
             let system_settings_handler = system_settings.connect_clock_format_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.update_timestamp();
+                    imp.update_timestamp();
                 }
             ));
             self.system_settings_handler
@@ -187,20 +186,20 @@ mod imp {
             ]);
 
             let timestamp_handler = event.connect_timestamp_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.update_timestamp();
+                    imp.update_timestamp();
                 }
             ));
 
             // Listening to changes in the source might not be enough, there are changes
-            // that we display that don't affect the source, like related events.
+            // that we display that do not affect the source, like related events.
             let item_changed_handler = event.connect_item_changed(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.update_content();
+                    imp.update_content();
                 }
             ));
 
@@ -211,8 +210,69 @@ mod imp {
                 .set(event, vec![timestamp_handler, item_changed_handler]);
             obj.notify_event();
 
-            obj.update_content();
-            obj.update_timestamp();
+            self.update_content();
+            self.update_timestamp();
+        }
+
+        /// Update the displayed timestamp for the current event with the
+        /// current clock format setting.
+        fn update_timestamp(&self) {
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+
+            let datetime = event.timestamp();
+
+            let clock_format = Application::default().system_settings().clock_format();
+            let time = if clock_format == ClockFormat::TwelveHours {
+                datetime.format("%I∶%M %p").unwrap()
+            } else {
+                datetime.format("%R").unwrap()
+            };
+
+            self.timestamp.set_label(&time);
+
+            let accessible_label = gettext_f("Sent at {time}", &[("time", &time)]);
+            self.timestamp
+                .update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
+        }
+
+        /// Update the content for the current event.
+        fn update_content(&self) {
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+
+            self.content.update_for_event(&event);
+        }
+
+        /// Get the texture displayed by this widget, if any.
+        pub(super) fn texture(&self) -> Option<gdk::Texture> {
+            self.content.texture()
+        }
+
+        /// Open the media viewer with the media content of this row.
+        fn show_media(&self) {
+            let Some(window) = self.obj().root().and_downcast::<Window>() else {
+                return;
+            };
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+            let Some(message) = event.message() else {
+                return;
+            };
+
+            if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
+                let Some(visual_media_widget) = self.content.visual_media_widget() else {
+                    warn!("Trying to show media of a non-media message");
+                    return;
+                };
+
+                window
+                    .session_view()
+                    .show_media(&event, &visual_media_widget);
+            }
         }
     }
 }
@@ -228,68 +288,8 @@ impl MessageRow {
         glib::Object::new()
     }
 
-    pub fn set_content_format(&self, format: ContentFormat) {
-        self.imp().content.set_format(format);
-    }
-
-    /// Update the displayed timestamp for the current event with the current
-    /// clock format setting.
-    fn update_timestamp(&self) {
-        let Some(event) = self.event() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let datetime = event.timestamp();
-
-        let clock_format = Application::default().system_settings().clock_format();
-        let time = if clock_format == ClockFormat::TwelveHours {
-            datetime.format("%I∶%M %p").unwrap()
-        } else {
-            datetime.format("%R").unwrap()
-        };
-
-        imp.timestamp.set_label(&time);
-
-        let accessible_label = gettext_f("Sent at {time}", &[("time", &time)]);
-        imp.timestamp
-            .update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
-    }
-
-    fn update_content(&self) {
-        let Some(event) = self.event() else {
-            return;
-        };
-
-        self.imp().content.update_for_event(&event);
-    }
-
     /// Get the texture displayed by this widget, if any.
-    pub fn texture(&self) -> Option<gdk::Texture> {
-        self.imp().content.texture()
-    }
-
-    /// Open the media viewer with the media content of this row.
-    fn show_media(&self) {
-        let Some(window) = self.root().and_downcast::<Window>() else {
-            return;
-        };
-        let Some(event) = self.event() else {
-            return;
-        };
-        let Some(message) = event.message() else {
-            return;
-        };
-
-        if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
-            let Some(visual_media_widget) = self.imp().content.visual_media_widget() else {
-                warn!("Trying to show media of a non-media message");
-                return;
-            };
-
-            window
-                .session_view()
-                .show_media(&event, &visual_media_widget);
-        }
+    pub(crate) fn texture(&self) -> Option<gdk::Texture> {
+        self.imp().texture()
     }
 }

@@ -20,10 +20,10 @@ mod imp {
     pub struct MessageFile {
         /// The filename of the file.
         #[property(get, set = Self::set_filename, explicit_notify, nullable)]
-        pub filename: RefCell<Option<String>>,
+        filename: RefCell<Option<String>>,
         /// Whether this file should be displayed in a compact format.
         #[property(get, set = Self::set_compact, explicit_notify)]
-        pub compact: Cell<bool>,
+        compact: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -93,7 +93,8 @@ impl MessageFile {
         glib::Object::new()
     }
 
-    pub fn set_format(&self, format: ContentFormat) {
+    /// Set the format of the content to present.
+    pub(crate) fn set_format(&self, format: ContentFormat) {
         self.set_compact(matches!(
             format,
             ContentFormat::Compact | ContentFormat::Ellipsized

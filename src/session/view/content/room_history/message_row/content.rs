@@ -49,7 +49,7 @@ mod imp {
     pub struct MessageContent {
         /// The displayed format of the message.
         #[property(get, set = Self::set_format, explicit_notify, builder(ContentFormat::default()))]
-        pub format: Cell<ContentFormat>,
+        format: Cell<ContentFormat>,
     }
 
     #[glib::object_subclass]
@@ -94,7 +94,7 @@ impl MessageContent {
     /// This allows to access the descendant content while discarding the
     /// content of a related message, like a replied-to event, or the caption of
     /// the event.
-    pub fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
+    pub(crate) fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
         let mut child = self.child()?;
 
         // If it is a reply, the media is in the main content.
@@ -111,7 +111,7 @@ impl MessageContent {
     }
 
     /// Update this widget to present the given `Event`.
-    pub fn update_for_event(&self, event: &Event) {
+    pub(crate) fn update_for_event(&self, event: &Event) {
         let detect_at_room = event.can_contain_at_room() && event.sender().can_notify_room();
 
         let format = self.format();
@@ -185,7 +185,7 @@ impl MessageContent {
     }
 
     /// Update this widget to present the given related event.
-    pub fn update_for_related_event(&self, info: &RepliedToInfo, sender: &Member) {
+    pub(crate) fn update_for_related_event(&self, info: &RepliedToInfo, sender: &Member) {
         let ReplyContent::Message(message) = info.content() else {
             return;
         };
@@ -196,7 +196,7 @@ impl MessageContent {
     }
 
     /// Get the texture displayed by this widget, if any.
-    pub fn texture(&self) -> Option<gdk::Texture> {
+    pub(crate) fn texture(&self) -> Option<gdk::Texture> {
         self.visual_media_widget()?.texture()
     }
 }
