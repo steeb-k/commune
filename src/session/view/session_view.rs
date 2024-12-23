@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    self, gdk, glib,
-    glib::{clone, signal::SignalHandlerId},
+    self, gdk,
+    glib::{self, clone, signal::SignalHandlerId},
     CompositeTemplate,
 };
 use ruma::{OwnedUserId, RoomId, RoomOrAliasId};
@@ -18,6 +18,22 @@ use crate::{
     utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri},
     Window,
 };
+
+/// A predicate to filter rooms depending on whether they have unread messages
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum ReadState {
+    /// Any room can be selected
+    Any,
+    /// Only unread rooms can be selected
+    Unread,
+}
+
+/// A direction in the room list
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum Direction {
+    Up,
+    Down,
+}
 
 mod imp {
     use std::cell::RefCell;
@@ -124,6 +140,22 @@ mod imp {
                 gdk::ModifierType::CONTROL_MASK,
                 "session.select-unread-room",
             );
+
+            klass.install_action("session.select-prev-room", None, |obj, _, _| {
+                obj.select_next_room(ReadState::Any, Direction::Up);
+            });
+
+            klass.install_action("session.select-prev-unread-room", None, |obj, _, _| {
+                obj.select_next_room(ReadState::Unread, Direction::Up);
+            });
+
+            klass.install_action("session.select-next-room", None, |obj, _, _| {
+                obj.select_next_room(ReadState::Any, Direction::Down);
+            });
+
+            klass.install_action("session.select-next-unread-room", None, |obj, _, _| {
+                obj.select_next_room(ReadState::Unread, Direction::Down);
+            });
 
             klass.install_action(
                 "session.show-matrix-uri",
@@ -313,6 +345,43 @@ impl SessionView {
             true
         } else {
             false
+        }
+    }
+
+    /// Select the next room with the given read state in the given direction.
+    ///
+    /// The search wraps: if no room matches below (for `direction == Down`)
+    /// then search continues in the down direction from the first room.
+    pub fn select_next_room(&self, read_state: ReadState, direction: Direction) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let item_list = session.sidebar_list_model().selection_model();
+        let len = item_list.n_items();
+        let current_index = item_list.selected().min(len);
+
+        let search_order: Box<dyn Iterator<Item = u32>> = {
+            // Iterate over every item except the current one.
+            let order = ((current_index + 1)..len).chain(0..current_index);
+            match direction {
+                Direction::Up => Box::new(order.rev()),
+                Direction::Down => Box::new(order),
+            }
+        };
+
+        for index in search_order {
+            let Some(item) = item_list.item(index) else {
+                // The list of rooms was mutated: let's give up responding to the key binding.
+                return;
+            };
+
+            if let Some(room) = item.downcast_ref::<Room>() {
+                if read_state == ReadState::Any || !room.is_read() {
+                    self.select_room(Some(room.clone()));
+                    return;
+                }
+            }
         }
     }
 
