@@ -4,7 +4,7 @@ use gtk::{gdk, glib, glib::clone};
 use matrix_sdk_ui::timeline::{
     Message, RepliedToInfo, ReplyContent, TimelineDetails, TimelineItemContent,
 };
-use ruma::events::room::message::MessageType;
+use ruma::{events::room::message::MessageType, OwnedEventId, OwnedTransactionId};
 use tracing::{error, warn};
 
 use super::{
@@ -158,6 +158,8 @@ impl MessageContent {
                             ContentFormat::Compact,
                             &replied_to_sender,
                             replied_to_detect_at_room,
+                            None,
+                            event.reply_to_id(),
                         );
                         build_content(
                             reply.content(),
@@ -165,6 +167,8 @@ impl MessageContent {
                             ContentFormat::Natural,
                             &event.sender(),
                             detect_at_room,
+                            event.transaction_id(),
+                            event.event_id(),
                         );
                         self.set_child(Some(&reply));
 
@@ -181,6 +185,8 @@ impl MessageContent {
             format,
             &event.sender(),
             detect_at_room,
+            event.transaction_id(),
+            event.event_id(),
         );
     }
 
@@ -192,7 +198,15 @@ impl MessageContent {
 
         let detect_at_room = message.can_contain_at_room() && sender.can_notify_room();
 
-        build_message_content(self, message, self.format(), sender, detect_at_room);
+        build_message_content(
+            self,
+            message,
+            self.format(),
+            sender,
+            detect_at_room,
+            None,
+            Some(info.event_id().to_owned()),
+        );
     }
 
     /// Get the texture displayed by this widget, if any.
@@ -208,12 +222,22 @@ fn build_content(
     format: ContentFormat,
     sender: &Member,
     detect_at_room: bool,
+    transaction_id: Option<OwnedTransactionId>,
+    event_id: Option<OwnedEventId>,
 ) {
     let room = sender.room();
 
     match content {
         TimelineItemContent::Message(message) => {
-            build_message_content(parent, &message, format, sender, detect_at_room);
+            build_message_content(
+                parent,
+                &message,
+                format,
+                sender,
+                detect_at_room,
+                transaction_id,
+                event_id,
+            );
         }
         TimelineItemContent::Sticker(sticker) => {
             build_media_message_content(
@@ -222,6 +246,11 @@ fn build_content(
                 format,
                 &room,
                 detect_at_room,
+                MessageCacheKey {
+                    transaction_id,
+                    event_id,
+                    is_edited: false,
+                },
             );
         }
         TimelineItemContent::UnableToDecrypt(_) => {
@@ -265,11 +294,24 @@ fn build_message_content(
     format: ContentFormat,
     sender: &Member,
     detect_at_room: bool,
+    transaction_id: Option<OwnedTransactionId>,
+    event_id: Option<OwnedEventId>,
 ) {
     let room = sender.room();
 
     if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
-        build_media_message_content(parent, media_message, format, &room, detect_at_room);
+        build_media_message_content(
+            parent,
+            media_message,
+            format,
+            &room,
+            detect_at_room,
+            MessageCacheKey {
+                transaction_id,
+                event_id,
+                is_edited: message.is_edited(),
+            },
+        );
         return;
     }
 
@@ -364,6 +406,7 @@ fn build_media_message_content(
     format: ContentFormat,
     room: &Room,
     detect_at_room: bool,
+    cache_key: MessageCacheKey,
 ) {
     let Some(session) = room.session() else {
         return;
@@ -387,11 +430,17 @@ fn build_media_message_content(
             detect_at_room,
         );
 
-        let new_widget =
-            build_media_content(caption_widget.child(), media_message, format, &session);
+        let new_widget = build_media_content(
+            caption_widget.child(),
+            media_message,
+            format,
+            &session,
+            cache_key,
+        );
         caption_widget.set_child(Some(new_widget));
     } else {
-        let new_widget = build_media_content(parent.child(), media_message, format, &session);
+        let new_widget =
+            build_media_content(parent.child(), media_message, format, &session, cache_key);
         parent.set_child(Some(&new_widget));
     }
 }
@@ -404,6 +453,7 @@ fn build_media_content(
     media_message: MediaMessage,
     format: ContentFormat,
     session: &Session,
+    cache_key: MessageCacheKey,
 ) -> gtk::Widget {
     match media_message {
         MediaMessage::Audio(audio) => {
@@ -411,7 +461,7 @@ fn build_media_content(
                 .and_downcast::<MessageAudio>()
                 .unwrap_or_default();
 
-            widget.audio(audio.into(), session, format);
+            widget.audio(audio.into(), session, format, cache_key);
 
             widget.upcast()
         }
@@ -429,7 +479,7 @@ fn build_media_content(
                 .and_downcast::<MessageVisualMedia>()
                 .unwrap_or_default();
 
-            widget.set_media_message(image.into(), session, format);
+            widget.set_media_message(image.into(), session, format, cache_key);
 
             widget.upcast()
         }
@@ -438,7 +488,7 @@ fn build_media_content(
                 .and_downcast::<MessageVisualMedia>()
                 .unwrap_or_default();
 
-            widget.set_media_message(video.into(), session, format);
+            widget.set_media_message(video.into(), session, format, cache_key);
 
             widget.upcast()
         }
@@ -447,9 +497,52 @@ fn build_media_content(
                 .and_downcast::<MessageVisualMedia>()
                 .unwrap_or_default();
 
-            widget.set_media_message(sticker.into(), session, format);
+            widget.set_media_message(sticker.into(), session, format, cache_key);
 
             widget.upcast()
         }
+    }
+}
+
+/// The data used as a cache key for messages.
+///
+/// This is used when there is no reliable way to detect if the content of a
+/// message changed. For example, the URI of a media file might change between a
+/// local echo and a remote echo, but we do not need to reload the media in this
+/// case, and we have no other way to know that both URIs point to the same
+/// file.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct MessageCacheKey {
+    /// The transaction ID of the event.
+    ///
+    /// Local echo should keep its transaction ID after the message is sent, so
+    /// we do not need to reload the message if it did not change.
+    transaction_id: Option<OwnedTransactionId>,
+    /// The global ID of the event.
+    ///
+    /// Local echo that was sent and remote echo should have the same event ID,
+    /// so we do not need to reload the message if it did not change.
+    event_id: Option<OwnedEventId>,
+    /// Whether the message is edited.
+    ///
+    /// The message must be reloaded when it was edited.
+    is_edited: bool,
+}
+
+impl MessageCacheKey {
+    /// Whether the given new `MessageCacheKey` should trigger a reload of the
+    /// mmessage compared to this one.
+    pub(super) fn should_reload(&self, new: &MessageCacheKey) -> bool {
+        if new.is_edited {
+            return true;
+        }
+
+        let transaction_id_invalidated = self.transaction_id.is_none()
+            || new.transaction_id.is_none()
+            || self.transaction_id != new.transaction_id;
+        let event_id_invalidated =
+            self.event_id.is_none() || new.event_id.is_none() || self.event_id != new.event_id;
+
+        transaction_id_invalidated && event_id_invalidated
     }
 }

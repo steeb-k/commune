@@ -17,7 +17,7 @@ use crate::{
     session::model::Room,
     spawn_tokio, toast,
     utils::{
-        media::{image::ImageInfoLoader, load_file},
+        media::{image::ImageInfoLoader, FileInfo},
         template_callbacks::TemplateCallbacks,
         BoundObjectWeakRef, OngoingAsyncAction,
     },
@@ -173,8 +173,18 @@ mod imp {
             let avatar = &self.avatar;
             avatar.edit_in_progress();
 
-            let (data, info) = match load_file(&file).await {
-                Ok(res) => res,
+            let info = match FileInfo::try_from_file(&file).await {
+                Ok(info) => info,
+                Err(error) => {
+                    error!("Could not load room avatar file info: {error}");
+                    toast!(obj, gettext("Could not load file"));
+                    avatar.reset();
+                    return;
+                }
+            };
+
+            let data = match file.load_contents_future().await {
+                Ok((data, _)) => data,
                 Err(error) => {
                     error!("Could not load room avatar file: {error}");
                     toast!(obj, gettext("Could not load file"));
@@ -196,7 +206,9 @@ mod imp {
             };
             let client = session.client();
             let handle =
-                spawn_tokio!(async move { client.media().upload(&info.mime, data, None).await });
+                spawn_tokio!(
+                    async move { client.media().upload(&info.mime, data.into(), None).await }
+                );
 
             let uri = match handle.await.unwrap() {
                 Ok(res) => res.content_uri,

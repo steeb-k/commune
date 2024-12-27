@@ -21,7 +21,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::load_file, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
+    utils::{media::FileInfo, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
 };
 
 mod imp {
@@ -224,8 +224,18 @@ impl GeneralPage {
         let avatar = &imp.avatar;
         avatar.edit_in_progress();
 
-        let (data, info) = match load_file(&file).await {
-            Ok(res) => res,
+        let info = match FileInfo::try_from_file(&file).await {
+            Ok(info) => info,
+            Err(error) => {
+                error!("Could not load user avatar file info: {error}");
+                toast!(self, gettext("Could not load file"));
+                avatar.reset();
+                return;
+            }
+        };
+
+        let data = match file.load_contents_future().await {
+            Ok((data, _)) => data,
             Err(error) => {
                 error!("Could not load user avatar file: {error}");
                 toast!(self, gettext("Could not load file"));
@@ -236,8 +246,12 @@ impl GeneralPage {
 
         let client = session.client();
         let client_clone = client.clone();
-        let handle =
-            spawn_tokio!(async move { client_clone.media().upload(&info.mime, data, None).await });
+        let handle = spawn_tokio!(async move {
+            client_clone
+                .media()
+                .upload(&info.mime, data.into(), None)
+                .await
+        });
 
         let uri = match handle.await.unwrap() {
             Ok(res) => res.content_uri,

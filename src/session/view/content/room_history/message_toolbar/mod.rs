@@ -12,7 +12,7 @@ use matrix_sdk::{
     attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
     room::edit::EditedContent,
 };
-use matrix_sdk_ui::timeline::{RepliedToInfo, TimelineItemContent};
+use matrix_sdk_ui::timeline::{AttachmentSource, RepliedToInfo, TimelineItemContent};
 use ruma::{
     events::{
         room::message::{
@@ -43,8 +43,8 @@ use crate::{
     spawn, spawn_tokio, toast,
     utils::{
         media::{
-            filename_for_mime, image::ImageInfoLoader, load_audio_info, load_file,
-            video::load_video_info,
+            filename_for_mime, image::ImageInfoLoader, load_audio_info, video::load_video_info,
+            FileInfo,
         },
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
@@ -665,9 +665,8 @@ mod imp {
         /// Send the attachment with the given data.
         async fn send_attachment(
             &self,
-            bytes: Vec<u8>,
+            source: AttachmentSource,
             mime: mime::Mime,
-            body: String,
             info: AttachmentInfo,
             thumbnail: Option<Thumbnail>,
         ) {
@@ -677,11 +676,12 @@ mod imp {
 
             let config = AttachmentConfig::new().thumbnail(thumbnail).info(info);
 
-            let matrix_room = room.matrix_room().clone();
+            let matrix_timeline = room.timeline().matrix_timeline();
 
             let handle = spawn_tokio!(async move {
-                matrix_room
-                    .send_attachment(&body, &mime, bytes, config)
+                matrix_timeline
+                    .send_attachment(source, mime, config)
+                    .use_send_queue()
                     .await
             });
 
@@ -722,7 +722,11 @@ mod imp {
             base_info.size = filesize.map(Into::into);
 
             let info = AttachmentInfo::Image(base_info);
-            self.send_attachment(bytes.to_vec(), mime::IMAGE_PNG, filename, info, thumbnail)
+            let source = AttachmentSource::Data {
+                bytes: bytes.to_vec(),
+                filename,
+            };
+            self.send_attachment(source, mime::IMAGE_PNG, info, thumbnail)
                 .await;
         }
 
@@ -779,10 +783,16 @@ mod imp {
         async fn send_file_inner(&self, file: gio::File) {
             let obj = self.obj();
 
-            let (bytes, file_info) = match load_file(&file).await {
-                Ok(data) => data,
+            let Some(path) = file.path() else {
+                warn!("Could not read file: file does not have a path");
+                toast!(obj, gettext("Error reading file"));
+                return;
+            };
+
+            let file_info = match FileInfo::try_from_file(&file).await {
+                Ok(file_info) => file_info,
                 Err(error) => {
-                    warn!("Could not read file: {error}");
+                    warn!("Could not read file info: {error}");
                     toast!(obj, gettext("Error reading file"));
                     return;
                 }
@@ -818,7 +828,7 @@ mod imp {
                 _ => (AttachmentInfo::File(BaseFileInfo { size }), None),
             };
 
-            self.send_attachment(bytes, file_info.mime, file_info.filename, info, thumbnail)
+            self.send_attachment(path.into(), file_info.mime, info, thumbnail)
                 .await;
         }
 

@@ -6,7 +6,7 @@ use gtk::{
 };
 use tracing::warn;
 
-use super::ContentFormat;
+use super::{content::MessageCacheKey, ContentFormat};
 use crate::{
     components::AudioPlayer,
     gettext_f,
@@ -37,6 +37,12 @@ mod imp {
         /// The filename of the audio file.
         #[property(get)]
         filename: RefCell<Option<String>>,
+        /// The cache key for the current audio message.
+        ///
+        /// The audio is only reloaded if the cache key changes. This is to
+        /// avoid reloading the audio when the local echo is updated to a remote
+        /// echo.
+        cache_key: RefCell<MessageCacheKey>,
         /// The media file.
         file: RefCell<Option<File>>,
         /// The state of the audio file.
@@ -137,13 +143,29 @@ mod imp {
             self.state_error.set_tooltip_text(Some(error));
         }
 
-        /// Display the given audio message.
+        /// Set the cache key with the given value.
+        ///
+        /// Returns `true` if the audio should be reloaded.
+        fn set_cache_key(&self, key: MessageCacheKey) -> bool {
+            let should_reload = self.cache_key.borrow().should_reload(&key);
+            self.cache_key.replace(key);
+
+            should_reload
+        }
+
+        /// Display the given `audio` message.
         pub(super) fn audio(
             &self,
             message: MediaMessage,
             session: &Session,
             format: ContentFormat,
+            cache_key: MessageCacheKey,
         ) {
+            if !self.set_cache_key(cache_key) {
+                // We do not need to reload the audio.
+                return;
+            }
+
             self.file.take();
             self.set_filename(Some(message.filename()));
 
@@ -212,8 +234,14 @@ impl MessageAudio {
     }
 
     /// Display the given `audio` message.
-    pub(crate) fn audio(&self, message: MediaMessage, session: &Session, format: ContentFormat) {
-        self.imp().audio(message, session, format);
+    pub(crate) fn audio(
+        &self,
+        message: MediaMessage,
+        session: &Session,
+        format: ContentFormat,
+        cache_key: MessageCacheKey,
+    ) {
+        self.imp().audio(message, session, format, cache_key);
     }
 }
 

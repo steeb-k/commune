@@ -45,57 +45,54 @@ pub fn filename_for_mime(mime_type: Option<&str>, fallback: Option<mime::Name>) 
         .unwrap_or(name)
 }
 
-/// Information about a file
-pub struct FileInfo {
+/// Information about a file.
+pub(crate) struct FileInfo {
     /// The mime type of the file.
-    pub mime: Mime,
+    pub(crate) mime: Mime,
     /// The name of the file.
-    pub filename: String,
+    pub(crate) filename: String,
     /// The size of the file in bytes.
-    pub size: Option<u32>,
+    pub(crate) size: Option<u32>,
 }
 
-/// Load a file and return its content and some information
-pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Error> {
-    let attributes: &[&str] = &[
-        gio::FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-        gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-        gio::FILE_ATTRIBUTE_STANDARD_SIZE,
-    ];
+impl FileInfo {
+    /// Try to load information about the given file.
+    pub(crate) async fn try_from_file(file: &gio::File) -> Result<FileInfo, glib::Error> {
+        let attributes: &[&str] = &[
+            gio::FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+            gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+            gio::FILE_ATTRIBUTE_STANDARD_SIZE,
+        ];
 
-    // Read mime type.
-    let info = file
-        .query_info_future(
-            &attributes.join(","),
-            gio::FileQueryInfoFlags::NONE,
-            glib::Priority::DEFAULT,
-        )
-        .await?;
+        // Read mime type.
+        let info = file
+            .query_info_future(
+                &attributes.join(","),
+                gio::FileQueryInfoFlags::NONE,
+                glib::Priority::DEFAULT,
+            )
+            .await?;
 
-    let mime = info
-        .content_type()
-        .and_then(|content_type| Mime::from_str(&content_type).ok())
-        .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+        let mime = info
+            .content_type()
+            .and_then(|content_type| Mime::from_str(&content_type).ok())
+            .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
-    let filename = info.display_name().to_string();
+        let filename = info.display_name().to_string();
 
-    let raw_size = info.size();
-    let size = if raw_size >= 0 {
-        Some(raw_size.try_into().unwrap_or(u32::MAX))
-    } else {
-        None
-    };
+        let raw_size = info.size();
+        let size = if raw_size >= 0 {
+            Some(raw_size.try_into().unwrap_or(u32::MAX))
+        } else {
+            None
+        };
 
-    let (data, _) = file.load_contents_future().await?;
-
-    Ok((
-        data.into(),
-        FileInfo {
+        Ok(FileInfo {
             mime,
             filename,
             size,
-        },
-    ))
+        })
+    }
 }
 
 /// Load information for the given media file.

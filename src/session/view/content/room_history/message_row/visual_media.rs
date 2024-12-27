@@ -9,7 +9,7 @@ use matrix_sdk::Client;
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::{error, warn};
 
-use super::ContentFormat;
+use super::{content::MessageCacheKey, ContentFormat};
 use crate::{
     components::{AnimatedImagePaintable, VideoPlayer},
     gettext_f,
@@ -74,6 +74,11 @@ mod imp {
         #[property(get)]
         activatable: Cell<bool>,
         gesture_click: glib::WeakRef<gtk::GestureClick>,
+        /// The cache key for the current media message.
+        ///
+        /// We only try to reload the media if the key changes. This is to avoid
+        /// reloading the media when a local echo changes to a remote echo.
+        cache_key: RefCell<MessageCacheKey>,
         /// The current video file, if any.
         file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
@@ -310,13 +315,30 @@ mod imp {
             }
         }
 
+        /// Set the cache key with the given value.
+        ///
+        /// Returns `true` if the media should be reloaded.
+        fn set_cache_key(&self, key: MessageCacheKey) -> bool {
+            let should_reload = self.cache_key.borrow().should_reload(&key);
+
+            self.cache_key.replace(key);
+
+            should_reload
+        }
+
         /// Build the content for the given media message.
         pub(super) fn build(
             &self,
             media_message: VisualMediaMessage,
             session: &Session,
             format: ContentFormat,
+            cache_key: MessageCacheKey,
         ) {
+            if !self.set_cache_key(cache_key) {
+                // We do not need to reload the media.
+                return;
+            }
+
             self.file.take();
             self.dimensions.set(media_message.dimensions());
 
@@ -525,8 +547,9 @@ impl MessageVisualMedia {
         media_message: VisualMediaMessage,
         session: &Session,
         format: ContentFormat,
+        cache_key: MessageCacheKey,
     ) {
-        self.imp().build(media_message, session, format);
+        self.imp().build(media_message, session, format, cache_key);
     }
 
     /// Get the texture displayed by this widget, if any.
