@@ -182,10 +182,6 @@ mod imp {
     }
 
     impl TimelineItemImpl for Event {
-        fn id(&self) -> String {
-            format!("Event::{:?}", self.identifier())
-        }
-
         fn can_hide_header(&self) -> bool {
             self.item().content().can_show_header()
         }
@@ -509,9 +505,10 @@ glib::wrapper! {
 
 impl Event {
     /// Create a new `Event` in the given room with the given SDK timeline item.
-    pub fn new(item: EventTimelineItem, room: &Room) -> Self {
+    pub fn new(item: EventTimelineItem, room: &Room, timeline_id: &str) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
+            .property("timeline-id", timeline_id)
             .build();
 
         obj.imp().set_item(item);
@@ -522,26 +519,14 @@ impl Event {
     /// Try to update this event with the given SDK timeline item.
     ///
     /// Returns `true` if the update succeeded.
-    pub(crate) fn try_update_with(&self, item: &EventTimelineItem) -> bool {
-        let imp = self.imp();
+    pub(crate) fn try_update_with(&self, item: &EventTimelineItem, timeline_id: &str) -> bool {
+        let is_same_item = self.timeline_id() == timeline_id;
 
-        match &self.identifier() {
-            TimelineEventItemId::TransactionId(txn_id)
-                if item.transaction_id().is_some_and(|id| id == txn_id) =>
-            {
-                imp.set_item(item.clone());
-                return true;
-            }
-            TimelineEventItemId::EventId(event_id)
-                if item.event_id().is_some_and(|id| id == event_id) =>
-            {
-                imp.set_item(item.clone());
-                return true;
-            }
-            _ => {}
+        if is_same_item {
+            self.imp().set_item(item.clone());
         }
 
-        false
+        is_same_item
     }
 
     /// The underlying SDK timeline item.

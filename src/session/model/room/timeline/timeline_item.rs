@@ -6,14 +6,16 @@ use super::VirtualItem;
 use crate::session::model::{Event, Room};
 
 mod imp {
-    use std::{cell::Cell, marker::PhantomData};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
     #[repr(C)]
     pub struct TimelineItemClass {
         parent_class: glib::object::ObjectClass,
-        pub(super) id: fn(&super::TimelineItem) -> String,
         pub(super) selectable: fn(&super::TimelineItem) -> bool,
         pub(super) can_hide_header: fn(&super::TimelineItem) -> bool,
         pub(super) event_sender_id: fn(&super::TimelineItem) -> Option<OwnedUserId>,
@@ -21,11 +23,6 @@ mod imp {
 
     unsafe impl ClassStruct for TimelineItemClass {
         type Type = TimelineItem;
-    }
-
-    pub(super) fn timeline_item_id(this: &super::TimelineItem) -> String {
-        let klass = this.class();
-        (klass.as_ref().id)(this)
     }
 
     pub(super) fn timeline_item_selectable(this: &super::TimelineItem) -> bool {
@@ -46,11 +43,9 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::TimelineItem)]
     pub struct TimelineItem {
-        /// A unique ID for this `TimelineItem`.
-        ///
-        /// For debugging purposes.
-        #[property(get = Self::id)]
-        id: PhantomData<String>,
+        /// A unique ID for this `TimelineItem` in the local timeline.
+        #[property(get, construct_only)]
+        timeline_id: RefCell<String>,
         /// Whether this `TimelineItem` is selectable.
         ///
         /// Defaults to `false`.
@@ -85,13 +80,6 @@ mod imp {
     impl ObjectImpl for TimelineItem {}
 
     impl TimelineItem {
-        /// A unique ID for this `TimelineItem`.
-        ///
-        /// For debugging purposes.
-        fn id(&self) -> String {
-            imp::timeline_item_id(&self.obj())
-        }
-
         /// Whether this `TimelineItem` is selectable.
         ///
         /// Defaults to `false`.
@@ -135,9 +123,11 @@ impl TimelineItem {
     ///
     /// Constructs the proper child type.
     pub fn new(item: &SdkTimelineItem, room: &Room) -> Self {
+        let timeline_id = &item.unique_id().0;
+
         match item.kind() {
-            TimelineItemKind::Event(event) => Event::new(event.clone(), room).upcast(),
-            TimelineItemKind::Virtual(item) => VirtualItem::new(item).upcast(),
+            TimelineItemKind::Event(event) => Event::new(event.clone(), room, timeline_id).upcast(),
+            TimelineItemKind::Virtual(item) => VirtualItem::with_item(item, timeline_id).upcast(),
         }
     }
 
@@ -145,14 +135,16 @@ impl TimelineItem {
     ///
     /// Returns `true` if the update succeeded.
     pub(crate) fn try_update_with(&self, item: &SdkTimelineItem) -> bool {
+        let timeline_id = &item.unique_id().0;
+
         match item.kind() {
             TimelineItemKind::Event(new_event) => {
                 if let Some(event) = self.downcast_ref::<Event>() {
-                    return event.try_update_with(new_event);
+                    return event.try_update_with(new_event, timeline_id);
                 }
             }
             TimelineItemKind::Virtual(_item) => {
-                // Always invalidate. It shouldn't happen often and updating
+                // Always invalidate. It should not happen often and updating
                 // those should be unexpensive.
             }
         }
@@ -168,10 +160,8 @@ impl TimelineItem {
 /// of `TimelineItemImpl`.
 #[allow(dead_code)]
 pub(crate) trait TimelineItemExt: 'static {
-    /// A unique ID for this `TimelineItem`.
-    ///
-    /// For debugging purposes.
-    fn id(&self) -> String;
+    /// A unique ID for this `TimelineItem` in the local timeline.
+    fn timeline_id(&self) -> String;
 
     /// Whether this `TimelineItem` is selectable.
     ///
@@ -198,8 +188,8 @@ pub(crate) trait TimelineItemExt: 'static {
 }
 
 impl<O: IsA<TimelineItem>> TimelineItemExt for O {
-    fn id(&self) -> String {
-        self.upcast_ref().id()
+    fn timeline_id(&self) -> String {
+        self.upcast_ref().timeline_id()
     }
 
     fn selectable(&self) -> bool {
@@ -229,8 +219,6 @@ impl<O: IsA<TimelineItem>> TimelineItemExt for O {
 /// Overriding a method from this Trait overrides also its behavior in
 /// `TimelineItemExt`.
 pub(crate) trait TimelineItemImpl: ObjectImpl {
-    fn id(&self) -> String;
-
     fn selectable(&self) -> bool {
         false
     }
@@ -255,7 +243,6 @@ where
 
         let klass = class.as_mut();
 
-        klass.id = id_trampoline::<T>;
         klass.selectable = selectable_trampoline::<T>;
         klass.can_hide_header = can_hide_header_trampoline::<T>;
         klass.event_sender_id = event_sender_id_trampoline::<T>;
@@ -263,15 +250,6 @@ where
 }
 
 // Virtual method implementation trampolines.
-fn id_trampoline<T>(this: &TimelineItem) -> String
-where
-    T: ObjectSubclass + TimelineItemImpl,
-    T::Type: IsA<TimelineItem>,
-{
-    let this = this.downcast_ref::<T::Type>().unwrap();
-    this.imp().id()
-}
-
 fn selectable_trampoline<T>(this: &TimelineItem) -> bool
 where
     T: ObjectSubclass + TimelineItemImpl,

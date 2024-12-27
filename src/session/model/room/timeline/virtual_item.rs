@@ -67,19 +67,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for VirtualItem {}
 
-    impl TimelineItemImpl for VirtualItem {
-        fn id(&self) -> String {
-            match &**self.kind.borrow() {
-                VirtualItemKind::Spinner => "VirtualItem::Spinner".to_owned(),
-                VirtualItemKind::Typing => "VirtualItem::Typing".to_owned(),
-                VirtualItemKind::TimelineStart => "VirtualItem::TimelineStart".to_owned(),
-                VirtualItemKind::DayDivider(date) => {
-                    format!("VirtualItem::DayDivider({})", date.format("%F").unwrap())
-                }
-                VirtualItemKind::NewMessages => "VirtualItem::NewMessages".to_owned(),
-            }
-        }
-    }
+    impl TimelineItemImpl for VirtualItem {}
 }
 
 glib::wrapper! {
@@ -91,10 +79,12 @@ glib::wrapper! {
 
 impl VirtualItem {
     /// Create a new `VirtualItem` from a virtual timeline item.
-    pub fn new(item: &VirtualTimelineItem) -> Self {
+    pub fn with_item(item: &VirtualTimelineItem, timeline_id: &str) -> Self {
         match item {
-            VirtualTimelineItem::DateDivider(ts) => Self::day_divider_with_timestamp(*ts),
-            VirtualTimelineItem::ReadMarker => Self::new_messages(),
+            VirtualTimelineItem::DateDivider(ts) => {
+                Self::day_divider_with_timestamp(*ts, timeline_id)
+            }
+            VirtualTimelineItem::ReadMarker => Self::new_messages(timeline_id),
         }
     }
 
@@ -102,6 +92,7 @@ impl VirtualItem {
     pub(crate) fn spinner() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::Spinner.boxed())
+            .property("timeline-id", "VirtualItemKind::Spinner")
             .build()
     }
 
@@ -109,6 +100,7 @@ impl VirtualItem {
     pub(crate) fn typing() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::Typing.boxed())
+            .property("timeline-id", "VirtualItemKind::Typing")
             .build()
     }
 
@@ -116,13 +108,15 @@ impl VirtualItem {
     pub(crate) fn timeline_start() -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::TimelineStart.boxed())
+            .property("timeline-id", "VirtualItemKind::TimelineStart")
             .build()
     }
 
     /// Create a new messages virtual item.
-    pub(crate) fn new_messages() -> Self {
+    fn new_messages(timeline_id: &str) -> Self {
         glib::Object::builder()
             .property("kind", VirtualItemKind::NewMessages.boxed())
+            .property("timeline-id", timeline_id)
             .build()
     }
 
@@ -133,13 +127,17 @@ impl VirtualItem {
     /// current local time.
     ///
     /// Panics if an error occurred when accessing the current local time.
-    pub(crate) fn day_divider_with_timestamp(timestamp: MilliSecondsSinceUnixEpoch) -> Self {
+    fn day_divider_with_timestamp(
+        timestamp: MilliSecondsSinceUnixEpoch,
+        timeline_id: &str,
+    ) -> Self {
         let date = glib::DateTime::from_unix_utc(timestamp.as_secs().into())
             .or_else(|_| glib::DateTime::now_utc())
             .expect("We should be able to get the current time");
 
         glib::Object::builder()
             .property("kind", VirtualItemKind::DayDivider(date).boxed())
+            .property("timeline-id", timeline_id)
             .build()
     }
 }

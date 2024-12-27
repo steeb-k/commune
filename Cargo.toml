@@ -21,6 +21,7 @@ codegen-units = 16
 
 # Please keep dependencies sorted.
 [dependencies]
+diff = "0.1"
 djb_hash = "0.1"
 futures-channel = "0.3"
 futures-util = "0.3"
