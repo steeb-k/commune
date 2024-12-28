@@ -150,7 +150,14 @@ mod imp {
 
         /// Set whether the label includes Pango markup.
         fn set_use_markup(&self, use_markup: bool) {
+            if self.uses_markup() == use_markup {
+                return;
+            }
+
             self.child.set_use_markup(use_markup);
+
+            self.invalidate_widgets();
+            self.obj().notify_use_markup();
         }
 
         /// Sets whether the text of the label should be ellipsized.
