@@ -205,7 +205,7 @@ mod imp {
 
             self.reactions
                 .set_reaction_list(&event.room().get_or_create_members(), &event.reactions());
-            self.read_receipts.set_source(&event.read_receipts());
+            self.read_receipts.set_source(event.read_receipts());
             self.event
                 .set(event, vec![timestamp_handler, item_changed_handler]);
             obj.notify_event();

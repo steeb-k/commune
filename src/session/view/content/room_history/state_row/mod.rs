@@ -83,7 +83,7 @@ mod imp {
                 _ => unreachable!(),
             }
 
-            self.read_receipts.set_source(&event.read_receipts());
+            self.read_receipts.set_source(event.read_receipts());
             self.event.replace(Some(event));
         }
     }

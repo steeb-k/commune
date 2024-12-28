@@ -25,10 +25,10 @@ mod imp {
     #[properties(wrapper_type = super::ReadReceiptsPopover)]
     pub struct ReadReceiptsPopover {
         #[template_child]
-        pub list: TemplateChild<gtk::ListView>,
+        list: TemplateChild<gtk::ListView>,
         /// The receipts to display.
         #[property(get, set = Self::set_receipts, construct_only)]
-        pub receipts: glib::WeakRef<gio::ListStore>,
+        receipts: glib::WeakRef<gio::ListStore>,
     }
 
     #[glib::object_subclass]
@@ -61,17 +61,16 @@ mod imp {
     impl ReadReceiptsPopover {
         /// Set the receipts to display.
         fn set_receipts(&self, receipts: gio::ListStore) {
-            let obj = self.obj();
-
             self.receipts.set(Some(&receipts));
             self.list
                 .set_model(Some(&gtk::NoSelection::new(Some(receipts))));
             self.list.connect_activate(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, pos| {
-                    let Some(member) = obj
-                        .receipts()
+                    let Some(member) = imp
+                        .receipts
+                        .upgrade()
                         .and_then(|list| list.item(pos))
                         .and_downcast::<MemberTimestamp>()
                         .and_then(|ts| ts.member())
@@ -79,9 +78,10 @@ mod imp {
                         return;
                     };
 
+                    let obj = imp.obj();
                     let dialog = UserProfileDialog::new();
                     dialog.set_room_member(member);
-                    dialog.present(Some(&obj));
+                    dialog.present(Some(&*obj));
                     obj.popdown();
                 }
             ));
