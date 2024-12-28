@@ -15,12 +15,12 @@ mod imp {
     pub struct MemberTimestamp {
         /// The room member.
         #[property(get, construct_only)]
-        pub member: glib::WeakRef<Member>,
+        member: glib::WeakRef<Member>,
         /// The timestamp, in seconds since Unix Epoch.
         ///
         /// A value of 0 means no timestamp.
         #[property(get, construct_only)]
-        pub timestamp: Cell<u64>,
+        timestamp: Cell<u64>,
     }
 
     #[glib::object_subclass]

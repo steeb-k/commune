@@ -19,11 +19,11 @@ mod imp {
     #[properties(wrapper_type = super::MemberTimestampRow)]
     pub struct MemberTimestampRow {
         #[template_child]
-        pub timestamp: TemplateChild<gtk::Label>,
+        timestamp: TemplateChild<gtk::Label>,
         /// The `MemberTimestamp` presented by this row.
         #[property(get, set = Self::set_data, explicit_notify, nullable)]
-        pub data: glib::WeakRef<MemberTimestamp>,
-        pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
+        data: glib::WeakRef<MemberTimestamp>,
+        system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -45,14 +45,13 @@ mod imp {
     impl ObjectImpl for MemberTimestampRow {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             let system_settings = Application::default().system_settings();
             let system_settings_handler = system_settings.connect_clock_format_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.update_timestamp();
+                    imp.update_timestamp();
                 }
             ));
             self.system_settings_handler
@@ -75,12 +74,50 @@ mod imp {
             if self.data.upgrade().as_ref() == data {
                 return;
             }
-            let obj = self.obj();
 
             self.data.set(data);
-            obj.notify_data();
 
-            obj.update_timestamp();
+            self.obj().notify_data();
+            self.update_timestamp();
+        }
+
+        /// The formatted date and time of this receipt.
+        fn update_timestamp(&self) {
+            let Some(timestamp) = self
+                .data
+                .upgrade()
+                .map(|d| d.timestamp())
+                .filter(|t| *t > 0)
+            else {
+                // No timestamp.
+                self.timestamp.set_visible(false);
+                return;
+            };
+
+            let timestamp = timestamp.try_into().unwrap_or(i64::MAX);
+            let datetime = glib::DateTime::from_unix_utc(timestamp)
+                .and_then(|t| t.to_local())
+                .unwrap();
+
+            let clock_format = Application::default().system_settings().clock_format();
+
+            let format = if clock_format == ClockFormat::TwelveHours {
+                // Translators: this is a date and a time in 12h format.
+                // For example, "May 5 at 01:20 PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                gettext("%B %-e at %I∶%M %p")
+            } else {
+                // Translators: this is a date and a time in 24h format.
+                // For example, "May 5 at 13:20".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                gettext("%B %-e at %H∶%M")
+            };
+            let label = datetime.format(&format).unwrap();
+
+            self.timestamp.set_label(&label);
+            self.timestamp.set_visible(true);
         }
     }
 }
@@ -94,42 +131,6 @@ glib::wrapper! {
 impl MemberTimestampRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The formatted date and time of this receipt.
-    fn update_timestamp(&self) {
-        let imp = self.imp();
-
-        let Some(timestamp) = self.data().map(|d| d.timestamp()).filter(|t| *t > 0) else {
-            // No timestamp.
-            imp.timestamp.set_visible(false);
-            return;
-        };
-
-        let timestamp = timestamp.try_into().unwrap_or(i64::MAX);
-        let datetime = glib::DateTime::from_unix_utc(timestamp)
-            .and_then(|t| t.to_local())
-            .unwrap();
-
-        let clock_format = Application::default().system_settings().clock_format();
-
-        let format = if clock_format == ClockFormat::TwelveHours {
-            // Translators: this is a date and a time in 12h format.
-            // For example, "May 5 at 01:20 PM".
-            // Do not change the time format as it will follow the system settings.
-            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %I∶%M %p")
-        } else {
-            // Translators: this is a date and a time in 24h format.
-            // For example, "May 5 at 13:20".
-            // Do not change the time format as it will follow the system settings.
-            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %H∶%M")
-        };
-        let label = datetime.format(&format).unwrap();
-
-        imp.timestamp.set_label(&label);
-        imp.timestamp.set_visible(true);
     }
 }
 
