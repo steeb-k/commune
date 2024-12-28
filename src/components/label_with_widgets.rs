@@ -13,18 +13,16 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::LabelWithWidgets)]
     pub struct LabelWithWidgets {
+        /// The child `GtkLabel`.
+        child: gtk::Label,
         /// The widgets to display in the label.
         widgets: RefCell<Vec<gtk::Widget>>,
         widgets_sizes: RefCell<Vec<(i32, i32)>>,
-        child: gtk::Label,
-        /// The placeholder that is replaced by the widgets.
-        #[property(get, set = Self::set_placeholder, explicit_notify, nullable)]
-        placeholder: RefCell<Option<String>>,
         /// The text of the label.
-        #[property(get, set = Self::set_label, explicit_notify, nullable)]
+        #[property(get)]
         label: RefCell<Option<String>>,
         /// Whether the label includes Pango markup.
-        #[property(get = Self::uses_markup, set = Self::set_use_markup)]
+        #[property(get = Self::uses_markup, set = Self::set_use_markup, explicit_notify)]
         use_markup: PhantomData<bool>,
         /// Whether the label should be ellipsized.
         #[property(get, set = Self::set_ellipsize, explicit_notify)]
@@ -40,7 +38,6 @@ mod imp {
         const NAME: &'static str = "LabelWithWidgets";
         type Type = super::LabelWithWidgets;
         type ParentType = gtk::Widget;
-        type Interfaces = (gtk::Buildable,);
     }
 
     #[glib::derived_properties]
@@ -82,19 +79,21 @@ mod imp {
         }
     }
 
-    impl BuildableImpl for LabelWithWidgets {
-        fn add_child(&self, builder: &gtk::Builder, child: &glib::Object, type_: Option<&str>) {
-            if let Some(child) = child.downcast_ref::<gtk::Widget>() {
-                self.append_child(child.clone());
-            } else {
-                self.parent_add_child(builder, child, type_);
-            }
-        }
-    }
-
     impl LabelWithWidgets {
-        /// Set the child widgets to present in this label.
-        pub(super) fn set_widgets<P: IsA<gtk::Widget>>(&self, widgets: Vec<P>) {
+        /// Set the label and widgets to display.
+        pub(super) fn set_label_and_widgets<P: IsA<gtk::Widget>>(
+            &self,
+            label: String,
+            widgets: Vec<P>,
+        ) {
+            self.set_label(Some(label));
+            self.set_widgets(widgets);
+
+            self.update();
+        }
+
+        /// Set the widgets to display.
+        fn set_widgets<P: IsA<gtk::Widget>>(&self, widgets: Vec<P>) {
             for widget in self.widgets.borrow_mut().drain(..) {
                 widget.unparent();
             }
@@ -107,16 +106,6 @@ mod imp {
             for child in self.widgets.borrow().iter() {
                 child.set_parent(&*obj);
             }
-
-            self.invalidate_widgets();
-        }
-
-        /// Add the given widget as the last child of this label.
-        fn append_child(&self, child: gtk::Widget) {
-            child.set_parent(&*self.obj());
-            self.widgets.borrow_mut().push(child);
-
-            self.invalidate_widgets();
         }
 
         /// Set the text of the label.
@@ -126,21 +115,7 @@ mod imp {
             }
 
             self.label.replace(label);
-
-            self.update();
             self.obj().notify_label();
-        }
-
-        /// Set the placeholder that is replaced with widgets.
-        fn set_placeholder(&self, placeholder: Option<String>) {
-            if *self.placeholder.borrow() == placeholder {
-                return;
-            }
-
-            self.placeholder.replace(placeholder);
-
-            self.update();
-            self.obj().notify_placeholder();
         }
 
         /// Whether the label includes Pango markup.
@@ -305,10 +280,7 @@ mod imp {
             let new_ellipsize = self.ellipsize.get();
 
             let new_label = if let Some(label) = self.label.borrow().as_ref() {
-                let placeholder = self.placeholder.borrow();
-                let placeholder = placeholder
-                    .as_deref()
-                    .unwrap_or(<Self as ObjectSubclass>::Type::DEFAULT_PLACEHOLDER);
+                let placeholder = <Self as ObjectSubclass>::Type::PLACEHOLDER;
                 let label = label.replace(placeholder, OBJECT_REPLACEMENT_CHARACTER);
 
                 if new_ellipsize {
@@ -344,34 +316,25 @@ mod imp {
 
 glib::wrapper! {
     /// A Label that can have multiple widgets placed inside the text.
-    ///
-    /// By default the string "<widget>" will be used as location to place the
-    /// child widgets. You can set your own placeholder if you need.
     pub struct LabelWithWidgets(ObjectSubclass<imp::LabelWithWidgets>)
-        @extends gtk::Widget, @implements gtk::Accessible, gtk::Buildable;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl LabelWithWidgets {
-    pub const DEFAULT_PLACEHOLDER: &'static str = "<widget>";
+    /// The placeholder used to mark the locations of widgets in the label.
+    pub(crate) const PLACEHOLDER: &'static str = "<widget>";
 
     /// Create an empty `LabelWithWidget`.
     pub fn new() -> Self {
         glib::Object::new()
     }
 
-    /// Create a `LabelWithWidget` with the given label and widgets.
-    pub(crate) fn with_label_and_widgets<P: IsA<gtk::Widget>>(
-        label: &str,
+    /// Set the label and widgets to display.
+    pub(crate) fn set_label_and_widgets<P: IsA<gtk::Widget>>(
+        &self,
+        label: String,
         widgets: Vec<P>,
-    ) -> Self {
-        let obj: Self = glib::Object::builder().property("label", label).build();
-        // FIXME: use a property for widgets
-        obj.imp().set_widgets(widgets);
-        obj
-    }
-
-    /// Set the child widgets to present in this label.
-    pub(crate) fn set_widgets<P: IsA<gtk::Widget>>(&self, widgets: Vec<P>) {
-        self.imp().set_widgets(widgets);
+    ) {
+        self.imp().set_label_and_widgets(label, widgets);
     }
 }

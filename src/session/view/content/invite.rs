@@ -181,15 +181,17 @@ mod imp {
                 self.category_handler.replace(Some(category_handler));
 
                 if let Some(inviter) = room.inviter() {
-                    // Translators: Do NOT translate the content between '{' and '}', these are
-                    // variable names.
-                    self.inviter.set_label(Some(gettext_f(
+                    let pill = inviter.to_pill();
+                    let label = gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}', these are
+                        // variable names.
                         "{user_name} ({user_id}) invited you",
                         &[
-                            ("user_name", "<widget>"),
+                            ("user_name", LabelWithWidgets::PLACEHOLDER),
                             ("user_id", inviter.user_id().as_str()),
                         ],
-                    )));
+                    );
+                    self.inviter.set_label_and_widgets(label, vec![pill]);
                 }
             }
 

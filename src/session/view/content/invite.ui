@@ -104,15 +104,6 @@
                       <object class="LabelWithWidgets" id="inviter">
                         <property name="halign">center</property>
                         <property name="justify">center</property>
-                        <child>
-                          <object class="Pill">
-                            <binding name="source">
-                              <lookup name="inviter">
-                                <lookup name="room">ContentInvite</lookup>
-                              </lookup>
-                            </binding>
-                          </object>
-                        </child>
                       </object>
                     </child>
                     <child>

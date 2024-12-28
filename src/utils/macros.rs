@@ -124,14 +124,15 @@ macro_rules! toast {
 
                 for (start, key) in matches {
                     swapped_label.push_str(&message[last_end..start]);
-                    swapped_label.push_str($crate::components::LabelWithWidgets::DEFAULT_PLACEHOLDER);
+                    swapped_label.push_str($crate::components::LabelWithWidgets::PLACEHOLDER);
                     last_end = start + key.len() + 2;
                     widgets.push(pill_vars.get(key).unwrap().clone())
                 }
                 swapped_label.push_str(&message[last_end..message.len()]);
 
-                let widget = $crate::components::LabelWithWidgets::with_label_and_widgets(
-                    &swapped_label,
+                let widget = $crate::components::LabelWithWidgets::new();
+                widget.set_label_and_widgets(
+                    swapped_label,
                     widgets,
                 );
 

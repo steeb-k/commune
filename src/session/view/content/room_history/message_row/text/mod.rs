@@ -289,8 +289,7 @@ mod imp {
 
             child.set_ellipsize(ellipsize);
             child.set_use_markup(true);
-            child.set_label(Some(result));
-            child.set_widgets(pills);
+            child.set_label_and_widgets(result, pills);
         }
 
         /// Build the message for the given HTML in the given room.

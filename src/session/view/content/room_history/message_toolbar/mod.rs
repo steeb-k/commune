@@ -36,7 +36,7 @@ use self::{
 };
 use super::message_row::MessageContent;
 use crate::{
-    components::{CustomEntry, LabelWithWidgets, Pill},
+    components::{CustomEntry, LabelWithWidgets},
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room},
@@ -336,12 +336,16 @@ mod imp {
                 .get_or_create_members()
                 .get_or_create(info.sender().to_owned());
 
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name. In this string, 'Reply' is a noun.
+            let label = gettext_f(
+                "Reply to {user}",
+                &[("user", LabelWithWidgets::PLACEHOLDER)],
+            );
+            let pill = sender.to_pill();
+
             self.related_event_header
-                .set_widgets(vec![Pill::new(&sender)]);
-            self.related_event_header
-                // Translators: Do NOT translate the content between '{' and '}',
-                // this is a variable name. In this string, 'Reply' is a noun.
-                .set_label(Some(gettext_f("Reply to {user}", &[("user", "<widget>")])));
+                .set_label_and_widgets(label, vec![pill]);
 
             self.related_event_content
                 .update_for_related_event(info, &sender);
@@ -350,10 +354,10 @@ mod imp {
 
         /// Update the displayed related event for the given edit.
         fn update_for_edit(&self) {
-            self.related_event_header.set_widgets::<gtk::Widget>(vec![]);
+            // Translators: In this string, 'Edit' is a noun.
+            let label = pgettext("room-history", "Edit");
             self.related_event_header
-                // Translators: In this string, 'Edit' is a noun.
-                .set_label(Some(pgettext("room-history", "Edit")));
+                .set_label_and_widgets::<gtk::Widget>(label, vec![]);
 
             self.related_event_content.set_visible(false);
         }

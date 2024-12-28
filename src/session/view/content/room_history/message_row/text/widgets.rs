@@ -184,9 +184,10 @@ fn label_for_inline_html(
                 pill.set_activatable(true);
             }
         }
-        let w = LabelWithWidgets::with_label_and_widgets(&text, widgets);
+        let w = LabelWithWidgets::new();
         w.set_use_markup(true);
         w.set_ellipsize(config.ellipsize);
+        w.set_label_and_widgets(text, widgets);
         Some(w.upcast())
     } else {
         let w = new_message_label();

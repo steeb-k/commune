@@ -151,7 +151,7 @@ impl PangoStrMutExt for String {
     ) -> Option<Pill> {
         let pill = uri.try_into().ok().and_then(|uri| uri.into_pill(room))?;
 
-        self.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
+        self.push_str(LabelWithWidgets::PLACEHOLDER);
 
         Some(pill)
     }
@@ -159,7 +159,7 @@ impl PangoStrMutExt for String {
     fn append_and_replace_at_room(&mut self, s: &str, room: &Room) -> Option<Pill> {
         if let Some(pos) = find_at_room(s) {
             self.push_str(&(&s[..pos]).escape_markup());
-            self.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
+            self.push_str(LabelWithWidgets::PLACEHOLDER);
             self.push_str(&(&s[pos + AT_ROOM.len()..]).escape_markup());
 
             Some(room.at_room().to_pill())
