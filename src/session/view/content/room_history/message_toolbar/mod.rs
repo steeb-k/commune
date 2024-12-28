@@ -336,9 +336,9 @@ mod imp {
                 .get_or_create_members()
                 .get_or_create(info.sender().to_owned());
 
-            // Translators: Do NOT translate the content between '{' and '}',
-            // this is a variable name. In this string, 'Reply' is a noun.
             let label = gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name. In this string, 'Reply' is a noun.
                 "Reply to {user}",
                 &[("user", LabelWithWidgets::PLACEHOLDER)],
             );
