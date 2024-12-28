@@ -59,7 +59,7 @@ mod imp {
     #[properties(wrapper_type = super::RoomHistory)]
     pub struct RoomHistory {
         #[template_child]
-        pub(super) sender_menu_model: TemplateChild<gio::Menu>,
+        sender_menu_model: TemplateChild<gio::Menu>,
         #[template_child]
         pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -86,9 +86,9 @@ mod imp {
         tombstoned_banner: TemplateChild<adw::Banner>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
-        pub(super) item_context_menu: OnceCell<gtk::PopoverMenu>,
-        pub(super) item_quick_reaction_chooser: QuickReactionChooser,
-        pub(super) sender_context_menu: OnceCell<gtk::PopoverMenu>,
+        item_context_menu: OnceCell<gtk::PopoverMenu>,
+        item_quick_reaction_chooser: QuickReactionChooser,
+        sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The room currently displayed.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         room: BoundObject<Room>,
@@ -103,7 +103,7 @@ mod imp {
         ///
         /// We hold a strong reference here to keep the list in memory as long
         /// as the room is opened.
-        pub(super) room_members: RefCell<Option<MemberList>>,
+        room_members: RefCell<Option<MemberList>>,
         timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         /// Whether the current room history scrolling is automatic.
         is_auto_scrolling: Cell<bool>,
@@ -133,7 +133,7 @@ mod imp {
             Timeline::ensure_type();
 
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
@@ -188,7 +188,7 @@ mod imp {
                         return;
                     };
 
-                    obj.message_toolbar().set_reply_to(&event);
+                    obj.imp().message_toolbar.set_reply_to(&event);
                 },
             );
 
@@ -212,7 +212,7 @@ mod imp {
                         return;
                     };
 
-                    obj.message_toolbar().set_edit(&event);
+                    obj.imp().message_toolbar.set_edit(&event);
                 },
             );
         }
@@ -248,6 +248,7 @@ mod imp {
     impl WidgetImpl for RoomHistory {}
     impl BinImpl for RoomHistory {}
 
+    #[gtk::template_callbacks]
     impl RoomHistory {
         /// Initialize the list view.
         fn init_listview(&self) {
@@ -575,7 +576,8 @@ mod imp {
         }
 
         /// Scroll to the bottom of the timeline.
-        pub(super) fn scroll_down(&self) {
+        #[template_callback]
+        fn scroll_down(&self) {
             tracing::trace!("scroll_down");
             self.set_is_auto_scrolling(true);
 
@@ -658,7 +660,8 @@ mod imp {
         }
 
         /// Load more events at the beginning of the history.
-        pub(super) fn load_more_events(&self) {
+        #[template_callback]
+        fn load_more_events(&self) {
             let Some(room) = self.room.obj() else {
                 return;
             };
@@ -934,6 +937,77 @@ mod imp {
             self.obj()
                 .action_set_enabled("room-history.invite-members", can_invite);
         }
+
+        /// Join or view the successor of the room, if possible.
+        #[template_callback]
+        async fn join_or_view_successor(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            if !room.is_joined() || !room.is_tombstoned() {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(successor) = room.successor() {
+                let Some(window) = obj.root().and_downcast::<Window>() else {
+                    return;
+                };
+
+                window.show_room(session.session_id(), successor.room_id());
+            } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
+                let via = successor_id
+                    .server_name()
+                    .map(ToOwned::to_owned)
+                    .into_iter()
+                    .collect();
+
+                if let Err(error) = session
+                    .room_list()
+                    .join_by_id_or_alias(successor_id.into(), via)
+                    .await
+                {
+                    toast!(obj, error);
+                }
+            }
+        }
+
+        /// The context menu for the item rows.
+        pub(super) fn item_context_menu(&self) -> &gtk::PopoverMenu {
+            self.item_context_menu.get_or_init(|| {
+                let popover = gtk::PopoverMenu::builder()
+                    .has_arrow(false)
+                    .halign(gtk::Align::Start)
+                    .build();
+                popover
+                    .update_property(&[gtk::accessible::Property::Label(&gettext("Context Menu"))]);
+                popover
+            })
+        }
+
+        /// The reaction chooser for the item rows.
+        pub(super) fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
+            &self.item_quick_reaction_chooser
+        }
+
+        /// The context menu for the sender avatars.
+        pub(super) fn sender_context_menu(&self) -> &gtk::PopoverMenu {
+            self.sender_context_menu.get_or_init(|| {
+                let popover = gtk::PopoverMenu::builder()
+                    .has_arrow(false)
+                    .halign(gtk::Align::Start)
+                    .menu_model(&*self.sender_menu_model)
+                    .build();
+                popover.update_property(&[gtk::accessible::Property::Label(&gettext(
+                    "Sender Context Menu",
+                ))]);
+                popover
+            })
+        }
     }
 }
 
@@ -943,14 +1017,13 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl RoomHistory {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
     /// The header bar of the room history.
-    pub fn header_bar(&self) -> &adw::HeaderBar {
+    pub(crate) fn header_bar(&self) -> &adw::HeaderBar {
         &self.imp().header_bar
     }
 
@@ -959,16 +1032,11 @@ impl RoomHistory {
         &self.imp().message_toolbar
     }
 
-    /// The members of the room currently displayed.
-    pub fn room_members(&self) -> Option<MemberList> {
-        self.imp().room_members.borrow().clone()
-    }
-
     /// Opens the room details.
     ///
     /// If `subpage_name` is set, the room details will be opened on the given
     /// subpage.
-    pub fn open_room_details(&self, subpage_name: Option<room_details::SubpageName>) {
+    pub(crate) fn open_room_details(&self, subpage_name: Option<room_details::SubpageName>) {
         let Some(room) = self.room() else {
             return;
         };
@@ -980,21 +1048,9 @@ impl RoomHistory {
         window.present();
     }
 
-    /// Load more events at the beginning of the history.
-    #[template_callback]
-    fn load_more_events(&self) {
-        self.imp().load_more_events();
-    }
-
-    /// Scroll to the bottom of the timeline.
-    #[template_callback]
-    fn scroll_down(&self) {
-        self.imp().scroll_down();
-    }
-
     /// Enable or disable the mode allowing the room history to stick to the
     /// bottom based on scrollbar position.
-    pub fn enable_sticky_mode(&self, enable: bool) {
+    pub(crate) fn enable_sticky_mode(&self, enable: bool) {
         let imp = self.imp();
         if enable {
             imp.set_sticky(imp.is_at_bottom());
@@ -1004,77 +1060,22 @@ impl RoomHistory {
     }
 
     /// Handle a paste action.
-    pub fn handle_paste_action(&self) {
-        self.message_toolbar().handle_paste_action();
+    pub(crate) fn handle_paste_action(&self) {
+        self.imp().message_toolbar.handle_paste_action();
     }
 
     /// The context menu for the item rows.
-    pub fn item_context_menu(&self) -> &gtk::PopoverMenu {
-        self.imp().item_context_menu.get_or_init(|| {
-            let popover = gtk::PopoverMenu::builder()
-                .has_arrow(false)
-                .halign(gtk::Align::Start)
-                .build();
-            popover.update_property(&[gtk::accessible::Property::Label(&gettext("Context Menu"))]);
-            popover
-        })
+    pub(crate) fn item_context_menu(&self) -> &gtk::PopoverMenu {
+        self.imp().item_context_menu()
     }
 
     /// The reaction chooser for the item rows.
-    pub fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
-        &self.imp().item_quick_reaction_chooser
+    pub(crate) fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
+        self.imp().item_quick_reaction_chooser()
     }
 
     /// The context menu for the sender avatars.
-    pub fn sender_context_menu(&self) -> &gtk::PopoverMenu {
-        let imp = self.imp();
-        imp.sender_context_menu.get_or_init(|| {
-            let popover = gtk::PopoverMenu::builder()
-                .has_arrow(false)
-                .halign(gtk::Align::Start)
-                .menu_model(&*imp.sender_menu_model)
-                .build();
-            popover.update_property(&[gtk::accessible::Property::Label(&gettext(
-                "Sender Context Menu",
-            ))]);
-            popover
-        })
-    }
-
-    /// Join or view the room's successor, if possible.
-    #[template_callback]
-    async fn join_or_view_successor(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let Some(session) = room.session() else {
-            return;
-        };
-
-        if !room.is_joined() || !room.is_tombstoned() {
-            return;
-        }
-
-        if let Some(successor) = room.successor() {
-            let Some(window) = self.root().and_downcast::<Window>() else {
-                return;
-            };
-
-            window.show_room(session.session_id(), successor.room_id());
-        } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
-            let via = successor_id
-                .server_name()
-                .map(ToOwned::to_owned)
-                .into_iter()
-                .collect();
-
-            if let Err(error) = session
-                .room_list()
-                .join_by_id_or_alias(successor_id.into(), via)
-                .await
-            {
-                toast!(self, error);
-            }
-        }
+    pub(crate) fn sender_context_menu(&self) -> &gtk::PopoverMenu {
+        self.imp().sender_context_menu()
     }
 }

@@ -26,17 +26,17 @@ mod imp {
     #[properties(wrapper_type = super::VerificationInfoBar)]
     pub struct VerificationInfoBar {
         #[template_child]
-        pub revealer: TemplateChild<gtk::Revealer>,
+        revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
-        pub label: TemplateChild<gtk::Label>,
+        label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub accept_btn: TemplateChild<LoadingButton>,
+        accept_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<LoadingButton>,
+        cancel_btn: TemplateChild<LoadingButton>,
         /// The identity verification presented by this info bar.
         #[property(get, set = Self::set_verification, explicit_notify)]
-        pub verification: BoundObjectWeakRef<IdentityVerification>,
-        pub user_handler: RefCell<Option<glib::SignalHandlerId>>,
+        verification: BoundObjectWeakRef<IdentityVerification>,
+        user_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
