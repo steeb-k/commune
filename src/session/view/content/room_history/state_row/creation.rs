@@ -15,9 +15,9 @@ mod imp {
     )]
     pub struct StateCreation {
         #[template_child]
-        pub previous_room_btn: TemplateChild<gtk::Button>,
+        previous_room_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub description: TemplateChild<gtk::Label>,
+        description: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -38,6 +38,31 @@ mod imp {
     impl ObjectImpl for StateCreation {}
     impl WidgetImpl for StateCreation {}
     impl BinImpl for StateCreation {}
+
+    impl StateCreation {
+        /// Set the room create state event to display.
+        pub(super) fn set_event(&self, event: &FullStateEventContent<RoomCreateEventContent>) {
+            let predecessor = match event {
+                FullStateEventContent::Original { content, .. } => content.predecessor.as_ref(),
+                FullStateEventContent::Redacted(_) => None,
+            };
+
+            if let Some(predecessor) = &predecessor {
+                self.previous_room_btn.set_detailed_action_name(&format!(
+                    "session.show-room::{}",
+                    predecessor.room_id
+                ));
+                self.previous_room_btn.set_visible(true);
+                self.description
+                    .set_label(&gettext("This is the continuation of an upgraded room."));
+            } else {
+                self.previous_room_btn.set_visible(false);
+                self.previous_room_btn.set_action_name(None);
+                self.description
+                    .set_label(&gettext("This is the beginning of this room."));
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -49,29 +74,7 @@ glib::wrapper! {
 impl StateCreation {
     pub fn new(event: &FullStateEventContent<RoomCreateEventContent>) -> Self {
         let obj: Self = glib::Object::new();
-        obj.set_event(event);
+        obj.imp().set_event(event);
         obj
-    }
-
-    fn set_event(&self, event: &FullStateEventContent<RoomCreateEventContent>) {
-        let imp = self.imp();
-
-        let predecessor = match event {
-            FullStateEventContent::Original { content, .. } => content.predecessor.as_ref(),
-            FullStateEventContent::Redacted(_) => None,
-        };
-
-        if let Some(predecessor) = &predecessor {
-            imp.previous_room_btn
-                .set_detailed_action_name(&format!("session.show-room::{}", predecessor.room_id));
-            imp.previous_room_btn.set_visible(true);
-            imp.description
-                .set_label(&gettext("This is the continuation of an upgraded room."));
-        } else {
-            imp.previous_room_btn.set_visible(false);
-            imp.previous_room_btn.set_action_name(None);
-            imp.description
-                .set_label(&gettext("This is the beginning of this room."));
-        }
     }
 }
