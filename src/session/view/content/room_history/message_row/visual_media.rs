@@ -7,7 +7,7 @@ use gtk::{
 };
 use matrix_sdk::Client;
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
-use tracing::warn;
+use tracing::{error, warn};
 
 use super::ContentFormat;
 use crate::{
@@ -324,6 +324,11 @@ mod imp {
 
         /// Build the content for the image in the given media message.
         async fn build_image(&self, media_message: &VisualMediaMessage, client: Client) {
+            // Disable the copy-image action while the image is loading.
+            if matches!(media_message, VisualMediaMessage::Image(_)) {
+                self.enable_copy_image_action(false);
+            }
+
             let scale_factor = self.obj().scale_factor();
 
             let settings = ThumbnailSettings {
@@ -364,6 +369,25 @@ mod imp {
             }
 
             self.set_state(LoadingState::Ready);
+
+            // Enable the copy-image action now that the image is loaded.
+            if matches!(media_message, VisualMediaMessage::Image(_)) {
+                self.enable_copy_image_action(true);
+            }
+        }
+
+        /// Enable or disable the context menu action to copy the image.
+        fn enable_copy_image_action(&self, enable: bool) {
+            if self
+                .obj()
+                .activate_action(
+                    "room-history-row.enable-copy-image",
+                    Some(&enable.to_variant()),
+                )
+                .is_err()
+            {
+                error!("Could not change state of copy-image action: `room-history-row.enable-copy-image` action not found");
+            }
         }
 
         /// Build the content for the video in the given media message.

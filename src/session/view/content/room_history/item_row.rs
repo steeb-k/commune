@@ -52,6 +52,32 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("room-history-row");
             klass.set_accessible_role(gtk::AccessibleRole::ListItem);
+
+            klass.install_action(
+                "room-history-row.enable-copy-image",
+                Some(&bool::static_variant_type()),
+                |obj, _, param| {
+                    let enable = param
+                        .and_then(glib::Variant::get::<bool>)
+                        .expect("The parameter should be a boolean");
+                    let imp = obj.imp();
+
+                    let Some(action_group) = imp.action_group.borrow().clone() else {
+                        error!("Could not change state of copy-image action: no action group");
+                        return;
+                    };
+                    let Some(action) = action_group.lookup_action("copy-image") else {
+                        error!("Could not change state of copy-image action: action not found");
+                        return;
+                    };
+                    tracing::debug!("Action: {action:?}");
+                    let Some(action) = action.downcast_ref::<gio::SimpleAction>() else {
+                        error!("Could not change state of copy-image action: not a GSimpleAction");
+                        return;
+                    };
+                    action.set_enabled(enable);
+                },
+            );
         }
     }
 
