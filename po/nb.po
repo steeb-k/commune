@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-10-14 08:28+0000\n"
-"PO-Revision-Date: 2024-10-16 20:39+0200\n"
+"POT-Creation-Date: 2024-11-02 12:37+0000\n"
+"PO-Revision-Date: 2024-12-29 23:27+0100\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -223,28 +223,28 @@ msgstr "Advarsel"
 msgid "Error"
 msgstr "Noe gikk galt"
 
-#: src/components/avatar/editable.rs:489
+#: src/components/avatar/editable.rs:506
 msgid "Images"
 msgstr "Bilder"
 
-#: src/components/avatar/editable.rs:494
+#: src/components/avatar/editable.rs:511
 msgid "Choose Avatar"
 msgstr "Velg profilbilde"
 
-#: src/components/avatar/editable.rs:496
+#: src/components/avatar/editable.rs:513
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "Velg"
 
-#: src/components/avatar/editable.rs:510
+#: src/components/avatar/editable.rs:527
 msgid "Could not open avatar file"
 msgstr "Åpning av profilbilde mislyktes"
 
-#: src/components/avatar/editable.rs:531
+#: src/components/avatar/editable.rs:548
 msgid "The chosen file is not an image"
 msgstr "Den valgte filen er ikke et bilde"
 
-#: src/components/avatar/editable.rs:537
+#: src/components/avatar/editable.rs:554
 msgid "Could not determine the type of the chosen file"
 msgstr "Filtypen er ikke gjenkjennbar"
 
@@ -256,12 +256,12 @@ msgstr "Fjern profilbilde"
 msgid "Select New Avatar"
 msgstr "Velg nytt profilbilde"
 
-#: src/components/crypto/identity_setup_view.rs:401
+#: src/components/crypto/identity_setup_view.rs:403
 #: src/identity_verification_view/cancelled_page.rs:189
 msgid "Could not send a new verification request"
 msgstr "Sending av ny forespørsel mislyktes"
 
-#: src/components/crypto/identity_setup_view.rs:452
+#: src/components/crypto/identity_setup_view.rs:454
 msgid "Could not create the crypto identity"
 msgstr "Oppretting av krypteringsidentitet mislyktes"
 
@@ -296,7 +296,7 @@ msgstr "Gjenopprett konto"
 #: src/components/crypto/identity_setup_view.ui:262
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
-#: src/components/crypto/recovery_setup_view.ui:513
+#: src/components/crypto/recovery_setup_view.ui:515
 #: src/session/view/account_settings/security_page/mod.rs:260
 #: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
@@ -350,11 +350,11 @@ msgid "To proceed, you will also need to reset your account recovery key."
 msgstr ""
 "For å fortsette, må også kontoens gjenopprettingsnøkkel tilbakestilles."
 
-#: src/components/crypto/recovery_setup_view.rs:180
+#: src/components/crypto/recovery_setup_view.rs:181
 msgid "Invalidates the verifications of all users and sessions"
 msgstr "Opphever verifiseringen av alle kontoer og økter"
 
-#: src/components/crypto/recovery_setup_view.rs:185
+#: src/components/crypto/recovery_setup_view.rs:186
 msgid ""
 "Required because the crypto identity in the recovery data is incomplete. "
 "Invalidates the verifications of all users and sessions."
@@ -362,11 +362,11 @@ msgstr ""
 "Dette er nødvendig fordi den oppgitte krypteringsidentiteten er "
 "ufullstendig. Alle nåværende verifiseringer vil oppheves."
 
-#: src/components/crypto/recovery_setup_view.rs:195
+#: src/components/crypto/recovery_setup_view.rs:196
 msgid "You might not be able to read your past encrypted messages anymore"
 msgstr "Krypterte meldinger vil kanskje ikke kunne leses lenger"
 
-#: src/components/crypto/recovery_setup_view.rs:200
+#: src/components/crypto/recovery_setup_view.rs:201
 msgid ""
 "Required because the backup is not set up properly. You might not be able to "
 "read your past encrypted messages anymore."
@@ -374,7 +374,7 @@ msgstr ""
 "Dette er nødvendig fordi noe er galt med sikkerhetskopien. Krypterte "
 "meldinger vil kanskje ikke kunne leses lenger."
 
-#: src/components/crypto/recovery_setup_view.rs:218
+#: src/components/crypto/recovery_setup_view.rs:219
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
@@ -382,7 +382,7 @@ msgstr ""
 "Oppbevar gjenopprettingsnøkkelen på et trygt sted. Den vil være nødvendig "
 "for å gjenopprette kontoen hvis ingen eksisterende økter er tilgjengelige."
 
-#: src/components/crypto/recovery_setup_view.rs:220
+#: src/components/crypto/recovery_setup_view.rs:221
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
@@ -390,29 +390,29 @@ msgstr ""
 "Oppbevar gjenopprettingspassordet på et trygt sted. Det vil være nødvendig "
 "for å gjenopprette kontoen hvis ingen eksisterende økter er tilgjengelige."
 
-#: src/components/crypto/recovery_setup_view.rs:301
+#: src/components/crypto/recovery_setup_view.rs:302
 msgid "The recovery passphrase or key is invalid"
 msgstr "Ugyldig passord eller nøkkel"
 
-#: src/components/crypto/recovery_setup_view.rs:304
+#: src/components/crypto/recovery_setup_view.rs:305
 msgid "Could not access recovery data"
 msgstr "Lesing av gjenopprettingsdata mislyktes"
 
-#: src/components/crypto/recovery_setup_view.rs:360
+#: src/components/crypto/recovery_setup_view.rs:361
 msgid "Could not reset the crypto identity"
 msgstr "Tilbakestillinng av krypteringsidentitet mislyktes"
 
-#: src/components/crypto/recovery_setup_view.rs:412
-#: src/components/crypto/recovery_setup_view.rs:421
-#: src/components/crypto/recovery_setup_view.rs:447
+#: src/components/crypto/recovery_setup_view.rs:413
+#: src/components/crypto/recovery_setup_view.rs:422
+#: src/components/crypto/recovery_setup_view.rs:448
 msgid "Could not reset account recovery"
 msgstr "Tilbakestilling av gjenoppretting mislyktes"
 
-#: src/components/crypto/recovery_setup_view.rs:482
+#: src/components/crypto/recovery_setup_view.rs:483
 msgid "Could not reset account recovery key"
 msgstr "Tilbakestilling av gjenopprettingsnøkkel mislyktes"
 
-#: src/components/crypto/recovery_setup_view.rs:520
+#: src/components/crypto/recovery_setup_view.rs:521
 msgid "Could not enable account recovery"
 msgstr "Aktivering av kontogjenoppretting mislyktes"
 
@@ -434,7 +434,7 @@ msgstr "Passord eller nøkkel"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:348
-#: src/session/view/sidebar/mod.rs:315
+#: src/session/view/sidebar/mod.rs:317
 msgid "Recover"
 msgstr "Gjenopprett"
 
@@ -513,23 +513,26 @@ msgid "Copy Recovery Key"
 msgstr "Kopier gjenopprettingsnøkkel"
 
 #: src/components/crypto/recovery_setup_view.ui:408
-#: src/components/crypto/recovery_setup_view.ui:493
-msgid "OK"
-msgstr "OK"
+#: src/components/crypto/recovery_setup_view.ui:494
+#: src/identity_verification_view/cancelled_page.ui:52
+#: src/identity_verification_view/completed_page.ui:48
+#: src/identity_verification_view/room_left_page.ui:44
+msgid "_Done"
+msgstr "_Ferdig"
 
-#: src/components/crypto/recovery_setup_view.ui:430
-#: src/components/crypto/recovery_setup_view.ui:457
+#: src/components/crypto/recovery_setup_view.ui:431
+#: src/components/crypto/recovery_setup_view.ui:458
 #: src/session/view/account_settings/security_page/mod.rs:343
 msgid "Account Recovery Incomplete"
 msgstr "Gjenoppretting mislyktes"
 
-#: src/components/crypto/recovery_setup_view.ui:468
+#: src/components/crypto/recovery_setup_view.ui:469
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr ""
 "Gjenopprettingen ble delvis fullført, men gjenopprettingsdataene var "
 "ufullstendige."
 
-#: src/components/crypto/recovery_setup_view.ui:476
+#: src/components/crypto/recovery_setup_view.ui:477
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
@@ -537,7 +540,7 @@ msgstr ""
 "For å ordne opp i dette, bør gjenopprettingen nullstilles fra en økt som har "
 "alle dataene, før denne økten gjenopprettes igjen."
 
-#: src/components/crypto/recovery_setup_view.ui:484
+#: src/components/crypto/recovery_setup_view.ui:485
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
@@ -545,7 +548,7 @@ msgstr ""
 "Gjenoppretting kan ha et annet navn i andre Matrix-apper, som "
 "«sikkerhetskopiering»."
 
-#: src/components/crypto/recovery_setup_view.ui:504
+#: src/components/crypto/recovery_setup_view.ui:506
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Eventuelt kan kontogjenopprettingen tilbakestilles"
 
@@ -692,8 +695,8 @@ msgstr "Forlat"
 #: src/session/view/content/room_details/general_page.rs:1118
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:874
-#: src/session/view/content/room_history/item_row.rs:928
+#: src/session/view/content/room_history/item_row.rs:875
+#: src/session/view/content/room_history/item_row.rs:929
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -758,7 +761,7 @@ msgstr ""
 "ikke kunne bli med i samtalen med mindre noen inviterer dem på nytt."
 
 #: src/components/dialogs/message_dialogs.rs:170
-#: src/components/user_page.rs:417
+#: src/components/user_page.rs:416
 msgid "Revoke Invite"
 msgstr "Trekk tilbake invitasjon"
 
@@ -775,7 +778,7 @@ msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Er du sikker på at du ønsker å avslå forespørselen fra {user_id}?"
 
 #: src/components/dialogs/message_dialogs.rs:186
-#: src/components/user_page.rs:418
+#: src/components/user_page.rs:417
 msgid "Deny Access"
 msgstr "Avvis"
 
@@ -808,7 +811,7 @@ msgstr ""
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
 #: src/components/dialogs/message_dialogs.rs:208
-#: src/components/user_page.rs:420
+#: src/components/user_page.rs:419
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "Spark ut"
@@ -838,7 +841,7 @@ msgstr[1] ""
 #: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:875
+#: src/session/view/content/room_history/item_row.rs:876
 msgid "Remove"
 msgstr "Fjern"
 
@@ -859,7 +862,7 @@ msgstr ""
 "Du kan prøve å laste inn flere ved å bla lenger tilbake i samtalen."
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:910
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Reason (optional)"
 msgstr "Begrunnelse"
 
@@ -928,19 +931,19 @@ msgstr "Ingen nettverksforbindelse"
 msgid "No Internet connection"
 msgstr "Ingen nettverksforbindelse"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:176
 msgid "Image not Viewable"
 msgstr "Bildet kan ikke vises"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:177
 msgid "Audio Clip not Playable"
 msgstr "Lydklippet kan ikke spilles av"
 
-#: src/components/media/content_viewer.rs:179
+#: src/components/media/content_viewer.rs:178
 msgid "Video not Playable"
 msgstr "Videoen kan ikke spilles av"
 
-#: src/components/media/content_viewer.rs:180
+#: src/components/media/content_viewer.rs:179
 msgid "File not Viewable"
 msgstr "Filen kan ikke vises"
 
@@ -971,137 +974,137 @@ msgstr "Tilpasset"
 msgid "Confirm Custom Role"
 msgstr "Bekreft tilpasset rolle"
 
-#: src/components/user_page.rs:277
+#: src/components/user_page.rs:276
 #: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix-brukernavn kopiert til utklippstavlen"
 
-#: src/components/user_page.rs:299
+#: src/components/user_page.rs:298
 msgid "Open Direct Chat"
 msgstr "Åpne direktesamtale"
 
-#: src/components/user_page.rs:301
+#: src/components/user_page.rs:300
 msgid "Create Direct Chat"
 msgstr "Opprett direktesamtale"
 
-#: src/components/user_page.rs:325
+#: src/components/user_page.rs:324
 #: src/session/view/content/room_history/sender_avatar/mod.rs:534
 #: src/session/view/create_dm_dialog/mod.rs:202
 msgid "Could not create a new Direct Chat"
 msgstr "Oppretting av samtale mislyktes"
 
-#: src/components/user_page.rs:358
+#: src/components/user_page.rs:357
 msgid "In {room_name}"
 msgstr "I {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:369
+#: src/components/user_page.rs:368
 msgctxt "member"
 msgid "Invited"
 msgstr "Invitert"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:374
+#: src/components/user_page.rs:373
 msgctxt "member"
 msgid "Banned"
 msgstr "Utestengt"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:379
+#: src/components/user_page.rs:378
 msgctxt "member"
 msgid "Knocked"
 msgstr "Bedt om tilgang"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:384
+#: src/components/user_page.rs:383
 msgctxt "member"
 msgid "Unknown"
 msgstr "Ukjent"
 
-#: src/components/user_page.rs:405
+#: src/components/user_page.rs:404
 msgid "Allow Access"
 msgstr "Gi tilgang"
 
-#: src/components/user_page.rs:505
+#: src/components/user_page.rs:504
 msgid "Could not change the role"
 msgstr "Endring av rolle mislyktes"
 
-#: src/components/user_page.rs:527
+#: src/components/user_page.rs:526
 #: src/session/view/content/room_history/sender_avatar/mod.rs:558
 msgid "Could not invite user"
 msgstr "Invitering av konto mislyktes"
 
-#: src/components/user_page.rs:561
+#: src/components/user_page.rs:560
 #: src/session/view/content/room_history/sender_avatar/mod.rs:591
 msgid "Could not revoke invite of user"
 msgstr "Tilbaketrekning av invitasjon mislyktes"
 
-#: src/components/user_page.rs:562
+#: src/components/user_page.rs:561
 #: src/session/view/content/room_history/sender_avatar/mod.rs:592
 msgid "Could not deny access to user"
 msgstr "Avvisning av konto mislyktes"
 
-#: src/components/user_page.rs:563
+#: src/components/user_page.rs:562
 #: src/session/view/content/room_history/sender_avatar/mod.rs:593
 msgid "Could not kick user"
 msgstr "Sparking av konto mislyktes"
 
-#: src/components/user_page.rs:609
+#: src/components/user_page.rs:608
 #: src/session/view/content/room_history/sender_avatar/mod.rs:678
 msgid "Could not ban user"
 msgstr "Utestenging av konto mislyktes"
 
-#: src/components/user_page.rs:637
+#: src/components/user_page.rs:636
 #: src/session/view/content/room_history/sender_avatar/mod.rs:698
 msgid "Could not unban user"
 msgstr "Oppheving av utestenging mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:685
+#: src/components/user_page.rs:684
 #: src/session/view/content/room_history/sender_avatar/mod.rs:752
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Sletting av melding mislyktes"
 msgstr[1] "Sletting av {n} meldinger mislyktes"
 
-#: src/components/user_page.rs:702
+#: src/components/user_page.rs:701
 msgid "Identity verified"
 msgstr "Identitet verifisert"
 
-#: src/components/user_page.rs:709
+#: src/components/user_page.rs:708
 msgid "Identity not verified"
 msgstr "Ikke verifisert"
 
-#: src/components/user_page.rs:725
+#: src/components/user_page.rs:724
 msgid "Could not start user verification"
 msgstr "Oppstart av verifisering mislyktes"
 
-#: src/components/user_page.rs:751
+#: src/components/user_page.rs:750
 msgid "Ignored"
 msgstr "Ignorert"
 
-#: src/components/user_page.rs:753
+#: src/components/user_page.rs:752
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Opphev ignorering"
 
-#: src/components/user_page.rs:756
+#: src/components/user_page.rs:755
 msgid "Not Ignored"
 msgstr "Ikke ignorert"
 
-#: src/components/user_page.rs:757
+#: src/components/user_page.rs:756
 msgid "Ignore"
 msgstr "Ignorer"
 
-#: src/components/user_page.rs:774
+#: src/components/user_page.rs:773
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
 #: src/session/view/content/room_history/sender_avatar/mod.rs:777
 msgid "Could not stop ignoring user"
 msgstr "Oppheving av ignorering mislyktes"
 
-#: src/components/user_page.rs:777 src/session/view/content/invite.rs:301
+#: src/components/user_page.rs:776 src/session/view/content/invite.rs:301
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
 #: src/session/view/sidebar/row.rs:760
 msgid "Could not ignore user"
@@ -1140,7 +1143,7 @@ msgstr "Sikkerhet"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:308
+#: src/session/view/sidebar/mod.rs:310
 msgid "Verify"
 msgstr "Verifiser"
 
@@ -1296,12 +1299,6 @@ msgstr "Verifiseringsfeil"
 #: src/identity_verification_view/cancelled_page.ui:41
 msgid "Send New Request"
 msgstr "Send på nytt"
-
-#: src/identity_verification_view/cancelled_page.ui:52
-#: src/identity_verification_view/completed_page.ui:48
-#: src/identity_verification_view/room_left_page.ui:44
-msgid "Dismiss"
-msgstr "Fortsett"
 
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
@@ -1861,31 +1858,31 @@ msgstr "{user} sendte en verifiseringsforespørsel"
 msgid "Verify your new session “{name}”"
 msgstr "Verifiser «{name}»"
 
-#: src/session/model/room/join_rule.rs:247
+#: src/session/model/room/join_rule.rs:249
 msgid "Only invited users, and users can knock"
 msgstr "Kun inviterte kontoer, og forespørsler for andre"
 
-#: src/session/model/room/join_rule.rs:249
+#: src/session/model/room/join_rule.rs:251
 msgid "Only invited users"
 msgstr "Kun inviterte kontoer"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:263
+#: src/session/model/room/join_rule.rs:265
 msgid "Members of {room}, and users can knock"
 msgstr "Medlemmer av {room}, og forespørsler for andre"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:270
+#: src/session/model/room/join_rule.rs:272
 msgid "Members of {room}"
 msgstr "Medlemmer av {room}"
 
-#: src/session/model/room/join_rule.rs:275
+#: src/session/model/room/join_rule.rs:277
 msgid "Any registered user"
 msgstr "Hvem som helst"
 
-#: src/session/model/room/join_rule.rs:276
+#: src/session/model/room/join_rule.rs:278
 #: src/session/view/content/room_details/general_page.rs:1022
 msgid "Unsupported rule"
 msgstr "Ukjent regel"
@@ -1924,7 +1921,7 @@ msgstr "Dempet"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:406
+#: src/session/model/room_list/mod.rs:405
 msgid "Could not join room {room_name}"
 msgstr "Kobling til {room_name} mislyktes"
 
@@ -2374,7 +2371,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Importer krypteringsnøkler fra…"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:233
-#: src/utils/matrix/media_message.rs:177
+#: src/utils/matrix/media_message.rs:183
 msgid "Could not access file"
 msgstr "Fikk ikke tilgang til fil"
 
@@ -2433,7 +2430,7 @@ msgstr "Kan ikke verifisere andre enheter eller kontoer"
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
 #: src/session/view/content/room_details/general_page.rs:1119
-#: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
+#: src/session/view/sidebar/mod.rs:308 src/session/view/sidebar/mod.rs:314
 msgid "Enable"
 msgstr "Slå på"
 
@@ -2950,7 +2947,7 @@ msgstr "Beskrivelse"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:156
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
-#: src/utils/matrix/media_message.rs:152
+#: src/utils/matrix/media_message.rs:158
 msgid "Save"
 msgstr "Lagre"
 
@@ -3257,7 +3254,7 @@ msgstr "Åpne fil"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:150
+#: src/utils/matrix/media_message.rs:156
 msgid "Save File"
 msgstr "Lagre fil"
 
@@ -3703,45 +3700,45 @@ msgstr "_Kopier forhåndsvisning"
 msgid "Rep_ort"
 msgstr "_Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:520
+#: src/session/view/content/room_history/item_row.rs:521
 #: src/session/view/media_viewer.rs:491
 msgid "Message link copied to clipboard"
 msgstr "Lenke kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:657
-#: src/session/view/content/room_history/item_row.rs:710
-#: src/session/view/content/room_history/item_row.rs:745
-#: src/session/view/content/room_history/item_row.rs:825
+#: src/session/view/content/room_history/item_row.rs:658
+#: src/session/view/content/room_history/item_row.rs:711
+#: src/session/view/content/room_history/item_row.rs:746
+#: src/session/view/content/room_history/item_row.rs:826
 msgid "Text copied to clipboard"
 msgstr "Tekst kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:765
+#: src/session/view/content/room_history/item_row.rs:766
 msgid "Thumbnail copied to clipboard"
 msgstr "Forhåndsvisning kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:868
+#: src/session/view/content/room_history/item_row.rs:869
 msgid "Remove Message?"
 msgstr "Slette melding?"
 
-#: src/session/view/content/room_history/item_row.rs:870
+#: src/session/view/content/room_history/item_row.rs:871
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Er du sikker på at du vil slette denne meldingen? Den vil bli borte for "
 "alltid."
 
-#: src/session/view/content/room_history/item_row.rs:884
+#: src/session/view/content/room_history/item_row.rs:885
 msgid "Could not remove message"
 msgstr "Sletting av melding mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:895
+#: src/session/view/content/room_history/item_row.rs:896
 msgid "Could not toggle reaction"
 msgstr "Endring av reaksjon mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:921
+#: src/session/view/content/room_history/item_row.rs:922
 msgid "Report Event?"
 msgstr "Rapportere hendelse?"
 
-#: src/session/view/content/room_history/item_row.rs:923
+#: src/session/view/content/room_history/item_row.rs:924
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3752,15 +3749,15 @@ msgstr ""
 "hendelsen hvis den er kryptert eller slettet."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:930
+#: src/session/view/content/room_history/item_row.rs:931
 msgid "Report"
 msgstr "Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:948
+#: src/session/view/content/room_history/item_row.rs:949
 msgid "Could not report event"
 msgstr "Rapportering av hendelse mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:964
+#: src/session/view/content/room_history/item_row.rs:965
 msgid "Could not discard message"
 msgstr "Forkasting av melding mislyktes"
 
@@ -3884,8 +3881,8 @@ msgstr "Klistremerke"
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:415
-#: src/utils/media/image.rs:800
+#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/utils/media/image/mod.rs:800
 msgid "Could not retrieve media"
 msgstr "Innlasting av medier mislyktes"
 
@@ -4069,7 +4066,7 @@ msgid "Could not forget {room}"
 msgstr "Glemming av {room} mislyktes"
 
 #: src/session/view/content/room_history/mod.rs:1008
-#: src/session/view/sidebar/mod.rs:424
+#: src/session/view/sidebar/mod.rs:426
 msgid "Context Menu"
 msgstr "Meny"
 
@@ -4642,19 +4639,19 @@ msgstr "Kan ikke slås av senere"
 msgid "_Create Room"
 msgstr "_Opprett samtale"
 
-#: src/session/view/sidebar/mod.rs:306
+#: src/session/view/sidebar/mod.rs:308
 msgid "No crypto identity"
 msgstr "Ingen krypteringsidentitet"
 
-#: src/session/view/sidebar/mod.rs:308
+#: src/session/view/sidebar/mod.rs:310
 msgid "Crypto identity incomplete"
 msgstr "Ufullstendig kryptering"
 
-#: src/session/view/sidebar/mod.rs:312
+#: src/session/view/sidebar/mod.rs:314
 msgid "Account recovery disabled"
 msgstr "Gjenoppretting er slått av"
 
-#: src/session/view/sidebar/mod.rs:315
+#: src/session/view/sidebar/mod.rs:317
 msgid "Account recovery incomplete"
 msgstr "Ufullstendig gjenoppretting"
 
@@ -4917,7 +4914,7 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Innlasting av database mislyktes."
 
-#: src/utils/matrix/media_message.rs:169
+#: src/utils/matrix/media_message.rs:175
 msgid "Could not save file"
 msgstr "Lagring av fil mislyktes"
 
@@ -4959,11 +4956,11 @@ msgstr "{user} inviterte deg"
 msgid "Could not generate unique session ID"
 msgstr "Generering av unik øktkode mislyktes"
 
-#: src/utils/media/image.rs:801
+#: src/utils/media/image/mod.rs:801
 msgid "Image format not supported"
 msgstr "Ukjent bildeformat"
 
-#: src/utils/media/image.rs:802
+#: src/utils/media/image/mod.rs:803
 msgid "An unexpected error occurred"
 msgstr "Noe gikk galt"
 
@@ -4990,6 +4987,12 @@ msgstr "fil"
 #: src/window.ui:60
 msgid "Session"
 msgstr "Økt"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Dismiss"
+#~ msgstr "Fortsett"
 
 #~ msgid "_Reject"
 #~ msgstr "_Avslå"
