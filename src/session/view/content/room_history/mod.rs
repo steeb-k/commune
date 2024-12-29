@@ -109,7 +109,7 @@ mod imp {
         is_auto_scrolling: Cell<bool>,
         /// Whether the room history should stick to the newest message in the
         /// timeline.
-        #[property(get, explicit_notify)]
+        #[property(get)]
         is_sticky: Cell<bool>,
         /// The `GtkSelectionModel` used in the list view.
         selection_model: OnceCell<gtk::NoSelection>,
@@ -300,6 +300,7 @@ mod imp {
                     } else {
                         tracing::trace!("User scrolled");
                         imp.set_sticky(is_at_bottom);
+                        imp.update_scroll_btn();
                     }
 
                     // Remove the typing row if we scroll up.
@@ -319,7 +320,10 @@ mod imp {
                     tracing::trace!("Scroll upper changed");
                     if imp.is_sticky.get() {
                         imp.scroll_down();
+                    } else {
+                        imp.update_scroll_btn();
                     }
+
                     imp.load_more_events_if_needed();
                 }
             ));
@@ -330,19 +334,13 @@ mod imp {
                     tracing::trace!("Scroll page size changed");
                     if imp.is_sticky.get() {
                         imp.scroll_down();
+                    } else {
+                        imp.update_scroll_btn();
                     }
+
                     imp.load_more_events_if_needed();
                 }
             ));
-        }
-
-        /// Whether the list view is scrolled at the bottom.
-        pub(super) fn is_at_bottom(&self) -> bool {
-            let adj = self
-                .listview
-                .vadjustment()
-                .expect("GtkListView has a vadjustment");
-            (adj.value() + adj.page_size() - adj.upper()).abs() < 0.0001
         }
 
         /// Initialize the drop target.
@@ -555,17 +553,12 @@ mod imp {
             }
             tracing::trace!("is-sticky changed");
 
-            if !is_sticky {
-                self.scroll_btn_revealer.set_visible(true);
-            }
-            self.scroll_btn_revealer.set_reveal_child(!is_sticky);
-
             self.is_sticky.set(is_sticky);
             self.obj().notify_is_sticky();
         }
 
         /// Set whether the current room history scrolling is automatic.
-        pub(super) fn set_is_auto_scrolling(&self, is_auto: bool) {
+        fn set_is_auto_scrolling(&self, is_auto: bool) {
             tracing::trace!("set_is_auto_scrolling: {is_auto:?}");
             if self.is_auto_scrolling.get() == is_auto {
                 return;
@@ -591,6 +584,25 @@ mod imp {
                 self.scrolled_window
                     .emit_scroll_child(gtk::ScrollType::End, false);
             }
+        }
+
+        /// Whether the list view is scrolled at the bottom.
+        pub(super) fn is_at_bottom(&self) -> bool {
+            let adj = self
+                .listview
+                .vadjustment()
+                .expect("GtkListView has a vadjustment");
+            (adj.value() + adj.page_size() - adj.upper()).abs() < 0.0001
+        }
+
+        /// Update the visibility of the scroll button.
+        fn update_scroll_btn(&self) {
+            let is_at_bottom = self.is_at_bottom();
+
+            if !is_at_bottom {
+                self.scroll_btn_revealer.set_visible(true);
+            }
+            self.scroll_btn_revealer.set_reveal_child(!is_at_bottom);
         }
 
         /// Update the room menu for the current state.
