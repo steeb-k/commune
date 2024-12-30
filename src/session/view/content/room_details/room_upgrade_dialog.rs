@@ -2,24 +2,23 @@ use std::{cmp::Ordering, str::FromStr};
 
 use adw::prelude::*;
 use gettextrs::gettext;
-use gtk::{gio, glib, subclass::prelude::*};
+use gtk::{gio, glib, pango, subclass::prelude::*};
 use ruma::{
     api::client::discovery::get_capabilities::{RoomVersionStability, RoomVersionsCapability},
     RoomVersionId,
 };
-
-use crate::gettext_f;
+use tracing::error;
 
 /// Show a dialog to confirm the room upgrade and select a room version.
 ///
 /// Returns the selected room version, or `None` if the user didn't confirm.
-pub async fn confirm_room_upgrade(
+pub(crate) async fn confirm_room_upgrade(
     capability: RoomVersionsCapability,
     parent: &impl IsA<gtk::Widget>,
 ) -> Option<RoomVersionId> {
-    // Build the model.
+    // Build the lists.
     let default = capability.default;
-    let mut list = capability
+    let (mut stable_list, mut experimental_list) = capability
         .available
         .into_iter()
         .map(|(id, stability)| {
@@ -32,34 +31,71 @@ pub async fn confirm_room_upgrade(
 
             RoomVersion::new(id, stability)
         })
-        .collect::<Vec<_>>();
+        .partition::<Vec<_>, _>(|version| *version.stability() == RoomVersionStability::Stable);
 
-    // Correctly sort numbers (string comparison will sort `1, 10, 2`, we want `1,
-    // 2, 10`).
-    list.sort_unstable_by(|a, b| {
-        match (
-            i64::from_str(a.id().as_str()),
-            i64::from_str(b.id().as_str()),
-        ) {
-            (Ok(a), Ok(b)) => a.cmp(&b),
-            (Ok(_), _) => Ordering::Less,
-            (_, Ok(_)) => Ordering::Greater,
-            _ => a.id().cmp(b.id()),
-        }
-    });
+    stable_list.sort_unstable_by(RoomVersion::cmp_ids);
+    experimental_list.sort_unstable_by(RoomVersion::cmp_ids);
 
-    let default_pos = list
+    let default_pos = stable_list
         .iter()
         .position(|v| *v.id() == default)
         .unwrap_or_default();
-    let model = list.into_iter().collect::<gio::ListStore>();
+
+    // Construct the list models for the combo row.
+    let stable_model = stable_list.into_iter().collect::<gio::ListStore>();
+    let experimental_model = experimental_list.into_iter().collect::<gio::ListStore>();
+
+    let model_list = gio::ListStore::new::<gio::ListStore>();
+    model_list.append(&stable_model);
+    model_list.append(&experimental_model);
+    let flatten_model = gtk::FlattenListModel::new(Some(model_list));
+
+    // Construct the header factory to separate stable from experimental versions.
+    let header_factory = gtk::SignalListItemFactory::new();
+    header_factory.connect_setup(|_, header| {
+        let Some(header) = header.downcast_ref::<gtk::ListHeader>() else {
+            error!("List item factory did not receive a list header: {header:?}");
+            return;
+        };
+
+        let label = gtk::Label::builder()
+            .margin_start(12)
+            .xalign(0.0)
+            .ellipsize(pango::EllipsizeMode::End)
+            .css_classes(["heading"])
+            .build();
+        header.set_child(Some(&label));
+    });
+    header_factory.connect_bind(|_, header| {
+        let Some(header) = header.downcast_ref::<gtk::ListHeader>() else {
+            error!("List item factory did not receive a list header: {header:?}");
+            return;
+        };
+        let Some(label) = header.child().and_downcast::<gtk::Label>() else {
+            error!("List header does not have a child GtkLabel");
+            return;
+        };
+        let Some(version) = header.item().and_downcast::<RoomVersion>() else {
+            error!("List header does not have a RoomVersion item");
+            return;
+        };
+
+        let text = match version.stability() {
+            // Translators: As in 'Stable version'.
+            RoomVersionStability::Stable => gettext("Stable"),
+            // Translators: As in 'Experimental version'.
+            _ => gettext("Experimental"),
+        };
+        label.set_label(&text);
+    });
 
     // Add an entry for the optional reason.
     let version_combo = adw::ComboRow::builder()
         .title(gettext("Version"))
         .selectable(false)
-        .expression(RoomVersion::this_expression("display-string"))
-        .model(&model)
+        .expression(RoomVersion::this_expression("id-string"))
+        .header_factory(&header_factory)
+        .model(&flatten_model)
         .selected(default_pos.try_into().unwrap_or(u32::MAX))
         .build();
     let list_box = gtk::ListBox::builder()
@@ -102,12 +138,12 @@ mod imp {
     #[properties(wrapper_type = super::RoomVersion)]
     pub struct RoomVersion {
         /// The ID of the version.
-        pub id: OnceCell<RoomVersionId>,
+        id: OnceCell<RoomVersionId>,
+        /// The ID of the version as a string.
+        #[property(get = Self::id_string)]
+        id_string: PhantomData<String>,
         /// The stability of the version.
-        pub stability: OnceCell<RoomVersionStability>,
-        /// The string used to display this version.
-        #[property(get = Self::display_string)]
-        display_string: PhantomData<String>,
+        stability: OnceCell<RoomVersionStability>,
     }
 
     #[glib::object_subclass]
@@ -120,28 +156,31 @@ mod imp {
     impl ObjectImpl for RoomVersion {}
 
     impl RoomVersion {
+        /// Set the ID of this version.
+        pub(super) fn set_id(&self, id: RoomVersionId) {
+            self.id.set(id).expect("id is uninitialized");
+        }
+
         /// The ID of this version.
         pub(super) fn id(&self) -> &RoomVersionId {
             self.id.get().expect("id is initialized")
         }
 
-        /// The stability of this version.
-        fn stability(&self) -> &RoomVersionStability {
-            self.stability.get().expect("stability is initialized")
+        /// The ID of this version as a string.
+        fn id_string(&self) -> String {
+            self.id().to_string()
         }
 
-        /// The string used to display this version.
-        fn display_string(&self) -> String {
-            let id = self.id();
-            let stability = self.stability();
+        /// Set the stability of this version.
+        pub(super) fn set_stability(&self, stability: RoomVersionStability) {
+            self.stability
+                .set(stability)
+                .expect("stability is uninitialized");
+        }
 
-            if *stability == RoomVersionStability::Stable {
-                id.to_string()
-            } else {
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                gettext_f("{version} (unstable)", &[("version", id.as_str())])
-            }
+        /// The stability of this version.
+        pub(super) fn stability(&self) -> &RoomVersionStability {
+            self.stability.get().expect("stability is initialized")
         }
     }
 }
@@ -157,8 +196,8 @@ impl RoomVersion {
         let obj = glib::Object::new::<Self>();
 
         let imp = obj.imp();
-        imp.id.set(id).unwrap();
-        imp.stability.set(stability).unwrap();
+        imp.set_id(id);
+        imp.set_stability(stability);
 
         obj
     }
@@ -166,5 +205,26 @@ impl RoomVersion {
     /// The ID of this version.
     pub(crate) fn id(&self) -> &RoomVersionId {
         self.imp().id()
+    }
+
+    /// The stability of this version.
+    pub(crate) fn stability(&self) -> &RoomVersionStability {
+        self.imp().stability()
+    }
+
+    /// Compare the IDs of the two given `RoomVersion`s.
+    ///
+    /// Correctly sorts numbers: string comparison will sort `1, 10, 2`, we want
+    /// `1, 2, 10`.
+    fn cmp_ids(a: &RoomVersion, b: &RoomVersion) -> Ordering {
+        match (
+            i64::from_str(a.id().as_str()),
+            i64::from_str(b.id().as_str()),
+        ) {
+            (Ok(a), Ok(b)) => a.cmp(&b),
+            (Ok(_), _) => Ordering::Less,
+            (_, Ok(_)) => Ordering::Greater,
+            _ => a.id().cmp(b.id()),
+        }
     }
 }
