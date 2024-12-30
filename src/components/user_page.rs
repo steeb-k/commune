@@ -36,6 +36,8 @@ mod imp {
         #[template_child]
         avatar: TemplateChild<Avatar>,
         #[template_child]
+        direct_chat_box: TemplateChild<gtk::ListBox>,
+        #[template_child]
         direct_chat_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
         verified_row: TemplateChild<adw::ActionRow>,
@@ -72,7 +74,7 @@ mod imp {
         user: BoundObject<User>,
         bindings: RefCell<Vec<glib::Binding>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
-        room_display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
+        room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -102,20 +104,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
-
-            if let Some(member) = self.user.obj().and_downcast::<Member>() {
-                let room = member.room();
-
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
-                if let Some(handler) = self.room_display_name_handler.take() {
-                    room.disconnect(handler);
-                }
-            }
+            self.disconnect_signals();
         }
     }
 
@@ -126,27 +115,12 @@ mod imp {
     impl UserPage {
         /// Set the current user.
         fn set_user(&self, user: Option<User>) {
-            let prev_user = self.user.obj();
-
-            if prev_user == user {
+            if self.user.obj() == user {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(member) = prev_user.and_downcast::<Member>() {
-                let room = member.room();
-
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
-                if let Some(handler) = self.room_display_name_handler.take() {
-                    room.disconnect(handler);
-                }
-            }
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
-            self.user.disconnect_signals();
+            self.disconnect_signals();
             self.power_level_row.set_permissions(None::<Permissions>);
 
             if let Some(user) = user {
@@ -198,8 +172,15 @@ mod imp {
                             imp.update_room();
                         }
                     ));
-                    self.room_display_name_handler
-                        .replace(Some(room_display_name_handler));
+                    let room_direct_member_handler = room.connect_direct_member_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_direct_chat();
+                        }
+                    ));
+                    self.room_handlers
+                        .replace(vec![room_display_name_handler, room_direct_member_handler]);
 
                     let membership_handler = member.connect_membership_notify(clone!(
                         #[weak(rename_to = imp)]
@@ -222,7 +203,7 @@ mod imp {
                     handlers.extend([membership_handler, power_level_handler]);
                 }
 
-                // We don't need to listen to changes of the property, it never changes after
+                // We do not need to listen to changes of the property, it never changes after
                 // construction.
                 let is_own_user = user.is_own_user();
                 self.ignored_row.set_visible(!is_own_user);
@@ -239,6 +220,26 @@ mod imp {
             obj.notify_user();
         }
 
+        /// Disconnect all the signals.
+        fn disconnect_signals(&self) {
+            if let Some(member) = self.user.obj().and_downcast::<Member>() {
+                let room = member.room();
+
+                for handler in self.room_handlers.take() {
+                    room.disconnect(handler);
+                }
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
+
+            for binding in self.bindings.take() {
+                binding.unbind();
+            }
+
+            self.user.disconnect_signals();
+        }
+
         /// Copy the user ID to the clipboard.
         #[template_callback]
         fn copy_user_id(&self) {
@@ -253,11 +254,15 @@ mod imp {
 
         /// Update the visibility of the direct chat button.
         fn update_direct_chat(&self) {
-            let is_visible = self
-                .user
-                .obj()
+            let user = self.user.obj();
+            let is_other_user = user
+                .as_ref()
                 .is_some_and(|u| !u.is_own_user() && !u.is_ignored());
-            self.direct_chat_button.set_visible(is_visible);
+            let is_direct_chat = user
+                .and_downcast::<Member>()
+                .is_some_and(|m| m.room().direct_member().is_some());
+            self.direct_chat_box
+                .set_visible(is_other_user && !is_direct_chat);
         }
 
         /// Load whether the current user has a direct chat or not.
