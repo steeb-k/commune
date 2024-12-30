@@ -41,6 +41,7 @@ mod imp {
         /// This avatar is active when the popover is displayed.
         #[property(get)]
         active: Cell<bool>,
+        direct_member_handler: RefCell<Option<glib::SignalHandlerId>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The displayed member.
         #[property(get, set = Self::set_sender, explicit_notify, nullable)]
@@ -179,6 +180,8 @@ mod imp {
         }
 
         fn dispose(&self) {
+            self.disconnect_signals();
+
             if let Some(popover) = self.popover.obj() {
                 popover.unparent();
                 popover.remove_child(&*self.user_id_btn);
@@ -207,10 +210,21 @@ mod imp {
                 return;
             }
 
-            self.sender.disconnect_signals();
+            self.disconnect_signals();
 
             if let Some(sender) = sender {
-                let permissions_handler = sender.room().permissions().connect_changed(clone!(
+                let room = sender.room();
+                let direct_member_handler = room.connect_direct_member_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_actions();
+                    }
+                ));
+                self.direct_member_handler
+                    .replace(Some(direct_member_handler));
+
+                let permissions_handler = room.permissions().connect_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -267,6 +281,22 @@ mod imp {
             self.obj().notify_sender();
         }
 
+        /// Disconnect all the signals.
+        fn disconnect_signals(&self) {
+            if let Some(sender) = self.sender.obj() {
+                let room = sender.room();
+
+                if let Some(handler) = self.direct_member_handler.take() {
+                    room.disconnect(handler);
+                }
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
+
+            self.sender.disconnect_signals();
+        }
+
         /// Update the accessible label for the current sender.
         fn update_accessible_label(&self) {
             let Some(sender) = self.sender.obj() else {
@@ -285,7 +315,9 @@ mod imp {
             };
             let obj = self.obj();
 
-            let permissions = sender.room().permissions();
+            let room = sender.room();
+            let is_direct_chat = room.direct_member().is_some();
+            let permissions = room.permissions();
             let membership = sender.membership();
             let sender_id = sender.user_id();
             let is_own_user = sender.is_own_user();
@@ -297,7 +329,10 @@ mod imp {
                 !is_own_user && membership == Membership::Join && permissions.can_send_message(),
             );
 
-            obj.action_set_enabled("sender-avatar.open-direct-chat", !is_own_user);
+            obj.action_set_enabled(
+                "sender-avatar.open-direct-chat",
+                !is_direct_chat && !is_own_user,
+            );
 
             obj.action_set_enabled(
                 "sender-avatar.invite",
