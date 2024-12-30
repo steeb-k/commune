@@ -70,7 +70,6 @@ mod imp {
                         error!("Could not change state of copy-image action: action not found");
                         return;
                     };
-                    tracing::debug!("Action: {action:?}");
                     let Some(action) = action.downcast_ref::<gio::SimpleAction>() else {
                         error!("Could not change state of copy-image action: not a GSimpleAction");
                         return;
