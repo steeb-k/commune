@@ -6,6 +6,7 @@
     <property name="child">
       <object class="LoadingBin" id="loading_bin">
         <property name="is-loading">True</property>
+        <property name="vhomogeneous">False</property>
         <property name="child">
           <object class="GtkBox" id="error">
             <property name="orientation">vertical</property>

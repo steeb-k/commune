@@ -22,6 +22,10 @@ mod imp {
         /// Whether this is showing the spinner.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
         is_loading: PhantomData<bool>,
+        /// Whether this should keep the same height when showing the spinner or
+        /// the content.
+        #[property(get = Self::vhomogeneous, set = Self::set_vhomogeneous)]
+        vhomogeneous: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -66,6 +70,18 @@ mod imp {
             let child_name = if loading { "loading" } else { "child" };
             self.stack.set_visible_child_name(child_name);
             self.obj().notify_is_loading();
+        }
+
+        /// Whether this should keep the same height when showing the spinner or
+        /// the content.
+        fn vhomogeneous(&self) -> bool {
+            self.stack.is_vhomogeneous()
+        }
+
+        /// Set whether this should keep the same height when showing the
+        /// spinner or the content.
+        fn set_vhomogeneous(&self, homogeneous: bool) {
+            self.stack.set_vhomogeneous(homogeneous);
         }
 
         /// The child widget.
