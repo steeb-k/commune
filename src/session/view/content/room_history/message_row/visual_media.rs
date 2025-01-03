@@ -378,6 +378,11 @@ mod imp {
 
         /// Enable or disable the context menu action to copy the image.
         fn enable_copy_image_action(&self, enable: bool) {
+            if self.compact.get() {
+                // In its compact form the message does not have actions.
+                return;
+            }
+
             if self
                 .obj()
                 .activate_action(
