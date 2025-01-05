@@ -129,10 +129,10 @@ mod imp {
                 let gesture_click = gtk::GestureClick::new();
 
                 gesture_click.connect_released(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_, _, _, _| {
-                        obj.activate();
+                        imp.activate();
                     }
                 ));
 
