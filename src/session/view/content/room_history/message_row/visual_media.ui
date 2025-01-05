@@ -11,11 +11,6 @@
         </style>
         <property name="overflow">hidden</property>
         <child>
-          <object class="GtkGestureClick">
-            <signal name="released" handler="handle_clicked" swapped="true"/>
-          </object>
-        </child>
-        <child>
           <object class="GtkStack" id="stack">
             <property name="transition-type">crossfade</property>
             <property name="hhomogeneous">False</property>

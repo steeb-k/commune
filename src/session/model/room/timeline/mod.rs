@@ -781,7 +781,7 @@ impl Timeline {
                 continue;
             }
 
-            if event.is_redactable() {
+            if event.can_be_redacted() {
                 if let Some(event_id) = event.event_id() {
                     events.push(event_id);
                 }

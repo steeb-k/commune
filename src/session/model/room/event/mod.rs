@@ -7,9 +7,7 @@ use matrix_sdk_ui::timeline::{
     RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
-    events::{
-        receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent, TimelineEventType,
-    },
+    events::{receipt::Receipt, AnySyncTimelineEvent, TimelineEventType},
     serde::Raw,
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
 };
@@ -616,19 +614,21 @@ impl Event {
     }
 
     /// Whether this event contains a message.
+    ///
+    /// Message events include the following variants of
+    /// [`TimelineItemContent`]:
+    ///
+    /// - `Message`
+    /// - `Sticker`
+    ///
+    /// Note that this differs from the SDK/Matrix definition that only includes
+    /// `m.room.message` events, and from the Ruma definition (e.g. used for
+    /// `AnySyncMessageLikeEvent`) which includes all non-state events.
     pub(crate) fn is_message(&self) -> bool {
         matches!(
             self.content(),
             TimelineItemContent::Message(_) | TimelineItemContent::Sticker(_)
         )
-    }
-
-    /// The message of this event, if any.
-    pub(crate) fn message(&self) -> Option<MessageType> {
-        match self.item().content() {
-            TimelineItemContent::Message(msg) => Some(msg.msgtype().clone()),
-            _ => None,
-        }
     }
 
     /// The media message of this event, if any.
@@ -700,10 +700,43 @@ impl Event {
             .expect("task was not aborted")
     }
 
+    /// Whether this event can be replied to.
+    pub(crate) fn can_be_replied_to(&self) -> bool {
+        // We only allow to reply to messages.
+        if !self.is_message() {
+            return false;
+        }
+
+        // The SDK API has its own rules.
+        if !self.item().can_be_replied_to() {
+            return false;
+        }
+
+        // Finally, check that the current permissions allow us to send messages.
+        self.room().permissions().can_send_message()
+    }
+
+    /// Whether this event can be reacted to.
+    pub(crate) fn can_be_reacted_to(&self) -> bool {
+        // We only allow to react to messages.
+        if !self.is_message() {
+            return false;
+        }
+
+        // We cannot react to an event that is being sent.
+        if self.event_id().is_none() {
+            return false;
+        }
+
+        // Finally, check that the current permissions allow us to send messages.
+        self.room().permissions().can_send_reaction()
+    }
+
     /// Whether this event can be redacted.
     ///
-    /// This uses the raw JSON to redact even events that failed to deserialize.
-    pub(crate) fn is_redactable(&self) -> bool {
+    /// This uses the raw JSON to be able to redact even events that failed to
+    /// deserialize.
+    pub(crate) fn can_be_redacted(&self) -> bool {
         let Some(raw) = self.raw() else {
             // Events without raw JSON are already redacted events, and events that are not
             // sent yet, we can ignore them.

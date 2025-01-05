@@ -67,6 +67,13 @@ mod imp {
         /// Whether to display this media in a compact format.
         #[property(get)]
         compact: Cell<bool>,
+        /// Whether the media can be activated.
+        ///
+        /// If the media is activatable and it is not using the compact format,
+        /// clicking on the media opens the media viewer.
+        #[property(get)]
+        activatable: Cell<bool>,
+        gesture_click: glib::WeakRef<gtk::GestureClick>,
         /// The current video file, if any.
         file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
@@ -80,7 +87,6 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("message-visual-media");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
@@ -182,7 +188,6 @@ mod imp {
         }
     }
 
-    #[gtk::template_callbacks]
     impl MessageVisualMedia {
         /// The media child of the given type, if any.
         pub(super) fn media_child<T: IsA<gtk::Widget>>(&self) -> Option<T> {
@@ -259,7 +264,50 @@ mod imp {
                 self.overlay.remove_css_class("compact");
             }
 
+            self.update_gesture_click();
             self.obj().notify_compact();
+        }
+
+        /// Set whether the media can be activated.
+        fn set_activatable(&self, activatable: bool) {
+            if self.activatable.get() == activatable {
+                return;
+            }
+
+            self.activatable.set(activatable);
+
+            self.update_gesture_click();
+            self.obj().notify_activatable();
+        }
+
+        /// Add or remove the click controller given the current state.
+        fn update_gesture_click(&self) {
+            let needs_controller = self.activatable.get() && !self.compact.get();
+            let gesture_click = self.gesture_click.upgrade();
+
+            if needs_controller && gesture_click.is_none() {
+                let gesture_click = gtk::GestureClick::new();
+
+                gesture_click.connect_released(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _, _| {
+                        if imp
+                            .obj()
+                            .activate_action("message-row.show-media", None)
+                            .is_err()
+                        {
+                            error!("Could not activate `message-row.show-media` action");
+                        }
+                    }
+                ));
+
+                self.gesture_click.set(Some(&gesture_click));
+                self.overlay.add_controller(gesture_click);
+            } else if let Some(gesture_click) = gesture_click {
+                self.gesture_click.set(None);
+                self.overlay.remove_controller(&gesture_click);
+            }
         }
 
         /// Build the content for the given media message.
@@ -274,6 +322,12 @@ mod imp {
 
             let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
             self.set_compact(compact);
+
+            let activatable = matches!(
+                media_message,
+                VisualMediaMessage::Image(_) | VisualMediaMessage::Video(_)
+            );
+            self.set_activatable(activatable);
 
             let filename = media_message.filename();
             let accessible_label = if filename.is_empty() {
@@ -449,12 +503,6 @@ mod imp {
                     );
                 }
             }
-        }
-
-        /// Handle when the media was clicked.
-        #[template_callback]
-        fn handle_clicked(&self) {
-            let _ = self.obj().activate_action("message-row.show-media", None);
         }
     }
 }

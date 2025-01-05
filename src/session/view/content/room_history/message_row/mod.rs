@@ -1,6 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::warn;
 
 mod audio;
@@ -259,20 +258,15 @@ mod imp {
             let Some(event) = self.event.obj() else {
                 return;
             };
-            let Some(message) = event.message() else {
+
+            let Some(visual_media_widget) = self.content.visual_media_widget() else {
+                warn!("Trying to show media of a non-media message");
                 return;
             };
 
-            if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
-                let Some(visual_media_widget) = self.content.visual_media_widget() else {
-                    warn!("Trying to show media of a non-media message");
-                    return;
-                };
-
-                window
-                    .session_view()
-                    .show_media(&event, &visual_media_widget);
-            }
+            window
+                .session_view()
+                .show_media(&event, &visual_media_widget);
         }
     }
 }

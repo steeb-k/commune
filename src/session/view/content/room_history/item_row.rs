@@ -16,7 +16,7 @@ use crate::{
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, spawn_tokio, toast,
-    utils::{matrix::MediaMessage, BoundObjectWeakRef},
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -168,13 +168,9 @@ mod imp {
             ));
             closed_handler_cell.replace(Some(closed_handler));
 
-            if let Some(event) = event
-                .downcast_ref::<Event>()
-                .filter(|event| event.is_message())
-            {
-                let has_event_id = event.event_id().is_some();
-                let can_send_reaction = event.room().permissions().can_send_reaction();
-                let menu_model = if has_event_id && can_send_reaction {
+            if event.is_message() {
+                let can_be_reacted_to = event.can_be_reacted_to();
+                let menu_model = if can_be_reacted_to {
                     event_message_menu_model_with_reactions()
                 } else {
                     event_message_menu_model_no_reactions()
@@ -184,7 +180,7 @@ mod imp {
                     popover.set_menu_model(Some(menu_model));
                 }
 
-                if can_send_reaction {
+                if can_be_reacted_to {
                     let quick_reaction_chooser = room_history.item_quick_reaction_chooser();
                     quick_reaction_chooser.set_reactions(Some(event.reactions()));
                     popover.add_child(quick_reaction_chooser, "quick-reaction-chooser");
@@ -625,18 +621,19 @@ mod imp {
 
         /// Add actions to the given action group for the given event, if it is
         /// a message.
-        #[allow(clippy::too_many_lines)]
+        ///
+        /// See [`Event::is_message`] for the definition of a message-like
+        /// event.
         fn add_message_actions(
             &self,
             action_group: &gio::SimpleActionGroup,
             room: &Room,
             event: &Event,
         ) {
-            let TimelineItemContent::Message(message) = event.content() else {
+            if !event.is_message() {
                 return;
-            };
+            }
 
-            let obj = self.obj();
             let own_member = room.own_member();
             let own_user_id = own_member.user_id();
             let is_from_own_user = event.sender_id() == *own_user_id;
@@ -662,7 +659,7 @@ mod imp {
             };
 
             // Send/redact a reaction.
-            if has_event_id && permissions.can_send_reaction() {
+            if event.can_be_reacted_to() {
                 action_group.add_action_entries([gio::ActionEntry::builder("toggle-reaction")
                     .parameter_type(Some(&String::static_variant_type()))
                     .activate(clone!(
@@ -682,51 +679,69 @@ mod imp {
                     .build()]);
             }
 
-            if has_event_id && permissions.can_send_message() {
-                action_group.add_action_entries([
-                    // Reply.
-                    gio::ActionEntry::builder("reply")
+            // Reply.
+            if event.can_be_replied_to() {
+                action_group.add_action_entries([gio::ActionEntry::builder("reply")
+                    .activate(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _| {
+                            let Some(event) = imp.event() else {
+                                error!("Could not reply to timeline item that is not an event");
+                                return;
+                            };
+                            let Some(event_id) = event.event_id() else {
+                                error!("Event to reply to does not have an event ID");
+                                return;
+                            };
+
+                            if imp
+                                .obj()
+                                .activate_action(
+                                    "room-history.reply",
+                                    Some(&event_id.as_str().to_variant()),
+                                )
+                                .is_err()
+                            {
+                                error!("Could not activate `room-history.reply` action");
+                            };
+                        }
+                    ))
+                    .build()]);
+            }
+
+            self.add_message_content_actions(action_group, room, event);
+        }
+
+        /// Add actions to the given action group for the given event, if it
+        /// includes message content.
+        #[allow(clippy::too_many_lines)]
+        fn add_message_content_actions(
+            &self,
+            action_group: &gio::SimpleActionGroup,
+            room: &Room,
+            event: &Event,
+        ) {
+            let TimelineItemContent::Message(message) = event.content() else {
+                return;
+            };
+
+            let obj = self.obj();
+            let own_member = room.own_member();
+            let own_user_id = own_member.user_id();
+            let is_from_own_user = event.sender_id() == *own_user_id;
+            let permissions = room.permissions();
+            let has_event_id = event.event_id().is_some();
+
+            match message.msgtype() {
+                MessageType::Text(_) | MessageType::Emote(_) => {
+                    // Copy text.
+                    action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(
                             #[weak(rename_to = imp)]
                             self,
                             move |_, _, _| {
-                                let Some(event) = imp.event() else {
-                                    error!("Could not reply to timeline item that is not an event");
-                                    return;
-                                };
-                                let Some(event_id) = event.event_id() else {
-                                    error!("Event to reply to does not have an event ID");
-                                    return;
-                                };
-
-                                if imp
-                                    .obj()
-                                    .activate_action(
-                                        "room-history.reply",
-                                        Some(&event_id.as_str().to_variant()),
-                                    )
-                                    .is_err()
-                                {
-                                    error!("Could not activate `room-history.reply` action");
-                                };
-                            }
-                        ))
-                        .build(),
-                ]);
-            }
-
-            match message.msgtype() {
-                MessageType::Text(text_message) => {
-                    // Copy text message.
-                    let body = text_message.body.clone();
-
-                    action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                        .activate(clone!(
-                            #[weak]
-                            obj,
-                            move |_, _, _| {
-                                obj.clipboard().set_text(&body);
-                                toast!(obj, gettext("Text copied to clipboard"));
+                                imp.copy_text();
                             }
                         ))
                         .build()]);
@@ -756,54 +771,14 @@ mod imp {
                         ))
                         .build()]);
                 }
-                MessageType::Emote(message) => {
-                    // Copy text message.
-                    let message = message.clone();
-
+                MessageType::Notice(_) => {
+                    // Copy text.
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                let Some(event) = obj.imp().event() else {
-                                    error!(
-                                        "Could not copy text of timeline item that is not an event"
-                                    );
-                                    return;
-                                };
-
-                                let display_name = event.sender().display_name();
-                                let message = format!("{display_name} {}", message.body);
-                                obj.clipboard().set_text(&message);
-                                toast!(obj, gettext("Text copied to clipboard"));
-                            }
-                        ))
-                        .build()]);
-
-                    // Edit message.
-                    if has_event_id && is_from_own_user && permissions.can_send_message() {
-                        action_group.add_action_entries([gio::ActionEntry::builder("edit")
-                            .activate(clone!(
-                                #[weak(rename_to = imp)]
-                                self,
-                                move |_, _, _| {
-                                    imp.edit_message();
-                                }
-                            ))
-                            .build()]);
-                    }
-                }
-                MessageType::Notice(message) => {
-                    // Copy text message.
-                    let body = message.body.clone();
-
-                    action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                        .activate(clone!(
-                            #[weak]
-                            obj,
-                            move |_, _, _| {
-                                obj.clipboard().set_text(&body);
-                                toast!(obj, gettext("Text copied to clipboard"));
+                                imp.copy_text();
                             }
                         ))
                         .build()]);
@@ -866,23 +841,56 @@ mod imp {
                 _ => {}
             }
 
-            if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
-                if let Some((caption, _)) = media_message.caption() {
-                    let caption = caption.to_owned();
-
+            if let Some(media_message) = event.media_message() {
+                if media_message.caption().is_some() {
                     // Copy caption.
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                obj.clipboard().set_text(&caption);
-                                toast!(obj, gettext("Text copied to clipboard"));
+                                imp.copy_text();
                             }
                         ))
                         .build()]);
                 }
             }
+        }
+
+        /// Copy the text of this row.
+        fn copy_text(&self) {
+            let Some(event) = self.event() else {
+                error!("Could not copy text of timeline item that is not an event");
+                return;
+            };
+            let TimelineItemContent::Message(message) = event.content() else {
+                error!("Could not copy text of event that is not a textual message");
+                return;
+            };
+
+            let text = match message.msgtype() {
+                MessageType::Text(text_message) => text_message.body.clone(),
+                MessageType::Emote(emote_message) => {
+                    let display_name = event.sender().display_name();
+                    format!("{display_name} {}", emote_message.body)
+                }
+                MessageType::Notice(notice_message) => notice_message.body.clone(),
+                _ => {
+                    if let Some(caption) = event
+                        .media_message()
+                        .and_then(|m| m.caption().map(|(caption, _)| caption.to_owned()))
+                    {
+                        caption
+                    } else {
+                        error!("Could not copy text of event that is not a textual message");
+                        return;
+                    }
+                }
+            };
+
+            let obj = self.obj();
+            obj.clipboard().set_text(&text);
+            toast!(obj, gettext("Text copied to clipboard"));
         }
 
         /// Edit the message of this row.
