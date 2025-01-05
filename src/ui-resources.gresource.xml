@@ -28,7 +28,6 @@
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/combo_box.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/quick_reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/button_count_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/check_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/combo_loading_row.ui</file>
@@ -104,7 +103,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/permissions_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/select_member_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_context_menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/member_timestamp/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/audio.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/file.ui</file>
@@ -120,6 +119,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/quick_reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/read_receipts_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/sender_avatar/mod.ui</file>

@@ -1,15 +1,3 @@
-mod divider_row;
-mod item_row;
-mod member_timestamp;
-mod message_row;
-mod message_toolbar;
-mod read_receipts_list;
-mod sender_avatar;
-mod state_row;
-mod title;
-mod typing_row;
-mod verification_info_bar;
-
 use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
@@ -20,15 +8,28 @@ use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
 use tracing::{error, warn};
 
+mod divider_row;
+mod item_row;
+mod item_row_context_menu;
+mod member_timestamp;
+mod message_row;
+mod message_toolbar;
+mod read_receipts_list;
+mod sender_avatar;
+mod state_row;
+mod title;
+mod typing_row;
+mod verification_info_bar;
+
 use self::{
-    divider_row::DividerRow, item_row::ItemRow, message_row::MessageRow,
-    message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
+    divider_row::DividerRow, item_row::ItemRow, item_row_context_menu::ItemRowContextMenu,
+    message_row::MessageRow, message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
     sender_avatar::SenderAvatar, state_row::StateRow, title::RoomHistoryTitle,
     typing_row::TypingRow, verification_info_bar::VerificationInfoBar,
 };
 use super::{room_details, RoomDetails};
 use crate::{
-    components::{confirm_leave_room_dialog, DragOverlay, QuickReactionChooser},
+    components::{confirm_leave_room_dialog, DragOverlay},
     prelude::*,
     session::model::{
         Event, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline, TimelineState,
@@ -86,8 +87,7 @@ mod imp {
         tombstoned_banner: TemplateChild<adw::Banner>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
-        item_context_menu: OnceCell<gtk::PopoverMenu>,
-        item_quick_reaction_chooser: QuickReactionChooser,
+        item_context_menu: OnceCell<ItemRowContextMenu>,
         sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The room currently displayed.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
@@ -989,21 +989,8 @@ mod imp {
         }
 
         /// The context menu for the item rows.
-        pub(super) fn item_context_menu(&self) -> &gtk::PopoverMenu {
-            self.item_context_menu.get_or_init(|| {
-                let popover = gtk::PopoverMenu::builder()
-                    .has_arrow(false)
-                    .halign(gtk::Align::Start)
-                    .build();
-                popover
-                    .update_property(&[gtk::accessible::Property::Label(&gettext("Context Menu"))]);
-                popover
-            })
-        }
-
-        /// The reaction chooser for the item rows.
-        pub(super) fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
-            &self.item_quick_reaction_chooser
+        pub(super) fn item_context_menu(&self) -> &ItemRowContextMenu {
+            self.item_context_menu.get_or_init(Default::default)
         }
 
         /// The context menu for the sender avatars.
@@ -1077,17 +1064,12 @@ impl RoomHistory {
     }
 
     /// The context menu for the item rows.
-    pub(crate) fn item_context_menu(&self) -> &gtk::PopoverMenu {
+    fn item_context_menu(&self) -> &ItemRowContextMenu {
         self.imp().item_context_menu()
     }
 
-    /// The reaction chooser for the item rows.
-    pub(crate) fn item_quick_reaction_chooser(&self) -> &QuickReactionChooser {
-        self.imp().item_quick_reaction_chooser()
-    }
-
     /// The context menu for the sender avatars.
-    pub(crate) fn sender_context_menu(&self) -> &gtk::PopoverMenu {
+    fn sender_context_menu(&self) -> &gtk::PopoverMenu {
         self.imp().sender_context_menu()
     }
 }

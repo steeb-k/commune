@@ -25,7 +25,6 @@ src/components/dialogs/user_profile.ui
 src/components/offline_banner.rs
 src/components/media/content_viewer.rs
 src/components/media/location_viewer.rs
-src/components/quick_reaction_chooser.ui
 src/components/pill/at_room.rs
 src/components/power_level_selection/popover.ui
 src/components/rows/loading_row.ui
@@ -135,8 +134,9 @@ src/session/view/content/room_details/permissions/permissions_subpage.rs
 src/session/view/content/room_details/permissions/permissions_subpage.ui
 src/session/view/content/room_details/room_upgrade_dialog.rs
 src/session/view/content/room_history/divider_row.rs
-src/session/view/content/room_history/event_actions.ui
+src/session/view/content/room_history/event_context_menu.ui
 src/session/view/content/room_history/item_row.rs
+src/session/view/content/room_history/item_row_context_menu.rs
 src/session/view/content/room_history/message_row/audio.rs
 src/session/view/content/room_history/message_row/content.rs
 src/session/view/content/room_history/message_row/file.rs
@@ -157,6 +157,7 @@ src/session/view/content/room_history/message_toolbar/mod.ui
 src/session/view/content/room_history/member_timestamp/row.rs
 src/session/view/content/room_history/mod.rs
 src/session/view/content/room_history/mod.ui
+src/session/view/content/room_history/quick_reaction_chooser.ui
 src/session/view/content/room_history/read_receipts_list/mod.rs
 src/session/view/content/room_history/sender_avatar/mod.rs
 src/session/view/content/room_history/sender_avatar/mod.ui

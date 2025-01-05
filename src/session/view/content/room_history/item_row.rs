@@ -1,5 +1,3 @@
-use std::sync::LazyLock;
-
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
@@ -132,81 +130,39 @@ mod imp {
                 return;
             };
 
-            let popover = room_history.item_context_menu().to_owned();
-            room_history.enable_sticky_mode(false);
+            let menu = room_history.item_context_menu();
 
-            obj.add_css_class("has-open-popup");
-
+            // Reset the state when the popover is closed.
             let closed_handler_cell: Rc<RefCell<Option<glib::signal::SignalHandlerId>>> =
                 Rc::default();
-            let quick_reaction_chooser_handler_cell: Rc<
-                RefCell<Option<glib::signal::SignalHandlerId>>,
-            > = Rc::default();
-            let closed_handler = popover.connect_closed(clone!(
+            let closed_handler = menu.popover.connect_closed(clone!(
                 #[weak]
                 obj,
                 #[weak]
                 room_history,
                 #[strong]
                 closed_handler_cell,
-                #[strong]
-                quick_reaction_chooser_handler_cell,
                 move |popover| {
                     room_history.enable_sticky_mode(true);
-
                     obj.remove_css_class("has-open-popup");
 
                     if let Some(handler) = closed_handler_cell.take() {
                         popover.disconnect(handler);
                     }
-                    if let Some(handler) = quick_reaction_chooser_handler_cell.take() {
-                        room_history
-                            .item_quick_reaction_chooser()
-                            .disconnect(handler);
-                    }
                 }
             ));
             closed_handler_cell.replace(Some(closed_handler));
 
-            if event.is_message() {
-                let can_be_reacted_to = event.can_be_reacted_to();
-                let menu_model = if can_be_reacted_to {
-                    event_message_menu_model_with_reactions()
-                } else {
-                    event_message_menu_model_no_reactions()
-                };
-
-                if popover.menu_model().as_ref() != Some(menu_model) {
-                    popover.set_menu_model(Some(menu_model));
-                }
-
-                if can_be_reacted_to {
-                    let quick_reaction_chooser = room_history.item_quick_reaction_chooser();
-                    quick_reaction_chooser.set_reactions(Some(event.reactions()));
-                    popover.add_child(quick_reaction_chooser, "quick-reaction-chooser");
-
-                    // Open emoji chooser
-                    let quick_reaction_chooser_handler = quick_reaction_chooser
-                        .connect_more_reactions_activated(clone!(
-                            #[weak(rename_to = imp)]
-                            self,
-                            #[weak]
-                            popover,
-                            move |_| {
-                                imp.show_reactions_chooser(&popover);
-                            }
-                        ));
-                    quick_reaction_chooser_handler_cell
-                        .replace(Some(quick_reaction_chooser_handler));
-                }
+            if event.can_be_reacted_to() {
+                menu.add_quick_reaction_chooser(event.reactions());
             } else {
-                let menu_model = event_state_menu_model();
-                if popover.menu_model().as_ref() != Some(menu_model) {
-                    popover.set_menu_model(Some(menu_model));
-                }
+                menu.remove_quick_reaction_chooser();
             }
 
-            obj.set_popover(Some(popover));
+            room_history.enable_sticky_mode(false);
+            obj.add_css_class("has-open-popup");
+
+            obj.set_popover(Some(menu.popover.clone()));
         }
     }
 
@@ -476,9 +432,14 @@ mod imp {
             }
         }
 
-        /// Replace the given popover with an emoji chooser for reactions.
-        fn show_reactions_chooser(&self, popover: &gtk::PopoverMenu) {
+        /// Replace the context menu with an emoji chooser for reactions.
+        fn show_reactions_chooser(&self) {
             let obj = self.obj();
+
+            let Some(popover) = obj.popover() else {
+                return;
+            };
+
             let (_, rectangle) = popover.pointing_to();
 
             let emoji_chooser = gtk::EmojiChooser::builder()
@@ -660,23 +621,34 @@ mod imp {
 
             // Send/redact a reaction.
             if event.can_be_reacted_to() {
-                action_group.add_action_entries([gio::ActionEntry::builder("toggle-reaction")
-                    .parameter_type(Some(&String::static_variant_type()))
-                    .activate(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |_, _, variant| {
-                            let Some(key) = variant.unwrap().get::<String>() else {
-                                error!("Could not parse reaction to toggle");
-                                return;
-                            };
+                action_group.add_action_entries([
+                    gio::ActionEntry::builder("toggle-reaction")
+                        .parameter_type(Some(&String::static_variant_type()))
+                        .activate(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move |_, _, variant| {
+                                let Some(key) = variant.unwrap().get::<String>() else {
+                                    error!("Could not parse reaction to toggle");
+                                    return;
+                                };
 
-                            spawn!(async move {
-                                imp.toggle_reaction(key).await;
-                            });
-                        }
-                    ))
-                    .build()]);
+                                spawn!(async move {
+                                    imp.toggle_reaction(key).await;
+                                });
+                            }
+                        ))
+                        .build(),
+                    gio::ActionEntry::builder("show-reactions-chooser")
+                        .activate(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move |_, _, _| {
+                                imp.show_reactions_chooser();
+                            }
+                        ))
+                        .build(),
+                ]);
             }
 
             // Reply.
@@ -1074,55 +1046,6 @@ impl ItemRow {
             .property("room-history", room_history)
             .build()
     }
-}
-
-// This is only safe because the trait `EventActions` can
-// only be implemented on `gtk::Widgets` that run only on the main thread
-struct MenuModelSendSync(gio::MenuModel);
-#[allow(clippy::non_send_fields_in_send_ty)]
-unsafe impl Send for MenuModelSendSync {}
-unsafe impl Sync for MenuModelSendSync {}
-
-/// The `MenuModel` for common message event actions, including reactions.
-fn event_message_menu_model_with_reactions() -> &'static gio::MenuModel {
-    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
-        MenuModelSendSync(
-            gtk::Builder::from_resource(
-                "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",
-            )
-            .object::<gio::MenuModel>("message_menu_model_with_reactions")
-            .unwrap(),
-        )
-    });
-    &MODEL.0
-}
-
-/// The `MenuModel` for common message event actions, without reactions.
-fn event_message_menu_model_no_reactions() -> &'static gio::MenuModel {
-    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
-        MenuModelSendSync(
-            gtk::Builder::from_resource(
-                "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",
-            )
-            .object::<gio::MenuModel>("message_menu_model_no_reactions")
-            .unwrap(),
-        )
-    });
-    &MODEL.0
-}
-
-/// The `MenuModel` for common state event actions.
-fn event_state_menu_model() -> &'static gio::MenuModel {
-    static MODEL: LazyLock<MenuModelSendSync> = LazyLock::new(|| {
-        MenuModelSendSync(
-            gtk::Builder::from_resource(
-                "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions.ui",
-            )
-            .object::<gio::MenuModel>("state_menu_model")
-            .unwrap(),
-        )
-    });
-    &MODEL.0
 }
 
 /// Create a spinner widget.

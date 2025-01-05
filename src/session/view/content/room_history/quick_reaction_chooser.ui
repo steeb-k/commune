@@ -18,8 +18,8 @@
             <style>
               <class name="circular"/>
             </style>
-            <property name="icon_name">view-more-horizontal-symbolic</property>
-            <signal name="clicked" handler="more_reactions_activated" swapped="yes" />
+            <property name="icon-name">view-more-horizontal-symbolic</property>
+            <property name="action-name">event.show-reactions-chooser</property>
             <layout>
               <property name="column">3</property>
               <property name="row">1</property>

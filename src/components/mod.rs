@@ -11,7 +11,6 @@ mod media;
 mod offline_banner;
 mod pill;
 mod power_level_selection;
-mod quick_reaction_chooser;
 mod role_badge;
 mod rows;
 mod scale_revealer;
@@ -30,7 +29,6 @@ pub(crate) use self::{
     offline_banner::OfflineBanner,
     pill::*,
     power_level_selection::*,
-    quick_reaction_chooser::QuickReactionChooser,
     role_badge::RoleBadge,
     rows::*,
     scale_revealer::ScaleRevealer,
