@@ -12,7 +12,7 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/login/greeter.ui")]
     pub struct Greeter {
         #[template_child]
-        pub login_button: TemplateChild<gtk::Button>,
+        login_button: TemplateChild<gtk::Button>,
     }
 
     #[glib::object_subclass]
@@ -25,6 +25,7 @@ mod imp {
             OfflineBanner::ensure_type();
 
             Self::bind_template(klass);
+
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 

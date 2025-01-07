@@ -5,71 +5,8 @@ use matrix_sdk::ruma::api::client::session::get_login_types::v3::{
 
 use crate::gettext_f;
 
-/// The possible brands of SSO providers.
-#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display)]
-#[repr(i32)]
-#[enum_type(name = "IdpBrand")]
-pub enum IdpBrand {
-    #[default]
-    Apple = 0,
-    Facebook = 1,
-    GitHub = 2,
-    GitLab = 3,
-    Google = 4,
-    X = 5,
-}
-
-impl IdpBrand {
-    /// The icon name of this brand, according to the current theme.
-    pub fn icon(self) -> &'static str {
-        let dark = adw::StyleManager::default().is_dark();
-        match self {
-            IdpBrand::Apple => {
-                if dark {
-                    "idp-apple-dark"
-                } else {
-                    "idp-apple"
-                }
-            }
-            IdpBrand::Facebook => "idp-facebook",
-            IdpBrand::GitHub => {
-                if dark {
-                    "idp-github-dark"
-                } else {
-                    "idp-github"
-                }
-            }
-            IdpBrand::GitLab => "idp-gitlab",
-            IdpBrand::Google => "idp-google",
-            IdpBrand::X => {
-                if dark {
-                    "idp-x-dark"
-                } else {
-                    "idp-x-light"
-                }
-            }
-        }
-    }
-}
-
-impl TryFrom<&IdentityProviderBrand> for IdpBrand {
-    type Error = ();
-
-    fn try_from(item: &IdentityProviderBrand) -> Result<Self, Self::Error> {
-        match item {
-            IdentityProviderBrand::Apple => Ok(IdpBrand::Apple),
-            IdentityProviderBrand::Facebook => Ok(IdpBrand::Facebook),
-            IdentityProviderBrand::GitHub => Ok(IdpBrand::GitHub),
-            IdentityProviderBrand::GitLab => Ok(IdpBrand::GitLab),
-            IdentityProviderBrand::Google => Ok(IdpBrand::Google),
-            IdentityProviderBrand::Twitter => Ok(IdpBrand::X),
-            _ => Err(()),
-        }
-    }
-}
-
 mod imp {
-    use std::cell::{Cell, OnceCell};
+    use std::{cell::OnceCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -79,12 +16,11 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/login/idp_button.ui")]
     #[properties(wrapper_type = super::IdpButton)]
     pub struct IdpButton {
-        /// The brand of this button.
-        #[property(get, construct_only, builder(IdpBrand::default()))]
-        pub brand: Cell<IdpBrand>,
-        /// The ID of the identity provider of this button.
-        #[property(get, set = Self::set_id, construct_only)]
-        pub id: OnceCell<String>,
+        /// The identity provider brand of this button.
+        brand: OnceCell<IdentityProviderBrand>,
+        /// The identity provider brand of this button, as a string.
+        #[property(get = Self::brand_string)]
+        brand_string: PhantomData<String>,
     }
 
     #[glib::object_subclass]
@@ -95,6 +31,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_accessible_role(gtk::AccessibleRole::Button);
         }
 
@@ -104,61 +41,117 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IdpButton {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
+    impl ObjectImpl for IdpButton {}
+
+    impl WidgetImpl for IdpButton {}
+    impl ButtonImpl for IdpButton {}
+
+    impl IdpButton {
+        /// Set the identity provider brand of this button.
+        pub(super) fn set_brand(&self, brand: IdentityProviderBrand) {
+            let brand = self.brand.get_or_init(|| brand);
 
             adw::StyleManager::default().connect_dark_notify(clone!(
-                #[weak]
-                obj,
-                move |_| obj.update_icon()
+                #[weak(rename_to = imp)]
+                self,
+                move |_| imp.update_icon()
             ));
-            obj.update_icon();
+            self.update_icon();
 
+            let obj = self.obj();
+            obj.set_action_target_value(Some(&Some(&brand.as_str()).to_variant()));
             obj.set_tooltip_text(Some(&gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name.
                 // This is the tooltip text on buttons to log in via Single Sign-On.
                 // The brand is something like Facebook, Apple, GitHub…
                 "Log in with {brand}",
-                &[("brand", &self.brand.get().to_string())],
+                &[("brand", brand.as_str())],
             )));
         }
-    }
 
-    impl WidgetImpl for IdpButton {}
-    impl ButtonImpl for IdpButton {}
+        /// The identity provider brand of this button.
+        fn brand(&self) -> &IdentityProviderBrand {
+            self.brand.get().expect("brand is initialized")
+        }
 
-    impl IdpButton {
-        /// Set the id of the identity-provider represented by this button.
-        fn set_id(&self, id: String) {
-            self.obj()
-                .set_action_target_value(Some(&Some(&id).to_variant()));
-            self.id.set(id).unwrap();
+        /// The identity provider brand of this button, as a string.
+        fn brand_string(&self) -> String {
+            self.brand().to_string()
+        }
+
+        /// The icon name of the current brand, according to the current theme.
+        fn brand_icon(&self) -> &str {
+            let is_dark = adw::StyleManager::default().is_dark();
+
+            match self.brand() {
+                IdentityProviderBrand::Apple => {
+                    if is_dark {
+                        "idp-apple-dark"
+                    } else {
+                        "idp-apple"
+                    }
+                }
+                IdentityProviderBrand::Facebook => "idp-facebook",
+                IdentityProviderBrand::GitHub => {
+                    if is_dark {
+                        "idp-github-dark"
+                    } else {
+                        "idp-github"
+                    }
+                }
+                IdentityProviderBrand::GitLab => "idp-gitlab",
+                IdentityProviderBrand::Google => "idp-google",
+                IdentityProviderBrand::Twitter => {
+                    if is_dark {
+                        "idp-x-dark"
+                    } else {
+                        "idp-x-light"
+                    }
+                }
+                // We do not construct this for other brands.
+                _ => unreachable!(),
+            }
+        }
+
+        /// Update the icon of this button for the current state.
+        fn update_icon(&self) {
+            self.obj().set_icon_name(self.brand_icon());
         }
     }
 }
 
 glib::wrapper! {
+    /// A button to represent an SSO identity provider.
     pub struct IdpButton(ObjectSubclass<imp::IdpButton>)
         @extends gtk::Widget, gtk::Button,
         @implements gtk::Accessible, gtk::Actionable;
 }
 
 impl IdpButton {
-    pub fn new_from_identity_provider(idp: &IdentityProvider) -> Option<Self> {
-        let gidp: IdpBrand = idp.brand.as_ref()?.try_into().ok()?;
+    /// The supported SSO identity provider brands of `IdpButton`.
+    const SUPPORTED_IDP_BRANDS: &[IdentityProviderBrand] = &[
+        IdentityProviderBrand::Apple,
+        IdentityProviderBrand::Facebook,
+        IdentityProviderBrand::GitHub,
+        IdentityProviderBrand::GitLab,
+        IdentityProviderBrand::Google,
+        IdentityProviderBrand::Twitter,
+    ];
 
-        Some(
-            glib::Object::builder()
-                .property("brand", gidp)
-                .property("id", &idp.id)
-                .build(),
-        )
-    }
+    /// Create a new `IdpButton` with the given identity provider.
+    ///
+    /// Returns `None` if the identity provider's brand is not supported.
+    pub fn new(idp: &IdentityProvider) -> Option<Self> {
+        // If this is not a supported brand, return `None`.
+        let brand = idp.brand.as_ref()?;
+        if !Self::SUPPORTED_IDP_BRANDS.contains(brand) {
+            return None;
+        }
 
-    pub fn update_icon(&self) {
-        self.set_icon_name(self.brand().icon());
+        let obj = glib::Object::new::<Self>();
+        obj.imp().set_brand(brand.clone());
+
+        Some(obj)
     }
 }

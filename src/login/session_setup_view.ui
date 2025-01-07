@@ -3,12 +3,12 @@
   <template class="SessionSetupView" parent="AdwNavigationPage">
     <property name="tag">session-setup</property>
     <property name="title" translatable="yes">Session Setup</property>
-    <signal name="shown" handler="grab_focus" swapped="yes" />
+    <signal name="shown" handler="focus_default_widget" swapped="yes" />
     <property name="child">
       <object class="GtkStack" id="stack">
         <property name="transition-type">slide-left</property>
         <property name="vexpand">True</property>
-        <signal name="notify::transition-running" handler="grab_focus" swapped="yes" />
+        <signal name="notify::transition-running" handler="focus_default_widget" swapped="yes" />
         <child>
           <object class="GtkStackPage">
             <property name="name">loading</property>

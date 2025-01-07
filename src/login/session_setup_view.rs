@@ -40,10 +40,10 @@ mod imp {
     #[properties(wrapper_type = super::SessionSetupView)]
     pub struct SessionSetupView {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        stack: TemplateChild<gtk::Stack>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The crypto identity view.
         crypto_identity_view: OnceCell<CryptoIdentitySetupView>,
         /// The recovery view.
@@ -60,7 +60,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("setup-view");
         }
@@ -110,6 +110,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl SessionSetupView {
         /// The visible page of the stack.
         fn visible_stack_page(&self) -> SessionSetupPage {
@@ -133,7 +134,7 @@ mod imp {
                     self,
                     move |_, next| {
                         match next {
-                            CryptoIdentitySetupNextStep::None => imp.obj().emit_completed(),
+                            CryptoIdentitySetupNextStep::None => imp.emit_completed(),
                             CryptoIdentitySetupNextStep::EnableRecovery => imp.check_recovery(true),
                             CryptoIdentitySetupNextStep::CompleteRecovery => {
                                 imp.check_recovery(false);
@@ -155,12 +156,11 @@ mod imp {
                     .expect("Session should still have a strong reference");
                 let recovery_view = CryptoRecoverySetupView::new(&session);
 
-                let obj = self.obj();
                 recovery_view.connect_completed(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.emit_completed();
+                        imp.emit_completed();
                     }
                 ));
 
@@ -262,7 +262,7 @@ mod imp {
                 && recovery_state == RecoveryState::Enabled
             {
                 // No need for setup.
-                self.obj().emit_completed();
+                self.emit_completed();
                 return;
             }
 
@@ -291,7 +291,7 @@ mod imp {
         }
 
         /// Check whether we need to enable or set up recovery.
-        pub(super) fn check_recovery(&self, enable_only: bool) {
+        fn check_recovery(&self, enable_only: bool) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -304,7 +304,7 @@ mod imp {
                     self.switch_to_recovery();
                 }
                 _ => {
-                    self.obj().emit_completed();
+                    self.emit_completed();
                 }
             }
         }
@@ -318,6 +318,21 @@ mod imp {
             self.stack
                 .set_visible_child_name(SessionSetupPage::Recovery.as_ref());
         }
+
+        /// Focus the proper widget for the current page.
+        #[template_callback]
+        fn focus_default_widget(&self) {
+            if !self.stack.is_transition_running() {
+                // Focus the default widget when the transition has ended.
+                self.grab_focus();
+            }
+        }
+
+        // Emit the `completed` signal.
+        #[template_callback]
+        fn emit_completed(&self) {
+            self.obj().emit_by_name::<()>("completed", &[]);
+        }
     }
 }
 
@@ -327,27 +342,9 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl SessionSetupView {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Focus the proper widget for the current page.
-    #[template_callback]
-    fn grab_focus(&self) {
-        let imp = self.imp();
-
-        if !imp.stack.is_transition_running() {
-            // Focus the default widget when the transition has ended.
-            imp.grab_focus();
-        }
-    }
-
-    // Emit the `completed` signal.
-    #[template_callback]
-    fn emit_completed(&self) {
-        self.emit_by_name::<()>("completed", &[]);
     }
 
     /// Connect to the signal emitted when the setup is completed.

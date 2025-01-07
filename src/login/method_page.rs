@@ -10,6 +10,8 @@ use crate::{
 };
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -19,20 +21,21 @@ mod imp {
     #[properties(wrapper_type = super::LoginMethodPage)]
     pub struct LoginMethodPage {
         #[template_child]
-        pub title: TemplateChild<gtk::Label>,
+        title: TemplateChild<gtk::Label>,
         #[template_child]
-        pub username_entry: TemplateChild<adw::EntryRow>,
+        username_entry: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub password_entry: TemplateChild<adw::PasswordEntryRow>,
+        password_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub sso_idp_box: TemplateChild<gtk::Box>,
+        sso_idp_box: TemplateChild<gtk::Box>,
+        sso_idp_box_children: RefCell<Vec<IdpButton>>,
         #[template_child]
-        pub more_sso_btn: TemplateChild<gtk::Button>,
+        more_sso_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub next_button: TemplateChild<LoadingButton>,
+        next_button: TemplateChild<LoadingButton>,
         /// The parent `Login` object.
         #[property(get, set = Self::set_login, nullable)]
-        pub login: BoundObjectWeakRef<Login>,
+        login: BoundObjectWeakRef<Login>,
     }
 
     #[glib::object_subclass]
@@ -43,7 +46,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -66,26 +69,25 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl LoginMethodPage {
         /// Set the parent `Login` object.
         fn set_login(&self, login: Option<&Login>) {
-            let obj = self.obj();
-
             self.login.disconnect_signals();
 
             if let Some(login) = login {
-                let domain_handler = login.connect_domain_notify(clone!(
-                    #[weak]
-                    obj,
+                let domain_handler = login.connect_domain_string_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_domain_name();
+                        imp.update_domain_name();
                     }
                 ));
-                let login_types_handler = login.connect_login_types_notify(clone!(
-                    #[weak]
-                    obj,
+                let login_types_handler = login.connect_login_types_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_sso();
+                        imp.update_sso();
                     }
                 ));
 
@@ -93,9 +95,160 @@ mod imp {
                     .set(login, vec![domain_handler, login_types_handler]);
             }
 
-            obj.update_domain_name();
-            obj.update_sso();
-            obj.update_next_state();
+            self.update_domain_name();
+            self.update_sso();
+            self.update_next_state();
+        }
+
+        /// The username entered by the user.
+        fn username(&self) -> glib::GString {
+            self.username_entry.text()
+        }
+
+        /// The password entered by the user.
+        fn password(&self) -> glib::GString {
+            self.password_entry.text()
+        }
+
+        /// Update the domain name displayed in the title.
+        fn update_domain_name(&self) {
+            let Some(login) = self.login.obj() else {
+                return;
+            };
+
+            let title = &self.title;
+            if let Some(domain) = login.domain_string() {
+                title.set_markup(&gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "Log in to {domain_name}",
+                    &[(
+                        "domain_name",
+                        &format!("<span segment=\"word\">{domain}</span>"),
+                    )],
+                ));
+            } else {
+                title.set_markup(&gettext("Log in"));
+            }
+        }
+
+        /// Update the SSO group.
+        fn update_sso(&self) {
+            let Some(login) = self.login.obj() else {
+                return;
+            };
+
+            let login_types = login.login_types();
+            let Some(sso_login) = login_types.into_iter().find_map(|t| match t {
+                LoginType::Sso(sso) => Some(sso),
+                _ => None,
+            }) else {
+                self.sso_idp_box.set_visible(false);
+                self.more_sso_btn.set_visible(false);
+                return;
+            };
+
+            self.clean_idp_box();
+
+            let mut has_unknown_methods = false;
+            let mut has_known_methods = false;
+
+            if !sso_login.identity_providers.is_empty() {
+                let mut sso_idp_box_children = self.sso_idp_box_children.borrow_mut();
+                sso_idp_box_children.reserve(sso_login.identity_providers.len());
+
+                for provider in &sso_login.identity_providers {
+                    if let Some(btn) = IdpButton::new(provider) {
+                        self.sso_idp_box.append(&btn);
+                        sso_idp_box_children.push(btn);
+
+                        has_known_methods = true;
+                    } else {
+                        has_unknown_methods = true;
+                    }
+                }
+            }
+            self.sso_idp_box.set_visible(has_known_methods);
+
+            if has_known_methods {
+                self.more_sso_btn.set_label(&gettext("More SSO Providers"));
+                self.more_sso_btn.set_visible(has_unknown_methods);
+            } else {
+                self.more_sso_btn.set_label(&gettext("Login via SSO"));
+                self.more_sso_btn.set_visible(true);
+            }
+        }
+
+        /// Whether the current state allows to login with a password.
+        fn can_login_with_password(&self) -> bool {
+            let username_length = self.username().len();
+            let password_length = self.password().len();
+            username_length != 0 && password_length != 0
+        }
+
+        /// Update the state of the "Next" button.
+        #[template_callback]
+        fn update_next_state(&self) {
+            self.next_button
+                .set_sensitive(self.can_login_with_password());
+        }
+
+        /// Login with the password login type.
+        #[template_callback]
+        async fn login_with_password(&self) {
+            if !self.can_login_with_password() {
+                return;
+            }
+
+            let Some(login) = self.login.obj() else {
+                return;
+            };
+
+            self.next_button.set_is_loading(true);
+            login.freeze();
+
+            let username = self.username();
+            let password = self.password();
+
+            let client = login.client().await.unwrap();
+            let handle = spawn_tokio!(async move {
+                client
+                    .matrix_auth()
+                    .login_username(&username, &password)
+                    .initial_device_display_name("Fractal")
+                    .send()
+                    .await
+            });
+
+            match handle.await.unwrap() {
+                Ok(response) => {
+                    login.handle_login_response(response).await;
+                }
+                Err(error) => {
+                    warn!("Could not log in: {error}");
+                    let obj = self.obj();
+                    toast!(obj, error.to_user_facing());
+                }
+            }
+
+            self.next_button.set_is_loading(false);
+            login.unfreeze();
+        }
+
+        /// Reset this page.
+        pub(super) fn clean(&self) {
+            self.username_entry.set_text("");
+            self.password_entry.set_text("");
+            self.next_button.set_is_loading(false);
+            self.update_next_state();
+            self.clean_idp_box();
+        }
+
+        /// Empty the identity providers box.
+        fn clean_idp_box(&self) {
+            for child in self.sso_idp_box_children.borrow_mut().drain(..) {
+                self.sso_idp_box.remove(&child);
+            }
         }
     }
 }
@@ -106,163 +259,13 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl LoginMethodPage {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
-    /// The username entered by the user.
-    pub fn username(&self) -> String {
-        self.imp().username_entry.text().into()
-    }
-
-    /// The password entered by the user.
-    pub fn password(&self) -> String {
-        self.imp().password_entry.text().into()
-    }
-
-    /// Update the domain name displayed in the title.
-    pub fn update_domain_name(&self) {
-        let Some(login) = self.login() else {
-            return;
-        };
-
-        let title = &self.imp().title;
-        if let Some(domain) = login.domain() {
-            title.set_markup(&gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                "Log in to {domain_name}",
-                &[(
-                    "domain_name",
-                    &format!("<span segment=\"word\">{domain}</span>"),
-                )],
-            ));
-        } else {
-            title.set_markup(&gettext("Log in"));
-        }
-    }
-
-    /// Update the SSO group.
-    pub fn update_sso(&self) {
-        let Some(login) = self.login() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let login_types = login.login_types().0;
-        let Some(sso_login) = login_types.into_iter().find_map(|t| match t {
-            LoginType::Sso(sso) => Some(sso),
-            _ => None,
-        }) else {
-            imp.sso_idp_box.set_visible(false);
-            imp.more_sso_btn.set_visible(false);
-            return;
-        };
-
-        self.clean_idp_box();
-
-        let mut has_unknown_methods = false;
-        let mut has_known_methods = false;
-
-        for provider in &sso_login.identity_providers {
-            let btn = IdpButton::new_from_identity_provider(provider);
-
-            if let Some(btn) = btn {
-                imp.sso_idp_box.append(&btn);
-                has_known_methods = true;
-            } else {
-                has_unknown_methods = true;
-            }
-        }
-
-        imp.sso_idp_box.set_visible(has_known_methods);
-
-        if has_known_methods {
-            imp.more_sso_btn.set_label(&gettext("More SSO Providers"));
-            imp.more_sso_btn.set_visible(has_unknown_methods);
-        } else {
-            imp.more_sso_btn.set_label(&gettext("Login via SSO"));
-            imp.more_sso_btn.set_visible(true);
-        }
-    }
-
-    /// Whether the current state allows to login with a password.
-    pub fn can_login_with_password(&self) -> bool {
-        let username_length = self.username().len();
-        let password_length = self.password().len();
-        username_length != 0 && password_length != 0
-    }
-
-    /// Update the state of the "Next" button.
-    #[template_callback]
-    fn update_next_state(&self) {
-        self.imp()
-            .next_button
-            .set_sensitive(self.can_login_with_password());
-    }
-
-    /// Login with the password login type.
-    #[template_callback]
-    async fn login_with_password(&self) {
-        if !self.can_login_with_password() {
-            return;
-        }
-
-        let Some(login) = self.login() else {
-            return;
-        };
-        let imp = self.imp();
-
-        imp.next_button.set_is_loading(true);
-        login.freeze();
-
-        let username = self.username();
-        let password = self.password();
-
-        let client = login.client().await.unwrap();
-        let handle = spawn_tokio!(async move {
-            client
-                .matrix_auth()
-                .login_username(&username, &password)
-                .initial_device_display_name("Fractal")
-                .send()
-                .await
-        });
-
-        match handle.await.unwrap() {
-            Ok(response) => {
-                login.handle_login_response(response).await;
-            }
-            Err(error) => {
-                warn!("Could not log in: {error}");
-                toast!(self, error.to_user_facing());
-            }
-        }
-
-        imp.next_button.set_is_loading(false);
-        login.unfreeze();
-    }
-
     /// Reset this page.
-    pub fn clean(&self) {
-        let imp = self.imp();
-        imp.username_entry.set_text("");
-        imp.password_entry.set_text("");
-        imp.next_button.set_is_loading(false);
-        self.update_next_state();
-        self.clean_idp_box();
-    }
-
-    /// Empty the identity providers box.
-    pub fn clean_idp_box(&self) {
-        let imp = self.imp();
-
-        let mut child = imp.sso_idp_box.first_child();
-        while child.is_some() {
-            imp.sso_idp_box.remove(&child.unwrap());
-            child = imp.sso_idp_box.first_child();
-        }
+    pub(crate) fn clean(&self) {
+        self.imp().clean();
     }
 }

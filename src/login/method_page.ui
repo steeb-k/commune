@@ -78,7 +78,7 @@
                                       <class name="body"/>
                                     </style>
                                     <binding name="label">
-                                      <lookup name="homeserver">
+                                      <lookup name="homeserver-url-string">
                                         <lookup name="login">LoginMethodPage</lookup>
                                       </lookup>
                                     </binding>

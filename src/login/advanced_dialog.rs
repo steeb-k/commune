@@ -15,8 +15,8 @@ mod imp {
     pub struct LoginAdvancedDialog {
         /// Whether auto-discovery is enabled.
         #[property(get, set, default = true)]
-        pub autodiscovery: Cell<bool>,
-        pub sender: RefCell<Option<oneshot::Sender<()>>>,
+        autodiscovery: Cell<bool>,
+        sender: RefCell<Option<oneshot::Sender<()>>>,
     }
 
     #[glib::object_subclass]
@@ -42,12 +42,25 @@ mod imp {
     impl AdwDialogImpl for LoginAdvancedDialog {
         fn closed(&self) {
             if let Some(sender) = self.sender.take() {
-                sender.send(()).unwrap();
+                sender.send(()).expect("receiver was not dropped");
             }
         }
     }
 
     impl PreferencesDialogImpl for LoginAdvancedDialog {}
+
+    impl LoginAdvancedDialog {
+        /// Present this dialog.
+        ///
+        /// Returns when the dialog is closed.
+        pub(super) async fn run_future(&self, parent: &gtk::Widget) {
+            let (sender, receiver) = oneshot::channel();
+            self.sender.replace(Some(sender));
+
+            self.obj().present(Some(parent));
+            receiver.await.expect("sender was not dropped");
+        }
+    }
 }
 
 glib::wrapper! {
@@ -65,11 +78,7 @@ impl LoginAdvancedDialog {
     /// Present this dialog.
     ///
     /// Returns when the dialog is closed.
-    pub async fn run_future(&self, parent: &impl IsA<gtk::Widget>) {
-        let (sender, receiver) = oneshot::channel();
-        self.imp().sender.replace(Some(sender));
-
-        self.present(Some(parent));
-        receiver.await.unwrap();
+    pub(crate) async fn run_future(&self, parent: &impl IsA<gtk::Widget>) {
+        self.imp().run_future(parent.upcast_ref()).await;
     }
 }
