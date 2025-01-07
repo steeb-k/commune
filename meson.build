@@ -29,6 +29,7 @@ dependency(
 )
 
 # Please keep these dependencies sorted.
+dependency('gstgtk4', version: '>= 0.13.0')
 dependency('gstreamer-1.0', version: '>= 1.20')
 dependency('gstreamer-app-1.0', version: '>= 1.20')
 dependency('gstreamer-base-1.0', version: '>= 1.20')

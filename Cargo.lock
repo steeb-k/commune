@@ -1362,7 +1362,6 @@ dependencies = [
  "geo-uri",
  "gettext-rs",
  "glycin",
- "gst-plugin-gtk4",
  "gstreamer",
  "gstreamer-app",
  "gstreamer-base",
@@ -1605,31 +1604,6 @@ dependencies = [
  "libc",
  "pango-sys",
  "pkg-config",
- "system-deps 7.0.3",
-]
-
-[[package]]
-name = "gdk4-win32"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54beb3e19bff7ccc05153e043bf0eea9cf76c07a3387fb0151bfa0fbfce9df0"
-dependencies = [
- "gdk4",
- "gdk4-win32-sys",
- "gio",
- "glib",
- "libc",
-]
-
-[[package]]
-name = "gdk4-win32-sys"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d554341f26b2f6191aaf2ecb4d0089f3696a40cadb2dba75dad03e48a6dc0eb9"
-dependencies = [
- "gdk4-sys",
- "glib-sys",
- "libc",
  "system-deps 7.0.3",
 ]
 
@@ -1934,34 +1908,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gst-plugin-gtk4"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cadbc46e0e79cc43b290df59262a17088ca0c6c3a4fbede5c179bf5b6994f42"
-dependencies = [
- "async-channel",
- "gdk4-win32",
- "gst-plugin-version-helper",
- "gstreamer",
- "gstreamer-base",
- "gstreamer-gl",
- "gstreamer-video",
- "gtk4",
- "once_cell",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "gst-plugin-version-helper"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e5e874f1660252fd2ec81c602066df3633b3a6fcbe2b196f7f93c27cf069b2a"
-dependencies = [
- "chrono",
- "toml_edit",
-]
-
-[[package]]
 name = "gstreamer"
 version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2067,36 +2013,6 @@ dependencies = [
  "glib-sys",
  "gobject-sys",
  "gstreamer-sys",
- "libc",
- "system-deps 7.0.3",
-]
-
-[[package]]
-name = "gstreamer-gl"
-version = "0.23.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56e25e3a848295df790f3628792cc82464a744d0b3ac5c202a6f73e1cedfcaf"
-dependencies = [
- "glib",
- "gstreamer",
- "gstreamer-base",
- "gstreamer-gl-sys",
- "gstreamer-video",
- "libc",
- "once_cell",
-]
-
-[[package]]
-name = "gstreamer-gl-sys"
-version = "0.23.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "497ad4193008c519f0516299281480e77a2c3c7d7f13e5dadca82d406170790a"
-dependencies = [
- "glib-sys",
- "gobject-sys",
- "gstreamer-base-sys",
- "gstreamer-sys",
- "gstreamer-video-sys",
  "libc",
  "system-deps 7.0.3",
 ]

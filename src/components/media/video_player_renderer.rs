@@ -10,7 +10,7 @@ mod imp {
     #[properties(wrapper_type = super::VideoPlayerRenderer)]
     pub struct VideoPlayerRenderer {
         /// The sink to use to display the video.
-        sink: OnceCell<gst_gtk::PaintableSink>,
+        sink: OnceCell<gst::Element>,
         /// The [`gdk::Paintable`] where the video is rendered.
         #[property(get = Self::paintable)]
         paintable: PhantomData<gdk::Paintable>,
@@ -34,8 +34,12 @@ mod imp {
 
     impl VideoPlayerRenderer {
         /// The sink to use to display the video.
-        fn sink(&self) -> &gst_gtk::PaintableSink {
-            self.sink.get_or_init(|| gst_gtk::PaintableSink::new(None))
+        fn sink(&self) -> &gst::Element {
+            self.sink.get_or_init(|| {
+                gst::ElementFactory::make("gtk4paintablesink")
+                    .build()
+                    .expect("gst-plugin-gtk4 should be available")
+            })
         }
 
         /// The [`gdk::Paintable`] where the video is rendered.
