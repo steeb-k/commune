@@ -297,7 +297,7 @@ mod imp {
             self.reset_btn.set_is_loading(true);
 
             let reset_identity = self.reset_identity_row.is_active();
-            if reset_identity && self.bootstrap_cross_signing().await.is_err() {
+            if reset_identity && self.reset_cross_signing().await.is_err() {
                 self.reset_btn.set_is_loading(false);
                 return;
             }
@@ -315,7 +315,7 @@ mod imp {
         }
 
         /// Reset the cross-signing identity.
-        async fn bootstrap_cross_signing(&self) -> Result<(), ()> {
+        async fn reset_cross_signing(&self) -> Result<(), ()> {
             let Some(session) = self.session.upgrade() else {
                 return Err(());
             };
@@ -323,11 +323,7 @@ mod imp {
             let dialog = AuthDialog::new(&session);
             let obj = self.obj();
 
-            let result = dialog
-                .authenticate(&*obj, move |client, auth| async move {
-                    client.encryption().bootstrap_cross_signing(auth).await
-                })
-                .await;
+            let result = dialog.reset_cross_signing(&*obj).await;
 
             match result {
                 Ok(()) => Ok(()),

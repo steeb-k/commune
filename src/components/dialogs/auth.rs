@@ -4,11 +4,13 @@ use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
-use matrix_sdk::Error;
+use matrix_sdk::{encryption::CrossSigningResetAuthType, Error};
 use ruma::{
     api::client::{
         error::StandardErrorBody,
-        uiaa::{AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UserIdentifier},
+        uiaa::{
+            AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
+        },
     },
     assign,
 };
@@ -153,36 +155,71 @@ mod imp {
                     return Err(error.into());
                 };
 
-                // Show the authentication error, if there is one.
-                self.show_auth_error(uiaa_info.auth_error.as_ref());
-
-                // Find and perform the next stage.
-                let possible_stages = uiaa_info
-                    .flows
-                    .iter()
-                    .filter_map(|flow| flow.stages.strip_prefix(uiaa_info.completed.as_slice()))
-                    .filter_map(|stages_left| stages_left.first());
-
-                let next_auth_data = self
-                    .perform_next_stage(uiaa_info.session.clone(), possible_stages)
-                    .await?;
+                let next_auth_data = self.perform_next_stage(uiaa_info).await?;
                 auth_data = Some(next_auth_data);
             }
         }
 
-        /// Performs the preferred stage in the given list.
+        /// Reset the cross-signing keys while handling the interactive
+        /// authentication flow.
+        ///
+        /// The type of flow and the required stages are negotiated during the
+        /// authentication. Returns the last server response on success.
+        pub(super) async fn reset_cross_signing(
+            &self,
+            parent: &gtk::Widget,
+        ) -> Result<(), AuthError> {
+            let Some(encryption) = self.session.upgrade().map(|s| s.client().encryption()) else {
+                return Err(AuthError::NoSession);
+            };
+
+            self.parent.set(Some(parent));
+
+            let handle = spawn_tokio!(async move { encryption.reset_cross_signing().await })
+                .await
+                .expect("task was not aborted")?;
+
+            if let Some(handle) = handle {
+                match handle.auth_type() {
+                    CrossSigningResetAuthType::Uiaa(uiaa_info) => {
+                        let auth_data = self.perform_next_stage(uiaa_info).await?;
+
+                        handle.auth(Some(auth_data)).await?;
+                    }
+                    CrossSigningResetAuthType::Oidc(_) => {
+                        // According to the code, this is only used with the `experimental-oidc`
+                        // feature. Return an error in case this changes.
+                        error!(
+                            "Could not perform cross-signing reset: received unexpected OIDC stage"
+                        );
+                        return Err(AuthError::Unknown);
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        /// Performs the preferred next stage in the given UIAA info.
         ///
         /// Stages that are actually supported are preferred. If no stages are
         /// supported, we use the web-based fallback.
-        async fn perform_next_stage(
-            &self,
-            uiaa_session: Option<String>,
-            stages: impl Iterator<Item = &AuthType>,
-        ) -> Result<AuthData, AuthError> {
+        async fn perform_next_stage(&self, uiaa_info: &UiaaInfo) -> Result<AuthData, AuthError> {
+            // Show the authentication error, if there is one.
+            self.show_auth_error(uiaa_info.auth_error.as_ref());
+
+            // Find and perform the next stage.
+            let stages = uiaa_info
+                .flows
+                .iter()
+                .filter_map(|flow| flow.stages.strip_prefix(uiaa_info.completed.as_slice()))
+                .filter_map(|stages_left| stages_left.first());
+
             let mut first_stage = None;
             for stage in stages {
-                if let Some(auth_result) =
-                    self.try_perform_stage(uiaa_session.as_ref(), stage).await
+                if let Some(auth_result) = self
+                    .try_perform_stage(uiaa_info.session.as_ref(), stage)
+                    .await
                 {
                     return auth_result;
                 }
@@ -194,7 +231,8 @@ mod imp {
 
             // Default to first stage if no stages are supported.
             let first_stage = first_stage.ok_or(AuthError::NoStageToChoose)?;
-            self.perform_fallback(uiaa_session, first_stage).await
+            self.perform_fallback(uiaa_info.session.clone(), first_stage)
+                .await
         }
 
         /// Tries to perform the given stage.
@@ -390,5 +428,17 @@ impl AuthDialog {
         callback: FN,
     ) -> Result<Response, AuthError> {
         self.imp().authenticate(parent.upcast_ref(), callback).await
+    }
+
+    /// Reset the cross-signing keys while handling the interactive
+    /// authentication flow.
+    ///
+    /// The type of flow and the required stages are negotiated during the
+    /// authentication. Returns the last server response on success.
+    pub(crate) async fn reset_cross_signing(
+        &self,
+        parent: &impl IsA<gtk::Widget>,
+    ) -> Result<(), AuthError> {
+        self.imp().reset_cross_signing(parent.upcast_ref()).await
     }
 }
