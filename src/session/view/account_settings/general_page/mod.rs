@@ -7,6 +7,7 @@ use gtk::{
 };
 use ruma::{api::client::discovery::get_capabilities::Capabilities, OwnedMxcUri};
 use tracing::error;
+use url::Url;
 
 mod change_password_subpage;
 mod deactivate_account_subpage;
@@ -16,12 +17,13 @@ pub use self::{
     change_password_subpage::ChangePasswordSubpage,
     deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
 };
+use super::AccountSettings;
 use crate::{
     components::{ActionButton, ActionState, CopyableRow, EditableAvatar},
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::FileInfo, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
+    utils::{media::FileInfo, oidc, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
 };
 
 mod imp {
@@ -37,9 +39,6 @@ mod imp {
     )]
     #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
-        /// The current session.
-        #[property(get, set = Self::set_session, nullable)]
-        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub avatar: TemplateChild<EditableAvatar>,
         #[template_child]
@@ -49,11 +48,21 @@ mod imp {
         #[template_child]
         pub change_password_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
+        manage_account_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
         pub homeserver: TemplateChild<CopyableRow>,
         #[template_child]
         pub user_id: TemplateChild<CopyableRow>,
         #[template_child]
         pub session_id: TemplateChild<CopyableRow>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        session: glib::WeakRef<Session>,
+        /// The ancestor [`AccountSettings`].
+        #[property(get, set = Self::set_account_settings, nullable)]
+        account_settings: glib::WeakRef<AccountSettings>,
+        /// The possible changes on the homeserver.
+        capabilities: RefCell<Capabilities>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -68,6 +77,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
         }
@@ -83,6 +93,7 @@ mod imp {
     impl WidgetImpl for GeneralPage {}
     impl PreferencesPageImpl for GeneralPage {}
 
+    #[gtk::template_callbacks]
     impl GeneralPage {
         /// Set the current session.
         fn set_session(&self, session: Option<Session>) {
@@ -150,6 +161,30 @@ mod imp {
             );
         }
 
+        /// Set the acestor [`AccountSettings`].
+        fn set_account_settings(&self, account_settings: Option<&AccountSettings>) {
+            self.account_settings.set(account_settings);
+
+            if let Some(account_settings) = account_settings {
+                account_settings.connect_account_management_url_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_capabilities();
+                    }
+                ));
+            }
+
+            self.update_capabilities();
+        }
+
+        /// The account management URL of the authentication issuer, if any.
+        fn account_management_url(&self) -> Option<Url> {
+            self.account_settings
+                .upgrade()
+                .and_then(|s| s.account_management_url())
+        }
+
         /// Load the possible changes on the user account.
         async fn load_capabilities(&self) {
             let Some(session) = self.session.upgrade() else {
@@ -166,12 +201,42 @@ mod imp {
                 }
             };
 
-            self.change_password_group
-                .set_visible(capabilities.change_password.enabled);
+            self.capabilities.replace(capabilities);
+            self.update_capabilities();
+        }
+
+        /// Update the possible changes on the user account with the current
+        /// state.
+        fn update_capabilities(&self) {
+            let has_account_management_url = self.account_management_url().is_some();
+            let capabilities = self.capabilities.borrow();
+
             self.avatar
                 .set_editable(capabilities.set_avatar_url.enabled);
             self.display_name
                 .set_editable(capabilities.set_displayname.enabled);
+            self.change_password_group
+                .set_visible(!has_account_management_url && capabilities.change_password.enabled);
+            self.manage_account_group
+                .set_visible(has_account_management_url);
+        }
+
+        /// Open the URL to manage the account.
+        #[template_callback]
+        async fn manage_account(&self) {
+            let Some(mut url) = self.account_management_url() else {
+                error!("Could not find open account management URL");
+                return;
+            };
+
+            oidc::AccountManagementAction::Profile.add_to_account_management_url(&mut url);
+
+            if let Err(error) = gtk::UriLauncher::new(url.as_ref())
+                .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
+                .await
+            {
+                error!("Could not launch account management URL: {error}");
+            }
         }
     }
 }

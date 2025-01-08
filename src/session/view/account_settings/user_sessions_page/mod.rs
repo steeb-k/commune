@@ -5,6 +5,7 @@ use tracing::error;
 mod user_session_row;
 
 use self::user_session_row::UserSessionRow;
+use super::AccountSettings;
 use crate::{
     session::model::{UserSession, UserSessionsList},
     utils::{BoundObject, LoadingState},
@@ -33,6 +34,9 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         other_sessions: TemplateChild<gtk::ListBox>,
+        /// The ancestor [`AccountSettings`].
+        #[property(get, set = Self::set_account_settings, explicit_notify, nullable)]
+        account_settings: glib::WeakRef<AccountSettings>,
         /// The list of user sessions.
         #[property(get, set = Self::set_user_sessions, explicit_notify, nullable)]
         user_sessions: BoundObject<UserSessionsList>,
@@ -73,6 +77,12 @@ mod imp {
     impl PreferencesPageImpl for UserSessionsPage {}
 
     impl UserSessionsPage {
+        /// Set the ancestor [`AccountSettings`].
+        fn set_account_settings(&self, account_settings: Option<&AccountSettings>) {
+            self.account_settings.set(account_settings);
+            self.update_other_sessions();
+        }
+
         /// Set the list of user sessions.
         fn set_user_sessions(&self, user_sessions: Option<UserSessionsList>) {
             let prev_user_sessions = self.user_sessions.obj();
@@ -91,16 +101,6 @@ mod imp {
             if let Some(user_sessions) = user_sessions {
                 let other_sessions = user_sessions.other_sessions();
 
-                self.other_sessions
-                    .bind_model(Some(&other_sessions), |item| {
-                        let Some(user_session) = item.downcast_ref::<UserSession>() else {
-                            error!("Did not get a user session as an item of user session list");
-                            return adw::Bin::new().upcast();
-                        };
-
-                        UserSessionRow::new(user_session).upcast()
-                    });
-
                 let other_sessions_handler = other_sessions.connect_items_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
@@ -118,14 +118,14 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
-                        imp.update_state();
+                        imp.update_other_sessions_state();
                     }
                 ));
                 let is_empty_handler = user_sessions.connect_is_empty_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
-                        imp.update_state();
+                        imp.update_other_sessions_state();
                     }
                 ));
                 let current_session_handler = user_sessions.connect_current_session_notify(clone!(
@@ -144,34 +144,70 @@ mod imp {
                         current_session_handler,
                     ],
                 );
-            } else {
-                self.other_sessions.unbind_model();
             }
 
             self.obj().notify_user_sessions();
 
             self.update_current_session();
-            self.update_state();
+            self.update_other_sessions();
+            self.update_other_sessions_state();
         }
 
-        /// Update the state of the UI according to the current state.
-        fn update_state(&self) {
-            let (is_empty, state) = self
-                .user_sessions
-                .obj()
-                .map_or((true, LoadingState::Loading), |s| {
-                    (s.is_empty(), s.loading_state())
-                });
+        /// Update the list of other sessions.
+        fn update_other_sessions(&self) {
+            let Some(account_settings) = self.account_settings.upgrade() else {
+                self.other_sessions.unbind_model();
+                return;
+            };
+            let Some(user_sessions) = self.user_sessions.obj() else {
+                self.other_sessions.unbind_model();
+                return;
+            };
 
-            let page = if is_empty {
-                match state {
+            self.other_sessions.bind_model(
+                Some(&user_sessions.other_sessions()),
+                clone!(
+                    #[weak]
+                    account_settings,
+                    #[upgrade_or_else]
+                    || adw::Bin::new().upcast(),
+                    move |item| {
+                        let Some(user_session) = item.downcast_ref::<UserSession>() else {
+                            error!("Did not get a user session as an item of user session list");
+                            return adw::Bin::new().upcast();
+                        };
+
+                        UserSessionRow::new(user_session, &account_settings).upcast()
+                    }
+                ),
+            );
+        }
+
+        /// The current page of the other sessions stack according to the
+        /// current state.
+        fn current_other_sessions_page(&self) -> &str {
+            if self.account_settings.upgrade().is_none() {
+                return "loading";
+            }
+
+            let Some(user_sessions) = self.user_sessions.obj() else {
+                return "loading";
+            };
+
+            if user_sessions.is_empty() {
+                match user_sessions.loading_state() {
                     LoadingState::Error | LoadingState::Ready => "error",
                     _ => "loading",
                 }
             } else {
                 "list"
-            };
-            self.stack.set_visible_child_name(page);
+            }
+        }
+
+        /// Update the state of the UI according to the current state.
+        fn update_other_sessions_state(&self) {
+            self.stack
+                .set_visible_child_name(self.current_other_sessions_page());
         }
 
         /// Update the section about the current session.
@@ -180,6 +216,11 @@ mod imp {
                 self.current_session.remove(&child);
             }
 
+            let Some(account_settings) = self.account_settings.upgrade() else {
+                self.current_session_group.set_visible(false);
+                return;
+            };
+
             let current_session = self.user_sessions.obj().and_then(|s| s.current_session());
             let Some(current_session) = current_session else {
                 self.current_session_group.set_visible(false);
@@ -187,7 +228,7 @@ mod imp {
             };
 
             self.current_session
-                .append(&UserSessionRow::new(&current_session));
+                .append(&UserSessionRow::new(&current_session, &account_settings));
             self.current_session_group.set_visible(true);
         }
     }

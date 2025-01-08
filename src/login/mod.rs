@@ -7,7 +7,7 @@ use gtk::{
 };
 use matrix_sdk::Client;
 use ruma::{
-    api::client::session::{get_login_types::v3::LoginType, login},
+    api::client::session::{get_login_types::v3::LoginType, login, SsoRedirectOidcAction},
     OwnedServerName,
 };
 use tracing::{error, warn};
@@ -118,7 +118,7 @@ mod imp {
                 Some(&Option::<String>::static_variant_type()),
                 |obj, _, variant| async move {
                     let idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
-                    obj.imp().login_with_sso(idp_id).await;
+                    obj.imp().login_with_sso(idp_id, false).await;
                 },
             );
 
@@ -344,14 +344,6 @@ mod imp {
             self.login_types.borrow().clone()
         }
 
-        /// Whether the password login type is supported.
-        fn supports_password(&self) -> bool {
-            self.login_types
-                .borrow()
-                .iter()
-                .any(|t| matches!(t, LoginType::Password(_)))
-        }
-
         /// Open the login advanced dialog.
         async fn open_advanced_dialog(&self) {
             let obj = self.obj();
@@ -365,21 +357,38 @@ mod imp {
 
         /// Show the appropriate login screen given the current login types.
         pub(super) fn show_login_screen(&self) {
-            if self.supports_password() {
-                self.navigation.push_by_tag(LoginPage::Method.as_ref());
-            } else {
+            let mut oidc_compatibility = false;
+            let mut supports_password = false;
+
+            for login_type in self.login_types.borrow().iter() {
+                match login_type {
+                    LoginType::Sso(sso) if sso.delegated_oidc_compatibility => {
+                        oidc_compatibility = true;
+                        // We do not care about password support at this point.
+                        break;
+                    }
+                    LoginType::Password(_) => {
+                        supports_password = true;
+                    }
+                    _ => {}
+                }
+            }
+
+            if oidc_compatibility || !supports_password {
                 spawn!(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.login_with_sso(None).await;
+                        imp.login_with_sso(None, oidc_compatibility).await;
                     }
                 ));
+            } else {
+                self.navigation.push_by_tag(LoginPage::Method.as_ref());
             }
         }
 
         /// Log in with the SSO login type.
-        async fn login_with_sso(&self, idp_id: Option<String>) {
+        async fn login_with_sso(&self, idp_id: Option<String>, oidc_compatibility: bool) {
             self.navigation.push_by_tag(LoginPage::Sso.as_ref());
             let client = self.client().await.expect("client was constructed");
 
@@ -390,6 +399,22 @@ mod imp {
                         let ctx = glib::MainContext::default();
                         ctx.spawn(async move {
                             spawn!(async move {
+                                let mut sso_url = sso_url;
+
+                                if oidc_compatibility {
+                                    if let Ok(mut parsed_url) = Url::parse(&sso_url) {
+                                        // Add an action query parameter manually.
+                                        parsed_url.query_pairs_mut().append_pair(
+                                            "action",
+                                            SsoRedirectOidcAction::Login.as_str(),
+                                        );
+                                        sso_url = parsed_url.into();
+                                    } else {
+                                        // If parsing fails, just use the provided URL.
+                                        error!("Failed to parse SSO URL: {sso_url}");
+                                    }
+                                }
+
                                 if let Err(error) = gtk::UriLauncher::new(&sso_url)
                                     .launch_future(gtk::Window::NONE)
                                     .await

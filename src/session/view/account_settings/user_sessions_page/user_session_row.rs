@@ -1,13 +1,18 @@
 use adw::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
+use tracing::error;
+use url::Url;
 
+use super::AccountSettings;
 use crate::{
     components::{AuthError, LoadingButton},
     gettext_f,
     session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
     system_settings::ClockFormat,
-    toast, Application,
+    toast,
+    utils::{oidc, BoundConstructOnlyObject},
+    Application,
 };
 
 mod imp {
@@ -32,12 +37,17 @@ mod imp {
         #[template_child]
         last_seen_ts: TemplateChild<gtk::Label>,
         #[template_child]
-        pub(super) disconnect_button: TemplateChild<LoadingButton>,
+        loading_disconnect_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        open_url_disconnect_button: TemplateChild<gtk::Button>,
         #[template_child]
         verify_button: TemplateChild<LoadingButton>,
         /// The user session displayed by this row.
         #[property(get, set = Self::set_user_session, construct_only)]
         user_session: RefCell<Option<UserSession>>,
+        /// The ancestor [`AccountSettings`].
+        #[property(get, set = Self::set_account_settings, construct_only)]
+        account_settings: BoundConstructOnlyObject<AccountSettings>,
         system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -49,7 +59,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -61,6 +71,8 @@ mod imp {
     impl ObjectImpl for UserSessionRow {
         fn constructed(&self) {
             self.parent_constructed();
+
+            self.update_disconnect_button();
 
             let system_settings = Application::default().system_settings();
             let system_settings_handler = system_settings.connect_clock_format_notify(clone!(
@@ -84,6 +96,7 @@ mod imp {
     impl WidgetImpl for UserSessionRow {}
     impl ListBoxRowImpl for UserSessionRow {}
 
+    #[gtk::template_callbacks]
     impl UserSessionRow {
         /// Set the user session displayed by this row.
         fn set_user_session(&self, user_session: UserSession) {
@@ -111,7 +124,8 @@ mod imp {
             } else {
                 gettext("Disconnect Session")
             };
-            self.disconnect_button.set_content_label(disconnect_label);
+            self.loading_disconnect_button
+                .set_content_label(disconnect_label);
 
             self.user_session.replace(Some(user_session));
 
@@ -247,6 +261,100 @@ mod imp {
                 .expect("formatting GDateTime works");
             self.last_seen_ts.set_label(&label);
         }
+
+        /// Set the ancestor [`AccountSettings`].
+        fn set_account_settings(&self, account_settings: AccountSettings) {
+            let handler = account_settings.connect_account_management_url_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_disconnect_button();
+                }
+            ));
+            self.account_settings.set(account_settings, vec![handler]);
+        }
+
+        /// The account management URL of the authentication issuer, if any.
+        fn account_management_url(&self) -> Option<Url> {
+            self.account_settings.obj().account_management_url()
+        }
+
+        /// Update the visible disconnect button.
+        fn update_disconnect_button(&self) {
+            let Some(user_session) = self.user_session.borrow().clone() else {
+                return;
+            };
+            let use_account_management_url =
+                !user_session.is_current() && self.account_management_url().is_some();
+
+            self.loading_disconnect_button
+                .set_visible(!use_account_management_url);
+            self.open_url_disconnect_button
+                .set_visible(use_account_management_url);
+        }
+
+        /// Disconnect the user session by making a request to the homeserver.
+        #[template_callback]
+        async fn disconnect_with_request(&self) {
+            let Some(user_session) = self.user_session.borrow().clone() else {
+                return;
+            };
+            let obj = self.obj();
+
+            if user_session.is_current() {
+                let _ = obj.activate_action(
+                    "account-settings.show-subpage",
+                    Some(&AccountSettingsSubpage::LogOut.to_variant()),
+                );
+                return;
+            }
+
+            self.loading_disconnect_button.set_is_loading(true);
+
+            match user_session.delete(&*obj).await {
+                Ok(()) => obj.set_visible(false),
+                Err(AuthError::UserCancelled) => {}
+                Err(_) => {
+                    let device_name = user_session.display_name();
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    let error_message = gettext_f(
+                        "Could not disconnect device “{device_name}”",
+                        &[("device_name", &device_name)],
+                    );
+                    toast!(obj, error_message);
+                }
+            }
+
+            self.loading_disconnect_button.set_is_loading(false);
+        }
+
+        // Open the account management URL to disconnect the session.
+        #[template_callback]
+        async fn open_disconnect_url(&self) {
+            let Some(device_id) = self
+                .user_session
+                .borrow()
+                .as_ref()
+                .map(|s| s.device_id().into())
+            else {
+                return;
+            };
+            let Some(mut url) = self.account_management_url() else {
+                error!("Could not find open account management URL");
+                return;
+            };
+
+            oidc::AccountManagementAction::SessionEnd { device_id }
+                .add_to_account_management_url(&mut url);
+
+            if let Err(error) = gtk::UriLauncher::new(url.as_ref())
+                .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
+                .await
+            {
+                error!("Could not launch account management URL: {error}");
+            }
+        }
     }
 }
 
@@ -256,48 +364,11 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl UserSessionRow {
-    pub fn new(user_session: &UserSession) -> Self {
+    pub fn new(user_session: &UserSession, account_settings: &AccountSettings) -> Self {
         glib::Object::builder()
             .property("user-session", user_session)
+            .property("account-settings", account_settings)
             .build()
-    }
-
-    /// Disconnect the user session.
-    #[template_callback]
-    async fn disconnect(&self) {
-        let Some(user_session) = self.user_session() else {
-            return;
-        };
-
-        if user_session.is_current() {
-            self.activate_action(
-                "account-settings.show-subpage",
-                Some(&AccountSettingsSubpage::LogOut.to_variant()),
-            )
-            .unwrap();
-            return;
-        }
-
-        let imp = self.imp();
-        imp.disconnect_button.set_is_loading(true);
-
-        match user_session.delete(self).await {
-            Ok(()) => self.set_visible(false),
-            Err(AuthError::UserCancelled) => {}
-            Err(_) => {
-                let device_name = user_session.display_name();
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                let error_message = gettext_f(
-                    "Could not disconnect device “{device_name}”",
-                    &[("device_name", &device_name)],
-                );
-                toast!(self, error_message);
-            }
-        }
-
-        imp.disconnect_button.set_is_loading(false);
     }
 }

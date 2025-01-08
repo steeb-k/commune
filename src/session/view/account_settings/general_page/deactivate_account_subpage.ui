@@ -65,18 +65,31 @@
                         <child>
                           <object class="AdwEntryRow" id="confirmation">
                             <property name="selectable">False</property>
-                            <signal name="changed" handler="update_button" swapped="yes"/>
+                            <signal name="changed" handler="update_buttons_state" swapped="yes"/>
                             <signal name="entry-activated" handler="deactivate_account" swapped="yes"/>
                           </object>
                         </child>
                         <child>
-                          <object class="LoadingButtonRow" id="button">
+                          <object class="LoadingButtonRow" id="loading_button">
+                            <property name="visible">False</property>
                             <style>
                               <class name="destructive-action"/>
                             </style>
                             <property name="title" translatable="yes">Continue</property>
                             <property name="sensitive">false</property>
-                            <signal name="activated" handler="deactivate_account" swapped="yes"/>
+                            <signal name="activated" handler="deactivate_account_with_request" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwButtonRow" id="open_url_button">
+                            <property name="visible">False</property>
+                            <style>
+                              <class name="destructive-action"/>
+                            </style>
+                            <property name="title" translatable="yes">Continue</property>
+                            <property name="end-icon-name">external-link-symbolic</property>
+                            <property name="sensitive">false</property>
+                            <signal name="activated" handler="open_deactivate_account_url" swapped="yes"/>
                           </object>
                         </child>
                       </object>

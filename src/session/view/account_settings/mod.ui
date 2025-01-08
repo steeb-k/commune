@@ -9,6 +9,7 @@
     <child>
       <object class="AccountSettingsGeneralPage" id="general_page">
         <property name="session" bind-source="AccountSettings" bind-property="session" bind-flags="sync-create"/>
+        <property name="account-settings">AccountSettings</property>
       </object>
     </child>
     <child>
@@ -29,6 +30,7 @@
             <lookup name="session">AccountSettings</lookup>
           </lookup>
         </binding>
+        <property name="account-settings">AccountSettings</property>
       </object>
     </child>
     <child>

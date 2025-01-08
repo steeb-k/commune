@@ -1,5 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    CompositeTemplate,
+};
+use url::Url;
 
 mod general_page;
 mod notifications_page;
@@ -23,7 +28,7 @@ use crate::{
 
 /// A subpage of the account settings.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, glib::Variant, strum::AsRefStr)]
-pub enum AccountSettingsSubpage {
+pub(crate) enum AccountSettingsSubpage {
     /// A form to change the account's password.
     ChangePassword,
     /// A page to confirm the logout.
@@ -43,7 +48,9 @@ pub enum AccountSettingsSubpage {
 }
 
 mod imp {
-    use glib::subclass::InitializingObject;
+    use std::{cell::RefCell, sync::LazyLock};
+
+    use glib::subclass::{InitializingObject, Signal};
 
     use super::*;
 
@@ -51,15 +58,18 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/mod.ui")]
     #[properties(wrapper_type = super::AccountSettings)]
     pub struct AccountSettings {
-        /// The current session.
-        #[property(get, set = Self::set_session, nullable)]
-        session: BoundObjectWeakRef<Session>,
         #[template_child]
         general_page: TemplateChild<GeneralPage>,
         #[template_child]
         sessions_page: TemplateChild<UserSessionsPage>,
         #[template_child]
         security_page: TemplateChild<SecurityPage>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        session: BoundObjectWeakRef<Session>,
+        /// The account management URL of the OIDC authentication issuer, if
+        /// any.
+        account_management_url: RefCell<Option<Url>>,
     }
 
     #[glib::object_subclass]
@@ -100,7 +110,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for AccountSettings {}
+    impl ObjectImpl for AccountSettings {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("account-management-url-changed").build()]);
+            SIGNALS.as_ref()
+        }
+    }
 
     impl WidgetImpl for AccountSettings {}
     impl AdwDialogImpl for AccountSettings {}
@@ -115,6 +131,7 @@ mod imp {
             let obj = self.obj();
 
             self.session.disconnect_signals();
+            self.set_account_management_url(None);
 
             if let Some(session) = session {
                 let logged_out_handler = session.connect_logged_out(clone!(
@@ -134,9 +151,38 @@ mod imp {
                         session.user_sessions().load().await;
                     }
                 ));
+
+                // Load the account management URL.
+                spawn!(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[weak]
+                    session,
+                    async move {
+                        let account_management_url = session.account_management_url().await;
+                        imp.set_account_management_url(account_management_url.cloned());
+                    }
+                ));
             }
 
             obj.notify_session();
+        }
+
+        /// Set the account management URL of the OIDC authentication issuer.
+        fn set_account_management_url(&self, url: Option<Url>) {
+            if *self.account_management_url.borrow() == url {
+                return;
+            }
+
+            self.account_management_url.replace(url);
+            self.obj()
+                .emit_by_name::<()>("account-management-url-changed", &[]);
+        }
+
+        /// The account management URL of the OIDC authentication issuer, if
+        /// any.
+        pub(super) fn account_management_url(&self) -> Option<Url> {
+            self.account_management_url.borrow().clone()
         }
     }
 }
@@ -153,8 +199,13 @@ impl AccountSettings {
         glib::Object::builder().property("session", session).build()
     }
 
+    /// The account management URL of the OIDC authentication issuer, if any.
+    fn account_management_url(&self) -> Option<Url> {
+        self.imp().account_management_url()
+    }
+
     /// Show the given subpage.
-    pub fn show_subpage(&self, subpage: AccountSettingsSubpage) {
+    pub(crate) fn show_subpage(&self, subpage: AccountSettingsSubpage) {
         let Some(session) = self.session() else {
             return;
         };
@@ -163,7 +214,7 @@ impl AccountSettings {
             AccountSettingsSubpage::ChangePassword => ChangePasswordSubpage::new(&session).upcast(),
             AccountSettingsSubpage::LogOut => LogOutSubpage::new(&session).upcast(),
             AccountSettingsSubpage::DeactivateAccount => {
-                DeactivateAccountSubpage::new(&session).upcast()
+                DeactivateAccountSubpage::new(&session, self).upcast()
             }
             AccountSettingsSubpage::IgnoredUsers => IgnoredUsersSubpage::new(&session).upcast(),
             AccountSettingsSubpage::ImportKeys => {
@@ -223,5 +274,19 @@ impl AccountSettings {
         };
 
         self.push_subpage(&page);
+    }
+
+    /// Connect to the signal emitted when the account management URL changed.
+    pub fn connect_account_management_url_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "account-management-url-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }

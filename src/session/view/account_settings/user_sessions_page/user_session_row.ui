@@ -62,12 +62,42 @@
           <object class="GtkBox">
             <property name="spacing">6</property>
             <child>
-              <object class="LoadingButton" id="disconnect_button">
-                <signal name="clicked" handler="disconnect" swapped="yes"/>
+              <object class="LoadingButton" id="loading_disconnect_button">
+                <property name="visible">False</property>
+                <signal name="clicked" handler="disconnect_with_request" swapped="yes"/>
                 <style>
                   <class name="label-button"/>
                   <class name="destructive-action"/>
                 </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="open_url_disconnect_button">
+                <property name="visible">False</property>
+                <signal name="clicked" handler="open_disconnect_url" swapped="yes"/>
+                <style>
+                  <class name="image-text-button"/>
+                  <class name="destructive-action"/>
+                </style>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="halign">center</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Disconnect Session</property>
+                        <property name="ellipsize">end</property>
+                        <property name="mnemonic-widget">open_url_disconnect_button</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="icon-name">external-link-symbolic</property>
+                        <property name="accessible-role">presentation</property>
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
               </object>
             </child>
             <child>
