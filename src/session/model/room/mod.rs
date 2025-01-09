@@ -357,23 +357,16 @@ mod imp {
 
         /// Load the display name from the SDK.
         async fn update_display_name(&self) {
-            let matrix_room = self.matrix_room();
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.display_name().await });
 
-            let sdk_display_name = if let Some(sdk_display_name) = matrix_room.cached_display_name()
-            {
-                Some(sdk_display_name)
-            } else {
-                let matrix_room = matrix_room.clone();
-                let handle = spawn_tokio!(async move { matrix_room.compute_display_name().await });
-
-                match handle.await.expect("task was not aborted") {
-                    Ok(sdk_display_name) => Some(sdk_display_name),
-                    Err(error) => {
-                        error!("Could not compute display name: {error}");
-                        None
-                    }
-                }
-            };
+            let sdk_display_name = handle
+                .await
+                .expect("task was not aborted")
+                .inspect_err(|error| {
+                    error!("Could not compute display name: {error}");
+                })
+                .ok();
 
             let mut display_name = if let Some(sdk_display_name) = sdk_display_name {
                 match sdk_display_name {
