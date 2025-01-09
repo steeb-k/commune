@@ -279,7 +279,7 @@ mod imp {
             };
             let was_empty = self.is_empty();
 
-            let diff_list = self.minimize_diff_list(diff_list);
+            let diff_list = self.minimize_diff_list(diff_list, &room);
 
             for diff in diff_list {
                 self.update_with_single_diff(diff, &room);
@@ -302,6 +302,7 @@ mod imp {
         fn minimize_diff_list(
             &self,
             diff_list: Vec<VectorDiff<Arc<SdkTimelineItem>>>,
+            room: &Room,
         ) -> Vec<VectorDiff<Arc<SdkTimelineItem>>> {
             if diff_list.iter().any(|diff| {
                 matches!(
@@ -393,13 +394,23 @@ mod imp {
                 .collect::<Vec<_>>();
 
             let mut index = 0;
-            let mut insert_batch = Vec::new();
+            let mut insert_batch = Vec::<TimelineItem>::new();
 
             for result in diff::slice(&old_item_ids, &new_item_ids) {
                 // Add insertions as a batch.
                 if !matches!(result, diff::Result::Right(_)) && !insert_batch.is_empty() {
                     let added = insert_batch.len() as u32;
+
                     self.sdk_items.splice(index, 0, &insert_batch);
+                    self.update_items_headers(index, added);
+
+                    // Try to update the latest unread message.
+                    room.update_latest_activity(
+                        insert_batch
+                            .iter()
+                            .filter_map(|i| i.downcast_ref::<Event>()),
+                    );
+
                     insert_batch.clear();
                     index += added;
                 }
@@ -407,6 +418,7 @@ mod imp {
                 match result {
                     diff::Result::Left(_) => {
                         self.sdk_items.remove(index);
+                        self.update_items_headers(index, 1);
                     }
                     diff::Result::Both(..) => {
                         index += 1;
@@ -422,7 +434,17 @@ mod imp {
             }
 
             if !insert_batch.is_empty() {
+                let added = insert_batch.len() as u32;
+
                 self.sdk_items.splice(index, 0, &insert_batch);
+                self.update_items_headers(index, added);
+
+                // Try to update the latest unread message.
+                room.update_latest_activity(
+                    insert_batch
+                        .iter()
+                        .filter_map(|i| i.downcast_ref::<Event>()),
+                );
             }
 
             Vec::new()
@@ -442,7 +464,7 @@ mod imp {
                     let added = new_list.len() as u32;
 
                     self.sdk_items.extend_from_slice(&new_list);
-                    self.update_items_headers(pos, added.max(1));
+                    self.update_items_headers(pos, added);
 
                     // Try to update the latest unread message.
                     room.update_latest_activity(
@@ -587,7 +609,7 @@ mod imp {
                     let added = new_list.len() as u32;
 
                     self.sdk_items.splice(0, removed, &new_list);
-                    self.update_items_headers(0, added.max(1));
+                    self.update_items_headers(0, added);
 
                     // Try to update the latest unread message.
                     room.update_latest_activity(
