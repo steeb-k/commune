@@ -5,6 +5,7 @@ use matrix_sdk_ui::timeline::VirtualTimelineItem;
 use ruma::MilliSecondsSinceUnixEpoch;
 
 use super::{TimelineItem, TimelineItemImpl};
+use crate::utils::matrix::timestamp_to_date;
 
 /// The kind of virtual item.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
@@ -25,6 +26,11 @@ pub enum VirtualItemKind {
 }
 
 impl VirtualItemKind {
+    /// Construct the `DayDivider` from the given timestamp.
+    fn with_timestamp(ts: MilliSecondsSinceUnixEpoch) -> Self {
+        Self::DayDivider(timestamp_to_date(ts))
+    }
+
     /// Convert this into a [`BoxedVirtualItemKind`].
     fn boxed(self) -> BoxedVirtualItemKind {
         BoxedVirtualItemKind(self)
@@ -79,13 +85,23 @@ glib::wrapper! {
 
 impl VirtualItem {
     /// Create a new `VirtualItem` from a virtual timeline item.
-    pub fn with_item(item: &VirtualTimelineItem, timeline_id: &str) -> Self {
+    pub(crate) fn with_item(item: &VirtualTimelineItem, timeline_id: &str) -> Self {
         match item {
             VirtualTimelineItem::DateDivider(ts) => {
                 Self::day_divider_with_timestamp(*ts, timeline_id)
             }
             VirtualTimelineItem::ReadMarker => Self::new_messages(timeline_id),
         }
+    }
+
+    /// Update this `VirtualItem` with the given virtual timeline item.
+    pub(crate) fn update_with_item(&self, item: &VirtualTimelineItem) {
+        let kind = match item {
+            VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
+            VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
+        };
+
+        self.set_kind(kind.boxed());
     }
 
     /// Create a spinner virtual item.
@@ -131,12 +147,8 @@ impl VirtualItem {
         timestamp: MilliSecondsSinceUnixEpoch,
         timeline_id: &str,
     ) -> Self {
-        let date = glib::DateTime::from_unix_utc(timestamp.as_secs().into())
-            .or_else(|_| glib::DateTime::now_utc())
-            .expect("We should be able to get the current time");
-
         glib::Object::builder()
-            .property("kind", VirtualItemKind::DayDivider(date).boxed())
+            .property("kind", VirtualItemKind::with_timestamp(timestamp).boxed())
             .property("timeline-id", timeline_id)
             .build()
     }

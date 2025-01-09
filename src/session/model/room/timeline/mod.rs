@@ -15,7 +15,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk_ui::{
-    eyeball_im::{Vector, VectorDiff},
+    eyeball_im::VectorDiff,
     timeline::{
         default_event_filter, RoomExt, Timeline as SdkTimeline, TimelineEventItemId,
         TimelineItem as SdkTimelineItem,
@@ -32,7 +32,7 @@ use tokio::task::AbortHandle;
 use tracing::error;
 
 pub(crate) use self::{
-    timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
+    timeline_item::{TimelineItem, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
 use super::{Event, Room};
@@ -298,46 +298,66 @@ mod imp {
         /// This is necessary because the SDK diffs are not always optimized,
         /// e.g. an item is removed then re-added, which creates jumps in the
         /// room history.
+        #[allow(clippy::too_many_lines)]
         fn minimize_diff_list(
             &self,
             diff_list: Vec<VectorDiff<Arc<SdkTimelineItem>>>,
         ) -> Vec<VectorDiff<Arc<SdkTimelineItem>>> {
-            let mut old_items = Vec::with_capacity(self.sdk_items.n_items() as usize);
-
-            // Construct the current state.
-            for item in self.sdk_items.iter::<TimelineItem>() {
-                let Ok(item) = item else {
-                    // The list changed, return early.
-                    return diff_list;
-                };
-
-                old_items.push(item.timeline_id());
+            if diff_list.iter().any(|diff| {
+                matches!(
+                    diff,
+                    VectorDiff::Clear | VectorDiff::Truncate { .. } | VectorDiff::Reset { .. }
+                )
+            }) {
+                // Minimizing this will probably make a worse diff, so we return early.
+                return diff_list;
             }
 
-            // Get the new state by applying the diffs.
-            let mut value_map = HashMap::with_capacity(diff_list.len());
+            // Get the current state.
+            let old_items = self
+                .sdk_items
+                .snapshot()
+                .into_iter()
+                .map(|obj| {
+                    obj.downcast::<TimelineItem>()
+                        .expect("SDK items are TimelineItems")
+                })
+                .collect::<Vec<_>>();
+
+            let mut item_map = old_items
+                .iter()
+                .cloned()
+                .map(|item| (item.timeline_id(), item))
+                .collect::<HashMap<_, _>>();
             let mut new_items = old_items.iter().cloned().collect::<VecDeque<_>>();
 
-            for diff in &diff_list {
+            let mut create_item = |value: Arc<SdkTimelineItem>| {
+                let timeline_id = value.unique_id().0.clone();
+                item_map
+                    .entry(timeline_id)
+                    // We do not check the result, if the timeline ID is identical updating the item
+                    // should work.
+                    .and_modify(|item| {
+                        item.try_update_with(&value);
+                    })
+                    .or_insert_with(|| self.create_item(&value))
+                    .clone()
+            };
+
+            // Get the new state by applying the diffs.
+            for diff in diff_list {
                 match diff {
                     VectorDiff::Append { values } => {
-                        new_items.reserve(values.len());
-
-                        for value in values {
-                            let timeline_id = value.unique_id().0.clone();
-                            value_map.insert(timeline_id.clone(), value.clone());
-                            new_items.push_back(timeline_id);
-                        }
+                        let items = values.into_iter().map(&mut create_item);
+                        new_items.extend(items);
                     }
                     VectorDiff::PushFront { value } => {
-                        let timeline_id = value.unique_id().0.clone();
-                        value_map.insert(timeline_id.clone(), value.clone());
-                        new_items.push_front(timeline_id);
+                        let item = create_item(value);
+                        new_items.push_front(item);
                     }
                     VectorDiff::PushBack { value } => {
-                        let timeline_id = value.unique_id().0.clone();
-                        value_map.insert(timeline_id.clone(), value.clone());
-                        new_items.push_back(timeline_id);
+                        let item = create_item(value);
+                        new_items.push_back(item);
                     }
                     VectorDiff::PopFront => {
                         new_items.pop_front();
@@ -346,69 +366,66 @@ mod imp {
                         new_items.pop_back();
                     }
                     VectorDiff::Insert { index, value } => {
-                        let timeline_id = value.unique_id().0.clone();
-                        value_map.insert(timeline_id.clone(), value.clone());
-                        new_items.insert(*index, timeline_id);
+                        let item = create_item(value);
+                        new_items.insert(index, item);
                     }
                     VectorDiff::Set { index, value } => {
-                        let timeline_id = value.unique_id().0.clone();
-                        value_map.insert(timeline_id.clone(), value.clone());
+                        let item = create_item(value);
 
-                        let item = new_items.get_mut(*index).expect("item exists");
-                        *item = timeline_id;
+                        *new_items.get_mut(index).expect("item exists") = item;
                     }
                     VectorDiff::Remove { index } => {
-                        new_items.remove(*index);
+                        new_items.remove(index);
                     }
                     VectorDiff::Clear | VectorDiff::Truncate { .. } | VectorDiff::Reset { .. } => {
-                        // Minimizing this will probably make a worse diff, so we return early.
-                        return diff_list;
+                        unreachable!()
                     }
                 }
             }
 
-            let new_items = Vec::from(new_items);
-            let mut min_diff_list = Vec::with_capacity(diff_list.len());
-            let mut index = 0;
-            let mut n_items = old_items.len();
+            let old_item_ids = old_items
+                .iter()
+                .map(TimelineItem::timeline_id)
+                .collect::<Vec<_>>();
+            let new_item_ids = new_items
+                .iter()
+                .map(TimelineItem::timeline_id)
+                .collect::<Vec<_>>();
 
-            for result in diff::slice(&old_items, &new_items) {
+            let mut index = 0;
+            let mut insert_batch = Vec::new();
+
+            for result in diff::slice(&old_item_ids, &new_item_ids) {
+                // Add insertions as a batch.
+                if !matches!(result, diff::Result::Right(_)) && !insert_batch.is_empty() {
+                    let added = insert_batch.len() as u32;
+                    self.sdk_items.splice(index, 0, &insert_batch);
+                    insert_batch.clear();
+                    index += added;
+                }
+
                 match result {
                     diff::Result::Left(_) => {
-                        min_diff_list.push(VectorDiff::Remove { index });
-                        n_items -= 1;
+                        self.sdk_items.remove(index);
                     }
-                    diff::Result::Both(timeline_id, _) => {
-                        if let Some(value) = value_map.get(timeline_id).cloned() {
-                            min_diff_list.push(VectorDiff::Set { index, value });
-                        }
+                    diff::Result::Both(..) => {
                         index += 1;
                     }
                     diff::Result::Right(timeline_id) => {
-                        let value = value_map
+                        let item = item_map
                             .get(timeline_id)
-                            .expect("value exists for added item")
+                            .expect("item should exist in map")
                             .clone();
-
-                        if index == n_items {
-                            if let Some(VectorDiff::Append { values }) = min_diff_list.last_mut() {
-                                values.push_back(value);
-                            } else {
-                                min_diff_list.push(VectorDiff::Append {
-                                    values: Vector::from([value]),
-                                });
-                            }
-                        } else {
-                            min_diff_list.push(VectorDiff::Insert { index, value });
-                        }
-
-                        index += 1;
-                        n_items += 1;
+                        insert_batch.push(item);
                     }
                 }
             }
 
-            min_diff_list
+            if !insert_batch.is_empty() {
+                self.sdk_items.splice(index, 0, &insert_batch);
+            }
+
+            Vec::new()
         }
 
         /// Update this timeline with the given diff.

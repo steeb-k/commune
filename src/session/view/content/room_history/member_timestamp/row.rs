@@ -3,7 +3,9 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::MemberTimestamp;
-use crate::{system_settings::ClockFormat, Application};
+use crate::{
+    system_settings::ClockFormat, utils::matrix::seconds_since_unix_epoch_to_date, Application,
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -95,9 +97,7 @@ mod imp {
             };
 
             let timestamp = timestamp.try_into().unwrap_or(i64::MAX);
-            let datetime = glib::DateTime::from_unix_utc(timestamp)
-                .and_then(|t| t.to_local())
-                .unwrap();
+            let datetime = seconds_since_unix_epoch_to_date(timestamp);
 
             let clock_format = Application::default().system_settings().clock_format();
 

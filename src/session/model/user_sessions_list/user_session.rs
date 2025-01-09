@@ -7,6 +7,7 @@ use crate::{
     components::{AuthDialog, AuthError},
     prelude::*,
     session::model::Session,
+    utils::matrix::timestamp_to_date,
 };
 
 /// The possible sources of the user data.
@@ -134,11 +135,7 @@ mod imp {
 
         /// The last time the user session was used.
         fn last_seen_ts(&self) -> Option<glib::DateTime> {
-            self.data().api()?.last_seen_ts.map(|last_seen_ts| {
-                glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
-                    .and_then(|t| t.to_local())
-                    .expect("constructing GDateTime works")
-            })
+            self.data().api()?.last_seen_ts.map(timestamp_to_date)
         }
 
         /// Whether this device is verified.

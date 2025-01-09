@@ -33,10 +33,10 @@ mod imp {
         /// The [`TimelineItem`] presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         item: RefCell<Option<TimelineItem>>,
+        item_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         /// The event action group of this row.
         #[property(get, set = Self::set_action_group)]
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
-        event_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         binding: RefCell<Option<glib::Binding>>,
     }
@@ -89,19 +89,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(event) = self.item.borrow().and_downcast_ref::<Event>() {
-                for handler in self.event_handlers.take() {
-                    event.disconnect(handler);
-                }
-
-                if let Some(handler) = self.permissions_handler.take() {
-                    event.room().permissions().disconnect(handler);
-                }
-            }
-
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
+            self.disconnect_item_signals();
 
             if let Some(handler) = self.message_toolbar_handler.take() {
                 if let Some(room_history) = self.room_history.upgrade() {
@@ -214,6 +202,25 @@ mod imp {
             );
         }
 
+        /// Disconnect the signal handlers depending on the item.
+        fn disconnect_item_signals(&self) {
+            if let Some(item) = self.item.borrow().clone() {
+                for handler in self.item_handlers.borrow_mut().drain(..) {
+                    item.disconnect(handler);
+                }
+
+                if let Some(event) = item.downcast_ref::<Event>() {
+                    if let Some(handler) = self.permissions_handler.take() {
+                        event.room().permissions().disconnect(handler);
+                    }
+                }
+            }
+
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
+        }
+
         /// Set the [`TimelineItem`] presented by this row.
         ///
         /// This tries to reuse the widget and only update the content whenever
@@ -223,18 +230,7 @@ mod imp {
             // Reinitialize the header.
             self.obj().remove_css_class("has-header");
 
-            if let Some(event) = self.event() {
-                for handler in self.event_handlers.take() {
-                    event.disconnect(handler);
-                }
-
-                if let Some(handler) = self.permissions_handler.take() {
-                    event.room().permissions().disconnect(handler);
-                }
-            }
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
+            self.disconnect_item_signals();
 
             if let Some(item) = &item {
                 if let Some(event) = item.downcast_ref::<Event>() {
@@ -289,7 +285,7 @@ mod imp {
                 }
             ));
 
-            self.event_handlers.replace(vec![
+            self.item_handlers.borrow_mut().extend([
                 state_notify_handler,
                 source_notify_handler,
                 edit_source_notify_handler,
@@ -312,12 +308,27 @@ mod imp {
         }
 
         /// Set the virtual item to display.
-        fn set_virtual_item(&self, item: &VirtualItem) {
-            let obj = self.obj();
-            obj.set_popover(None);
+        fn set_virtual_item(&self, virtual_item: &VirtualItem) {
+            self.obj().set_popover(None);
             self.update_event_actions(None);
 
-            let kind = &*item.kind();
+            let kind_handler = virtual_item.connect_kind_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |virtual_item| {
+                    imp.build_virtual_item(virtual_item);
+                }
+            ));
+            self.item_handlers.borrow_mut().push(kind_handler);
+
+            self.build_virtual_item(virtual_item);
+        }
+
+        /// Construct the widget for the given virtual item.
+        fn build_virtual_item(&self, virtual_item: &VirtualItem) {
+            let obj = self.obj();
+            let kind = &*virtual_item.kind();
+
             match kind {
                 VirtualItemKind::Spinner => {
                     if !obj

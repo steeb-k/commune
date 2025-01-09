@@ -28,7 +28,7 @@ use super::{
 use crate::{
     prelude::*,
     spawn_tokio,
-    utils::matrix::{raw_eq, MediaMessage, VisualMediaMessage},
+    utils::matrix::{raw_eq, timestamp_to_date, MediaMessage, VisualMediaMessage},
 };
 
 /// The possible states of a message.
@@ -305,11 +305,7 @@ mod imp {
 
         /// The timestamp of this event, as a `GDateTime`.
         fn timestamp(&self) -> glib::DateTime {
-            let ts = self.origin_server_ts();
-
-            glib::DateTime::from_unix_utc(ts.as_secs().into())
-                .and_then(|t| t.to_local())
-                .expect("constructing GDateTime from timestamp should work")
+            timestamp_to_date(self.origin_server_ts())
         }
 
         /// The formatted timestamp of this event.
@@ -424,11 +420,7 @@ mod imp {
                         .ok()
                         .flatten()
                 })
-                .map(|ts| {
-                    glib::DateTime::from_unix_utc(ts.as_secs().into())
-                        .and_then(|t| t.to_local())
-                        .expect("constructing GDateTime from timestamp should work")
-                })
+                .map(timestamp_to_date)
         }
 
         /// The formatted timestamp of the latest edit of this `Event`.
@@ -516,17 +508,9 @@ impl Event {
         obj
     }
 
-    /// Try to update this event with the given SDK timeline item.
-    ///
-    /// Returns `true` if the update succeeded.
-    pub(crate) fn try_update_with(&self, item: &EventTimelineItem, timeline_id: &str) -> bool {
-        let is_same_item = self.timeline_id() == timeline_id;
-
-        if is_same_item {
-            self.imp().set_item(item.clone());
-        }
-
-        is_same_item
+    /// Update this event with the given SDK timeline item.
+    pub(crate) fn update_with(&self, item: EventTimelineItem) {
+        self.imp().set_item(item);
     }
 
     /// The underlying SDK timeline item.

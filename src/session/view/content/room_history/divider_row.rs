@@ -48,9 +48,7 @@ mod imp {
                 VirtualItemKind::TimelineStart => {
                     gettext("This is the start of the visible history")
                 }
-                VirtualItemKind::DayDivider(utc_date) => {
-                    let date = utc_date.to_local().unwrap_or(utc_date.clone());
-
+                VirtualItemKind::DayDivider(date) => {
                     let fmt = if date.year()
                         == glib::DateTime::now_local()
                             .expect("we should be able to get the local datetime")

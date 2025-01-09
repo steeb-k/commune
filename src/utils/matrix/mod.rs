@@ -23,8 +23,9 @@ use ruma::{
     },
     matrix_uri::MatrixId,
     serde::Raw,
-    EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, OwnedEventId, OwnedRoomAliasId,
-    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomId, RoomOrAliasId, UserId,
+    EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch,
+    OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId,
+    RoomId, RoomOrAliasId, UserId,
 };
 use thiserror::Error;
 
@@ -651,4 +652,16 @@ pub enum MatrixIdUriParseError {
     /// Unsupported Matrix ID.
     #[error("unsupported Matrix ID: {0:?}")]
     UnsupportedId(MatrixId),
+}
+
+/// Convert the given timestamp to a `GDateTime`.
+pub(crate) fn timestamp_to_date(ts: MilliSecondsSinceUnixEpoch) -> glib::DateTime {
+    seconds_since_unix_epoch_to_date(ts.as_secs().into())
+}
+
+/// Convert the given number of seconds since Unix EPOCH to a `GDateTime`.
+pub(crate) fn seconds_since_unix_epoch_to_date(secs: i64) -> glib::DateTime {
+    glib::DateTime::from_unix_utc(secs)
+        .and_then(|date| date.to_local())
+        .expect("constructing GDateTime from timestamp should work")
 }

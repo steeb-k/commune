@@ -135,21 +135,28 @@ impl TimelineItem {
     ///
     /// Returns `true` if the update succeeded.
     pub(crate) fn try_update_with(&self, item: &SdkTimelineItem) -> bool {
-        let timeline_id = &item.unique_id().0;
+        if self.timeline_id() != item.unique_id().0 {
+            return false;
+        }
 
         match item.kind() {
             TimelineItemKind::Event(new_event) => {
                 if let Some(event) = self.downcast_ref::<Event>() {
-                    return event.try_update_with(new_event, timeline_id);
+                    event.update_with(new_event.clone());
+                } else {
+                    return false;
                 }
             }
-            TimelineItemKind::Virtual(_item) => {
-                // Always invalidate. It should not happen often and updating
-                // those should be unexpensive.
+            TimelineItemKind::Virtual(new_item) => {
+                if let Some(virtual_item) = self.downcast_ref::<VirtualItem>() {
+                    virtual_item.update_with_item(new_item);
+                } else {
+                    return false;
+                }
             }
         }
 
-        false
+        true
     }
 }
 
