@@ -455,7 +455,7 @@ pub struct ThumbnailDownloader<'a> {
     pub alt: Option<ImageSource<'a>>,
 }
 
-impl<'a> ThumbnailDownloader<'a> {
+impl ThumbnailDownloader<'_> {
     /// Download the thumbnail of the media.
     ///
     /// This might not return a thumbnail at the requested dimensions, depending
