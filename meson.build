@@ -22,11 +22,7 @@ full_version = version
 dependency('glib-2.0', version: '>= 2.76') # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.76') # always same version as glib
 dependency('gtk4', version: '>= 4.16')
-dependency(
-  'libadwaita-1', version: '>= 1.6',
-  fallback: ['libadwaita', 'libadwaita_dep'],
-  default_options: ['tests=false', 'examples=false', 'vapi=false']
-)
+dependency('libadwaita-1', version: '>= 1.6')
 
 # Please keep these dependencies sorted.
 dependency('gstgtk4', version: '>= 0.13.0')
@@ -36,11 +32,7 @@ dependency('gstreamer-base-1.0', version: '>= 1.20')
 dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
-dependency(
-  'gtksourceview-5', version: '>= 5.0.0',
-  fallback: ['gtksourceview', 'gtksource_dep'],
-  default_options: ['gtk_doc=false', 'sysprof=false', 'gir=false', 'vapi=false', 'install_tests=false']
-)
+dependency('gtksourceview-5', version: '>= 5.0.0')
 dependency('libwebp', version: '>= 1.0.0')
 dependency('openssl', version: '>= 1.0.1')
 dependency('shumate-1.0', version: '>= 1.0.0')
