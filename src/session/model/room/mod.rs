@@ -2012,7 +2012,7 @@ impl Room {
     /// Update the latest activity of the room with the given events.
     ///
     /// The events must be in reverse chronological order.
-    fn update_latest_activity<'a>(&self, events: impl IntoIterator<Item = &'a Event>) {
+    fn update_latest_activity<'a>(&self, events: impl Iterator<Item = &'a Event>) {
         let mut latest_activity = self.latest_activity();
 
         for event in events {

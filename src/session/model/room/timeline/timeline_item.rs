@@ -1,6 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::{TimelineItem as SdkTimelineItem, TimelineItemKind};
 use ruma::OwnedUserId;
+use tracing::error;
 
 use super::VirtualItem;
 use crate::session::model::{Event, Room};
@@ -131,12 +132,13 @@ impl TimelineItem {
         }
     }
 
-    /// Try to update this `TimelineItem` with the given SDK timeline item.
+    /// Update this `TimelineItem` with the given SDK timeline item.
     ///
-    /// Returns `true` if the update succeeded.
-    pub(crate) fn try_update_with(&self, item: &SdkTimelineItem) -> bool {
+    /// A `TimelineItem` should not be updated with a SDK item that has a
+    /// different timeline ID.
+    pub(crate) fn update_with(&self, item: &SdkTimelineItem) {
         if self.timeline_id() != item.unique_id().0 {
-            return false;
+            error!("Should not update an item with a different timeline ID");
         }
 
         match item.kind() {
@@ -144,19 +146,17 @@ impl TimelineItem {
                 if let Some(event) = self.downcast_ref::<Event>() {
                     event.update_with(new_event.clone());
                 } else {
-                    return false;
+                    error!("Could not update a TimelineItem that is not an Event with an event SDK item");
                 }
             }
             TimelineItemKind::Virtual(new_item) => {
                 if let Some(virtual_item) = self.downcast_ref::<VirtualItem>() {
                     virtual_item.update_with_item(new_item);
                 } else {
-                    return false;
+                    error!("Could not update a TimelineItem that is not a VirtualItem with a virtual SDK item");
                 }
             }
         }
-
-        true
     }
 }
 
