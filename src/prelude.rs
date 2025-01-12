@@ -4,7 +4,7 @@ pub(crate) use crate::{
         ToastableDialogImpl,
     },
     contrib::CameraExt,
-    session::model::UserExt,
+    session::model::{TimelineItemExt, UserExt},
     session_list::SessionInfoExt,
     user_facing_error::UserFacingError,
     utils::{

@@ -112,6 +112,9 @@ oo7 = { version = "0.3", default-features = false, features = [
     "tracing",
 ] }
 
+[dev-dependencies]
+assert_matches2 = "0.1"
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 cast_possible_truncation = "allow"

@@ -1,11 +1,4 @@
-mod timeline_item;
-mod virtual_item;
-
-use std::{
-    collections::{HashMap, VecDeque},
-    ops::ControlFlow,
-    sync::Arc,
-};
+use std::{collections::HashMap, ops::ControlFlow, sync::Arc};
 
 use futures_util::StreamExt;
 use gtk::{
@@ -31,8 +24,13 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tracing::error;
 
+mod timeline_item;
+mod timeline_item_diff_minimizer;
+mod virtual_item;
+
+use self::timeline_item_diff_minimizer::{TimelineItemDiff, TimelineItemStore};
 pub(crate) use self::{
-    timeline_item::{TimelineItem, TimelineItemImpl},
+    timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
 use super::{Event, Room};
@@ -280,7 +278,7 @@ mod imp {
         fn update_with_diff_list(&self, diff_list: Vec<VectorDiff<Arc<SdkTimelineItem>>>) {
             let was_empty = self.is_empty();
 
-            if let Some(diff_list) = self.minimize_diff_list(diff_list) {
+            if let Some(diff_list) = self.try_minimize_diff_list(diff_list) {
                 // The diff could not be minimized, handle it manually.
                 for diff in diff_list {
                     self.update_with_single_diff(diff);
@@ -302,150 +300,15 @@ mod imp {
         /// room history.
         ///
         /// Returns the list of diffs if it could not be minimized.
-        #[allow(clippy::too_many_lines)]
-        fn minimize_diff_list(
+        fn try_minimize_diff_list(
             &self,
             diff_list: Vec<VectorDiff<Arc<SdkTimelineItem>>>,
         ) -> Option<Vec<VectorDiff<Arc<SdkTimelineItem>>>> {
-            if diff_list.len() == 1
-                || diff_list.iter().any(|diff| {
-                    matches!(
-                        diff,
-                        VectorDiff::Clear | VectorDiff::Truncate { .. } | VectorDiff::Reset { .. }
-                    )
-                })
-            {
-                // Minimizing this will probably make a worse diff, so we return early.
+            if !self.can_minimize_diff_list(&diff_list) {
                 return Some(diff_list);
             }
 
-            // Get the current state.
-            let old_items = self
-                .sdk_items
-                .snapshot()
-                .into_iter()
-                .map(|obj| {
-                    obj.downcast::<TimelineItem>()
-                        .expect("SDK items are TimelineItems")
-                })
-                .collect::<Vec<_>>();
-
-            let mut item_map = old_items
-                .iter()
-                .cloned()
-                .map(|item| (item.timeline_id(), item))
-                .collect::<HashMap<_, _>>();
-            let mut new_items = VecDeque::from(old_items.clone());
-            let mut updated_item_ids = Vec::new();
-
-            let mut update_or_create_item = |value: Arc<SdkTimelineItem>| {
-                let timeline_id = value.unique_id().0.clone();
-                item_map
-                    .entry(timeline_id)
-                    .and_modify(|item| {
-                        self.update_item(item, &value);
-                        updated_item_ids.push(item.timeline_id());
-                    })
-                    .or_insert_with(|| self.create_item(&value))
-                    .clone()
-            };
-
-            // Get the new state by applying the diffs.
-            for diff in diff_list {
-                match diff {
-                    VectorDiff::Append { values } => {
-                        let items = values.into_iter().map(&mut update_or_create_item);
-                        new_items.extend(items);
-                    }
-                    VectorDiff::PushFront { value } => {
-                        let item = update_or_create_item(value);
-                        new_items.push_front(item);
-                    }
-                    VectorDiff::PushBack { value } => {
-                        let item = update_or_create_item(value);
-                        new_items.push_back(item);
-                    }
-                    VectorDiff::PopFront => {
-                        new_items.pop_front();
-                    }
-                    VectorDiff::PopBack => {
-                        new_items.pop_back();
-                    }
-                    VectorDiff::Insert { index, value } => {
-                        let item = update_or_create_item(value);
-                        new_items.insert(index, item);
-                    }
-                    VectorDiff::Set { index, value } => {
-                        let item = update_or_create_item(value);
-                        *new_items
-                            .get_mut(index)
-                            .expect("an item should already exist at the given index") = item;
-                    }
-                    VectorDiff::Remove { index } => {
-                        new_items.remove(index);
-                    }
-                    VectorDiff::Clear | VectorDiff::Truncate { .. } | VectorDiff::Reset { .. } => {
-                        unreachable!()
-                    }
-                }
-            }
-
-            // Use a diff algorithm to minimize the removals and additions.
-            let old_item_ids = old_items
-                .iter()
-                .map(TimelineItem::timeline_id)
-                .collect::<Vec<_>>();
-            let new_item_ids = new_items
-                .iter()
-                .map(TimelineItem::timeline_id)
-                .collect::<Vec<_>>();
-
-            let mut pos = 0;
-            // Remove and insert items in batch.
-            let mut n_removals = 0;
-            let mut additions = Vec::<TimelineItem>::new();
-
-            for result in diff::slice(&old_item_ids, &new_item_ids) {
-                match result {
-                    diff::Result::Left(_) => {
-                        if !additions.is_empty() {
-                            self.update_items(pos, 0, &additions);
-
-                            pos += additions.len() as u32;
-                            additions.clear();
-                        }
-
-                        n_removals += 1;
-                    }
-                    diff::Result::Both(timeline_id, _) => {
-                        if !additions.is_empty() || n_removals > 0 {
-                            self.update_items(pos, n_removals, &additions);
-
-                            pos += additions.len() as u32;
-                            additions.clear();
-                        }
-
-                        if updated_item_ids.contains(timeline_id) {
-                            // The header visibility might have changed.
-                            self.update_items_headers(pos, 1);
-                        }
-
-                        pos += 1;
-                    }
-                    diff::Result::Right(timeline_id) => {
-                        let item = item_map
-                            .get(timeline_id)
-                            .expect("item should exist in map")
-                            .clone();
-                        additions.push(item);
-                    }
-                }
-            }
-
-            // Process the remaining items.
-            if !additions.is_empty() || n_removals > 0 {
-                self.update_items(pos, n_removals, &additions);
-            }
+            self.minimize_diff_list(diff_list);
 
             None
         }
@@ -543,14 +406,9 @@ mod imp {
 
             self.sdk_items.splice(pos, n_removals, additions);
 
-            // Update the header visibility of all the new additions, or only the first item
-            // after a removal.
-            let update_nb = if additions.is_empty() {
-                n_removals.min(1)
-            } else {
-                additions.len() as u32
-            };
-            self.update_items_headers(pos, update_nb);
+            // Update the header visibility of all the new additions, and the first item
+            // after this batch.
+            self.update_items_headers(pos, additions.len() as u32);
 
             // Try to update the latest unread message.
             if !additions.is_empty() {
@@ -560,7 +418,8 @@ mod imp {
             }
         }
 
-        /// Update `nb` items' headers starting at `pos`.
+        /// Update the headers of the item at the given position and the given
+        /// number of items after it.
         fn update_items_headers(&self, pos: u32, nb: u32) {
             let sdk_items = &self.sdk_items;
 
@@ -592,49 +451,6 @@ mod imp {
                     current.set_show_header(false);
                 }
             }
-        }
-
-        /// Update the given item with the given value.
-        fn update_item(&self, item: &TimelineItem, value: &SdkTimelineItem) {
-            item.update_with(value);
-
-            if let Some(event) = item.downcast_ref::<Event>() {
-                // Update the identifier in the event map, in case we switched from a
-                // transaction ID to an event ID.
-                self.event_map
-                    .borrow_mut()
-                    .insert(event.identifier(), event.clone());
-
-                // Try to update the latest unread message.
-                self.room().update_latest_activity(iter::once(event));
-            }
-        }
-
-        /// Create a `TimelineItem` in this `Timeline` from the given SDK
-        /// timeline item.
-        fn create_item(&self, item: &SdkTimelineItem) -> TimelineItem {
-            let room = self.room();
-            let item = TimelineItem::new(item, room);
-
-            if let Some(event) = item.downcast_ref::<Event>() {
-                self.event_map
-                    .borrow_mut()
-                    .insert(event.identifier(), event.clone());
-
-                // Keep track of the activity of the sender.
-                if event.counts_as_unread() {
-                    if let Some(members) = room.members() {
-                        let member = members.get_or_create(event.sender_id());
-                        member.set_latest_activity(u64::from(event.origin_server_ts().get()));
-                    }
-                }
-
-                if event.is_room_create_event() {
-                    self.set_has_room_create(true);
-                }
-            }
-
-            item
         }
 
         /// Remove the given item from this `Timeline`.
@@ -763,6 +579,75 @@ mod imp {
             self.read_receipts_changed_handle
                 .set(handle.abort_handle())
                 .expect("handle is uninitialized");
+        }
+    }
+
+    impl TimelineItemStore for Timeline {
+        type Item = TimelineItem;
+        type Data = Arc<SdkTimelineItem>;
+
+        fn items(&self) -> Vec<TimelineItem> {
+            self.sdk_items
+                .snapshot()
+                .into_iter()
+                .map(|obj| {
+                    obj.downcast::<TimelineItem>()
+                        .expect("SDK items are TimelineItems")
+                })
+                .collect()
+        }
+
+        fn create_item(&self, data: &Arc<SdkTimelineItem>) -> TimelineItem {
+            let room = self.room();
+            let item = TimelineItem::new(data, room);
+
+            if let Some(event) = item.downcast_ref::<Event>() {
+                self.event_map
+                    .borrow_mut()
+                    .insert(event.identifier(), event.clone());
+
+                // Keep track of the activity of the sender.
+                if event.counts_as_unread() {
+                    if let Some(members) = room.members() {
+                        let member = members.get_or_create(event.sender_id());
+                        member.set_latest_activity(u64::from(event.origin_server_ts().get()));
+                    }
+                }
+
+                if event.is_room_create_event() {
+                    self.set_has_room_create(true);
+                }
+            }
+
+            item
+        }
+
+        fn update_item(&self, item: &TimelineItem, data: &Arc<SdkTimelineItem>) {
+            item.update_with(data);
+
+            if let Some(event) = item.downcast_ref::<Event>() {
+                // Update the identifier in the event map, in case we switched from a
+                // transaction ID to an event ID.
+                self.event_map
+                    .borrow_mut()
+                    .insert(event.identifier(), event.clone());
+
+                // Try to update the latest unread message.
+                self.room().update_latest_activity(iter::once(event));
+            }
+        }
+
+        fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineItemDiff<TimelineItem>>) {
+            for item_diff in item_diff_list {
+                match item_diff {
+                    TimelineItemDiff::Splice(splice) => {
+                        self.update_items(splice.pos, splice.n_removals, &splice.additions);
+                    }
+                    TimelineItemDiff::Update(update) => {
+                        self.update_items_headers(update.pos, update.n_items);
+                    }
+                }
+            }
         }
     }
 }
