@@ -184,7 +184,9 @@ mod imp {
                     CrossSigningResetAuthType::Uiaa(uiaa_info) => {
                         let auth_data = self.perform_next_stage(uiaa_info).await?;
 
-                        handle.auth(Some(auth_data)).await?;
+                        spawn_tokio!(async move { handle.auth(Some(auth_data)).await })
+                            .await
+                            .expect("task was not aborted")?;
                     }
                     CrossSigningResetAuthType::Oidc(_) => {
                         // According to the code, this is only used with the `experimental-oidc`

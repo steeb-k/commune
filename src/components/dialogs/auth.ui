@@ -18,13 +18,33 @@
         <child>
           <object class="GtkButton" id="open_browser_btn">
             <property name="can-shrink">true</property>
-            <property name="label" translatable="yes">Authenticate</property>
             <property name="halign">center</property>
             <style>
               <class name="suggested-action"/>
               <class name="pill"/>
               <class name="large"/>
+              <class name="image-text-button"/>
             </style>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="halign">center</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Contin_ue</property>
+                    <property name="use-underline">True</property>
+                    <property name="ellipsize">end</property>
+                    <property name="mnemonic-widget">open_browser_btn</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">external-link-symbolic</property>
+                    <property name="accessible-role">presentation</property>
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </property>
           </object>
         </child>
         <child>
