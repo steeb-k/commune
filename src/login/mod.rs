@@ -7,23 +7,24 @@ use gtk::{
 };
 use matrix_sdk::Client;
 use ruma::{
-    api::client::session::{get_login_types::v3::LoginType, login, SsoRedirectOidcAction},
+    api::client::session::{get_login_types::v3::LoginType, login},
     OwnedServerName,
 };
-use tracing::{error, warn};
+use tracing::warn;
 use url::Url;
 
 mod advanced_dialog;
 mod greeter;
 mod homeserver_page;
-mod idp_button;
+mod in_browser_page;
 mod method_page;
 mod session_setup_view;
-mod sso_page;
+mod sso_idp_button;
 
 use self::{
     advanced_dialog::LoginAdvancedDialog, greeter::Greeter, homeserver_page::LoginHomeserverPage,
-    method_page::LoginMethodPage, session_setup_view::SessionSetupView, sso_page::LoginSsoPage,
+    in_browser_page::LoginInBrowserPage, method_page::LoginMethodPage,
+    session_setup_view::SessionSetupView,
 };
 use crate::{
     components::OfflineBanner, prelude::*, secret::store_session, session::model::Session, spawn,
@@ -40,8 +41,8 @@ enum LoginPage {
     Homeserver,
     /// The page to select a login method.
     Method,
-    /// The page to wait for SSO to be finished.
-    Sso,
+    /// The page to log in with the browser.
+    InBrowser,
     /// The loading page.
     Loading,
     /// The session setup stack.
@@ -74,7 +75,7 @@ mod imp {
         #[template_child]
         method_page: TemplateChild<LoginMethodPage>,
         #[template_child]
-        sso_page: TemplateChild<LoginSsoPage>,
+        in_browser_page: TemplateChild<LoginInBrowserPage>,
         #[template_child]
         done_button: TemplateChild<gtk::Button>,
         /// Whether auto-discovery is enabled.
@@ -117,8 +118,8 @@ mod imp {
                 "login.sso",
                 Some(&Option::<String>::static_variant_type()),
                 |obj, _, variant| async move {
-                    let idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
-                    obj.imp().login_with_sso(idp_id, false).await;
+                    let sso_idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
+                    obj.imp().show_in_browser_page(sso_idp_id, false);
                 },
             );
 
@@ -181,7 +182,8 @@ mod imp {
                 LoginPage::Greeter => self.greeter.grab_focus(),
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
-                LoginPage::Sso | LoginPage::Loading => false,
+                LoginPage::InBrowser => self.in_browser_page.grab_focus(),
+                LoginPage::Loading => false,
                 LoginPage::SessionSetup => {
                     if let Some(session_setup) = self.session_setup() {
                         session_setup.grab_focus()
@@ -355,8 +357,8 @@ mod imp {
             dialog.run_future(&*obj).await;
         }
 
-        /// Show the appropriate login screen given the current login types.
-        pub(super) fn show_login_screen(&self) {
+        /// Show the appropriate login page given the current login types.
+        pub(super) fn show_login_page(&self) {
             let mut oidc_compatibility = false;
             let mut supports_password = false;
 
@@ -375,77 +377,19 @@ mod imp {
             }
 
             if oidc_compatibility || !supports_password {
-                spawn!(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.login_with_sso(None, oidc_compatibility).await;
-                    }
-                ));
+                self.show_in_browser_page(None, oidc_compatibility);
             } else {
                 self.navigation.push_by_tag(LoginPage::Method.as_ref());
             }
         }
 
-        /// Log in with the SSO login type.
-        async fn login_with_sso(&self, idp_id: Option<String>, oidc_compatibility: bool) {
-            self.navigation.push_by_tag(LoginPage::Sso.as_ref());
-            let client = self.client().await.expect("client was constructed");
+        /// Show the page to log in with the browser with the given parameters.
+        fn show_in_browser_page(&self, sso_idp_id: Option<String>, oidc_compatibility: bool) {
+            self.in_browser_page.set_sso_idp_id(sso_idp_id);
+            self.in_browser_page
+                .set_oidc_compatibility(oidc_compatibility);
 
-            let handle = spawn_tokio!(async move {
-                let mut login = client
-                    .matrix_auth()
-                    .login_sso(|sso_url| async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                let mut sso_url = sso_url;
-
-                                if oidc_compatibility {
-                                    if let Ok(mut parsed_url) = Url::parse(&sso_url) {
-                                        // Add an action query parameter manually.
-                                        parsed_url.query_pairs_mut().append_pair(
-                                            "action",
-                                            SsoRedirectOidcAction::Login.as_str(),
-                                        );
-                                        sso_url = parsed_url.into();
-                                    } else {
-                                        // If parsing fails, just use the provided URL.
-                                        error!("Failed to parse SSO URL: {sso_url}");
-                                    }
-                                }
-
-                                if let Err(error) = gtk::UriLauncher::new(&sso_url)
-                                    .launch_future(gtk::Window::NONE)
-                                    .await
-                                {
-                                    // FIXME: We should forward the error.
-                                    error!("Could not launch URI: {error}");
-                                }
-                            });
-                        });
-                        Ok(())
-                    })
-                    .initial_device_display_name("Fractal");
-
-                if let Some(idp_id) = idp_id.as_deref() {
-                    login = login.identity_provider_id(idp_id);
-                }
-
-                login.send().await
-            });
-
-            match handle.await.expect("task was not aborted") {
-                Ok(response) => {
-                    self.handle_login_response(response).await;
-                }
-                Err(error) => {
-                    warn!("Could not log in: {error}");
-                    let obj = self.obj();
-                    toast!(obj, error.to_user_facing());
-                    self.navigation.pop();
-                }
-            }
+            self.navigation.push_by_tag(LoginPage::InBrowser.as_ref());
         }
 
         /// Handle the given response after successfully logging in.
@@ -595,8 +539,8 @@ impl Login {
     }
 
     /// Show the appropriate login screen given the current login types.
-    fn show_login_screen(&self) {
-        self.imp().show_login_screen();
+    fn show_login_page(&self) {
+        self.imp().show_login_page();
     }
 
     /// Freeze the login screen.

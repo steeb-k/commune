@@ -4,7 +4,7 @@ use gtk::{self, glib, glib::clone, CompositeTemplate};
 use ruma::api::client::session::get_login_types::v3::LoginType;
 use tracing::warn;
 
-use super::{idp_button::IdpButton, Login};
+use super::{sso_idp_button::SsoIdpButton, Login};
 use crate::{
     components::LoadingButton, gettext_f, prelude::*, spawn_tokio, toast, utils::BoundObjectWeakRef,
 };
@@ -28,7 +28,7 @@ mod imp {
         password_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
         sso_idp_box: TemplateChild<gtk::Box>,
-        sso_idp_box_children: RefCell<Vec<IdpButton>>,
+        sso_idp_box_children: RefCell<Vec<SsoIdpButton>>,
         #[template_child]
         more_sso_btn: TemplateChild<gtk::Button>,
         #[template_child]
@@ -157,8 +157,8 @@ mod imp {
                 let mut sso_idp_box_children = self.sso_idp_box_children.borrow_mut();
                 sso_idp_box_children.reserve(sso_login.identity_providers.len());
 
-                for provider in &sso_login.identity_providers {
-                    if let Some(btn) = IdpButton::new(provider) {
+                for identity_provider in sso_login.identity_providers {
+                    if let Some(btn) = SsoIdpButton::new(identity_provider) {
                         self.sso_idp_box.append(&btn);
                         sso_idp_box_children.push(btn);
 

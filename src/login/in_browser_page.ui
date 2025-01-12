@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="LoginSsoPage" parent="AdwNavigationPage">
-    <property name="tag">sso</property>
-    <property name="title" translatable="yes">Single Sign-On</property>
+  <template class="LoginInBrowserPage" parent="AdwNavigationPage">
+    <property name="tag">in-browser</property>
+    <property name="title" translatable="yes">Authentication</property>
     <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
@@ -23,7 +23,6 @@
                 <property name="vexpand">True</property>
                 <property name="child">
                   <object class="AdwClamp">
-                    <property name="maximum-size">360</property>
                     <property name="margin-top">24</property>
                     <property name="margin-bottom">24</property>
                     <property name="margin-start">12</property>
@@ -38,7 +37,7 @@
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="justify">center</property>
-                            <property name="label" translatable="yes">Single Sign-On</property>
+                            <property name="label" translatable="yes">Authentication</property>
                             <property name="accessible-role">heading</property>
                             <accessibility>
                               <property name="level">1</property>
@@ -53,10 +52,42 @@
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="justify">center</property>
-                            <property name="label" translatable="yes">Please follow the steps in the browser</property>
+                            <property name="label" translatable="yes">Click on the button below and follow the steps in the browser</property>
                             <style>
-                              <class name="title-4"/>
+                              <class name="body"/>
                             </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="continue_btn">
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="standalone-button"/>
+                              <class name="image-text-button"/>
+                              <class name="pill"/>
+                            </style>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="label" translatable="yes">Contin_ue</property>
+                                    <property name="use-underline">True</property>
+                                    <property name="ellipsize">end</property>
+                                    <property name="mnemonic-widget">continue_btn</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkImage">
+                                    <property name="icon-name">external-link-symbolic</property>
+                                    <property name="accessible-role">presentation</property>
+                                    <property name="valign">center</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                            <property name="halign">center</property>
+                            <signal name="clicked" handler="login_with_sso" swapped="yes" />
                           </object>
                         </child>
                       </object>
@@ -71,4 +102,3 @@
     </property>
   </template>
 </interface>
-

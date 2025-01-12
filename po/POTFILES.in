@@ -60,13 +60,13 @@ src/login/advanced_dialog.ui
 src/login/greeter.ui
 src/login/homeserver_page.rs
 src/login/homeserver_page.ui
-src/login/idp_button.rs
+src/login/in_browser_page.ui
 src/login/method_page.rs
 src/login/method_page.ui
 src/login/mod.rs
 src/login/mod.ui
 src/login/session_setup_view.ui
-src/login/sso_page.ui
+src/login/sso_idp_button.rs
 src/secret/linux.rs
 src/session/model/session.rs
 src/session/model/notifications/mod.rs

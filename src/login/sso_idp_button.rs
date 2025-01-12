@@ -13,20 +13,26 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/login/idp_button.ui")]
-    #[properties(wrapper_type = super::IdpButton)]
-    pub struct IdpButton {
-        /// The identity provider brand of this button.
-        brand: OnceCell<IdentityProviderBrand>,
-        /// The identity provider brand of this button, as a string.
+    #[template(resource = "/org/gnome/Fractal/ui/login/sso_idp_button.ui")]
+    #[properties(wrapper_type = super::SsoIdpButton)]
+    pub struct SsoIdpButton {
+        /// The identity provider of this button.
+        identity_provider: OnceCell<IdentityProvider>,
+        /// The ID of the identity provider.
+        #[property(get = Self::id)]
+        id: PhantomData<String>,
+        /// The name of the identity provider.
+        #[property(get = Self::name)]
+        name: PhantomData<String>,
+        /// The brand of the identity provider, as a string.
         #[property(get = Self::brand_string)]
         brand_string: PhantomData<String>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for IdpButton {
-        const NAME: &'static str = "IdpButton";
-        type Type = super::IdpButton;
+    impl ObjectSubclass for SsoIdpButton {
+        const NAME: &'static str = "SsoIdpButton";
+        type Type = super::SsoIdpButton;
         type ParentType = gtk::Button;
 
         fn class_init(klass: &mut Self::Class) {
@@ -41,15 +47,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IdpButton {}
+    impl ObjectImpl for SsoIdpButton {}
 
-    impl WidgetImpl for IdpButton {}
-    impl ButtonImpl for IdpButton {}
+    impl WidgetImpl for SsoIdpButton {}
+    impl ButtonImpl for SsoIdpButton {}
 
-    impl IdpButton {
-        /// Set the identity provider brand of this button.
-        pub(super) fn set_brand(&self, brand: IdentityProviderBrand) {
-            let brand = self.brand.get_or_init(|| brand);
+    impl SsoIdpButton {
+        /// Set the identity provider of this button.
+        pub(super) fn set_identity_provider(&self, identity_provider: IdentityProvider) {
+            let identity_provider = self.identity_provider.get_or_init(|| identity_provider);
 
             adw::StyleManager::default().connect_dark_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -58,29 +64,49 @@ mod imp {
             ));
             self.update_icon();
 
-            let obj = self.obj();
-            obj.set_action_target_value(Some(&Some(&brand.as_str()).to_variant()));
-            obj.set_tooltip_text(Some(&gettext_f(
+            self.obj()
+                .set_action_target_value(Some(&Some(&identity_provider.id).to_variant()));
+            self.obj().set_tooltip_text(Some(&gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name.
                 // This is the tooltip text on buttons to log in via Single Sign-On.
                 // The brand is something like Facebook, Apple, GitHub…
                 "Log in with {brand}",
-                &[("brand", brand.as_str())],
+                &[("brand", &identity_provider.name)],
             )));
         }
 
-        /// The identity provider brand of this button.
-        fn brand(&self) -> &IdentityProviderBrand {
-            self.brand.get().expect("brand is initialized")
+        /// The identity provider of this button.
+        fn identity_provider(&self) -> &IdentityProvider {
+            self.identity_provider
+                .get()
+                .expect("identity provider is initialized")
         }
 
-        /// The identity provider brand of this button, as a string.
+        /// The ID of the identity provider.
+        fn id(&self) -> String {
+            self.identity_provider().id.clone()
+        }
+
+        /// The name of the identity provider.
+        fn name(&self) -> String {
+            self.identity_provider().name.clone()
+        }
+
+        /// The brand of the identity provider.
+        fn brand(&self) -> &IdentityProviderBrand {
+            self.identity_provider()
+                .brand
+                .as_ref()
+                .expect("identity provider has a brand")
+        }
+
+        /// The brand of the identity provider, as a string.
         fn brand_string(&self) -> String {
             self.brand().to_string()
         }
 
-        /// The icon name of the current brand, according to the current theme.
+        /// The icon name of the brand, according to the current theme.
         fn brand_icon(&self) -> &str {
             let is_dark = adw::StyleManager::default().is_dark();
 
@@ -123,13 +149,13 @@ mod imp {
 
 glib::wrapper! {
     /// A button to represent an SSO identity provider.
-    pub struct IdpButton(ObjectSubclass<imp::IdpButton>)
+    pub struct SsoIdpButton(ObjectSubclass<imp::SsoIdpButton>)
         @extends gtk::Widget, gtk::Button,
         @implements gtk::Accessible, gtk::Actionable;
 }
 
-impl IdpButton {
-    /// The supported SSO identity provider brands of `IdpButton`.
+impl SsoIdpButton {
+    /// The supported SSO identity provider brands of `SsoIdpButton`.
     const SUPPORTED_IDP_BRANDS: &[IdentityProviderBrand] = &[
         IdentityProviderBrand::Apple,
         IdentityProviderBrand::Facebook,
@@ -139,18 +165,18 @@ impl IdpButton {
         IdentityProviderBrand::Twitter,
     ];
 
-    /// Create a new `IdpButton` with the given identity provider.
+    /// Create a new `SsoIdpButton` with the given identity provider.
     ///
     /// Returns `None` if the identity provider's brand is not supported.
-    pub fn new(idp: &IdentityProvider) -> Option<Self> {
+    pub fn new(identity_provider: IdentityProvider) -> Option<Self> {
         // If this is not a supported brand, return `None`.
-        let brand = idp.brand.as_ref()?;
+        let brand = identity_provider.brand.as_ref()?;
         if !Self::SUPPORTED_IDP_BRANDS.contains(brand) {
             return None;
         }
 
         let obj = glib::Object::new::<Self>();
-        obj.imp().set_brand(brand.clone());
+        obj.imp().set_identity_provider(identity_provider);
 
         Some(obj)
     }

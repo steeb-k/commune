@@ -242,7 +242,7 @@ mod imp {
             match handle.await.expect("task was not aborted") {
                 Ok(res) => {
                     login.set_login_types(res.flows);
-                    login.show_login_screen();
+                    login.show_login_page();
                 }
                 Err(error) => {
                     warn!("Could not get available login types: {error}");

@@ -17,7 +17,9 @@
           </object>
         </child>
         <child>
-          <object class="LoginSsoPage" id="sso_page"/>
+          <object class="LoginInBrowserPage" id="in_browser_page">
+            <property name="login">Login</property>
+          </object>
         </child>
         <child>
           <object class="AdwNavigationPage">

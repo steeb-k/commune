@@ -57,11 +57,11 @@
     <file compressed="true" preprocess="xml-stripblanks">login/advanced_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/greeter.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/homeserver_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">login/idp_button.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">login/in_browser_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/method_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/session_setup_view.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">login/sso_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">login/sso_idp_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/deactivate_account_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/log_out_subpage.ui</file>
