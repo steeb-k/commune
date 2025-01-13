@@ -57,10 +57,9 @@ mod imp {
                 return;
             }
 
-            let obj = self.obj();
             let stack = &self.stack;
 
-            match state {
+            let name = match state {
                 MessageState::None => {
                     if matches!(
                         prev_state,
@@ -68,35 +67,26 @@ mod imp {
                             | MessageState::RecoverableError
                             | MessageState::PermanentError
                     ) {
-                        // Show the sent icon.
-                        stack.set_visible_child_name("sent");
-
+                        // Show the sent icon for a few seconds.
                         glib::timeout_add_seconds_local_once(
                             SENT_VISIBLE_SECONDS,
                             clone!(
                                 #[weak]
-                                obj,
+                                stack,
                                 move || {
-                                    obj.set_visible(false);
+                                    stack.set_visible_child_name("none");
                                 }
                             ),
                         );
+
+                        "sent"
                     } else {
-                        obj.set_visible(false);
+                        "none"
                     }
                 }
-                MessageState::Sending => {
-                    stack.set_visible_child_name("sending");
-                    obj.set_visible(true);
-                }
-                MessageState::RecoverableError => {
-                    stack.set_visible_child_name("warning");
-                    obj.set_visible(true);
-                }
-                MessageState::PermanentError => {
-                    stack.set_visible_child_name("error");
-                    obj.set_visible(true);
-                }
+                MessageState::Sending => "sending",
+                MessageState::RecoverableError => "warning",
+                MessageState::PermanentError => "error",
                 MessageState::Edited => {
                     if matches!(
                         prev_state,
@@ -104,9 +94,7 @@ mod imp {
                             | MessageState::RecoverableError
                             | MessageState::PermanentError
                     ) {
-                        // Show the sent icon.
-                        stack.set_visible_child_name("sent");
-
+                        // Show the sent icon for a few seconds.
                         glib::timeout_add_seconds_local_once(
                             SENT_VISIBLE_SECONDS,
                             clone!(
@@ -117,15 +105,17 @@ mod imp {
                                 }
                             ),
                         );
+
+                        "sent"
                     } else {
-                        stack.set_visible_child_name("edited");
-                        obj.set_visible(true);
+                        "edited"
                     }
                 }
-            }
+            };
+            stack.set_visible_child_name(name);
 
             self.state.set(state);
-            obj.notify_state();
+            self.obj().notify_state();
         }
     }
 }
