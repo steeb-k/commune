@@ -119,10 +119,7 @@ async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disc
 
 /// Load information for the audio in the given file.
 pub async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
-    let mut info = BaseAudioInfo {
-        duration: None,
-        size: None,
-    };
+    let mut info = BaseAudioInfo::default();
 
     let Some(media_info) = load_gstreamer_media_info(file).await else {
         return info;

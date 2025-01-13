@@ -20,13 +20,7 @@ pub async fn load_video_info(
     file: &gio::File,
     widget: &impl IsA<gtk::Widget>,
 ) -> (BaseVideoInfo, Option<Thumbnail>) {
-    let mut info = BaseVideoInfo {
-        duration: None,
-        width: None,
-        height: None,
-        size: None,
-        blurhash: None,
-    };
+    let mut info = BaseVideoInfo::default();
 
     let Some(media_info) = load_gstreamer_media_info(file).await else {
         return (info, None);

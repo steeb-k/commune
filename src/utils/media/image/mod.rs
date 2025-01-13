@@ -162,7 +162,8 @@ impl ImageInfoLoader {
         self.into_first_frame()
             .await
             .and_then(|f| f.dimensions())
-            .map_or_else(default_base_image_info, Into::into)
+            .map(Into::into)
+            .unwrap_or_default()
     }
 
     /// Load the information for this image and try to generate a thumbnail
@@ -173,11 +174,11 @@ impl ImageInfoLoader {
         widget: &impl IsA<gtk::Widget>,
     ) -> (BaseImageInfo, Option<Thumbnail>) {
         let Some(frame) = self.into_first_frame().await else {
-            return (default_base_image_info(), None);
+            return (BaseImageInfo::default(), None);
         };
 
         let dimensions = frame.dimensions();
-        let info = dimensions.map_or_else(default_base_image_info, Into::into);
+        let info = dimensions.map(Into::into).unwrap_or_default();
 
         // Generate the same thumbnail dimensions as we will need in the timeline.
         let scale_factor = widget.scale_factor();
@@ -307,18 +308,8 @@ impl From<FrameDimensions> for BaseImageInfo {
         BaseImageInfo {
             height: Some(height.into()),
             width: Some(width.into()),
-            ..default_base_image_info()
+            ..Default::default()
         }
-    }
-}
-
-/// The default value for `BaseImageInfo`.
-fn default_base_image_info() -> BaseImageInfo {
-    BaseImageInfo {
-        height: None,
-        width: None,
-        size: None,
-        blurhash: None,
     }
 }
 
