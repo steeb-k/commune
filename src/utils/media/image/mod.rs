@@ -55,6 +55,12 @@ const THUMBNAIL_MAX_FILESIZE_THRESHOLD: u32 = 1024 * 1024;
 /// If the original image is larger than dimensions + threshold, we assume it is
 /// worth it to request or generate a thumbnail.
 const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
+/// The known image MIME types that can be animated.
+///
+/// From the list of [supported image formats of glycin].
+///
+/// [supported image formats of glycin]: https://gitlab.gnome.org/GNOME/glycin/-/tree/main?ref_type=heads#supported-image-formats
+const SUPPORTED_ANIMATED_IMAGE_MIME_TYPES: &[&str] = &["image/gif", "image/png", "image/webp"];
 
 /// Get an image loader for the given file.
 async fn image_loader(file: gio::File) -> Result<glycin::Image<'static>, glycin::ErrorCtx> {
@@ -161,8 +167,7 @@ impl ImageInfoLoader {
     pub async fn load_info(self) -> BaseImageInfo {
         self.into_first_frame()
             .await
-            .and_then(|f| f.dimensions())
-            .map(Into::into)
+            .map(|f| f.info())
             .unwrap_or_default()
     }
 
@@ -177,8 +182,7 @@ impl ImageInfoLoader {
             return (BaseImageInfo::default(), None);
         };
 
-        let dimensions = frame.dimensions();
-        let info = dimensions.map(Into::into).unwrap_or_default();
+        let info = frame.info();
 
         // Generate the same thumbnail dimensions as we will need in the timeline.
         let scale_factor = widget.scale_factor();
@@ -186,7 +190,9 @@ impl ImageInfoLoader {
             FrameDimensions::thumbnail_max_dimensions(widget.scale_factor());
 
         if !filesize_is_too_big(filesize)
-            && !dimensions.is_some_and(|d| d.needs_thumbnail(max_thumbnail_dimensions))
+            && !frame
+                .dimensions()
+                .is_some_and(|d| d.needs_thumbnail(max_thumbnail_dimensions))
         {
             // It is not worth it to generate a thumbnail.
             return (info, None);
@@ -238,6 +244,25 @@ impl Frame {
                 height: frame.height(),
             }),
             Self::Texture(texture) => FrameDimensions::with_texture(texture),
+        }
+    }
+
+    /// Whether the image that this frame belongs to is animated.
+    fn is_animated(&self) -> bool {
+        match self {
+            Self::Glycin(frame) => frame.delay().is_some(),
+            Self::Texture(_) => false,
+        }
+    }
+
+    /// Get the `BaseImageInfo` for this frame.
+    fn info(&self) -> BaseImageInfo {
+        let dimensions = self.dimensions();
+        BaseImageInfo {
+            width: dimensions.map(|d| d.width.into()),
+            height: dimensions.map(|d| d.height.into()),
+            is_animated: Some(self.is_animated()),
+            ..Default::default()
         }
     }
 
@@ -299,17 +324,6 @@ impl FrameDimensions {
     fn to_image_loader_request(self, requested: Self) -> glycin::FrameRequest {
         let scaled = self.scale_to_fit(requested, gtk::ContentFit::Cover);
         glycin::FrameRequest::new().scale(scaled.width, scaled.height)
-    }
-}
-
-impl From<FrameDimensions> for BaseImageInfo {
-    fn from(value: FrameDimensions) -> Self {
-        let FrameDimensions { width, height } = value;
-        BaseImageInfo {
-            height: Some(height.into()),
-            width: Some(width.into()),
-            ..Default::default()
-        }
     }
 }
 
@@ -523,6 +537,13 @@ impl ImageSource<'_> {
             return false;
         }
 
+        // Even if we request animated thumbnails, not a lot of media repositories
+        // support scaling animated images. So we just download the original to be able
+        // to play it.
+        if self.is_animated() {
+            return false;
+        }
+
         let dimensions = self.dimensions();
 
         if prefer_thumbnail && dimensions.is_none() {
@@ -557,6 +578,24 @@ impl ImageSource<'_> {
     /// The dimensions of this source.
     fn dimensions(&self) -> Option<FrameDimensions> {
         self.info.and_then(|i| i.dimensions)
+    }
+
+    /// Whether this source is animated.
+    ///
+    /// Returns `false` if the info does not say that it is animated, or if the
+    /// MIME type is not one of the supported animated image formats.
+    fn is_animated(&self) -> bool {
+        if self
+            .info
+            .and_then(|i| i.is_animated)
+            .is_none_or(|is_animated| !is_animated)
+        {
+            return false;
+        }
+
+        self.info
+            .and_then(|i| i.mimetype)
+            .is_some_and(|mimetype| SUPPORTED_ANIMATED_IMAGE_MIME_TYPES.contains(&mimetype))
     }
 }
 
@@ -624,6 +663,8 @@ pub struct ImageSourceInfo<'a> {
     mimetype: Option<&'a str>,
     /// The file size of the image.
     filesize: Option<u32>,
+    /// Whether the image is animated.
+    is_animated: Option<bool>,
 }
 
 impl<'a> From<&'a ImageInfo> for ImageSourceInfo<'a> {
@@ -632,6 +673,7 @@ impl<'a> From<&'a ImageInfo> for ImageSourceInfo<'a> {
             dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
             filesize: value.size.and_then(|u| u.try_into().ok()),
+            is_animated: value.is_animated,
         }
     }
 }
@@ -642,6 +684,7 @@ impl<'a> From<&'a ThumbnailInfo> for ImageSourceInfo<'a> {
             dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
             filesize: value.size.and_then(|u| u.try_into().ok()),
+            is_animated: None,
         }
     }
 }
@@ -652,6 +695,7 @@ impl<'a> From<&'a AvatarImageInfo> for ImageSourceInfo<'a> {
             dimensions: FrameDimensions::from_options(value.width, value.height),
             mimetype: value.mimetype.as_deref(),
             filesize: value.size.and_then(|u| u.try_into().ok()),
+            is_animated: None,
         }
     }
 }
