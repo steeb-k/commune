@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-10 19:34+0000\n"
-"PO-Revision-Date: 2025-01-11 12:59+0200\n"
+"POT-Creation-Date: 2025-01-13 14:42+0000\n"
+"PO-Revision-Date: 2025-01-14 21:22+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -571,11 +571,11 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Крім того, ви можете скинути відновлення облікового запису"
 
-#: src/components/dialogs/auth.rs:269
+#: src/components/dialogs/auth.rs:271
 msgid "Please authenticate the operation with your password"
 msgstr "Будь ласка, пройдіть розпізнавання, ввівши пароль"
 
-#: src/components/dialogs/auth.rs:306
+#: src/components/dialogs/auth.rs:308
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
@@ -583,21 +583,23 @@ msgstr ""
 "Будь ласка, пройдіть розпізнавання за допомогою браузера, а потім "
 "поверніться сюди і натисніть кнопку «Підтвердити»"
 
-#: src/components/dialogs/auth.ui:4
+#: src/components/dialogs/auth.ui:4 src/login/in_browser_page.ui:5
+#: src/login/in_browser_page.ui:40
 msgid "Authentication"
 msgstr "Розпізнавання"
 
-#: src/components/dialogs/auth.ui:21
-msgid "Authenticate"
-msgstr "Розпізнавання"
+#: src/components/dialogs/auth.ui:33 src/login/in_browser_page.ui:74
+#| msgid "Continue"
+msgid "Contin_ue"
+msgstr "Продов_жити"
 
-#: src/components/dialogs/auth.ui:44
+#: src/components/dialogs/auth.ui:64
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Скасувати"
 
-#: src/components/dialogs/auth.ui:45
+#: src/components/dialogs/auth.ui:65
 msgid "C_onfirm"
 msgstr "_Підтвердити"
 
@@ -1730,13 +1732,10 @@ msgstr "Далі"
 msgid "Advanced…"
 msgstr "Додатково…"
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#. This is the tooltip text on buttons to log in via Single Sign-On.
-#. The brand is something like Facebook, Apple, GitHub…
-#: src/login/idp_button.rs:68
-msgid "Log in with {brand}"
-msgstr "Увійти за допомогою {brand}"
+#: src/login/in_browser_page.ui:55
+#| msgid "Please follow the steps in the browser"
+msgid "Click on the button below and follow the steps in the browser"
+msgstr "Натисніть розташовану нижче кнопку і виконайте настанови з браузера"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1772,19 +1771,19 @@ msgstr "Пароль"
 msgid "Single Sign-On Providers"
 msgstr "Надавачі єдиної системи розпізнавання"
 
-#: src/login/mod.rs:500
+#: src/login/mod.rs:444
 msgid "Could not store session"
 msgstr "Не вдалося зберегти сеанс"
 
-#: src/login/mod.ui:25 src/login/mod.ui:59
+#: src/login/mod.ui:27 src/login/mod.ui:61
 msgid "Login Complete"
 msgstr "Вхід завершено"
 
-#: src/login/mod.ui:80
+#: src/login/mod.ui:82
 msgid "This session is ready to send and receive secure messages"
 msgstr "Цей сеанс готовий до надсилання і отримання захищених повідомлень"
 
-#: src/login/mod.ui:86
+#: src/login/mod.ui:88
 msgid "Start Chatting"
 msgstr "Почати спілкування"
 
@@ -1796,13 +1795,13 @@ msgstr "Налаштовування сеансу"
 msgid "Fetching Account Data…"
 msgstr "Отримуємо дані облікового запису…"
 
-#: src/login/sso_page.ui:5 src/login/sso_page.ui:41
-msgid "Single Sign-On"
-msgstr "Єдина система розпізнавання"
-
-#: src/login/sso_page.ui:56
-msgid "Please follow the steps in the browser"
-msgstr "Будь ласка, виконайте настанови з браузера"
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#. This is the tooltip text on buttons to log in via Single Sign-On.
+#. The brand is something like Facebook, Apple, GitHub…
+#: src/login/sso_idp_button.rs:74
+msgid "Log in with {brand}"
+msgstr "Увійти за допомогою {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -2242,7 +2241,6 @@ msgid "Name"
 msgstr "Ім'я"
 
 #: src/session/view/account_settings/general_page/mod.ui:73
-#| msgid "_Create Account"
 msgid "Manage Account"
 msgstr "Керування обліковим записом"
 
@@ -3897,28 +3895,28 @@ msgid "User Location"
 msgstr "Місце перебування користувача"
 
 #. Translators: As in 'Sending message…'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:15
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:18
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:23
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:26
 msgid "Sending…"
 msgstr "Надсилання…"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:31
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:39
 msgid "Temporary Error Sending Message"
 msgstr "Тимчасова помилка при надсиланні повідомлення"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:46
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:54
 msgid "Message Cannot Be Sent"
 msgstr "Не вдалося надіслати повідомлення"
 
 #. Translators: As in 'Sent message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:62
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:65
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:73
 msgid "Sent"
 msgstr "Надіслано"
 
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:84
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:87
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:92
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:95
 msgid "Edited"
 msgstr "Змінено"
 
@@ -5107,6 +5105,12 @@ msgstr "файл"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Authenticate"
+#~ msgstr "Розпізнавання"
+
+#~ msgid "Single Sign-On"
+#~ msgstr "Єдина система розпізнавання"
 
 #~ msgid "{version} (unstable)"
 #~ msgstr "{version} (нестабільна)"
