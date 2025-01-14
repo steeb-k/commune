@@ -71,6 +71,49 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="10~rc" type="development" date="2025-01-14">
+      <description>
+        <p>
+          In this cold weather, we hope this new release candidate will warm your hearts. Let’s
+          celebrate this with our own awards ceremony:
+        </p>
+        <ul>
+          <li>
+            The most next-gen addition goes to… making Fractal OIDC aware. This ensures
+            compatibility with the upcoming authentication changes for matrix.org.
+          </li>
+          <li>
+            The most valuable fix goes to… showing consistently pills for users and rooms mentions
+            in the right place instead of seemingly random places, getting rid of one of our oldest
+            and most annoying bug.
+          </li>
+          <li>
+            The most sensible improvement goes to… using the send queue for attachments, ensuring
+            correct order of all messages and improving the visual feedback.
+          </li>
+          <li>
+            The most underrated feature goes to… allowing to react to stickers, fixing a crash in
+            the process.
+          </li>
+          <li>
+            The most obvious tweak goes to… removing the “Open Direct Chat” menu entry from avatar
+            menu and member profile in direct chats.
+          </li>
+          <li>
+            The clearest enhancement goes to… labelling experimental versions in the room upgrade
+            menu as such.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, it should be mostly stable and we expect to only include minor
+          improvements until the release of Fractal 10.
+        </p>
+      </description>
+    </release>
     <release version="10~beta" type="development" date="2024-12-26">
       <description>
         <p>

@@ -1358,7 +1358,7 @@ dependencies = [
 
 [[package]]
 name = "fractal"
-version = "10.0.0-beta"
+version = "10.0.0-rc"
 dependencies = [
  "ashpd",
  "assert_matches2",
