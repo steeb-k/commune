@@ -17,9 +17,9 @@ include:
   - local: .gitlab-ci/run_checks.yml
   - local: .gitlab-ci/build.yml
   - local: .gitlab-ci/test.yml
-  - local: .gitlab-ci/publish_docs.yml
-    rules:
-      - if: $CI_COMMIT_BRANCH == "main"
+  - component: "gitlab.gnome.org/GNOME/citemplates/basic-deploy-docs@master"
+    inputs:
+      docs-job-name: "build-docs"
   - local: .gitlab-ci/publish_nightly.yml
     rules:
       - if: $CI_COMMIT_BRANCH == "main"
