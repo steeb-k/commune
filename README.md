@@ -154,6 +154,10 @@ following dependencies at runtime:
   * Camera: scan QR codes during verification.
   * Location: send the user’s location in a conversation.
   * Settings: get the 12h/24h time format system preference.
+* GStreamer plugins:
+  * gst-plugin-gtk4 (gstgtk4): required to preview videos in the timeline and to present the output
+    of the camera.
+  * libgstpipewire with the `pipewiredeviceprovider`: used to list and access the cameras.
 * glycin: all images are loaded with this library so loaders for the different image formats need to
   be installed.
 
