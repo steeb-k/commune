@@ -78,6 +78,7 @@ doc_deps = [
   '--package=ruma',
   '--package=ruma-common',
   '--package=ruma-client-api',
+  '--package=ruma-events',
   '--package=matrix-sdk',
   '--package=matrix-sdk-base',
   '--package=matrix-sdk-common',
