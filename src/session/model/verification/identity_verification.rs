@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use futures_util::StreamExt;
 use gtk::{
-    gdk, glib,
+    glib,
     glib::{clone, closure_local},
     prelude::*,
     subclass::prelude::*,
@@ -20,7 +20,7 @@ use tracing::{debug, error};
 
 use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
-    contrib::Camera,
+    components::QrCodeScanner,
     prelude::*,
     session::model::{Member, Membership, Room, Session, User},
     spawn, spawn_tokio,
@@ -170,10 +170,10 @@ mod imp {
         display_name: PhantomData<String>,
         /// The QR Code, if the `QrCodeShowV1` method is supported.
         pub qr_code: RefCell<Option<QrCode>>,
-        /// The camera paintable, if the user wants to scan a QR Code and we
+        /// The QR code scanner, if the user wants to scan a QR Code and we
         /// have access to the camera.
         #[property(get)]
-        pub camera_paintable: RefCell<Option<gdk::Paintable>>,
+        pub qrcode_scanner: RefCell<Option<QrCodeScanner>>,
         /// Whether this verification was viewed by the user.
         #[property(get, set = Self::set_was_viewed, explicit_notify)]
         pub was_viewed: Cell<bool>,
@@ -333,6 +333,8 @@ mod imp {
                 if glib::Propagation::from(ret).is_stop() {
                     return;
                 }
+            } else if state != VerificationState::QrScan && self.qrcode_scanner.take().is_some() {
+                obj.notify_qrcode_scanner();
             }
 
             self.state.set(state);
@@ -862,10 +864,10 @@ impl IdentityVerification {
     pub async fn start_qr_code_scan(&self) -> Result<(), ()> {
         let imp = self.imp();
 
-        match Camera::default().paintable().await {
-            Some(paintable) => {
-                imp.camera_paintable.replace(Some(paintable.upcast()));
-                self.notify_camera_paintable();
+        match QrCodeScanner::new().await {
+            Some(qrcode_scanner) => {
+                imp.qrcode_scanner.replace(Some(qrcode_scanner));
+                self.notify_qrcode_scanner();
 
                 imp.set_state(VerificationState::QrScan);
 

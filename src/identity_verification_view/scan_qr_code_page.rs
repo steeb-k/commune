@@ -1,16 +1,16 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 use matrix_sdk::encryption::verification::QrVerificationData;
+use tracing::error;
 
 use crate::{
-    components::LoadingButton,
-    contrib::QrCodeScanner,
+    components::{LoadingButton, QrCodeScanner},
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationSupportedMethods},
     spawn, toast,
-    utils::BoundObjectWeakRef,
+    utils::BoundConstructOnlyObject,
 };
 
 mod imp {
@@ -25,15 +25,18 @@ mod imp {
     #[properties(wrapper_type = super::ScanQrCodePage)]
     pub struct ScanQrCodePage {
         /// The current identity verification.
-        #[property(get, set = Self::set_verification, explicit_notify, nullable)]
-        pub verification: BoundObjectWeakRef<IdentityVerification>,
+        #[property(get, set = Self::set_verification, construct_only)]
+        pub verification: BoundConstructOnlyObject<IdentityVerification>,
+        /// The QR code scanner to use.
+        #[property(get)]
+        pub qrcode_scanner: BoundConstructOnlyObject<QrCodeScanner>,
         pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub title: TemplateChild<gtk::Label>,
         #[template_child]
         pub instructions: TemplateChild<gtk::Label>,
         #[template_child]
-        pub qr_code_scanner: TemplateChild<QrCodeScanner>,
+        qrcode_scanner_bin: TemplateChild<adw::Bin>,
         #[template_child]
         pub show_qr_code_btn: TemplateChild<gtk::Button>,
         #[template_child]
@@ -60,93 +63,69 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for ScanQrCodePage {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.qr_code_scanner.connect_code_detected(clone!(
-                #[weak]
-                obj,
-                move |_, data| {
-                    obj.code_detected(data);
-                }
-            ));
-        }
-
         fn dispose(&self) {
-            if let Some(verification) = self.verification.obj() {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
-                }
+            if let Some(handler) = self.display_name_handler.take() {
+                self.verification.obj().user().disconnect(handler);
             }
         }
     }
 
-    impl WidgetImpl for ScanQrCodePage {
-        fn map(&self) {
-            self.parent_map();
-
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.qr_code_scanner.start().await;
-                }
-            ));
-        }
-
-        fn unmap(&self) {
-            self.qr_code_scanner.stop();
-            self.parent_unmap();
-        }
-    }
-
+    impl WidgetImpl for ScanQrCodePage {}
     impl BinImpl for ScanQrCodePage {}
 
     impl ScanQrCodePage {
         /// Set the current identity verification.
-        fn set_verification(&self, verification: Option<&IdentityVerification>) {
-            let prev_verification = self.verification.obj();
-
-            if prev_verification.as_ref() == verification {
-                return;
-            }
+        fn set_verification(&self, verification: IdentityVerification) {
             let obj = self.obj();
 
-            if let Some(verification) = prev_verification {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
+            let display_name_handler = verification.user().connect_display_name_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_labels();
                 }
-            }
-            self.verification.disconnect_signals();
+            ));
+            self.display_name_handler
+                .replace(Some(display_name_handler));
 
-            if let Some(verification) = verification {
-                let display_name_handler = verification.user().connect_display_name_notify(clone!(
-                    #[weak]
-                    obj,
-                    move |_| {
-                        obj.update_labels();
-                    }
-                ));
-                self.display_name_handler
-                    .replace(Some(display_name_handler));
+            let supported_methods_handler = verification.connect_supported_methods_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_page();
+                }
+            ));
 
-                let supported_methods_handler =
-                    verification.connect_supported_methods_notify(clone!(
-                        #[weak]
-                        obj,
-                        move |_| {
-                            obj.update_page();
-                        }
-                    ));
+            self.verification
+                .set(verification, vec![supported_methods_handler]);
 
-                self.verification
-                    .set(verification, vec![supported_methods_handler]);
-            }
-
+            self.init_qrcode_scanner();
             obj.update_labels();
             obj.update_page();
             obj.notify_verification();
+        }
+
+        /// Initialize the QR code scanner.
+        fn init_qrcode_scanner(&self) {
+            let Some(qrcode_scanner) = self.verification.obj().qrcode_scanner() else {
+                // This is a programmer error.
+                error!("Could not show QR code scanner: not found");
+                return;
+            };
+
+            self.qrcode_scanner_bin.set_child(Some(&qrcode_scanner));
+
+            let obj = self.obj();
+            let qrcode_detected_handler = qrcode_scanner.connect_qrcode_detected(clone!(
+                #[weak]
+                obj,
+                move |_, data| {
+                    obj.qrcode_detected(data);
+                }
+            ));
+
+            self.qrcode_scanner
+                .set(qrcode_scanner, vec![qrcode_detected_handler]);
         }
     }
 }
@@ -159,16 +138,16 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl ScanQrCodePage {
-    pub fn new() -> Self {
-        glib::Object::new()
+    pub fn new(verification: IdentityVerification) -> Self {
+        glib::Object::builder()
+            .property("verification", verification)
+            .build()
     }
 
     /// Update the labels for the current verification.
     fn update_labels(&self) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
         let imp = self.imp();
+        let verification = self.verification();
 
         if verification.is_self_verification() {
             imp.title.set_label(&gettext("Verify Session"));
@@ -188,10 +167,7 @@ impl ScanQrCodePage {
 
     /// Update the UI for the available verification methods.
     fn update_page(&self) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
-        let imp = self.imp();
+        let verification = self.verification();
         let supported_methods = verification.supported_methods();
 
         let show_qr_code_visible = supported_methods
@@ -199,6 +175,7 @@ impl ScanQrCodePage {
             && verification.has_qr_code();
         let sas_visible = supported_methods.contains(VerificationSupportedMethods::SAS);
 
+        let imp = self.imp();
         imp.show_qr_code_btn.set_visible(show_qr_code_visible);
         imp.start_sas_btn.set_visible(sas_visible);
     }
@@ -214,16 +191,12 @@ impl ScanQrCodePage {
     }
 
     /// Handle a detected QR Code.
-    fn code_detected(&self, data: QrVerificationData) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
-
+    fn qrcode_detected(&self, data: QrVerificationData) {
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
             async move {
-                if verification.qr_code_scanned(data).await.is_err() {
+                if obj.verification().qr_code_scanned(data).await.is_err() {
                     toast!(obj, gettext("Could not validate scanned QR Code"));
                 }
             }
@@ -232,26 +205,19 @@ impl ScanQrCodePage {
 
     /// Switch to the screen to scan a QR Code.
     #[template_callback]
-    fn show_qr_code(&self) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
-
-        verification.choose_method();
+    fn show_qrcode(&self) {
+        self.verification().choose_method();
     }
 
     /// Start a SAS verification.
     #[template_callback]
     async fn start_sas(&self) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
         let imp = self.imp();
 
         imp.start_sas_btn.set_is_loading(true);
         self.set_sensitive(false);
 
-        if verification.start_sas().await.is_err() {
+        if self.verification().start_sas().await.is_err() {
             toast!(self, gettext("Could not start emoji verification"));
             self.reset();
         }
@@ -260,14 +226,10 @@ impl ScanQrCodePage {
     /// Cancel the verification.
     #[template_callback]
     async fn cancel(&self) {
-        let Some(verification) = self.verification() else {
-            return;
-        };
-
         self.imp().cancel_btn.set_is_loading(true);
         self.set_sensitive(false);
 
-        if verification.cancel().await.is_err() {
+        if self.verification().cancel().await.is_err() {
             toast!(self, gettext("Could not cancel the verification"));
             self.reset();
         }

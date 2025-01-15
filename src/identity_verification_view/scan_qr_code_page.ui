@@ -36,11 +36,11 @@
                   </object>
                 </child>
                 <child>
-                  <object class="QrCodeScanner" id="qr_code_scanner">
-                    <property name="margin-top">24</property>
-                    <property name="margin-bottom">24</property>
-                    <property name="vexpand">True</property>
-                    <property name="hexpand">True</property>
+                  <object class="AdwBin" id="qrcode_scanner_bin">
+                    <property name="margin-top">12</property>
+                    <property name="margin-bottom">12</property>
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
                   </object>
                 </child>
                 <child>
@@ -56,7 +56,7 @@
                     <property name="halign">center</property>
                     <property name="can-shrink">True</property>
                     <property name="label" translatable="yes">Show a QR code to scan with another device</property>
-                    <signal name="clicked" handler="show_qr_code" swapped="yes"/>
+                    <signal name="clicked" handler="show_qrcode" swapped="yes"/>
                     <style>
                       <class name="pill"/>
                     </style>

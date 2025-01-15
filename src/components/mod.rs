@@ -1,5 +1,6 @@
 mod action_button;
 mod avatar;
+mod camera;
 mod context_menu_bin;
 pub mod crypto;
 mod custom_entry;
@@ -19,6 +20,7 @@ mod user_page;
 pub(crate) use self::{
     action_button::{ActionButton, ActionState},
     avatar::*,
+    camera::{Camera, CameraExt, QrCodeScanner},
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     custom_entry::CustomEntry,
     dialogs::*,

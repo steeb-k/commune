@@ -40,11 +40,11 @@ dependency('sqlite3', version: '>= 3.24.0')
 
 # Required by glycin crate
 dependency('lcms2', version: '>=2.12.0')
-dependency('libseccomp', version: '>= 2.5.0')
 
 # Linux-only dependencies
 if build_machine.system() == 'linux'
-  dependency('libpipewire-0.3', version: '>= 0.3.0')
+  # Required by glycin crate
+  dependency('libseccomp', version: '>= 2.5.0')
 endif
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)

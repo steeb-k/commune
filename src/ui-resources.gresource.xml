@@ -10,6 +10,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/action_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/avatar/editable.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/avatar/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/camera/qrcode_scanner.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/identity_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/recovery_setup_view.ui</file>
@@ -39,7 +40,6 @@
     <file compressed="true" preprocess="xml-stripblanks">components/rows/substring_entry_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/switch_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/user_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">contrib/qr_code_scanner/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">error_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/accept_request_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/cancelled_page.ui</file>

@@ -10,7 +10,7 @@ pub use self::{
     },
     verification_list::VerificationList,
 };
-use crate::{contrib::Camera, prelude::*};
+use crate::{components::Camera, prelude::*};
 
 /// A unique key to identify an identity verification.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -44,7 +44,7 @@ async fn load_supported_verification_methods() -> Vec<VerificationMethod> {
         VerificationMethod::ReciprocateV1,
     ];
 
-    let has_cameras = Camera::default().has_cameras().await;
+    let has_cameras = Camera::has_cameras().await;
 
     if has_cameras {
         methods.push(VerificationMethod::QrCodeScanV1);

@@ -1,4 +1,5 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod accept_request_page;
@@ -49,8 +50,6 @@ mod imp {
         #[template_child]
         pub choose_method_page: TemplateChild<ChooseMethodPage>,
         #[template_child]
-        pub scan_qr_code_page: TemplateChild<ScanQrCodePage>,
-        #[template_child]
         pub qr_code_scanned_page: TemplateChild<QrCodeScannedPage>,
         #[template_child]
         pub confirm_qr_code_page: TemplateChild<ConfirmQrCodePage>,
@@ -72,6 +71,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -80,20 +80,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IdentityVerificationView {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.main_stack.connect_transition_running_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |stack| if !stack.is_transition_running() {
-                    // Focus the default widget when the transition has ended.
-                    imp.grab_focus();
-                }
-            ));
-        }
-    }
+    impl ObjectImpl for IdentityVerificationView {}
 
     impl WidgetImpl for IdentityVerificationView {
         fn grab_focus(&self) -> bool {
@@ -117,6 +104,7 @@ mod imp {
 
     impl BinImpl for IdentityVerificationView {}
 
+    #[gtk::template_callbacks]
     impl IdentityVerificationView {
         /// Set the current identity verification.
         fn set_verification(&self, verification: Option<IdentityVerification>) {
@@ -144,6 +132,22 @@ mod imp {
 
             obj.update_view();
             obj.notify_verification();
+        }
+
+        #[template_callback]
+        fn handle_transition_running(&self) {
+            if !self.main_stack.is_transition_running() {
+                // Focus the default widget when the transition has ended.
+                self.grab_focus();
+
+                // Drop the page to scan QR codes if it is not the current page, to free the
+                // camera.
+                if let Some(scan_qrcode_page) = self.main_stack.child_by_name("scan-qrcode") {
+                    if self.main_stack.visible_child_name().as_deref() != Some("scan-qrcode") {
+                        self.main_stack.remove(&scan_qrcode_page);
+                    }
+                }
+            }
         }
     }
 }
@@ -188,8 +192,13 @@ impl IdentityVerificationView {
                 imp.main_stack.set_visible_child_name("choose-method");
             }
             VerificationState::QrScan => {
-                imp.scan_qr_code_page.reset();
-                imp.main_stack.set_visible_child_name("scan-qr-code");
+                let scan_qrcode_page = ScanQrCodePage::new(verification);
+                imp.main_stack.add_titled(
+                    &scan_qrcode_page,
+                    Some("scan-qrcode"),
+                    &gettext("Scan QR Code"),
+                );
+                imp.main_stack.set_visible_child_name("scan-qrcode");
             }
             VerificationState::QrScanned => {
                 imp.qr_code_scanned_page.reset();

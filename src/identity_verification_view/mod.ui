@@ -8,6 +8,7 @@
       <object class="GtkStack" id="main_stack">
         <property name="transition-type">crossfade</property>
         <property name="vexpand">True</property>
+        <signal name="notify::transition-running" handler="handle_transition_running" swapped="yes"/>
         <child>
           <object class="GtkStackPage">
             <property name="name">accept-request</property>
@@ -47,17 +48,6 @@
             <property name="title" translatable="yes">Verification Request Methods</property>
             <property name="child">
               <object class="IdentityVerificationChooseMethodPage" id="choose_method_page">
-                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
-              </object>
-            </property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">scan-qr-code</property>
-            <property name="title" translatable="yes">Scan QR Code</property>
-            <property name="child">
-              <object class="IdentityVerificationScanQrCodePage" id="scan_qr_code_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
               </object>
             </property>

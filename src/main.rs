@@ -58,6 +58,9 @@ fn main() {
     gtk::init().expect("Could not start GTK4");
     gst::init().expect("Could not initialize gst");
 
+    #[cfg(target_os = "linux")]
+    aperture::init(APP_ID);
+
     let res = gio::Resource::load(RESOURCES_FILE).expect("Could not load gresource file");
     gio::resources_register(&res);
     let ui_res = gio::Resource::load(UI_RESOURCES_FILE).expect("Could not load UI gresource file");

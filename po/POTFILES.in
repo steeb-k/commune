@@ -12,6 +12,9 @@ src/application.rs
 src/components/action_button.ui
 src/components/avatar/editable.rs
 src/components/avatar/editable.ui
+src/components/camera/qrcode_scanner.rs
+src/components/camera/qrcode_scanner.ui
+src/components/camera/viewfinder.rs
 src/components/crypto/identity_setup_view.rs
 src/components/crypto/identity_setup_view.ui
 src/components/crypto/recovery_setup_view.rs
@@ -30,7 +33,6 @@ src/components/power_level_selection/popover.ui
 src/components/rows/loading_row.ui
 src/components/user_page.rs
 src/components/user_page.ui
-src/contrib/qr_code_scanner/mod.ui
 src/contrib/qr_code.rs
 src/error_page.rs
 src/error_page.ui
@@ -44,6 +46,7 @@ src/identity_verification_view/completed_page.rs
 src/identity_verification_view/completed_page.ui
 src/identity_verification_view/confirm_qr_code_page.rs
 src/identity_verification_view/confirm_qr_code_page.ui
+src/identity_verification_view/mod.rs
 src/identity_verification_view/mod.ui
 src/identity_verification_view/no_supported_methods_page.rs
 src/identity_verification_view/no_supported_methods_page.ui
