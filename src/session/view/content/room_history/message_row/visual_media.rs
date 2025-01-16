@@ -118,7 +118,9 @@ mod imp {
                 THUMBNAIL_MAX_DIMENSIONS
             };
             let max = max_size.dimension_for_orientation(orientation);
-            let max_for_size = i32::try_from(max_size.dimension_for_other_orientation(orientation))
+            let max_for_size = max_size
+                .dimension_for_other_orientation(orientation)
+                .try_into()
                 .unwrap_or(i32::MAX);
 
             // Limit for_size to the max.
@@ -142,11 +144,14 @@ mod imp {
                     };
                     let (_, intrinsic_for_size, ..) = child.measure(other_orientation, -1);
 
-                    let (_, nat, ..) = child.measure(orientation, for_size.min(intrinsic_for_size));
+                    let (min, nat, ..) =
+                        child.measure(orientation, for_size.min(intrinsic_for_size));
 
                     if nat != 0 {
                         // Limit the returned size to the max.
-                        return (0, nat.min(max.try_into().unwrap_or(i32::MAX)), -1, -1);
+                        let max = max.try_into().unwrap_or(i32::MAX);
+
+                        return (min.min(max), nat.min(max), -1, -1);
                     }
                 }
             }
@@ -169,9 +174,11 @@ mod imp {
             let media_size = self.dimensions.get().unwrap_or(FALLBACK_DIMENSIONS);
             let nat = media_size
                 .scale_to_fit(wanted_size, gtk::ContentFit::ScaleDown)
-                .dimension_for_orientation(orientation);
+                .dimension_for_orientation(orientation)
+                .try_into()
+                .unwrap_or(i32::MAX);
 
-            (0, nat.try_into().unwrap_or(i32::MAX), -1, -1)
+            (0, nat, -1, -1)
         }
 
         fn request_mode(&self) -> gtk::SizeRequestMode {
