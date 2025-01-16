@@ -4,7 +4,7 @@ use gettextrs::gettext;
 use gtk::glib;
 use serde::{Deserialize, Serialize};
 
-use crate::session::model::RoomCategory;
+use crate::session::model::{RoomCategory, TargetRoomCategory};
 
 /// The possible names of the sections in the sidebar.
 #[derive(
@@ -30,7 +30,7 @@ pub enum SidebarSectionName {
 
 impl SidebarSectionName {
     /// Convert the given `RoomCategory` to a `SidebarSectionName`, if possible.
-    pub fn from_room_category(category: RoomCategory) -> Option<Self> {
+    pub(crate) fn from_room_category(category: RoomCategory) -> Option<Self> {
         let name = match category {
             RoomCategory::Invited => Self::Invited,
             RoomCategory::Favorite => Self::Favorite,
@@ -44,7 +44,7 @@ impl SidebarSectionName {
     }
 
     /// Convert this `SidebarSectionName` to a `RoomCategory`, if possible.
-    pub fn into_room_category(self) -> Option<RoomCategory> {
+    pub(crate) fn into_room_category(self) -> Option<RoomCategory> {
         let category = match self {
             Self::VerificationRequest => return None,
             Self::Invited => RoomCategory::Invited,
@@ -52,6 +52,20 @@ impl SidebarSectionName {
             Self::Normal => RoomCategory::Normal,
             Self::LowPriority => RoomCategory::LowPriority,
             Self::Left => RoomCategory::Left,
+        };
+
+        Some(category)
+    }
+
+    /// Convert this `SidebarSectionName` to a `TargetRoomCategory`, if
+    /// possible.
+    pub(crate) fn into_target_room_category(self) -> Option<TargetRoomCategory> {
+        let category = match self {
+            Self::VerificationRequest | Self::Invited => return None,
+            Self::Favorite => TargetRoomCategory::Favorite,
+            Self::Normal => TargetRoomCategory::Normal,
+            Self::LowPriority => TargetRoomCategory::LowPriority,
+            Self::Left => TargetRoomCategory::Left,
         };
 
         Some(category)

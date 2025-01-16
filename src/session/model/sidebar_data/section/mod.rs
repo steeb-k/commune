@@ -216,7 +216,7 @@ impl SidebarSection {
         }
 
         source_category
-            .zip(self.name().into_room_category())
+            .zip(self.name().into_target_room_category())
             .is_some_and(|(source_category, target_category)| {
                 source_category.can_change_to(target_category)
             })

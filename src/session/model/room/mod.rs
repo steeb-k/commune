@@ -43,7 +43,7 @@ mod typing_list;
 
 pub(crate) use self::{
     aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
-    category::RoomCategory,
+    category::{RoomCategory, TargetRoomCategory},
     event::*,
     highlight_flags::HighlightFlags,
     join_rule::{JoinRule, JoinRuleValue},
@@ -1536,7 +1536,7 @@ impl Room {
     ///
     /// Note: Rooms can't be moved to the invite category and they can't be
     /// moved once they are upgraded.
-    pub(crate) async fn set_category(&self, category: RoomCategory) -> MatrixResult<()> {
+    pub(crate) async fn set_category(&self, category: TargetRoomCategory) -> MatrixResult<()> {
         let previous_category = self.category();
 
         if previous_category == category {
@@ -1548,28 +1548,14 @@ impl Room {
             return Ok(());
         }
 
-        match category {
-            RoomCategory::Invited | RoomCategory::Space => {
-                warn!("Rooms cannot be moved to the {category:?} category");
-                return Ok(());
-            }
-            RoomCategory::Outdated | RoomCategory::Ignored => {
-                // These are local-only categories. We do not need to propagate anything to the
-                // server.
-                self.imp().set_category(category);
-                return Ok(());
-            }
-            _ => {}
-        }
-
-        self.imp().set_category(category);
+        self.imp().set_category(category.into());
 
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move {
             let room_state = matrix_room.state();
 
             match category {
-                RoomCategory::Favorite => {
+                TargetRoomCategory::Favorite => {
                     if !matrix_room.is_favourite() {
                         // This method handles removing the low priority tag.
                         matrix_room.set_is_favourite(true, None).await?;
@@ -1581,7 +1567,7 @@ impl Room {
                         matrix_room.join().await?;
                     }
                 }
-                RoomCategory::Normal => {
+                TargetRoomCategory::Normal => {
                     if matrix_room.is_favourite() {
                         matrix_room.set_is_favourite(false, None).await?;
                     }
@@ -1593,7 +1579,7 @@ impl Room {
                         matrix_room.join().await?;
                     }
                 }
-                RoomCategory::LowPriority => {
+                TargetRoomCategory::LowPriority => {
                     if !matrix_room.is_low_priority() {
                         // This method handles removing the favourite tag.
                         matrix_room.set_is_low_priority(true, None).await?;
@@ -1605,15 +1591,11 @@ impl Room {
                         matrix_room.join().await?;
                     }
                 }
-                RoomCategory::Left => {
+                TargetRoomCategory::Left => {
                     if matches!(room_state, RoomState::Invited | RoomState::Joined) {
                         matrix_room.leave().await?;
                     }
                 }
-                RoomCategory::Invited
-                | RoomCategory::Outdated
-                | RoomCategory::Space
-                | RoomCategory::Ignored => unreachable!(),
             }
 
             Result::<_, matrix_sdk::Error>::Ok(())

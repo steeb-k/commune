@@ -10,7 +10,7 @@ use crate::{
     prelude::*,
     session::model::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
-        SidebarIconItemType, SidebarSection, User,
+        SidebarIconItemType, SidebarSection, TargetRoomCategory, User,
     },
     spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
@@ -51,7 +51,6 @@ mod imp {
     impl ObjectImpl for Row {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             // Set up drop controller
             let drop = gtk::DropTarget::builder()
@@ -59,27 +58,27 @@ mod imp {
                 .formats(&gdk::ContentFormats::for_type(Room::static_type()))
                 .build();
             drop.connect_accept(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 #[upgrade_or]
                 false,
-                move |_, drop| obj.drop_accept(drop)
+                move |_, drop| imp.drop_accept(drop)
             ));
             drop.connect_leave(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.drop_leave();
+                    imp.drop_leave();
                 }
             ));
             drop.connect_drop(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 #[upgrade_or]
                 false,
-                move |_, v, _, _| obj.drop_end(v)
+                move |_, v, _, _| imp.drop_end(v)
             ));
-            obj.add_controller(drop);
+            self.obj().add_controller(drop);
         }
 
         fn dispose(&self) {
@@ -272,6 +271,12 @@ mod imp {
             }
         }
 
+        /// Get the `TargetRoomCategory` of this row, if any.
+        pub(super) fn target_room_category(&self) -> Option<TargetRoomCategory> {
+            self.room_category()
+                .and_then(RoomCategory::to_target_room_category)
+        }
+
         /// Get the [`SidebarIconItemType`] of the icon item displayed by this
         /// row, if any.
         pub(super) fn item_type(&self) -> Option<SidebarIconItemType> {
@@ -315,7 +320,6 @@ mod imp {
         fn room_actions(&self) -> Option<gio::SimpleActionGroup> {
             let room = self.room()?;
 
-            let obj = self.obj();
             let action_group = gio::SimpleActionGroup::new();
             let category = room.category();
 
@@ -324,13 +328,16 @@ mod imp {
                     action_group.add_action_entries([
                         gio::ActionEntry::builder("accept-invite")
                             .activate(clone!(
-                                #[weak]
-                                obj,
+                                #[weak(rename_to = imp)]
+                                self,
                                 move |_, _, _| {
-                                    if let Some(room) = obj.room() {
+                                    if let Some(room) = imp.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomCategory::Normal)
-                                                .await;
+                                            imp.set_room_category(
+                                                &room,
+                                                TargetRoomCategory::Normal,
+                                            )
+                                            .await;
                                         });
                                     }
                                 }
@@ -338,12 +345,13 @@ mod imp {
                             .build(),
                         gio::ActionEntry::builder("decline-invite")
                             .activate(clone!(
-                                #[weak]
-                                obj,
+                                #[weak(rename_to = imp)]
+                                self,
                                 move |_, _, _| {
-                                    if let Some(room) = obj.room() {
+                                    if let Some(room) = imp.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomCategory::Left).await;
+                                            imp.set_room_category(&room, TargetRoomCategory::Left)
+                                                .await;
                                         });
                                     }
                                 }
@@ -355,13 +363,16 @@ mod imp {
                     if matches!(category, RoomCategory::Favorite | RoomCategory::LowPriority) {
                         action_group.add_action_entries([gio::ActionEntry::builder("set-normal")
                             .activate(clone!(
-                                #[weak]
-                                obj,
+                                #[weak(rename_to = imp)]
+                                self,
                                 move |_, _, _| {
-                                    if let Some(room) = obj.room() {
+                                    if let Some(room) = imp.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomCategory::Normal)
-                                                .await;
+                                            imp.set_room_category(
+                                                &room,
+                                                TargetRoomCategory::Normal,
+                                            )
+                                            .await;
                                         });
                                     }
                                 }
@@ -374,12 +385,13 @@ mod imp {
                             "set-favorite",
                         )
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                if let Some(room) = obj.room() {
+                                if let Some(room) = imp.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomCategory::Favorite).await;
+                                        imp.set_room_category(&room, TargetRoomCategory::Favorite)
+                                            .await;
                                     });
                                 }
                             }
@@ -392,13 +404,16 @@ mod imp {
                             "set-lowpriority",
                         )
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                if let Some(room) = obj.room() {
+                                if let Some(room) = imp.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomCategory::LowPriority)
-                                            .await;
+                                        imp.set_room_category(
+                                            &room,
+                                            TargetRoomCategory::LowPriority,
+                                        )
+                                        .await;
                                     });
                                 }
                             }
@@ -408,12 +423,13 @@ mod imp {
 
                     action_group.add_action_entries([gio::ActionEntry::builder("leave")
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                if let Some(room) = obj.room() {
+                                if let Some(room) = imp.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomCategory::Left).await;
+                                        imp.set_room_category(&room, TargetRoomCategory::Left)
+                                            .await;
                                     });
                                 }
                             }
@@ -441,13 +457,16 @@ mod imp {
                     if room.join_rule().we_can_join() {
                         action_group.add_action_entries([gio::ActionEntry::builder("join")
                             .activate(clone!(
-                                #[weak]
-                                obj,
+                                #[weak(rename_to = imp)]
+                                self,
                                 move |_, _, _| {
-                                    if let Some(room) = obj.room() {
+                                    if let Some(room) = imp.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomCategory::Normal)
-                                                .await;
+                                            imp.set_room_category(
+                                                &room,
+                                                TargetRoomCategory::Normal,
+                                            )
+                                            .await;
                                         });
                                     }
                                 }
@@ -457,12 +476,12 @@ mod imp {
 
                     action_group.add_action_entries([gio::ActionEntry::builder("forget")
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                if let Some(room) = obj.room() {
+                                if let Some(room) = imp.room() {
                                     spawn!(async move {
-                                        obj.forget_room(&room).await;
+                                        imp.forget_room(&room).await;
                                     });
                                 }
                             }
@@ -484,12 +503,12 @@ mod imp {
                         "unset-direct-chat",
                     )
                     .activate(clone!(
-                        #[weak]
-                        obj,
+                        #[weak(rename_to = imp)]
+                        self,
                         move |_, _, _| {
-                            if let Some(room) = obj.room() {
+                            if let Some(room) = imp.room() {
                                 spawn!(async move {
-                                    obj.set_room_is_direct(&room, false).await;
+                                    imp.set_room_is_direct(&room, false).await;
                                 });
                             }
                         }
@@ -498,12 +517,12 @@ mod imp {
                 } else {
                     action_group.add_action_entries([gio::ActionEntry::builder("set-direct-chat")
                         .activate(clone!(
-                            #[weak]
-                            obj,
+                            #[weak(rename_to = imp)]
+                            self,
                             move |_, _, _| {
-                                if let Some(room) = obj.room() {
+                                if let Some(room) = imp.room() {
                                     spawn!(async move {
-                                        obj.set_room_is_direct(&room, true).await;
+                                        imp.set_room_is_direct(&room, true).await;
                                     });
                                 }
                             }
@@ -522,7 +541,7 @@ mod imp {
 
             if let Some(source_category) = source_category {
                 if self
-                    .room_category()
+                    .target_room_category()
                     .is_some_and(|row_category| source_category.can_change_to(row_category))
                 {
                     obj.remove_css_class("drop-disabled");
@@ -581,6 +600,199 @@ mod imp {
                 obj.remove_css_class("drop-active");
             }
         }
+
+        /// Handle the drag-n-drop hovering this row.
+        fn drop_accept(&self, drop: &gdk::Drop) -> bool {
+            let Some(sidebar) = self.sidebar.obj() else {
+                return false;
+            };
+
+            let room = drop
+                .drag()
+                .map(|drag| drag.content())
+                .and_then(|content| content.value(Room::static_type()).ok())
+                .and_then(|value| value.get::<Room>().ok());
+            if let Some(room) = room {
+                if let Some(target_category) = self.target_room_category() {
+                    if room.category().can_change_to(target_category) {
+                        sidebar.set_drop_active_target_category(Some(target_category));
+                        return true;
+                    }
+                } else if let Some(item_type) = self.item_type() {
+                    if room.category() == RoomCategory::Left
+                        && item_type == SidebarIconItemType::Forget
+                    {
+                        self.obj().add_css_class("drop-active");
+                        sidebar.set_drop_active_target_category(None);
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        /// Handle the drag-n-drop leaving this row.
+        fn drop_leave(&self) {
+            self.obj().remove_css_class("drop-active");
+            if let Some(sidebar) = self.sidebar.obj() {
+                sidebar.set_drop_active_target_category(None);
+            }
+        }
+
+        /// Handle the drop on this row.
+        fn drop_end(&self, value: &glib::Value) -> bool {
+            let mut ret = false;
+            if let Ok(room) = value.get::<Room>() {
+                if let Some(target_category) = self.target_room_category() {
+                    if room.category().can_change_to(target_category) {
+                        spawn!(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            async move {
+                                imp.set_room_category(&room, target_category).await;
+                            }
+                        ));
+                        ret = true;
+                    }
+                } else if let Some(item_type) = self.item_type() {
+                    if room.category() == RoomCategory::Left
+                        && item_type == SidebarIconItemType::Forget
+                    {
+                        spawn!(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            async move {
+                                imp.forget_room(&room).await;
+                            }
+                        ));
+                        ret = true;
+                    }
+                }
+            }
+            if let Some(sidebar) = self.sidebar.obj() {
+                sidebar.set_drop_source_category(None);
+            }
+            ret
+        }
+
+        /// Change the category of the given room.
+        async fn set_room_category(&self, room: &Room, category: TargetRoomCategory) {
+            let obj = self.obj();
+
+            let ignored_inviter = if category == TargetRoomCategory::Left {
+                let Some(response) = confirm_leave_room_dialog(room, &*obj).await else {
+                    return;
+                };
+
+                response.ignore_inviter.then(|| room.inviter()).flatten()
+            } else {
+                None
+            };
+
+            let previous_category = room.category();
+            if room.set_category(category).await.is_err() {
+                match previous_category {
+                    RoomCategory::Invited => {
+                        if category == RoomCategory::Left {
+                            toast!(
+                                obj,
+                                gettext(
+                                    // Translators: Do NOT translate the content between '{' and '}', this
+                                    // is a variable name.
+                                    "Could not decline invitation for {room}",
+                                ),
+                                @room,
+                            );
+                        } else {
+                            toast!(
+                                obj,
+                                gettext(
+                                    // Translators: Do NOT translate the content between '{' and '}', this
+                                    // is a variable name.
+                                    "Could not accept invitation for {room}",
+                                ),
+                                @room,
+                            );
+                        }
+                    }
+                    RoomCategory::Left => {
+                        toast!(
+                            obj,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this is a
+                                // variable name.
+                                "Could not join {room}",
+                            ),
+                            @room,
+                        );
+                    }
+                    _ => {
+                        if category == RoomCategory::Left {
+                            toast!(
+                                obj,
+                                gettext(
+                                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                                    "Could not leave {room}",
+                                ),
+                                @room,
+                            );
+                        } else {
+                            toast!(
+                                obj,
+                                gettext(
+                                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                                    "Could not move {room} from {previous_category} to {new_category}",
+                                ),
+                                @room,
+                                previous_category = previous_category.to_string(),
+                                new_category = RoomCategory::from(category).to_string(),
+                            );
+                        }
+                    }
+                }
+            }
+
+            if let Some(inviter) = ignored_inviter {
+                if inviter.upcast::<User>().ignore().await.is_err() {
+                    toast!(obj, gettext("Could not ignore user"));
+                }
+            }
+        }
+
+        /// Forget the given room.
+        async fn forget_room(&self, room: &Room) {
+            if room.forget().await.is_err() {
+                let obj = self.obj();
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                    gettext("Could not forget {room}"),
+                    @room,
+                );
+            }
+        }
+
+        /// Set or unset the room as a direct chat.
+        async fn set_room_is_direct(&self, room: &Room, is_direct: bool) {
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.set_is_direct(is_direct).await });
+
+            if let Err(error) = handle.await.unwrap() {
+                let obj = self.obj();
+
+                if is_direct {
+                    error!("Could not mark room as direct chat: {error}");
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    toast!(obj, gettext("Could not mark {room} as direct chat"), @room,);
+                } else {
+                    error!("Could not unmark room as direct chat: {error}");
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    toast!(obj, gettext("Could not unmark {room} as direct chat"), @room,);
+                }
+            }
+        }
     }
 }
 
@@ -593,210 +805,5 @@ glib::wrapper! {
 impl Row {
     pub fn new(sidebar: &Sidebar) -> Self {
         glib::Object::builder().property("sidebar", sidebar).build()
-    }
-
-    /// Get the `Room` displayed by this row, if any.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room()
-    }
-
-    /// Get the `RoomCategory` of this row, if any.
-    ///
-    /// If this does not display a room or a section containing rooms, returns
-    /// `None`.
-    pub fn room_category(&self) -> Option<RoomCategory> {
-        self.imp().room_category()
-    }
-
-    /// Get the [`SidebarIconItemType`] of the icon item displayed by this row,
-    /// if any.
-    pub fn item_type(&self) -> Option<SidebarIconItemType> {
-        self.imp().item_type()
-    }
-
-    /// Handle the drag-n-drop hovering this row.
-    fn drop_accept(&self, drop: &gdk::Drop) -> bool {
-        let Some(sidebar) = self.sidebar() else {
-            return false;
-        };
-
-        let room = drop
-            .drag()
-            .map(|drag| drag.content())
-            .and_then(|content| content.value(Room::static_type()).ok())
-            .and_then(|value| value.get::<Room>().ok());
-        if let Some(room) = room {
-            if let Some(target_category) = self.room_category() {
-                if room.category().can_change_to(target_category) {
-                    sidebar.set_drop_active_target_category(Some(target_category));
-                    return true;
-                }
-            } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomCategory::Left && item_type == SidebarIconItemType::Forget
-                {
-                    self.add_css_class("drop-active");
-                    sidebar.set_drop_active_target_category(None);
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// Handle the drag-n-drop leaving this row.
-    fn drop_leave(&self) {
-        self.remove_css_class("drop-active");
-        if let Some(sidebar) = self.sidebar() {
-            sidebar.set_drop_active_target_category(None);
-        }
-    }
-
-    /// Handle the drop on this row.
-    fn drop_end(&self, value: &glib::Value) -> bool {
-        let mut ret = false;
-        if let Ok(room) = value.get::<Room>() {
-            if let Some(target_category) = self.room_category() {
-                if room.category().can_change_to(target_category) {
-                    spawn!(clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        async move {
-                            obj.set_room_category(&room, target_category).await;
-                        }
-                    ));
-                    ret = true;
-                }
-            } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomCategory::Left && item_type == SidebarIconItemType::Forget
-                {
-                    spawn!(clone!(
-                        #[strong(rename_to = obj)]
-                        self,
-                        async move {
-                            obj.forget_room(&room).await;
-                        }
-                    ));
-                    ret = true;
-                }
-            }
-        }
-        if let Some(sidebar) = self.sidebar() {
-            sidebar.set_drop_source_category(None);
-        }
-        ret
-    }
-
-    /// Change the category of the given room.
-    async fn set_room_category(&self, room: &Room, category: RoomCategory) {
-        let ignored_inviter = if category == RoomCategory::Left {
-            let Some(response) = confirm_leave_room_dialog(room, self).await else {
-                return;
-            };
-
-            response.ignore_inviter.then(|| room.inviter()).flatten()
-        } else {
-            None
-        };
-
-        let previous_category = room.category();
-        if room.set_category(category).await.is_err() {
-            match previous_category {
-                RoomCategory::Invited => {
-                    if category == RoomCategory::Left {
-                        toast!(
-                            self,
-                            gettext(
-                                // Translators: Do NOT translate the content between '{' and '}', this
-                                // is a variable name.
-                                "Could not decline invitation for {room}",
-                            ),
-                            @room,
-                        );
-                    } else {
-                        toast!(
-                            self,
-                            gettext(
-                                // Translators: Do NOT translate the content between '{' and '}', this
-                                // is a variable name.
-                                "Could not accept invitation for {room}",
-                            ),
-                            @room,
-                        );
-                    }
-                }
-                RoomCategory::Left => {
-                    toast!(
-                        self,
-                        gettext(
-                            // Translators: Do NOT translate the content between '{' and '}', this is a
-                            // variable name.
-                            "Could not join {room}",
-                        ),
-                        @room,
-                    );
-                }
-                _ => {
-                    if category == RoomCategory::Left {
-                        toast!(
-                            self,
-                            gettext(
-                                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                                "Could not leave {room}",
-                            ),
-                            @room,
-                        );
-                    } else {
-                        toast!(
-                            self,
-                            gettext(
-                                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                                "Could not move {room} from {previous_category} to {new_category}",
-                            ),
-                            @room,
-                            previous_category = previous_category.to_string(),
-                            new_category = category.to_string(),
-                        );
-                    }
-                }
-            }
-        }
-
-        if let Some(inviter) = ignored_inviter {
-            if inviter.upcast::<User>().ignore().await.is_err() {
-                toast!(self, gettext("Could not ignore user"));
-            }
-        }
-    }
-
-    /// Forget the given room.
-    async fn forget_room(&self, room: &Room) {
-        if room.forget().await.is_err() {
-            toast!(
-                self,
-                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Could not forget {room}"),
-                @room,
-            );
-        }
-    }
-
-    /// Set or unset the room as a direct chat.
-    async fn set_room_is_direct(&self, room: &Room, is_direct: bool) {
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.set_is_direct(is_direct).await });
-
-        if let Err(error) = handle.await.unwrap() {
-            if is_direct {
-                error!("Could not mark room as direct chat: {error}");
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                toast!(self, gettext("Could not mark {room} as direct chat"), @room,);
-            } else {
-                error!("Could not unmark room as direct chat: {error}");
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                toast!(self, gettext("Could not unmark {room} as direct chat"), @room,);
-            }
-        }
     }
 }

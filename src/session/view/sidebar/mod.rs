@@ -23,7 +23,7 @@ use crate::{
     components::OfflineBanner,
     session::model::{
         CryptoIdentityState, RecoveryState, RoomCategory, Selection, SessionVerificationState,
-        SidebarListModel, SidebarSection, User,
+        SidebarListModel, SidebarSection, TargetRoomCategory, User,
     },
     utils::expression,
 };
@@ -63,7 +63,7 @@ mod imp {
         /// The category of the source that activated drop mode.
         pub drop_source_category: Cell<Option<RoomCategory>>,
         /// The category of the drop target that is currently hovered.
-        pub drop_active_target_category: Cell<Option<RoomCategory>>,
+        pub drop_active_target_category: Cell<Option<TargetRoomCategory>>,
         /// The list model of this sidebar.
         #[property(get, set = Self::set_list_model, explicit_notify, nullable)]
         pub list_model: glib::WeakRef<SidebarListModel>,
@@ -397,12 +397,12 @@ impl Sidebar {
     }
 
     /// The category of the drop target that is currently hovered.
-    pub fn drop_active_target_category(&self) -> Option<RoomCategory> {
+    pub fn drop_active_target_category(&self) -> Option<TargetRoomCategory> {
         self.imp().drop_active_target_category.get()
     }
 
     /// Set the category of the drop target that is currently hovered.
-    fn set_drop_active_target_category(&self, target_category: Option<RoomCategory>) {
+    fn set_drop_active_target_category(&self, target_category: Option<TargetRoomCategory>) {
         if self.drop_active_target_category() == target_category {
             return;
         }

@@ -6,7 +6,7 @@ use crate::{
     components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
     prelude::*,
-    session::model::{MemberList, Room, RoomCategory, User},
+    session::model::{MemberList, Room, RoomCategory, TargetRoomCategory, User},
     toast,
     utils::matrix::MatrixIdUri,
 };
@@ -241,7 +241,7 @@ impl Invite {
         imp.accept_button.set_is_loading(true);
         imp.accept_requests.borrow_mut().insert(room.clone());
 
-        if room.set_category(RoomCategory::Normal).await.is_err() {
+        if room.set_category(TargetRoomCategory::Normal).await.is_err() {
             toast!(
                 self,
                 gettext(
@@ -275,7 +275,7 @@ impl Invite {
 
         let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
 
-        let closed = if room.set_category(RoomCategory::Left).await.is_ok() {
+        let closed = if room.set_category(TargetRoomCategory::Left).await.is_ok() {
             // A room where we were invited is usually empty so just close it.
             let _ = self.activate_action("session.close-room", None);
             true

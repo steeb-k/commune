@@ -32,7 +32,8 @@ use crate::{
     components::{confirm_leave_room_dialog, DragOverlay},
     prelude::*,
     session::model::{
-        Event, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline, TimelineState,
+        Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,
+        TimelineState,
     },
     spawn, toast,
     utils::{template_callbacks::TemplateCallbacks, BoundObject},
@@ -890,7 +891,7 @@ mod imp {
                 return;
             }
 
-            if room.set_category(RoomCategory::Left).await.is_err() {
+            if room.set_category(TargetRoomCategory::Left).await.is_err() {
                 toast!(
                     self.obj(),
                     gettext(
@@ -908,7 +909,7 @@ mod imp {
                 return;
             };
 
-            if room.set_category(RoomCategory::Normal).await.is_err() {
+            if room.set_category(TargetRoomCategory::Normal).await.is_err() {
                 toast!(
                     self.obj(),
                     gettext(
