@@ -258,7 +258,6 @@ mod imp {
             self.aliases.init(&obj);
             self.load_predecessor();
             self.watch_members();
-            self.init_timeline();
             self.join_rule.init(&obj);
             self.set_up_typing();
             self.watch_send_queue();
@@ -273,6 +272,10 @@ mod imp {
                             .await;
                         imp.watch_room_info();
                         imp.is_room_info_initialized.set(true);
+
+                        // Only initialize the timeline after we have loaded the category of the
+                        // room since we only load it for some of them.
+                        imp.init_timeline();
                     }
                 )
             );
@@ -533,37 +536,18 @@ mod imp {
 
                         self.set_up_typing();
                     }
-                    RoomState::Left | RoomState::Knocked | RoomState::Banned => {}
-                    RoomState::Invited => {
-                        spawn!(
-                            glib::Priority::DEFAULT_IDLE,
-                            clone!(
-                                #[weak(rename_to = imp)]
-                                self,
-                                async move {
-                                    imp.load_inviter().await;
-                                }
-                            )
-                        );
-                    }
+                    RoomState::Left
+                    | RoomState::Knocked
+                    | RoomState::Banned
+                    | RoomState::Invited => {}
                 }
             }
         }
 
         /// Update the category from the SDK.
-        pub(super) fn update_category(&self) {
-            // Don't load the category if this room was upgraded
+        pub(super) async fn update_category(&self) {
+            // Do not load the category if this room was upgraded.
             if self.category.get() == RoomCategory::Outdated {
-                return;
-            }
-
-            if self
-                .inviter
-                .borrow()
-                .as_ref()
-                .is_some_and(Member::is_ignored)
-            {
-                self.set_category(RoomCategory::Ignored);
                 return;
             }
 
@@ -580,7 +564,20 @@ mod imp {
                         RoomCategory::Normal
                     }
                 }
-                RoomState::Invited => RoomCategory::Invited,
+                RoomState::Invited => {
+                    self.load_inviter().await;
+
+                    if self
+                        .inviter
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(Member::is_ignored)
+                    {
+                        RoomCategory::Ignored
+                    } else {
+                        RoomCategory::Invited
+                    }
+                }
                 RoomState::Left | RoomState::Knocked | RoomState::Banned => RoomCategory::Left,
             };
 
@@ -815,6 +812,7 @@ mod imp {
             let matrix_room = self.matrix_room();
 
             if matrix_room.state() != RoomState::Invited {
+                // We are only interested in the inviter for current invites.
                 return;
             }
 
@@ -833,6 +831,18 @@ mod imp {
                 return;
             };
 
+            if let Some(inviter) = self
+                .inviter
+                .borrow()
+                .as_ref()
+                .filter(|inviter| inviter.user_id() == inviter_member.user_id())
+            {
+                // Just update the member.
+                inviter.update_from_room_member(&inviter_member);
+
+                return;
+            }
+
             let inviter = Member::new(&self.obj(), inviter_member.user_id().to_owned());
             inviter.update_from_room_member(&inviter_member);
 
@@ -842,15 +852,16 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
-                        // When the user is ignored, this invite should be ignored too.
-                        imp.update_category();
+                        spawn!(async move {
+                            // When the user is ignored, this invite should be ignored too.
+                            imp.update_category().await;
+                        });
                     }
                 ));
 
             self.inviter.replace(Some(inviter));
 
             self.obj().notify_inviter();
-            self.update_category();
         }
 
         /// Set the other member of the room, if this room is a direct chat and
@@ -1300,7 +1311,7 @@ mod imp {
             self.update_display_name().await;
             self.update_avatar();
             self.update_topic();
-            self.update_category();
+            self.update_category().await;
             self.update_is_direct().await;
             self.update_tombstone();
             self.set_joined_members_count(room_info.joined_members_count());
@@ -1609,7 +1620,7 @@ impl Room {
                 error!("Could not set the room category: {error}");
 
                 // Reset the category
-                self.imp().update_category();
+                self.imp().update_category().await;
 
                 Err(error)
             }
