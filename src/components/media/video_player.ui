@@ -19,7 +19,7 @@
               <class name="osd"/>
               <class name="timestamp"/>
             </style>
-            <property name="visible" bind-source="VideoPlayer" bind-property="compact" bind-flags="sync-create | invert-boolean"/>
+            <property name="visible">false</property>
             <property name="halign">start</property>
             <property name="valign">start</property>
             <property name="margin-start">5</property>

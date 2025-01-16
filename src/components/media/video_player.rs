@@ -32,6 +32,8 @@ mod imp {
         state: Cell<LoadingState>,
         /// The current error, if any.
         pub(super) error: RefCell<Option<glib::Error>>,
+        /// The duration of the video, if it is known.
+        duration: Cell<Option<gst::ClockTime>>,
         bus_guard: OnceCell<gst::bus::BusWatchGuard>,
     }
 
@@ -110,6 +112,8 @@ mod imp {
             }
 
             self.compact.set(compact);
+
+            self.update_timestamp();
             self.obj().notify_compact();
         }
 
@@ -128,7 +132,7 @@ mod imp {
             let uri = file.uri();
             self.file.replace(Some(file));
 
-            self.duration_changed(None);
+            self.set_duration(None);
             self.set_state(LoadingState::Loading);
 
             self.player.set_uri(Some(uri.as_ref()));
@@ -155,7 +159,7 @@ mod imp {
                     }
                 }
                 gst_play::PlayMessage::DurationChanged { duration } => {
-                    self.duration_changed(duration);
+                    self.set_duration(duration);
                 }
                 gst_play::PlayMessage::Warning { error, .. } => {
                     warn!("Warning playing video: {error}");
@@ -169,9 +173,23 @@ mod imp {
             }
         }
 
-        /// Handle when the duration changed.
-        fn duration_changed(&self, duration: Option<gst::ClockTime>) {
-            if let Some(duration) = duration {
+        /// Set the duration of the video.
+        fn set_duration(&self, duration: Option<gst::ClockTime>) {
+            if self.duration.get() == duration {
+                return;
+            }
+
+            self.duration.set(duration);
+            self.update_timestamp();
+        }
+
+        /// Update the timestamp for the current state.
+        fn update_timestamp(&self) {
+            // We show the duration if we know it and if we are not in compact mode.
+            let visible_duration = self.duration.get().filter(|_| !self.compact.get());
+            let is_visible = visible_duration.is_some();
+
+            if let Some(duration) = visible_duration {
                 let mut time = duration.seconds();
 
                 let sec = time % 60;
@@ -193,7 +211,7 @@ mod imp {
                 self.timestamp.set_label(&label);
             }
 
-            self.timestamp.set_visible(duration.is_some());
+            self.timestamp.set_visible(is_visible);
         }
     }
 }
