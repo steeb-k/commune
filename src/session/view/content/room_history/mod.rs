@@ -891,7 +891,11 @@ mod imp {
                 return;
             }
 
-            if room.set_category(TargetRoomCategory::Left).await.is_err() {
+            if room
+                .change_category(TargetRoomCategory::Left)
+                .await
+                .is_err()
+            {
                 toast!(
                     self.obj(),
                     gettext(
@@ -909,7 +913,11 @@ mod imp {
                 return;
             };
 
-            if room.set_category(TargetRoomCategory::Normal).await.is_err() {
+            if room
+                .change_category(TargetRoomCategory::Normal)
+                .await
+                .is_err()
+            {
                 toast!(
                     self.obj(),
                     gettext(

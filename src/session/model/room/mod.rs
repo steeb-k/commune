@@ -1530,13 +1530,15 @@ impl Room {
         }
     }
 
-    /// Set the category of this room.
+    /// Change the category of this room.
     ///
     /// This makes the necessary to propagate the category to the homeserver.
     ///
-    /// Note: Rooms can't be moved to the invite category and they can't be
-    /// moved once they are upgraded.
-    pub(crate) async fn set_category(&self, category: TargetRoomCategory) -> MatrixResult<()> {
+    /// This can be used to trigger actions like join or leave, as well as
+    /// changing the category in the sidebar.
+    ///
+    /// Note that rooms cannot change category once they are upgraded.
+    pub(crate) async fn change_category(&self, category: TargetRoomCategory) -> MatrixResult<()> {
         let previous_category = self.category();
 
         if previous_category == category {

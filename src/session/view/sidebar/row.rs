@@ -690,7 +690,7 @@ mod imp {
             };
 
             let previous_category = room.category();
-            if room.set_category(category).await.is_err() {
+            if room.change_category(category).await.is_err() {
                 match previous_category {
                     RoomCategory::Invited => {
                         if category == RoomCategory::Left {
