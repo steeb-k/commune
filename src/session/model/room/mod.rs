@@ -997,11 +997,12 @@ mod imp {
                 }
             ));
 
-            if !matches!(
+            // When idle, preload the timeline of rooms that the user is likely to visit and
+            // for which we offer to show the timeline.
+            if matches!(
                 self.category.get(),
-                RoomCategory::Left | RoomCategory::Outdated
+                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority
             ) {
-                // Load the room history when idle.
                 spawn!(
                     glib::source::Priority::LOW,
                     clone!(
