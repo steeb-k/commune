@@ -273,9 +273,10 @@ mod imp {
                         imp.watch_room_info();
                         imp.is_room_info_initialized.set(true);
 
-                        // Only initialize the timeline after we have loaded the category of the
-                        // room since we only load it for some of them.
+                        // Only initialize the following after we have loaded the category of the
+                        // room since we only load them for some categories.
                         imp.init_timeline();
+                        imp.permissions.init(&imp.obj()).await;
                     }
                 )
             );
@@ -287,17 +288,6 @@ mod imp {
                     self,
                     async move {
                         imp.load_own_member().await;
-                    }
-                )
-            );
-
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.permissions.init(&imp.obj()).await;
                     }
                 )
             );
@@ -1108,8 +1098,9 @@ mod imp {
 
         /// Update whether the room is encrypted from the SDK.
         async fn update_is_encrypted(&self) {
-            let matrix_room = self.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.is_encrypted().await });
+            let matrix_room = self.matrix_room();
+            let matrix_room_clone = matrix_room.clone();
+            let handle = spawn_tokio!(async move { matrix_room_clone.is_encrypted().await });
 
             match handle.await.expect("task was not aborted") {
                 Ok(true) => {
@@ -1120,7 +1111,17 @@ mod imp {
                     // Ignore as the room encryption cannot be disabled.
                 }
                 Err(error) => {
-                    error!("Could not load room encryption state: {error}");
+                    // It can be expected to not be allowed to access the encryption state if the
+                    // user was never in the room, so do not add noise in the logs.
+                    if matches!(matrix_room.state(), RoomState::Invited | RoomState::Knocked)
+                        && error
+                            .as_client_api_error()
+                            .is_some_and(|e| e.status_code.is_client_error())
+                    {
+                        debug!("Could not load room encryption state: {error}");
+                    } else {
+                        error!("Could not load room encryption state: {error}");
+                    }
                 }
             }
         }
@@ -1969,7 +1970,7 @@ impl Room {
         match handle.await.expect("task was not aborted") {
             Ok(()) => Ok(()),
             Err(error) => {
-                error!("Could not enabled room encryption: {error}");
+                error!("Could not enable room encryption: {error}");
                 Err(())
             }
         }

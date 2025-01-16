@@ -7,11 +7,12 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::event_handler::EventHandlerDropGuard;
+use matrix_sdk::{event_handler::EventHandlerDropGuard, RoomState};
 use ruma::{
     events::{
         room::power_levels::{
-            PowerLevelAction, PowerLevelUserAction, RoomPowerLevels, RoomPowerLevelsEventContent,
+            NotificationPowerLevelType, PowerLevelAction, PowerLevelUserAction, RoomPowerLevels,
+            RoomPowerLevelsEventContent,
         },
         MessageLikeEventType, StateEventType, SyncStateEvent,
     },
@@ -84,7 +85,6 @@ mod imp {
     };
 
     use glib::subclass::Signal;
-    use ruma::events::room::power_levels::NotificationPowerLevelType;
 
     use super::*;
 
@@ -203,13 +203,17 @@ mod imp {
 
             let matrix_room = room.matrix_room();
 
-            let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move { matrix_room_clone.power_levels().await });
+            // We will probably not be able to load the power levels if we were never in the
+            // room, so skip this. We should get the power levels when we join the room.
+            if !matches!(matrix_room.state(), RoomState::Invited | RoomState::Knocked) {
+                let matrix_room_clone = matrix_room.clone();
+                let handle = spawn_tokio!(async move { matrix_room_clone.power_levels().await });
 
-            match handle.await.expect("task was not aborted") {
-                Ok(power_levels) => self.update_power_levels(&power_levels),
-                Err(error) => {
-                    error!("Could not load room power levels: {error}");
+                match handle.await.expect("task was not aborted") {
+                    Ok(power_levels) => self.update_power_levels(&power_levels),
+                    Err(error) => {
+                        error!("Could not load room power levels: {error}");
+                    }
                 }
             }
 
