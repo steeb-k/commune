@@ -580,9 +580,16 @@ mod imp {
             let n_items = self.selection_model().n_items();
 
             if n_items > 0 {
-                // Make sure that the last item is focused.
-                self.listview
-                    .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
+                // Wait until the next tick, to make sure that the GtkListView has created the
+                // item before focusing it.
+                glib::idle_add_local_once(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move || {
+                        imp.listview
+                            .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
+                    }
+                ));
             }
         }
 
