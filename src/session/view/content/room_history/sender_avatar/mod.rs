@@ -15,7 +15,7 @@ use crate::{
         view::content::RoomHistory,
     },
     toast,
-    utils::{add_activate_binding_action, BoundObject},
+    utils::{key_bindings, BoundObject},
     Window,
 };
 
@@ -163,7 +163,7 @@ mod imp {
                 obj.imp().show_popover(1, 0.0, 0.0);
             });
 
-            add_activate_binding_action(klass, "sender-avatar.activate");
+            key_bindings::add_activate_bindings(klass, "sender-avatar.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

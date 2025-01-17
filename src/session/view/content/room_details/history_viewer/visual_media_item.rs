@@ -5,7 +5,7 @@ use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
     spawn,
     utils::{
-        add_activate_binding_action,
+        key_bindings,
         matrix::VisualMediaMessage,
         media::{
             image::{ImageRequestPriority, ThumbnailSettings},
@@ -56,7 +56,7 @@ mod imp {
                 obj.activate();
             });
 
-            add_activate_binding_action(klass, "visual-media-item.activate");
+            key_bindings::add_activate_bindings(klass, "visual-media-item.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

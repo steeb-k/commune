@@ -19,7 +19,7 @@ use crate::{
         model::{Member, RemoteRoom, Room},
         view::SessionView,
     },
-    utils::{add_activate_binding_action, BoundObject},
+    utils::{key_bindings, BoundObject},
 };
 
 mod imp {
@@ -64,7 +64,7 @@ mod imp {
                 obj.imp().activate();
             });
 
-            add_activate_binding_action(klass, "pill.activate");
+            key_bindings::add_activate_bindings(klass, "pill.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

@@ -10,7 +10,7 @@ use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, MemberList, UserReadReceipt},
-    utils::{add_activate_binding_action, BoundObjectWeakRef},
+    utils::{key_bindings, BoundObjectWeakRef},
 };
 
 // Keep in sync with the `max-avatars` property of the `avatar_list` in the
@@ -88,7 +88,7 @@ mod imp {
                 obj.imp().show_popover(1, 0.0, 0.0);
             });
 
-            add_activate_binding_action(klass, "read-receipts-list.activate");
+            key_bindings::add_activate_bindings(klass, "read-receipts-list.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

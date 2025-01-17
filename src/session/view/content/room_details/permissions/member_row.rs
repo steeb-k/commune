@@ -4,7 +4,7 @@ use super::MemberPowerLevel;
 use crate::{
     components::{Avatar, PowerLevelSelectionPopover, RoleBadge},
     session::model::Permissions,
-    utils::{add_activate_binding_action, BoundObject},
+    utils::{key_bindings, BoundObject},
 };
 
 mod imp {
@@ -53,7 +53,7 @@ mod imp {
                 obj.imp().activate_row();
             });
 
-            add_activate_binding_action(klass, "permissions-member.activate");
+            key_bindings::add_activate_bindings(klass, "permissions-member.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
