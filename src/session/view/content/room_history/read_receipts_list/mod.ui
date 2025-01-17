@@ -3,6 +3,9 @@
   <template class="ContentReadReceiptsList" parent="GtkWidget">
     <property name="focusable">True</property>
     <property name="halign">end</property>
+    <accessibility>
+      <property name="has-popup">true</property>
+    </accessibility>
     <child>
       <object class="GtkBox" id="content">
         <property name="spacing">6</property>
