@@ -131,9 +131,11 @@
                             <child>
                               <object class="GtkBox">
                                 <binding name="visible">
-                                  <lookup name="is-edited">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
+                                  <closure type="gboolean" function="string_not_empty">
+                                    <lookup name="latest-edit-source">
+                                      <lookup name="event">EventDetailsDialog</lookup>
+                                    </lookup>
+                                  </closure>
                                 </binding>
                                 <property name="orientation">vertical</property>
                                 <property name="spacing">12</property>
@@ -211,9 +213,9 @@
                       <object class="GtkButton">
                         <property name="icon-name">copy-symbolic</property>
                         <property name="focus-on-click">False</property>
-                        <property name="action-name">event-details-dialog.copy-source</property>
                         <property name="tooltip-text" translatable="yes">Copy Source</property>
                         <property name="valign">center</property>
+                        <signal name="clicked" handler="copy_source" swapped="yes" />
                         <style>
                           <class name="flat"/>
                         </style>
