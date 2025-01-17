@@ -286,60 +286,21 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    tracing::trace!("Scroll value changed");
-                    imp.trigger_read_receipts_update();
-
-                    let is_at_bottom = imp.is_at_bottom();
-                    if imp.is_auto_scrolling.get() {
-                        tracing::trace!("Automatically scrolled");
-                        if is_at_bottom {
-                            imp.set_is_auto_scrolling(false);
-                            imp.set_sticky(true);
-                        } else {
-                            imp.scroll_down();
-                        }
-                    } else {
-                        tracing::trace!("User scrolled");
-                        imp.set_sticky(is_at_bottom);
-                        imp.update_scroll_btn();
-                    }
-
-                    // Remove the typing row if we scroll up.
-                    if !is_at_bottom {
-                        if let Some(room) = imp.room.obj() {
-                            room.timeline().remove_empty_typing_row();
-                        }
-                    }
-
-                    imp.load_more_events_if_needed();
+                    imp.scroll_value_changed();
                 }
             ));
             adj.connect_upper_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    tracing::trace!("Scroll upper changed");
-                    if imp.is_sticky.get() {
-                        imp.scroll_down();
-                    } else {
-                        imp.update_scroll_btn();
-                    }
-
-                    imp.load_more_events_if_needed();
+                    imp.scroll_max_value_changed();
                 }
             ));
             adj.connect_page_size_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    tracing::trace!("Scroll page size changed");
-                    if imp.is_sticky.get() {
-                        imp.scroll_down();
-                    } else {
-                        imp.update_scroll_btn();
-                    }
-
-                    imp.load_more_events_if_needed();
+                    imp.scroll_max_value_changed();
                 }
             ));
         }
@@ -545,14 +506,53 @@ mod imp {
             self.room.obj().is_none()
         }
 
+        /// Handle when the scroll value changed.
+        fn scroll_value_changed(&self) {
+            let is_at_bottom = self.is_at_bottom();
+
+            if self.is_auto_scrolling.get() && !is_at_bottom {
+                // Force to scroll to the very bottom.
+                self.scrolled_window
+                    .emit_scroll_child(gtk::ScrollType::End, false);
+            } else {
+                self.set_is_auto_scrolling(false);
+                self.set_sticky(is_at_bottom);
+                self.update_scroll_btn();
+
+                // Remove the typing row if the user scrolls up.
+                if !is_at_bottom {
+                    if let Some(room) = self.room.obj() {
+                        room.timeline().remove_empty_typing_row();
+                    }
+                }
+
+                self.trigger_read_receipts_update();
+                self.load_more_events_if_needed();
+            }
+        }
+
+        /// Handle when the maximum scroll value changed.
+        fn scroll_max_value_changed(&self) {
+            if self.is_auto_scrolling.get() {
+                // We are handling it.
+                return;
+            }
+
+            if self.is_sticky.get() {
+                self.scroll_down();
+            } else {
+                self.update_scroll_btn();
+            }
+
+            self.load_more_events_if_needed();
+        }
+
         /// Set whether the room history should stick to the newest message in
         /// the timeline.
         pub(super) fn set_sticky(&self, is_sticky: bool) {
-            tracing::trace!("set_sticky: {is_sticky:?}");
             if self.is_sticky.get() == is_sticky {
                 return;
             }
-            tracing::trace!("is-sticky changed");
 
             self.is_sticky.set(is_sticky);
             self.obj().notify_is_sticky();
@@ -560,19 +560,21 @@ mod imp {
 
         /// Set whether the current room history scrolling is automatic.
         fn set_is_auto_scrolling(&self, is_auto: bool) {
-            tracing::trace!("set_is_auto_scrolling: {is_auto:?}");
             if self.is_auto_scrolling.get() == is_auto {
                 return;
             }
 
-            tracing::trace!("is_auto_scrolling changed");
             self.is_auto_scrolling.set(is_auto);
         }
 
         /// Scroll to the bottom of the timeline.
         #[template_callback]
         fn scroll_down(&self) {
-            tracing::trace!("scroll_down");
+            if self.is_at_bottom() {
+                // Nothing to do.
+                return;
+            }
+
             self.set_is_auto_scrolling(true);
 
             let n_items = self.selection_model().n_items();
@@ -581,9 +583,6 @@ mod imp {
                 // Make sure that the last item is focused.
                 self.listview
                     .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
-                // Make sure that we do scroll to the very bottom.
-                self.scrolled_window
-                    .emit_scroll_child(gtk::ScrollType::End, false);
             }
         }
 
@@ -601,8 +600,10 @@ mod imp {
             let is_at_bottom = self.is_at_bottom();
 
             if !is_at_bottom {
+                // Show the revealer so we can reveal the button.
                 self.scroll_btn_revealer.set_visible(true);
             }
+
             self.scroll_btn_revealer.set_reveal_child(!is_at_bottom);
         }
 
