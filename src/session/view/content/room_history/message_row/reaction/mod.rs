@@ -11,7 +11,7 @@ use crate::{
         model::{Member, MemberList, ReactionData, ReactionGroup},
         view::content::room_history::member_timestamp::MemberTimestamp,
     },
-    utils::{BoundObjectWeakRef, EMOJI_REGEX},
+    utils::{key_bindings, BoundObjectWeakRef, EMOJI_REGEX},
 };
 
 mod imp {
@@ -69,6 +69,11 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+
+            klass.install_action("reaction.show-popover", None, |obj, _, _| {
+                obj.imp().show_popover();
+            });
+            key_bindings::add_context_menu_bindings(klass, "reaction.show-popover");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

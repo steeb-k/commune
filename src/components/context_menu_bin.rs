@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
-use crate::utils::BoundObject;
+use crate::utils::{key_bindings, BoundObject};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -62,16 +62,7 @@ mod imp {
             klass.install_action("context-menu.activate", None, |obj, _, _| {
                 obj.open_menu_at(0, 0);
             });
-            klass.add_binding_action(
-                gdk::Key::F10,
-                gdk::ModifierType::SHIFT_MASK,
-                "context-menu.activate",
-            );
-            klass.add_binding_action(
-                gdk::Key::Menu,
-                gdk::ModifierType::empty(),
-                "context-menu.activate",
-            );
+            key_bindings::add_context_menu_bindings(klass, "context-menu.activate");
 
             klass.install_action("context-menu.close", None, |obj, _, _| {
                 if let Some(popover) = obj.popover() {

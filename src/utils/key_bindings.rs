@@ -4,7 +4,7 @@ use gtk::{gdk, subclass::prelude::*};
 
 /// List of keys that activate a widget.
 // Copied from GtkButton's source code.
-pub(crate) const ACTIVATE_KEYS: &[gdk::Key] = &[
+const ACTIVATE_KEYS: &[gdk::Key] = &[
     gdk::Key::space,
     gdk::Key::KP_Space,
     gdk::Key::Return,
@@ -12,10 +12,24 @@ pub(crate) const ACTIVATE_KEYS: &[gdk::Key] = &[
     gdk::Key::KP_Enter,
 ];
 
-/// Activate the given action when one of the [`ACTIVATE_KEYS`] binding is
-/// triggered.
+/// Add key bindings to the given class to trigger the given action to activate
+/// a widget.
 pub(crate) fn add_activate_bindings<T: WidgetClassExt>(klass: &mut T, action: &str) {
     for key in ACTIVATE_KEYS {
         klass.add_binding_action(*key, gdk::ModifierType::empty(), action);
+    }
+}
+
+/// List of key and modifier combos that trigger a context menu to appear.
+const CONTEXT_MENU_BINDINGS: &[(gdk::Key, gdk::ModifierType)] = &[
+    (gdk::Key::F10, gdk::ModifierType::SHIFT_MASK),
+    (gdk::Key::Menu, gdk::ModifierType::empty()),
+];
+
+/// Add key bindings to the given class to trigger the given action to show a
+/// context menu.
+pub(crate) fn add_context_menu_bindings<T: WidgetClassExt>(klass: &mut T, action: &str) {
+    for (key, modifier) in CONTEXT_MENU_BINDINGS {
+        klass.add_binding_action(*key, *modifier, action);
     }
 }
