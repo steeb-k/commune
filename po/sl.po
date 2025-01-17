@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the fractal package.
 #
 # Matej Urbančič <mateju@svn.gnome.org>, 2020–2022.
+# Martin Srebotnjak <miles@filmsi.net>, 2024,2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-11 11:47+0000\n"
-"PO-Revision-Date: 2025-01-11 19:32+0100\n"
+"POT-Creation-Date: 2025-01-15 22:34+0000\n"
+"PO-Revision-Date: 2025-01-17 11:02+0100\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -177,7 +178,9 @@ msgstr "© 2017-2024 Ekipa Fraktala"
 
 #: src/application.rs:295
 msgid "translator-credits"
-msgstr "Martin Srebotnjak"
+msgstr ""
+"Matej Urbančič <mateju@src.gnome.org>\n"
+"Martin Srebotnjak <miles@filmsi.net>"
 
 #. This can't be added via the builder
 #: src/application.rs:299
@@ -203,7 +206,9 @@ msgstr "Potrdi spremembo"
 msgid "Try Again"
 msgstr "Poskusi znova"
 
-#: src/components/action_button.ui:65 src/login/session_setup_view.ui:15
+#: src/components/action_button.ui:65
+#: src/components/camera/qrcode_scanner.ui:13
+#: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:52
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
@@ -261,6 +266,19 @@ msgstr "Odstrani podobo"
 #: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "Izberite novo sliko podobe"
+
+#: src/components/camera/qrcode_scanner.rs:90
+msgid "Camera"
+msgstr "Kamera"
+
+#: src/components/camera/qrcode_scanner.ui:22
+#: src/components/camera/qrcode_scanner.ui:35
+msgid "Could Not Connect to Camera"
+msgstr "Povezave s kamero ni mogoče vzpostaviti"
+
+#: src/components/camera/viewfinder.rs:72
+msgid "Viewfinder"
+msgstr "Iskalo"
 
 #: src/components/crypto/identity_setup_view.rs:384
 #: src/identity_verification_view/cancelled_page.rs:190
@@ -558,32 +576,33 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Obnovitev računa lahko tudi ponastavite."
 
-#: src/components/dialogs/auth.rs:269
+#: src/components/dialogs/auth.rs:271
 msgid "Please authenticate the operation with your password"
 msgstr "Postopek overite s svojim geslom"
 
-#: src/components/dialogs/auth.rs:306
+#: src/components/dialogs/auth.rs:308
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
 msgstr ""
 "Postopek overite prek brskalnika in po končanem pritisku pritisnite Potrdi"
 
-#: src/components/dialogs/auth.ui:4
+#: src/components/dialogs/auth.ui:4 src/login/in_browser_page.ui:5
+#: src/login/in_browser_page.ui:40
 msgid "Authentication"
 msgstr "Overitev"
 
-#: src/components/dialogs/auth.ui:21
-msgid "Authenticate"
-msgstr "Overi"
+#: src/components/dialogs/auth.ui:33 src/login/in_browser_page.ui:74
+msgid "Contin_ue"
+msgstr "Na_daljuj"
 
-#: src/components/dialogs/auth.ui:44
+#: src/components/dialogs/auth.ui:64
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Prekliči"
 
-#: src/components/dialogs/auth.ui:45
+#: src/components/dialogs/auth.ui:65
 msgid "C_onfirm"
 msgstr "P_otrdi"
 
@@ -1161,19 +1180,6 @@ msgstr "Varnost"
 msgid "Verify"
 msgstr "Preveri"
 
-#: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
-msgid "Could Not Connect to Camera"
-msgstr "Povezave s kamero ni mogoče vzpostaviti"
-
-#: src/contrib/qr_code_scanner/mod.ui:36
-msgid "Camera"
-msgstr "Kamera"
-
-#. Translators: This is the widget where we see a camera's output
-#: src/contrib/qr_code_scanner/mod.ui:41
-msgid "Viewfinder"
-msgstr "Iskalo"
-
 #: src/contrib/qr_code.rs:52
 msgid "QR Code"
 msgstr "Koda QR"
@@ -1251,7 +1257,7 @@ msgstr "Preverite novo sejo iz trenutne seje."
 #: src/identity_verification_view/accept_request_page.rs:134
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
-#: src/identity_verification_view/scan_qr_code_page.rs:179
+#: src/identity_verification_view/scan_qr_code_page.rs:158
 #: src/session/model/notifications/mod.rs:244
 msgid "Verification Request"
 msgstr "Zahtevek za preverjanje"
@@ -1305,8 +1311,8 @@ msgid "An unexpected error happened during the verification process."
 msgstr "Med postopkom preverjanja je prišlo do nepričakovane napake."
 
 #: src/identity_verification_view/cancelled_page.rs:166
-#: src/identity_verification_view/mod.ui:113
-#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/mod.ui:103
+#: src/identity_verification_view/mod.ui:114
 #: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "Preverjanje preklicano"
@@ -1321,7 +1327,7 @@ msgstr "Pošlji novo zahtevo"
 
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
-#: src/identity_verification_view/scan_qr_code_page.rs:174
+#: src/identity_verification_view/scan_qr_code_page.rs:153
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:106
 msgid "Verify Session"
 msgstr "Preveri sejo"
@@ -1349,14 +1355,14 @@ msgid "Could not access camera"
 msgstr "Dostop do kamere ni mogoč"
 
 #: src/identity_verification_view/choose_method_page.rs:250
-#: src/identity_verification_view/scan_qr_code_page.rs:255
+#: src/identity_verification_view/scan_qr_code_page.rs:221
 msgid "Could not start emoji verification"
 msgstr "Preverjanja čustvenih simbolov ni bilo mogoče začeti"
 
 #: src/identity_verification_view/choose_method_page.rs:266
 #: src/identity_verification_view/confirm_qr_code_page.rs:176
 #: src/identity_verification_view/qr_code_scanned_page.rs:144
-#: src/identity_verification_view/scan_qr_code_page.rs:271
+#: src/identity_verification_view/scan_qr_code_page.rs:233
 #: src/identity_verification_view/wait_for_other_page.rs:163
 msgid "Could not cancel the verification"
 msgstr "Preverjanja ni bilo mogoče preklicati"
@@ -1427,41 +1433,41 @@ msgstr "Potrdi optično branje"
 msgid "Confirm"
 msgstr "Potrdi"
 
-#: src/identity_verification_view/mod.ui:14
+#: src/identity_verification_view/mod.rs:199
+msgid "Scan QR Code"
+msgstr "Preberi kodo QR"
+
+#: src/identity_verification_view/mod.ui:15
 msgid "New Identity Verification Request"
 msgstr "Nova zahteva za preverjanje identitete"
 
-#: src/identity_verification_view/mod.ui:25
+#: src/identity_verification_view/mod.ui:26
 msgid "Wait for Other Party"
 msgstr "Počakaj na drugo stranko"
 
-#: src/identity_verification_view/mod.ui:36
+#: src/identity_verification_view/mod.ui:37
 #: src/identity_verification_view/no_supported_methods_page.ui:22
 msgid "No Supported Verification Methods"
 msgstr "Ni podprtih načinov preverjanja"
 
-#: src/identity_verification_view/mod.ui:47
+#: src/identity_verification_view/mod.ui:48
 msgid "Verification Request Methods"
 msgstr "Načini zahteve za preverjanje"
 
-#: src/identity_verification_view/mod.ui:58
-msgid "Scan QR Code"
-msgstr "Preberi kodo QR"
-
-#: src/identity_verification_view/mod.ui:69
+#: src/identity_verification_view/mod.ui:59
 #: src/identity_verification_view/qr_code_scanned_page.ui:19
 msgid "Scan Complete"
 msgstr "Optično branje je dokončano"
 
-#: src/identity_verification_view/mod.ui:80
+#: src/identity_verification_view/mod.ui:70
 msgid "Confirm Scan Result"
 msgstr "Potrditev rezultata optičnega branja"
 
-#: src/identity_verification_view/mod.ui:91
+#: src/identity_verification_view/mod.ui:81
 msgid "Short Authentication String Verification"
 msgstr "Preverjanje s kratkim nizom za preverjanje pristnosti"
 
-#: src/identity_verification_view/mod.ui:102
+#: src/identity_verification_view/mod.ui:92
 msgid "Verification Successful"
 msgstr "Preverjanje uspešno"
 
@@ -1583,17 +1589,17 @@ msgstr "Ne ujema se"
 msgid "Match"
 msgstr "Se ujema"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:176
+#: src/identity_verification_view/scan_qr_code_page.rs:155
 msgid "Scan the QR code displayed by the other session."
 msgstr "Optično preberite kodo QR, prikazano v drugi seji."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:183
+#: src/identity_verification_view/scan_qr_code_page.rs:162
 msgid "Scan the QR code shown on the device of {user}."
 msgstr "Optično preberite kodo QR, prikazano na napravi uporabnika {user}."
 
-#: src/identity_verification_view/scan_qr_code_page.rs:227
+#: src/identity_verification_view/scan_qr_code_page.rs:200
 msgid "Could not validate scanned QR Code"
 msgstr "Optično prebrane kode QR ni bilo mogoče preveriti"
 
@@ -1707,13 +1713,9 @@ msgstr "Naslednji"
 msgid "Advanced…"
 msgstr "Napredno ..."
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#. This is the tooltip text on buttons to log in via Single Sign-On.
-#. The brand is something like Facebook, Apple, GitHub…
-#: src/login/idp_button.rs:68
-msgid "Log in with {brand}"
-msgstr "Prijavi se z {brand}"
+#: src/login/in_browser_page.ui:55
+msgid "Click on the button below and follow the steps in the browser"
+msgstr "Kliknite spodnji gumb in sledite korakom v brskalniku"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1749,19 +1751,19 @@ msgstr "Geslo"
 msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
-#: src/login/mod.rs:500
+#: src/login/mod.rs:444
 msgid "Could not store session"
 msgstr "Seje ni mogoče shraniti"
 
-#: src/login/mod.ui:25 src/login/mod.ui:59
+#: src/login/mod.ui:27 src/login/mod.ui:61
 msgid "Login Complete"
 msgstr "Prijava je končana"
 
-#: src/login/mod.ui:80
+#: src/login/mod.ui:82
 msgid "This session is ready to send and receive secure messages"
 msgstr "Ta seja je pripravljena za pošiljanje in prejemanje varnih sporočil"
 
-#: src/login/mod.ui:86
+#: src/login/mod.ui:88
 msgid "Start Chatting"
 msgstr "Začni klepet"
 
@@ -1773,13 +1775,13 @@ msgstr "Nastavitev seje"
 msgid "Fetching Account Data…"
 msgstr "Pridobivanje podatkov o računu ..."
 
-#: src/login/sso_page.ui:5 src/login/sso_page.ui:41
-msgid "Single Sign-On"
-msgstr "Enotna prijava"
-
-#: src/login/sso_page.ui:56
-msgid "Please follow the steps in the browser"
-msgstr "Sledite korakom v brskalniku"
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#. This is the tooltip text on buttons to log in via Single Sign-On.
+#. The brand is something like Facebook, Apple, GitHub…
+#: src/login/sso_idp_button.rs:74
+msgid "Log in with {brand}"
+msgstr "Prijavi se z {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -3855,28 +3857,28 @@ msgid "User Location"
 msgstr "Lokacija uporabnika"
 
 #. Translators: As in 'Sending message…'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:15
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:18
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:23
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:26
 msgid "Sending…"
 msgstr "Poteka pošiljanje …"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:31
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:39
 msgid "Temporary Error Sending Message"
 msgstr "Začasna napaka pri pošiljanju sporočila"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:46
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:54
 msgid "Message Cannot Be Sent"
 msgstr "Sporočila ni mogoče poslati"
 
 #. Translators: As in 'Sent message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:62
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:65
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:73
 msgid "Sent"
 msgstr "Poslano"
 
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:84
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:87
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:92
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:95
 msgid "Edited"
 msgstr "Urejeno"
 
@@ -3936,12 +3938,12 @@ msgid "Video: {filename}"
 msgstr "Videoposnetek: {imedatoteke }"
 
 #: src/session/view/content/room_history/message_row/visual_media.rs:480
-#: src/utils/media/image/mod.rs:727
+#: src/utils/media/image/mod.rs:762
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
 
 #: src/session/view/content/room_history/message_row/visual_media.rs:524
-#: src/utils/media/image/mod.rs:730
+#: src/utils/media/image/mod.rs:765
 msgid "An unexpected error occurred"
 msgstr "Prišlo je do nepričakovane napake"
 
@@ -5032,7 +5034,7 @@ msgstr "{user} vas je povabil/a"
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
 
-#: src/utils/media/image/mod.rs:728
+#: src/utils/media/image/mod.rs:763
 msgid "Image format not supported"
 msgstr "Vrsta slikovnih datotek ni podprta"
 
