@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
 
 use crate::components::{Avatar, AvatarData};
 
@@ -15,18 +15,18 @@ mod imp {
     #[properties(wrapper_type = super::AvatarWithSelection)]
     pub struct AvatarWithSelection {
         #[template_child]
-        pub child_avatar: TemplateChild<Avatar>,
+        child_avatar: TemplateChild<Avatar>,
         #[template_child]
-        pub checkmark: TemplateChild<gtk::Image>,
+        checkmark: TemplateChild<gtk::Image>,
         /// The [`AvatarData`] displayed by this widget.
         #[property(get = Self::data, set = Self::set_data, explicit_notify, nullable)]
-        pub data: PhantomData<Option<AvatarData>>,
+        data: PhantomData<Option<AvatarData>>,
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, minimum = -1, default = -1)]
-        pub size: PhantomData<i32>,
+        size: PhantomData<i32>,
         /// Whether this avatar is selected.
         #[property(get = Self::is_selected, set = Self::set_selected, explicit_notify)]
-        pub selected: PhantomData<bool>,
+        selected: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -103,7 +103,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A widget displaying an `Avatar` for a `Room` or `User` and an optional selected effect.
+    /// A widget displaying an [`Avatar`] and an optional selected effect.
     pub struct AvatarWithSelection(ObjectSubclass<imp::AvatarWithSelection>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -111,9 +111,5 @@ glib::wrapper! {
 impl AvatarWithSelection {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    pub fn avatar(&self) -> &Avatar {
-        &self.imp().child_avatar
     }
 }

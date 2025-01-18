@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="AccountSwitcherButton" parent="GtkToggleButton">
+    <signal name="toggled" handler="toggle_popover" swapped="yes"/>
+    <binding name="visible">
+      <closure type="gboolean" function="invert_boolean">
+        <closure type="gboolean" function="guint_is_zero">
+          <lookup name="n-items" type="GtkSingleSelection">
+            <lookup name="session-selection" type="Window">
+              <lookup name="root">AccountSwitcherButton</lookup>
+            </lookup>
+          </lookup>
+        </closure>
+      </closure>
+    </binding>
     <binding name="tooltip-text">
       <lookup name="user-id-string" type="SessionInfo">
         <lookup name="selected-item" type="GtkSingleSelection">

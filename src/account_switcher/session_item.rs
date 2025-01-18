@@ -1,4 +1,4 @@
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::avatar_with_selection::AvatarWithSelection;
 use crate::{
@@ -20,22 +20,22 @@ mod imp {
     #[properties(wrapper_type = super::SessionItemRow)]
     pub struct SessionItemRow {
         #[template_child]
-        pub avatar: TemplateChild<AvatarWithSelection>,
+        avatar: TemplateChild<AvatarWithSelection>,
         #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub user_id: TemplateChild<gtk::Label>,
+        user_id: TemplateChild<gtk::Label>,
         #[template_child]
-        pub state_stack: TemplateChild<gtk::Stack>,
+        state_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub error_image: TemplateChild<gtk::Image>,
+        error_image: TemplateChild<gtk::Image>,
         /// The session this item represents.
         #[property(get, set = Self::set_session, explicit_notify)]
-        pub session: glib::WeakRef<SessionInfo>,
-        pub user_bindings: RefCell<Vec<glib::Binding>>,
+        session: glib::WeakRef<SessionInfo>,
+        user_bindings: RefCell<Vec<glib::Binding>>,
         /// Whether this session is selected.
         #[property(get = Self::is_selected, set = Self::set_selected, explicit_notify)]
-        pub selected: PhantomData<bool>,
+        selected: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -46,7 +46,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -66,6 +66,7 @@ mod imp {
     impl WidgetImpl for SessionItemRow {}
     impl ListBoxRowImpl for SessionItemRow {}
 
+    #[gtk::template_callbacks]
     impl SessionItemRow {
         /// Whether this session is selected.
         fn is_selected(&self) -> bool {
@@ -145,6 +146,23 @@ mod imp {
             self.session.set(session);
             self.obj().notify_session();
         }
+
+        /// Show the account settings for the session of this row.
+        #[template_callback]
+        fn show_account_settings(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let obj = self.obj();
+            obj.activate_action("account-switcher.close", None)
+                .expect("`account-switcher.close` action should exist");
+            obj.activate_action(
+                "win.open-account-settings",
+                Some(&session.session_id().to_variant()),
+            )
+            .expect("`win.open-account-settings` action should exist");
+        }
     }
 }
 
@@ -154,24 +172,8 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl SessionItemRow {
     pub fn new(session: &SessionInfo) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    #[template_callback]
-    pub fn show_account_settings(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        self.activate_action("account-switcher.close", None)
-            .unwrap();
-        self.activate_action(
-            "win.open-account-settings",
-            Some(&session.session_id().to_variant()),
-        )
-        .unwrap();
     }
 }
