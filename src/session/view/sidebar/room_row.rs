@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
-use super::Row;
+use super::SidebarRow;
 use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
@@ -18,30 +18,30 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/room_row.ui")]
-    #[properties(wrapper_type = super::RoomRow)]
-    pub struct RoomRow {
+    #[properties(wrapper_type = super::SidebarRoomRow)]
+    pub struct SidebarRoomRow {
         /// The room represented by this row.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: BoundObject<Room>,
+        room: BoundObject<Room>,
         #[template_child]
-        pub display_name_box: TemplateChild<gtk::Box>,
+        display_name_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub notification_count: TemplateChild<gtk::Label>,
-        pub direct_icon: RefCell<Option<gtk::Image>>,
+        notification_count: TemplateChild<gtk::Label>,
+        direct_icon: RefCell<Option<gtk::Image>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for RoomRow {
+    impl ObjectSubclass for SidebarRoomRow {
         const NAME: &'static str = "SidebarRoomRow";
-        type Type = super::RoomRow;
+        type Type = super::SidebarRoomRow;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            klass.set_css_name("room");
 
+            klass.set_css_name("room");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
@@ -51,81 +51,79 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for RoomRow {
+    impl ObjectImpl for SidebarRoomRow {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             // Allow to drag rooms
             let drag = gtk::DragSource::builder()
                 .actions(gdk::DragAction::MOVE)
                 .build();
             drag.connect_prepare(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 #[upgrade_or]
                 None,
-                move |drag, x, y| obj.drag_prepare(drag, x, y)
+                move |drag, x, y| imp.prepare_drag(drag, x, y)
             ));
             drag.connect_drag_begin(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, _| {
-                    obj.drag_begin();
+                    imp.begin_drag();
                 }
             ));
             drag.connect_drag_end(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, _, _| {
-                    obj.drag_end();
+                    imp.end_drag();
                 }
             ));
-            obj.add_controller(drag);
+            self.obj().add_controller(drag);
         }
     }
 
-    impl WidgetImpl for RoomRow {}
-    impl BinImpl for RoomRow {}
+    impl WidgetImpl for SidebarRoomRow {}
+    impl BinImpl for SidebarRoomRow {}
 
-    impl RoomRow {
+    impl SidebarRoomRow {
         /// Set the room represented by this row.
-        pub fn set_room(&self, room: Option<Room>) {
+        fn set_room(&self, room: Option<Room>) {
             if self.room.obj() == room {
                 return;
             }
-            let obj = self.obj();
 
             self.room.disconnect_signals();
             self.display_name.remove_css_class("dim-label");
 
             if let Some(room) = room {
                 let highlight_handler = room.connect_highlight_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_highlight();
+                        imp.update_highlight();
                     }
                 ));
                 let direct_handler = room.connect_is_direct_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_direct_icon();
+                        imp.update_direct_icon();
                     }
                 ));
                 let name_handler = room.connect_display_name_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_accessibility_label();
+                        imp.update_accessibility_label();
                     }
                 ));
                 let notifications_count_handler = room.connect_notification_count_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_accessibility_label();
+                        imp.update_accessibility_label();
                     }
                 ));
 
@@ -143,146 +141,160 @@ mod imp {
                     ],
                 );
 
-                obj.update_accessibility_label();
+                self.update_accessibility_label();
             }
 
-            obj.update_highlight();
-            obj.update_direct_icon();
-            obj.notify_room();
+            self.update_highlight();
+            self.update_direct_icon();
+            self.obj().notify_room();
+        }
+
+        /// Update how this row is highlighted according to the current state.
+        fn update_highlight(&self) {
+            if let Some(room) = self.room.obj() {
+                let flags = room.highlight();
+
+                if flags.contains(HighlightFlags::HIGHLIGHT) {
+                    self.notification_count.add_css_class("highlight");
+                } else {
+                    self.notification_count.remove_css_class("highlight");
+                }
+
+                if flags.contains(HighlightFlags::BOLD) {
+                    self.display_name.add_css_class("bold");
+                } else {
+                    self.display_name.remove_css_class("bold");
+                }
+            } else {
+                self.notification_count.remove_css_class("highlight");
+                self.display_name.remove_css_class("bold");
+            }
+        }
+
+        /// The parent `SidebarRow` of this row.
+        fn parent_row(&self) -> Option<SidebarRow> {
+            self.obj().parent().and_downcast()
+        }
+
+        /// Prepare a drag action.
+        fn prepare_drag(
+            &self,
+            drag: &gtk::DragSource,
+            x: f64,
+            y: f64,
+        ) -> Option<gdk::ContentProvider> {
+            let room = self.room.obj()?;
+
+            if let Some(parent) = self.parent_row() {
+                let paintable = gtk::WidgetPaintable::new(Some(&parent));
+                // FIXME: The hotspot coordinates don't work.
+                // See https://gitlab.gnome.org/GNOME/gtk/-/issues/2341
+                drag.set_icon(Some(&paintable), x as i32, y as i32);
+            }
+
+            Some(gdk::ContentProvider::for_value(&room.to_value()))
+        }
+
+        /// Begin a drag action.
+        fn begin_drag(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let Some(row) = self.parent_row() else {
+                return;
+            };
+            let Some(sidebar) = row.sidebar() else {
+                return;
+            };
+            row.add_css_class("drag");
+
+            sidebar.set_drop_source_category(Some(room.category()));
+        }
+
+        /// End a drag action.
+        fn end_drag(&self) {
+            let Some(row) = self.parent_row() else {
+                return;
+            };
+            let Some(sidebar) = row.sidebar() else {
+                return;
+            };
+            sidebar.set_drop_source_category(None);
+            row.remove_css_class("drag");
+        }
+
+        /// Update the icon showing whether a room is direct or not.
+        fn update_direct_icon(&self) {
+            let is_direct = self.room.obj().is_some_and(|room| room.is_direct());
+
+            if is_direct {
+                if self.direct_icon.borrow().is_none() {
+                    let icon = gtk::Image::builder()
+                        .icon_name("avatar-default-symbolic")
+                        .icon_size(gtk::IconSize::Normal)
+                        .css_classes(["dim-label"])
+                        .build();
+
+                    self.display_name_box.prepend(&icon);
+                    self.direct_icon.replace(Some(icon));
+                }
+            } else if let Some(icon) = self.direct_icon.take() {
+                self.display_name_box.remove(&icon);
+            }
+        }
+
+        /// Update the accessibility label of this row.
+        fn update_accessibility_label(&self) {
+            let Some(parent) = self.obj().parent() else {
+                return;
+            };
+            parent.update_property(&[gtk::accessible::Property::Label(&self.accessible_label())]);
+        }
+
+        /// Compute the accessibility label of this row.
+        fn accessible_label(&self) -> String {
+            let Some(room) = self.room.obj() else {
+                return String::new();
+            };
+
+            let name = if room.is_direct() {
+                gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name. Presented to screen readers when a
+                    // room is a direct chat with another user.
+                    "Direct chat with {name}",
+                    &[("name", &room.display_name())],
+                )
+            } else {
+                room.display_name()
+            };
+
+            if room.notification_count() > 0 {
+                let count = ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name. Presented to screen readers when a room has notifications
+                    // for unread messages.
+                    "1 notification",
+                    "{count} notifications",
+                    room.notification_count() as u32,
+                    &[("count", &room.notification_count().to_string())],
+                );
+                format!("{name} {count}")
+            } else {
+                name
+            }
         }
     }
 }
 
 glib::wrapper! {
     /// A sidebar row representing a room.
-    pub struct RoomRow(ObjectSubclass<imp::RoomRow>)
+    pub struct SidebarRoomRow(ObjectSubclass<imp::SidebarRoomRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl RoomRow {
+impl SidebarRoomRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Update how this row is highlighted according to the current state.
-    fn update_highlight(&self) {
-        let imp = self.imp();
-        if let Some(room) = self.room() {
-            let flags = room.highlight();
-
-            if flags.contains(HighlightFlags::HIGHLIGHT) {
-                imp.notification_count.add_css_class("highlight");
-            } else {
-                imp.notification_count.remove_css_class("highlight");
-            }
-
-            if flags.contains(HighlightFlags::BOLD) {
-                imp.display_name.add_css_class("bold");
-            } else {
-                imp.display_name.remove_css_class("bold");
-            }
-        } else {
-            imp.notification_count.remove_css_class("highlight");
-            imp.display_name.remove_css_class("bold");
-        }
-    }
-
-    fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
-        let room = self.room()?;
-
-        if let Some(parent) = self.parent() {
-            let paintable = gtk::WidgetPaintable::new(Some(&parent));
-            // FIXME: The hotspot coordinates don't work.
-            // See https://gitlab.gnome.org/GNOME/gtk/-/issues/2341
-            drag.set_icon(Some(&paintable), x as i32, y as i32);
-        }
-
-        Some(gdk::ContentProvider::for_value(&room.to_value()))
-    }
-
-    fn drag_begin(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let Some(row) = self.parent().and_downcast::<Row>() else {
-            return;
-        };
-        let Some(sidebar) = row.sidebar() else {
-            return;
-        };
-        row.add_css_class("drag");
-
-        sidebar.set_drop_source_category(Some(room.category()));
-    }
-
-    fn drag_end(&self) {
-        let Some(row) = self.parent().and_downcast::<Row>() else {
-            return;
-        };
-        let Some(sidebar) = row.sidebar() else {
-            return;
-        };
-        sidebar.set_drop_source_category(None);
-        row.remove_css_class("drag");
-    }
-
-    fn update_direct_icon(&self) {
-        let imp = self.imp();
-        let is_direct = self.room().is_some_and(|room| room.is_direct());
-
-        if is_direct {
-            if imp.direct_icon.borrow().is_none() {
-                let icon = gtk::Image::builder()
-                    .icon_name("avatar-default-symbolic")
-                    .icon_size(gtk::IconSize::Normal)
-                    .css_classes(["dim-label"])
-                    .build();
-
-                imp.display_name_box.prepend(&icon);
-                imp.direct_icon.replace(Some(icon));
-            }
-        } else if let Some(icon) = imp.direct_icon.take() {
-            imp.display_name_box.remove(&icon);
-        }
-    }
-
-    fn update_accessibility_label(&self) {
-        let Some(parent) = self.parent() else {
-            return;
-        };
-        parent.update_property(&[gtk::accessible::Property::Label(&self.accessible_label())]);
-    }
-
-    fn accessible_label(&self) -> String {
-        let Some(room) = self.room() else {
-            return String::new();
-        };
-
-        let name = if room.is_direct() {
-            gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name. Presented to screen readers when a
-                // room is a direct chat with another user.
-                "Direct chat with {name}",
-                &[("name", &room.display_name())],
-            )
-        } else {
-            room.display_name()
-        };
-
-        if room.notification_count() > 0 {
-            let count = ngettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name. Presented to screen readers when a room has notifications
-                // for unread messages.
-                "1 notification",
-                "{count} notifications",
-                room.notification_count() as u32,
-                &[("count", &room.notification_count().to_string())],
-            );
-            format!("{name} {count}")
-        } else {
-            name
-        }
     }
 }

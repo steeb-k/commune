@@ -47,6 +47,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
+
             klass.set_css_name("sidebar-section");
         }
 
@@ -57,14 +59,6 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for SidebarSectionRow {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.obj().connect_parent_notify(|obj| {
-                obj.set_expanded_accessibility_state(obj.is_expanded());
-            });
-        }
-
         fn dispose(&self) {
             if let Some(binding) = self.section_binding.take() {
                 binding.unbind();
@@ -75,6 +69,7 @@ mod imp {
     impl WidgetImpl for SidebarSectionRow {}
     impl BinImpl for SidebarSectionRow {}
 
+    #[gtk::template_callbacks]
     impl SidebarSectionRow {
         /// Set the section represented by this row.
         fn set_section(&self, section: Option<SidebarSection>) {
@@ -166,8 +161,18 @@ mod imp {
             }
 
             self.is_expanded.set(is_expanded);
-            obj.set_expanded_accessibility_state(is_expanded);
+            self.update_expanded_accessibility_state();
             obj.notify_is_expanded();
+        }
+
+        /// Update the expanded state of this row for a11y.
+        #[template_callback]
+        fn update_expanded_accessibility_state(&self) {
+            if let Some(row) = self.obj().parent() {
+                row.update_state(&[gtk::accessible::State::Expanded(Some(
+                    self.is_expanded.get(),
+                ))]);
+            }
         }
 
         /// Set the room category to show the label for.
@@ -195,19 +200,12 @@ impl SidebarSectionRow {
     }
 
     /// Set the room category to show the label for.
-    pub fn set_show_label_for_room_category(&self, category: Option<RoomCategory>) {
+    pub(crate) fn set_show_label_for_room_category(&self, category: Option<RoomCategory>) {
         self.imp().set_show_label_for_room_category(category);
     }
 
-    /// Set the expanded state of this row for a11y.
-    fn set_expanded_accessibility_state(&self, is_expanded: bool) {
-        if let Some(row) = self.parent() {
-            row.update_state(&[gtk::accessible::State::Expanded(Some(is_expanded))]);
-        }
-    }
-
     /// The descendant that labels this row for a11y.
-    pub fn labelled_by(&self) -> &gtk::Accessible {
+    pub(crate) fn labelled_by(&self) -> &gtk::Accessible {
         self.imp().display_name.upcast_ref()
     }
 }

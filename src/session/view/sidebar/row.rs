@@ -4,7 +4,9 @@ use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
 use ruma::api::client::receipt::create_receipt::v3::ReceiptType;
 use tracing::error;
 
-use super::{IconItemRow, RoomRow, Sidebar, SidebarSectionRow, VerificationRow};
+use super::{
+    Sidebar, SidebarIconItemRow, SidebarRoomRow, SidebarSectionRow, SidebarVerificationRow,
+};
 use crate::{
     components::{confirm_leave_room_dialog, ContextMenuBin},
     prelude::*,
@@ -22,8 +24,8 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::Row)]
-    pub struct Row {
+    #[properties(wrapper_type = super::SidebarRow)]
+    pub struct SidebarRow {
         /// The ancestor sidebar of this row.
         #[property(get, set = Self::set_sidebar, construct_only)]
         sidebar: BoundObjectWeakRef<Sidebar>,
@@ -36,9 +38,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Row {
+    impl ObjectSubclass for SidebarRow {
         const NAME: &'static str = "SidebarRow";
-        type Type = super::Row;
+        type Type = super::SidebarRow;
         type ParentType = ContextMenuBin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -48,7 +50,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Row {
+    impl ObjectImpl for SidebarRow {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -93,9 +95,9 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Row {}
+    impl WidgetImpl for SidebarRow {}
 
-    impl ContextMenuBinImpl for Row {
+    impl ContextMenuBinImpl for SidebarRow {
         fn menu_opened(&self) {
             if !self
                 .item
@@ -115,7 +117,7 @@ mod imp {
         }
     }
 
-    impl Row {
+    impl SidebarRow {
         /// Set the ancestor sidebar of this row.
         fn set_sidebar(&self, sidebar: &Sidebar) {
             let drop_source_category_handler =
@@ -181,10 +183,10 @@ mod imp {
                     };
                     child.set_section(Some(section.clone()));
                 } else if let Some(room) = item.downcast_ref::<Room>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<RoomRow>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<SidebarRoomRow>() {
                         child
                     } else {
-                        let child = RoomRow::new();
+                        let child = SidebarRoomRow::new();
                         obj.set_child(Some(&child));
                         child
                     };
@@ -220,23 +222,25 @@ mod imp {
 
                     child.set_room(Some(room.clone()));
                 } else if let Some(icon_item) = item.downcast_ref::<SidebarIconItem>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<IconItemRow>() {
-                        child
-                    } else {
-                        let child = IconItemRow::new();
-                        obj.set_child(Some(&child));
-                        child
-                    };
+                    let child =
+                        if let Some(child) = obj.child().and_downcast::<SidebarIconItemRow>() {
+                            child
+                        } else {
+                            let child = SidebarIconItemRow::new();
+                            obj.set_child(Some(&child));
+                            child
+                        };
 
                     child.set_icon_item(Some(icon_item.clone()));
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<VerificationRow>() {
-                        child
-                    } else {
-                        let child = VerificationRow::new();
-                        obj.set_child(Some(&child));
-                        child
-                    };
+                    let child =
+                        if let Some(child) = obj.child().and_downcast::<SidebarVerificationRow>() {
+                            child
+                        } else {
+                            let child = SidebarVerificationRow::new();
+                            obj.set_child(Some(&child));
+                            child
+                        };
 
                     child.set_identity_verification(Some(verification.clone()));
                 } else {
@@ -798,11 +802,11 @@ mod imp {
 
 glib::wrapper! {
     /// A row of the sidebar.
-    pub struct Row(ObjectSubclass<imp::Row>)
+    pub struct SidebarRow(ObjectSubclass<imp::SidebarRow>)
         @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
 }
 
-impl Row {
+impl SidebarRow {
     pub fn new(sidebar: &Sidebar) -> Self {
         glib::Object::builder().property("sidebar", sidebar).build()
     }

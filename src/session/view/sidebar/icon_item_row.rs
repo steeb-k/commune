@@ -1,5 +1,5 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
 
 use crate::session::model::{SidebarIconItem, SidebarIconItemType};
 
@@ -12,21 +12,22 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/icon_item_row.ui")]
-    #[properties(wrapper_type = super::IconItemRow)]
-    pub struct IconItemRow {
+    #[properties(wrapper_type = super::SidebarIconItemRow)]
+    pub struct SidebarIconItemRow {
         /// The [`SidebarIconItem`] of this row.
         #[property(get, set = Self::set_icon_item, explicit_notify, nullable)]
-        pub icon_item: RefCell<Option<SidebarIconItem>>,
+        icon_item: RefCell<Option<SidebarIconItem>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for IconItemRow {
+    impl ObjectSubclass for SidebarIconItemRow {
         const NAME: &'static str = "SidebarIconItemRow";
-        type Type = super::IconItemRow;
+        type Type = super::SidebarIconItemRow;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_css_name("icon-item");
         }
 
@@ -36,12 +37,12 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IconItemRow {}
+    impl ObjectImpl for SidebarIconItemRow {}
 
-    impl WidgetImpl for IconItemRow {}
-    impl BinImpl for IconItemRow {}
+    impl WidgetImpl for SidebarIconItemRow {}
+    impl BinImpl for SidebarIconItemRow {}
 
-    impl IconItemRow {
+    impl SidebarIconItemRow {
         /// Set the [`SidebarIconItem`] of this row.
         fn set_icon_item(&self, icon_item: Option<SidebarIconItem>) {
             if *self.icon_item.borrow() == icon_item {
@@ -65,11 +66,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct IconItemRow(ObjectSubclass<imp::IconItemRow>)
+    /// A row in the sidebar presenting a [`SidebarIconItem`].
+    pub struct SidebarIconItemRow(ObjectSubclass<imp::SidebarIconItemRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl IconItemRow {
+impl SidebarIconItemRow {
     pub fn new() -> Self {
         glib::Object::new()
     }
