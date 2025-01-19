@@ -95,11 +95,11 @@ impl MessageContent {
     /// content of a related message, like a replied-to event, or the caption of
     /// the event.
     pub(crate) fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
-        let mut child = self.child()?;
+        let mut child = BinExt::child(self)?;
 
         // If it is a reply, the media is in the main content.
         if let Some(reply) = child.downcast_ref::<MessageReply>() {
-            child = reply.content().child()?;
+            child = BinExt::child(reply.content())?;
         }
 
         // If it is a caption, the media is the child of the caption.
@@ -152,8 +152,7 @@ impl MessageContent {
                         let reply = MessageReply::new();
                         reply.set_show_related_content_header(replied_to_content.can_show_header());
                         reply.set_related_content_sender(replied_to_sender.upcast_ref());
-                        build_content(
-                            reply.related_content(),
+                        reply.related_content().build_content(
                             replied_to_content.clone(),
                             ContentFormat::Compact,
                             &replied_to_sender,
@@ -161,8 +160,7 @@ impl MessageContent {
                             None,
                             event.reply_to_id(),
                         );
-                        build_content(
-                            reply.content(),
+                        reply.content().build_content(
                             event.content(),
                             ContentFormat::Natural,
                             &event.sender(),
@@ -170,7 +168,7 @@ impl MessageContent {
                             event.transaction_id(),
                             event.event_id(),
                         );
-                        self.set_child(Some(&reply));
+                        BinExt::set_child(self, Some(&reply));
 
                         return;
                     }
@@ -179,8 +177,7 @@ impl MessageContent {
             }
         }
 
-        build_content(
-            self,
+        self.build_content(
             event.content(),
             format,
             &event.sender(),
@@ -198,8 +195,7 @@ impl MessageContent {
 
         let detect_at_room = message.can_contain_at_room() && sender.can_notify_room();
 
-        build_message_content(
-            self,
+        self.build_message_content(
             message,
             self.format(),
             sender,
@@ -215,292 +211,245 @@ impl MessageContent {
     }
 }
 
-/// Build the content widget of `event` as a child of `parent`.
-fn build_content(
-    parent: &impl IsA<adw::Bin>,
-    content: TimelineItemContent,
-    format: ContentFormat,
-    sender: &Member,
-    detect_at_room: bool,
-    transaction_id: Option<OwnedTransactionId>,
-    event_id: Option<OwnedEventId>,
-) {
-    let room = sender.room();
+/// Helper trait for types used to build a message's content.
+trait MessageContentContainer: IsA<gtk::Widget> {
+    /// Get the child of this widget
+    fn child(&self) -> Option<gtk::Widget>;
 
-    match content {
-        TimelineItemContent::Message(message) => {
-            build_message_content(
-                parent,
-                &message,
-                format,
-                sender,
-                detect_at_room,
-                transaction_id,
-                event_id,
-            );
+    /// Set the child of this widget
+    fn set_child(&self, child: Option<gtk::Widget>);
+
+    /// Reuse the child of this widget if it is of the correct type `W`, or
+    /// replace it with a new `W` constructed with its `Default` implementation.
+    ///
+    /// Returns the reused or new widget.
+    fn reuse_child_or_default<W: IsA<gtk::Widget> + Clone + Default>(&self) -> W {
+        if let Some(child) = self.child().and_downcast::<W>() {
+            child
+        } else {
+            let child = W::default();
+            self.set_child(Some(child.clone().upcast()));
+            child
         }
-        TimelineItemContent::Sticker(sticker) => {
-            build_media_message_content(
-                parent,
-                sticker.content().clone().into(),
+    }
+
+    /// Build the content widget of `event` as a child of this widget.
+    fn build_content(
+        &self,
+        content: TimelineItemContent,
+        format: ContentFormat,
+        sender: &Member,
+        detect_at_room: bool,
+        transaction_id: Option<OwnedTransactionId>,
+        event_id: Option<OwnedEventId>,
+    ) {
+        let room = sender.room();
+
+        match content {
+            TimelineItemContent::Message(message) => {
+                self.build_message_content(
+                    &message,
+                    format,
+                    sender,
+                    detect_at_room,
+                    transaction_id,
+                    event_id,
+                );
+            }
+            TimelineItemContent::Sticker(sticker) => {
+                self.build_media_message_content(
+                    sticker.content().clone().into(),
+                    format,
+                    &room,
+                    detect_at_room,
+                    MessageCacheKey {
+                        transaction_id,
+                        event_id,
+                        is_edited: false,
+                    },
+                );
+            }
+            TimelineItemContent::UnableToDecrypt(_) => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
+            }
+            TimelineItemContent::RedactedMessage => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_plain_text(gettext("This message was removed."), format);
+            }
+            content => {
+                warn!("Unsupported event content: {content:?}");
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_plain_text(gettext("Unsupported event"), format);
+            }
+        }
+    }
+
+    /// Build the content widget of the given message as a child of this widget.
+    fn build_message_content(
+        &self,
+        message: &Message,
+        format: ContentFormat,
+        sender: &Member,
+        detect_at_room: bool,
+        transaction_id: Option<OwnedTransactionId>,
+        event_id: Option<OwnedEventId>,
+    ) {
+        let room = sender.room();
+
+        if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
+            self.build_media_message_content(
+                media_message,
                 format,
                 &room,
                 detect_at_room,
                 MessageCacheKey {
                     transaction_id,
                     event_id,
-                    is_edited: false,
+                    is_edited: message.is_edited(),
                 },
             );
+            return;
         }
-        TimelineItemContent::UnableToDecrypt(_) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
+
+        match message.msgtype() {
+            MessageType::Emote(message) => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_emote(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    sender,
+                    &room,
+                    format,
+                    detect_at_room,
+                );
+            }
+            MessageType::Location(message) => {
+                let child = self.reuse_child_or_default::<MessageLocation>();
+                child.set_geo_uri(&message.geo_uri, format);
+            }
+            MessageType::Notice(message) => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_markup(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    &room,
+                    format,
+                    detect_at_room,
+                );
+            }
+            MessageType::ServerNotice(message) => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_plain_text(message.body.clone(), format);
+            }
+            MessageType::Text(message) => {
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_markup(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    &room,
+                    format,
+                    detect_at_room,
+                );
+            }
+            msgtype => {
+                warn!("Event not supported: {msgtype:?}");
+                let child = self.reuse_child_or_default::<MessageText>();
+                child.with_plain_text(gettext("Unsupported event"), format);
+            }
         }
-        TimelineItemContent::RedactedMessage => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_plain_text(gettext("This message was removed."), format);
+    }
+
+    /// Build the content widget of the given media message as a child of this
+    /// widget.
+    fn build_media_message_content(
+        &self,
+        media_message: MediaMessage,
+        format: ContentFormat,
+        room: &Room,
+        detect_at_room: bool,
+        cache_key: MessageCacheKey,
+    ) {
+        let Some(session) = room.session() else {
+            return;
+        };
+
+        if let Some((caption, formatted_caption)) = media_message.caption() {
+            let caption_widget = self.reuse_child_or_default::<MessageCaption>();
+
+            caption_widget.set_caption(
+                caption.to_owned(),
+                formatted_caption.cloned(),
+                room,
+                format,
+                detect_at_room,
+            );
+
+            caption_widget.build_media_content(media_message, format, &session, cache_key);
+        } else {
+            self.build_media_content(media_message, format, &session, cache_key);
         }
-        content => {
-            warn!("Unsupported event content: {content:?}");
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_plain_text(gettext("Unsupported event"), format);
+    }
+
+    /// Build the content widget of the given media content as the child of this
+    /// widget.
+    ///
+    /// If the child of the parent is already of the proper type, it is reused.
+    fn build_media_content(
+        &self,
+        media_message: MediaMessage,
+        format: ContentFormat,
+        session: &Session,
+        cache_key: MessageCacheKey,
+    ) {
+        match media_message {
+            MediaMessage::Audio(audio) => {
+                let widget = self.reuse_child_or_default::<MessageAudio>();
+                widget.audio(audio.into(), session, format, cache_key);
+            }
+            MediaMessage::File(file) => {
+                let widget = self.reuse_child_or_default::<MessageFile>();
+
+                let media_message = MediaMessage::from(file);
+                widget.set_filename(Some(media_message.filename()));
+                widget.set_format(format);
+            }
+            MediaMessage::Image(image) => {
+                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                widget.set_media_message(image.into(), session, format, cache_key);
+            }
+            MediaMessage::Video(video) => {
+                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                widget.set_media_message(video.into(), session, format, cache_key);
+            }
+            MediaMessage::Sticker(sticker) => {
+                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                widget.set_media_message(sticker.into(), session, format, cache_key);
+            }
         }
     }
 }
 
-/// Build the content widget of the given message as a child of `parent`.
-fn build_message_content(
-    parent: &impl IsA<adw::Bin>,
-    message: &Message,
-    format: ContentFormat,
-    sender: &Member,
-    detect_at_room: bool,
-    transaction_id: Option<OwnedTransactionId>,
-    event_id: Option<OwnedEventId>,
-) {
-    let room = sender.room();
-
-    if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
-        build_media_message_content(
-            parent,
-            media_message,
-            format,
-            &room,
-            detect_at_room,
-            MessageCacheKey {
-                transaction_id,
-                event_id,
-                is_edited: message.is_edited(),
-            },
-        );
-        return;
+impl<W> MessageContentContainer for W
+where
+    W: IsA<adw::Bin> + IsA<gtk::Widget>,
+{
+    fn child(&self) -> Option<gtk::Widget> {
+        BinExt::child(self)
     }
 
-    match message.msgtype() {
-        MessageType::Emote(message) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_emote(
-                message.formatted.clone(),
-                message.body.clone(),
-                sender,
-                &room,
-                format,
-                detect_at_room,
-            );
-        }
-        MessageType::Location(message) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
-                child
-            } else {
-                let child = MessageLocation::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.set_geo_uri(&message.geo_uri, format);
-        }
-        MessageType::Notice(message) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_markup(
-                message.formatted.clone(),
-                message.body.clone(),
-                &room,
-                format,
-                detect_at_room,
-            );
-        }
-        MessageType::ServerNotice(message) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_plain_text(message.body.clone(), format);
-        }
-        MessageType::Text(message) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_markup(
-                message.formatted.clone(),
-                message.body.clone(),
-                &room,
-                format,
-                detect_at_room,
-            );
-        }
-        msgtype => {
-            warn!("Event not supported: {msgtype:?}");
-            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                child
-            } else {
-                let child = MessageText::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.with_plain_text(gettext("Unsupported event"), format);
-        }
+    fn set_child(&self, child: Option<gtk::Widget>) {
+        BinExt::set_child(self, child.as_ref());
     }
 }
 
-/// Build the content widget of the given media message as a child of `parent`.
-fn build_media_message_content(
-    parent: &impl IsA<adw::Bin>,
-    media_message: MediaMessage,
-    format: ContentFormat,
-    room: &Room,
-    detect_at_room: bool,
-    cache_key: MessageCacheKey,
-) {
-    let Some(session) = room.session() else {
-        return;
-    };
-
-    if let Some((caption, formatted_caption)) = media_message.caption() {
-        let caption_widget =
-            if let Some(caption_widget) = parent.child().and_downcast::<MessageCaption>() {
-                caption_widget
-            } else {
-                let caption_widget = MessageCaption::new();
-                parent.set_child(Some(&caption_widget));
-                caption_widget
-            };
-
-        caption_widget.set_caption(
-            caption.to_owned(),
-            formatted_caption.cloned(),
-            room,
-            format,
-            detect_at_room,
-        );
-
-        let new_widget = build_media_content(
-            caption_widget.child(),
-            media_message,
-            format,
-            &session,
-            cache_key,
-        );
-        caption_widget.set_child(Some(new_widget));
-    } else {
-        let new_widget =
-            build_media_content(parent.child(), media_message, format, &session, cache_key);
-        parent.set_child(Some(&new_widget));
+impl MessageContentContainer for MessageCaption {
+    fn child(&self) -> Option<gtk::Widget> {
+        self.child()
     }
-}
 
-/// Build the content widget of the given media content.
-///
-/// If the given old widget is of the proper type, it is reused.
-fn build_media_content(
-    old_widget: Option<gtk::Widget>,
-    media_message: MediaMessage,
-    format: ContentFormat,
-    session: &Session,
-    cache_key: MessageCacheKey,
-) -> gtk::Widget {
-    match media_message {
-        MediaMessage::Audio(audio) => {
-            let widget = old_widget
-                .and_downcast::<MessageAudio>()
-                .unwrap_or_default();
-
-            widget.audio(audio.into(), session, format, cache_key);
-
-            widget.upcast()
-        }
-        MediaMessage::File(file) => {
-            let widget = old_widget.and_downcast::<MessageFile>().unwrap_or_default();
-
-            let media_message = MediaMessage::from(file);
-            widget.set_filename(Some(media_message.filename()));
-            widget.set_format(format);
-
-            widget.upcast()
-        }
-        MediaMessage::Image(image) => {
-            let widget = old_widget
-                .and_downcast::<MessageVisualMedia>()
-                .unwrap_or_default();
-
-            widget.set_media_message(image.into(), session, format, cache_key);
-
-            widget.upcast()
-        }
-        MediaMessage::Video(video) => {
-            let widget = old_widget
-                .and_downcast::<MessageVisualMedia>()
-                .unwrap_or_default();
-
-            widget.set_media_message(video.into(), session, format, cache_key);
-
-            widget.upcast()
-        }
-        MediaMessage::Sticker(sticker) => {
-            let widget = old_widget
-                .and_downcast::<MessageVisualMedia>()
-                .unwrap_or_default();
-
-            widget.set_media_message(sticker.into(), session, format, cache_key);
-
-            widget.upcast()
-        }
+    fn set_child(&self, child: Option<gtk::Widget>) {
+        self.set_child(child);
     }
 }
 

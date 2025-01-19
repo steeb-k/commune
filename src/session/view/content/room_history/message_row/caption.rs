@@ -115,3 +115,9 @@ impl MessageCaption {
             .set_caption(caption, formatted_caption, room, format, detect_at_room);
     }
 }
+
+impl Default for MessageCaption {
+    fn default() -> Self {
+        Self::new()
+    }
+}

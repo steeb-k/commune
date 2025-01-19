@@ -122,3 +122,9 @@ impl MessageLocation {
         self.imp().set_geo_uri(uri, format);
     }
 }
+
+impl Default for MessageLocation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
