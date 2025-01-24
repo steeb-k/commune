@@ -4,18 +4,22 @@ use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
-use matrix_sdk::{encryption::CrossSigningResetAuthType, Error};
+use matrix_sdk::{encryption::CrossSigningResetAuthType, Client, Error};
 use ruma::{
-    api::client::{
-        error::StandardErrorBody,
-        uiaa::{
-            AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
+    api::{
+        client::{
+            error::StandardErrorBody,
+            uiaa::{
+                get_uiaa_fallback_page, AuthData, AuthType, Dummy, FallbackAcknowledgement,
+                Password, UiaaInfo, UserIdentifier,
+            },
         },
+        MatrixVersion, OutgoingRequest, SendAccessToken,
     },
     assign,
 };
 use thiserror::Error;
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{prelude::*, session::model::Session, spawn, spawn_tokio};
 
@@ -309,8 +313,8 @@ mod imp {
             ));
             obj.set_response_enabled("confirm", false);
 
-            let homeserver = client.homeserver();
-            self.set_up_fallback(homeserver.as_str(), stage.as_ref(), &uiaa_session);
+            self.set_up_fallback(client, stage, uiaa_session.clone())
+                .await?;
 
             self.show_and_wait_for_response().await?;
 
@@ -359,14 +363,42 @@ mod imp {
 
         /// Prepare the button to open the web-based fallback with the given
         /// settings.
-        fn set_up_fallback(&self, homeserver: &str, auth_type: &str, uiaa_session: &str) {
+        async fn set_up_fallback(
+            &self,
+            client: Client,
+            auth_type: &AuthType,
+            uiaa_session: String,
+        ) -> Result<(), AuthError> {
             if let Some(handler) = self.open_browser_btn_handler.take() {
                 self.open_browser_btn.disconnect(handler);
             }
 
-            let uri = format!(
-                "{homeserver}_matrix/client/r0/auth/{auth_type}/fallback/web?session={uiaa_session}"
-            );
+            let request =
+                get_uiaa_fallback_page::v3::Request::new(auth_type.to_string(), uiaa_session);
+            let homeserver = client.homeserver();
+            let handle = spawn_tokio!(async move { client.server_versions().await });
+
+            let server_versions = match handle.await.expect("task was not aborted") {
+                Ok(server_versions) => server_versions,
+                Err(error) => {
+                    warn!("Could not get Matrix versions supported by homeserver: {error}");
+                    // Default to the v3 endpoint.
+                    Box::new([MatrixVersion::V1_1])
+                }
+            };
+
+            let http_request = match request.try_into_http_request::<Vec<u8>>(
+                homeserver.as_ref(),
+                SendAccessToken::None,
+                &server_versions,
+            ) {
+                Ok(http_request) => http_request,
+                Err(error) => {
+                    error!("Could not get fallback UIAA URL: {error}");
+                    return Err(AuthError::Unknown);
+                }
+            };
+            let uri = http_request.uri().to_string();
 
             let handler = self.open_browser_btn.connect_clicked(clone!(
                 #[weak(rename_to = imp)]
@@ -382,7 +414,7 @@ mod imp {
                             .launch_future(parent.root().and_downcast_ref::<gtk::Window>())
                             .await
                         {
-                            error!("Could not launch URI: {error}");
+                            error!("Could not launch fallback UIAA URI: {error}");
                         }
 
                         imp.obj().set_response_enabled("confirm", true);
@@ -391,6 +423,8 @@ mod imp {
             ));
 
             self.open_browser_btn_handler.replace(Some(handler));
+
+            Ok(())
         }
 
         /// Update the confirm response for the current state.
