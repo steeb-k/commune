@@ -275,6 +275,7 @@ impl Application {
     fn set_up_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
         self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
+        self.set_accels_for_action("window.close", &["<Control>w"]);
     }
 
     fn show_about_dialog(&self) {
