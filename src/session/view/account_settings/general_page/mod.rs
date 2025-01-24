@@ -23,7 +23,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::FileInfo, oidc, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
+    utils::{media::FileInfo, oauth, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
 };
 
 mod imp {
@@ -229,7 +229,7 @@ mod imp {
                 return;
             };
 
-            oidc::AccountManagementAction::Profile.add_to_account_management_url(&mut url);
+            oauth::AccountManagementAction::Profile.add_to_account_management_url(&mut url);
 
             if let Err(error) = gtk::UriLauncher::new(url.as_ref())
                 .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())

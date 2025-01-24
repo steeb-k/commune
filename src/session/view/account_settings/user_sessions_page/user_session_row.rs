@@ -11,7 +11,7 @@ use crate::{
     session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
     system_settings::ClockFormat,
     toast,
-    utils::{oidc, BoundConstructOnlyObject},
+    utils::{oauth, BoundConstructOnlyObject},
     Application,
 };
 
@@ -345,7 +345,7 @@ mod imp {
                 return;
             };
 
-            oidc::AccountManagementAction::SessionEnd { device_id }
+            oauth::AccountManagementAction::SessionEnd { device_id }
                 .add_to_account_management_url(&mut url);
 
             if let Err(error) = gtk::UriLauncher::new(url.as_ref())

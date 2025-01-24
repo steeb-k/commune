@@ -10,7 +10,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     toast,
-    utils::oidc,
+    utils::oauth,
 };
 
 mod imp {
@@ -174,7 +174,7 @@ mod imp {
                 return;
             };
 
-            oidc::AccountManagementAction::AccountDeactivate
+            oauth::AccountManagementAction::AccountDeactivate
                 .add_to_account_management_url(&mut url);
 
             if let Err(error) = gtk::UriLauncher::new(url.as_ref())

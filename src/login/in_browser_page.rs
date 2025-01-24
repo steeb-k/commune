@@ -23,7 +23,7 @@ mod imp {
         /// The ancestor `Login` object.
         #[property(get, set, nullable)]
         login: glib::WeakRef<Login>,
-        /// Whether we are logging in with OIDC compatibility.
+        /// Whether we are logging in with OAuth 2.0 compatibility.
         #[property(get, set)]
         oidc_compatibility: Cell<bool>,
         /// The identity provider to use when logging in with SSO.

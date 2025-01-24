@@ -1,4 +1,4 @@
-//! Helper methods for OIDC-aware compatibility, to avoid pulling in all the
+//! Helper methods for OAuth-aware compatibility, to avoid pulling in all the
 //! dependencies of the `experimental-oidc` SDK feature only to use a few
 //! methods.
 
@@ -10,17 +10,17 @@ use serde::Deserialize;
 use tracing::{debug, warn};
 use url::Url;
 
-/// Get the URL of the OIDC [authentication issuer] for the current homeserver
-/// of the given Matrix client.
+/// Get the URL of the OAuth 2.0 [authorization provider] for the current
+/// homeserver of the given Matrix client.
 ///
-/// [authentication issuer]: https://github.com/matrix-org/matrix-spec-proposals/pull/2965
+/// [authorization provider]: https://github.com/matrix-org/matrix-spec-proposals/pull/2965
 pub(crate) async fn fetch_auth_issuer(client: &Client) -> Option<Url> {
     let res = client
         .send(get_authentication_issuer::msc2965::Request::new())
         .await;
 
     if let Err(error) = &res {
-        debug!("Could not fetch authentication issuer: {error:?}");
+        debug!("Could not fetch authorization provider: {error:?}");
     }
 
     let issuer = res.ok()?.issuer;
@@ -28,20 +28,20 @@ pub(crate) async fn fetch_auth_issuer(client: &Client) -> Option<Url> {
     match issuer.parse() {
         Ok(url) => Some(url),
         Err(error) => {
-            warn!("Could not parse authentication issuer `{issuer}` as a URL: {error}");
+            warn!("Could not parse authorization provider `{issuer}` as a URL: {error}");
             None
         }
     }
 }
 
-/// Part of an OIDC provider metadata.
+/// Part of an OAuth 2.0 provider metadata.
 #[derive(Debug, Clone, Deserialize)]
 struct ProviderMetadata {
     account_management_uri: Url,
 }
 
-/// Get the [account management URL] of the given authentication issuer with the
-/// given Matrix client.
+/// Get the [account management URL] of the given authorization provider with
+/// the given Matrix client, by using OIDC provider discovery.
 ///
 /// [account management URL]: https://github.com/matrix-org/matrix-spec-proposals/pull/4191
 pub(crate) async fn discover_account_management_url(

@@ -35,7 +35,7 @@ use crate::{
     spawn, spawn_tokio,
     utils::{
         matrix::{self, ClientSetupError},
-        oidc, TokioDrop,
+        oauth, TokioDrop,
     },
     Application,
 };
@@ -523,7 +523,7 @@ mod imp {
             debug!("The logged out session was cleaned up");
         }
 
-        /// The OIDC authentication issuer, if any.
+        /// The OAuth 2.0 authorization provider, if any.
         async fn auth_issuer(&self) -> Option<&Url> {
             self.auth_issuer
                 .get_or_try_init(clone!(
@@ -533,7 +533,7 @@ mod imp {
                         let client = imp.client().clone();
 
                         spawn_tokio!(
-                            async move { oidc::fetch_auth_issuer(&client).await.ok_or(()) }
+                            async move { oauth::fetch_auth_issuer(&client).await.ok_or(()) }
                         )
                         .await
                         .expect("task was not aborted")
@@ -543,8 +543,8 @@ mod imp {
                 .ok()
         }
 
-        /// The account management URL of the OIDC authentication issuer, if
-        /// any.
+        /// The account management URL of the OAuth 2.0 authorization provider,
+        /// if any.
         pub(super) async fn account_management_url(&self) -> Option<&Url> {
             self.account_management_url
                 .get_or_try_init(clone!(
@@ -555,7 +555,7 @@ mod imp {
 
                         let client = imp.client().clone();
                         spawn_tokio!(async move {
-                            oidc::discover_account_management_url(&client, auth_issuer)
+                            oauth::discover_account_management_url(&client, auth_issuer)
                                 .await
                                 .map_err(|error| {
                                     warn!("Could not discover account management URL: {error}");
