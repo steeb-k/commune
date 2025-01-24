@@ -4,7 +4,7 @@ use std::{fmt, path::PathBuf};
 
 use gtk::glib;
 use matrix_sdk::{
-    matrix_auth::{MatrixSession, MatrixSessionTokens},
+    authentication::matrix::{MatrixSession, MatrixSessionTokens},
     SessionMeta,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};

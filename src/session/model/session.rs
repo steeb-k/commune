@@ -8,7 +8,9 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{config::SyncSettings, matrix_auth::MatrixSession, sync::SyncResponse, Client};
+use matrix_sdk::{
+    authentication::matrix::MatrixSession, config::SyncSettings, sync::SyncResponse, Client,
+};
 use ruma::{
     api::client::{
         error::ErrorKind,

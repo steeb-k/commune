@@ -5,10 +5,10 @@ use std::{borrow::Cow, str::FromStr};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
+    authentication::matrix::{MatrixSession, MatrixSessionTokens},
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
-    matrix_auth::{MatrixSession, MatrixSessionTokens},
     Client, ClientBuildError, SessionMeta,
 };
 use ruma::{
