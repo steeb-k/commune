@@ -4,10 +4,10 @@
 
 use std::error::Error;
 
-use matrix_sdk::Client;
+use matrix_sdk::{reqwest::StatusCode, Client};
 use ruma::{api::client::discovery::get_authentication_issuer, OwnedDeviceId};
 use serde::Deserialize;
-use tracing::{debug, warn};
+use tracing::warn;
 use url::Url;
 
 /// Get the URL of the OAuth 2.0 [authorization provider] for the current
@@ -15,15 +15,23 @@ use url::Url;
 ///
 /// [authorization provider]: https://github.com/matrix-org/matrix-spec-proposals/pull/2965
 pub(crate) async fn fetch_auth_issuer(client: &Client) -> Option<Url> {
-    let res = client
+    let result = client
         .send(get_authentication_issuer::msc2965::Request::new())
         .await;
 
-    if let Err(error) = &res {
-        debug!("Could not fetch authorization provider: {error:?}");
-    }
+    let issuer = match result {
+        Ok(response) => response.issuer,
+        Err(error) => {
+            if error
+                .as_client_api_error()
+                .is_none_or(|error| error.status_code != StatusCode::NOT_FOUND)
+            {
+                warn!("Could not fetch authentication issuer: {error:?}");
+            }
 
-    let issuer = res.ok()?.issuer;
+            return None;
+        }
+    };
 
     match issuer.parse() {
         Ok(url) => Some(url),
