@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-13 14:42+0000\n"
-"PO-Revision-Date: 2025-01-14 21:22+0200\n"
+"POT-Creation-Date: 2025-01-25 12:54+0000\n"
+"PO-Revision-Date: 2025-01-25 15:22+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -158,7 +158,7 @@ msgstr "Виберіть обліковий запис"
 msgid "Select the account you want to open the URI with"
 msgstr "Виберіть обліковий запис, для якого ви хочете відкрити адресу"
 
-#: src/account_switcher/account_switcher_button.ui:14
+#: src/account_switcher/account_switcher_button.ui:26
 msgid "Switch Accounts"
 msgstr "Перемкнути обліковий запис"
 
@@ -166,7 +166,6 @@ msgstr "Перемкнути обліковий запис"
 msgid "_Add Account"
 msgstr "Д_одати обліковий запис"
 
-#: src/account_switcher/session_item.ui:60
 #: src/account_switcher/session_item.ui:62
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
@@ -208,7 +207,9 @@ msgstr "Підтвердити зміну"
 msgid "Try Again"
 msgstr "Повторити спробу"
 
-#: src/components/action_button.ui:65 src/login/session_setup_view.ui:15
+#: src/components/action_button.ui:65
+#: src/components/camera/qrcode_scanner.ui:13
+#: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:52
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
@@ -266,6 +267,19 @@ msgstr "Вилучити аватар"
 #: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "Виберіть новий аватар"
+
+#: src/components/camera/qrcode_scanner.rs:90
+msgid "Camera"
+msgstr "Камера"
+
+#: src/components/camera/qrcode_scanner.ui:22
+#: src/components/camera/qrcode_scanner.ui:35
+msgid "Could Not Connect to Camera"
+msgstr "Не вдалося встановити з'єднання з «Камерою»"
+
+#: src/components/camera/viewfinder.rs:72
+msgid "Viewfinder"
+msgstr "Видошукач"
 
 #: src/components/crypto/identity_setup_view.rs:384
 #: src/identity_verification_view/cancelled_page.rs:190
@@ -453,7 +467,7 @@ msgstr "Ключ або пароль для відновлення"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:348
-#: src/session/view/sidebar/mod.rs:314
+#: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "Відновити"
 
@@ -571,11 +585,11 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Крім того, ви можете скинути відновлення облікового запису"
 
-#: src/components/dialogs/auth.rs:271
+#: src/components/dialogs/auth.rs:275
 msgid "Please authenticate the operation with your password"
 msgstr "Будь ласка, пройдіть розпізнавання, ввівши пароль"
 
-#: src/components/dialogs/auth.rs:308
+#: src/components/dialogs/auth.rs:312
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
@@ -589,7 +603,6 @@ msgid "Authentication"
 msgstr "Розпізнавання"
 
 #: src/components/dialogs/auth.ui:33 src/login/in_browser_page.ui:74
-#| msgid "Continue"
 msgid "Contin_ue"
 msgstr "Продов_жити"
 
@@ -606,7 +619,7 @@ msgstr "_Підтвердити"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:868
+#: src/session/view/content/room_history/mod.rs:877
 #: src/session/view/content/room_history/state_row/tombstone.rs:77
 msgid "View"
 msgstr "Перегляд"
@@ -658,7 +671,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:871
+#: src/session/view/content/room_history/mod.rs:880
 #: src/session/view/content/room_history/state_row/tombstone.rs:79
 msgid "Join"
 msgstr "Увійти"
@@ -998,7 +1011,7 @@ msgstr "Сповістити усю кімнату"
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:71
+#: src/session/model/room/permissions.rs:72
 msgid "Custom"
 msgstr "Нетипове"
 
@@ -1138,9 +1151,9 @@ msgstr "Ігнорувати"
 msgid "Could not stop ignoring user"
 msgstr "Не вдалося припинити ігнорувати користувача"
 
-#: src/components/user_page.rs:750 src/session/view/content/invite.rs:300
+#: src/components/user_page.rs:750 src/session/view/content/invite.rs:304
 #: src/session/view/content/room_history/sender_avatar/mod.rs:804
-#: src/session/view/sidebar/row.rs:766
+#: src/session/view/sidebar/row.rs:761
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
@@ -1177,22 +1190,9 @@ msgstr "Безпека"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:307
+#: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
 msgstr "Перевірити"
-
-#: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
-msgid "Could Not Connect to Camera"
-msgstr "Не вдалося встановити з'єднання з «Камерою»"
-
-#: src/contrib/qr_code_scanner/mod.ui:36
-msgid "Camera"
-msgstr "Камера"
-
-#. Translators: This is the widget where we see a camera's output
-#: src/contrib/qr_code_scanner/mod.ui:41
-msgid "Viewfinder"
-msgstr "Видошукач"
 
 #: src/contrib/qr_code.rs:52
 msgid "QR Code"
@@ -1270,7 +1270,7 @@ msgstr "Перевірити новий сеанс з поточного сеа�
 #: src/identity_verification_view/accept_request_page.rs:134
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
-#: src/identity_verification_view/scan_qr_code_page.rs:179
+#: src/identity_verification_view/scan_qr_code_page.rs:158
 #: src/session/model/notifications/mod.rs:244
 msgid "Verification Request"
 msgstr "Запит щодо перевірки"
@@ -1325,8 +1325,8 @@ msgid "An unexpected error happened during the verification process."
 msgstr "Під час процедури перевірки сталася неочікувана помилка."
 
 #: src/identity_verification_view/cancelled_page.rs:166
-#: src/identity_verification_view/mod.ui:113
-#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/mod.ui:103
+#: src/identity_verification_view/mod.ui:114
 #: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "Перевірку скасовано"
@@ -1341,7 +1341,7 @@ msgstr "Надіслати новий запит"
 
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
-#: src/identity_verification_view/scan_qr_code_page.rs:174
+#: src/identity_verification_view/scan_qr_code_page.rs:153
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:106
 msgid "Verify Session"
 msgstr "Перевірити сеанс"
@@ -1369,14 +1369,14 @@ msgid "Could not access camera"
 msgstr "Не вдалося отримати доступ до камери"
 
 #: src/identity_verification_view/choose_method_page.rs:250
-#: src/identity_verification_view/scan_qr_code_page.rs:255
+#: src/identity_verification_view/scan_qr_code_page.rs:221
 msgid "Could not start emoji verification"
 msgstr "Не вдалося почати перевірку емодзі"
 
 #: src/identity_verification_view/choose_method_page.rs:266
 #: src/identity_verification_view/confirm_qr_code_page.rs:176
 #: src/identity_verification_view/qr_code_scanned_page.rs:144
-#: src/identity_verification_view/scan_qr_code_page.rs:271
+#: src/identity_verification_view/scan_qr_code_page.rs:233
 #: src/identity_verification_view/wait_for_other_page.rs:163
 msgid "Could not cancel the verification"
 msgstr "Не вдалося скасувати перевірку"
@@ -1447,41 +1447,41 @@ msgstr "Підтвердити сканування"
 msgid "Confirm"
 msgstr "Підтвердити"
 
-#: src/identity_verification_view/mod.ui:14
+#: src/identity_verification_view/mod.rs:199
+msgid "Scan QR Code"
+msgstr "Сканувати QR-код"
+
+#: src/identity_verification_view/mod.ui:15
 msgid "New Identity Verification Request"
 msgstr "Новий запит щодо перевірки профілю"
 
-#: src/identity_verification_view/mod.ui:25
+#: src/identity_verification_view/mod.ui:26
 msgid "Wait for Other Party"
 msgstr "Очікувати на інший бік"
 
-#: src/identity_verification_view/mod.ui:36
+#: src/identity_verification_view/mod.ui:37
 #: src/identity_verification_view/no_supported_methods_page.ui:22
 msgid "No Supported Verification Methods"
 msgstr "Немає підтримуваних методів перевірки"
 
-#: src/identity_verification_view/mod.ui:47
+#: src/identity_verification_view/mod.ui:48
 msgid "Verification Request Methods"
 msgstr "Способи запиту щодо перевірки"
 
-#: src/identity_verification_view/mod.ui:58
-msgid "Scan QR Code"
-msgstr "Сканувати QR-код"
-
-#: src/identity_verification_view/mod.ui:69
+#: src/identity_verification_view/mod.ui:59
 #: src/identity_verification_view/qr_code_scanned_page.ui:19
 msgid "Scan Complete"
 msgstr "Сканування завершено"
 
-#: src/identity_verification_view/mod.ui:80
+#: src/identity_verification_view/mod.ui:70
 msgid "Confirm Scan Result"
 msgstr "Підтвердити результат сканування"
 
-#: src/identity_verification_view/mod.ui:91
+#: src/identity_verification_view/mod.ui:81
 msgid "Short Authentication String Verification"
 msgstr "Коротке розпізнавання рядка перевірки"
 
-#: src/identity_verification_view/mod.ui:102
+#: src/identity_verification_view/mod.ui:92
 msgid "Verification Successful"
 msgstr "Перевірку пройдено"
 
@@ -1608,17 +1608,17 @@ msgstr "Не збігається"
 msgid "Match"
 msgstr "Збігається"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:176
+#: src/identity_verification_view/scan_qr_code_page.rs:155
 msgid "Scan the QR code displayed by the other session."
 msgstr "Скануйте QR-код, який показано в іншому сеансі."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:183
+#: src/identity_verification_view/scan_qr_code_page.rs:162
 msgid "Scan the QR code shown on the device of {user}."
 msgstr "Скануйте QR-код, який показано на пристрої {user}."
 
-#: src/identity_verification_view/scan_qr_code_page.rs:227
+#: src/identity_verification_view/scan_qr_code_page.rs:200
 msgid "Could not validate scanned QR Code"
 msgstr "Сканований QR-код не пройшов перевірки"
 
@@ -1733,7 +1733,6 @@ msgid "Advanced…"
 msgstr "Додатково…"
 
 #: src/login/in_browser_page.ui:55
-#| msgid "Please follow the steps in the browser"
 msgid "Click on the button below and follow the steps in the browser"
 msgstr "Натисніть розташовану нижче кнопку і виконайте настанови з браузера"
 
@@ -1901,7 +1900,7 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/session/model/session.rs:649
+#: src/session/model/session.rs:651
 msgid "Could not log the session out"
 msgstr "Не вдалося вийти з сеансу"
 
@@ -1949,35 +1948,35 @@ msgstr "Непідтримуване правило"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:380
+#: src/session/model/room/mod.rs:373
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:383
+#: src/session/model/room/mod.rs:376
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:393
+#: src/session/model/room/mod.rs:386
 msgid "Unknown"
 msgstr "Невідомий"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:69
+#: src/session/model/room/permissions.rs:70
 msgid "Default"
 msgstr "Типовий"
 
-#: src/session/model/room/permissions.rs:72
+#: src/session/model/room/permissions.rs:73
 msgid "Moderator"
 msgstr "Модератор"
 
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:74
 msgid "Admin"
 msgstr "Адміністратор"
 
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:75
+#: src/session/model/room/permissions.rs:76
 msgid "Muted"
 msgstr "Вимкнено"
 
@@ -1987,28 +1986,28 @@ msgstr "Вимкнено"
 msgid "Could not join room {room_name}"
 msgstr "Не вдалося долучитися до кімнати {room_name}"
 
-#: src/session/model/sidebar_data/section/name.rs:64
+#: src/session/model/sidebar_data/section/name.rs:78
 msgid "Verifications"
 msgstr "Перевірки"
 
-#: src/session/model/sidebar_data/section/name.rs:65
+#: src/session/model/sidebar_data/section/name.rs:79
 #: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "Запрошено"
 
-#: src/session/model/sidebar_data/section/name.rs:66
+#: src/session/model/sidebar_data/section/name.rs:80
 msgid "Favorites"
 msgstr "Улюблені"
 
-#: src/session/model/sidebar_data/section/name.rs:67
+#: src/session/model/sidebar_data/section/name.rs:81
 msgid "Rooms"
 msgstr "Кімнати"
 
-#: src/session/model/sidebar_data/section/name.rs:68
+#: src/session/model/sidebar_data/section/name.rs:82
 msgid "Low Priority"
 msgstr "Низький пріоритет"
 
-#: src/session/model/sidebar_data/section/name.rs:69
+#: src/session/model/sidebar_data/section/name.rs:83
 msgid "Historical"
 msgstr "Історичні"
 
@@ -2245,7 +2244,7 @@ msgid "Manage Account"
 msgstr "Керування обліковим записом"
 
 #: src/session/view/account_settings/general_page/mod.ui:82
-#: src/session/view/content/room_details/general_page.ui:282
+#: src/session/view/content/room_details/general_page.ui:291
 msgid "Advanced Information"
 msgstr "Додаткова інформація"
 
@@ -2509,7 +2508,7 @@ msgstr "Засвідчення ваших власних пристроїв аб
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
 #: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:305 src/session/view/sidebar/mod.rs:311
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
 msgid "Enable"
 msgstr "Увімкнути"
 
@@ -2804,13 +2803,13 @@ msgstr "Вас запрошено {user_name} ({user_id})"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:250 src/session/view/sidebar/row.rs:721
+#: src/session/view/content/invite.rs:254 src/session/view/sidebar/row.rs:716
 msgid "Could not accept invitation for {room}"
 msgstr "Не вдалося прийняти запрошення до {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:288 src/session/view/sidebar/row.rs:711
+#: src/session/view/content/invite.rs:292 src/session/view/sidebar/row.rs:706
 msgid "Could not decline invitation for {room}"
 msgstr "Не вдалося відхилити запрошення до {room}"
 
@@ -3099,22 +3098,22 @@ msgid "Could not unpublish room from directory"
 msgstr "Не вдалося скасувати оприлюднення кімнати у каталозі"
 
 #: src/session/view/content/room_details/general_page.rs:1016
-#: src/session/view/content/room_details/general_page.ui:268
+#: src/session/view/content/room_details/general_page.ui:277
 msgid "Anyone, even if they are not in the room"
 msgstr "Будь-хто, навіть якщо їх немає у кімнаті"
 
 #: src/session/view/content/room_details/general_page.rs:1019
-#: src/session/view/content/room_details/general_page.ui:269
+#: src/session/view/content/room_details/general_page.ui:278
 msgid "Members only, since this option was selected"
 msgstr "Лише учасники, з моменту позначення цього пункту"
 
 #: src/session/view/content/room_details/general_page.rs:1021
-#: src/session/view/content/room_details/general_page.ui:271
+#: src/session/view/content/room_details/general_page.ui:280
 msgid "Members only, since they were invited"
 msgstr "Лише учасники, з моменту запрошення"
 
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/content/room_details/general_page.ui:270
+#: src/session/view/content/room_details/general_page.ui:279
 msgid "Members only, since they joined the room"
 msgstr "Лише учасники, з моменту долучення до кімнати"
 
@@ -3206,86 +3205,87 @@ msgstr "Лише згадки та ключові слова"
 msgid "Disable Notifications"
 msgstr "Вимкнути сповіщення"
 
-#. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page.ui:181
-msgctxt "room details"
-msgid "Edit"
-msgstr "Редагувати"
-
-#: src/session/view/content/room_details/general_page.ui:185
+#: src/session/view/content/room_details/general_page.ui:183
 msgid "Edit Public Addresses"
 msgstr "Редагувати загальнодоступні адреси"
 
-#: src/session/view/content/room_details/general_page.ui:194
+#. Translators: In this string, 'Edit' is a verb.
+#: src/session/view/content/room_details/general_page.ui:193
+#| msgid "_Edit"
+msgctxt "room details"
+msgid "_Edit"
+msgstr "З_мінити"
+
+#: src/session/view/content/room_details/general_page.ui:203
 msgid "This room has no public addresses"
 msgstr "У цієї кімнати немає загальнодоступних адрес"
 
-#: src/session/view/content/room_details/general_page.ui:211
+#: src/session/view/content/room_details/general_page.ui:220
 msgid "Copy Room Link"
 msgstr "Копіювати посилання на кімнату"
 
-#: src/session/view/content/room_details/general_page.ui:221
+#: src/session/view/content/room_details/general_page.ui:230
 msgid "Access and Visibility"
 msgstr "Доступ і видимість"
 
-#: src/session/view/content/room_details/general_page.ui:231
+#: src/session/view/content/room_details/general_page.ui:240
 msgid "Who Can Join"
 msgstr "Хто може долучатися"
 
-#: src/session/view/content/room_details/general_page.ui:235
+#: src/session/view/content/room_details/general_page.ui:244
 msgid "Only Invited Users"
 msgstr "Лише запрошені користувачі"
 
-#: src/session/view/content/room_details/general_page.ui:236
+#: src/session/view/content/room_details/general_page.ui:245
 msgid "Any Registered User"
 msgstr "Будь-який зареєстрований користувач"
 
-#: src/session/view/content/room_details/general_page.ui:252
+#: src/session/view/content/room_details/general_page.ui:261
 msgid "Allow Guests"
 msgstr "Дозволяти вхід для гостей"
 
-#: src/session/view/content/room_details/general_page.ui:253
+#: src/session/view/content/room_details/general_page.ui:262
 msgid "Guests are Matrix users without a registered account"
 msgstr "Гості — користувачі Matrix без зареєстрованого облікового запису"
 
-#: src/session/view/content/room_details/general_page.ui:264
+#: src/session/view/content/room_details/general_page.ui:273
 msgid "Who Can Read History"
 msgstr "Хто може читати журнал"
 
-#: src/session/view/content/room_details/general_page.ui:285
+#: src/session/view/content/room_details/general_page.ui:294
 msgid "Matrix Room ID"
 msgstr "Ідентифікатор кімнати Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:292
+#: src/session/view/content/room_details/general_page.ui:301
 msgid "Copy Matrix Room ID"
 msgstr "Скопіювати ідентифікатор кімнати Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:293
+#: src/session/view/content/room_details/general_page.ui:302
 msgid "Matrix room ID copied to clipboard"
 msgstr "Ідентифікатор кімнати Matrix скопійовано до буфера обміну"
 
-#: src/session/view/content/room_details/general_page.ui:298
+#: src/session/view/content/room_details/general_page.ui:307
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Вмикати шифрування"
 
-#: src/session/view/content/room_details/general_page.ui:309
+#: src/session/view/content/room_details/general_page.ui:318
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Права доступу"
 
-#: src/session/view/content/room_details/general_page.ui:324
+#: src/session/view/content/room_details/general_page.ui:333
 msgid "Room Version"
 msgstr "Версія кімнати"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page.ui:336
+#: src/session/view/content/room_details/general_page.ui:345
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:118
 msgid "Upgrade"
 msgstr "Оновити"
 
-#: src/session/view/content/room_details/general_page.ui:349
+#: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
 msgstr "Федерація"
 
@@ -3849,7 +3849,7 @@ msgid "Could not discard message"
 msgstr "Не вдалося відкинути повідомлення"
 
 #: src/session/view/content/room_history/item_row_context_menu.rs:85
-#: src/session/view/sidebar/mod.rs:423
+#: src/session/view/sidebar/mod.rs:363
 msgid "Context Menu"
 msgstr "Контекстне меню"
 
@@ -3865,7 +3865,7 @@ msgstr "Не вдалося отримати звуковий файл"
 msgid "Error reading audio file"
 msgstr "Помилка під час читання звукового файла"
 
-#: src/session/view/content/room_history/message_row/content.rs:264
+#: src/session/view/content/room_history/message_row/content.rs:274
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3873,12 +3873,12 @@ msgstr ""
 "Не вдалося розшифрувати це повідомлення, але програма повторить спробу, "
 "щойно стануть доступними ключі."
 
-#: src/session/view/content/room_history/message_row/content.rs:274
+#: src/session/view/content/room_history/message_row/content.rs:278
 msgid "This message was removed."
 msgstr "Це повідомлення було вилучено."
 
-#: src/session/view/content/room_history/message_row/content.rs:285
-#: src/session/view/content/room_history/message_row/content.rs:397
+#: src/session/view/content/room_history/message_row/content.rs:283
+#: src/session/view/content/room_history/message_row/content.rs:358
 msgid "Unsupported event"
 msgstr "Непідтримувана подія"
 
@@ -3926,7 +3926,7 @@ msgstr "Надіслано {time}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:197
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:202
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] "{n} учасник відреагував за допомогою {reaction_key}"
@@ -3934,7 +3934,7 @@ msgstr[1] "{n} учасники відреагували за допомогою
 msgstr[2] "{n} учасників відреагували за допомогою {reaction_key}"
 msgstr[3] "{n} учасник відреагував за допомогою {reaction_key}"
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:217
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:222
 msgid "{user} reacted with {reaction_key}"
 msgstr "{user} надіслано реакцію {reaction_key}"
 
@@ -3951,37 +3951,37 @@ msgstr "У відповідь на"
 msgid "Details"
 msgstr "Подробиці"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:357
+#: src/session/view/content/room_history/message_row/visual_media.rs:364
 msgid "Image"
 msgstr "Зображення"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:358
+#: src/session/view/content/room_history/message_row/visual_media.rs:365
 msgid "Sticker"
 msgstr "Наліпка"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:359
+#: src/session/view/content/room_history/message_row/visual_media.rs:366
 msgid "Video"
 msgstr "Відео"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:364
+#: src/session/view/content/room_history/message_row/visual_media.rs:371
 msgid "Image: {filename}"
 msgstr "Зображення: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:367
+#: src/session/view/content/room_history/message_row/visual_media.rs:374
 msgid "Sticker: {filename}"
 msgstr "Наліпка: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:370
+#: src/session/view/content/room_history/message_row/visual_media.rs:377
 msgid "Video: {filename}"
 msgstr "Відео: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:480
-#: src/utils/media/image/mod.rs:727
+#: src/session/view/content/room_history/message_row/visual_media.rs:487
+#: src/utils/media/image/mod.rs:762
 msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:524
-#: src/utils/media/image/mod.rs:730
+#: src/session/view/content/room_history/message_row/visual_media.rs:531
+#: src/utils/media/image/mod.rs:765
 msgid "An unexpected error occurred"
 msgstr "Сталася неочікувана помилка."
 
@@ -4127,40 +4127,40 @@ msgstr "%-e %B о %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e %B о %H∶%M"
 
-#: src/session/view/content/room_history/mod.rs:368
+#: src/session/view/content/room_history/mod.rs:330
 msgid "Error getting file from drop"
 msgstr "Помилка під час отримання файла зі скидання"
 
-#: src/session/view/content/room_history/mod.rs:866
-#: src/session/view/content/room_history/mod.rs:870
+#: src/session/view/content/room_history/mod.rs:875
+#: src/session/view/content/room_history/mod.rs:879
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:873
+#: src/session/view/content/room_history/mod.rs:882
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:898
-#: src/session/view/sidebar/row.rs:744
+#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr "Не вдалося полишити {room}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:917
-#: src/session/view/sidebar/row.rs:733
+#: src/session/view/content/room_history/mod.rs:934
+#: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "Не вдалося долучитися до {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:934
-#: src/session/view/sidebar/row.rs:777
+#: src/session/view/content/room_history/mod.rs:951
+#: src/session/view/sidebar/row.rs:773
 msgid "Could not forget {room}"
 msgstr "Не вдалося забути про {room}"
 
-#: src/session/view/content/room_history/mod.rs:1005
+#: src/session/view/content/room_history/mod.rs:1022
 msgid "Sender Context Menu"
 msgstr "Контекстне меню відправника"
 
@@ -4575,21 +4575,21 @@ msgstr "Шукати тих, з ким слід почати спілкуван�
 msgid "No users matching the search pattern were found"
 msgstr "Не знайдено жодного користувача, який відповідає критерію пошуку"
 
-#: src/session/view/event_details_dialog.rs:52
-msgid "Source copied to clipboard"
-msgstr "Джерело скопійовано до буфера обміну"
-
-#: src/session/view/event_details_dialog.rs:113
+#: src/session/view/event_details_dialog.rs:94
 msgid "Original Event Source"
 msgstr "Початкове джерело події"
 
-#: src/session/view/event_details_dialog.rs:115
+#: src/session/view/event_details_dialog.rs:96
 msgid "Event Source"
 msgstr "Джерело подій"
 
-#: src/session/view/event_details_dialog.rs:129
+#: src/session/view/event_details_dialog.rs:110
 msgid "Latest Edit Source"
 msgstr "Найсвіжіше джерело редагування"
+
+#: src/session/view/event_details_dialog.rs:124
+msgid "Source copied to clipboard"
+msgstr "Джерело скопійовано до буфера обміну"
 
 #: src/session/view/event_details_dialog.ui:4
 #: src/session/view/event_details_dialog.ui:14
@@ -4601,17 +4601,17 @@ msgid "Original Event"
 msgstr "Початкова подія"
 
 #: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:158
+#: src/session/view/event_details_dialog.ui:160
 msgid "Event ID"
 msgstr "Ід. події"
 
 #: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:164
+#: src/session/view/event_details_dialog.ui:166
 msgid "Copy Event ID"
 msgstr "Скопіювати ідентифікатор події"
 
 #: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:165
+#: src/session/view/event_details_dialog.ui:167
 msgid "Event ID copied to clipboard"
 msgstr "Ідентифікатор події скопійовано до буфера обміну"
 
@@ -4640,30 +4640,30 @@ msgid "Sender ID copied to clipboard"
 msgstr "Ідентифікатор відправника скопійовано до буфера обміну"
 
 #: src/session/view/event_details_dialog.ui:104
-#: src/session/view/event_details_dialog.ui:171
+#: src/session/view/event_details_dialog.ui:173
 msgid "Timestamp"
 msgstr "Часова позначка"
 
 #: src/session/view/event_details_dialog.ui:110
-#: src/session/view/event_details_dialog.ui:177
+#: src/session/view/event_details_dialog.ui:179
 msgid "Copy Timestamp"
 msgstr "Скопіювати часову позначку"
 
 #: src/session/view/event_details_dialog.ui:111
-#: src/session/view/event_details_dialog.ui:178
+#: src/session/view/event_details_dialog.ui:180
 msgid "Timestamp copied to clipboard"
 msgstr "Часову позначку скопійовано до буфера обміну"
 
 #: src/session/view/event_details_dialog.ui:122
-#: src/session/view/event_details_dialog.ui:184
+#: src/session/view/event_details_dialog.ui:186
 msgid "View Source"
 msgstr "Перегляд джерела"
 
-#: src/session/view/event_details_dialog.ui:142
+#: src/session/view/event_details_dialog.ui:144
 msgid "Latest Edit"
 msgstr "Найсвіжіше редагування"
 
-#: src/session/view/event_details_dialog.ui:215
+#: src/session/view/event_details_dialog.ui:216
 msgid "Copy Source"
 msgstr "Скопіювати джерело"
 
@@ -4743,19 +4743,19 @@ msgstr "Не можна вимикати пізніше"
 msgid "_Create Room"
 msgstr "С_творити кімнату"
 
-#: src/session/view/sidebar/mod.rs:305
+#: src/session/view/sidebar/mod.rs:311
 msgid "No crypto identity"
 msgstr "Немає криптопрофілю"
 
-#: src/session/view/sidebar/mod.rs:307
+#: src/session/view/sidebar/mod.rs:313
 msgid "Crypto identity incomplete"
 msgstr "Криптопрофіль є неповним"
 
-#: src/session/view/sidebar/mod.rs:311
+#: src/session/view/sidebar/mod.rs:317
 msgid "Account recovery disabled"
 msgstr "Відновлення облікового запису вимкнено"
 
-#: src/session/view/sidebar/mod.rs:314
+#: src/session/view/sidebar/mod.rs:320
 msgid "Account recovery incomplete"
 msgstr "Відновлення облікового запису є неповним"
 
@@ -4838,14 +4838,14 @@ msgstr "Дозволяє навігацію між кімнатами"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:266
+#: src/session/view/sidebar/room_row.rs:265
 msgid "Direct chat with {name}"
 msgstr "Безпосереднє спілкування з {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:278
+#: src/session/view/sidebar/room_row.rs:277
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "{count} сповіщення"
@@ -4854,76 +4854,76 @@ msgstr[2] "{count} сповіщень"
 msgstr[3] "{count} сповіщення"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:753
+#: src/session/view/sidebar/row.rs:748
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:793
+#: src/session/view/sidebar/row.rs:791
 msgid "Could not mark {room} as direct chat"
 msgstr "Не вдалося позначити {room} як безпосереднє спілкування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:798
+#: src/session/view/sidebar/row.rs:796
 msgid "Could not unmark {room} as direct chat"
 msgstr "Не вдалося зняти з {room} позначення безпосереднього спілкування"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/section_row.rs:113
+#: src/session/view/sidebar/section_row.rs:108
 msgid "Join Room as Favorite"
 msgstr "Увійти як до улюбленої кімнати"
 
-#: src/session/view/sidebar/section_row.rs:114
+#: src/session/view/sidebar/section_row.rs:109
 msgid "Join Room"
 msgstr "Увійти до кімнати"
 
 #. Translators: This is an action to join a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/section_row.rs:117
+#: src/session/view/sidebar/section_row.rs:112
 msgid "Join Room as Low Priority"
 msgstr "Увійти як до низькопріоритетної кімнати"
 
-#: src/session/view/sidebar/section_row.rs:118
+#: src/session/view/sidebar/section_row.rs:113
 msgid "Reject Invite"
 msgstr "Відкинути запрошення"
 
-#: src/session/view/sidebar/section_row.rs:122
-#: src/session/view/sidebar/section_row.rs:135
+#: src/session/view/sidebar/section_row.rs:117
+#: src/session/view/sidebar/section_row.rs:130
 msgid "Move to Rooms"
 msgstr "Пересунути до «Кімнат»"
 
-#: src/session/view/sidebar/section_row.rs:123
-#: src/session/view/sidebar/section_row.rs:129
+#: src/session/view/sidebar/section_row.rs:118
+#: src/session/view/sidebar/section_row.rs:124
 msgid "Move to Low Priority"
 msgstr "Пересунути до «Низький пріоритет»"
 
-#: src/session/view/sidebar/section_row.rs:124
-#: src/session/view/sidebar/section_row.rs:130
-#: src/session/view/sidebar/section_row.rs:136
+#: src/session/view/sidebar/section_row.rs:119
+#: src/session/view/sidebar/section_row.rs:125
+#: src/session/view/sidebar/section_row.rs:131
 msgid "Leave Room"
 msgstr "Покинути кімнату"
 
-#: src/session/view/sidebar/section_row.rs:128
-#: src/session/view/sidebar/section_row.rs:134
+#: src/session/view/sidebar/section_row.rs:123
+#: src/session/view/sidebar/section_row.rs:129
 msgid "Move to Favorites"
 msgstr "Пересунути до «Улюблених»"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/section_row.rs:142
+#: src/session/view/sidebar/section_row.rs:137
 msgid "Rejoin Room as Favorite"
 msgstr "Повторно увійти як до улюбленої кімнати"
 
-#: src/session/view/sidebar/section_row.rs:143
+#: src/session/view/sidebar/section_row.rs:138
 msgid "Rejoin Room"
 msgstr "Повторно увійти до кімнати"
 
 #. Translators: This is an action to rejoin a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/section_row.rs:146
+#: src/session/view/sidebar/section_row.rs:141
 msgid "Rejoin Room as Low Priority"
 msgstr "Повторно увійти як до низькопріоритетної кімнати"
 
@@ -5078,7 +5078,7 @@ msgstr "{user} запросив/запросила вас"
 msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
 
-#: src/utils/media/image/mod.rs:728
+#: src/utils/media/image/mod.rs:763
 msgid "Image format not supported"
 msgstr "Підтримки формату зображення не передбачено"
 
@@ -5105,6 +5105,10 @@ msgstr "файл"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgctxt "room details"
+#~ msgid "Edit"
+#~ msgstr "Редагувати"
 
 #~ msgid "Authenticate"
 #~ msgstr "Розпізнавання"
