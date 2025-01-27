@@ -190,7 +190,7 @@
                 <property name="icon-name">edit-symbolic</property>
                 <property name="use-underline">True</property>
                 <!-- Translators: In this string, 'Edit' is a verb. -->
-                <property name="label" translatable="yes" context="room details">_Edit</property>
+                <property name="label" translatable="yes">_Edit</property>
               </object>
             </child>
           </object>
