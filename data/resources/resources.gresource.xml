@@ -56,6 +56,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/key-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/no-camera-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/notifications-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/person-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/security-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/sync-off-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/sync-on-symbolic.svg</file>

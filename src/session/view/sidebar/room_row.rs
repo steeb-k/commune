@@ -230,7 +230,7 @@ mod imp {
             if is_direct {
                 if self.direct_icon.borrow().is_none() {
                     let icon = gtk::Image::builder()
-                        .icon_name("avatar-default-symbolic")
+                        .icon_name("person-symbolic")
                         .icon_size(gtk::IconSize::Normal)
                         .css_classes(["dim-label"])
                         .build();
