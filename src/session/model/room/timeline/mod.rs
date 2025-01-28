@@ -341,7 +341,7 @@ mod imp {
                     self.update_items(0, 1, &[]);
                 }
                 VectorDiff::PopBack => {
-                    self.update_items(self.sdk_items.n_items(), 1, &[]);
+                    self.update_items(self.sdk_items.n_items().saturating_sub(1), 1, &[]);
                 }
                 VectorDiff::Insert { index, value } => {
                     let item = self.create_item(&value);
@@ -367,8 +367,9 @@ mod imp {
                     self.update_items(index as u32, 1, &[]);
                 }
                 VectorDiff::Truncate { length } => {
+                    let length = length as u32;
                     let old_len = self.sdk_items.n_items();
-                    self.update_items(old_len, old_len.saturating_sub(length as u32), &[]);
+                    self.update_items(length, old_len.saturating_sub(length), &[]);
                 }
                 VectorDiff::Reset { values } => {
                     // Reset the state.
@@ -456,19 +457,30 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
+                let mut removed_from_map = false;
+                let mut event_map = self.event_map.borrow_mut();
+
                 // We need to remove both the transaction ID and the event ID.
-                if let Some(txn_id) = event.transaction_id() {
-                    self.event_map
-                        .borrow_mut()
-                        .remove(&TimelineEventItemId::TransactionId(txn_id));
-                }
-                if let Some(event_id) = event.event_id() {
-                    self.event_map
-                        .borrow_mut()
-                        .remove(&TimelineEventItemId::EventId(event_id));
+                let identifiers = event
+                    .transaction_id()
+                    .map(TimelineEventItemId::TransactionId)
+                    .into_iter()
+                    .chain(event.event_id().map(TimelineEventItemId::EventId));
+
+                for id in identifiers {
+                    // We check if we are removing the right event, in case we receive a diff that
+                    // adds an existing event to another place, making us create a new event, before
+                    // another diff that removes it from its old place, making
+                    // us remove the old event.
+                    let found = event_map.get(&id).is_some_and(|e| e == event);
+
+                    if found {
+                        event_map.remove(&id);
+                        removed_from_map = true;
+                    }
                 }
 
-                if event.is_room_create_event() {
+                if removed_from_map && event.is_room_create_event() {
                     self.set_has_room_create(false);
                 }
             }
