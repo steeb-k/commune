@@ -173,14 +173,6 @@ mod imp {
                     }
                 }
             ));
-
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.init_matrix_timeline().await;
-                }
-            ));
         }
 
         /// The room containing this timeline.
@@ -189,7 +181,7 @@ mod imp {
         }
 
         /// Initialize the underlying SDK timeline.
-        async fn init_matrix_timeline(&self) {
+        pub(super) async fn init_matrix_timeline(&self, preload: bool) {
             let room = self.room();
             let room_id = room.room_id().to_owned();
             let matrix_room = room.matrix_room().clone();
@@ -249,6 +241,12 @@ mod imp {
                 .expect("handle is uninitialized");
 
             self.watch_read_receipts().await;
+
+            if preload {
+                self.set_state(TimelineState::Loading);
+                self.load().await;
+            }
+
             self.set_state(TimelineState::Ready);
         }
 
@@ -675,8 +673,21 @@ glib::wrapper! {
 
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
-    pub(crate) fn new(room: &Room) -> Self {
-        glib::Object::builder().property("room", room).build()
+    pub(crate) fn new(room: &Room, preload: bool) -> Self {
+        let obj = glib::Object::builder::<Self>()
+            .property("room", room)
+            .build();
+
+        let imp = obj.imp();
+        spawn!(clone!(
+            #[weak]
+            imp,
+            async move {
+                imp.init_matrix_timeline(preload).await;
+            }
+        ));
+
+        obj
     }
 
     /// The underlying SDK timeline.

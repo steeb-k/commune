@@ -73,7 +73,6 @@ mod imp {
     use std::{
         cell::{Cell, OnceCell},
         marker::PhantomData,
-        ops::ControlFlow,
         sync::LazyLock,
         time::SystemTime,
     };
@@ -975,7 +974,15 @@ mod imp {
 
         /// Initialize the timeline of this room.
         fn init_timeline(&self) {
-            let timeline = self.timeline.get_or_init(|| Timeline::new(&self.obj()));
+            // Preload the timeline of rooms that the user is likely to visit and for which
+            // we offer to show the timeline.
+            let preload = matches!(
+                self.category.get(),
+                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority
+            );
+            let timeline = self
+                .timeline
+                .get_or_init(|| Timeline::new(&self.obj(), preload));
 
             timeline.connect_read_change_trigger(clone!(
                 #[weak(rename_to = imp)]
@@ -986,25 +993,6 @@ mod imp {
                     });
                 }
             ));
-
-            // When idle, preload the timeline of rooms that the user is likely to visit and
-            // for which we offer to show the timeline.
-            if matches!(
-                self.category.get(),
-                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority
-            ) {
-                spawn!(
-                    glib::source::Priority::LOW,
-                    clone!(
-                        #[weak]
-                        timeline,
-                        async move {
-                            // Make a single request for now.
-                            timeline.load(|| ControlFlow::Break(())).await;
-                        }
-                    )
-                );
-            }
         }
 
         /// Set the timestamp of the room's latest possibly unread event.
