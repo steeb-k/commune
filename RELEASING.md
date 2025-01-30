@@ -48,6 +48,11 @@ Make a single release commit containing the following changes:
   - **stable.** remove all the `development` entries.
   - **stable.** update the paths of the screenshots to point to the major version branch.
 - **stable.** If there were visible changes in the UI, update the screenshots in `/screenshots`.
+  They should follow [Flathub's quality guidelines](https://docs.flathub.org/docs/for-app-authors/metainfo-guidelines/quality-guidelines#screenshots),
+  with the following window sizes:
+  - `main.png`: 760×550.
+  - `adaptive.png`: 360×600.
+  - `media-history.png`: 500×540.
 
 A good practice in this merge request is to launch the `build-stable` CI jobs to make sure that
 Fractal builds with the stable Flatpak runtime.
