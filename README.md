@@ -38,7 +38,7 @@ development version while keeping the stable release around for daily use.
 
 ### Stable version
 
-The current stable version is 9 (released October 30th 2024).
+The current stable version is 10 (released January 30th 2024).
 
 You can get the official Fractal Flatpak from Flathub.
 
@@ -53,7 +53,7 @@ You can get the official Fractal Flatpak from Flathub.
 
 ### Beta version
 
-The current beta version is 10.rc (released January 14th 2025).
+The current beta version is 10 (same as stable).
 
 It is available as a Flatpak on Flathub Beta.
 
