@@ -144,6 +144,8 @@ mod imp {
 
     impl ApplicationImpl for Application {
         fn activate(&self) {
+            self.parent_activate();
+
             debug!("Application::activate");
 
             self.obj().present_main_window();
