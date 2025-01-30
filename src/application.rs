@@ -149,6 +149,13 @@ mod imp {
             self.obj().present_main_window();
         }
 
+        fn startup(&self) {
+            self.parent_startup();
+
+            // Set icons for shell
+            gtk::Window::set_default_icon_name(crate::APP_ID);
+        }
+
         fn open(&self, files: &[gio::File], _hint: &str) {
             debug!("Application::open");
 
