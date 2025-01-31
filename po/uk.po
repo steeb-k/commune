@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-25 12:54+0000\n"
-"PO-Revision-Date: 2025-01-25 15:22+0200\n"
+"POT-Creation-Date: 2025-01-31 10:58+0000\n"
+"PO-Revision-Date: 2025-01-31 17:46+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -171,24 +171,24 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:275
+#: src/application.rs:285
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
-#: src/application.rs:281
+#: src/application.rs:291
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© Команда «Фрактал», 2017-2024"
 
-#: src/application.rs:295
+#: src/application.rs:305
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:299
+#: src/application.rs:309
 msgid "Name by"
 msgstr "Авторка назви"
 
-#: src/application.rs:414
+#: src/application.rs:424
 msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
@@ -1948,17 +1948,17 @@ msgstr "Непідтримуване правило"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:373
+#: src/session/model/room/mod.rs:372
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:376
+#: src/session/model/room/mod.rs:375
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:385
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -3211,8 +3211,7 @@ msgstr "Редагувати загальнодоступні адреси"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:193
-#| msgid "_Edit"
-msgctxt "room details"
+#: src/session/view/content/room_history/event_context_menu.ui:13
 msgid "_Edit"
 msgstr "З_мінити"
 
@@ -3730,11 +3729,6 @@ msgstr "Нові повідомлення"
 #: src/session/view/content/room_history/event_context_menu.ui:7
 msgid "_Reply"
 msgstr "_Відповісти"
-
-#. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_history/event_context_menu.ui:13
-msgid "_Edit"
-msgstr "З_мінити"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
@@ -4952,18 +4946,45 @@ msgctxt "shortcut window"
 msgid "Quit"
 msgstr "Завершити"
 
+#: src/shortcuts.ui:26
+#| msgctxt "shortcut window"
+#| msgid "Close Room"
+msgctxt "shortcut window"
+msgid "Close Window"
+msgstr "Закрити вікно"
+
 #. Translators: This shows and focuses the search input to find a room by its name in the room list.
-#: src/shortcuts.ui:27
+#: src/shortcuts.ui:33
 msgctxt "shortcut window"
 msgid "Search Room List"
 msgstr "Шукати у списку кімнат"
 
-#: src/shortcuts.ui:33
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Open Room With Unread Messages"
 msgstr "Відкрити кімнату із непрочитаними повідомленнями"
 
-#: src/shortcuts.ui:39
+#: src/shortcuts.ui:45
+msgctxt "shortcut window"
+msgid "Open the next room in the list"
+msgstr "Відкрити наступну кімнату у списку"
+
+#: src/shortcuts.ui:51
+msgctxt "shortcut window"
+msgid "Open the previous room in the list"
+msgstr "Відкрити попередню кімнату у списку"
+
+#: src/shortcuts.ui:57
+msgctxt "shortcut window"
+msgid "Open the next room with unread messages in the list"
+msgstr "Відкрити наступну кімнату із непрочитаними повідомленнями у списку"
+
+#: src/shortcuts.ui:63
+msgctxt "shortcut window"
+msgid "Open the previous room with unread messages in the list"
+msgstr "Відкрити попередню кімнату із непрочитаними повідомленнями у списку"
+
+#: src/shortcuts.ui:69
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Закрити кімнату"
@@ -5105,6 +5126,11 @@ msgstr "файл"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Сеанс"
+
+#~| msgid "_Edit"
+#~ msgctxt "room details"
+#~ msgid "_Edit"
+#~ msgstr "З_мінити"
 
 #~ msgctxt "room details"
 #~ msgid "Edit"
@@ -5757,22 +5783,6 @@ msgstr "Сеанс"
 #~ msgctxt "shortcut window"
 #~ msgid "Open / close the room sidebar search"
 #~ msgstr "Відкрити / закрити пошук кімнат в бічній панелі"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the previous room in the list"
-#~ msgstr "Відкрити попередню кімнату у списку"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the next room in the list"
-#~ msgstr "Відкрити наступну кімнату у списку"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the previous room with unread messages in the list"
-#~ msgstr "Відкрити попередню кімнату із непрочитаними повідомленнями у списку"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the next room with unread messages in the list"
-#~ msgstr "Відкрити наступну кімнату із непрочитаними повідомленнями у списку"
 
 #~ msgctxt "shortcut window"
 #~ msgid "Open the first room of the list"
