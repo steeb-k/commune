@@ -16,6 +16,7 @@
 4. Create a release on GitLab for that tag.
 5. Make a fast-forward merge of the major version branch to `main`.
 6. [Publish the new version on Flathub and Flathub beta](#publishing-a-version-on-flathub).
+7. [Get the stable branch added to Damned Lies](#getting-a-branch-added-to-damned-lies).
 
 ## Making a new beta release
 
@@ -81,7 +82,7 @@ beta build, work against the `beta` branch. It must contain a commit that update
   - Use the latest GNOME runtime.
   - Make sure that the Flatpak dependencies are the same as in the nightly manifest, and using the
     same version.
-  - Build the latest version of Fractal, identified by its tag _and_ commit hash. 
+  - Build the latest version of Fractal, identified by its tag _and_ commit hash.
 2. When the PR is opened, a CI job will update the `cargo-sources.json` file with the latest Rust
   dependencies for Fractal and add a commit to the PR.
 3. The Flathub buildbot will likely launch 2 builds, one for when the PR was opened, and another one
@@ -110,3 +111,15 @@ manually:
 4. If you only want to trigger a test build, i.e. one that will not be published in the end, check
   the corresponding setting.
 5. Click on `Start build`.
+
+## Getting a branch added to Damned Lies
+
+Damned Lies is the GNOME translation management platform. It provides translation workflows, but
+also statistics. Even though we don’t publish any release from stable branches after the initial
+one, we add them there so we can keep track of the evolution of translation coverage.
+
+1. Go to https://l10n.gnome.org/module/fractal/ and log in.
+2. Click on the pencil icon next to the branch list.
+3. In the entry at the bottom, type in the name of the new branch, then click on the Save button.
+4. Assign the newly added branch to the “Other Apps (stable)” Release, unassign the previous one.
+5. Hit Save again for the assignments to take effect.
