@@ -12,8 +12,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-25 12:54+0000\n"
-"PO-Revision-Date: 2025-01-25 13:58-0300\n"
+"POT-Creation-Date: 2025-01-31 10:58+0000\n"
+"PO-Revision-Date: 2025-01-31 23:22-0300\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
@@ -169,15 +169,15 @@ msgstr "_Adicionar conta"
 msgid "Account Settings"
 msgstr "Configurações de conta"
 
-#: src/application.rs:275
+#: src/application.rs:285
 msgid "The Fractal Team"
 msgstr "A equipe do Fractal"
 
-#: src/application.rs:281
+#: src/application.rs:291
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2022 A equipe do Fractal"
 
-#: src/application.rs:295
+#: src/application.rs:305
 msgid "translator-credits"
 msgstr ""
 "Bruno Lopes da Silva <brunolopesdsilv@gmail.com>\n"
@@ -188,11 +188,11 @@ msgstr ""
 "Filipe Motta <luizfilipemotta@gmail.com>"
 
 #. This can't be added via the builder
-#: src/application.rs:299
+#: src/application.rs:309
 msgid "Name by"
 msgstr "Nome por"
 
-#: src/application.rs:414
+#: src/application.rs:424
 msgid "Session not found"
 msgstr "Sessão não encontrada"
 
@@ -1923,17 +1923,17 @@ msgstr "Regra sem suporte"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:373
+#: src/session/model/room/mod.rs:372
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:376
+#: src/session/model/room/mod.rs:375
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:385
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -3183,7 +3183,7 @@ msgstr "Editar Endereço Público"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:193
-msgctxt "room details"
+#: src/session/view/content/room_history/event_context_menu.ui:13
 msgid "_Edit"
 msgstr "_Editar"
 
@@ -3688,11 +3688,6 @@ msgstr "Novas mensagens"
 #: src/session/view/content/room_history/event_context_menu.ui:7
 msgid "_Reply"
 msgstr "_Responder"
-
-#. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_history/event_context_menu.ui:13
-msgid "_Edit"
-msgstr "_Editar"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
@@ -4902,18 +4897,43 @@ msgctxt "shortcut window"
 msgid "Quit"
 msgstr "Sai"
 
+#: src/shortcuts.ui:26
+msgctxt "shortcut window"
+msgid "Close Window"
+msgstr "Fecha a janela"
+
 #. Translators: This shows and focuses the search input to find a room by its name in the room list.
-#: src/shortcuts.ui:27
+#: src/shortcuts.ui:33
 msgctxt "shortcut window"
 msgid "Search Room List"
 msgstr "Pesquisa na lista de salas"
 
-#: src/shortcuts.ui:33
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Open Room With Unread Messages"
-msgstr "Abrir sala com mensagens não lidas"
+msgstr "Abre a sala com mensagens não lidas"
 
-#: src/shortcuts.ui:39
+#: src/shortcuts.ui:45
+msgctxt "shortcut window"
+msgid "Open the next room in the list"
+msgstr "Abre a próxima sala na lista"
+
+#: src/shortcuts.ui:51
+msgctxt "shortcut window"
+msgid "Open the previous room in the list"
+msgstr "Abre a sala anterior na lista"
+
+#: src/shortcuts.ui:57
+msgctxt "shortcut window"
+msgid "Open the next room with unread messages in the list"
+msgstr "Abre a próxima sala com mensagens não lidas na lista"
+
+#: src/shortcuts.ui:63
+msgctxt "shortcut window"
+msgid "Open the previous room with unread messages in the list"
+msgstr "Abre a sala anterior com mensagens não lidas na lista"
+
+#: src/shortcuts.ui:69
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Fecha a sala"
@@ -5045,6 +5065,10 @@ msgstr "arquivo"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Sessão"
+
+#~ msgctxt "room details"
+#~ msgid "_Edit"
+#~ msgstr "_Editar"
 
 #~ msgctxt "room details"
 #~ msgid "Edit"
