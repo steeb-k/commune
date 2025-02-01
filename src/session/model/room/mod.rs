@@ -254,6 +254,7 @@ mod imp {
                 .set(matrix_room)
                 .expect("matrix room is uninitialized");
 
+            self.init_timeline();
             self.aliases.init(&obj);
             self.load_predecessor();
             self.watch_members();
@@ -274,7 +275,17 @@ mod imp {
 
                         // Only initialize the following after we have loaded the category of the
                         // room since we only load them for some categories.
-                        imp.init_timeline();
+
+                        // Preload the timeline of rooms that the user is likely to visit and for
+                        // which we offer to show the timeline.
+                        let preload = matches!(
+                            imp.category.get(),
+                            RoomCategory::Favorite
+                                | RoomCategory::Normal
+                                | RoomCategory::LowPriority
+                        );
+                        imp.timeline().set_preload(preload);
+
                         imp.permissions.init(&imp.obj()).await;
                     }
                 )
@@ -974,15 +985,7 @@ mod imp {
 
         /// Initialize the timeline of this room.
         fn init_timeline(&self) {
-            // Preload the timeline of rooms that the user is likely to visit and for which
-            // we offer to show the timeline.
-            let preload = matches!(
-                self.category.get(),
-                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority
-            );
-            let timeline = self
-                .timeline
-                .get_or_init(|| Timeline::new(&self.obj(), preload));
+            let timeline = self.timeline.get_or_init(|| Timeline::new(&self.obj()));
 
             timeline.connect_read_change_trigger(clone!(
                 #[weak(rename_to = imp)]
@@ -993,6 +996,11 @@ mod imp {
                     });
                 }
             ));
+        }
+
+        /// The timeline of this room.
+        fn timeline(&self) -> &Timeline {
+            self.timeline.get().expect("timeline is initialized")
         }
 
         /// Set the timestamp of the room's latest possibly unread event.
@@ -1017,7 +1025,7 @@ mod imp {
 
         /// Handle the trigger emitted when a read change might have occurred.
         async fn handle_read_change_trigger(&self) {
-            let timeline = self.timeline.get().expect("timeline is initialized");
+            let timeline = self.timeline();
 
             if let Some(has_unread) = timeline.has_unread_messages().await {
                 self.set_is_read(!has_unread);

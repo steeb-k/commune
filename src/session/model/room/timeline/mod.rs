@@ -95,6 +95,9 @@ mod imp {
         /// Whether the timeline is empty.
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
+        /// Whether the timeline should be pre-loaded when it is ready.
+        #[property(get, set = Self::set_preload, explicit_notify)]
+        preload: Cell<bool>,
         /// Whether the timeline has the `m.room.create` event of the room.
         #[property(get)]
         has_room_create: Cell<bool>,
@@ -125,6 +128,7 @@ mod imp {
                 state: Default::default(),
                 is_empty: Default::default(),
                 has_room_create: Default::default(),
+                preload: Default::default(),
                 diff_handle: Default::default(),
                 back_pagination_status_handle: Default::default(),
                 read_receipts_changed_handle: Default::default(),
@@ -181,7 +185,7 @@ mod imp {
         }
 
         /// Initialize the underlying SDK timeline.
-        pub(super) async fn init_matrix_timeline(&self, preload: bool) {
+        pub(super) async fn init_matrix_timeline(&self) {
             let room = self.room();
             let room_id = room.room_id().to_owned();
             let matrix_room = room.matrix_room().clone();
@@ -242,9 +246,8 @@ mod imp {
 
             self.watch_read_receipts().await;
 
-            if preload {
-                self.set_state(TimelineState::Loading);
-                self.load().await;
+            if self.preload.get() {
+                self.preload().await;
             }
 
             self.set_state(TimelineState::Ready);
@@ -270,6 +273,36 @@ mod imp {
 
             self.has_room_create.set(has_room_create);
             self.obj().notify_has_room_create();
+        }
+
+        /// Set whether the timeline should be pre-loaded when it is ready.
+        fn set_preload(&self, preload: bool) {
+            if self.preload.get() == preload {
+                return;
+            }
+
+            self.preload.set(preload);
+            self.obj().notify_preload();
+
+            if preload && self.can_load() {
+                spawn!(
+                    glib::Priority::DEFAULT_IDLE,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        async move {
+                            imp.preload().await;
+                        }
+                    )
+                );
+            }
+        }
+
+        /// Preload the timeline, if there are not enough items.
+        async fn preload(&self) {
+            if self.sdk_items.n_items() < u32::from(MAX_BATCH_SIZE) {
+                self.load(|| ControlFlow::Break(())).await;
+            }
         }
 
         /// Update this timeline with the given diff list.
@@ -484,10 +517,42 @@ mod imp {
             }
         }
 
+        /// Whether we can load more events with the current state of the
+        /// timeline.
+        pub(super) fn can_load(&self) -> bool {
+            // We don't want to load twice at the same time, and it's useless to try to load
+            // more history before the timeline is ready or when we reached the
+            // start.
+            !matches!(
+                self.state.get(),
+                TimelineState::Initial | TimelineState::Loading | TimelineState::Complete
+            )
+        }
+
+        /// Load more events at the start of the timeline until the given
+        /// function tells us to stop.
+        pub(super) async fn load<F>(&self, continue_fn: F)
+        where
+            F: Fn() -> ControlFlow<()>,
+        {
+            self.set_state(TimelineState::Loading);
+
+            loop {
+                if !self.load_inner().await {
+                    return;
+                }
+
+                if continue_fn().is_break() {
+                    self.set_state(TimelineState::Ready);
+                    return;
+                }
+            }
+        }
+
         /// Load more events at the start of the timeline.
         ///
         /// Returns `true` if more events can be loaded.
-        pub(super) async fn load(&self) -> bool {
+        async fn load_inner(&self) -> bool {
             let matrix_timeline = self.matrix_timeline().clone();
             let handle =
                 spawn_tokio!(
@@ -673,7 +738,7 @@ glib::wrapper! {
 
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
-    pub(crate) fn new(room: &Room, preload: bool) -> Self {
+    pub(crate) fn new(room: &Room) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
@@ -683,7 +748,7 @@ impl Timeline {
             #[weak]
             imp,
             async move {
-                imp.init_matrix_timeline(preload).await;
+                imp.init_matrix_timeline().await;
             }
         ));
 
@@ -695,40 +760,19 @@ impl Timeline {
         self.imp().matrix_timeline().clone()
     }
 
-    /// Whether we can load more events with the current state of the timeline.
-    fn can_load(&self) -> bool {
-        // We don't want to load twice at the same time, and it's useless to try to load
-        // more history before the timeline is ready or when we reached the
-        // start.
-        !matches!(
-            self.state(),
-            TimelineState::Initial | TimelineState::Loading | TimelineState::Complete
-        )
-    }
-
     /// Load more events at the start of the timeline until the given function
     /// tells us to stop.
     pub(crate) async fn load<F>(&self, continue_fn: F)
     where
         F: Fn() -> ControlFlow<()>,
     {
-        if !self.can_load() {
+        let imp = self.imp();
+
+        if !imp.can_load() {
             return;
         }
 
-        let imp = self.imp();
-        imp.set_state(TimelineState::Loading);
-
-        loop {
-            if !imp.load().await {
-                return;
-            }
-
-            if continue_fn().is_break() {
-                imp.set_state(TimelineState::Ready);
-                return;
-            }
-        }
+        imp.load(continue_fn).await;
     }
 
     /// Get the event with the given identifier from this `Timeline`.
