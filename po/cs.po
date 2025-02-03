@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-30 14:27+0000\n"
-"PO-Revision-Date: 2025-01-30 19:28+0100\n"
+"POT-Creation-Date: 2025-01-31 10:58+0000\n"
+"PO-Revision-Date: 2025-02-03 12:38+0100\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -161,15 +161,15 @@ msgstr "Přid_at účet"
 msgid "Account Settings"
 msgstr "Nastavení účtu"
 
-#: src/application.rs:275
+#: src/application.rs:285
 msgid "The Fractal Team"
 msgstr "Tým Fractal"
 
-#: src/application.rs:281
+#: src/application.rs:291
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Tým Fractal"
 
-#: src/application.rs:295
+#: src/application.rs:305
 msgid "translator-credits"
 msgstr ""
 "Marek Černocký <marek@manet.cz>\n"
@@ -177,11 +177,11 @@ msgstr ""
 "Daniel Rusek <mail@asciiwolf.com>"
 
 #. This can't be added via the builder
-#: src/application.rs:299
+#: src/application.rs:309
 msgid "Name by"
 msgstr "Pojmenoval"
 
-#: src/application.rs:414
+#: src/application.rs:424
 msgid "Session not found"
 msgstr "Sezení nebylo nalezeno"
 
@@ -4874,38 +4874,43 @@ msgctxt "shortcut window"
 msgid "Quit"
 msgstr "Ukončit"
 
+#: src/shortcuts.ui:26
+msgctxt "shortcut window"
+msgid "Close Window"
+msgstr "Zavřít okno"
+
 #. Translators: This shows and focuses the search input to find a room by its name in the room list.
-#: src/shortcuts.ui:27
+#: src/shortcuts.ui:33
 msgctxt "shortcut window"
 msgid "Search Room List"
 msgstr "Prohledat seznam místností"
 
-#: src/shortcuts.ui:33
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Open Room With Unread Messages"
 msgstr "Otevřít místnost s nepřečtenými zprávami"
 
-#: src/shortcuts.ui:39
+#: src/shortcuts.ui:45
 msgctxt "shortcut window"
 msgid "Open the next room in the list"
 msgstr "Otevřít následující místnost ze seznamu"
 
-#: src/shortcuts.ui:45
+#: src/shortcuts.ui:51
 msgctxt "shortcut window"
 msgid "Open the previous room in the list"
 msgstr "Otevřít předchozí místnost ze seznamu"
 
-#: src/shortcuts.ui:51
+#: src/shortcuts.ui:57
 msgctxt "shortcut window"
 msgid "Open the next room with unread messages in the list"
 msgstr "Otevřít následující místnost s nepřečtenými zprávami ze seznamu"
 
-#: src/shortcuts.ui:57
+#: src/shortcuts.ui:63
 msgctxt "shortcut window"
 msgid "Open the previous room with unread messages in the list"
 msgstr "Otevřít předchozí místnost s nepřečtenými zprávami ze seznamu"
 
-#: src/shortcuts.ui:63
+#: src/shortcuts.ui:69
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Zavřít místnost"
