@@ -212,7 +212,7 @@ mod imp {
                 .set(matrix_timeline.clone())
                 .expect("matrix timeline is uninitialized");
 
-            let (values, timeline_stream) = matrix_timeline.subscribe_batched().await;
+            let (values, timeline_stream) = matrix_timeline.subscribe().await;
 
             if !values.is_empty() {
                 self.update_with_single_diff(VectorDiff::Append { values });
