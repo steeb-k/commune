@@ -12,8 +12,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-31 10:58+0000\n"
-"PO-Revision-Date: 2025-01-31 23:22-0300\n"
+"POT-Creation-Date: 2025-02-01 02:23+0000\n"
+"PO-Revision-Date: 2025-02-04 13:17-0300\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
@@ -4069,7 +4069,7 @@ msgstr "Você não tem permissão para enviar mensagens para esta sala"
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:109
 msgid "%B %-e at %I∶%M %p"
-msgstr "Visto pela última vez em %-e de %B às %I∶%M %p"
+msgstr "%-e de %B às %I∶%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
@@ -4077,7 +4077,7 @@ msgstr "Visto pela última vez em %-e de %B às %I∶%M %p"
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:115
 msgid "%B %-e at %H∶%M"
-msgstr "Visto pela última vez em %-e de %B às %H:%M"
+msgstr "%-e de %B às %H:%M"
 
 #: src/session/view/content/room_history/mod.rs:330
 msgid "Error getting file from drop"
