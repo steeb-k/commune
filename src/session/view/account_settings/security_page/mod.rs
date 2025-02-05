@@ -233,7 +233,7 @@ impl SecurityPage {
                 "Verifying your own devices or other users is not possible",
             ));
 
-            imp.crypto_identity_btn.set_label(&gettext("Enable"));
+            imp.crypto_identity_btn.set_label(&gettext("Enable…"));
             imp.crypto_identity_btn
                 .update_property(&[gtk::accessible::Property::Label(&gettext(
                     "Enable Crypto Identity",
@@ -257,7 +257,7 @@ impl SecurityPage {
                 "The crypto identity exists and this device is verified",
             ));
 
-            imp.crypto_identity_btn.set_label(&gettext("Reset"));
+            imp.crypto_identity_btn.set_label(&gettext("Reset…"));
             imp.crypto_identity_btn
                 .update_property(&[gtk::accessible::Property::Label(&gettext(
                     "Reset Crypto Identity",
@@ -276,7 +276,7 @@ impl SecurityPage {
                 "The crypto identity exists but this device is not verified",
             ));
 
-            imp.crypto_identity_btn.set_label(&gettext("Verify"));
+            imp.crypto_identity_btn.set_label(&gettext("Verify…"));
             imp.crypto_identity_btn
                 .update_property(&[gtk::accessible::Property::Label(&gettext(
                     "Verify This Session",
@@ -306,7 +306,7 @@ impl SecurityPage {
                     "Enable recovery to be able to restore your account without another device",
                 ));
 
-                imp.recovery_btn.set_label(&gettext("Enable"));
+                imp.recovery_btn.set_label(&gettext("Enable…"));
                 imp.recovery_btn
                     .update_property(&[gtk::accessible::Property::Label(&gettext(
                         "Enable Account Recovery",
@@ -325,7 +325,7 @@ impl SecurityPage {
                     "Your signing keys and encryption keys are synchronized",
                 ));
 
-                imp.recovery_btn.set_label(&gettext("Reset"));
+                imp.recovery_btn.set_label(&gettext("Reset…"));
                 imp.recovery_btn
                     .update_property(&[gtk::accessible::Property::Label(&gettext(
                         "Reset Account Recovery Key",
@@ -345,7 +345,7 @@ impl SecurityPage {
                     "Recover to synchronize your signing keys and encryption keys",
                 ));
 
-                imp.recovery_btn.set_label(&gettext("Recover"));
+                imp.recovery_btn.set_label(&gettext("Recover…"));
                 imp.recovery_btn
                     .update_property(&[gtk::accessible::Property::Label(&gettext(
                         "Recover Account Data",
