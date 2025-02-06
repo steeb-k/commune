@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-31 10:58+0000\n"
-"PO-Revision-Date: 2025-01-31 17:46+0200\n"
+"POT-Creation-Date: 2025-02-06 11:56+0000\n"
+"PO-Revision-Date: 2025-02-06 17:19+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -323,8 +323,6 @@ msgstr "Відновити обліковий запис"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
-#: src/session/view/account_settings/security_page/mod.rs:260
-#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "Скинути"
 
@@ -466,7 +464,6 @@ msgid "Recovery Passphrase or Key"
 msgstr "Ключ або пароль для відновлення"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "Відновити"
@@ -1188,7 +1185,6 @@ msgstr "Безпека"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1948,17 +1944,17 @@ msgstr "Непідтримуване правило"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:372
+#: src/session/model/room/mod.rs:383
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:375
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:385
+#: src/session/model/room/mod.rs:396
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -2507,10 +2503,9 @@ msgstr "Засвідчення ваших власних пристроїв аб
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
-msgid "Enable"
-msgstr "Увімкнути"
+#| msgid "Enable"
+msgid "Enable…"
+msgstr "Увімкнути…"
 
 #: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
@@ -2524,6 +2519,12 @@ msgstr "Криптопрофіль увімкнено"
 msgid "The crypto identity exists and this device is verified"
 msgstr "Існує криптопрофіль, і цей пристрій було засвідчено"
 
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
+#| msgid "Reset"
+msgid "Reset…"
+msgstr "Скинути…"
+
 #: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "Криптопрофіль є неповним"
@@ -2531,6 +2532,11 @@ msgstr "Криптопрофіль є неповним"
 #: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Існує криптопрофіль, але цей пристрій не було засвідчено"
+
+#: src/session/view/account_settings/security_page/mod.rs:279
+#| msgid "Verify"
+msgid "Verify…"
+msgstr "Перевірити…"
 
 #: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
@@ -2566,6 +2572,11 @@ msgstr "Скидання ключа відновлення облікового 
 #: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Відновіть для синхронізації ваших ключів підписування та шифрування"
+
+#: src/session/view/account_settings/security_page/mod.rs:348
+#| msgid "Recover"
+msgid "Recover…"
+msgstr "Відновити…"
 
 #: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
@@ -3133,6 +3144,11 @@ msgstr ""
 "Вмикання шифрування заважатиме новим учасникам читати журнал до того, як "
 "вони з'явилися у кімнаті. Цю можливість не можна буде вимкнути пізніше."
 
+#: src/session/view/content/room_details/general_page.rs:1120
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
+msgid "Enable"
+msgstr "Увімкнути"
+
 #: src/session/view/content/room_details/general_page.rs:1130
 msgid "Could not enable encryption"
 msgstr "Не вдалося увімкнути шифрування"
@@ -3280,9 +3296,9 @@ msgstr "Версія кімнати"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
-msgid "Upgrade"
-msgstr "Оновити"
+#| msgid "Upgrade"
+msgid "Upgrade…"
+msgstr "Оновити…"
 
 #: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
@@ -3700,6 +3716,11 @@ msgstr ""
 "Втім, цим не слід зловживати, оскільки це може призвести до певних "
 "незручностей, оскільки учасникам кімнати доведеться долучатися до нової "
 "кімнати вручну."
+
+#. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+msgid "Upgrade"
+msgstr "Оновити"
 
 #: src/session/view/content/room_history/divider_row.rs:49
 msgid "This is the start of the visible history"
@@ -4947,8 +4968,6 @@ msgid "Quit"
 msgstr "Завершити"
 
 #: src/shortcuts.ui:26
-#| msgctxt "shortcut window"
-#| msgid "Close Room"
 msgctxt "shortcut window"
 msgid "Close Window"
 msgstr "Закрити вікно"
