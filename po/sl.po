@@ -9,18 +9,18 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-31 10:58+0000\n"
-"PO-Revision-Date: 2025-02-01 09:41+0100\n"
+"POT-Creation-Date: 2025-02-06 11:56+0000\n"
+"PO-Revision-Date: 2025-02-06 16:12+0100\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n"
-"%100==4 ? 3 : 0);\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || "
+"n%100==4 ? 3 : 0);\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Generator: Poedit 2.2.1\n"
+"X-Generator: Poedit 3.4.2\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
@@ -321,8 +321,6 @@ msgstr "Obnovi račun"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
-#: src/session/view/account_settings/security_page/mod.rs:260
-#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "Ponastavi"
 
@@ -459,7 +457,6 @@ msgid "Recovery Passphrase or Key"
 msgstr "Obnovitveno geslo ali ključ"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "Obnovi"
@@ -1173,7 +1170,6 @@ msgstr "Varnost"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1923,17 +1919,17 @@ msgstr "Nepodprto pravilo"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:372
+#: src/session/model/room/mod.rs:383
 msgid "Empty Room (was {user})"
 msgstr "Prazna klepetalnica (prej {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:375
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room"
 msgstr "Prazna klepetalnica"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:385
+#: src/session/model/room/mod.rs:396
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -2478,10 +2474,8 @@ msgstr "Preverjanje lastnih naprav ali drugih uporabnikov ni mogoče"
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
-msgid "Enable"
-msgstr "Omogoči"
+msgid "Enable…"
+msgstr "Omogoči …"
 
 #: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
@@ -2495,6 +2489,11 @@ msgstr "Kripto identiteta omogočena"
 msgid "The crypto identity exists and this device is verified"
 msgstr "Kripto identiteta obstaja in ta naprava je preverjena"
 
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
+msgid "Reset…"
+msgstr "Ponastavi …"
+
 #: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "Kripto identiteta je nepopolna"
@@ -2502,6 +2501,10 @@ msgstr "Kripto identiteta je nepopolna"
 #: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Kripto identiteta obstaja, vendar ta naprava ni preverjena"
+
+#: src/session/view/account_settings/security_page/mod.rs:279
+msgid "Verify…"
+msgstr "Preveri …"
 
 #: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
@@ -2535,6 +2538,10 @@ msgstr "Ponastavi ključ za obnovitev računa"
 #: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Obnovite, da sinhronizirate svoje podpisne ključe in šifrirne ključe"
+
+#: src/session/view/account_settings/security_page/mod.rs:348
+msgid "Recover…"
+msgstr "Obnovi …"
 
 #: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
@@ -3100,6 +3107,11 @@ msgstr ""
 "Če omogočite šifriranje, novi člani ne bodo mogli prebrati zgodovine pred "
 "svojo včlanitvijo. Tega pozneje ni možno onemogočiti."
 
+#: src/session/view/content/room_details/general_page.rs:1120
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
+msgid "Enable"
+msgstr "Omogoči"
+
 #: src/session/view/content/room_details/general_page.rs:1130
 msgid "Could not enable encryption"
 msgstr "Šifriranja ni bilo mogoče omogočiti"
@@ -3247,9 +3259,8 @@ msgstr "Različica klepetalnice"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
-msgid "Upgrade"
-msgstr "Nadgradi"
+msgid "Upgrade…"
+msgstr "Nadgradi …"
 
 #: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
@@ -3665,6 +3676,11 @@ msgstr ""
 "stanja klepetalnice, zaradi česar naj bi se v klepetalnico hitreje "
 "pridružili. Vendar pa je to treba uporabljati zmerno, ker je lahko moteče, "
 "saj se morajo člani klepetalnice ročno pridružiti novi klepetalnici."
+
+#. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+msgid "Upgrade"
+msgstr "Nadgradi"
 
 #: src/session/view/content/room_history/divider_row.rs:49
 msgid "This is the start of the visible history"
