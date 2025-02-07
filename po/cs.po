@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-06 11:56+0000\n"
-"PO-Revision-Date: 2025-02-06 23:02+0100\n"
+"POT-Creation-Date: 2025-02-07 12:43+0000\n"
+"PO-Revision-Date: 2025-02-07 14:44+0100\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -166,8 +166,8 @@ msgid "The Fractal Team"
 msgstr "Tým Fractal"
 
 #: src/application.rs:291
-msgid "© 2017-2024 The Fractal Team"
-msgstr "© 2017-2024 Tým Fractal"
+msgid "© The Fractal Team"
+msgstr "© Tým Fractal"
 
 #: src/application.rs:305
 msgid "translator-credits"
@@ -5063,6 +5063,9 @@ msgstr "soubor"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Sezení"
+
+#~ msgid "© 2017-2024 The Fractal Team"
+#~ msgstr "© 2017-2024 Tým Fractal"
 
 #~ msgctxt "room details"
 #~ msgid "Edit"
