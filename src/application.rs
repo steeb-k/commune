@@ -288,7 +288,7 @@ impl Application {
             .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
             .support_url("https://matrix.to/#/#fractal:gnome.org")
             .version(config::VERSION)
-            .copyright(gettext("© 2017-2024 The Fractal Team"))
+            .copyright(gettext("© The Fractal Team"))
             .developers(vec![
                 "Alejandro Domínguez".to_string(),
                 "Alexandre Franke".to_string(),
