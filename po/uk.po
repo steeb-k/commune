@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-06 11:56+0000\n"
-"PO-Revision-Date: 2025-02-06 17:19+0200\n"
+"POT-Creation-Date: 2025-02-07 12:43+0000\n"
+"PO-Revision-Date: 2025-02-07 18:27+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -176,8 +176,9 @@ msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
 #: src/application.rs:291
-msgid "© 2017-2024 The Fractal Team"
-msgstr "© Команда «Фрактал», 2017-2024"
+#| msgid "The Fractal Team"
+msgid "© The Fractal Team"
+msgstr "© Команда «Фрактал»"
 
 #: src/application.rs:305
 msgid "translator-credits"
@@ -2503,7 +2504,6 @@ msgstr "Засвідчення ваших власних пристроїв аб
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#| msgid "Enable"
 msgid "Enable…"
 msgstr "Увімкнути…"
 
@@ -2521,7 +2521,6 @@ msgstr "Існує криптопрофіль, і цей пристрій бул
 
 #: src/session/view/account_settings/security_page/mod.rs:260
 #: src/session/view/account_settings/security_page/mod.rs:328
-#| msgid "Reset"
 msgid "Reset…"
 msgstr "Скинути…"
 
@@ -2534,7 +2533,6 @@ msgid "The crypto identity exists but this device is not verified"
 msgstr "Існує криптопрофіль, але цей пристрій не було засвідчено"
 
 #: src/session/view/account_settings/security_page/mod.rs:279
-#| msgid "Verify"
 msgid "Verify…"
 msgstr "Перевірити…"
 
@@ -2574,7 +2572,6 @@ msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Відновіть для синхронізації ваших ключів підписування та шифрування"
 
 #: src/session/view/account_settings/security_page/mod.rs:348
-#| msgid "Recover"
 msgid "Recover…"
 msgstr "Відновити…"
 
@@ -3296,7 +3293,6 @@ msgstr "Версія кімнати"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#| msgid "Upgrade"
 msgid "Upgrade…"
 msgstr "Оновити…"
 
@@ -5145,6 +5141,9 @@ msgstr "файл"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "© 2017-2024 The Fractal Team"
+#~ msgstr "© Команда «Фрактал», 2017-2024"
 
 #~| msgid "_Edit"
 #~ msgctxt "room details"
