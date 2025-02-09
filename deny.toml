@@ -1,0 +1,27 @@
+[advisories]
+yanked = "deny"
+ignore = [
+    { id = "RUSTSEC-2024-0384", reason = "instant is used by backoff which is also unmaintained but doesn't have a suitable replacement yet" },
+]
+
+[bans]
+multiple-versions = "allow"
+
+# To check if a license if compatible with our GPL v3.0 license, see: https://www.gnu.org/licenses/license-list.html
+# Keep list sorted alphabetically.
+[licenses]
+unused-allowed-license = "deny"
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "GPL-3.0",
+    "LGPL-2.1",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+]

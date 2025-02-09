@@ -121,12 +121,12 @@ check_cargo() {
         elif [ ! -t 1 ]; then
             exit 2
         elif check_rustup; then
-            echo -e "$error rustup is installed but the cargo command isn't available"
+            echo -e "$error rustup is installed but the cargo command isn’t available"
             exit 2
         else
             echo ""
             echo "y: Install cargo via rustup"
-            echo "N: Don't install cargo and abort checks"
+            echo "N: Don’t install cargo and abort checks"
             echo ""
             while true; do
                 echo -n "Install cargo? [y/N]: "; read yn < /dev/tty
@@ -176,7 +176,7 @@ run_rustfmt() {
             echo "Rustfmt is needed to check Fractal’s code style, but it isn’t available"
             echo ""
             echo "y: Install rustfmt via rustup"
-            echo "N: Don't install rustfmt and abort checks"
+            echo "N: Don’t install rustfmt and abort checks"
             echo ""
             while true; do
                 echo -n "Install rustfmt? [y/N]: "; read yn < /dev/tty
@@ -255,7 +255,7 @@ run_typos() {
             echo "Typos is needed to check spelling mistakes, but it isn’t available"
             echo ""
             echo "y: Install typos via cargo"
-            echo "N: Don't install typos and abort checks"
+            echo "N: Don’t install typos and abort checks"
             echo ""
             while true; do
                 echo -n "Install typos? [y/N]: "; read yn < /dev/tty
@@ -316,7 +316,7 @@ run_machete() {
             echo "cargo-machete is needed to check for unused dependencies, but it isn’t available"
             echo ""
             echo "y: Install cargo-machete via cargo"
-            echo "N: Don't install cargo-machete and abort checks"
+            echo "N: Don’t install cargo-machete and abort checks"
             echo ""
             while true; do
                 echo -n "Install cargo-machete? [y/N]: "; read yn < /dev/tty
@@ -350,6 +350,65 @@ run_machete() {
         exit 1
     else
         echo -e "  Checking for unused dependencies result: $ok"
+    fi
+}
+
+# Install cargo-deny with cargo.
+install_cargo_deny() {
+    echo -e "$Installing cargo-deny…"
+    cargo install cargo-deny
+    if ! cargo deny --version>/dev/null 2>&1; then
+        echo -e "$Could not install cargo-deny"
+        exit 2
+    fi
+}
+
+# Run cargo-deny to check Rust dependencies.
+run_cargo_deny() {
+    if ! cargo deny --version >/dev/null 2>&1; then
+        if [[ $force_install -eq 1 ]]; then
+            install_cargo_deny
+        elif [ ! -t 1 ]; then
+            echo "Could not check Rust dependencies, because cargo-deny could not be run"
+            exit 2
+        else
+            echo "cargo-deny is needed to check the Rust dependencies, but it isn’t available"
+            echo ""
+            echo "y: Install cargo-deny via cargo"
+            echo "N: Don’t install cargo-deny and abort checks"
+            echo ""
+            while true; do
+                echo -n "Install cargo-deny? [y/N]: "; read yn < /dev/tty
+                case $yn in
+                    [Yy]* )
+                        install_cargo_deny
+                        break
+                        ;;
+                    [Nn]* | "" )
+                        exit 2
+                        ;;
+                    * )
+                        echo $invalid
+                        ;;
+                esac
+            done
+        fi
+    fi
+
+    echo -e "$Checking Rust dependencies…"
+
+    if [[ $verbose -eq 1 ]]; then
+        echo ""
+        cargo deny --version
+        echo ""
+    fi
+
+    if ! cargo deny check; then
+        echo -e "  Checking Rust dependencies result: $fail"
+        echo "Please fix the above issues, either by removing the dependencies, or by adding the necessary configuration option in deny.toml (see cargo-deny documentation)"
+        exit 1
+    else
+        echo -e "  Checking Rust dependencies result: $ok"
     fi
 }
 
@@ -579,7 +638,7 @@ run_cargo_sort() {
             echo "Cargo-sort is needed to check the sorting in Cargo.toml, but it isn’t available"
             echo ""
             echo "y: Install cargo-sort via cargo"
-            echo "N: Don't install cargo-sort and abort checks"
+            echo "N: Don’t install cargo-sort and abort checks"
             echo ""
             while true; do
                 echo -n "Install cargo-sort? [y/N]: "; read yn < /dev/tty
@@ -655,6 +714,8 @@ echo ""
 run_typos
 echo ""
 run_machete
+echo ""
+run_cargo_deny
 echo ""
 check_potfiles
 echo ""
