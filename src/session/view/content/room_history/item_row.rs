@@ -354,32 +354,9 @@ mod imp {
                         .map(|room| room.typing_list());
                     child.set_list(typing_list);
                 }
-                VirtualItemKind::TimelineStart => {
-                    // Hide this if the `m.room.create` event is visible.
-                    if let Some(timeline) = self
-                        .room_history
-                        .upgrade()
-                        .and_then(|h| h.room())
-                        .map(|r| r.timeline())
-                    {
-                        let binding = timeline
-                            .bind_property("has-room-create", &*obj, "visible")
-                            .sync_create()
-                            .invert_boolean()
-                            .build();
-                        self.binding.replace(Some(binding));
-                    }
-
-                    let divider = if let Some(divider) = obj.child().and_downcast::<DividerRow>() {
-                        divider
-                    } else {
-                        let divider = DividerRow::new();
-                        obj.set_child(Some(&divider));
-                        divider
-                    };
-                    divider.set_kind(kind);
-                }
-                VirtualItemKind::DayDivider(_) | VirtualItemKind::NewMessages => {
+                VirtualItemKind::TimelineStart
+                | VirtualItemKind::DayDivider(_)
+                | VirtualItemKind::NewMessages => {
                     let divider = if let Some(divider) = obj.child().and_downcast::<DividerRow>() {
                         divider
                     } else {

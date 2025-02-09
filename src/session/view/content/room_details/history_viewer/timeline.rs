@@ -13,11 +13,7 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::HistoryViewerEvent;
-use crate::{
-    components::LoadingRow,
-    session::model::{Room, TimelineState},
-    spawn_tokio,
-};
+use crate::{components::LoadingRow, session::model::Room, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::{
@@ -35,9 +31,12 @@ mod imp {
         /// The room that this timeline belongs to.
         #[property(get, construct_only)]
         pub room: OnceCell<Room>,
-        /// The state of this timeline.
-        #[property(get, builder(TimelineState::default()))]
-        pub state: Cell<TimelineState>,
+        /// The loading state of this timeline.
+        #[property(get, builder(LoadingState::default()))]
+        pub state: Cell<LoadingState>,
+        /// Whether we have reached the start of the timeline.
+        #[property(get)]
+        has_reached_start: Cell<bool>,
         pub list: RefCell<Vec<HistoryViewerEvent>>,
         pub last_token: Arc<Mutex<String>>,
         /// A wrapper model with an extra loading item at the end when
@@ -78,8 +77,8 @@ mod imp {
     }
 
     impl HistoryViewerTimeline {
-        /// Set the state of the timeline.
-        pub(super) fn set_state(&self, state: TimelineState) {
+        /// Set the loading state of the timeline.
+        pub(super) fn set_state(&self, state: LoadingState) {
             if state == self.state.get() {
                 return;
             }
@@ -87,7 +86,7 @@ mod imp {
             self.state.set(state);
 
             let loading_item_model = self.loading_item_model();
-            if state == TimelineState::Loading {
+            if state == LoadingState::Loading {
                 if loading_item_model.n_items() == 0 {
                     loading_item_model.append(&self.loading_row);
                 }
@@ -96,6 +95,16 @@ mod imp {
             }
 
             self.obj().notify_state();
+        }
+
+        /// Set whether we have reached the start of the timeline.
+        pub(super) fn set_has_reached_start(&self, has_reached_start: bool) {
+            if self.has_reached_start.get() == has_reached_start {
+                return;
+            }
+
+            self.has_reached_start.set(has_reached_start);
+            self.obj().notify_has_reached_start();
         }
 
         /// Append the given batch to the timeline.
@@ -152,15 +161,12 @@ impl HistoryViewerTimeline {
     where
         F: Fn() -> ControlFlow<()>,
     {
-        if matches!(
-            self.state(),
-            TimelineState::Loading | TimelineState::Complete
-        ) {
+        if self.state() == LoadingState::Loading || self.has_reached_start() {
             return;
         }
 
         let imp = self.imp();
-        imp.set_state(TimelineState::Loading);
+        imp.set_state(LoadingState::Loading);
 
         loop {
             if !self.load_inner().await {
@@ -168,7 +174,7 @@ impl HistoryViewerTimeline {
             }
 
             if continue_fn().is_break() {
-                imp.set_state(TimelineState::Ready);
+                imp.set_state(LoadingState::Ready);
                 return;
             }
         }
@@ -225,13 +231,14 @@ impl HistoryViewerTimeline {
                     imp.append(events);
                     true
                 } else {
-                    imp.set_state(TimelineState::Complete);
+                    imp.set_has_reached_start(true);
+                    imp.set_state(LoadingState::Ready);
                     false
                 }
             }
             Err(error) => {
                 error!("Could not load history viewer timeline events: {error}");
-                imp.set_state(TimelineState::Error);
+                imp.set_state(LoadingState::Error);
                 false
             }
         }

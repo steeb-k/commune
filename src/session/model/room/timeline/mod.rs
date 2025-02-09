@@ -34,25 +34,7 @@ pub(crate) use self::{
     virtual_item::{VirtualItem, VirtualItemKind},
 };
 use super::{Event, Room};
-use crate::{prelude::*, spawn, spawn_tokio};
-
-/// The possible states of the timeline.
-#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
-#[enum_type(name = "TimelineState")]
-pub enum TimelineState {
-    /// The timeline is not initialized yet.
-    #[default]
-    Initial,
-    /// The timeline is currently loading.
-    Loading,
-    /// The timeline has been initialized and there is no ongoing action.
-    Ready,
-    /// An error occurred with the timeline.
-    Error,
-    /// We have reached the beginning of the timeline.
-    Complete,
-}
+use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
 
 /// The number of events to request when loading more history.
 const MAX_BATCH_SIZE: u16 = 20;
@@ -78,6 +60,8 @@ mod imp {
         /// The underlying SDK timeline.
         matrix_timeline: OnceCell<Arc<SdkTimeline>>,
         /// Items added at the start of the timeline.
+        ///
+        /// Currently this can only contain one item at a time.
         start_items: gio::ListStore,
         /// Items provided by the SDK timeline.
         pub(super) sdk_items: gio::ListStore,
@@ -89,15 +73,21 @@ mod imp {
         /// A Hashmap linking a `TimelineEventItemId` to the corresponding
         /// `Event`.
         pub(super) event_map: RefCell<HashMap<TimelineEventItemId, Event>>,
-        /// The state of the timeline.
-        #[property(get, builder(TimelineState::default()))]
-        state: Cell<TimelineState>,
+        /// The loading state of the timeline.
+        #[property(get, builder(LoadingState::default()))]
+        state: Cell<LoadingState>,
+        /// Whether we are loading events at the start of the timeline.
+        #[property(get)]
+        is_loading_start: Cell<bool>,
         /// Whether the timeline is empty.
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
         /// Whether the timeline should be pre-loaded when it is ready.
         #[property(get, set = Self::set_preload, explicit_notify)]
         preload: Cell<bool>,
+        /// Whether we have reached the start of the timeline.
+        #[property(get)]
+        has_reached_start: Cell<bool>,
         /// Whether the timeline has the `m.room.create` event of the room.
         #[property(get)]
         has_room_create: Cell<bool>,
@@ -126,7 +116,9 @@ mod imp {
                 items: gtk::FlattenListModel::new(Some(model_list)),
                 event_map: Default::default(),
                 state: Default::default(),
+                is_loading_start: Default::default(),
                 is_empty: Default::default(),
+                has_reached_start: Default::default(),
                 has_room_create: Default::default(),
                 preload: Default::default(),
                 diff_handle: Default::default(),
@@ -250,7 +242,7 @@ mod imp {
                 self.preload().await;
             }
 
-            self.set_state(TimelineState::Ready);
+            self.set_state(LoadingState::Ready);
         }
 
         /// The underlying SDK timeline.
@@ -265,14 +257,108 @@ mod imp {
             self.sdk_items.n_items() == 0
         }
 
+        /// Set the loading state of the timeline.
+        fn set_state(&self, state: LoadingState) {
+            if self.state.get() == state {
+                return;
+            }
+
+            self.state.set(state);
+
+            self.obj().notify_state();
+        }
+
+        /// Update the loading state of the timeline.
+        fn update_loading_state(&self) {
+            let is_loading = self.is_loading_start.get();
+
+            if is_loading {
+                self.set_state(LoadingState::Loading);
+            } else if self.state.get() != LoadingState::Error {
+                self.set_state(LoadingState::Ready);
+            }
+        }
+
+        /// Set whether we are loading events at the start of the timeline.
+        fn set_loading_start(&self, is_loading_start: bool) {
+            if self.is_loading_start.get() == is_loading_start {
+                return;
+            }
+
+            self.is_loading_start.set(is_loading_start);
+
+            self.update_loading_state();
+            self.update_start_items();
+            self.obj().notify_is_loading_start();
+        }
+
+        /// Set whether we have reached the start of the timeline.
+        fn set_has_reached_start(&self, has_reached_start: bool) {
+            if self.has_reached_start.get() == has_reached_start {
+                // Nothing to do.
+                return;
+            }
+
+            self.has_reached_start.set(has_reached_start);
+
+            self.update_start_items();
+            self.obj().notify_has_reached_start();
+        }
+
         /// Set whether the timeline has the `m.room.create` event of the room.
-        pub(super) fn set_has_room_create(&self, has_room_create: bool) {
+        fn set_has_room_create(&self, has_room_create: bool) {
             if self.has_room_create.get() == has_room_create {
                 return;
             }
 
             self.has_room_create.set(has_room_create);
+
+            self.update_start_items();
             self.obj().notify_has_room_create();
+        }
+
+        /// Update the virtual items at the start of the timeline.
+        fn update_start_items(&self) {
+            let n_items = self.start_items.n_items();
+
+            if self.has_reached_start.get() {
+                let has_room_create = self.has_room_create.get();
+                let has_item = self
+                    .start_items
+                    .item(0)
+                    .and_downcast::<VirtualItem>()
+                    .is_some_and(|item| item.is_timeline_start());
+
+                if has_room_create && n_items > 0 {
+                    self.start_items.remove_all();
+                } else if !has_room_create && !has_item {
+                    self.start_items
+                        .splice(0, n_items, &[VirtualItem::timeline_start()]);
+                }
+            } else if self.is_loading_start.get() {
+                let has_item = self
+                    .start_items
+                    .item(0)
+                    .and_downcast::<VirtualItem>()
+                    .is_some_and(|item| item.is_spinner());
+
+                if !has_item {
+                    self.start_items
+                        .splice(0, n_items, &[VirtualItem::spinner()]);
+                }
+            } else if n_items > 0 {
+                self.start_items.remove_all();
+            }
+        }
+
+        /// Clear the state of the timeline.
+        ///
+        /// This doesn't handle removing items in `sdk_items` because it can be
+        /// optimized by the caller of the function.
+        fn clear(&self) {
+            self.event_map.borrow_mut().clear();
+            self.set_has_room_create(false);
+            self.set_has_reached_start(false);
         }
 
         /// Set whether the timeline should be pre-loaded when it is ready.
@@ -284,7 +370,7 @@ mod imp {
             self.preload.set(preload);
             self.obj().notify_preload();
 
-            if preload && self.can_load() {
+            if preload && self.can_paginate_backwards() {
                 spawn!(
                     glib::Priority::DEFAULT_IDLE,
                     clone!(
@@ -301,7 +387,7 @@ mod imp {
         /// Preload the timeline, if there are not enough items.
         async fn preload(&self) {
             if self.sdk_items.n_items() < u32::from(MAX_BATCH_SIZE) {
-                self.load(|| ControlFlow::Break(())).await;
+                self.paginate_backwards(|| ControlFlow::Break(())).await;
             }
         }
 
@@ -357,8 +443,7 @@ mod imp {
                 }
                 VectorDiff::Clear => {
                     self.sdk_items.remove_all();
-                    self.event_map.borrow_mut().clear();
-                    self.set_has_room_create(false);
+                    self.clear();
                 }
                 VectorDiff::PushFront { value } => {
                     let item = self.create_item(&value);
@@ -404,8 +489,7 @@ mod imp {
                 }
                 VectorDiff::Reset { values } => {
                     // Reset the state.
-                    self.event_map.borrow_mut().clear();
-                    self.set_has_room_create(false);
+                    self.clear();
 
                     let removed = self.sdk_items.n_items();
                     let new_list = values
@@ -517,42 +601,42 @@ mod imp {
             }
         }
 
-        /// Whether we can load more events with the current state of the
-        /// timeline.
-        pub(super) fn can_load(&self) -> bool {
-            // We don't want to load twice at the same time, and it's useless to try to load
-            // more history before the timeline is ready or when we reached the
-            // start.
-            !matches!(
-                self.state.get(),
-                TimelineState::Initial | TimelineState::Loading | TimelineState::Complete
-            )
+        /// Whether we can load more events at the start of the timeline with
+        /// the current state.
+        pub(super) fn can_paginate_backwards(&self) -> bool {
+            // We do not want to load twice at the same time, and it's useless to try to
+            // load more history before the timeline is ready or if we have
+            // reached the start of the timeline.
+            self.state.get() != LoadingState::Initial
+                && !self.is_loading_start.get()
+                && !self.has_reached_start.get()
         }
 
         /// Load more events at the start of the timeline until the given
         /// function tells us to stop.
-        pub(super) async fn load<F>(&self, continue_fn: F)
+        pub(super) async fn paginate_backwards<F>(&self, continue_fn: F)
         where
             F: Fn() -> ControlFlow<()>,
         {
-            self.set_state(TimelineState::Loading);
+            self.set_loading_start(true);
 
             loop {
-                if !self.load_inner().await {
-                    return;
+                if !self.paginate_backwards_inner().await {
+                    break;
                 }
 
                 if continue_fn().is_break() {
-                    self.set_state(TimelineState::Ready);
-                    return;
+                    break;
                 }
             }
+
+            self.set_loading_start(false);
         }
 
         /// Load more events at the start of the timeline.
         ///
         /// Returns `true` if more events can be loaded.
-        async fn load_inner(&self) -> bool {
+        async fn paginate_backwards_inner(&self) -> bool {
             let matrix_timeline = self.matrix_timeline().clone();
             let handle =
                 spawn_tokio!(
@@ -562,39 +646,17 @@ mod imp {
             match handle.await.expect("task was not aborted") {
                 Ok(reached_start) => {
                     if reached_start {
-                        self.set_state(TimelineState::Complete);
+                        self.set_has_reached_start(true);
                     }
 
                     !reached_start
                 }
                 Err(error) => {
                     error!("Could not load timeline: {error}");
-                    self.set_state(TimelineState::Error);
+                    self.set_state(LoadingState::Error);
                     false
                 }
             }
-        }
-
-        /// Set the state of the timeline.
-        pub(super) fn set_state(&self, state: TimelineState) {
-            if self.state.get() == state {
-                return;
-            }
-
-            self.state.set(state);
-
-            let start_items = &self.start_items;
-            let removed = start_items.n_items();
-
-            match state {
-                TimelineState::Loading => start_items.splice(0, removed, &[VirtualItem::spinner()]),
-                TimelineState::Complete => {
-                    start_items.splice(0, removed, &[VirtualItem::timeline_start()]);
-                }
-                _ => start_items.remove_all(),
-            }
-
-            self.obj().notify_state();
         }
 
         /// Whether the timeline has a typing row.
@@ -762,17 +824,17 @@ impl Timeline {
 
     /// Load more events at the start of the timeline until the given function
     /// tells us to stop.
-    pub(crate) async fn load<F>(&self, continue_fn: F)
+    pub(crate) async fn paginate_backwards<F>(&self, continue_fn: F)
     where
         F: Fn() -> ControlFlow<()>,
     {
         let imp = self.imp();
 
-        if !imp.can_load() {
+        if !imp.can_paginate_backwards() {
             return;
         }
 
-        imp.load(continue_fn).await;
+        imp.paginate_backwards(continue_fn).await;
     }
 
     /// Get the event with the given identifier from this `Timeline`.

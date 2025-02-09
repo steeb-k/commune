@@ -33,10 +33,9 @@ use crate::{
     prelude::*,
     session::model::{
         Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,
-        TimelineState,
     },
     spawn, toast,
-    utils::{template_callbacks::TemplateCallbacks, BoundObject},
+    utils::{template_callbacks::TemplateCallbacks, BoundObject, LoadingState},
     Window,
 };
 
@@ -465,7 +464,7 @@ mod imp {
                         // Always test if we need to load more when the timeline is ready.
                         // This is mostly to make sure that we load events if the timeline was not
                         // initialized when the room was opened.
-                        if timeline.state() == TimelineState::Ready {
+                        if timeline.state() == LoadingState::Ready {
                             imp.load_more_events_if_needed();
                         }
                     }
@@ -643,7 +642,7 @@ mod imp {
             };
 
             let visible_child_name = if room.timeline().is_empty() {
-                if room.timeline().state() == TimelineState::Error {
+                if room.timeline().state() == LoadingState::Error {
                     "error"
                 } else {
                     "loading"
@@ -654,8 +653,8 @@ mod imp {
             self.stack.set_visible_child_name(visible_child_name);
         }
 
-        /// Whether we need to load more events.
-        fn needs_more_events(&self) -> bool {
+        /// Whether we need to load more events at the start of the timeline.
+        fn needs_more_events_at_the_start(&self) -> bool {
             if self.selection_model().n_items() == 0 {
                 // We definitely want events if the history is empty.
                 return true;
@@ -671,18 +670,15 @@ mod imp {
             adj.value() < adj.page_size() * 2.0
         }
 
-        /// Load more events at the beginning of the history if needed.
+        /// Load more events in the history if needed.
         fn load_more_events_if_needed(&self) {
-            if !self.needs_more_events() {
-                return;
+            if self.needs_more_events_at_the_start() {
+                self.load_more_events_at_the_start();
             }
-
-            self.load_more_events();
         }
 
         /// Load more events at the beginning of the history.
-        #[template_callback]
-        fn load_more_events(&self) {
+        fn load_more_events_at_the_start(&self) {
             let Some(room) = self.room.obj() else {
                 return;
             };
@@ -692,13 +688,13 @@ mod imp {
                 self,
                 async move {
                     room.timeline()
-                        .load(clone!(
+                        .paginate_backwards(clone!(
                             #[weak]
                             imp,
                             #[upgrade_or]
                             ControlFlow::Break(()),
                             move || {
-                                if imp.needs_more_events() {
+                                if imp.needs_more_events_at_the_start() {
                                     ControlFlow::Continue(())
                                 } else {
                                     ControlFlow::Break(())
@@ -708,6 +704,14 @@ mod imp {
                         .await;
                 }
             ));
+        }
+
+        /// Load more events in the history, regardless of if we need them.
+        ///
+        /// This should only be used to try to fix timeline loading errors.
+        #[template_callback]
+        fn load_more_events(&self) {
+            self.load_more_events_at_the_start();
         }
 
         /// Scroll to the event with the given identifier.

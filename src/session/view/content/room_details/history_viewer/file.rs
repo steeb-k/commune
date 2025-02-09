@@ -4,7 +4,9 @@ use tracing::error;
 
 use super::{FileRow, HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline};
 use crate::{
-    components::LoadingRow, session::model::TimelineState, spawn, utils::BoundConstructOnlyObject,
+    components::LoadingRow,
+    spawn,
+    utils::{BoundConstructOnlyObject, LoadingState},
 };
 
 /// The minimum number of items that should be loaded.
@@ -214,10 +216,10 @@ mod imp {
             let timeline = self.timeline.obj();
 
             let visible_child_name = match timeline.state() {
-                TimelineState::Initial => "loading",
-                TimelineState::Error => "error",
-                TimelineState::Complete if model.n_items() == 0 => "empty",
-                TimelineState::Loading => {
+                LoadingState::Initial => "loading",
+                LoadingState::Error => "error",
+                LoadingState::Ready if model.n_items() == 0 => "empty",
+                LoadingState::Loading => {
                     if model.n_items() == 0
                         || (model.n_items() == 1
                             && model.item(0).is_some_and(|item| item.is::<LoadingRow>()))
@@ -227,7 +229,7 @@ mod imp {
                         "content"
                     }
                 }
-                _ => "content",
+                LoadingState::Ready => "content",
             };
             self.stack.set_visible_child_name(visible_child_name);
         }

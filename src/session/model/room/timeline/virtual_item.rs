@@ -112,6 +112,11 @@ impl VirtualItem {
             .build()
     }
 
+    /// Whether this is a spinner virtual item.
+    pub(crate) fn is_spinner(&self) -> bool {
+        self.kind().0 == VirtualItemKind::Spinner
+    }
+
     /// Create a typing virtual item.
     pub(crate) fn typing() -> Self {
         glib::Object::builder()
@@ -126,6 +131,11 @@ impl VirtualItem {
             .property("kind", VirtualItemKind::TimelineStart.boxed())
             .property("timeline-id", "VirtualItemKind::TimelineStart")
             .build()
+    }
+
+    /// Whether this is a timeline start virtual item.
+    pub(crate) fn is_timeline_start(&self) -> bool {
+        self.kind().0 == VirtualItemKind::TimelineStart
     }
 
     /// Create a new messages virtual item.
