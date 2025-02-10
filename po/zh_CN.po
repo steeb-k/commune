@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-31 10:58+0000\n"
-"PO-Revision-Date: 2025-02-04 10:06+0800\n"
+"POT-Creation-Date: 2025-02-07 12:43+0000\n"
+"PO-Revision-Date: 2025-02-10 18:56+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -164,8 +164,8 @@ msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
 #: src/application.rs:291
-msgid "© 2017-2024 The Fractal Team"
-msgstr "© 2017-2024 Fractal 团队"
+msgid "© The Fractal Team"
+msgstr "© Fractal 团队"
 
 #: src/application.rs:305
 msgid "translator-credits"
@@ -310,8 +310,6 @@ msgstr "恢复账号"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
-#: src/session/view/account_settings/security_page/mod.rs:260
-#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "重置"
 
@@ -435,7 +433,6 @@ msgid "Recovery Passphrase or Key"
 msgstr "恢复口令或密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "恢复"
@@ -1099,7 +1096,6 @@ msgstr "安全"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1803,17 +1799,17 @@ msgstr "不支持的规则"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:372
+#: src/session/model/room/mod.rs:383
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:375
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:385
+#: src/session/model/room/mod.rs:396
 msgid "Unknown"
 msgstr "未知"
 
@@ -2337,10 +2333,8 @@ msgstr "无法认证您自己的设备或别的用户"
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
-msgid "Enable"
-msgstr "启用"
+msgid "Enable…"
+msgstr "启用…"
 
 #: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
@@ -2354,6 +2348,11 @@ msgstr "加密身份已启用"
 msgid "The crypto identity exists and this device is verified"
 msgstr "加密身份存在并且该设备通过验证"
 
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
+msgid "Reset…"
+msgstr "重置…"
+
 #: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "加密身份未完成"
@@ -2361,6 +2360,10 @@ msgstr "加密身份未完成"
 #: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "加密身份存在并且该设备未通过验证"
+
+#: src/session/view/account_settings/security_page/mod.rs:279
+msgid "Verify…"
+msgstr "验证…"
 
 #: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
@@ -2394,6 +2397,10 @@ msgstr "重置账号恢复密钥"
 #: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "恢复同步您的签名和加密密钥"
+
+#: src/session/view/account_settings/security_page/mod.rs:348
+msgid "Recover…"
+msgstr "恢复…"
 
 #: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
@@ -2942,6 +2949,11 @@ msgid ""
 "arrived. This cannot be disabled later."
 msgstr "启用加密将阻止新成员在到达聊天室前查阅聊天历史。该选项无法在随后禁用。"
 
+#: src/session/view/content/room_details/general_page.rs:1120
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
+msgid "Enable"
+msgstr "启用"
+
 #: src/session/view/content/room_details/general_page.rs:1130
 msgid "Could not enable encryption"
 msgstr "无法启用加密"
@@ -3089,9 +3101,8 @@ msgstr "聊天室版本"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
-msgid "Upgrade"
-msgstr "升级"
+msgid "Upgrade…"
+msgstr "升级…"
 
 #: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
@@ -3486,6 +3497,11 @@ msgstr ""
 "将聊天室升级为最新版本可以从 Matrix 规范的新特性获益。同样可用于重置聊天室状"
 "态，可使加入聊天室速度更快。然而由于其可能引起混乱应保守使用，因为聊天室成员"
 "需要手动加入新聊天室。"
+
+#. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+msgid "Upgrade"
+msgstr "升级"
 
 #: src/session/view/content/room_history/divider_row.rs:49
 msgid "This is the start of the visible history"
@@ -4871,6 +4887,9 @@ msgstr "文件"
 #: src/window.ui:84
 msgid "Session"
 msgstr "会话"
+
+#~ msgid "© 2017-2024 The Fractal Team"
+#~ msgstr "© 2017-2024 Fractal 团队"
 
 #~ msgctxt "room details"
 #~ msgid "Edit"
