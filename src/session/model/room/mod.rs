@@ -159,9 +159,9 @@ mod imp {
         /// there is only one other member.
         #[property(get)]
         direct_member: RefCell<Option<Member>>,
-        /// The timeline of this room.
+        /// The live timeline of this room.
         #[property(get)]
-        timeline: OnceCell<Timeline>,
+        live_timeline: OnceCell<Timeline>,
         /// The timestamp of the room's latest activity.
         ///
         /// This is the timestamp of the latest event that counts as possibly
@@ -252,7 +252,7 @@ mod imp {
                 .set(matrix_room)
                 .expect("matrix room is uninitialized");
 
-            self.init_timeline();
+            self.init_live_timeline();
             self.aliases.init(&obj);
             self.load_predecessor();
             self.watch_members();
@@ -282,7 +282,7 @@ mod imp {
                                 | RoomCategory::Normal
                                 | RoomCategory::LowPriority
                         );
-                        imp.timeline().set_preload(preload);
+                        imp.live_timeline().set_preload(preload);
 
                         imp.permissions.init(&imp.obj()).await;
                     }
@@ -981,9 +981,11 @@ mod imp {
             self.set_direct_member(Some(direct_member));
         }
 
-        /// Initialize the timeline of this room.
-        fn init_timeline(&self) {
-            let timeline = self.timeline.get_or_init(|| Timeline::new(&self.obj()));
+        /// Initialize the live timeline of this room.
+        fn init_live_timeline(&self) {
+            let timeline = self
+                .live_timeline
+                .get_or_init(|| Timeline::new(&self.obj()));
 
             timeline.connect_read_change_trigger(clone!(
                 #[weak(rename_to = imp)]
@@ -996,9 +998,11 @@ mod imp {
             ));
         }
 
-        /// The timeline of this room.
-        fn timeline(&self) -> &Timeline {
-            self.timeline.get().expect("timeline is initialized")
+        /// The live timeline of this room.
+        fn live_timeline(&self) -> &Timeline {
+            self.live_timeline
+                .get()
+                .expect("live timeline is initialized")
         }
 
         /// Set the timestamp of the room's latest possibly unread event.
@@ -1023,7 +1027,7 @@ mod imp {
 
         /// Handle the trigger emitted when a read change might have occurred.
         async fn handle_read_change_trigger(&self) {
-            let timeline = self.timeline();
+            let timeline = self.live_timeline();
 
             if let Some(has_unread) = timeline.has_unread_messages().await {
                 self.set_is_read(!has_unread);
@@ -1625,10 +1629,11 @@ impl Room {
 
     /// Toggle the `key` reaction on the given related event in this room.
     pub(crate) async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
-        let timeline = self.timeline().matrix_timeline();
+        let matrix_timeline = self.live_timeline().matrix_timeline();
         let identifier = event.identifier();
 
-        let handle = spawn_tokio!(async move { timeline.toggle_reaction(&identifier, &key).await });
+        let handle =
+            spawn_tokio!(async move { matrix_timeline.toggle_reaction(&identifier, &key).await });
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             error!("Could not toggle reaction: {error}");
@@ -1654,7 +1659,7 @@ impl Room {
             t => t,
         };
 
-        let matrix_timeline = self.timeline().matrix_timeline();
+        let matrix_timeline = self.live_timeline().matrix_timeline();
         let handle = spawn_tokio!(async move {
             match position {
                 ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,

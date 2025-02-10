@@ -259,7 +259,9 @@ impl Member {
 
     /// The IDs of the events sent by this member that can be redacted.
     pub(crate) fn redactable_events(&self) -> Vec<OwnedEventId> {
-        self.room().timeline().redactable_events_for(self.user_id())
+        self.room()
+            .live_timeline()
+            .redactable_events_for(self.user_id())
     }
 
     /// Whether this room member can notify the whole room.

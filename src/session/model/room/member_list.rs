@@ -189,8 +189,8 @@ mod imp {
                     }
                 }
 
-                // Restore the members activity according to the known timeline events.
-                for item in room.timeline().items().iter::<glib::Object>().rev() {
+                // Restore the members activity according to the known live timeline events.
+                for item in room.live_timeline().items().iter::<glib::Object>().rev() {
                     let Ok(item) = item else {
                         // The iterator is broken, stop.
                         break;

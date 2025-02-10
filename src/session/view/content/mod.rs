@@ -237,7 +237,7 @@ impl Content {
                         imp.invite.set_room(Some(room));
                         self.set_visible_page(ContentPage::Invite);
                     } else {
-                        imp.room_history.set_timeline(Some(room.timeline()));
+                        imp.room_history.set_timeline(Some(room.live_timeline()));
                         self.set_visible_page(ContentPage::RoomHistory);
                     }
                 }
