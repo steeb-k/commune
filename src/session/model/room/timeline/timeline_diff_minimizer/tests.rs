@@ -1,55 +1,55 @@
 #![cfg(test)]
 #![allow(clippy::too_many_lines)]
 
-use std::cell::RefCell;
+use std::{
+    cell::{Cell, RefCell},
+    ops::Deref,
+    rc::Rc,
+};
 
 use assert_matches2::assert_matches;
-use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::eyeball_im::Vector;
 
 use super::*;
-use crate::session::model::TimelineItemImpl;
 
-/// Timeline item store to test `TimelineItemDiffMinimizer`.
+/// Timeline item store to test `TimelineDiffMinimizer`.
 #[derive(Debug, Clone, Default)]
-struct TestTimelineItemStore {
+struct TestTimelineDiffItemStore {
     /// The items in the store.
-    items: RefCell<Vec<TestTimelineItem>>,
+    items: RefCell<Vec<TestTimelineDiffItem>>,
 }
 
-impl TestTimelineItemStore {
+impl TestTimelineDiffItemStore {
     /// Set `processed` to false for all items.
     fn reset_processed_items(&self) {
         for item in &*self.items.borrow() {
-            item.downcast_ref::<TestTimelineItem>()
-                .expect("TestTimelineItemStore only receives TestTimelineItem")
-                .set_processed(false);
+            item.set_processed(false);
         }
     }
 }
 
-impl TimelineItemStore for TestTimelineItemStore {
-    type Item = TestTimelineItem;
-    type Data = TestTimelineItemData;
+impl TimelineDiffItemStore for TestTimelineDiffItemStore {
+    type Item = TestTimelineDiffItem;
+    type Data = TestTimelineDiffItemData;
 
-    fn items(&self) -> Vec<TestTimelineItem> {
+    fn items(&self) -> Vec<TestTimelineDiffItem> {
         self.items.borrow().clone()
     }
 
-    fn create_item(&self, data: &Self::Data) -> TestTimelineItem {
+    fn create_item(&self, data: &Self::Data) -> TestTimelineDiffItem {
         println!("create_item: {data:?}");
-        TestTimelineItem::new(data)
+        TestTimelineDiffItem::new(data)
     }
 
-    fn update_item(&self, item: &TestTimelineItem, data: &Self::Data) {
+    fn update_item(&self, item: &TestTimelineDiffItem, data: &Self::Data) {
         println!("update_item: {item:?} {data:?}");
         item.set_version(data.version);
     }
 
-    fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineItemDiff<TestTimelineItem>>) {
+    fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineDiff<TestTimelineDiffItem>>) {
         for item_diff in item_diff_list {
             match item_diff {
-                TimelineItemDiff::Splice(splice_diff) => {
+                TimelineDiff::Splice(splice_diff) => {
                     let mut items = self.items.borrow_mut();
                     let pos = splice_diff.pos as usize;
                     let n_removals = splice_diff.n_removals as usize;
@@ -63,7 +63,7 @@ impl TimelineItemStore for TestTimelineItemStore {
                         item.set_processed(true);
                     }
                 }
-                TimelineItemDiff::Update(update_diff) => {
+                TimelineDiff::Update(update_diff) => {
                     let pos = update_diff.pos as usize;
                     let n_items = update_diff.n_items as usize;
                     let items = &*self.items.borrow();
@@ -83,59 +83,64 @@ impl TimelineItemStore for TestTimelineItemStore {
     }
 }
 
-/// Timeline item data to test `TimelineItemDiffMinimizer`.
+/// Timeline item data to test `TimelineDiffMinimizer`.
 #[derive(Debug, Clone, Copy)]
-struct TestTimelineItemData {
+struct TestTimelineDiffItemData {
     timeline_id: &'static str,
     version: u8,
 }
 
-impl TimelineItemData for TestTimelineItemData {
+impl TimelineDiffItemData for TestTimelineDiffItemData {
     fn timeline_id(&self) -> &str {
         self.timeline_id
     }
 }
 
-mod imp {
-    use std::cell::Cell;
+#[derive(Debug, Clone)]
+struct TestTimelineDiffItem(Rc<TestTimelineDiffItemInner>);
 
-    use super::*;
-
-    #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::TestTimelineItem)]
-    pub struct TestTimelineItem {
-        /// The version of the item.
-        #[property(get, set, construct)]
-        version: Cell<u8>,
-        /// Whether the item was processed in `apply_item_diff_list`.
-        #[property(get, set)]
-        processed: Cell<bool>,
-    }
-
-    #[glib::object_subclass]
-    impl ObjectSubclass for TestTimelineItem {
-        const NAME: &'static str = "TestTimelineItem";
-        type Type = super::TestTimelineItem;
-        type ParentType = TimelineItem;
-    }
-
-    #[glib::derived_properties]
-    impl ObjectImpl for TestTimelineItem {}
-
-    impl TimelineItemImpl for TestTimelineItem {}
+#[derive(Debug)]
+struct TestTimelineDiffItemInner {
+    /// The unique ID of the item in the timeline.
+    timeline_id: String,
+    /// The version of the item.
+    version: Cell<u8>,
+    /// Whether the item was processed in `apply_item_diff_list`.
+    processed: Cell<bool>,
 }
 
-glib::wrapper! {
-    /// Timeline item to test `TimelineItemDiffMinimizer`.
-    pub struct TestTimelineItem(ObjectSubclass<imp::TestTimelineItem>) @extends TimelineItem;
+impl Deref for TestTimelineDiffItem {
+    type Target = TestTimelineDiffItemInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl TestTimelineItem {
-    fn new(data: &TestTimelineItemData) -> Self {
-        glib::Object::builder()
-            .property("timeline-id", data.timeline_id)
-            .property("version", data.version)
-            .build()
+impl TestTimelineDiffItem {
+    fn new(data: &TestTimelineDiffItemData) -> Self {
+        Self(
+            TestTimelineDiffItemInner {
+                timeline_id: data.timeline_id.to_owned(),
+                version: Cell::new(data.version),
+                processed: Cell::new(false),
+            }
+            .into(),
+        )
+    }
+
+    fn set_version(&self, version: u8) {
+        self.0.version.set(version);
+    }
+
+    fn set_processed(&self, processed: bool) {
+        self.0.processed.set(processed);
+    }
+}
+
+impl TimelineDiffItem for TestTimelineDiffItem {
+    fn timeline_id(&self) -> String {
+        self.timeline_id.clone()
     }
 }
 
@@ -145,20 +150,20 @@ impl TestTimelineItem {
 /// at least the correctness of the code.
 #[test]
 fn process_single_vector_diff() {
-    let store = TestTimelineItemStore::default();
+    let store = TestTimelineDiffItemStore::default();
 
     // Append.
     let diff = VectorDiff::Append {
         values: Vector::from([
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "a",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "b",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "c",
                 version: 0,
             },
@@ -169,15 +174,15 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 3);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 0);
-    assert!(items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 0);
-    assert!(items[2].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 0);
+    assert!(items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 0);
+    assert!(items[2].processed.get());
 
     store.reset_processed_items();
 
@@ -188,12 +193,12 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 2);
-    assert_eq!(items[0].timeline_id(), "b");
-    assert_eq!(items[0].version(), 0);
-    assert!(items[0].processed());
-    assert_eq!(items[1].timeline_id(), "c");
-    assert_eq!(items[1].version(), 0);
-    assert!(!items[1].processed());
+    assert_eq!(items[0].timeline_id, "b");
+    assert_eq!(items[0].version.get(), 0);
+    assert!(items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "c");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(!items[1].processed.get());
 
     store.reset_processed_items();
 
@@ -204,15 +209,15 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 1);
-    assert_eq!(items[0].timeline_id(), "b");
-    assert_eq!(items[0].version(), 0);
-    assert!(!items[0].processed());
+    assert_eq!(items[0].timeline_id, "b");
+    assert_eq!(items[0].version.get(), 0);
+    assert!(!items[0].processed.get());
 
     store.reset_processed_items();
 
     // Push front.
     let diff = VectorDiff::PushFront {
-        value: TestTimelineItemData {
+        value: TestTimelineDiffItemData {
             timeline_id: "a",
             version: 1,
         },
@@ -222,18 +227,18 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 2);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 1);
-    assert!(items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(items[1].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 1);
+    assert!(items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(items[1].processed.get());
 
     store.reset_processed_items();
 
     // Push back.
     let diff = VectorDiff::PushBack {
-        value: TestTimelineItemData {
+        value: TestTimelineDiffItemData {
             timeline_id: "d",
             version: 0,
         },
@@ -243,22 +248,22 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 3);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 1);
-    assert!(!items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(!items[1].processed());
-    assert_eq!(items[2].timeline_id(), "d");
-    assert_eq!(items[2].version(), 0);
-    assert!(items[2].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 1);
+    assert!(!items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(!items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "d");
+    assert_eq!(items[2].version.get(), 0);
+    assert!(items[2].processed.get());
 
     store.reset_processed_items();
 
     // Insert.
     let diff = VectorDiff::Insert {
         index: 2,
-        value: TestTimelineItemData {
+        value: TestTimelineDiffItemData {
             timeline_id: "c",
             version: 1,
         },
@@ -268,25 +273,25 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 1);
-    assert!(!items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(!items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 1);
-    assert!(items[2].processed());
-    assert_eq!(items[3].timeline_id(), "d");
-    assert_eq!(items[3].version(), 0);
-    assert!(items[3].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 1);
+    assert!(!items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(!items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 1);
+    assert!(items[2].processed.get());
+    assert_eq!(items[3].timeline_id, "d");
+    assert_eq!(items[3].version.get(), 0);
+    assert!(items[3].processed.get());
 
     store.reset_processed_items();
 
     // Set same item (update).
     let diff = VectorDiff::Set {
         index: 1,
-        value: TestTimelineItemData {
+        value: TestTimelineDiffItemData {
             timeline_id: "b",
             version: 1,
         },
@@ -296,25 +301,25 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 1);
-    assert!(!items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 1);
-    assert!(items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 1);
-    assert!(items[2].processed());
-    assert_eq!(items[3].timeline_id(), "d");
-    assert_eq!(items[3].version(), 0);
-    assert!(!items[3].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 1);
+    assert!(!items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 1);
+    assert!(items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 1);
+    assert!(items[2].processed.get());
+    assert_eq!(items[3].timeline_id, "d");
+    assert_eq!(items[3].version.get(), 0);
+    assert!(!items[3].processed.get());
 
     store.reset_processed_items();
 
     // Set new item (replace).
     let diff = VectorDiff::Set {
         index: 1,
-        value: TestTimelineItemData {
+        value: TestTimelineDiffItemData {
             timeline_id: "b1",
             version: 0,
         },
@@ -324,18 +329,18 @@ fn process_single_vector_diff() {
 
     let items = store.items();
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 1);
-    assert!(!items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b1");
-    assert_eq!(items[1].version(), 0);
-    assert!(items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 1);
-    assert!(items[2].processed());
-    assert_eq!(items[3].timeline_id(), "d");
-    assert_eq!(items[3].version(), 0);
-    assert!(!items[3].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 1);
+    assert!(!items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b1");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 1);
+    assert!(items[2].processed.get());
+    assert_eq!(items[3].timeline_id, "d");
+    assert_eq!(items[3].version.get(), 0);
+    assert!(!items[3].processed.get());
 
     store.reset_processed_items();
 
@@ -359,31 +364,31 @@ fn process_single_vector_diff() {
 /// Minimize only insertions or only removals.
 #[test]
 fn minimize_simple_diff() {
-    let store = TestTimelineItemStore::default();
+    let store = TestTimelineDiffItemStore::default();
 
     // Minimize out of order insertions.
     let diff_list = vec![
         VectorDiff::PushBack {
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "b",
                 version: 0,
             },
         },
         VectorDiff::PushBack {
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "d",
                 version: 0,
             },
         },
         VectorDiff::PushFront {
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "a",
                 version: 0,
             },
         },
         VectorDiff::Insert {
             index: 2,
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "c",
                 version: 0,
             },
@@ -391,7 +396,7 @@ fn minimize_simple_diff() {
     ];
     assert!(store.can_minimize_diff_list(&diff_list));
 
-    let mut minimizer = TimelineItemDiffMinimizer::new(&store);
+    let mut minimizer = TimelineDiffMinimizer::new(&store);
 
     assert_eq!(store.items().len(), 0);
     let old_item_ids = minimizer.load_items();
@@ -406,7 +411,7 @@ fn minimize_simple_diff() {
 
     let item_diff_list = minimizer.item_diff_list(&old_item_ids, &new_item_ids);
     assert_eq!(item_diff_list.len(), 1);
-    assert_matches!(&item_diff_list[0], TimelineItemDiff::Splice(splice_diff));
+    assert_matches!(&item_diff_list[0], TimelineDiff::Splice(splice_diff));
     assert_eq!(splice_diff.pos, 0);
     assert_eq!(splice_diff.n_removals, 0);
     assert_eq!(splice_diff.additions.len(), 4);
@@ -414,18 +419,18 @@ fn minimize_simple_diff() {
     store.apply_item_diff_list(item_diff_list);
     let items = store.items();
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 0);
-    assert!(items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 0);
-    assert!(items[2].processed());
-    assert_eq!(items[3].timeline_id(), "d");
-    assert_eq!(items[3].version(), 0);
-    assert!(items[3].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 0);
+    assert!(items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 0);
+    assert!(items[2].processed.get());
+    assert_eq!(items[3].timeline_id, "d");
+    assert_eq!(items[3].version.get(), 0);
+    assert!(items[3].processed.get());
 
     // Minimize out of order removals.
     let diff_list = vec![
@@ -436,7 +441,7 @@ fn minimize_simple_diff() {
     ];
     assert!(store.can_minimize_diff_list(&diff_list));
 
-    let mut minimizer = TimelineItemDiffMinimizer::new(&store);
+    let mut minimizer = TimelineDiffMinimizer::new(&store);
 
     assert_eq!(store.items().len(), 4);
     let old_item_ids = minimizer.load_items();
@@ -447,7 +452,7 @@ fn minimize_simple_diff() {
 
     let item_diff_list = minimizer.item_diff_list(&old_item_ids, &new_item_ids);
     assert_eq!(item_diff_list.len(), 1);
-    assert_matches!(&item_diff_list[0], TimelineItemDiff::Splice(splice_diff));
+    assert_matches!(&item_diff_list[0], TimelineDiff::Splice(splice_diff));
     assert_eq!(splice_diff.pos, 0);
     assert_eq!(splice_diff.n_removals, 4);
     assert_eq!(splice_diff.additions.len(), 0);
@@ -460,35 +465,35 @@ fn minimize_simple_diff() {
 /// Minimize mix of insertions and removals.
 #[test]
 fn minimize_complex_diff() {
-    let store = TestTimelineItemStore::default();
+    let store = TestTimelineDiffItemStore::default();
     // Populate the store first.
     store.minimize_diff_list(vec![VectorDiff::Append {
         values: Vector::from([
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "a",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "c",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "d",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "e",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "f",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "g",
                 version: 0,
             },
-            TestTimelineItemData {
+            TestTimelineDiffItemData {
                 timeline_id: "h",
                 version: 0,
             },
@@ -500,14 +505,14 @@ fn minimize_complex_diff() {
         VectorDiff::Remove { index: 1 },
         VectorDiff::Insert {
             index: 1,
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "b",
                 version: 0,
             },
         },
         VectorDiff::Insert {
             index: 2,
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "c",
                 version: 1,
             },
@@ -515,21 +520,21 @@ fn minimize_complex_diff() {
         VectorDiff::PopBack,
         VectorDiff::Set {
             index: 3,
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "d1",
                 version: 0,
             },
         },
         VectorDiff::Set {
             index: 4,
-            value: TestTimelineItemData {
+            value: TestTimelineDiffItemData {
                 timeline_id: "e",
                 version: 1,
             },
         },
     ];
 
-    let mut minimizer = TimelineItemDiffMinimizer::new(&store);
+    let mut minimizer = TimelineDiffMinimizer::new(&store);
 
     assert_eq!(store.items().len(), 7);
     let old_item_ids = minimizer.load_items();
@@ -554,21 +559,21 @@ fn minimize_complex_diff() {
 
     let item_diff_list = minimizer.item_diff_list(&old_item_ids, &new_item_ids);
     assert_eq!(item_diff_list.len(), 5);
-    assert_matches!(&item_diff_list[0], TimelineItemDiff::Splice(splice_diff));
+    assert_matches!(&item_diff_list[0], TimelineDiff::Splice(splice_diff));
     assert_eq!(splice_diff.pos, 1);
     assert_eq!(splice_diff.n_removals, 0);
     assert_eq!(splice_diff.additions.len(), 1);
-    assert_matches!(&item_diff_list[1], TimelineItemDiff::Update(update_diff));
+    assert_matches!(&item_diff_list[1], TimelineDiff::Update(update_diff));
     assert_eq!(update_diff.pos, 2);
     assert_eq!(update_diff.n_items, 1);
-    assert_matches!(&item_diff_list[2], TimelineItemDiff::Splice(splice_diff));
+    assert_matches!(&item_diff_list[2], TimelineDiff::Splice(splice_diff));
     assert_eq!(splice_diff.pos, 3);
     assert_eq!(splice_diff.n_removals, 1);
     assert_eq!(splice_diff.additions.len(), 1);
-    assert_matches!(&item_diff_list[3], TimelineItemDiff::Update(update_diff));
+    assert_matches!(&item_diff_list[3], TimelineDiff::Update(update_diff));
     assert_eq!(update_diff.pos, 4);
     assert_eq!(update_diff.n_items, 1);
-    assert_matches!(&item_diff_list[4], TimelineItemDiff::Splice(splice_diff));
+    assert_matches!(&item_diff_list[4], TimelineDiff::Splice(splice_diff));
     assert_eq!(splice_diff.pos, 7);
     assert_eq!(splice_diff.n_removals, 1);
     assert_eq!(splice_diff.additions.len(), 0);
@@ -576,25 +581,25 @@ fn minimize_complex_diff() {
     store.apply_item_diff_list(item_diff_list);
     let items = store.items();
     assert_eq!(items.len(), 7);
-    assert_eq!(items[0].timeline_id(), "a");
-    assert_eq!(items[0].version(), 0);
-    assert!(!items[0].processed());
-    assert_eq!(items[1].timeline_id(), "b");
-    assert_eq!(items[1].version(), 0);
-    assert!(items[1].processed());
-    assert_eq!(items[2].timeline_id(), "c");
-    assert_eq!(items[2].version(), 1);
-    assert!(items[2].processed());
-    assert_eq!(items[3].timeline_id(), "d1");
-    assert_eq!(items[3].version(), 0);
-    assert!(items[3].processed());
-    assert_eq!(items[4].timeline_id(), "e");
-    assert_eq!(items[4].version(), 1);
-    assert!(items[4].processed());
-    assert_eq!(items[5].timeline_id(), "f");
-    assert_eq!(items[5].version(), 0);
-    assert!(items[5].processed());
-    assert_eq!(items[6].timeline_id(), "g");
-    assert_eq!(items[6].version(), 0);
-    assert!(!items[6].processed());
+    assert_eq!(items[0].timeline_id, "a");
+    assert_eq!(items[0].version.get(), 0);
+    assert!(!items[0].processed.get());
+    assert_eq!(items[1].timeline_id, "b");
+    assert_eq!(items[1].version.get(), 0);
+    assert!(items[1].processed.get());
+    assert_eq!(items[2].timeline_id, "c");
+    assert_eq!(items[2].version.get(), 1);
+    assert!(items[2].processed.get());
+    assert_eq!(items[3].timeline_id, "d1");
+    assert_eq!(items[3].version.get(), 0);
+    assert!(items[3].processed.get());
+    assert_eq!(items[4].timeline_id, "e");
+    assert_eq!(items[4].version.get(), 1);
+    assert!(items[4].processed.get());
+    assert_eq!(items[5].timeline_id, "f");
+    assert_eq!(items[5].version.get(), 0);
+    assert!(items[5].processed.get());
+    assert_eq!(items[6].timeline_id, "g");
+    assert_eq!(items[6].version.get(), 0);
+    assert!(!items[6].processed.get());
 }

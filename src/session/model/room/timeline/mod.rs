@@ -24,11 +24,11 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tracing::error;
 
+mod timeline_diff_minimizer;
 mod timeline_item;
-mod timeline_item_diff_minimizer;
 mod virtual_item;
 
-use self::timeline_item_diff_minimizer::{TimelineItemDiff, TimelineItemStore};
+use self::timeline_diff_minimizer::{TimelineDiff, TimelineDiffItemStore};
 pub(crate) use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
@@ -719,7 +719,7 @@ mod imp {
         }
     }
 
-    impl TimelineItemStore for Timeline {
+    impl TimelineDiffItemStore for Timeline {
         type Item = TimelineItem;
         type Data = Arc<SdkTimelineItem>;
 
@@ -774,13 +774,13 @@ mod imp {
             }
         }
 
-        fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineItemDiff<TimelineItem>>) {
+        fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineDiff<TimelineItem>>) {
             for item_diff in item_diff_list {
                 match item_diff {
-                    TimelineItemDiff::Splice(splice) => {
+                    TimelineDiff::Splice(splice) => {
                         self.update_items(splice.pos, splice.n_removals, &splice.additions);
                     }
-                    TimelineItemDiff::Update(update) => {
+                    TimelineDiff::Update(update) => {
                         self.update_items_headers(update.pos, update.n_items);
                     }
                 }

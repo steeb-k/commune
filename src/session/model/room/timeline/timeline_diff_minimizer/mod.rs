@@ -9,12 +9,11 @@ use matrix_sdk_ui::{eyeball_im::VectorDiff, timeline::TimelineItem as SdkTimelin
 mod tests;
 
 use super::TimelineItem;
-use crate::prelude::*;
 
-/// Trait to access data from a type that store `TimelineItem`s.
-pub(super) trait TimelineItemStore: Sized {
-    type Item: IsA<TimelineItem>;
-    type Data: TimelineItemData;
+/// Trait to access data from a type that stores [`TimelineDiffItem`]s.
+pub(super) trait TimelineDiffItemStore: Sized {
+    type Item: TimelineDiffItem;
+    type Data: TimelineDiffItemData;
 
     /// The current list of items.
     fn items(&self) -> Vec<Self::Item>;
@@ -26,7 +25,7 @@ pub(super) trait TimelineItemStore: Sized {
     fn update_item(&self, item: &Self::Item, data: &Self::Data);
 
     /// Apply the given list of item diffs to this store.
-    fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineItemDiff<Self::Item>>);
+    fn apply_item_diff_list(&self, item_diff_list: Vec<TimelineDiff<Self::Item>>);
 
     /// Whether the given diff list can be minimized by calling
     /// `minimize_diff_list`.
@@ -48,28 +47,43 @@ pub(super) trait TimelineItemStore: Sized {
     /// Panics if the diff list contains unsupported `VectorDiff` variants. This
     /// will never panic if `can_minimize_diff_list` returns `true`.
     fn minimize_diff_list(&self, diff_list: Vec<VectorDiff<Self::Data>>) {
-        TimelineItemDiffMinimizer::new(self).apply(diff_list);
+        TimelineDiffMinimizer::new(self).apply(diff_list);
     }
 }
 
-/// Trait implemented by types that provide data for `TimelineItem`s.
-pub(super) trait TimelineItemData {
+/// Trait implemented by types that provide data for [`TimelineDiffItem`]s.
+pub(super) trait TimelineDiffItemData {
     /// The unique timeline ID of the data.
     fn timeline_id(&self) -> &str;
 }
 
-impl TimelineItemData for SdkTimelineItem {
+impl TimelineDiffItemData for SdkTimelineItem {
     fn timeline_id(&self) -> &str {
         &self.unique_id().0
     }
 }
 
-impl<T> TimelineItemData for Arc<T>
+impl<T> TimelineDiffItemData for Arc<T>
 where
-    T: TimelineItemData,
+    T: TimelineDiffItemData,
 {
     fn timeline_id(&self) -> &str {
         (**self).timeline_id()
+    }
+}
+
+/// Trait implemented by items in the timeline.
+pub(super) trait TimelineDiffItem: Clone {
+    /// The unique timeline ID of the item.
+    fn timeline_id(&self) -> String;
+}
+
+impl<T> TimelineDiffItem for T
+where
+    T: IsA<TimelineItem>,
+{
+    fn timeline_id(&self) -> String {
+        self.upcast_ref().timeline_id()
     }
 }
 
@@ -78,14 +92,14 @@ where
 /// This does not support `VectorDiff::Clear`, `VectorDiff::Truncate` and
 /// `VectorDiff::Reset` as we assume that lists including those cannot be
 /// minimized in an optimal way.
-struct TimelineItemDiffMinimizer<'a, S, I> {
+struct TimelineDiffMinimizer<'a, S, I> {
     store: &'a S,
     item_map: HashMap<String, I>,
     updated_item_ids: Vec<String>,
 }
 
-impl<'a, S, I> TimelineItemDiffMinimizer<'a, S, I> {
-    /// Construct a `TimelineItemDiffMinimizer` with the given store.
+impl<'a, S, I> TimelineDiffMinimizer<'a, S, I> {
+    /// Construct a `TimelineDiffMinimizer` with the given store.
     fn new(store: &'a S) -> Self {
         Self {
             store,
@@ -95,10 +109,10 @@ impl<'a, S, I> TimelineItemDiffMinimizer<'a, S, I> {
     }
 }
 
-impl<S, I> TimelineItemDiffMinimizer<'_, S, I>
+impl<S, I> TimelineDiffMinimizer<'_, S, I>
 where
-    S: TimelineItemStore<Item = I>,
-    I: IsA<TimelineItem>,
+    S: TimelineDiffItemStore<Item = I>,
+    I: TimelineDiffItem,
 {
     /// Load the items from the store.
     ///
@@ -188,7 +202,7 @@ where
         &self,
         old_item_ids: &[String],
         new_item_ids: &[String],
-    ) -> Vec<TimelineItemDiff<S::Item>> {
+    ) -> Vec<TimelineDiff<S::Item>> {
         let mut item_diff_list = Vec::new();
         let mut pos = 0;
         // Group diffs in batch.
@@ -302,7 +316,7 @@ where
 
 /// A minimized diff for timeline items.
 #[derive(Debug, Clone)]
-pub(super) enum TimelineItemDiff<T> {
+pub(super) enum TimelineDiff<T> {
     /// Remove then add items.
     Splice(SpliceDiff<T>),
 
@@ -310,13 +324,13 @@ pub(super) enum TimelineItemDiff<T> {
     Update(UpdateDiff),
 }
 
-impl<T> From<SpliceDiff<T>> for TimelineItemDiff<T> {
+impl<T> From<SpliceDiff<T>> for TimelineDiff<T> {
     fn from(value: SpliceDiff<T>) -> Self {
         Self::Splice(value)
     }
 }
 
-impl<T> From<UpdateDiff> for TimelineItemDiff<T> {
+impl<T> From<UpdateDiff> for TimelineDiff<T> {
     fn from(value: UpdateDiff) -> Self {
         Self::Update(value)
     }
