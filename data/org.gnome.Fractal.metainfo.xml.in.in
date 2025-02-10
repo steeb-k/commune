@@ -71,6 +71,24 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="10.1" type="stable" date="2025-02-10">
+      <description>
+        <p>
+          Due to a couple of unfortunate but important regressions in Fractal 10, we are releasing
+          Fractal 10.1 so our users don’t have to wait too long for them to be addressed. This minor
+          version fixes the following issues:
+        </p>
+        <ul>
+          <li>
+            Some rooms were stuck in an unread state, even after reading them or marking them as
+            read.
+          </li>
+          <li>
+            Joining or creating a room would crash the app.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="10" type="stable" date="2025-01-30">
       <description>
         <p>
