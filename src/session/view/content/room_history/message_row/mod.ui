@@ -79,14 +79,16 @@
         <child>
           <object class="ContentReadReceiptsList" id="read_receipts">
             <binding name="visible">
-              <lookup name="has-read-receipts" type="RoomEvent">
+              <lookup name="has-read-receipts">
                 <lookup name="event">ContentMessageRow</lookup>
               </lookup>
             </binding>
             <binding name="members">
-              <lookup name="members" type="Room">
-                <lookup name="room" type="RoomEvent">
-                  <lookup name="event">ContentMessageRow</lookup>
+              <lookup name="members">
+                <lookup name="room">
+                  <lookup name="timeline">
+                    <lookup name="event">ContentMessageRow</lookup>
+                  </lookup>
                 </lookup>
               </lookup>
             </binding>

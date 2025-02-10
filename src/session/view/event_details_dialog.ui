@@ -77,7 +77,9 @@
                                         <binding name="subtitle">
                                           <lookup name="room-id-string">
                                             <lookup name="room">
-                                              <lookup name="event">EventDetailsDialog</lookup>
+                                              <lookup name="timeline">
+                                                <lookup name="event">EventDetailsDialog</lookup>q
+                                              </lookup>
                                             </lookup>
                                           </lookup>
                                         </binding>

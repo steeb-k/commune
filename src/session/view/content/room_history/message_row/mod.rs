@@ -18,7 +18,7 @@ pub use self::content::{ContentFormat, MessageContent};
 use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
 use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
-    gettext_f, session::model::Event, system_settings::ClockFormat, utils::BoundObject,
+    gettext_f, prelude::*, session::model::Event, system_settings::ClockFormat, utils::BoundObject,
     Application, Window,
 };
 

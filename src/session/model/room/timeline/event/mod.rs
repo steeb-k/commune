@@ -21,12 +21,10 @@ pub use self::{
     reaction_group::{ReactionData, ReactionGroup},
     reaction_list::ReactionList,
 };
-use super::{
-    timeline::{TimelineItem, TimelineItemImpl},
-    Member, Room,
-};
+use super::{Timeline, TimelineItem, TimelineItemImpl};
 use crate::{
     prelude::*,
+    session::model::Member,
     spawn_tokio,
     utils::matrix::{raw_eq, timestamp_to_date, MediaMessage, VisualMediaMessage},
 };
@@ -63,7 +61,7 @@ pub struct UserReadReceipt {
 
 mod imp {
     use std::{
-        cell::{Cell, OnceCell, RefCell},
+        cell::{Cell, RefCell},
         marker::PhantomData,
         sync::LazyLock,
     };
@@ -75,9 +73,6 @@ mod imp {
     #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::Event)]
     pub struct Event {
-        /// The room containing this event.
-        #[property(get, set = Self::set_room, construct_only)]
-        room: OnceCell<Room>,
         /// The underlying SDK timeline item.
         item: RefCell<Option<Arc<EventTimelineItem>>>,
         /// The global permanent ID of this event, if it has been received from
@@ -143,7 +138,6 @@ mod imp {
     impl Default for Event {
         fn default() -> Self {
             Self {
-                room: Default::default(),
                 item: Default::default(),
                 event_id_string: Default::default(),
                 sender_id_string: Default::default(),
@@ -179,6 +173,14 @@ mod imp {
                 LazyLock::new(|| vec![Signal::builder("item-changed").build()]);
             SIGNALS.as_ref()
         }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            if let Some(session) = self.obj().room().session() {
+                self.reactions.set_user(session.user().clone());
+            }
+        }
     }
 
     impl TimelineItemImpl for Event {
@@ -196,15 +198,6 @@ mod imp {
     }
 
     impl Event {
-        /// Set the room that contains this event.
-        fn set_room(&self, room: Room) {
-            let room = self.room.get_or_init(|| room);
-
-            if let Some(session) = room.session() {
-                self.reactions.set_user(session.user().clone());
-            }
-        }
-
         /// Set the underlying SDK timeline item.
         pub(super) fn set_item(&self, item: EventTimelineItem) {
             let obj = self.obj();
@@ -497,9 +490,9 @@ glib::wrapper! {
 
 impl Event {
     /// Create a new `Event` in the given room with the given SDK timeline item.
-    pub fn new(item: EventTimelineItem, room: &Room, timeline_id: &str) -> Self {
+    pub fn new(timeline: &Timeline, item: EventTimelineItem, timeline_id: &str) -> Self {
         let obj = glib::Object::builder::<Self>()
-            .property("room", room)
+            .property("timeline", timeline)
             .property("timeline-id", timeline_id)
             .build();
 
@@ -663,7 +656,7 @@ impl Event {
             return Ok(());
         };
 
-        let timeline = self.room().timeline().matrix_timeline();
+        let timeline = self.timeline().matrix_timeline();
         spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
             .await
             .expect("task was not aborted")

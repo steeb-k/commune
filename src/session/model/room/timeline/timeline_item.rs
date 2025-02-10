@@ -3,12 +3,12 @@ use matrix_sdk_ui::timeline::{TimelineItem as SdkTimelineItem, TimelineItemKind}
 use ruma::OwnedUserId;
 use tracing::error;
 
-use super::VirtualItem;
-use crate::session::model::{Event, Room};
+use super::{Event, Timeline, VirtualItem};
+use crate::session::model::Room;
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
     };
 
@@ -44,6 +44,9 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::TimelineItem)]
     pub struct TimelineItem {
+        /// The timeline containing this `TimelineItem`.
+        #[property(get, construct_only)]
+        timeline: OnceCell<Timeline>,
         /// A unique ID for this `TimelineItem` in the local timeline.
         #[property(get, construct_only)]
         timeline_id: RefCell<String>,
@@ -123,12 +126,16 @@ impl TimelineItem {
     /// Create a new `TimelineItem` with the given SDK timeline item.
     ///
     /// Constructs the proper child type.
-    pub fn new(item: &SdkTimelineItem, room: &Room) -> Self {
+    pub fn new(item: &SdkTimelineItem, timeline: &Timeline) -> Self {
         let timeline_id = &item.unique_id().0;
 
         match item.kind() {
-            TimelineItemKind::Event(event) => Event::new(event.clone(), room, timeline_id).upcast(),
-            TimelineItemKind::Virtual(item) => VirtualItem::with_item(item, timeline_id).upcast(),
+            TimelineItemKind::Event(event_item) => {
+                Event::new(timeline, event_item.clone(), timeline_id).upcast()
+            }
+            TimelineItemKind::Virtual(virtual_item) => {
+                VirtualItem::with_item(timeline, virtual_item, timeline_id).upcast()
+            }
         }
     }
 
@@ -167,6 +174,14 @@ impl TimelineItem {
 /// of `TimelineItemImpl`.
 #[allow(dead_code)]
 pub(crate) trait TimelineItemExt: 'static {
+    /// The timeline containing this `TimelineItem`.
+    fn timeline(&self) -> Timeline;
+
+    /// The room containing this `TimelineItem`.
+    fn room(&self) -> Room {
+        self.timeline().room()
+    }
+
     /// A unique ID for this `TimelineItem` in the local timeline.
     fn timeline_id(&self) -> String;
 
@@ -195,6 +210,10 @@ pub(crate) trait TimelineItemExt: 'static {
 }
 
 impl<O: IsA<TimelineItem>> TimelineItemExt for O {
+    fn timeline(&self) -> Timeline {
+        self.upcast_ref().timeline()
+    }
+
     fn timeline_id(&self) -> String {
         self.upcast_ref().timeline_id()
     }

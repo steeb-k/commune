@@ -24,16 +24,18 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tracing::error;
 
+mod event;
 mod timeline_diff_minimizer;
 mod timeline_item;
 mod virtual_item;
 
 use self::timeline_diff_minimizer::{TimelineDiff, TimelineDiffItemStore};
 pub(crate) use self::{
+    event::*,
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
-use super::{Event, Room};
+use super::Room;
 use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
 
 /// The number of events to request when loading more history.
@@ -332,8 +334,11 @@ mod imp {
                 if has_room_create && n_items > 0 {
                     self.start_items.remove_all();
                 } else if !has_room_create && !has_item {
-                    self.start_items
-                        .splice(0, n_items, &[VirtualItem::timeline_start()]);
+                    self.start_items.splice(
+                        0,
+                        n_items,
+                        &[VirtualItem::timeline_start(&self.obj())],
+                    );
                 }
             } else if self.is_loading_start.get() {
                 let has_item = self
@@ -344,7 +349,7 @@ mod imp {
 
                 if !has_item {
                     self.start_items
-                        .splice(0, n_items, &[VirtualItem::spinner()]);
+                        .splice(0, n_items, &[VirtualItem::spinner(&self.obj())]);
                 }
             } else if n_items > 0 {
                 self.start_items.remove_all();
@@ -670,7 +675,7 @@ mod imp {
                 return;
             }
 
-            self.end_items.append(&VirtualItem::typing());
+            self.end_items.append(&VirtualItem::typing(&self.obj()));
         }
 
         /// Remove the typing row from the timeline.
@@ -735,8 +740,7 @@ mod imp {
         }
 
         fn create_item(&self, data: &Arc<SdkTimelineItem>) -> TimelineItem {
-            let room = self.room();
-            let item = TimelineItem::new(data, room);
+            let item = TimelineItem::new(data, &self.obj());
 
             if let Some(event) = item.downcast_ref::<Event>() {
                 self.event_map
@@ -745,7 +749,7 @@ mod imp {
 
                 // Keep track of the activity of the sender.
                 if event.counts_as_unread() {
-                    if let Some(members) = room.members() {
+                    if let Some(members) = self.room().members() {
                         let member = members.get_or_create(event.sender_id());
                         member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                     }

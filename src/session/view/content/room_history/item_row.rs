@@ -347,12 +347,8 @@ mod imp {
                         child
                     };
 
-                    let typing_list = self
-                        .room_history
-                        .upgrade()
-                        .and_then(|h| h.room())
-                        .map(|room| room.typing_list());
-                    child.set_list(typing_list);
+                    let typing_list = virtual_item.room().typing_list();
+                    child.set_list(Some(typing_list));
                 }
                 VirtualItemKind::TimelineStart
                 | VirtualItemKind::DayDivider(_)
@@ -1008,7 +1004,7 @@ mod imp {
                 return;
             };
 
-            let matrix_timeline = event.room().timeline().matrix_timeline();
+            let matrix_timeline = event.timeline().matrix_timeline();
             let identifier = event.identifier();
             let handle =
                 spawn_tokio!(async move { matrix_timeline.redact(&identifier, None).await });

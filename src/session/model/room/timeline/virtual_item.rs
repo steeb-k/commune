@@ -4,7 +4,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::VirtualTimelineItem;
 use ruma::MilliSecondsSinceUnixEpoch;
 
-use super::{TimelineItem, TimelineItemImpl};
+use super::{Timeline, TimelineItem, TimelineItemImpl};
 use crate::utils::matrix::timestamp_to_date;
 
 /// The kind of virtual item.
@@ -84,14 +84,27 @@ glib::wrapper! {
 }
 
 impl VirtualItem {
+    /// Create a new `VirtualItem`.
+    fn new(timeline: &Timeline, kind: VirtualItemKind, timeline_id: &str) -> Self {
+        glib::Object::builder()
+            .property("timeline", timeline)
+            .property("kind", kind.boxed())
+            .property("timeline-id", timeline_id)
+            .build()
+    }
+
     /// Create a new `VirtualItem` from a virtual timeline item.
-    pub(crate) fn with_item(item: &VirtualTimelineItem, timeline_id: &str) -> Self {
-        match item {
-            VirtualTimelineItem::DateDivider(ts) => {
-                Self::day_divider_with_timestamp(*ts, timeline_id)
-            }
-            VirtualTimelineItem::ReadMarker => Self::new_messages(timeline_id),
-        }
+    pub(crate) fn with_item(
+        timeline: &Timeline,
+        item: &VirtualTimelineItem,
+        timeline_id: &str,
+    ) -> Self {
+        let kind = match item {
+            VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
+            VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
+        };
+
+        Self::new(timeline, kind, timeline_id)
     }
 
     /// Update this `VirtualItem` with the given virtual timeline item.
@@ -105,11 +118,12 @@ impl VirtualItem {
     }
 
     /// Create a spinner virtual item.
-    pub(crate) fn spinner() -> Self {
-        glib::Object::builder()
-            .property("kind", VirtualItemKind::Spinner.boxed())
-            .property("timeline-id", "VirtualItemKind::Spinner")
-            .build()
+    pub(crate) fn spinner(timeline: &Timeline) -> Self {
+        Self::new(
+            timeline,
+            VirtualItemKind::Spinner,
+            "VirtualItemKind::Spinner",
+        )
     }
 
     /// Whether this is a spinner virtual item.
@@ -118,48 +132,21 @@ impl VirtualItem {
     }
 
     /// Create a typing virtual item.
-    pub(crate) fn typing() -> Self {
-        glib::Object::builder()
-            .property("kind", VirtualItemKind::Typing.boxed())
-            .property("timeline-id", "VirtualItemKind::Typing")
-            .build()
+    pub(crate) fn typing(timeline: &Timeline) -> Self {
+        Self::new(timeline, VirtualItemKind::Typing, "VirtualItemKind::Typing")
     }
 
     /// Create a timeline start virtual item.
-    pub(crate) fn timeline_start() -> Self {
-        glib::Object::builder()
-            .property("kind", VirtualItemKind::TimelineStart.boxed())
-            .property("timeline-id", "VirtualItemKind::TimelineStart")
-            .build()
+    pub(crate) fn timeline_start(timeline: &Timeline) -> Self {
+        Self::new(
+            timeline,
+            VirtualItemKind::TimelineStart,
+            "VirtualItemKind::TimelineStart",
+        )
     }
 
     /// Whether this is a timeline start virtual item.
     pub(crate) fn is_timeline_start(&self) -> bool {
         self.kind().0 == VirtualItemKind::TimelineStart
-    }
-
-    /// Create a new messages virtual item.
-    fn new_messages(timeline_id: &str) -> Self {
-        glib::Object::builder()
-            .property("kind", VirtualItemKind::NewMessages.boxed())
-            .property("timeline-id", timeline_id)
-            .build()
-    }
-
-    /// Creates a new day divider virtual item for the given timestamp.
-    ///
-    /// If the timestamp is out of range for `glib::DateTime` (later than the
-    /// end of year 9999), this fallbacks to creating a divider with the
-    /// current local time.
-    ///
-    /// Panics if an error occurred when accessing the current local time.
-    fn day_divider_with_timestamp(
-        timestamp: MilliSecondsSinceUnixEpoch,
-        timeline_id: &str,
-    ) -> Self {
-        glib::Object::builder()
-            .property("kind", VirtualItemKind::with_timestamp(timestamp).boxed())
-            .property("timeline-id", timeline_id)
-            .build()
     }
 }

@@ -10,6 +10,7 @@ use tracing::{error, warn};
 use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
+    prelude::*,
     session::model::{
         Event, IdentityVerification, Room, RoomCategory, Selection, Session, SidebarListModel,
         VerificationKey,

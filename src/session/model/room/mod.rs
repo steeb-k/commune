@@ -32,7 +32,6 @@ use tracing::{debug, error, warn};
 
 mod aliases;
 mod category;
-mod event;
 mod highlight_flags;
 mod join_rule;
 mod member;
@@ -44,7 +43,6 @@ mod typing_list;
 pub(crate) use self::{
     aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
     category::{RoomCategory, TargetRoomCategory},
-    event::*,
     highlight_flags::HighlightFlags,
     join_rule::{JoinRule, JoinRuleValue},
     member::{Member, Membership},
