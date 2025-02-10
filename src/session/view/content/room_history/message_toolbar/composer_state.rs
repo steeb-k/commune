@@ -17,7 +17,7 @@ use super::ComposerParser;
 use crate::{
     components::{Pill, PillSource},
     prelude::*,
-    session::model::{Member, Room},
+    session::model::{Member, Room, Timeline},
     spawn, spawn_tokio,
     utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
 };
@@ -261,16 +261,12 @@ mod imp {
         }
 
         /// Restore the state from the persisted draft.
-        pub(super) async fn restore_draft(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            let matrix_room = room.matrix_room().clone();
+        pub(super) async fn restore_draft(&self, timeline: &Timeline) {
+            let matrix_room = timeline.room().matrix_room().clone();
             let handle = spawn_tokio!(async move { matrix_room.load_composer_draft().await });
 
             match handle.await.unwrap() {
-                Ok(Some(draft)) => self.restore_from_draft(draft).await,
+                Ok(Some(draft)) => self.restore_from_draft(timeline, draft).await,
                 Ok(None) => {}
                 Err(error) => {
                     error!("Could not restore draft: {error}");
@@ -279,13 +275,11 @@ mod imp {
         }
 
         /// Restore the state from the given draft.
-        async fn restore_from_draft(&self, draft: ComposerDraft) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
+        async fn restore_from_draft(&self, timeline: &Timeline, draft: ComposerDraft) {
+            let room = timeline.room();
 
             // Restore the relation.
-            self.restore_related_to_from_draft(draft.draft_type.clone())
+            self.restore_related_to_from_draft(timeline, draft.draft_type.clone())
                 .await;
 
             // Make sure we start from an empty state.
@@ -332,15 +326,15 @@ mod imp {
         }
 
         /// Restore the relation from the given draft content.
-        async fn restore_related_to_from_draft(&self, draft_type: ComposerDraftType) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
+        async fn restore_related_to_from_draft(
+            &self,
+            timeline: &Timeline,
+            draft_type: ComposerDraftType,
+        ) {
             let related_to = match draft_type {
                 ComposerDraftType::NewMessage => None,
                 ComposerDraftType::Reply { event_id } => {
-                    let matrix_timeline = room.timeline().matrix_timeline();
+                    let matrix_timeline = timeline.matrix_timeline();
 
                     let handle = spawn_tokio!(async move {
                         matrix_timeline
@@ -470,20 +464,22 @@ glib::wrapper! {
 }
 
 impl ComposerState {
-    /// Create a new empty `ComposerState` for the given room.
-    pub fn new(room: Option<&Room>) -> Self {
+    /// Create a new empty `ComposerState` for the room of the given timeline.
+    pub fn new(timeline: Option<Timeline>) -> Self {
         let obj = glib::Object::builder::<Self>()
-            .property("room", room)
+            .property("room", timeline.as_ref().map(Timeline::room))
             .build();
 
-        let imp = obj.imp();
-        spawn!(clone!(
-            #[weak]
-            imp,
-            async move {
-                imp.restore_draft().await;
-            }
-        ));
+        if let Some(timeline) = timeline {
+            let imp = obj.imp();
+            spawn!(clone!(
+                #[weak]
+                imp,
+                async move {
+                    imp.restore_draft(&timeline).await;
+                }
+            ));
+        }
 
         obj
     }

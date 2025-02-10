@@ -47,7 +47,6 @@ const READ_TIMEOUT: Duration = Duration::from_secs(5);
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
-        marker::PhantomData,
         ops::ControlFlow,
     };
 
@@ -89,22 +88,17 @@ mod imp {
         drag_overlay: TemplateChild<DragOverlay>,
         item_context_menu: OnceCell<ItemRowContextMenu>,
         sender_context_menu: OnceCell<gtk::PopoverMenu>,
-        /// The room currently displayed.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        room: BoundObject<Room>,
+        /// The timeline currently displayed.
+        #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
+        timeline: BoundObject<Timeline>,
         /// Whether this is the only view visible, i.e. there is no sidebar.
         #[property(get, set)]
         is_only_view: Cell<bool>,
-        /// Whether this `RoomHistory` is empty, aka no room is currently
-        /// displayed.
-        #[property(get = Self::is_empty)]
-        is_empty: PhantomData<bool>,
         /// The members of the current room.
         ///
         /// We hold a strong reference here to keep the list in memory as long
         /// as the room is opened.
         room_members: RefCell<Option<MemberList>>,
-        timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         /// Whether the current room history scrolling is automatic.
         is_auto_scrolling: Cell<bool>,
         /// Whether the room history should stick to the newest message in the
@@ -115,6 +109,7 @@ mod imp {
         selection_model: OnceCell<gtk::NoSelection>,
         scroll_timeout: RefCell<Option<glib::SourceId>>,
         read_timeout: RefCell<Option<glib::SourceId>>,
+        room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -130,7 +125,6 @@ mod imp {
             RoomHistoryTitle::ensure_type();
             ItemRow::ensure_type();
             VerificationInfoBar::ensure_type();
-            Timeline::ensure_type();
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
@@ -180,9 +174,8 @@ mod imp {
                         return;
                     };
 
-                    let Some(event) = obj.room().and_then(|room| {
-                        room.timeline()
-                            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
+                    let Some(event) = obj.timeline().and_then(|timeline| {
+                        timeline.event_by_identifier(&TimelineEventItemId::EventId(event_id))
                     }) else {
                         warn!("Could not find event to reply to");
                         return;
@@ -204,9 +197,8 @@ mod imp {
                         return;
                     };
 
-                    let Some(event) = obj.room().and_then(|room| {
-                        room.timeline()
-                            .event_by_identifier(&TimelineEventItemId::EventId(event_id))
+                    let Some(event) = obj.timeline().and_then(|timeline| {
+                        timeline.event_by_identifier(&TimelineEventItemId::EventId(event_id))
                     }) else {
                         warn!("Could not find event to edit");
                         return;
@@ -339,9 +331,9 @@ mod imp {
 
         /// Disconnect all the signals.
         fn disconnect_all(&self) {
-            if let Some(room) = self.room.obj() {
-                for handler in self.timeline_handlers.take() {
-                    room.timeline().disconnect(handler);
+            if let Some(room) = self.room() {
+                for handler in self.room_handlers.take() {
+                    room.disconnect(handler);
                 }
 
                 if let Some(handler) = self.can_invite_handler.take() {
@@ -355,13 +347,13 @@ mod imp {
                 }
             }
 
-            self.room.disconnect_signals();
+            self.timeline.disconnect_signals();
         }
 
-        /// Set the room currently displayed.
+        /// Set the timeline currently displayed.
         #[allow(clippy::too_many_lines)]
-        fn set_room(&self, room: Option<Room>) {
-            if self.room.obj() == room {
+        fn set_timeline(&self, timeline: Option<Timeline>) {
+            if self.timeline.obj() == timeline {
                 return;
             }
 
@@ -373,8 +365,8 @@ mod imp {
                 source_id.remove();
             }
 
-            if let Some(room) = room {
-                let timeline = room.timeline();
+            if let Some(timeline) = timeline {
+                let room = timeline.room();
 
                 // Keep a strong reference to the members list before changing the model, so all
                 // events use the same list.
@@ -437,15 +429,12 @@ mod imp {
                     }
                 ));
 
-                self.room.set(
-                    room,
-                    vec![
-                        is_direct_handler,
-                        tombstoned_handler,
-                        successor_id_handler,
-                        successor_handler,
-                    ],
-                );
+                self.room_handlers.replace(vec![
+                    is_direct_handler,
+                    tombstoned_handler,
+                    successor_id_handler,
+                    successor_handler,
+                ]);
 
                 let empty_handler = timeline.connect_is_empty_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -470,8 +459,8 @@ mod imp {
                     }
                 ));
 
-                self.timeline_handlers
-                    .replace(vec![empty_handler, state_handler]);
+                self.timeline
+                    .set(timeline.clone(), vec![empty_handler, state_handler]);
 
                 timeline.remove_empty_typing_row();
                 self.selection_model().set_model(Some(&timeline.items()));
@@ -489,20 +478,18 @@ mod imp {
             self.update_invite_action();
 
             let obj = self.obj();
-            obj.notify_room();
-            obj.notify_is_empty();
+            obj.notify_timeline();
+        }
+
+        /// The room of the current timeline, if any.
+        pub(super) fn room(&self) -> Option<Room> {
+            self.timeline.obj().map(|timeline| timeline.room())
         }
 
         /// The `GtkSelectionModel` used in the list view.
         fn selection_model(&self) -> &gtk::NoSelection {
             self.selection_model
                 .get_or_init(|| gtk::NoSelection::new(gio::ListModel::NONE.cloned()))
-        }
-
-        /// Whether this `RoomHistory` is empty, aka no room is currently
-        /// displayed.
-        fn is_empty(&self) -> bool {
-            self.room.obj().is_none()
         }
 
         /// Handle when the scroll value changed.
@@ -520,8 +507,8 @@ mod imp {
 
                 // Remove the typing row if the user scrolls up.
                 if !is_at_bottom {
-                    if let Some(room) = self.room.obj() {
-                        room.timeline().remove_empty_typing_row();
+                    if let Some(timeline) = self.timeline.obj() {
+                        timeline.remove_empty_typing_row();
                     }
                 }
 
@@ -615,7 +602,7 @@ mod imp {
 
         /// Update the room menu for the current state.
         fn update_room_menu(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 self.room_menu.set_visible(false);
                 return;
             };
@@ -637,12 +624,12 @@ mod imp {
 
         /// Update the view for the current state.
         fn update_view(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(timeline) = self.timeline.obj() else {
                 return;
             };
 
-            let visible_child_name = if room.timeline().is_empty() {
-                if room.timeline().state() == LoadingState::Error {
+            let visible_child_name = if timeline.is_empty() {
+                if timeline.state() == LoadingState::Error {
                     "error"
                 } else {
                     "loading"
@@ -679,7 +666,7 @@ mod imp {
 
         /// Load more events at the beginning of the history.
         fn load_more_events_at_the_start(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(timeline) = self.timeline.obj() else {
                 return;
             };
 
@@ -687,7 +674,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    room.timeline()
+                    timeline
                         .paginate_backwards(clone!(
                             #[weak]
                             imp,
@@ -716,11 +703,11 @@ mod imp {
 
         /// Scroll to the event with the given identifier.
         fn scroll_to_event(&self, key: &TimelineEventItemId) {
-            let Some(room) = self.room.obj() else {
+            let Some(timeline) = self.timeline.obj() else {
                 return;
             };
 
-            if let Some(pos) = room.timeline().find_event_position(key) {
+            if let Some(pos) = timeline.find_event_position(key) {
                 let pos = pos as u32;
                 self.listview
                     .scroll_to(pos, gtk::ListScrollFlags::FOCUS, None);
@@ -729,11 +716,10 @@ mod imp {
 
         /// Trigger the process to update read receipts.
         fn trigger_read_receipts_update(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(timeline) = self.timeline.obj() else {
                 return;
             };
 
-            let timeline = room.timeline();
             if !timeline.is_empty() {
                 if let Some(source_id) = self.scroll_timeout.take() {
                     source_id.remove();
@@ -784,7 +770,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    let Some(room) = imp.room.obj() else { return };
+                    let Some(room) = imp.room() else { return };
                     room.send_receipt(ReceiptType::Read, position).await;
                 }
             ));
@@ -802,7 +788,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    let Some(room) = imp.room.obj() else { return };
+                    let Some(room) = imp.room() else { return };
                     room.send_receipt(ReceiptType::FullyRead, position).await;
                 }
             ));
@@ -865,7 +851,7 @@ mod imp {
         fn update_tombstoned_banner(&self) {
             let banner = &self.tombstoned_banner;
 
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 banner.set_revealed(false);
                 return;
             };
@@ -892,7 +878,7 @@ mod imp {
 
         /// Leave the room.
         async fn leave(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 return;
             };
 
@@ -921,7 +907,7 @@ mod imp {
 
         /// Join the room.
         async fn join(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 return;
             };
 
@@ -944,7 +930,7 @@ mod imp {
 
         /// Forget the room.
         async fn forget(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 return;
             };
 
@@ -960,7 +946,7 @@ mod imp {
 
         // Update the invite action according to the current state.
         fn update_invite_action(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 return;
             };
 
@@ -974,7 +960,7 @@ mod imp {
         /// Join or view the successor of the room, if possible.
         #[template_callback]
         async fn join_or_view_successor(&self) {
-            let Some(room) = self.room.obj() else {
+            let Some(room) = self.room() else {
                 return;
             };
             let Some(session) = room.session() else {
@@ -1057,7 +1043,7 @@ impl RoomHistory {
     /// If `subpage_name` is set, the room details will be opened on the given
     /// subpage.
     pub(crate) fn open_room_details(&self, subpage_name: Option<room_details::SubpageName>) {
-        let Some(room) = self.room() else {
+        let Some(room) = self.imp().room() else {
             return;
         };
 

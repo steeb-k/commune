@@ -39,7 +39,7 @@ use crate::{
     components::{CustomEntry, LabelWithWidgets},
     gettext_f,
     prelude::*,
-    session::model::{Event, Member, Room},
+    session::model::{Event, Member, Room, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
         media::{
@@ -81,9 +81,9 @@ mod imp {
         related_event_header: TemplateChild<LabelWithWidgets>,
         #[template_child]
         related_event_content: TemplateChild<MessageContent>,
-        /// The room to send messages in.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        room: glib::WeakRef<Room>,
+        /// The timeline used to send messages.
+        #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
+        timeline: glib::WeakRef<Timeline>,
         send_message_permission_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// Whether outgoing messages should be interpreted as markdown.
         #[property(get, set)]
@@ -146,9 +146,6 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
-            obj.bind_property("room", &self.completion, "room")
-                .sync_create()
-                .build();
 
             // Location.
             let location = Location::new();
@@ -158,9 +155,9 @@ mod imp {
         fn dispose(&self) {
             self.completion.unparent();
 
-            if let Some(room) = self.room.upgrade() {
+            if let Some(timeline) = self.timeline.upgrade() {
                 if let Some(handler) = self.send_message_permission_handler.take() {
-                    room.permissions().disconnect(handler);
+                    timeline.room().permissions().disconnect(handler);
                 }
             }
         }
@@ -171,23 +168,25 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl MessageToolbar {
-        /// Set the room currently displayed.
-        fn set_room(&self, room: Option<&Room>) {
-            let old_room = self.room.upgrade();
-            if old_room.as_ref() == room {
+        /// Set the timeline used to send messages.
+        fn set_timeline(&self, timeline: Option<&Timeline>) {
+            let old_timeline = self.timeline.upgrade();
+            if old_timeline.as_ref() == timeline {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(room) = &old_room {
+            if let Some(timeline) = &old_timeline {
                 if let Some(handler) = self.send_message_permission_handler.take() {
-                    room.permissions().disconnect(handler);
+                    timeline.room().permissions().disconnect(handler);
                 }
             }
 
-            if let Some(room) = room {
-                let send_message_permission_handler =
-                    room.permissions().connect_can_send_message_notify(clone!(
+            if let Some(timeline) = timeline {
+                let send_message_permission_handler = timeline
+                    .room()
+                    .permissions()
+                    .connect_can_send_message_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
@@ -198,13 +197,14 @@ mod imp {
                     .replace(Some(send_message_permission_handler));
             }
 
-            self.room.set(room);
+            self.completion.set_room(timeline.map(Timeline::room));
+            self.timeline.set(timeline);
 
             self.send_message_permission_updated();
             self.message_entry.grab_focus();
 
-            obj.notify_room();
-            self.update_current_composer_state(old_room.as_ref());
+            obj.notify_timeline();
+            self.update_current_composer_state(old_timeline);
         }
 
         /// Whether the user can compose a message.
@@ -212,9 +212,9 @@ mod imp {
         /// It depends on whether our own user has the permission to send a
         /// message in the current room.
         pub(super) fn can_compose_message(&self) -> bool {
-            self.room
+            self.timeline
                 .upgrade()
-                .is_some_and(|r| r.permissions().can_send_message())
+                .is_some_and(|timeline| timeline.room().permissions().can_send_message())
         }
 
         /// Handle an update of the permission to send a message in the current
@@ -230,29 +230,32 @@ mod imp {
 
         /// Get the current composer state.
         fn current_composer_state(&self) -> ComposerState {
-            let room = self.room.upgrade();
-            self.composer_state(room.as_ref())
+            let timeline = self.timeline.upgrade();
+            self.composer_state(timeline)
         }
 
         /// Get the composer state for the given room.
         ///
         /// If the composer state doesn't exist, it is created.
-        fn composer_state(&self, room: Option<&Room>) -> ComposerState {
+        fn composer_state(&self, timeline: Option<Timeline>) -> ComposerState {
+            let room = timeline.as_ref().map(Timeline::room);
+
             self.composer_states
                 .borrow_mut()
                 .entry(
-                    room.and_then(Room::session)
+                    room.as_ref()
+                        .and_then(Room::session)
                         .map(|s| s.session_id().to_owned()),
                 )
                 .or_default()
-                .entry(room.map(|r| r.room_id().to_owned()))
-                .or_insert_with(|| ComposerState::new(room))
+                .entry(room.map(|room| room.room_id().to_owned()))
+                .or_insert_with(|| ComposerState::new(timeline))
                 .clone()
         }
 
         /// Update the current composer state.
-        fn update_current_composer_state(&self, old_room: Option<&Room>) {
-            let old_composer_state = self.composer_state(old_room);
+        fn update_current_composer_state(&self, old_timeline: Option<Timeline>) {
+            let old_composer_state = self.composer_state(old_timeline);
             old_composer_state.attach_to_view(None);
 
             if let Some(handler) = self.composer_state_handler.take() {
@@ -328,10 +331,11 @@ mod imp {
 
         /// Update the displayed related event for the given reply.
         fn update_for_reply(&self, info: &RepliedToInfo) {
-            let Some(room) = self.room.upgrade() else {
+            let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
 
+            let room = timeline.room();
             let sender = room
                 .get_or_create_members()
                 .get_or_create(info.sender().to_owned());
@@ -460,7 +464,7 @@ mod imp {
             if !self.can_compose_message() {
                 return;
             }
-            let Some(room) = self.room.upgrade() else {
+            let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
 
@@ -474,7 +478,7 @@ mod imp {
                 return;
             };
 
-            let matrix_timeline = room.timeline().matrix_timeline();
+            let matrix_timeline = timeline.matrix_timeline();
 
             // Send event depending on relation.
             match composer_state.related_to() {
@@ -491,7 +495,7 @@ mod imp {
                     }
                 }
                 Some(RelationInfo::Edit(event_id)) => {
-                    let matrix_room = room.matrix_room().clone();
+                    let matrix_room = timeline.room().matrix_room().clone();
                     let handle = spawn_tokio!(async move {
                         let full_content = matrix_room
                             .make_edit_event(&event_id, EditedContent::RoomMessage(content))
@@ -545,7 +549,7 @@ mod imp {
             if !self.can_compose_message() {
                 return;
             }
-            let Some(room) = self.room.upgrade() else {
+            let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
 
@@ -640,7 +644,7 @@ mod imp {
             // even if they are empty.
             .add_mentions(Mentions::default());
 
-            let matrix_timeline = room.timeline().matrix_timeline();
+            let matrix_timeline = timeline.matrix_timeline();
             let handle = spawn_tokio!(async move { matrix_timeline.send(content.into()).await });
 
             if let Err(error) = handle.await.unwrap() {
@@ -670,13 +674,13 @@ mod imp {
             info: AttachmentInfo,
             thumbnail: Option<Thumbnail>,
         ) {
-            let Some(room) = self.room.upgrade() else {
+            let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
 
             let config = AttachmentConfig::new().thumbnail(thumbnail).info(info);
 
-            let matrix_timeline = room.timeline().matrix_timeline();
+            let matrix_timeline = timeline.matrix_timeline();
 
             let handle = spawn_tokio!(async move {
                 matrix_timeline
@@ -948,9 +952,11 @@ mod imp {
 
         /// Send a typing notification for the given typing state.
         fn send_typing_notification(&self, typing: bool) {
-            let Some(room) = self.room.upgrade() else {
+            let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
+            let room = timeline.room();
+
             let Some(session) = room.session() else {
                 return;
             };

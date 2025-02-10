@@ -136,7 +136,11 @@
             <property name="centering-policy">strict</property>
             <child type="title">
               <object class="RoomHistoryTitle">
-                <property name="room" bind-source="ContentRoomHistory" bind-property="room" bind-flags="sync-create" />
+                <binding name="room">
+                  <lookup name="room">
+                    <lookup name="timeline">ContentRoomHistory</lookup>
+                  </lookup>
+                </binding>
               </object>
             </child>
             <child type="end">
@@ -162,7 +166,9 @@
               <object class="ContentVerificationInfoBar" id="verification_info_bar">
                 <binding name="verification">
                   <lookup name="verification">
-                    <lookup name="room">ContentRoomHistory</lookup>
+                    <lookup name="room">
+                      <lookup name="timeline">ContentRoomHistory</lookup>
+                    </lookup>
                   </lookup>
                 </binding>
               </object>
@@ -280,7 +286,7 @@
                 <property name="tightening-threshold">550</property>
                 <child>
                   <object class="MessageToolbar" id="message_toolbar">
-                    <property name="room" bind-source="ContentRoomHistory" bind-property="room" bind-flags="sync-create" />
+                    <property name="timeline" bind-source="ContentRoomHistory" bind-property="timeline" bind-flags="sync-create" />
                   </object>
                 </child>
               </object>
