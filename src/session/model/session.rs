@@ -9,7 +9,8 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    authentication::matrix::MatrixSession, config::SyncSettings, sync::SyncResponse, Client,
+    authentication::matrix::MatrixSession, config::SyncSettings, media::MediaRetentionPolicy,
+    sync::SyncResponse, Client,
 };
 use ruma::{
     api::client::{
@@ -595,12 +596,24 @@ impl Session {
         settings: SessionSettings,
     ) -> Result<Self, ClientSetupError> {
         let stored_session_clone = stored_session.clone();
-        let client =
-            spawn_tokio!(
-                async move { matrix::client_with_stored_session(stored_session_clone).await }
-            )
-            .await
-            .expect("task was not aborted")?;
+        let client = spawn_tokio!(async move {
+            let client = matrix::client_with_stored_session(stored_session_clone).await?;
+
+            // Make sure that we use the proper retention policy.
+            let media = client.media();
+            let used_media_retention_policy = media.media_retention_policy().await?;
+            let wanted_media_retention_policy = MediaRetentionPolicy::default();
+
+            if used_media_retention_policy != wanted_media_retention_policy {
+                media
+                    .set_media_retention_policy(wanted_media_retention_policy)
+                    .await?;
+            }
+
+            Ok::<_, ClientSetupError>(client)
+        })
+        .await
+        .expect("task was not aborted")?;
 
         Ok(glib::Object::builder()
             .property("info", &stored_session)
