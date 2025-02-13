@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-01-25 12:54+0000\n"
-"PO-Revision-Date: 2025-01-27 02:51+0100\n"
+"POT-Creation-Date: 2025-02-10 22:31+0000\n"
+"PO-Revision-Date: 2025-02-13 05:24+0100\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <ka@li.org>\n"
 "Language: ka\n"
@@ -147,24 +147,24 @@ msgstr "_ანგარიშის დამატება"
 msgid "Account Settings"
 msgstr "ანგარიშის მორგება"
 
-#: src/application.rs:275
+#: src/application.rs:285
 msgid "The Fractal Team"
 msgstr ""
 
-#: src/application.rs:281
-msgid "© 2017-2024 The Fractal Team"
+#: src/application.rs:291
+msgid "© The Fractal Team"
 msgstr ""
 
-#: src/application.rs:295
+#: src/application.rs:305
 msgid "translator-credits"
 msgstr "თემური დოღონაძე"
 
 #. This can't be added via the builder
-#: src/application.rs:299
+#: src/application.rs:309
 msgid "Name by"
 msgstr ""
 
-#: src/application.rs:414
+#: src/application.rs:424
 msgid "Session not found"
 msgstr ""
 
@@ -179,7 +179,7 @@ msgstr ""
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:197
+#: src/session/view/content/room_history/mod.ui:203
 msgid "Try Again"
 msgstr "კიდევ სცადეთ"
 
@@ -190,7 +190,7 @@ msgstr "კიდევ სცადეთ"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:176 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:182 src/window.ui:17
 msgid "Loading"
 msgstr "იტვირთება"
 
@@ -296,10 +296,8 @@ msgstr "ანგარიშის აღდგენა"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
-#: src/session/view/account_settings/security_page/mod.rs:260
-#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
-msgstr "თავიდან ჩართვა"
+msgstr "ჩამოყრა"
 
 #: src/components/crypto/identity_setup_view.ui:106
 #: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
@@ -417,7 +415,6 @@ msgid "Recovery Passphrase or Key"
 msgstr "აღდგენის საკვანძო ფრაზა ან გასაღები"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "აღდგენა"
@@ -551,7 +548,7 @@ msgstr "_დასტური"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:877
+#: src/session/view/content/room_history/mod.rs:867
 #: src/session/view/content/room_history/state_row/tombstone.rs:77
 msgid "View"
 msgstr "ნახვა"
@@ -595,7 +592,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:880
+#: src/session/view/content/room_history/mod.rs:870
 #: src/session/view/content/room_history/state_row/tombstone.rs:79
 msgid "Join"
 msgstr "შეერთება"
@@ -653,8 +650,8 @@ msgstr "გასვლა"
 #: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:558
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/item_row.rs:944
-#: src/session/view/content/room_history/item_row.rs:1003
+#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:976
 #: src/session/view/content/room_history/message_toolbar/mod.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -781,7 +778,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:227
 #: src/session/view/account_settings/general_page/mod.rs:376
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
 msgstr "წაშლა"
 
@@ -800,7 +797,7 @@ msgid ""
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/item_row.rs:985
+#: src/session/view/content/room_history/item_row.rs:958
 msgid "Reason (optional)"
 msgstr ""
 
@@ -1065,7 +1062,6 @@ msgstr "უსაფრთხოება"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1763,17 +1759,17 @@ msgstr ""
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:373
+#: src/session/model/room/mod.rs:381
 msgid "Empty Room (was {user})"
 msgstr ""
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:376
+#: src/session/model/room/mod.rs:384
 msgid "Empty Room"
 msgstr ""
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:394
 msgid "Unknown"
 msgstr "უცნობი"
 
@@ -2285,10 +2281,8 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
-msgid "Enable"
-msgstr "ჩართვა"
+msgid "Enable…"
+msgstr "ჩართვა…"
 
 #: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
@@ -2302,6 +2296,11 @@ msgstr ""
 msgid "The crypto identity exists and this device is verified"
 msgstr ""
 
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
+msgid "Reset…"
+msgstr "ჩამოყრა…"
+
 #: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr ""
@@ -2309,6 +2308,10 @@ msgstr ""
 #: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr ""
+
+#: src/session/view/account_settings/security_page/mod.rs:279
+msgid "Verify…"
+msgstr "შემოწმება…"
 
 #: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
@@ -2342,6 +2345,10 @@ msgstr "ანგარიშის აღდგენის გასაღე�
 #: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr ""
+
+#: src/session/view/account_settings/security_page/mod.rs:348
+msgid "Recover…"
+msgstr "აღდგენა…"
 
 #: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
@@ -2606,7 +2613,7 @@ msgid "Join a room to start chatting"
 msgstr ""
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/room_history/mod.ui:218
 msgid "Room History"
 msgstr "ოთახის ისტორია"
 
@@ -2884,6 +2891,11 @@ msgid ""
 "arrived. This cannot be disabled later."
 msgstr ""
 
+#: src/session/view/content/room_details/general_page.rs:1120
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
+msgid "Enable"
+msgstr "ჩართვა"
+
 #: src/session/view/content/room_details/general_page.rs:1130
 msgid "Could not enable encryption"
 msgstr ""
@@ -2962,7 +2974,7 @@ msgstr ""
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:193
-msgctxt "room details"
+#: src/session/view/content/room_history/event_context_menu.ui:13
 msgid "_Edit"
 msgstr "_ჩასწორება"
 
@@ -3031,9 +3043,8 @@ msgstr ""
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
-msgid "Upgrade"
-msgstr "გაუმჯობესება"
+msgid "Upgrade…"
+msgstr "გაუმჯობესება…"
 
 #: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
@@ -3072,7 +3083,7 @@ msgstr ""
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:193
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Check your network connection"
 msgstr "გადაამოწმეთ ქსელთან კავშირის მდგომარეობა"
 
@@ -3426,6 +3437,11 @@ msgid ""
 "the new room manually."
 msgstr ""
 
+#. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+msgid "Upgrade"
+msgstr "გაუმჯობესება"
+
 #: src/session/view/content/room_history/divider_row.rs:49
 msgid "This is the start of the visible history"
 msgstr ""
@@ -3454,11 +3470,6 @@ msgstr "ახალი შეტყობინებები"
 #: src/session/view/content/room_history/event_context_menu.ui:7
 msgid "_Reply"
 msgstr "_პასუხი"
-
-#. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_history/event_context_menu.ui:13
-msgid "_Edit"
-msgstr "_ჩასწორება"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
@@ -3514,40 +3525,40 @@ msgstr ""
 msgid "Re_move"
 msgstr "_წაშლა"
 
-#: src/session/view/content/room_history/item_row.rs:525
+#: src/session/view/content/room_history/item_row.rs:498
 #: src/session/view/media_viewer.rs:502
 msgid "Message link copied to clipboard"
 msgstr "შეტყობინების ბმული დაკოპირდა ბუფერში"
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:757
 msgid "Thumbnail copied to clipboard"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:876
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "ტექსტი დაკოპირდა ბუფერში"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Remove Message?"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:940
+#: src/session/view/content/room_history/item_row.rs:913
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:954
+#: src/session/view/content/room_history/item_row.rs:927
 msgid "Could not remove message"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:967
+#: src/session/view/content/room_history/item_row.rs:940
 msgid "Could not toggle reaction"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:996
+#: src/session/view/content/room_history/item_row.rs:969
 msgid "Report Event?"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:998
+#: src/session/view/content/room_history/item_row.rs:971
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3555,15 +3566,15 @@ msgid ""
 msgstr ""
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:1005
+#: src/session/view/content/room_history/item_row.rs:978
 msgid "Report"
 msgstr "ანგარიში"
 
-#: src/session/view/content/room_history/item_row.rs:1023
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Could not report event"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:1042
+#: src/session/view/content/room_history/item_row.rs:1015
 msgid "Could not discard message"
 msgstr ""
 
@@ -3713,80 +3724,80 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:342
+#: src/session/view/content/room_history/message_toolbar/mod.rs:346
 msgid "Reply to {user}"
 msgstr ""
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:358
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgctxt "room-history"
 msgid "Edit"
 msgstr "ჩასწორება"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:490
+#: src/session/view/content/room_history/message_toolbar/mod.rs:494
 msgid "Could not send reply"
 msgstr "პასუხის გაგზავნა შეუძლებელია"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:507
+#: src/session/view/content/room_history/message_toolbar/mod.rs:511
 msgid "Could not send edit"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:519
+#: src/session/view/content/room_history/message_toolbar/mod.rs:523
 msgid "Could not send message"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:565
+#: src/session/view/content/room_history/message_toolbar/mod.rs:569
 msgid "Your Location"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:626
+#: src/session/view/content/room_history/message_toolbar/mod.rs:630
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:649
+#: src/session/view/content/room_history/message_toolbar/mod.rs:653
 msgid "Could not send location"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "The location request has been cancelled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:657
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "The location services are disabled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:658
+#: src/session/view/content/room_history/message_toolbar/mod.rs:662
 msgid "Could not retrieve current location"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:691
+#: src/session/view/content/room_history/message_toolbar/mod.rs:695
 msgid "Could not send file"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "Select File"
 msgstr "აირჩიეთ ფაილი"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:751
 msgid "Select"
 msgstr "არჩევა"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:766
 msgid "Could not open file"
 msgstr "ფაილის გახსნა შეუძლებელია"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:788
-#: src/session/view/content/room_history/message_toolbar/mod.rs:796
+#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:800
 msgid "Error reading file"
 msgstr "ფაილის წაკითხვის შეცდომა"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:861
 msgid "Error getting image from clipboard"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:878
 msgid "Error getting file from clipboard"
 msgstr ""
 
@@ -3841,40 +3852,40 @@ msgstr ""
 msgid "%B %-e at %H∶%M"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:330
+#: src/session/view/content/room_history/mod.rs:321
 msgid "Error getting file from drop"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:875
-#: src/session/view/content/room_history/mod.rs:879
+#: src/session/view/content/room_history/mod.rs:865
+#: src/session/view/content/room_history/mod.rs:869
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:882
+#: src/session/view/content/room_history/mod.rs:872
 msgid "This room was closed"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/content/room_history/mod.rs:901
 #: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:934
+#: src/session/view/content/room_history/mod.rs:924
 #: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "{room}-ში შესვლა შეუძლებელია"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:951
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/sidebar/row.rs:773
 msgid "Could not forget {room}"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:1022
+#: src/session/view/content/room_history/mod.rs:1012
 msgid "Sender Context Menu"
 msgstr ""
 
@@ -3963,20 +3974,20 @@ msgstr ""
 msgid "Stop I_gnoring"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:148
+#: src/session/view/content/room_history/mod.ui:152
 msgid "Room Menu"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:185
-#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:191
+#: src/session/view/content/room_history/mod.ui:198
 msgid "Could Not Load Room"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:226
+#: src/session/view/content/room_history/mod.ui:232
 msgid "Scroll to Bottom"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:239
+#: src/session/view/content/room_history/mod.ui:245
 msgid "Drop Here to Send"
 msgstr ""
 
@@ -4306,17 +4317,17 @@ msgid "Original Event"
 msgstr ""
 
 #: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:160
+#: src/session/view/event_details_dialog.ui:162
 msgid "Event ID"
 msgstr ""
 
 #: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:166
+#: src/session/view/event_details_dialog.ui:168
 msgid "Copy Event ID"
 msgstr "მოვლენის ID-ის კოპირება"
 
 #: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:167
+#: src/session/view/event_details_dialog.ui:169
 msgid "Event ID copied to clipboard"
 msgstr ""
 
@@ -4324,51 +4335,51 @@ msgstr ""
 msgid "Room ID"
 msgstr "ოთახის ID"
 
-#: src/session/view/event_details_dialog.ui:84
+#: src/session/view/event_details_dialog.ui:86
 msgid "Copy Room ID"
 msgstr "ოთახის ID-ის კოპირება"
 
-#: src/session/view/event_details_dialog.ui:85
+#: src/session/view/event_details_dialog.ui:87
 msgid "Room ID copied to clipboard"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:91
+#: src/session/view/event_details_dialog.ui:93
 msgid "Sender ID"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:97
+#: src/session/view/event_details_dialog.ui:99
 msgid "Copy Sender ID"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:98
+#: src/session/view/event_details_dialog.ui:100
 msgid "Sender ID copied to clipboard"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:104
-#: src/session/view/event_details_dialog.ui:173
+#: src/session/view/event_details_dialog.ui:106
+#: src/session/view/event_details_dialog.ui:175
 msgid "Timestamp"
 msgstr "დროის შტამპი"
 
-#: src/session/view/event_details_dialog.ui:110
-#: src/session/view/event_details_dialog.ui:179
+#: src/session/view/event_details_dialog.ui:112
+#: src/session/view/event_details_dialog.ui:181
 msgid "Copy Timestamp"
 msgstr "დროის შტამპის კოპირება"
 
-#: src/session/view/event_details_dialog.ui:111
-#: src/session/view/event_details_dialog.ui:180
+#: src/session/view/event_details_dialog.ui:113
+#: src/session/view/event_details_dialog.ui:182
 msgid "Timestamp copied to clipboard"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:122
-#: src/session/view/event_details_dialog.ui:186
+#: src/session/view/event_details_dialog.ui:124
+#: src/session/view/event_details_dialog.ui:188
 msgid "View Source"
 msgstr "წყაროს ნახვა"
 
-#: src/session/view/event_details_dialog.ui:144
+#: src/session/view/event_details_dialog.ui:146
 msgid "Latest Edit"
 msgstr ""
 
-#: src/session/view/event_details_dialog.ui:216
+#: src/session/view/event_details_dialog.ui:218
 msgid "Copy Source"
 msgstr "წყაროს კოპირება"
 
@@ -4652,18 +4663,43 @@ msgctxt "shortcut window"
 msgid "Quit"
 msgstr "გასვლა"
 
+#: src/shortcuts.ui:26
+msgctxt "shortcut window"
+msgid "Close Window"
+msgstr "ფანჯრის დახურვა"
+
 #. Translators: This shows and focuses the search input to find a room by its name in the room list.
-#: src/shortcuts.ui:27
+#: src/shortcuts.ui:33
 msgctxt "shortcut window"
 msgid "Search Room List"
 msgstr "ოთახების სიაში მოძებნა"
 
-#: src/shortcuts.ui:33
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Open Room With Unread Messages"
 msgstr ""
 
-#: src/shortcuts.ui:39
+#: src/shortcuts.ui:45
+msgctxt "shortcut window"
+msgid "Open the next room in the list"
+msgstr ""
+
+#: src/shortcuts.ui:51
+msgctxt "shortcut window"
+msgid "Open the previous room in the list"
+msgstr ""
+
+#: src/shortcuts.ui:57
+msgctxt "shortcut window"
+msgid "Open the next room with unread messages in the list"
+msgstr ""
+
+#: src/shortcuts.ui:63
+msgctxt "shortcut window"
+msgid "Open the previous room with unread messages in the list"
+msgstr ""
+
+#: src/shortcuts.ui:69
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "ოთახის დახურვა"
@@ -4788,6 +4824,10 @@ msgstr "ფაილი"
 #: src/window.ui:84
 msgid "Session"
 msgstr "სესია"
+
+#~ msgctxt "room details"
+#~ msgid "_Edit"
+#~ msgstr "_ჩასწორება"
 
 #~ msgctxt "room details"
 #~ msgid "Edit"
