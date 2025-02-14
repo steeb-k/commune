@@ -12,8 +12,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-07 12:43+0000\n"
-"PO-Revision-Date: 2025-02-09 02:02-0300\n"
+"POT-Creation-Date: 2025-02-10 22:31+0000\n"
+"PO-Revision-Date: 2025-02-13 22:36-0300\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
@@ -207,7 +207,7 @@ msgstr "Confirmar mudança"
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:197
+#: src/session/view/content/room_history/mod.ui:203
 msgid "Try Again"
 msgstr "Tente novamente"
 
@@ -218,7 +218,7 @@ msgstr "Tente novamente"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:176 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:182 src/window.ui:17
 msgid "Loading"
 msgstr "Carregando"
 
@@ -620,7 +620,7 @@ msgstr "C_onfirmar"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:877
+#: src/session/view/content/room_history/mod.rs:867
 #: src/session/view/content/room_history/state_row/tombstone.rs:77
 msgid "View"
 msgstr "Ver"
@@ -668,7 +668,7 @@ msgstr "Digite um ID de sala, um apelido ou um link para procurar uma sala"
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:880
+#: src/session/view/content/room_history/mod.rs:870
 #: src/session/view/content/room_history/state_row/tombstone.rs:79
 msgid "Join"
 msgstr "Entrar"
@@ -732,8 +732,8 @@ msgstr "Sair"
 #: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:558
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/item_row.rs:944
-#: src/session/view/content/room_history/item_row.rs:1003
+#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:976
 #: src/session/view/content/room_history/message_toolbar/mod.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -876,7 +876,7 @@ msgstr[1] ""
 #: src/components/dialogs/message_dialogs.rs:227
 #: src/session/view/account_settings/general_page/mod.rs:376
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
 msgstr "Remover"
 
@@ -897,7 +897,7 @@ msgstr ""
 "tentar carregar mais indo mais para trás no histórico da sala."
 
 #: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/item_row.rs:985
+#: src/session/view/content/room_history/item_row.rs:958
 msgid "Reason (optional)"
 msgstr "Razão (opcional)"
 
@@ -1667,7 +1667,7 @@ msgstr "Bem-vindo ao Fractal"
 #: src/login/greeter.ui:26 src/login/greeter.ui:29 src/login/greeter.ui:37
 #: src/login/greeter.ui:40 src/window.ui:30 src/window.ui:33
 msgid "About Fractal"
-msgstr "_Sobre Fractal"
+msgstr "Sobre o Fractal"
 
 #: src/login/greeter.ui:117
 msgid "_Log In"
@@ -1919,17 +1919,17 @@ msgstr "Regra sem suporte"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:383
+#: src/session/model/room/mod.rs:381
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:384
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:396
+#: src/session/model/room/mod.rs:394
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -2822,7 +2822,7 @@ msgid "Join a room to start chatting"
 msgstr "Entre em uma sala para começar a conversar"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/room_history/mod.ui:218
 msgid "Room History"
 msgstr "História da sala"
 
@@ -3304,7 +3304,7 @@ msgstr "Falha ao carregar áudio"
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:193
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Check your network connection"
 msgstr "Verifique sua conexão de rede"
 
@@ -3759,40 +3759,40 @@ msgstr "Rep_ortar…"
 msgid "Re_move"
 msgstr "Re_mover"
 
-#: src/session/view/content/room_history/item_row.rs:525
+#: src/session/view/content/room_history/item_row.rs:498
 #: src/session/view/media_viewer.rs:502
 msgid "Message link copied to clipboard"
 msgstr "Link da mensagem copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:757
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatura copiada para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:876
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "Texto copiado para a área de transferência"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Remove Message?"
 msgstr "Remover mensagem?"
 
-#: src/session/view/content/room_history/item_row.rs:940
+#: src/session/view/content/room_history/item_row.rs:913
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Você realmente quer remover essa mensagem? Isso não pode ser desfeito."
 
-#: src/session/view/content/room_history/item_row.rs:954
+#: src/session/view/content/room_history/item_row.rs:927
 msgid "Could not remove message"
 msgstr "Falha ao remover a mensagem"
 
-#: src/session/view/content/room_history/item_row.rs:967
+#: src/session/view/content/room_history/item_row.rs:940
 msgid "Could not toggle reaction"
 msgstr "Falha ao alternar reação"
 
-#: src/session/view/content/room_history/item_row.rs:996
+#: src/session/view/content/room_history/item_row.rs:969
 msgid "Report Event?"
 msgstr "Reportar evento?"
 
-#: src/session/view/content/room_history/item_row.rs:998
+#: src/session/view/content/room_history/item_row.rs:971
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3803,15 +3803,15 @@ msgstr ""
 "ou redigido."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:1005
+#: src/session/view/content/room_history/item_row.rs:978
 msgid "Report"
 msgstr "Reportar"
 
-#: src/session/view/content/room_history/item_row.rs:1023
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Could not report event"
 msgstr "Falha ao reportar evento"
 
-#: src/session/view/content/room_history/item_row.rs:1042
+#: src/session/view/content/room_history/item_row.rs:1015
 msgid "Could not discard message"
 msgstr "Falha ao descartar mensagem"
 
@@ -3967,80 +3967,80 @@ msgstr "Preenchimento automático de menção do membro da sala"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:342
+#: src/session/view/content/room_history/message_toolbar/mod.rs:346
 msgid "Reply to {user}"
 msgstr "Responder a {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:358
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Edição"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:490
+#: src/session/view/content/room_history/message_toolbar/mod.rs:494
 msgid "Could not send reply"
 msgstr "Falha ao enviar resposta"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:507
+#: src/session/view/content/room_history/message_toolbar/mod.rs:511
 msgid "Could not send edit"
 msgstr "Falha ao enviar edição"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:519
+#: src/session/view/content/room_history/message_toolbar/mod.rs:523
 msgid "Could not send message"
 msgstr "Falha ao enviar mensagem"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:565
+#: src/session/view/content/room_history/message_toolbar/mod.rs:569
 msgid "Your Location"
 msgstr "Seu local"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:626
+#: src/session/view/content/room_history/message_toolbar/mod.rs:630
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Local do usuário {geo_uri} em {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:649
+#: src/session/view/content/room_history/message_toolbar/mod.rs:653
 msgid "Could not send location"
 msgstr "Falha ao enviar local"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "The location request has been cancelled"
 msgstr "A solicitação de local foi cancelada"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:657
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "The location services are disabled"
 msgstr "O serviço de localização está desabilitado"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:658
+#: src/session/view/content/room_history/message_toolbar/mod.rs:662
 msgid "Could not retrieve current location"
 msgstr "Falha ao recuperar a localização atual"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:691
+#: src/session/view/content/room_history/message_toolbar/mod.rs:695
 msgid "Could not send file"
 msgstr "Falha ao enviar arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "Select File"
 msgstr "Selecionar um arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:751
 msgid "Select"
 msgstr "Selecionar"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:766
 msgid "Could not open file"
 msgstr "Falha ao abrir o arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:788
-#: src/session/view/content/room_history/message_toolbar/mod.rs:796
+#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:800
 msgid "Error reading file"
 msgstr "Erro ao ler o arquivo"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:861
 msgid "Error getting image from clipboard"
 msgstr "Erro ao pegar imagem da área de transferência"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:878
 msgid "Error getting file from clipboard"
 msgstr "Erro ao pegar arquivo da área de transferência"
 
@@ -4095,40 +4095,40 @@ msgstr "%-e de %B às %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e de %B às %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:330
+#: src/session/view/content/room_history/mod.rs:321
 msgid "Error getting file from drop"
 msgstr "Erro ao obter arquivo largado"
 
-#: src/session/view/content/room_history/mod.rs:875
-#: src/session/view/content/room_history/mod.rs:879
+#: src/session/view/content/room_history/mod.rs:865
+#: src/session/view/content/room_history/mod.rs:869
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Há uma versão mais recente desta sala"
 
-#: src/session/view/content/room_history/mod.rs:882
+#: src/session/view/content/room_history/mod.rs:872
 msgid "This room was closed"
 msgstr "Esta sala foi fechada"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/content/room_history/mod.rs:901
 #: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr "Falha ao deixar {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:934
+#: src/session/view/content/room_history/mod.rs:924
 #: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "Não pôde entrar em {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:951
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/sidebar/row.rs:773
 msgid "Could not forget {room}"
 msgstr "Falha em esquecer {room}"
 
-#: src/session/view/content/room_history/mod.rs:1022
+#: src/session/view/content/room_history/mod.rs:1012
 msgid "Sender Context Menu"
 msgstr "Menu de Contexto do Remetente"
 
@@ -4218,20 +4218,20 @@ msgstr "I_gnorar"
 msgid "Stop I_gnoring"
 msgstr "Parar de I_gnorar"
 
-#: src/session/view/content/room_history/mod.ui:148
+#: src/session/view/content/room_history/mod.ui:152
 msgid "Room Menu"
 msgstr "Menu da sala"
 
-#: src/session/view/content/room_history/mod.ui:185
-#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:191
+#: src/session/view/content/room_history/mod.ui:198
 msgid "Could Not Load Room"
 msgstr "Falha ao carregar sala"
 
-#: src/session/view/content/room_history/mod.ui:226
+#: src/session/view/content/room_history/mod.ui:232
 msgid "Scroll to Bottom"
 msgstr "Rolar à parte inferior"
 
-#: src/session/view/content/room_history/mod.ui:239
+#: src/session/view/content/room_history/mod.ui:245
 msgid "Drop Here to Send"
 msgstr "Solte aqui para enviar"
 
@@ -4565,17 +4565,17 @@ msgid "Original Event"
 msgstr "Evento original"
 
 #: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:160
+#: src/session/view/event_details_dialog.ui:162
 msgid "Event ID"
 msgstr "ID do evento"
 
 #: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:166
+#: src/session/view/event_details_dialog.ui:168
 msgid "Copy Event ID"
 msgstr "Copiar ID do evento"
 
 #: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:167
+#: src/session/view/event_details_dialog.ui:169
 msgid "Event ID copied to clipboard"
 msgstr "ID do evento copiado para a área de transferência"
 
@@ -4583,52 +4583,52 @@ msgstr "ID do evento copiado para a área de transferência"
 msgid "Room ID"
 msgstr "ID da sala"
 
-#: src/session/view/event_details_dialog.ui:84
+#: src/session/view/event_details_dialog.ui:86
 msgid "Copy Room ID"
 msgstr "Copiar ID da sala"
 
-#: src/session/view/event_details_dialog.ui:85
+#: src/session/view/event_details_dialog.ui:87
 msgid "Room ID copied to clipboard"
 msgstr "ID da sala copiada para a área de transferência"
 
-#: src/session/view/event_details_dialog.ui:91
+#: src/session/view/event_details_dialog.ui:93
 msgid "Sender ID"
 msgstr "ID do remetente"
 
-#: src/session/view/event_details_dialog.ui:97
+#: src/session/view/event_details_dialog.ui:99
 msgid "Copy Sender ID"
 msgstr "Copiar ID do emetente"
 
-#: src/session/view/event_details_dialog.ui:98
+#: src/session/view/event_details_dialog.ui:100
 msgid "Sender ID copied to clipboard"
 msgstr "ID do remetente copiado para a área de transferência"
 
 # A tradução de Timestamp para o português seria "Carimbo de Data/Hora", mas a achei ruim e muito grande, e como muito do conteúdo da internet na rede nacional usa neste no original, descedi mantela assim.
-#: src/session/view/event_details_dialog.ui:104
-#: src/session/view/event_details_dialog.ui:173
+#: src/session/view/event_details_dialog.ui:106
+#: src/session/view/event_details_dialog.ui:175
 msgid "Timestamp"
 msgstr "Timestamp"
 
-#: src/session/view/event_details_dialog.ui:110
-#: src/session/view/event_details_dialog.ui:179
+#: src/session/view/event_details_dialog.ui:112
+#: src/session/view/event_details_dialog.ui:181
 msgid "Copy Timestamp"
 msgstr "Copiar timestamp"
 
-#: src/session/view/event_details_dialog.ui:111
-#: src/session/view/event_details_dialog.ui:180
+#: src/session/view/event_details_dialog.ui:113
+#: src/session/view/event_details_dialog.ui:182
 msgid "Timestamp copied to clipboard"
 msgstr "Timestamp copiado para a área de transferência"
 
-#: src/session/view/event_details_dialog.ui:122
-#: src/session/view/event_details_dialog.ui:186
+#: src/session/view/event_details_dialog.ui:124
+#: src/session/view/event_details_dialog.ui:188
 msgid "View Source"
 msgstr "Ver fonte"
 
-#: src/session/view/event_details_dialog.ui:144
+#: src/session/view/event_details_dialog.ui:146
 msgid "Latest Edit"
 msgstr "Última edição"
 
-#: src/session/view/event_details_dialog.ui:216
+#: src/session/view/event_details_dialog.ui:218
 msgid "Copy Source"
 msgstr "Copiar fonte"
 
@@ -4742,7 +4742,7 @@ msgstr "A_talhos de teclado"
 
 #: src/session/view/sidebar/mod.ui:24
 msgid "_About Fractal"
-msgstr "_Sobre Fractal"
+msgstr "_Sobre o Fractal"
 
 #: src/session/view/sidebar/mod.ui:37
 msgid "Dec_line"
