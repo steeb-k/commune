@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-01 14:59+0000\n"
-"PO-Revision-Date: 2025-02-02 15:37+0300\n"
+"POT-Creation-Date: 2025-02-07 12:43+0000\n"
+"PO-Revision-Date: 2025-02-09 23:47+0300\n"
 "Last-Translator: Artur So <arturios2005@mail.ru>\n"
 "Language-Team: Russian <gnome-cyr@gnome.org>\n"
 "Language: ru\n"
@@ -168,8 +168,8 @@ msgid "The Fractal Team"
 msgstr "Команда Fractal"
 
 #: src/application.rs:291
-msgid "© 2017-2024 The Fractal Team"
-msgstr "© 2017-2024 Команда Fractal"
+msgid "© The Fractal Team"
+msgstr "© Команда Fractal"
 
 #: src/application.rs:305
 msgid "translator-credits"
@@ -317,8 +317,6 @@ msgstr "Восстановить учетную запись"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
-#: src/session/view/account_settings/security_page/mod.rs:260
-#: src/session/view/account_settings/security_page/mod.rs:328
 msgid "Reset"
 msgstr "Сброс"
 
@@ -458,7 +456,6 @@ msgid "Recovery Passphrase or Key"
 msgstr "Восстановление парольной фразы или ключа"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:348
 #: src/session/view/sidebar/mod.rs:320
 msgid "Recover"
 msgstr "Восстановить"
@@ -1169,7 +1166,6 @@ msgstr "Безопасность"
 
 #: src/components/user_page.ui:212
 #: src/identity_verification_view/accept_request_page.ui:57
-#: src/session/view/account_settings/security_page/mod.rs:279
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -2479,10 +2475,8 @@ msgstr "Проверка собственных устройств или дру
 
 #: src/session/view/account_settings/security_page/mod.rs:236
 #: src/session/view/account_settings/security_page/mod.rs:309
-#: src/session/view/content/room_details/general_page.rs:1120
-#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
-msgid "Enable"
-msgstr "Включить"
+msgid "Enable…"
+msgstr "Включить…"
 
 #: src/session/view/account_settings/security_page/mod.rs:239
 msgid "Enable Crypto Identity"
@@ -2496,6 +2490,11 @@ msgstr "Криптоидентификация включена"
 msgid "The crypto identity exists and this device is verified"
 msgstr "Криптоидентификация установлена, и это устройство проверено"
 
+#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:328
+msgid "Reset…"
+msgstr "Сбросить…"
+
 #: src/session/view/account_settings/security_page/mod.rs:274
 msgid "Crypto Identity Incomplete"
 msgstr "Криптоидентификация не завершена"
@@ -2503,6 +2502,10 @@ msgstr "Криптоидентификация не завершена"
 #: src/session/view/account_settings/security_page/mod.rs:276
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Криптоидентификация установлена, но это устройство не проверено"
+
+#: src/session/view/account_settings/security_page/mod.rs:279
+msgid "Verify…"
+msgstr "Проверить…"
 
 #: src/session/view/account_settings/security_page/mod.rs:282
 msgid "Verify This Session"
@@ -2537,7 +2540,11 @@ msgstr "Сбросить ключ восстановления учетной з
 
 #: src/session/view/account_settings/security_page/mod.rs:345
 msgid "Recover to synchronize your signing keys and encryption keys"
-msgstr "Восстановите синхронизацию ключей подписи и шифрования"
+msgstr "Восстановить синхронизацию ключей подписи и шифрования"
+
+#: src/session/view/account_settings/security_page/mod.rs:348
+msgid "Recover…"
+msgstr "Восстановить…"
 
 #: src/session/view/account_settings/security_page/mod.rs:351
 msgid "Recover Account Data"
@@ -2684,7 +2691,7 @@ msgstr "Был(-а) в сети в %A в %I:%M %p"
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:234
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
-msgstr "Был(-а) в сети %-e %b в %H:%M"
+msgstr "Был(-а) в сети %-e %B в %H:%M"
 
 #. Translators: this is the month and day and the time in 12h format, i.e. "Last
 #. seen February 3 at 11:04 PM".
@@ -2693,7 +2700,7 @@ msgstr "Был(-а) в сети %-e %b в %H:%M"
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:241
 #, no-c-format
 msgid "Last seen %B %-e at %I:%M %p"
-msgstr "Был(-а) в сети %-e %b в %I:%M %p"
+msgstr "Был(-а) в сети %-e %B в %I:%M %p"
 
 #. Translators: this is the full date and the time in 24h format, i.e. "Last
 #. seen February 3 2015 at 23:04".
@@ -2702,7 +2709,7 @@ msgstr "Был(-а) в сети %-e %b в %I:%M %p"
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:249
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
-msgstr "Был(-а) в сети %-e %b %Y в %H:%M"
+msgstr "Был(-а) в сети %-e %B %Y в %H:%M"
 
 #. Translators: this is the full date and the time in 12h format, i.e. "Last
 #. seen February 3 2015 at 11:04 PM".
@@ -2711,7 +2718,7 @@ msgstr "Был(-а) в сети %-e %b %Y в %H:%M"
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:256
 #, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
-msgstr "Был(-а) в сети %-e %b %Y в %I:%M %p"
+msgstr "Был(-а) в сети %-e %B %Y в %I:%M %p"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:322
 msgid "Could not disconnect device “{device_name}”"
@@ -3104,6 +3111,11 @@ msgstr ""
 "Включение шифрования не позволит новым пользователям прочитать историю до их "
 "прихода. Это нельзя будет отключить позже."
 
+#: src/session/view/content/room_details/general_page.rs:1120
+#: src/session/view/sidebar/mod.rs:311 src/session/view/sidebar/mod.rs:317
+msgid "Enable"
+msgstr "Включить"
+
 #: src/session/view/content/room_details/general_page.rs:1130
 msgid "Could not enable encryption"
 msgstr "Не удалось включить шифрование"
@@ -3252,9 +3264,8 @@ msgstr "Версия комнаты"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.ui:345
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
-msgid "Upgrade"
-msgstr "Обновить"
+msgid "Upgrade…"
+msgstr "Обновить…"
 
 #: src/session/view/content/room_details/general_page.ui:358
 msgid "Federation"
@@ -3668,6 +3679,11 @@ msgstr ""
 "может привести к сбоям в работе, поскольку участникам комнаты придется "
 "присоединяться к новой комнате вручную."
 
+#. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+msgid "Upgrade"
+msgstr "Обновить"
+
 #: src/session/view/content/room_history/divider_row.rs:49
 msgid "This is the start of the visible history"
 msgstr "Это начало видимой истории"
@@ -3678,7 +3694,7 @@ msgstr "Это начало видимой истории"
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/divider_row.rs:61
 msgid "%A, %B %-e"
-msgstr "%A, %-e %b"
+msgstr "%A, %-e %B"
 
 #. Translators: This is a date format in the day divider with the
 #. year. For ex. "Friday, May 5, 2023".
@@ -3686,7 +3702,7 @@ msgstr "%A, %-e %b"
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/divider_row.rs:67
 msgid "%A, %B %-e, %Y"
-msgstr "%A, %-e %b, %Y"
+msgstr "%A, %-e %B, %Y"
 
 #: src/session/view/content/room_history/divider_row.rs:74
 msgid "New Messages"
@@ -4076,7 +4092,7 @@ msgstr "У вас нет разрешения на отправку сообще
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:109
 msgid "%B %-e at %I∶%M %p"
-msgstr "%-e %b в %I∶%M %p"
+msgstr "%-e %B в %I∶%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
@@ -4084,7 +4100,7 @@ msgstr "%-e %b в %I∶%M %p"
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:115
 msgid "%B %-e at %H∶%M"
-msgstr "%-e %b в %H∶%M"
+msgstr "%-e %B в %H∶%M"
 
 #: src/session/view/content/room_history/mod.rs:330
 msgid "Error getting file from drop"
@@ -5077,6 +5093,9 @@ msgstr "файл"
 #: src/window.ui:84
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "© 2017-2024 The Fractal Team"
+#~ msgstr "© 2017-2024 Команда Fractal"
 
 #~ msgctxt "room details"
 #~ msgid "_Edit"
