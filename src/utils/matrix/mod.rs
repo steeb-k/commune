@@ -37,7 +37,7 @@ use crate::{
     components::Pill,
     gettext_f,
     prelude::*,
-    secret::{Secret, StoredSession},
+    secret::{SecretData, StoredSession},
     session::model::{RemoteRoom, Room},
 };
 
@@ -291,7 +291,7 @@ pub async fn client_with_stored_session(
         user_id,
         device_id,
         id: _,
-        secret: Secret {
+        secret: SecretData {
             access_token,
             passphrase,
         },

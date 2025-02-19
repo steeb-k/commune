@@ -3,6 +3,7 @@ pub(crate) use crate::{
         CameraExt, ContextMenuBinExt, ContextMenuBinImpl, PillSourceExt, PillSourceImpl,
         ToastableDialogExt, ToastableDialogImpl,
     },
+    secret::SecretExt,
     session::model::{TimelineItemExt, UserExt},
     session_list::SessionInfoExt,
     user_facing_error::UserFacingError,

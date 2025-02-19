@@ -20,17 +20,7 @@ use url::Url;
 
 #[cfg(target_os = "linux")]
 mod linux;
-#[cfg(not(target_os = "linux"))]
-mod unimplemented;
 
-#[cfg(target_os = "linux")]
-use self::linux::delete_session;
-#[cfg(target_os = "linux")]
-pub use self::linux::{restore_sessions, store_session};
-#[cfg(not(target_os = "linux"))]
-use self::unimplemented::delete_session;
-#[cfg(not(target_os = "linux"))]
-pub use self::unimplemented::{restore_sessions, store_session};
 use crate::{
     prelude::*,
     spawn_tokio,
@@ -38,13 +28,57 @@ use crate::{
 };
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.
-pub const SESSION_ID_LENGTH: usize = 8;
+pub(crate) const SESSION_ID_LENGTH: usize = 8;
 /// The length of a passphrase, in chars or bytes as the string is ASCII.
-pub const PASSPHRASE_LENGTH: usize = 30;
+pub(crate) const PASSPHRASE_LENGTH: usize = 30;
+
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        /// The secret API.
+        pub(crate) type Secret = linux::LinuxSecret;
+    } else {
+        /// The secret API.
+        pub(crate) type Secret = unimplemented::UnimplementedSecret;
+    }
+}
+
+/// Trait implemented by secret backends.
+pub(crate) trait SecretExt {
+    /// Retrieves all sessions stored in the secret backend.
+    async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError>;
+
+    /// Store the given session into the secret backend, overwriting any
+    /// previously stored session with the same attributes.
+    async fn store_session(session: StoredSession) -> Result<(), SecretError>;
+
+    /// Delete the given session from the secret backend.
+    async fn delete_session(session: &StoredSession);
+}
+
+/// The fallback `Secret` API, to use on platforms where it is unimplemented.
+#[cfg(not(target_os = "linux"))]
+mod unimplemented {
+    #[derive(Debug)]
+    pub(crate) struct UnimplementedSecret;
+
+    impl SecretExt for UnimplementedSecret {
+        async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
+            unimplemented!()
+        }
+
+        async fn store_session(session: StoredSession) -> Result<(), SecretError> {
+            unimplemented!()
+        }
+
+        async fn delete_session(session: &StoredSession) {
+            unimplemented!()
+        }
+    }
+}
 
 /// Any error that can happen when interacting with the secret service.
 #[derive(Debug, Error)]
-pub enum SecretError {
+pub(crate) enum SecretError {
     /// An error occurred interacting with the secret service.
     #[error("Service error: {0}")]
     Service(String),
@@ -73,7 +107,7 @@ pub struct StoredSession {
     /// This is the name of the directories where the session data lives.
     pub id: String,
     /// The secrets of the session.
-    pub secret: Secret,
+    pub secret: SecretData,
 }
 
 impl fmt::Debug for StoredSession {
@@ -92,7 +126,10 @@ impl StoredSession {
     ///
     /// Returns an error if we failed to generate a unique session ID for the
     /// new session.
-    pub fn with_login_data(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
+    pub(crate) fn with_login_data(
+        homeserver: Url,
+        data: MatrixSession,
+    ) -> Result<Self, ClientSetupError> {
         let MatrixSession {
             meta: SessionMeta { user_id, device_id },
             tokens: MatrixSessionTokens { access_token, .. },
@@ -120,7 +157,7 @@ impl StoredSession {
 
         let passphrase = Alphanumeric.sample_string(&mut rng(), PASSPHRASE_LENGTH);
 
-        let secret = Secret {
+        let secret = SecretData {
             access_token,
             passphrase,
         };
@@ -135,27 +172,27 @@ impl StoredSession {
     }
 
     /// The path where the persistent data of this session lives.
-    pub fn data_path(&self) -> PathBuf {
+    pub(crate) fn data_path(&self) -> PathBuf {
         let mut path = data_dir_path(DataType::Persistent);
         path.push(&self.id);
         path
     }
 
     /// The path where the cached data of this session lives.
-    pub fn cache_path(&self) -> PathBuf {
+    pub(crate) fn cache_path(&self) -> PathBuf {
         let mut path = data_dir_path(DataType::Cache);
         path.push(&self.id);
         path
     }
 
     /// Delete this session from the system.
-    pub async fn delete(self) {
+    pub(crate) async fn delete(self) {
         debug!(
             "Removing stored session {} for Matrix user {}…",
             self.id, self.user_id,
         );
 
-        delete_session(&self).await;
+        Secret::delete_session(&self).await;
 
         spawn_tokio!(async move {
             if let Err(error) = fs::remove_dir_all(self.data_path()).await {
@@ -166,13 +203,13 @@ impl StoredSession {
             }
         })
         .await
-        .unwrap();
+        .expect("task was not aborted");
     }
 }
 
-/// A `Secret` that can be stored in the `SecretService`.
+/// Secret data that can be stored in the secret backend.
 #[derive(Clone, Deserialize, Serialize)]
-pub struct Secret {
+pub struct SecretData {
     /// The access token to provide to the homeserver for authentication.
     pub access_token: String,
     /// The passphrase used to encrypt the local databases.

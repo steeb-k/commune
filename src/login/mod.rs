@@ -27,8 +27,8 @@ use self::{
     session_setup_view::SessionSetupView,
 };
 use crate::{
-    components::OfflineBanner, prelude::*, secret::store_session, session::model::Session, spawn,
-    spawn_tokio, toast, Application, Window, RUNTIME, SETTINGS_KEY_CURRENT_SESSION,
+    components::OfflineBanner, prelude::*, secret::Secret, session::model::Session, spawn, toast,
+    Application, Window, RUNTIME, SETTINGS_KEY_CURRENT_SESSION,
 };
 
 /// A page of the login stack.
@@ -437,9 +437,8 @@ mod imp {
             }
 
             let session_info = session.info().clone();
-            let handle = spawn_tokio!(async move { store_session(session_info).await });
 
-            if handle.await.expect("task was not aborted").is_err() {
+            if Secret::store_session(session_info).await.is_err() {
                 let obj = self.obj();
                 toast!(obj, gettext("Could not store session"));
             }

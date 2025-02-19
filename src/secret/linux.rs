@@ -11,15 +11,15 @@ use tokio::fs;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{Secret, SecretError, StoredSession, SESSION_ID_LENGTH};
+use super::{SecretData, SecretError, SecretExt, StoredSession, SESSION_ID_LENGTH};
 use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
 
 /// The current version of the stored session.
-pub const CURRENT_VERSION: u8 = 6;
+const CURRENT_VERSION: u8 = 6;
 /// The minimum supported version for the stored sessions.
 ///
 /// Currently, this matches the version when Fractal 5 was released.
-pub const MIN_SUPPORTED_VERSION: u8 = 4;
+const MIN_SUPPORTED_VERSION: u8 = 4;
 
 /// Keys used in the Linux secret backend.
 mod keys {
@@ -41,14 +41,42 @@ mod keys {
     pub(super) const ID: &str = "id";
 }
 
-/// Retrieves all sessions stored in the secret backend.
-pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
-    match restore_sessions_inner().await {
-        Ok(sessions) => Ok(sessions),
-        Err(error) => {
-            error!("Could not restore previous sessions: {error}");
-            Err(error.into())
+/// Secret API under Linux.
+pub(crate) struct LinuxSecret;
+
+impl SecretExt for LinuxSecret {
+    async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
+        let handle = spawn_tokio!(async move { restore_sessions_inner().await });
+        match handle.await.expect("task was not aborted") {
+            Ok(sessions) => Ok(sessions),
+            Err(error) => {
+                error!("Could not restore previous sessions: {error}");
+                Err(error.into())
+            }
         }
+    }
+
+    async fn store_session(session: StoredSession) -> Result<(), SecretError> {
+        let handle = spawn_tokio!(async move { store_session_inner(session).await });
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                error!("Could not store session: {error}");
+                Err(error.into())
+            }
+        }
+    }
+
+    async fn delete_session(session: &StoredSession) {
+        let attributes = session.attributes();
+
+        spawn_tokio!(async move {
+            if let Err(error) = delete_item_with_attributes(&attributes).await {
+                error!("Could not delete session data from secret backend: {error}");
+            }
+        })
+        .await
+        .expect("task was not aborted");
     }
 }
 
@@ -86,7 +114,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                     log_out_session(session.clone()).await;
 
                     // Delete the session from the secret backend.
-                    delete_session(&session).await;
+                    LinuxSecret::delete_session(&session).await;
 
                     // Delete the session data folders.
                     spawn_tokio!(async move {
@@ -101,7 +129,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                         }
                     })
                     .await
-                    .unwrap();
+                    .expect("task was not aborted");
 
                     continue;
                 }
@@ -126,25 +154,11 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
     Ok(sessions)
 }
 
-/// Write the given session to the secret backend.
-///
-/// Note that this overwrites any previously stored session with the same
-/// attributes.
-pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
-    match store_session_inner(session).await {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            error!("Could not store session: {error}");
-            Err(error.into())
-        }
-    }
-}
-
 async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     let keyring = Keyring::new().await?;
 
     let attributes = session.attributes();
-    let secret = serde_json::to_string(&session.secret).unwrap();
+    let secret = serde_json::to_string(&session.secret).expect("serializing secret should succeed");
 
     keyring
         .create_item(
@@ -163,19 +177,6 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     Ok(())
 }
 
-/// Delete the given session from the secret backend.
-pub async fn delete_session(session: &StoredSession) {
-    let attributes = session.attributes();
-
-    spawn_tokio!(async move {
-        if let Err(error) = delete_item_with_attributes(&attributes).await {
-            error!("Could not delete session data from secret backend: {error}");
-        }
-    })
-    .await
-    .unwrap();
-}
-
 /// Create a client and log out the given session.
 async fn log_out_session(session: StoredSession) {
     debug!("Logging out session");
@@ -192,7 +193,7 @@ async fn log_out_session(session: StoredSession) {
         }
     })
     .await
-    .unwrap();
+    .expect("task was not aborted");
 }
 
 impl StoredSession {
@@ -222,7 +223,7 @@ impl StoredSession {
         let secret = match item.secret().await {
             Ok(secret) => {
                 if version <= 4 {
-                    match rmp_serde::from_slice::<Secret>(&secret) {
+                    match rmp_serde::from_slice::<SecretData>(&secret) {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error}");
@@ -315,7 +316,7 @@ impl StoredSession {
                 }
             })
             .await
-            .unwrap();
+            .expect("task was not aborted");
         }
     }
 }
@@ -354,7 +355,7 @@ where
 /// Any error that can happen when retrieving an attribute from the secret
 /// backends on Linux.
 #[derive(Debug, Error)]
-pub enum LinuxSecretFieldError {
+enum LinuxSecretFieldError {
     /// An attribute is missing.
     ///
     /// This should only happen if for some reason we get an item from a
@@ -385,7 +386,7 @@ async fn delete_item_with_attributes(
 #[derive(Debug, Error)]
 // Complains about StoredSession in OldVersion, but we need it.
 #[allow(clippy::large_enum_variant)]
-pub enum LinuxSecretError {
+enum LinuxSecretError {
     /// A session with an unsupported version was found.
     #[error("Session found with unsupported version {0}")]
     UnsupportedVersion(u8),

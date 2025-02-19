@@ -13,7 +13,7 @@ mod session_list_settings;
 pub use self::{failed_session::*, new_session::*, session_info::*, session_list_settings::*};
 use crate::{
     prelude::*,
-    secret::{self, StoredSession},
+    secret::{Secret, StoredSession},
     session::model::{Session, SessionState},
     spawn, spawn_tokio,
     utils::{data_dir_path, DataType, LoadingState},
@@ -152,8 +152,7 @@ mod imp {
 
             self.set_state(LoadingState::Loading);
 
-            let handle = spawn_tokio!(secret::restore_sessions());
-            let mut sessions = match handle.await.expect("task was not aborted") {
+            let mut sessions = match Secret::restore_sessions().await {
                 Ok(sessions) => sessions,
                 Err(error) => {
                     let message = format!(
