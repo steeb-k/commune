@@ -7,7 +7,7 @@ use matrix_sdk::{
     authentication::matrix::{MatrixSession, MatrixSessionTokens},
     SessionMeta,
 };
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use rand::{distr::Alphanumeric, rng, Rng};
 use ruma::{OwnedDeviceId, OwnedUserId};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -101,7 +101,7 @@ impl StoredSession {
 
         // Try 10 times, so we do not have an infinite loop.
         for _ in 0..10 {
-            let generated = thread_rng()
+            let generated = rng()
                 .sample_iter(Alphanumeric)
                 .take(SESSION_ID_LENGTH)
                 .map(char::from)
@@ -119,7 +119,7 @@ impl StoredSession {
             return Err(ClientSetupError::NoSessionId);
         };
 
-        let passphrase = thread_rng()
+        let passphrase = rng()
             .sample_iter(Alphanumeric)
             .take(PASSPHRASE_LENGTH)
             .map(char::from)

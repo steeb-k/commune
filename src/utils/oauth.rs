@@ -15,6 +15,7 @@ use url::Url;
 ///
 /// [authorization provider]: https://github.com/matrix-org/matrix-spec-proposals/pull/2965
 pub(crate) async fn fetch_auth_issuer(client: &Client) -> Option<Url> {
+    #[allow(deprecated)]
     let result = client
         .send(get_authentication_issuer::msc2965::Request::new())
         .await;
