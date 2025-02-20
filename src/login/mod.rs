@@ -399,7 +399,7 @@ mod imp {
             // Client.
             let homeserver = client.homeserver();
 
-            match Session::new(homeserver, (&response).into()).await {
+            match Session::create(homeserver, (&response).into()).await {
                 Ok(session) => {
                     self.init_session(session).await;
                 }

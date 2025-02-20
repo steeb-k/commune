@@ -271,7 +271,7 @@ mod imp {
         /// Restore a stored session.
         async fn restore_stored_session(&self, session_info: &StoredSession) {
             let settings = self.settings.get_or_create(&session_info.id);
-            match Session::restore(session_info.clone(), settings).await {
+            match Session::new(session_info.clone(), settings).await {
                 Ok(session) => {
                     session.prepare().await;
                     self.insert(session);

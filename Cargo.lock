@@ -1325,6 +1325,7 @@ dependencies = [
  "libshumate",
  "linkify",
  "matrix-sdk",
+ "matrix-sdk-store-encryption",
  "matrix-sdk-ui",
  "mime",
  "mime_guess",
@@ -1337,6 +1338,7 @@ dependencies = [
  "ruma",
  "secular",
  "serde",
+ "serde_bytes",
  "serde_json",
  "sourceview5",
  "strum",
@@ -1349,6 +1351,7 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "webp",
+ "zeroize",
 ]
 
 [[package]]

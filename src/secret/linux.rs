@@ -6,16 +6,17 @@ use std::{collections::HashMap, path::Path};
 use gettextrs::gettext;
 use oo7::{Item, Keyring};
 use ruma::UserId;
+use serde::Deserialize;
 use thiserror::Error;
 use tokio::fs;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{SecretData, SecretError, SecretExt, StoredSession, SESSION_ID_LENGTH};
+use super::{SecretError, SecretExt, SessionTokens, StoredSession, SESSION_ID_LENGTH};
 use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
 
 /// The current version of the stored session.
-const CURRENT_VERSION: u8 = 6;
+const CURRENT_VERSION: u8 = 7;
 /// The minimum supported version for the stored sessions.
 ///
 /// Currently, this matches the version when Fractal 5 was released.
@@ -102,7 +103,8 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
             Err(LinuxSecretError::OldVersion {
                 version,
                 mut session,
-                attributes,
+                item,
+                access_token,
             }) => {
                 if version < MIN_SUPPORTED_VERSION {
                     info!(
@@ -111,7 +113,9 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                     );
 
                     // Try to log it out.
-                    log_out_session(session.clone()).await;
+                    if let Some(access_token) = access_token {
+                        log_out_session(session.clone(), access_token).await;
+                    }
 
                     // Delete the session from the secret backend.
                     LinuxSecret::delete_session(&session).await;
@@ -138,7 +142,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                     "Found session {} for user {} with old version {}, applying migrations…",
                     session.id, session.user_id, version,
                 );
-                session.apply_migrations(version, attributes).await;
+                session.apply_migrations(version, item, access_token).await;
 
                 sessions.push(session);
             }
@@ -158,7 +162,7 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     let keyring = Keyring::new().await?;
 
     let attributes = session.attributes();
-    let secret = serde_json::to_string(&session.secret).expect("serializing secret should succeed");
+    let secret = oo7::Secret::text(session.passphrase);
 
     keyring
         .create_item(
@@ -178,10 +182,16 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
 }
 
 /// Create a client and log out the given session.
-async fn log_out_session(session: StoredSession) {
+async fn log_out_session(session: StoredSession, access_token: String) {
     debug!("Logging out session");
+
+    let tokens = SessionTokens {
+        access_token,
+        refresh_token: None,
+    };
+
     spawn_tokio!(async move {
-        match matrix::client_with_stored_session(session).await {
+        match matrix::client_with_stored_session(session, tokens).await {
             Ok(client) => {
                 if let Err(error) = client.matrix_auth().logout().await {
                     error!("Could not log out session: {error}");
@@ -197,7 +207,7 @@ async fn log_out_session(session: StoredSession) {
 }
 
 impl StoredSession {
-    /// Build self from a secret.
+    /// Build self from an item.
     async fn try_from_secret_item(item: Item) -> Result<Self, LinuxSecretError> {
         let attributes = item.attributes().await?;
 
@@ -220,21 +230,35 @@ impl StoredSession {
         } else {
             get_attribute(&attributes, keys::ID)?.clone()
         };
-        let secret = match item.secret().await {
+        let (passphrase, access_token) = match item.secret().await {
             Ok(secret) => {
-                if version <= 4 {
-                    match rmp_serde::from_slice::<SecretData>(&secret) {
-                        Ok(secret) => secret,
-                        Err(error) => {
-                            error!("Could not parse secret in stored session: {error}");
-                            return Err(LinuxSecretFieldError::Invalid.into());
+                if version <= 6 {
+                    let secret_data = if version <= 4 {
+                        match rmp_serde::from_slice::<V4SecretData>(&secret) {
+                            Ok(secret) => secret,
+                            Err(error) => {
+                                error!("Could not parse secret in stored session: {error}");
+                                return Err(LinuxSecretFieldError::Invalid.into());
+                            }
                         }
-                    }
+                    } else {
+                        match serde_json::from_slice(&secret) {
+                            Ok(secret) => secret,
+                            Err(error) => {
+                                error!("Could not parse secret in stored session: {error:?}");
+                                return Err(LinuxSecretFieldError::Invalid.into());
+                            }
+                        }
+                    };
+
+                    (secret_data.passphrase, Some(secret_data.access_token))
                 } else {
-                    match serde_json::from_slice(&secret) {
-                        Ok(secret) => secret,
+                    // Even if we store the secret as plain text, the file backend always returns a
+                    // blob so let's always treat it as a byte slice.
+                    match String::from_utf8(secret.as_bytes().to_owned()) {
+                        Ok(passphrase) => (passphrase.clone(), None),
                         Err(error) => {
-                            error!("Could not parse secret in stored session: {error:?}");
+                            error!("Could not get secret in stored session: {error}");
                             return Err(LinuxSecretFieldError::Invalid.into());
                         }
                     }
@@ -251,14 +275,15 @@ impl StoredSession {
             user_id,
             device_id,
             id,
-            secret,
+            passphrase: passphrase.into(),
         };
 
         if version < CURRENT_VERSION {
             Err(LinuxSecretError::OldVersion {
                 version,
                 session,
-                attributes,
+                item,
+                access_token,
             })
         } else {
             Ok(session)
@@ -279,46 +304,82 @@ impl StoredSession {
     }
 
     /// Migrate this session to the current version.
-    async fn apply_migrations(&mut self, from_version: u8, attributes: HashMap<String, String>) {
+    async fn apply_migrations(
+        &mut self,
+        from_version: u8,
+        item: Item,
+        access_token: Option<String>,
+    ) {
+        // Version 5 changes the serialization of the secret from MessagePack to JSON.
+        // We can ignore the migration because we changed the format of the secret again
+        // in version 7.
+
         if from_version < 6 {
-            // Version 5 changes the serialization of the secret from MessagePack to JSON.
             // Version 6 truncates sessions IDs, changing the path of the databases, and
             // removes the `db-path` attribute to replace it with the `id` attribute.
-            // They both remove and add again the item in the secret backend so we merged
-            // the migrations.
+            // Because we need to update the `version` in the attributes for version 7, we
+            // only migrate the path here.
             info!("Migrating to version 6…");
 
-            // Keep the old state of the session.
+            // Get the old path of the session.
             let old_path = self.data_path();
 
             // Truncate the session ID.
             self.id.truncate(SESSION_ID_LENGTH);
             let new_path = self.data_path();
 
-            let clone = self.clone();
             spawn_tokio!(async move {
                 debug!(
                     "Renaming databases directory to: {}",
                     new_path.to_string_lossy()
                 );
+
                 if let Err(error) = fs::rename(old_path, new_path).await {
                     error!("Could not rename databases directory: {error}");
-                }
-
-                // Changing an attribute in an item creates a new item in oo7 because of a bug,
-                // so we need to delete it and create a new one.
-                if let Err(error) = delete_item_with_attributes(&attributes).await {
-                    error!("Could not remove outdated session: {error}");
-                }
-
-                if let Err(error) = store_session_inner(clone).await {
-                    error!("Could not store updated session: {error}");
                 }
             })
             .await
             .expect("task was not aborted");
         }
+
+        if from_version < 7 {
+            // Version 7 moves the access token to a separate file. Only the passphrase is
+            // stored as the secret now.
+            info!("Migrating to version 7…");
+
+            let new_attributes = self.attributes();
+            let new_secret = oo7::Secret::text(&self.passphrase);
+
+            spawn_tokio!(async move {
+                if let Err(error) = item.set_secret(new_secret).await {
+                    error!("Could not store updated session secret: {error}");
+                }
+
+                if let Err(error) = item.set_attributes(&new_attributes).await {
+                    error!("Could not store updated session attributes: {error}");
+                }
+            })
+            .await
+            .expect("task was not aborted");
+
+            if let Some(access_token) = access_token {
+                let session_tokens = SessionTokens {
+                    access_token,
+                    refresh_token: None,
+                };
+                self.store_tokens(session_tokens).await;
+            }
+        }
     }
+}
+
+/// Secret data that was stored in the secret backend from versions 4 through 6.
+#[derive(Clone, Deserialize)]
+struct V4SecretData {
+    /// The access token to provide to the homeserver for authentication.
+    access_token: String,
+    /// The passphrase used to encrypt the local databases.
+    passphrase: String,
 }
 
 /// Get the attribute with the given key in the given map.
@@ -398,12 +459,12 @@ enum LinuxSecretError {
         version: u8,
         /// The session that was found.
         session: StoredSession,
-        /// The attributes of the secret item for the session.
+        /// The item for the session.
+        item: Item,
+        /// The access token that was found.
         ///
-        /// We use it to update the secret item because, if we use the `Item`
-        /// directly, the Secret portal API returns errors saying that the file
-        /// has changed after the first item was modified.
-        attributes: HashMap<String, String>,
+        /// It needs to be stored outside of the secret backend now.
+        access_token: Option<String>,
     },
 
     /// An error occurred while retrieving a field of the session.

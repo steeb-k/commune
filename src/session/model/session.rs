@@ -579,25 +579,19 @@ glib::wrapper! {
 }
 
 impl Session {
-    /// Create a new session.
-    pub async fn new(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::with_login_data(homeserver, data)?;
-        let settings = Application::default()
-            .session_list()
-            .settings()
-            .get_or_create(&stored_session.id);
-
-        Self::restore(stored_session, settings).await
-    }
-
-    /// Restore a stored session.
-    pub(crate) async fn restore(
+    /// Construct an existing session.
+    pub(crate) async fn new(
         stored_session: StoredSession,
         settings: SessionSettings,
     ) -> Result<Self, ClientSetupError> {
+        let tokens = stored_session
+            .load_tokens()
+            .await
+            .ok_or(ClientSetupError::NoSessionTokens)?;
+
         let stored_session_clone = stored_session.clone();
         let client = spawn_tokio!(async move {
-            let client = matrix::client_with_stored_session(stored_session_clone).await?;
+            let client = matrix::client_with_stored_session(stored_session_clone, tokens).await?;
 
             // Make sure that we use the proper retention policy.
             let media = client.media();
@@ -616,10 +610,24 @@ impl Session {
         .expect("task was not aborted")?;
 
         Ok(glib::Object::builder()
-            .property("info", &stored_session)
+            .property("info", stored_session)
             .property("settings", settings)
             .property("client", BoxedClient(client))
             .build())
+    }
+
+    /// Create a new session after login.
+    pub(crate) async fn create(
+        homeserver: Url,
+        data: MatrixSession,
+    ) -> Result<Self, ClientSetupError> {
+        let stored_session = StoredSession::new(homeserver, data.meta, data.tokens.into()).await?;
+        let settings = Application::default()
+            .session_list()
+            .settings()
+            .get_or_create(&stored_session.id);
+
+        Self::new(stored_session, settings).await
     }
 
     /// Finish initialization of this session.

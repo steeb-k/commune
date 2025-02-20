@@ -5,7 +5,7 @@ use std::{borrow::Cow, str::FromStr};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
-    authentication::matrix::{MatrixSession, MatrixSessionTokens},
+    authentication::matrix::MatrixSession,
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
@@ -37,7 +37,7 @@ use crate::{
     components::Pill,
     gettext_f,
     prelude::*,
-    secret::{SecretData, StoredSession},
+    secret::{SessionTokens, StoredSession},
     session::model::{RemoteRoom, Room},
 };
 
@@ -267,6 +267,9 @@ pub enum ClientSetupError {
     /// An error creating the unique local ID of the session.
     #[error("Could not generate unique session ID")]
     NoSessionId,
+    /// An error accessing the session tokens.
+    #[error("Could not access session tokens")]
+    NoSessionTokens,
 }
 
 impl UserFacingError for ClientSetupError {
@@ -275,6 +278,7 @@ impl UserFacingError for ClientSetupError {
             Self::Client(err) => err.to_user_facing(),
             Self::Sdk(err) => err.to_user_facing(),
             Self::NoSessionId => gettext("Could not generate unique session ID"),
+            Self::NoSessionTokens => gettext("Could not access the session tokens"),
         }
     }
 }
@@ -282,6 +286,7 @@ impl UserFacingError for ClientSetupError {
 /// Create a [`Client`] with the given stored session.
 pub async fn client_with_stored_session(
     session: StoredSession,
+    tokens: SessionTokens,
 ) -> Result<Client, ClientSetupError> {
     let data_path = session.data_path();
     let cache_path = session.cache_path();
@@ -290,19 +295,13 @@ pub async fn client_with_stored_session(
         homeserver,
         user_id,
         device_id,
-        id: _,
-        secret: SecretData {
-            access_token,
-            passphrase,
-        },
+        passphrase,
+        ..
     } = session;
 
     let session_data = MatrixSession {
         meta: SessionMeta { user_id, device_id },
-        tokens: MatrixSessionTokens {
-            access_token,
-            refresh_token: None,
-        },
+        tokens: tokens.into(),
     };
 
     let encryption_settings = EncryptionSettings {

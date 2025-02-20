@@ -3,10 +3,7 @@
 use std::{fmt, path::PathBuf};
 
 use gtk::glib;
-use matrix_sdk::{
-    authentication::matrix::{MatrixSession, MatrixSessionTokens},
-    SessionMeta,
-};
+use matrix_sdk::{authentication::matrix::MatrixSessionTokens, SessionMeta};
 use rand::{
     distr::{Alphanumeric, SampleString},
     rng,
@@ -17,10 +14,13 @@ use thiserror::Error;
 use tokio::fs;
 use tracing::{debug, error};
 use url::Url;
+use zeroize::Zeroizing;
 
+mod file;
 #[cfg(target_os = "linux")]
 mod linux;
 
+use self::file::SecretFile;
 use crate::{
     prelude::*,
     spawn_tokio,
@@ -106,8 +106,8 @@ pub struct StoredSession {
     ///
     /// This is the name of the directories where the session data lives.
     pub id: String,
-    /// The secrets of the session.
-    pub secret: SecretData,
+    /// The passphrase used to encrypt the local databases.
+    pub passphrase: Zeroizing<String>,
 }
 
 impl fmt::Debug for StoredSession {
@@ -122,18 +122,16 @@ impl fmt::Debug for StoredSession {
 }
 
 impl StoredSession {
-    /// Construct a `StoredSession` from the given login data.
+    /// Construct a `StoredSession` from the given SDK user session data.
     ///
     /// Returns an error if we failed to generate a unique session ID for the
     /// new session.
-    pub(crate) fn with_login_data(
+    pub(crate) async fn new(
         homeserver: Url,
-        data: MatrixSession,
+        meta: SessionMeta,
+        tokens: SessionTokens,
     ) -> Result<Self, ClientSetupError> {
-        let MatrixSession {
-            meta: SessionMeta { user_id, device_id },
-            tokens: MatrixSessionTokens { access_token, .. },
-        } = data;
+        let SessionMeta { user_id, device_id } = meta;
 
         // Generate a unique random session ID.
         let mut id = None;
@@ -157,18 +155,17 @@ impl StoredSession {
 
         let passphrase = Alphanumeric.sample_string(&mut rng(), PASSPHRASE_LENGTH);
 
-        let secret = SecretData {
-            access_token,
-            passphrase,
-        };
-
-        Ok(Self {
+        let session = Self {
             homeserver,
             user_id,
             device_id,
             id,
-            secret,
-        })
+            passphrase: passphrase.into(),
+        };
+
+        session.store_tokens(tokens).await;
+
+        Ok(session)
     }
 
     /// The path where the persistent data of this session lives.
@@ -205,13 +202,76 @@ impl StoredSession {
         .await
         .expect("task was not aborted");
     }
+
+    /// The path to the files containing the session tokens.
+    fn tokens_path(&self) -> PathBuf {
+        let mut path = self.data_path();
+        path.push("tokens");
+        path
+    }
+
+    /// Load the tokens of this session.
+    pub(crate) async fn load_tokens(&self) -> Option<SessionTokens> {
+        let tokens_path = self.tokens_path();
+        let passphrase = self.passphrase.clone();
+
+        let handle = spawn_tokio!(async move { SecretFile::read(&tokens_path, &passphrase).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(tokens) => Some(tokens),
+            Err(error) => {
+                error!("Could not load session tokens: {error}");
+                None
+            }
+        }
+    }
+
+    /// Store the tokens of this session.
+    pub(crate) async fn store_tokens(&self, tokens: SessionTokens) {
+        let tokens_path = self.tokens_path();
+        let passphrase = self.passphrase.clone();
+
+        let handle =
+            spawn_tokio!(
+                async move { SecretFile::write(&tokens_path, &passphrase, &tokens).await }
+            );
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            error!("Could not store session tokens: {error}");
+        }
+    }
 }
 
-/// Secret data that can be stored in the secret backend.
-#[derive(Clone, Deserialize, Serialize)]
-pub struct SecretData {
-    /// The access token to provide to the homeserver for authentication.
-    pub access_token: String,
-    /// The passphrase used to encrypt the local databases.
-    pub passphrase: String,
+/// The tokens of a user session.
+#[derive(Serialize, Deserialize)]
+pub(crate) struct SessionTokens {
+    access_token: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    refresh_token: Option<String>,
+}
+
+impl From<MatrixSessionTokens> for SessionTokens {
+    fn from(value: MatrixSessionTokens) -> Self {
+        let MatrixSessionTokens {
+            access_token,
+            refresh_token,
+        } = value;
+        SessionTokens {
+            access_token,
+            refresh_token,
+        }
+    }
+}
+
+impl From<SessionTokens> for MatrixSessionTokens {
+    fn from(value: SessionTokens) -> Self {
+        let SessionTokens {
+            access_token,
+            refresh_token,
+        } = value;
+        MatrixSessionTokens {
+            access_token,
+            refresh_token,
+        }
+    }
 }
