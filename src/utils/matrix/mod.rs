@@ -288,6 +288,7 @@ pub async fn client_with_stored_session(
     session: StoredSession,
     tokens: SessionTokens,
 ) -> Result<Client, ClientSetupError> {
+    let has_refresh_token = tokens.refresh_token.is_some();
     let data_path = session.data_path();
     let cache_path = session.cache_path();
 
@@ -310,16 +311,20 @@ pub async fn client_with_stored_session(
         auto_enable_backups: true,
     };
 
-    let client = Client::builder()
+    let mut client_builder = Client::builder()
         .homeserver_url(homeserver)
         .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
         // force_auth option to solve an issue with some servers configuration to require
         // auth for profiles:
         // https://gitlab.gnome.org/World/fractal/-/issues/934
         .request_config(RequestConfig::new().retry_limit(2).force_auth())
-        .with_encryption_settings(encryption_settings)
-        .build()
-        .await?;
+        .with_encryption_settings(encryption_settings);
+
+    if has_refresh_token {
+        client_builder = client_builder.handle_refresh_tokens();
+    }
+
+    let client = client_builder.build().await?;
 
     client.restore_session(session_data).await?;
 

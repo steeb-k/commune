@@ -10,17 +10,17 @@ use gtk::{
 };
 use matrix_sdk::{
     authentication::matrix::MatrixSession, config::SyncSettings, media::MediaRetentionPolicy,
-    sync::SyncResponse, Client,
+    sync::SyncResponse, Client, SessionChange,
 };
 use ruma::{
     api::client::{
-        error::ErrorKind,
         filter::{FilterDefinition, RoomFilter},
         search::search_events::v3::UserProfile,
     },
     assign,
 };
 use tokio::task::AbortHandle;
+use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 use url::Url;
 
@@ -106,6 +106,7 @@ mod imp {
         /// Information about security for this session.
         #[property(get)]
         security: SessionSecurity,
+        session_changes_handle: RefCell<Option<AbortHandle>>,
         sync_handle: RefCell<Option<AbortHandle>>,
         network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
         /// The number of missed synchonizations in a row.
@@ -153,6 +154,10 @@ mod imp {
             // Needs to be disconnected or else it may restart the sync
             if let Some(handler_id) = self.network_monitor_handler_id.take() {
                 gio::NetworkMonitor::default().disconnect(handler_id);
+            }
+
+            if let Some(handle) = self.session_changes_handle.take() {
+                handle.abort();
             }
 
             if let Some(handle) = self.sync_handle.take() {
@@ -293,6 +298,7 @@ mod imp {
                     }
                 )
             );
+            self.watch_session_changes();
             self.update_homeserver_reachable().await;
 
             self.room_list().load().await;
@@ -311,6 +317,42 @@ mod imp {
             self.sync();
 
             debug!("A new session was prepared");
+        }
+
+        /// Watch the changes of the session, like being logged out or the
+        /// tokens being refreshed.
+        fn watch_session_changes(&self) {
+            let receiver = self.client().subscribe_to_session_changes();
+            let stream = BroadcastStream::new(receiver);
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let fut = stream.for_each(move |change| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let Ok(change) = change else {
+                        return;
+                    };
+
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                match change {
+                                    SessionChange::UnknownToken { .. } => {
+                                        obj.imp().clean_up().await;
+                                    }
+                                    SessionChange::TokensRefreshed => {
+                                        obj.imp().store_tokens().await;
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+
+            let handle = spawn_tokio!(fut).abort_handle();
+            self.session_changes_handle.replace(Some(handle));
         }
 
         /// Start syncing the Matrix client.
@@ -341,7 +383,7 @@ mod imp {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().handle_sync_response(response).await;
+                                obj.imp().handle_sync_response(response);
                             }
                         });
                     });
@@ -353,7 +395,7 @@ mod imp {
         }
 
         /// Handle the response received via sync.
-        async fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
+        fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
             debug!("Received sync response");
 
             match response {
@@ -369,16 +411,12 @@ mod imp {
                     self.missed_sync_count.set(0);
                 }
                 Err(error) => {
-                    if let Some(ErrorKind::UnknownToken { .. }) = error.client_api_error_kind() {
-                        self.clean_up().await;
-                    } else {
-                        let missed_sync_count = self.missed_sync_count.get() + 1;
+                    let missed_sync_count = self.missed_sync_count.get() + 1;
 
-                        if missed_sync_count >= MISSED_SYNC_MAX_COUNT {
-                            self.set_offline(true);
-                        } else {
-                            self.missed_sync_count.set(missed_sync_count);
-                        }
+                    if missed_sync_count >= MISSED_SYNC_MAX_COUNT {
+                        self.set_offline(true);
+                    } else {
+                        self.missed_sync_count.set(missed_sync_count);
                     }
                     error!("Could not perform sync: {error}");
                 }
@@ -500,6 +538,16 @@ mod imp {
                     })
                     .await;
             });
+        }
+
+        /// Update the stored session tokens.
+        async fn store_tokens(&self) {
+            let Some(sdk_session) = self.client().session() else {
+                return;
+            };
+
+            debug!("Storing updated session tokens…");
+            self.obj().info().store_tokens(sdk_session.into()).await;
         }
 
         /// Clean up this session after it was logged out.
