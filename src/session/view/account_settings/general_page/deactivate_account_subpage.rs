@@ -139,11 +139,7 @@ mod imp {
 
             let result = dialog
                 .authenticate(&*obj, move |client, auth| async move {
-                    client
-                        .account()
-                        .deactivate(None, auth, false)
-                        .await
-                        .map_err(Into::into)
+                    client.account().deactivate(None, auth, false).await
                 })
                 .await;
 

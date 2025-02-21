@@ -405,7 +405,7 @@ mod imp {
             };
 
             // Try to detect `@room` mentions.
-            let can_contain_at_room = message.mentions().map_or(true, |m| m.room);
+            let can_contain_at_room = message.mentions().is_none_or(|m| m.room);
             if room.permissions().can_notify_room() && can_contain_at_room {
                 if let Some(start) = find_at_room(&text) {
                     let pill = room.at_room().to_pill();

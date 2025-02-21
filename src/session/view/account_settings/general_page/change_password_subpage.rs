@@ -230,13 +230,7 @@ impl ChangePasswordSubpage {
         let result = dialog
             .authenticate(self, move |client, auth| {
                 let password = password.clone();
-                async move {
-                    client
-                        .account()
-                        .change_password(&password, auth)
-                        .await
-                        .map_err(Into::into)
-                }
+                async move { client.account().change_password(&password, auth).await }
             })
             .await;
 
