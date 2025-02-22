@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-07 12:43+0000\n"
-"PO-Revision-Date: 2025-02-08 11:48+0100\n"
+"POT-Creation-Date: 2025-02-21 11:01+0000\n"
+"PO-Revision-Date: 2025-02-22 11:10+0100\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -201,7 +201,7 @@ msgstr "Potrdi spremembo"
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:197
+#: src/session/view/content/room_history/mod.ui:203
 msgid "Try Again"
 msgstr "Poskusi znova"
 
@@ -212,7 +212,7 @@ msgstr "Poskusi znova"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:176 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:182 src/window.ui:17
 msgid "Loading"
 msgstr "Poteka nalaganje"
 
@@ -605,7 +605,7 @@ msgstr "P_otrdi"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:877
+#: src/session/view/content/room_history/mod.rs:867
 #: src/session/view/content/room_history/state_row/tombstone.rs:77
 msgid "View"
 msgstr "Pogled"
@@ -657,7 +657,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:880
+#: src/session/view/content/room_history/mod.rs:870
 #: src/session/view/content/room_history/state_row/tombstone.rs:79
 msgid "Join"
 msgstr "Pridruži se"
@@ -721,8 +721,8 @@ msgstr "Zapusti"
 #: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:558
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/item_row.rs:944
-#: src/session/view/content/room_history/item_row.rs:1003
+#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:976
 #: src/session/view/content/room_history/message_toolbar/mod.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -874,7 +874,7 @@ msgstr[3] ""
 #: src/components/dialogs/message_dialogs.rs:227
 #: src/session/view/account_settings/general_page/mod.rs:376
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
 msgstr "Odstrani"
 
@@ -895,7 +895,7 @@ msgstr ""
 "lahko poskusite naložiti tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/item_row.rs:985
+#: src/session/view/content/room_history/item_row.rs:958
 msgid "Reason (optional)"
 msgstr "Razlog (neobvezno)"
 
@@ -1746,7 +1746,7 @@ msgstr "Geslo"
 msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
-#: src/login/mod.rs:444
+#: src/login/mod.rs:443
 msgid "Could not store session"
 msgstr "Seje ni mogoče shraniti"
 
@@ -1780,38 +1780,30 @@ msgstr "Prijavi se z {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:154
+#: src/secret/linux.rs:172
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fraktal: poverilnice Matrix za {user_id}"
 
-#: src/secret/linux.rs:450
+#: src/secret/linux.rs:514
 msgid "The secret storage file is corrupted."
 msgstr "Skrivna datoteka za shranjevanje je poškodovana."
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:518
 msgid "Could not access the secret storage file location."
 msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
-#: src/secret/linux.rs:457
+#: src/secret/linux.rs:521
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do "
 "nepričakovane napake."
 
-#: src/secret/linux.rs:460
+#: src/secret/linux.rs:524
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
 
-#: src/secret/linux.rs:463
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr ""
-"Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
-"nepričakovane napake."
-
-#: src/secret/linux.rs:466
+#: src/secret/linux.rs:527
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1819,7 +1811,7 @@ msgstr ""
 "Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
 "pozive, ki zahtevajo dostop do njega."
 
-#: src/secret/linux.rs:469
+#: src/secret/linux.rs:530
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1827,35 +1819,43 @@ msgstr ""
 "Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
 "nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
 
-#: src/secret/linux.rs:472
+#: src/secret/linux.rs:533
+msgid ""
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
+"backend."
+msgstr ""
+"Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
+"nepričakovane napake."
+
+#: src/secret/linux.rs:536
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, "
 "da bi bil varen."
 
-#: src/secret/linux.rs:486
+#: src/secret/linux.rs:550
 msgid "The item was deleted."
 msgstr "Element je bil izbrisan."
 
-#: src/secret/linux.rs:490 src/secret/linux.rs:510
+#: src/secret/linux.rs:554 src/secret/linux.rs:576
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
 
-#: src/secret/linux.rs:493
+#: src/secret/linux.rs:557
 msgid "The collection or item is locked."
 msgstr "Zbirka ali predmet je zaklenjen."
 
-#: src/secret/linux.rs:496
+#: src/secret/linux.rs:560
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Seja tajne storitve D-Bus ne obstaja."
 
-#: src/secret/linux.rs:499
+#: src/secret/linux.rs:563
 msgid "The collection or item does not exist."
 msgstr "Zbirka ali predmet ne obstaja."
 
-#: src/secret/linux.rs:503
+#: src/secret/linux.rs:567
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1863,7 +1863,7 @@ msgstr ""
 "Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
 "zahtevajo dostop do nje."
 
-#: src/secret/linux.rs:506
+#: src/secret/linux.rs:570
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1871,7 +1871,7 @@ msgstr ""
 "Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
 "ključev ustvarjena in nastavljena kot privzeta."
 
-#: src/session/model/session.rs:651
+#: src/session/model/session.rs:720
 msgid "Could not log the session out"
 msgstr "Seje ni bilo mogoče odjaviti"
 
@@ -1919,17 +1919,17 @@ msgstr "Nepodprto pravilo"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:383
+#: src/session/model/room/mod.rs:381
 msgid "Empty Room (was {user})"
 msgstr "Prazna klepetalnica (prej {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:384
 msgid "Empty Room"
 msgstr "Prazna klepetalnica"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:396
+#: src/session/model/room/mod.rs:394
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -2014,15 +2014,15 @@ msgstr "Geslo mora vsebovati vsaj en simbol"
 msgid "Passwords do not match"
 msgstr "Gesli se ne ujemata"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:245
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:239
 msgid "Password changed successfully"
 msgstr "Geslo je bilo uspešno spremenjeno"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:257
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:251
 msgid "Password rejected for being too weak"
 msgstr "Geslo je zavrnjeno, ker je prešibko"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:261
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
 msgid "Could not change password"
 msgstr "Gesla ni mogoče spremeniti"
 
@@ -2051,11 +2051,11 @@ msgstr "Potrdi novo geslo"
 msgid "Continue"
 msgstr "Nadaljuj"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:154
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:150
 msgid "Account successfully deactivated"
 msgstr "Račun je bil uspešno deaktiviran"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:162
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:158
 msgid "Could not deactivate account"
 msgstr "Računa ni mogoče deaktivirati"
 
@@ -2817,7 +2817,7 @@ msgid "Join a room to start chatting"
 msgstr "Pridružite se klepetalnici za začetek klepeta"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/room_history/mod.ui:218
 msgid "Room History"
 msgstr "Zgodovina klepetalnice"
 
@@ -3299,7 +3299,7 @@ msgstr "Zvoka ni bilo mogoče naložiti"
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:193
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Check your network connection"
 msgstr "Preverite omrežno povezavo"
 
@@ -3765,40 +3765,40 @@ msgstr "P_oročaj ..."
 msgid "Re_move"
 msgstr "_Odstrani"
 
-#: src/session/view/content/room_history/item_row.rs:525
+#: src/session/view/content/room_history/item_row.rs:498
 #: src/session/view/media_viewer.rs:502
 msgid "Message link copied to clipboard"
 msgstr "Povezava sporočila kopirana v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:757
 msgid "Thumbnail copied to clipboard"
 msgstr "Sličica je kopirana v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:876
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "Besedilo je kopirano v odložišče"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Remove Message?"
 msgstr "Želite odstraniti sporočilo?"
 
-#: src/session/view/content/room_history/item_row.rs:940
+#: src/session/view/content/room_history/item_row.rs:913
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Ali res želite odstraniti to sporočilo? Tega ni mogoče razveljaviti."
 
-#: src/session/view/content/room_history/item_row.rs:954
+#: src/session/view/content/room_history/item_row.rs:927
 msgid "Could not remove message"
 msgstr "Sporočila ni bilo mogoče odstraniti"
 
-#: src/session/view/content/room_history/item_row.rs:967
+#: src/session/view/content/room_history/item_row.rs:940
 msgid "Could not toggle reaction"
 msgstr "Odziva ni bilo mogoče preklopiti"
 
-#: src/session/view/content/room_history/item_row.rs:996
+#: src/session/view/content/room_history/item_row.rs:969
 msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
-#: src/session/view/content/room_history/item_row.rs:998
+#: src/session/view/content/room_history/item_row.rs:971
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3808,15 +3808,15 @@ msgstr ""
 "ID. Skrbnik ne bo mogel videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:1005
+#: src/session/view/content/room_history/item_row.rs:978
 msgid "Report"
 msgstr "Poročilo"
 
-#: src/session/view/content/room_history/item_row.rs:1023
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Could not report event"
 msgstr "Dogodka ni bilo mogoče prijaviti"
 
-#: src/session/view/content/room_history/item_row.rs:1042
+#: src/session/view/content/room_history/item_row.rs:1015
 msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
@@ -3971,80 +3971,80 @@ msgstr "Samodokončanje omemba člana klepetalnice"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:342
+#: src/session/view/content/room_history/message_toolbar/mod.rs:346
 msgid "Reply to {user}"
 msgstr "Odgovori {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:358
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Uredi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:490
+#: src/session/view/content/room_history/message_toolbar/mod.rs:494
 msgid "Could not send reply"
 msgstr "Odgovora ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:507
+#: src/session/view/content/room_history/message_toolbar/mod.rs:511
 msgid "Could not send edit"
 msgstr "Urejanja ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:519
+#: src/session/view/content/room_history/message_toolbar/mod.rs:523
 msgid "Could not send message"
 msgstr "Ni mogoče poslati sporočila."
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:565
+#: src/session/view/content/room_history/message_toolbar/mod.rs:569
 msgid "Your Location"
 msgstr "Vaša lokacija"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:626
+#: src/session/view/content/room_history/message_toolbar/mod.rs:630
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Lokacija uporabnika {geo_uri} ob {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:649
+#: src/session/view/content/room_history/message_toolbar/mod.rs:653
 msgid "Could not send location"
 msgstr "Lokacije ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "The location request has been cancelled"
 msgstr "Zahteva za lokacijo je preklicana"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:657
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "The location services are disabled"
 msgstr "Lokacijske storitve so onemogočene"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:658
+#: src/session/view/content/room_history/message_toolbar/mod.rs:662
 msgid "Could not retrieve current location"
 msgstr "Ni mogoče pridobiti trenutne lokacije"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:691
+#: src/session/view/content/room_history/message_toolbar/mod.rs:695
 msgid "Could not send file"
 msgstr "Ni mogoče poslati datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "Select File"
 msgstr "Izbor datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:751
 msgid "Select"
 msgstr "Izberi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:766
 msgid "Could not open file"
 msgstr "Datoteke ni mogoče odpreti"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:788
-#: src/session/view/content/room_history/message_toolbar/mod.rs:796
+#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:800
 msgid "Error reading file"
 msgstr "Napaka pri branju datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:861
 msgid "Error getting image from clipboard"
 msgstr "Napaka pri pridobivanju slike iz odložišča"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:878
 msgid "Error getting file from clipboard"
 msgstr "Napaka pri pridobivanju datoteke iz odložišča"
 
@@ -4099,40 +4099,40 @@ msgstr "%-e. %b %Y ob %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e. %b %Y ob %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:330
+#: src/session/view/content/room_history/mod.rs:321
 msgid "Error getting file from drop"
 msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
-#: src/session/view/content/room_history/mod.rs:875
-#: src/session/view/content/room_history/mod.rs:879
+#: src/session/view/content/room_history/mod.rs:865
+#: src/session/view/content/room_history/mod.rs:869
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Obstaja novejša različica te klepetalnice"
 
-#: src/session/view/content/room_history/mod.rs:882
+#: src/session/view/content/room_history/mod.rs:872
 msgid "This room was closed"
 msgstr "Ta klepetalnica je bila zaprta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/content/room_history/mod.rs:901
 #: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr "Ni možno zapustiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:934
+#: src/session/view/content/room_history/mod.rs:924
 #: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "Ni se možno pridružiti {room_name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:951
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/sidebar/row.rs:773
 msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
-#: src/session/view/content/room_history/mod.rs:1022
+#: src/session/view/content/room_history/mod.rs:1012
 msgid "Sender Context Menu"
 msgstr "Kontekstni meni pošiljatelja"
 
@@ -4221,20 +4221,20 @@ msgstr "Pre_zri"
 msgid "Stop I_gnoring"
 msgstr "Nehaj i_gnorirati"
 
-#: src/session/view/content/room_history/mod.ui:148
+#: src/session/view/content/room_history/mod.ui:152
 msgid "Room Menu"
 msgstr "Meni klepetalnic"
 
-#: src/session/view/content/room_history/mod.ui:185
-#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:191
+#: src/session/view/content/room_history/mod.ui:198
 msgid "Could Not Load Room"
 msgstr "Ni bilo mogoče naložiti klepetalnice"
 
-#: src/session/view/content/room_history/mod.ui:226
+#: src/session/view/content/room_history/mod.ui:232
 msgid "Scroll to Bottom"
 msgstr "Pomakni se na dno"
 
-#: src/session/view/content/room_history/mod.ui:239
+#: src/session/view/content/room_history/mod.ui:245
 msgid "Drop Here to Send"
 msgstr "Spustite tukaj za pošiljanje"
 
@@ -4575,17 +4575,17 @@ msgid "Original Event"
 msgstr "Izvirni dogodek"
 
 #: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:160
+#: src/session/view/event_details_dialog.ui:162
 msgid "Event ID"
 msgstr "ID dogodka"
 
 #: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:166
+#: src/session/view/event_details_dialog.ui:168
 msgid "Copy Event ID"
 msgstr "Kopiraj ID dogodka"
 
 #: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:167
+#: src/session/view/event_details_dialog.ui:169
 msgid "Event ID copied to clipboard"
 msgstr "ID dogodka je kopiran v odložišče"
 
@@ -4593,51 +4593,51 @@ msgstr "ID dogodka je kopiran v odložišče"
 msgid "Room ID"
 msgstr "ID klepetalnice"
 
-#: src/session/view/event_details_dialog.ui:84
+#: src/session/view/event_details_dialog.ui:86
 msgid "Copy Room ID"
 msgstr "Kopiraj ID klepetalnice"
 
-#: src/session/view/event_details_dialog.ui:85
+#: src/session/view/event_details_dialog.ui:87
 msgid "Room ID copied to clipboard"
 msgstr "ID klepetalnice je kopiran v odložišče"
 
-#: src/session/view/event_details_dialog.ui:91
+#: src/session/view/event_details_dialog.ui:93
 msgid "Sender ID"
 msgstr "ID pošiljatelja"
 
-#: src/session/view/event_details_dialog.ui:97
+#: src/session/view/event_details_dialog.ui:99
 msgid "Copy Sender ID"
 msgstr "Kopiraj ID pošiljatelja"
 
-#: src/session/view/event_details_dialog.ui:98
+#: src/session/view/event_details_dialog.ui:100
 msgid "Sender ID copied to clipboard"
 msgstr "ID pošiljatelja je kopiran v odložišče"
 
-#: src/session/view/event_details_dialog.ui:104
-#: src/session/view/event_details_dialog.ui:173
+#: src/session/view/event_details_dialog.ui:106
+#: src/session/view/event_details_dialog.ui:175
 msgid "Timestamp"
 msgstr "Časovni žig"
 
-#: src/session/view/event_details_dialog.ui:110
-#: src/session/view/event_details_dialog.ui:179
+#: src/session/view/event_details_dialog.ui:112
+#: src/session/view/event_details_dialog.ui:181
 msgid "Copy Timestamp"
 msgstr "Kopiraj časovni žig"
 
-#: src/session/view/event_details_dialog.ui:111
-#: src/session/view/event_details_dialog.ui:180
+#: src/session/view/event_details_dialog.ui:113
+#: src/session/view/event_details_dialog.ui:182
 msgid "Timestamp copied to clipboard"
 msgstr "Časovni žig je kopiran v odložišče"
 
-#: src/session/view/event_details_dialog.ui:122
-#: src/session/view/event_details_dialog.ui:186
+#: src/session/view/event_details_dialog.ui:124
+#: src/session/view/event_details_dialog.ui:188
 msgid "View Source"
 msgstr "Poglej vir"
 
-#: src/session/view/event_details_dialog.ui:144
+#: src/session/view/event_details_dialog.ui:146
 msgid "Latest Edit"
 msgstr "Zadnje urejanje"
 
-#: src/session/view/event_details_dialog.ui:216
+#: src/session/view/event_details_dialog.ui:218
 msgid "Copy Source"
 msgstr "Kopiraj vir"
 
@@ -4902,11 +4902,11 @@ msgstr "Znova se pridruži klepetalnici"
 msgid "Rejoin Room as Low Priority"
 msgstr "Znova se pridružite klepetalnici z nizko prioriteto"
 
-#: src/session_list/mod.rs:161 src/session_list/mod.rs:197
+#: src/session_list/mod.rs:160 src/session_list/mod.rs:196
 msgid "Could not restore previous sessions"
 msgstr "Prejšnjih sej ni bilo mogoče obnoviti"
 
-#: src/session_list/mod.rs:198
+#: src/session_list/mod.rs:197
 msgid "An unexpected error happened while accessing the data directory"
 msgstr "Pri dostopu do podatkovne mape je prišlo do nepričakovane napake"
 
@@ -5065,9 +5065,13 @@ msgstr "{user}: {message}"
 msgid "{user} invited you"
 msgstr "{user} vas je povabil/a"
 
-#: src/utils/matrix/mod.rs:277
+#: src/utils/matrix/mod.rs:280
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
+
+#: src/utils/matrix/mod.rs:281
+msgid "Could not access the session tokens"
+msgstr "Ni bilo mogoče dostopati do žetonov seje"
 
 #: src/utils/media/image/mod.rs:763
 msgid "Image format not supported"
