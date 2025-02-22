@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-07 12:43+0000\n"
-"PO-Revision-Date: 2025-02-10 18:56+0800\n"
+"POT-Creation-Date: 2025-02-21 11:01+0000\n"
+"PO-Revision-Date: 2025-02-22 08:07+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -193,7 +193,7 @@ msgstr "确认更改"
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:197
+#: src/session/view/content/room_history/mod.ui:203
 msgid "Try Again"
 msgstr "重试"
 
@@ -204,7 +204,7 @@ msgstr "重试"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:176 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:182 src/window.ui:17
 msgid "Loading"
 msgstr "正在加载"
 
@@ -574,7 +574,7 @@ msgstr "确认(_O)"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:877
+#: src/session/view/content/room_history/mod.rs:867
 #: src/session/view/content/room_history/state_row/tombstone.rs:77
 msgid "View"
 msgstr "查看"
@@ -620,7 +620,7 @@ msgstr "输入聊天室标识、别名或链接来查找聊天室"
 
 #: src/components/dialogs/join_room.ui:190
 #: src/session/view/content/explore/public_room_row.rs:203
-#: src/session/view/content/room_history/mod.rs:880
+#: src/session/view/content/room_history/mod.rs:870
 #: src/session/view/content/room_history/state_row/tombstone.rs:79
 msgid "Join"
 msgstr "加入"
@@ -678,8 +678,8 @@ msgstr "离开"
 #: src/session/view/content/room_details/general_page.rs:1119
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:558
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/item_row.rs:944
-#: src/session/view/content/room_history/item_row.rs:1003
+#: src/session/view/content/room_history/item_row.rs:917
+#: src/session/view/content/room_history/item_row.rs:976
 #: src/session/view/content/room_history/message_toolbar/mod.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -810,7 +810,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:227
 #: src/session/view/account_settings/general_page/mod.rs:376
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
-#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
 msgstr "移除"
 
@@ -831,7 +831,7 @@ msgstr ""
 "早来加载更多历史。"
 
 #: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/item_row.rs:985
+#: src/session/view/content/room_history/item_row.rs:958
 msgid "Reason (optional)"
 msgstr "原因（可选）"
 
@@ -1640,7 +1640,7 @@ msgstr "密码"
 msgid "Single Sign-On Providers"
 msgstr "单点登录提供者"
 
-#: src/login/mod.rs:444
+#: src/login/mod.rs:443
 msgid "Could not store session"
 msgstr "无法存储会话"
 
@@ -1674,39 +1674,33 @@ msgstr "使用 {brand} 登录"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:154
+#: src/secret/linux.rs:172
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal：用于 {user_id} 的 Matrix 证书"
 
-#: src/secret/linux.rs:450
+#: src/secret/linux.rs:514
 msgid "The secret storage file is corrupted."
 msgstr "该保密存储文件已损坏。"
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:518
 msgid "Could not access the secret storage file location."
 msgstr "无法访问保密存储文件位置。"
 
-#: src/secret/linux.rs:457
+#: src/secret/linux.rs:521
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr "访问保密存储文件时发生意外错误。"
 
-#: src/secret/linux.rs:460
+#: src/secret/linux.rs:524
 msgid "The secret storage file has been changed by another process."
 msgstr "保密存储文件已被其它进程修改。"
 
-#: src/secret/linux.rs:463
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr "与 D-Bus 保密服务门户后端交互时发生意外错误。"
-
-#: src/secret/linux.rs:466
+#: src/secret/linux.rs:527
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 Flatpak 保密门户的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:469
+#: src/secret/linux.rs:530
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1714,44 +1708,50 @@ msgstr ""
 "Flatpak 保密门户不可用。请确保 xdg-desktop-portal 已安装，且其版本至少为 "
 "1.5.0。"
 
-#: src/secret/linux.rs:472
+#: src/secret/linux.rs:533
+msgid ""
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
+"backend."
+msgstr "与 D-Bus 保密服务门户后端交互时发生意外错误。"
+
+#: src/secret/linux.rs:536
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr "Flatpak 保密门户提供了一个太弱而不安全的密钥。"
 
-#: src/secret/linux.rs:486
+#: src/secret/linux.rs:550
 msgid "The item was deleted."
 msgstr "该项目已删除。"
 
-#: src/secret/linux.rs:490 src/secret/linux.rs:510
+#: src/secret/linux.rs:554 src/secret/linux.rs:576
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr "与 D-Bus 保密服务交互时发生意外错误。"
 
-#: src/secret/linux.rs:493
+#: src/secret/linux.rs:557
 msgid "The collection or item is locked."
 msgstr "该集合或项目已锁定。"
 
-#: src/secret/linux.rs:496
+#: src/secret/linux.rs:560
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Bus 保密服务会话不存在。"
 
-#: src/secret/linux.rs:499
+#: src/secret/linux.rs:563
 msgid "The collection or item does not exist."
 msgstr "该集合或项目不存在。"
 
-#: src/secret/linux.rs:503
+#: src/secret/linux.rs:567
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 D-Bus 保密服务的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:506
+#: src/secret/linux.rs:570
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:651
+#: src/session/model/session.rs:720
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -1799,17 +1799,17 @@ msgstr "不支持的规则"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:383
+#: src/session/model/room/mod.rs:381
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:386
+#: src/session/model/room/mod.rs:384
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:396
+#: src/session/model/room/mod.rs:394
 msgid "Unknown"
 msgstr "未知"
 
@@ -1894,15 +1894,15 @@ msgstr "密码必须包含至少一个符号"
 msgid "Passwords do not match"
 msgstr "密码不匹配"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:245
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:239
 msgid "Password changed successfully"
 msgstr "密码已成功修改"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:257
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:251
 msgid "Password rejected for being too weak"
 msgstr "密码因太弱已被拒绝"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:261
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
 msgid "Could not change password"
 msgstr "无法修改密码"
 
@@ -1931,11 +1931,11 @@ msgstr "确认新密码"
 msgid "Continue"
 msgstr "继续"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:154
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:150
 msgid "Account successfully deactivated"
 msgstr "账号已成功停用"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:162
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:158
 msgid "Could not deactivate account"
 msgstr "无法停用账号"
 
@@ -2667,7 +2667,7 @@ msgid "Join a room to start chatting"
 msgstr "加入聊天室开始聊天"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/room_history/mod.ui:218
 msgid "Room History"
 msgstr "聊天室历史"
 
@@ -3141,7 +3141,7 @@ msgstr "无法加载音频"
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:193
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Check your network connection"
 msgstr "检查您的网络连接"
 
@@ -3586,40 +3586,40 @@ msgstr "举报(_O)…"
 msgid "Re_move"
 msgstr "移除(_M)"
 
-#: src/session/view/content/room_history/item_row.rs:525
+#: src/session/view/content/room_history/item_row.rs:498
 #: src/session/view/media_viewer.rs:502
 msgid "Message link copied to clipboard"
 msgstr "消息链接已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:757
 msgid "Thumbnail copied to clipboard"
 msgstr "缩略图已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:876
+#: src/session/view/content/room_history/item_row.rs:849
 msgid "Text copied to clipboard"
 msgstr "文字已复制到剪贴板"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:911
 msgid "Remove Message?"
 msgstr "移除消息吗？"
 
-#: src/session/view/content/room_history/item_row.rs:940
+#: src/session/view/content/room_history/item_row.rs:913
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "您确定想要移除该消息吗？该操作无法撤消。"
 
-#: src/session/view/content/room_history/item_row.rs:954
+#: src/session/view/content/room_history/item_row.rs:927
 msgid "Could not remove message"
 msgstr "无法移除消息"
 
-#: src/session/view/content/room_history/item_row.rs:967
+#: src/session/view/content/room_history/item_row.rs:940
 msgid "Could not toggle reaction"
 msgstr "无法切换回应"
 
-#: src/session/view/content/room_history/item_row.rs:996
+#: src/session/view/content/room_history/item_row.rs:969
 msgid "Report Event?"
 msgstr "举报事件？"
 
-#: src/session/view/content/room_history/item_row.rs:998
+#: src/session/view/content/room_history/item_row.rs:971
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3629,15 +3629,15 @@ msgstr ""
 "编校，管理员将无法看到它。"
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:1005
+#: src/session/view/content/room_history/item_row.rs:978
 msgid "Report"
 msgstr "举报"
 
-#: src/session/view/content/room_history/item_row.rs:1023
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Could not report event"
 msgstr "无法举报该事件"
 
-#: src/session/view/content/room_history/item_row.rs:1042
+#: src/session/view/content/room_history/item_row.rs:1015
 msgid "Could not discard message"
 msgstr "无法取消发送消息"
 
@@ -3787,80 +3787,80 @@ msgstr "聊天室成员提到自动补全"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:342
+#: src/session/view/content/room_history/message_toolbar/mod.rs:346
 msgid "Reply to {user}"
 msgstr "对 {user} 的回复"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:358
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgctxt "room-history"
 msgid "Edit"
 msgstr "编辑"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:490
+#: src/session/view/content/room_history/message_toolbar/mod.rs:494
 msgid "Could not send reply"
 msgstr "无法发送回复"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:507
+#: src/session/view/content/room_history/message_toolbar/mod.rs:511
 msgid "Could not send edit"
 msgstr "无法发送编辑"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:519
+#: src/session/view/content/room_history/message_toolbar/mod.rs:523
 msgid "Could not send message"
 msgstr "无法发送消息"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:565
+#: src/session/view/content/room_history/message_toolbar/mod.rs:569
 msgid "Your Location"
 msgstr "您的位置"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:626
+#: src/session/view/content/room_history/message_toolbar/mod.rs:630
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "用户定位 {geo_uri} 于 {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:649
+#: src/session/view/content/room_history/message_toolbar/mod.rs:653
 msgid "Could not send location"
 msgstr "无法发送位置"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:660
 msgid "The location request has been cancelled"
 msgstr "定位请求已取消"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:657
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "The location services are disabled"
 msgstr "定位请求已取消"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:658
+#: src/session/view/content/room_history/message_toolbar/mod.rs:662
 msgid "Could not retrieve current location"
 msgstr "无法检索当前位置"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:691
+#: src/session/view/content/room_history/message_toolbar/mod.rs:695
 msgid "Could not send file"
 msgstr "无法发送文件"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "Select File"
 msgstr "选择文件"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:751
 msgid "Select"
 msgstr "选择"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:766
 msgid "Could not open file"
 msgstr "无法打开文件"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:788
-#: src/session/view/content/room_history/message_toolbar/mod.rs:796
+#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:800
 msgid "Error reading file"
 msgstr "读取文件时出错"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:857
+#: src/session/view/content/room_history/message_toolbar/mod.rs:861
 msgid "Error getting image from clipboard"
 msgstr "从剪贴板获取图像时出错"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:874
+#: src/session/view/content/room_history/message_toolbar/mod.rs:878
 msgid "Error getting file from clipboard"
 msgstr "从剪贴板获取文件时出错"
 
@@ -3915,40 +3915,40 @@ msgstr "%m 月 %d 日 %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%m 月 %d 日 %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:330
+#: src/session/view/content/room_history/mod.rs:321
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
-#: src/session/view/content/room_history/mod.rs:875
-#: src/session/view/content/room_history/mod.rs:879
+#: src/session/view/content/room_history/mod.rs:865
+#: src/session/view/content/room_history/mod.rs:869
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:882
+#: src/session/view/content/room_history/mod.rs:872
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/content/room_history/mod.rs:901
 #: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr "无法离开 {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:934
+#: src/session/view/content/room_history/mod.rs:924
 #: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "无法加入 {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:951
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/sidebar/row.rs:773
 msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
-#: src/session/view/content/room_history/mod.rs:1022
+#: src/session/view/content/room_history/mod.rs:1012
 msgid "Sender Context Menu"
 msgstr "发送者上下文菜单"
 
@@ -4037,20 +4037,20 @@ msgstr "忽略(_G)"
 msgid "Stop I_gnoring"
 msgstr "停止忽略(_G)"
 
-#: src/session/view/content/room_history/mod.ui:148
+#: src/session/view/content/room_history/mod.ui:152
 msgid "Room Menu"
 msgstr "聊天室菜单"
 
-#: src/session/view/content/room_history/mod.ui:185
-#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:191
+#: src/session/view/content/room_history/mod.ui:198
 msgid "Could Not Load Room"
 msgstr "无法加载聊天室"
 
-#: src/session/view/content/room_history/mod.ui:226
+#: src/session/view/content/room_history/mod.ui:232
 msgid "Scroll to Bottom"
 msgstr "滚动到底部"
 
-#: src/session/view/content/room_history/mod.ui:239
+#: src/session/view/content/room_history/mod.ui:245
 msgid "Drop Here to Send"
 msgstr "拖到这里发送"
 
@@ -4380,17 +4380,17 @@ msgid "Original Event"
 msgstr "原始事件"
 
 #: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:160
+#: src/session/view/event_details_dialog.ui:162
 msgid "Event ID"
 msgstr "事件标识"
 
 #: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:166
+#: src/session/view/event_details_dialog.ui:168
 msgid "Copy Event ID"
 msgstr "复制事件标识"
 
 #: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:167
+#: src/session/view/event_details_dialog.ui:169
 msgid "Event ID copied to clipboard"
 msgstr "事件标识已复制到剪贴板"
 
@@ -4398,51 +4398,51 @@ msgstr "事件标识已复制到剪贴板"
 msgid "Room ID"
 msgstr "聊天室标识"
 
-#: src/session/view/event_details_dialog.ui:84
+#: src/session/view/event_details_dialog.ui:86
 msgid "Copy Room ID"
 msgstr "复制聊天室标识"
 
-#: src/session/view/event_details_dialog.ui:85
+#: src/session/view/event_details_dialog.ui:87
 msgid "Room ID copied to clipboard"
 msgstr "聊天室标识已复制到剪贴板"
 
-#: src/session/view/event_details_dialog.ui:91
+#: src/session/view/event_details_dialog.ui:93
 msgid "Sender ID"
 msgstr "发送者标识"
 
-#: src/session/view/event_details_dialog.ui:97
+#: src/session/view/event_details_dialog.ui:99
 msgid "Copy Sender ID"
 msgstr "复制发送者标识"
 
-#: src/session/view/event_details_dialog.ui:98
+#: src/session/view/event_details_dialog.ui:100
 msgid "Sender ID copied to clipboard"
 msgstr "发送者标识已复制到剪贴板"
 
-#: src/session/view/event_details_dialog.ui:104
-#: src/session/view/event_details_dialog.ui:173
+#: src/session/view/event_details_dialog.ui:106
+#: src/session/view/event_details_dialog.ui:175
 msgid "Timestamp"
 msgstr "时间戳"
 
-#: src/session/view/event_details_dialog.ui:110
-#: src/session/view/event_details_dialog.ui:179
+#: src/session/view/event_details_dialog.ui:112
+#: src/session/view/event_details_dialog.ui:181
 msgid "Copy Timestamp"
 msgstr "复制时间戳"
 
-#: src/session/view/event_details_dialog.ui:111
-#: src/session/view/event_details_dialog.ui:180
+#: src/session/view/event_details_dialog.ui:113
+#: src/session/view/event_details_dialog.ui:182
 msgid "Timestamp copied to clipboard"
 msgstr "时间戳已复制到剪贴板"
 
-#: src/session/view/event_details_dialog.ui:122
-#: src/session/view/event_details_dialog.ui:186
+#: src/session/view/event_details_dialog.ui:124
+#: src/session/view/event_details_dialog.ui:188
 msgid "View Source"
 msgstr "查看来源"
 
-#: src/session/view/event_details_dialog.ui:144
+#: src/session/view/event_details_dialog.ui:146
 msgid "Latest Edit"
 msgstr "最新编辑"
 
-#: src/session/view/event_details_dialog.ui:216
+#: src/session/view/event_details_dialog.ui:218
 msgid "Copy Source"
 msgstr "复制来源"
 
@@ -4703,11 +4703,11 @@ msgstr "重新加入聊天室"
 msgid "Rejoin Room as Low Priority"
 msgstr "重新加入聊天室并设为低优先级"
 
-#: src/session_list/mod.rs:161 src/session_list/mod.rs:197
+#: src/session_list/mod.rs:160 src/session_list/mod.rs:196
 msgid "Could not restore previous sessions"
 msgstr "无法恢复上次会话"
 
-#: src/session_list/mod.rs:198
+#: src/session_list/mod.rs:197
 msgid "An unexpected error happened while accessing the data directory"
 msgstr "访问数据目录时发生了意外错误"
 
@@ -4856,9 +4856,13 @@ msgstr "{user}：{message}"
 msgid "{user} invited you"
 msgstr "{user} 邀请了您"
 
-#: src/utils/matrix/mod.rs:277
+#: src/utils/matrix/mod.rs:280
 msgid "Could not generate unique session ID"
 msgstr "无法生成唯一会话标识"
+
+#: src/utils/matrix/mod.rs:281
+msgid "Could not access the session tokens"
+msgstr "无法访问会话令牌"
 
 #: src/utils/media/image/mod.rs:763
 msgid "Image format not supported"
