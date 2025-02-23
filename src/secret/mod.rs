@@ -163,6 +163,7 @@ impl StoredSession {
             passphrase: passphrase.into(),
         };
 
+        session.create_data_dir().await;
         session.store_tokens(tokens).await;
 
         Ok(session)
@@ -173,6 +174,20 @@ impl StoredSession {
         let mut path = data_dir_path(DataType::Persistent);
         path.push(&self.id);
         path
+    }
+
+    /// Create the directory where the persistent data of this session will
+    /// live.
+    async fn create_data_dir(&self) {
+        let data_path = self.data_path();
+
+        spawn_tokio!(async move {
+            if let Err(error) = fs::create_dir_all(data_path).await {
+                error!("Could not create session data directory: {error}");
+            }
+        })
+        .await
+        .expect("task was not aborted");
     }
 
     /// The path where the cached data of this session lives.
