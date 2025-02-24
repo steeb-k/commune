@@ -133,8 +133,15 @@ mod imp {
                 let obj_weak = obj_weak.clone();
 
                 async move {
+                    // If a device update is received for an account different than the one
+                    // for which the settings are currently opened, we don't want to reload the user
+                    // sessions, to save bandwidth.
+                    // However, when a device is disconnected, an empty device update is received.
+                    // In this case, we do not know which account had a device disconnection, so we
+                    // want to reload the sessions just in case.
                     if !updates.new.contains_key(&user_id)
                         && !updates.changed.contains_key(&user_id)
+                        && (!updates.new.is_empty() || !updates.changed.is_empty())
                     {
                         return;
                     }
