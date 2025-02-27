@@ -40,7 +40,7 @@ impl VirtualItemKind {
 /// A boxed [`VirtualItemKind`].
 #[derive(Clone, Debug, Default, PartialEq, Eq, glib::Boxed)]
 #[boxed_type(name = "BoxedVirtualItemKind")]
-pub struct BoxedVirtualItemKind(VirtualItemKind);
+pub struct BoxedVirtualItemKind(pub(super) VirtualItemKind);
 
 impl Deref for BoxedVirtualItemKind {
     type Target = VirtualItemKind;

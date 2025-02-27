@@ -398,6 +398,10 @@ mod imp {
 
         /// Update this timeline with the given diff list.
         fn update_with_diff_list(&self, diff_list: Vec<VectorDiff<Arc<SdkTimelineItem>>>) {
+            if *IS_AT_TRACE_LEVEL {
+                self.log_diff_list(&diff_list);
+            }
+
             let was_empty = self.is_empty();
 
             if let Some(diff_list) = self.try_minimize_diff_list(diff_list) {
@@ -405,6 +409,10 @@ mod imp {
                 for diff in diff_list {
                     self.update_with_single_diff(diff);
                 }
+            }
+
+            if *IS_AT_TRACE_LEVEL {
+                self.log_items();
             }
 
             let obj = self.obj();
@@ -789,6 +797,103 @@ mod imp {
                     }
                 }
             }
+        }
+    }
+
+    /// The default log filter initialized with the `RUST_LOG` environment
+    /// variable.
+    ///
+    /// Used to know if we are likely to need to log the diff.
+    static IS_AT_TRACE_LEVEL: LazyLock<bool> = LazyLock::new(|| {
+        tracing_subscriber::EnvFilter::try_from_default_env()
+            // If the env variable is not set, we know that we are not at trace level.
+            .ok()
+            .and_then(|filter| filter.max_level_hint())
+            .is_some_and(|max| max == tracing::level_filters::LevelFilter::TRACE)
+    });
+
+    /// Temporary methods to debug items in the timeline.
+    impl Timeline {
+        /// Log the given diff list.
+        fn log_diff_list(&self, diff_list: &[VectorDiff<Arc<SdkTimelineItem>>]) {
+            let mut log_list = Vec::with_capacity(diff_list.len());
+
+            for diff in diff_list {
+                let log = match diff {
+                    VectorDiff::Append { values } => {
+                        format!("append: {:?}", sdk_items_to_log(values))
+                    }
+                    VectorDiff::Clear => "clear".to_owned(),
+                    VectorDiff::PushFront { value } => {
+                        format!("push_front: {}", sdk_item_to_log(value))
+                    }
+                    VectorDiff::PushBack { value } => {
+                        format!("push_back: {}", sdk_item_to_log(value))
+                    }
+                    VectorDiff::PopFront => "pop_front".to_owned(),
+                    VectorDiff::PopBack => "pop_back".to_owned(),
+                    VectorDiff::Insert { index, value } => {
+                        format!("insert at {index}: {}", sdk_item_to_log(value))
+                    }
+                    VectorDiff::Set { index, value } => {
+                        format!("set at {index}: {}", sdk_item_to_log(value))
+                    }
+                    VectorDiff::Remove { index } => format!("remove at {index}"),
+                    VectorDiff::Truncate { length } => format!("truncate at {length}"),
+                    VectorDiff::Reset { values } => {
+                        format!("reset: {:?}", sdk_items_to_log(values))
+                    }
+                };
+
+                log_list.push(log);
+            }
+
+            tracing::trace!(
+                room = self.room().human_readable_id(),
+                "Diff list: {log_list:#?}"
+            );
+        }
+
+        /// Log the items in this timeline.
+        fn log_items(&self) {
+            let items = self
+                .sdk_items
+                .iter::<TimelineItem>()
+                .filter_map(|item| item.as_ref().map(item_to_log).ok())
+                .collect::<Vec<_>>();
+
+            tracing::trace!(
+                room = self.room().human_readable_id(),
+                "Timeline: {items:#?}"
+            );
+        }
+    }
+
+    // Helper methods for logging items.
+    fn sdk_items_to_log(
+        items: &matrix_sdk_ui::eyeball_im::Vector<Arc<SdkTimelineItem>>,
+    ) -> Vec<String> {
+        items.iter().map(|item| sdk_item_to_log(item)).collect()
+    }
+
+    fn sdk_item_to_log(item: &SdkTimelineItem) -> String {
+        match item.kind() {
+            matrix_sdk_ui::timeline::TimelineItemKind::Event(event) => {
+                format!("event::{:?}", event.identifier())
+            }
+            matrix_sdk_ui::timeline::TimelineItemKind::Virtual(virtual_item) => {
+                format!("virtual::{virtual_item:?}")
+            }
+        }
+    }
+
+    fn item_to_log(item: &TimelineItem) -> String {
+        if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
+            format!("virtual::{:?}", virtual_item.kind().0)
+        } else if let Some(event) = item.downcast_ref::<Event>() {
+            format!("event::{:?}", event.identifier())
+        } else {
+            "Unknown item".to_owned()
         }
     }
 }
