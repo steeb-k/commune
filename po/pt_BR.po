@@ -7,20 +7,21 @@
 # Juliano de Souza Camargo <julianosc@pm.me>, 2024.
 # Filipe Motta <luizfilipemotta@gmail.com>, 2024.
 # Rafael Fontenelle <rafaelff@gnome.org>, 2018-2025.
+# Álvaro Burns <>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-10 22:31+0000\n"
-"PO-Revision-Date: 2025-02-13 22:36-0300\n"
-"Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
-"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
+"POT-Creation-Date: 2025-02-22 10:11+0000\n"
+"PO-Revision-Date: 2025-02-22 08:14-0300\n"
+"Last-Translator: Álvaro Burns <>\n"
+"Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Gtranslator 47.1\n"
 "X-DL-Lang: pt_BR\n"
 "X-DL-Module: fractal\n"
@@ -1747,7 +1748,7 @@ msgstr "Senha"
 msgid "Single Sign-On Providers"
 msgstr "Provedores de login único"
 
-#: src/login/mod.rs:444
+#: src/login/mod.rs:443
 msgid "Could not store session"
 msgstr "Falha ao armazenar a sessão"
 
@@ -1781,36 +1782,28 @@ msgstr "Entrar com {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:154
+#: src/secret/linux.rs:172
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal: credenciais Matrix para {user_id}"
 
-#: src/secret/linux.rs:450
+#: src/secret/linux.rs:514
 msgid "The secret storage file is corrupted."
 msgstr "O armazenamento de segredos foi corrompido."
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:518
 msgid "Could not access the secret storage file location."
 msgstr "Falha ao acessar o armazenamento de segredos"
 
-#: src/secret/linux.rs:457
+#: src/secret/linux.rs:521
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Ocorreu um erro desconhecido ao interagir com o armazenamento de segredos."
 
-#: src/secret/linux.rs:460
+#: src/secret/linux.rs:524
 msgid "The secret storage file has been changed by another process."
 msgstr "O armazenamento de segredos foi mudado por outro processo."
 
-#: src/secret/linux.rs:463
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr ""
-"Ocorreu um erro desconhecido ao interagir com o backend do D-Bus Secret "
-"Portal."
-
-#: src/secret/linux.rs:466
+#: src/secret/linux.rs:527
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1819,7 +1812,7 @@ msgstr ""
 "de aceitar qualquer mensagem pedindo para acessar isto."
 
 # Não acho que xdg-desktop-portal tenha uma tradução, mas deixo em aproximada por precaução
-#: src/secret/linux.rs:469
+#: src/secret/linux.rs:530
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1827,34 +1820,42 @@ msgstr ""
 "O Portar de Segredos Flatpak não está disponível. Tenha certeza que xdg-"
 "desktop-portal está instalado, e está pelo menos na versão 1.5.0."
 
-#: src/secret/linux.rs:472
+#: src/secret/linux.rs:533
+msgid ""
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
+"backend."
+msgstr ""
+"Ocorreu um erro desconhecido ao interagir com o backend do D-Bus Secret "
+"Portal."
+
+#: src/secret/linux.rs:536
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "O Portal de Segredos Flatpak providenciou uma chave que é muito fraca para "
 "ser segura."
 
-#: src/secret/linux.rs:486
+#: src/secret/linux.rs:550
 msgid "The item was deleted."
 msgstr "O item foi excluído."
 
-#: src/secret/linux.rs:490 src/secret/linux.rs:510
+#: src/secret/linux.rs:554 src/secret/linux.rs:576
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr "Ocorreu um erro desconhecido ao interagir com o D-Bus Secret Service."
 
-#: src/secret/linux.rs:493
+#: src/secret/linux.rs:557
 msgid "The collection or item is locked."
 msgstr "A coleção ou item está trancado."
 
-#: src/secret/linux.rs:496
+#: src/secret/linux.rs:560
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "A sessão do D-Bus Secret Service não existe."
 
-#: src/secret/linux.rs:499
+#: src/secret/linux.rs:563
 msgid "The collection or item does not exist."
 msgstr "A coleção ou item não existe."
 
-#: src/secret/linux.rs:503
+#: src/secret/linux.rs:567
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1862,7 +1863,7 @@ msgstr ""
 "A requisição para o D-Bus Secret Service foi cancelada. Tenha certeza de "
 "aceitar qualquer mensagem pedindo acesso"
 
-#: src/secret/linux.rs:506
+#: src/secret/linux.rs:570
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1870,7 +1871,7 @@ msgstr ""
 "Falha ao acessar a coleção padrão. Tenha certeza que um chaveiro foi criado "
 "e definido como padrão."
 
-#: src/session/model/session.rs:651
+#: src/session/model/session.rs:720
 msgid "Could not log the session out"
 msgstr "Falha ao encerrar a sessão"
 
@@ -2014,15 +2015,15 @@ msgstr "A senha deve ter pelo menos um símbolo"
 msgid "Passwords do not match"
 msgstr "As senhas não conferem"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:245
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:239
 msgid "Password changed successfully"
 msgstr "Senha alterada com sucesso"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:257
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:251
 msgid "Password rejected for being too weak"
 msgstr "Senha rejeitada por ser fraca demais"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:261
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
 msgid "Could not change password"
 msgstr "Falha ao alterar a senha"
 
@@ -2051,11 +2052,11 @@ msgstr "Confirmar nova senha"
 msgid "Continue"
 msgstr "Continuar"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:154
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:150
 msgid "Account successfully deactivated"
 msgstr "Conta desativada com sucesso"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:162
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:158
 msgid "Could not deactivate account"
 msgstr "Falha ao desativar a conta"
 
@@ -4890,11 +4891,11 @@ msgstr "Entrar novamente na sala"
 msgid "Rejoin Room as Low Priority"
 msgstr "Entrar novamente na sala como baixa prioridade"
 
-#: src/session_list/mod.rs:161 src/session_list/mod.rs:197
+#: src/session_list/mod.rs:160 src/session_list/mod.rs:196
 msgid "Could not restore previous sessions"
 msgstr "Falha ao restaurar as sessões anteriores"
 
-#: src/session_list/mod.rs:198
+#: src/session_list/mod.rs:197
 msgid "An unexpected error happened while accessing the data directory"
 msgstr "Ocorreu um erro inesperado ao acessar do diretório dos dados"
 
@@ -5050,9 +5051,13 @@ msgstr "{user}: {message}"
 msgid "{user} invited you"
 msgstr "{user} convidou você"
 
-#: src/utils/matrix/mod.rs:277
+#: src/utils/matrix/mod.rs:280
 msgid "Could not generate unique session ID"
 msgstr "Não foi possível gerar um ID de sessão única"
+
+#: src/utils/matrix/mod.rs:281
+msgid "Could not access the session tokens"
+msgstr "Não pôde acessar aos tokens da sessão"
 
 #: src/utils/media/image/mod.rs:763
 msgid "Image format not supported"
