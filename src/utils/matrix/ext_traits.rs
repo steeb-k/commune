@@ -4,12 +4,13 @@ use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, EventTimelineItem, Message, TimelineEventItemId,
-    TimelineItemContent,
+    AnyOtherFullStateEventContent, EventTimelineItem, MembershipChange, Message,
+    TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
     events::{room::message::MessageType, AnySyncTimelineEvent},
     serde::Raw,
+    UserId,
 };
 use serde::Deserialize;
 
@@ -90,6 +91,13 @@ pub(crate) trait TimelineItemContentExt {
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
     fn counts_as_unread(&self) -> bool;
 
+    /// Whether this content can count as the latest activity in a room.
+    ///
+    /// This includes content that counts as unread, plus membership changes for
+    /// our own user towards joining a room, so that freshly joined rooms are at
+    /// the top of the list.
+    fn counts_as_activity(&self, own_user_id: &UserId) -> bool;
+
     /// Whether we can show the header for this content.
     fn can_show_header(&self) -> bool;
 
@@ -108,6 +116,40 @@ impl TimelineItemContentExt for TimelineItemContent {
                 state.content(),
                 AnyOtherFullStateEventContent::RoomTombstone(_)
             ),
+            _ => false,
+        }
+    }
+
+    fn counts_as_activity(&self, own_user_id: &UserId) -> bool {
+        if self.counts_as_unread() {
+            return true;
+        }
+
+        match self {
+            TimelineItemContent::MembershipChange(membership) => {
+                if membership.user_id() != own_user_id {
+                    return false;
+                }
+
+                // We need to bump the room for every meaningful change towards joining a room.
+                //
+                // The change cannot be computed in two cases:
+                // - This is the first membership event for our user in the room: we need to
+                //   count it.
+                // - The event was redacted: we do not know if we should count it or not, so we
+                //   count it too for simplicity.
+                membership.change().is_none_or(|change| {
+                    matches!(
+                        change,
+                        MembershipChange::Joined
+                            | MembershipChange::Unbanned
+                            | MembershipChange::Invited
+                            | MembershipChange::InvitationAccepted
+                            | MembershipChange::KnockAccepted
+                            | MembershipChange::Knocked
+                    )
+                })
+            }
             _ => false,
         }
     }

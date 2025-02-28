@@ -782,7 +782,7 @@ mod imp {
         }
 
         /// The member corresponding to our own user.
-        fn own_member(&self) -> &Member {
+        pub(super) fn own_member(&self) -> &Member {
             self.own_member.get().expect("Own member was initialized")
         }
 
@@ -2009,10 +2009,11 @@ impl Room {
     ///
     /// The events must be in reverse chronological order.
     fn update_latest_activity<'a>(&self, events: impl Iterator<Item = &'a Event>) {
+        let own_user_id = self.imp().own_member().user_id();
         let mut latest_activity = self.latest_activity();
 
         for event in events {
-            if event.counts_as_unread() {
+            if event.counts_as_activity(own_user_id) {
                 latest_activity = latest_activity.max(event.origin_server_ts().get().into());
                 break;
             }
