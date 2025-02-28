@@ -3,8 +3,10 @@ use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 use tracing::error;
 
 mod user_session_row;
+mod user_session_subpage;
 
 use self::user_session_row::UserSessionRow;
+pub use self::user_session_subpage::UserSessionSubpage;
 use super::AccountSettings;
 use crate::{
     session::model::{UserSession, UserSessionsList},
@@ -34,9 +36,6 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         other_sessions: TemplateChild<gtk::ListBox>,
-        /// The ancestor [`AccountSettings`].
-        #[property(get, set = Self::set_account_settings, explicit_notify, nullable)]
-        account_settings: glib::WeakRef<AccountSettings>,
         /// The list of user sessions.
         #[property(get, set = Self::set_user_sessions, explicit_notify, nullable)]
         user_sessions: BoundObject<UserSessionsList>,
@@ -52,7 +51,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -62,6 +61,12 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for UserSessionsPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.init_other_sessions();
+        }
+
         fn dispose(&self) {
             if let Some(user_sessions) = self.user_sessions.obj() {
                 if let Some(handler) = self.other_sessions_handler.take() {
@@ -77,16 +82,8 @@ mod imp {
     impl WidgetImpl for UserSessionsPage {}
     impl PreferencesPageImpl for UserSessionsPage {}
 
+    #[gtk::template_callbacks]
     impl UserSessionsPage {
-        /// Set the ancestor [`AccountSettings`].
-        fn set_account_settings(&self, account_settings: Option<&AccountSettings>) {
-            self.account_settings.set(account_settings);
-
-            if let Some(account_settings) = account_settings {
-                self.init_other_sessions(account_settings);
-            }
-        }
-
         /// Set the list of user sessions.
         fn set_user_sessions(&self, user_sessions: Option<UserSessionsList>) {
             let prev_user_sessions = self.user_sessions.obj();
@@ -162,7 +159,7 @@ mod imp {
         }
 
         /// Initialize the list of other sessions.
-        fn init_other_sessions(&self, account_settings: &AccountSettings) {
+        fn init_other_sessions(&self) {
             let last_seen_ts_sorter = gtk::NumericSorter::builder()
                 .expression(UserSession::this_expression("last-seen-ts"))
                 .sort_order(gtk::SortType::Descending)
@@ -175,32 +172,20 @@ mod imp {
             self.other_sessions_sorted_model
                 .set_sorter(Some(&multi_sorter));
 
-            self.other_sessions.bind_model(
-                Some(&self.other_sessions_sorted_model),
-                clone!(
-                    #[weak]
-                    account_settings,
-                    #[upgrade_or_else]
-                    || adw::Bin::new().upcast(),
-                    move |item| {
-                        let Some(user_session) = item.downcast_ref::<UserSession>() else {
-                            error!("Did not get a user session as an item of user session list");
-                            return adw::Bin::new().upcast();
-                        };
+            self.other_sessions
+                .bind_model(Some(&self.other_sessions_sorted_model), move |item| {
+                    let Some(user_session) = item.downcast_ref::<UserSession>() else {
+                        error!("Did not get a user session as an item of user session list");
+                        return adw::Bin::new().upcast();
+                    };
 
-                        UserSessionRow::new(user_session, &account_settings).upcast()
-                    }
-                ),
-            );
+                    UserSessionRow::new(user_session).upcast()
+                });
         }
 
         /// The current page of the other sessions stack according to the
         /// current state.
         fn current_other_sessions_page(&self) -> &str {
-            if self.account_settings.upgrade().is_none() {
-                return "loading";
-            }
-
             let Some(user_sessions) = self.user_sessions.obj() else {
                 return "loading";
             };
@@ -227,11 +212,6 @@ mod imp {
                 self.current_session.remove(&child);
             }
 
-            let Some(account_settings) = self.account_settings.upgrade() else {
-                self.current_session_group.set_visible(false);
-                return;
-            };
-
             let current_session = self.user_sessions.obj().and_then(|s| s.current_session());
             let Some(current_session) = current_session else {
                 self.current_session_group.set_visible(false);
@@ -239,8 +219,19 @@ mod imp {
             };
 
             self.current_session
-                .append(&UserSessionRow::new(&current_session, &account_settings));
+                .append(&UserSessionRow::new(&current_session));
             self.current_session_group.set_visible(true);
+        }
+
+        /// Show the session subpage.
+        #[template_callback]
+        fn show_session_subpage(&self, row: &UserSessionRow) {
+            let obj = self.obj();
+
+            let _ = obj.activate_action(
+                "account-settings.show-session-subpage",
+                Some(&row.user_session().unwrap().device_id_string().to_variant()),
+            );
         }
     }
 }
@@ -252,21 +243,10 @@ glib::wrapper! {
         @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl UserSessionsPage {
     /// Construct a new empty `UserSessionsPage`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Reload the user sessions list.
-    #[template_callback]
-    async fn reload_list(&self) {
-        let Some(user_sessions) = self.user_sessions() else {
-            return;
-        };
-
-        user_sessions.load().await;
     }
 }
 

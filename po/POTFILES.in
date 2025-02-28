@@ -79,6 +79,7 @@ src/session/model/room/permissions.rs
 src/session/model/room_list/mod.rs
 src/session/model/sidebar_data/section/name.rs
 src/session/model/sidebar_data/icon_item.rs
+src/session/model/user_sessions_list/user_session.rs
 src/session/view/account_settings/general_page/change_password_subpage.rs
 src/session/view/account_settings/general_page/change_password_subpage.ui
 src/session/view/account_settings/general_page/deactivate_account_subpage.rs
@@ -98,8 +99,9 @@ src/session/view/account_settings/security_page/import_export_keys_subpage.ui
 src/session/view/account_settings/security_page/mod.rs
 src/session/view/account_settings/security_page/mod.ui
 src/session/view/account_settings/user_sessions_page/mod.ui
-src/session/view/account_settings/user_sessions_page/user_session_row.rs
 src/session/view/account_settings/user_sessions_page/user_session_row.ui
+src/session/view/account_settings/user_sessions_page/user_session_subpage.rs
+src/session/view/account_settings/user_sessions_page/user_session_subpage.ui
 src/session/view/content/explore/mod.ui
 src/session/view/content/explore/public_room_row.rs
 src/session/view/content/explore/servers_popover.ui

@@ -1,127 +1,108 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="AccountSettingsUserSessionRow">
-    <property name="activatable">False</property>
+  <template class="UserSessionRow" parent="GtkListBoxRow">
     <property name="selectable">False</property>
     <accessibility>
       <relation name="labelled-by">header</relation>
     </accessibility>
     <property name="child">
       <object class="GtkBox">
-        <property name="orientation">vertical</property>
-        <property name="halign">start</property>
-        <property name="spacing">6</property>
+        <property name="spacing">12</property>
         <property name="margin-top">12</property>
         <property name="margin-bottom">12</property>
         <property name="margin-start">12</property>
         <property name="margin-end">12</property>
         <child>
-          <object class="GtkBox" id="header">
-            <property name="spacing">6</property>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="hexpand">True</property>
+            <property name="spacing">3</property>
             <child>
-              <object class="GtkLabel" id="display_name">
+              <object class="GtkBox" id="header">
+                <property name="spacing">6</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="xalign">0.0</property>
+                    <property name="ellipsize">end</property>
+                    <style>
+                      <class name="title"/>
+                    </style>
+                    <binding name="label">
+                      <lookup name="display-name-or-device-id">
+                        <lookup name="user-session">
+                          UserSessionRow
+                        </lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">verified-symbolic</property>
+                    <!-- Translators: As in 'The session is verified'. -->
+                    <property name="tooltip-text" translatable="yes">Verified</property>
+                    <style>
+                      <class name="success"/>
+                    </style>
+                    <binding name="visible">
+                      <lookup name="verified">
+                        <lookup name="user-session">
+                          UserSessionRow
+                        </lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">verified-warning-symbolic</property>
+                    <!-- Translators: As in 'The session is not verified'. -->
+                    <property name="tooltip-text" translatable="yes">Not verified</property>
+                    <style>
+                      <class name="error"/>
+                    </style>
+                    <binding name="visible">
+                      <closure type="gboolean" function="invert_boolean">
+                        <lookup name="verified">
+                          <lookup name="user-session">
+                            UserSessionRow
+                          </lookup>
+                        </lookup>
+                      </closure>
+                    </binding>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
                 <property name="xalign">0.0</property>
                 <property name="ellipsize">end</property>
+                <style>
+                  <class name="subtitle"/>
+                </style>
                 <binding name="label">
-                  <lookup name="display-name">
-                    <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
-                  </lookup>
+                  <closure type="gchararray" function="unwrap_string_or_empty">
+                    <lookup name="last-seen-datetime-string">
+                      <lookup name="user-session">UserSessionRow</lookup>
+                    </lookup>
+                  </closure>
                 </binding>
-                <style>
-                  <class name="heading"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkImage" id="verified_icon">
                 <binding name="visible">
-                  <lookup name="verified">
-                    <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
-                  </lookup>
+                  <closure type="gboolean" function="string_not_empty">
+                    <lookup name="last-seen-datetime-string">
+                      <lookup name="user-session">UserSessionRow</lookup>
+                    </lookup>
+                  </closure>
                 </binding>
-                <property name="icon-name">verified-symbolic</property>
-                <!-- Translators: As in 'A verified session'. -->
-                <property name="tooltip-text" translatable="yes">Verified</property>
-                <style>
-                  <class name="success"/>
-                </style>
               </object>
             </child>
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="last_seen_ts">
-            <property name="xalign">0.0</property>
-            <property name="ellipsize">end</property>
-            <style>
-              <class name="caption"/>
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkLabel" id="last_seen_ip">
-            <binding name="visible">
-              <closure type="gboolean" function="string_not_empty">
-                <lookup name="last-seen-ip">
-                  <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
-                </lookup>
-              </closure>
-            </binding>
-            <property name="xalign">0.0</property>
-            <property name="ellipsize">end</property>
-            <binding name="label">
-              <lookup name="last-seen-ip">
-                <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
-              </lookup>
-            </binding>
-            <style>
-              <class name="dim-label"/>
-              <class name="caption"/>
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="spacing">6</property>
-            <child>
-              <object class="LoadingButton" id="loading_disconnect_button">
-                <property name="visible">False</property>
-                <signal name="clicked" handler="disconnect_with_request" swapped="yes"/>
-                <style>
-                  <class name="label-button"/>
-                  <class name="destructive-action"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="open_url_disconnect_button">
-                <property name="visible">False</property>
-                <signal name="clicked" handler="open_disconnect_url" swapped="yes"/>
-                <style>
-                  <class name="image-text-button"/>
-                  <class name="destructive-action"/>
-                </style>
-                <property name="child">
-                  <object class="GtkBox">
-                    <property name="halign">center</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Disconnect Session</property>
-                        <property name="ellipsize">end</property>
-                        <property name="mnemonic-widget">open_url_disconnect_button</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="icon-name">external-link-symbolic</property>
-                        <property name="accessible-role">presentation</property>
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </property>
-              </object>
-            </child>
+          <object class="GtkImage">
+            <property name="icon-name">go-next-symbolic</property>
+            <property name="accessible-role">presentation</property>
           </object>
         </child>
       </object>

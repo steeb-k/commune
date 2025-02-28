@@ -105,6 +105,11 @@ mod imp {
                 session.emit_disconnected();
             }
         }
+
+        /// Find the user session with the given device ID, if any.
+        pub(super) fn get(&self, device_id: &OwnedDeviceId) -> Option<UserSession> {
+            self.map.borrow().get(device_id).cloned()
+        }
     }
 }
 
@@ -122,6 +127,11 @@ impl OtherSessionsList {
     /// Update this list to match the given list of data.
     pub(super) fn update(&self, session: &Session, data_list: Vec<UserSessionData>) {
         self.imp().update(session, data_list);
+    }
+
+    /// Find the user session with the given device ID, if any.
+    pub(super) fn get(&self, device_id: &OwnedDeviceId) -> Option<UserSession> {
+        self.imp().get(device_id)
     }
 }
 

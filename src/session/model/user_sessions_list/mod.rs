@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::UserDevices;
-use ruma::OwnedUserId;
+use ruma::{OwnedDeviceId, OwnedUserId};
 use tokio::task::AbortHandle;
 use tracing::error;
 
@@ -259,6 +259,17 @@ mod imp {
             self.set_loading_state(LoadingState::Ready);
         }
 
+        /// Find the user session with the given device ID, if any.
+        pub(super) fn get(&self, device_id: &OwnedDeviceId) -> Option<UserSession> {
+            if let Some(current_session) = self.current_session.borrow().as_ref() {
+                if current_session.device_id() == device_id {
+                    return Some(current_session.clone());
+                }
+            }
+
+            self.other_sessions.get(device_id)
+        }
+
         /// Set the loading state of the list.
         fn set_loading_state(&self, loading_state: LoadingState) {
             if self.loading_state.get() == loading_state {
@@ -295,6 +306,11 @@ impl UserSessionsList {
     /// Load the list of user sessions.
     pub(crate) async fn load(&self) {
         self.imp().load().await;
+    }
+
+    /// Find the user session with the given device ID, if any.
+    pub(crate) fn get(&self, device_id: &OwnedDeviceId) -> Option<UserSession> {
+        self.imp().get(device_id)
     }
 }
 

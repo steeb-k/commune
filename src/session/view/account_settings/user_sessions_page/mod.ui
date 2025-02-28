@@ -12,6 +12,7 @@
             <accessibility>
               <property name="label" translatable="yes">Current Session</property>
             </accessibility>
+            <signal name="row-activated" handler="show_session_subpage" swapped="yes"/>
             <style>
               <class name="content"/>
             </style>
@@ -47,6 +48,7 @@
                     <accessibility>
                       <property name="label" translatable="yes">Other Active Sessions</property>
                     </accessibility>
+                    <signal name="row-activated" handler="show_session_subpage" swapped="yes"/>
                     <style>
                       <class name="content"/>
                     </style>
@@ -78,7 +80,7 @@
                         <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Try Again</property>
                         <property name="halign">center</property>
-                        <signal name="clicked" handler="reload_list" swapped="yes"/>
+                        <property name="action-name">account-settings.reload-user-sessions</property>
                         <style>
                           <class name="suggested-action"/>
                           <class name="standalone-button"/>

@@ -4,6 +4,7 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
+use tracing::error;
 use url::Url;
 
 mod general_page;
@@ -17,7 +18,7 @@ use self::{
     security_page::{
         IgnoredUsersSubpage, ImportExportKeysSubpage, ImportExportKeysSubpageMode, SecurityPage,
     },
-    user_sessions_page::UserSessionsPage,
+    user_sessions_page::{UserSessionSubpage, UserSessionsPage},
 };
 use crate::{
     components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
@@ -95,6 +96,26 @@ mod imp {
                 },
             );
 
+            klass.install_action(
+                "account-settings.show-session-subpage",
+                Some(&String::static_variant_type()),
+                |obj, _, param| {
+                    obj.show_session_subpage(
+                        &param
+                            .and_then(glib::Variant::get::<String>)
+                            .expect("The parameter should be a string"),
+                    );
+                },
+            );
+
+            klass.install_action_async(
+                "account-settings.reload-user-sessions",
+                None,
+                |obj, _, _| async move {
+                    obj.imp().reload_user_sessions().await;
+                },
+            );
+
             klass.install_action("account-settings.close", None, |obj, _, _| {
                 obj.close();
             });
@@ -145,10 +166,10 @@ mod imp {
 
                 // Refresh the list of sessions.
                 spawn!(clone!(
-                    #[weak]
-                    session,
+                    #[weak(rename_to = imp)]
+                    self,
                     async move {
-                        session.user_sessions().load().await;
+                        imp.reload_user_sessions().await;
                     }
                 ));
 
@@ -183,6 +204,15 @@ mod imp {
         /// any.
         pub(super) fn account_management_url(&self) -> Option<Url> {
             self.account_management_url.borrow().clone()
+        }
+
+        /// Reload the sessions from the server.
+        async fn reload_user_sessions(&self) {
+            let Some(session) = self.session.obj() else {
+                return;
+            };
+
+            session.user_sessions().load().await;
         }
     }
 }
@@ -272,6 +302,24 @@ impl AccountSettings {
                 page
             }
         };
+
+        self.push_subpage(&page);
+    }
+
+    /// Show a subpage with the session details of the given session ID.
+    pub(crate) fn show_session_subpage(&self, device_id: &str) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let user_session = session.user_sessions().get(&device_id.into());
+
+        let Some(user_session) = user_session else {
+            error!("ID {device_id} is not associated to any device");
+            return;
+        };
+
+        let page = UserSessionSubpage::new(&user_session, self);
 
         self.push_subpage(&page);
     }

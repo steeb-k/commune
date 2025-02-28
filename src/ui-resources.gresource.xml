@@ -74,6 +74,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_sessions_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_sessions_page/user_session_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_sessions_page/user_session_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/public_room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/server_row.ui</file>

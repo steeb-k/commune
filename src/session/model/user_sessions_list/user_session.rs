@@ -1,4 +1,10 @@
-use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::encryption::identities::Device as CryptoDevice;
 use ruma::{api::client::device::Device as DeviceData, DeviceId, OwnedDeviceId};
 use tracing::{debug, error};
@@ -7,7 +13,9 @@ use crate::{
     components::{AuthDialog, AuthError},
     prelude::*,
     session::model::Session,
+    system_settings::ClockFormat,
     utils::matrix::timestamp_to_date,
+    Application,
 };
 
 /// The possible sources of the user data.
@@ -77,9 +85,12 @@ mod imp {
         /// The ID of the user session, as a string.
         #[property(get = Self::device_id_string)]
         device_id_string: PhantomData<String>,
-        /// The display name of the user session.
+        /// The display name of the device.
         #[property(get = Self::display_name)]
         display_name: PhantomData<String>,
+        /// The display name of the device, or the device id as a fallback.
+        #[property(get = Self::display_name_or_device_id)]
+        display_name_or_device_id: PhantomData<String>,
         /// The last IP address used by the user session.
         #[property(get = Self::last_seen_ip)]
         last_seen_ip: PhantomData<Option<String>>,
@@ -90,9 +101,13 @@ mod imp {
         /// The last time the user session was used, as a `GDateTime`.
         #[property(get = Self::last_seen_datetime)]
         last_seen_datetime: PhantomData<Option<glib::DateTime>>,
+        /// The last time the user session was used, as a formatted string.
+        #[property(get = Self::last_seen_datetime_string)]
+        last_seen_datetime_string: PhantomData<Option<String>>,
         /// Whether this user session is verified.
         #[property(get = Self::verified)]
         verified: PhantomData<bool>,
+        system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -103,6 +118,28 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for UserSession {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let obj = self.obj();
+            let system_settings = Application::default().system_settings();
+            let system_settings_handler = system_settings.connect_clock_format_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.notify_last_seen_datetime_string();
+                }
+            ));
+            self.system_settings_handler
+                .replace(Some(system_settings_handler));
+        }
+
+        fn dispose(&self) {
+            if let Some(handler) = self.system_settings_handler.take() {
+                Application::default().system_settings().disconnect(handler);
+            }
+        }
+
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> =
                 LazyLock::new(|| vec![Signal::builder("disconnected").build()]);
@@ -140,12 +177,15 @@ mod imp {
             let obj = self.obj();
             if self.display_name() != old_display_name {
                 obj.notify_display_name();
+                obj.notify_display_name_or_device_id();
             }
             if self.last_seen_ip() != old_last_seen_ip {
                 obj.notify_last_seen_ip();
             }
             if self.last_seen_ts() != old_last_seen_ts {
                 obj.notify_last_seen_ts();
+                obj.notify_last_seen_datetime();
+                obj.notify_last_seen_datetime_string();
             }
             if self.verified() != old_verified {
                 obj.notify_verified();
@@ -159,12 +199,24 @@ mod imp {
 
         /// The display name of the device.
         fn display_name(&self) -> String {
+            self.data
+                .borrow()
+                .as_ref()
+                .and_then(UserSessionData::api)
+                .and_then(|d| d.display_name.clone())
+                .unwrap_or_default()
+        }
+
+        /// The display name of the device, or the device id as a fallback.
+        fn display_name_or_device_id(&self) -> String {
             if let Some(display_name) = self
                 .data
                 .borrow()
                 .as_ref()
                 .and_then(UserSessionData::api)
-                .and_then(|d| d.display_name.clone())
+                .and_then(|d| d.display_name.as_ref().map(|s| s.trim()))
+                .filter(|s| !s.is_empty())
+                .map(ToOwned::to_owned)
             {
                 display_name
             } else {
@@ -199,6 +251,129 @@ mod imp {
                 .api()?
                 .last_seen_ts
                 .map(timestamp_to_date)
+        }
+
+        /// The last time the user session was used, as a `GDateTime`.
+        pub(super) fn last_seen_datetime_string(&self) -> Option<String> {
+            let datetime = self.last_seen_datetime()?;
+
+            let clock_format = Application::default().system_settings().clock_format();
+            let use_24 = clock_format == ClockFormat::TwentyFourHours;
+
+            // This was ported from Nautilus and simplified for our use case.
+            // See: https://gitlab.gnome.org/GNOME/nautilus/-/blob/1c5bd3614a35cfbb49de087bc10381cdef5a218f/src/nautilus-file.c#L5001
+            let now = glib::DateTime::now_local().unwrap();
+            let format;
+            let days_ago = {
+                let today_midnight = glib::DateTime::from_local(
+                    now.year(),
+                    now.month(),
+                    now.day_of_month(),
+                    0,
+                    0,
+                    0f64,
+                )
+                .expect("constructing GDateTime works");
+
+                let date = glib::DateTime::from_local(
+                    datetime.year(),
+                    datetime.month(),
+                    datetime.day_of_month(),
+                    0,
+                    0,
+                    0f64,
+                )
+                .expect("constructing GDateTime works");
+
+                today_midnight.difference(&date).as_days()
+            };
+
+            // Show only the time if date is on today
+            if days_ago == 0 {
+                if use_24 {
+                    // Translators: Time in 24h format, i.e. "23:04".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    format = gettext("Last seen at %H:%M");
+                } else {
+                    // Translators: Time in 12h format, i.e. "11:04 PM".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    format = gettext("Last seen at %I:%M %p");
+                }
+            }
+            // Show the word "Yesterday" and time if date is on yesterday
+            else if days_ago == 1 {
+                if use_24 {
+                    // Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen yesterday at %H:%M");
+                } else {
+                    // Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+                    // PM".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen yesterday at %I:%M %p");
+                }
+            }
+            // Show a week day and time if date is in the last week
+            else if days_ago > 1 && days_ago < 7 {
+                if use_24 {
+                    // Translators: this is the name of the week day followed by a time in 24h
+                    // format, i.e. "Last seen Monday at 23:04".
+                    // Do not change the time format as it will follow the system settings.
+                    //  See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen %A at %H:%M");
+                } else {
+                    // Translators: this is the week day name followed by a time in 12h format, i.e.
+                    // "Last seen Monday at 11:04 PM".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen %A at %I:%M %p");
+                }
+            } else if datetime.year() == now.year() {
+                if use_24 {
+                    // Translators: this is the month and day and the time in 24h format, i.e. "Last
+                    // seen February 3 at 23:04".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen %B %-e at %H:%M");
+                } else {
+                    // Translators: this is the month and day and the time in 12h format, i.e. "Last
+                    // seen February 3 at 11:04 PM".
+                    // Do not change the time format as it will follow the system settings.
+                    // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                    // xgettext:no-c-format
+                    format = gettext("Last seen %B %-e at %I:%M %p");
+                }
+            } else if use_24 {
+                // Translators: this is the full date and the time in 24h format, i.e. "Last
+                // seen February 3 2015 at 23:04".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                // xgettext:no-c-format
+                format = gettext("Last seen %B %-e %Y at %H:%M");
+            } else {
+                // Translators: this is the full date and the time in 12h format, i.e. "Last
+                // seen February 3 2015 at 11:04 PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                // xgettext:no-c-format
+                format = gettext("Last seen %B %-e %Y at %I:%M %p");
+            }
+
+            Some(
+                datetime
+                    .format(&format)
+                    .expect("formatting GDateTime works")
+                    .into(),
+            )
         }
 
         /// Whether this device is verified.

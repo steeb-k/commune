@@ -30,7 +30,6 @@
             <lookup name="session">AccountSettings</lookup>
           </lookup>
         </binding>
-        <property name="account-settings">AccountSettings</property>
       </object>
     </child>
     <child>
