@@ -122,8 +122,8 @@
                 {
                     "type": "git",
                     "url": "https://gitlab.gnome.org/sophie-h/glycin.git",
-                    "tag": "1.1.2",
-                    "commit": "ec00d78b3e4f48030011601fcf991d0749fa3dab"
+                    "tag": "1.2.rc",
+                    "commit": "e9022e39b1188330ac0a2924f52ab29063e3d1c2"
                 }
             ]
         },
