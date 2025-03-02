@@ -1,29 +1,28 @@
-use std::cmp;
-
 use futures_util::StreamExt;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use indexmap::{IndexMap, IndexSet};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::UserDevices;
 use ruma::OwnedUserId;
 use tokio::task::AbortHandle;
 use tracing::error;
 
+mod other_sessions_list;
 mod user_session;
 
-pub use self::user_session::UserSession;
 use self::user_session::UserSessionData;
+pub use self::{other_sessions_list::OtherSessionsList, user_session::UserSession};
 use super::Session;
 use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
+        collections::HashMap,
         marker::PhantomData,
     };
 
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::UserSessionsList)]
     pub struct UserSessionsList {
         /// The current session.
@@ -33,7 +32,7 @@ mod imp {
         user_id: OnceCell<OwnedUserId>,
         /// The other user sessions.
         #[property(get)]
-        other_sessions: gio::ListStore,
+        other_sessions: OtherSessionsList,
         /// The current user session.
         #[property(get)]
         current_session: RefCell<Option<UserSession>>,
@@ -44,20 +43,6 @@ mod imp {
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
         sessions_watch_abort_handle: RefCell<Option<AbortHandle>>,
-    }
-
-    impl Default for UserSessionsList {
-        fn default() -> Self {
-            Self {
-                session: Default::default(),
-                user_id: Default::default(),
-                other_sessions: gio::ListStore::new::<UserSession>(),
-                current_session: Default::default(),
-                loading_state: Default::default(),
-                is_empty: Default::default(),
-                sessions_watch_abort_handle: Default::default(),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -83,11 +68,8 @@ mod imp {
 
             // We know that we have at least this session for our own user.
             if session.user_id() == user_id {
-                let current_session = UserSession::new(
-                    session,
-                    UserSessionData::DeviceId(session.device_id().clone()),
-                );
-                self.set_current_session(Some(current_session));
+                let current_session = UserSession::new(session, session.device_id().clone());
+                self.current_session.replace(Some(current_session));
             }
 
             spawn!(clone!(
@@ -150,7 +132,7 @@ mod imp {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.load().await;
+                                obj.imp().load().await;
                             }
                         });
                     });
@@ -177,6 +159,7 @@ mod imp {
             let user_id = self.user_id().clone();
             let client = session.client();
             let handle = spawn_tokio!(async move {
+                // Load the crypto sessions, to know whether the device is encrypted or not.
                 let crypto_sessions = match client.encryption().get_user_devices(&user_id).await {
                     Ok(crypto_sessions) => Some(crypto_sessions),
                     Err(error) => {
@@ -189,6 +172,7 @@ mod imp {
 
                 let mut api_sessions = None;
                 if is_own_user {
+                    // Load the session information, to get the display name and last seen info.
                     match client.devices().await {
                         Ok(response) => {
                             api_sessions = Some(response.devices);
@@ -214,77 +198,65 @@ mod imp {
                 .into_iter()
                 .flatten()
                 .map(|d| (d.device_id.clone(), d))
-                .collect::<IndexMap<_, _>>();
+                .collect::<HashMap<_, _>>();
 
-            // Sort the API sessions, last seen first, then sort by device ID.
-            api_sessions.sort_by(|_key_a, val_a, _key_b, val_b| {
-                match val_b.last_seen_ts.cmp(&val_a.last_seen_ts) {
-                    cmp::Ordering::Equal => val_a.device_id.cmp(&val_b.device_id),
-                    cmp => cmp,
+            let is_own_user = session.user_id() == self.user_id();
+            let own_device_id = session.device_id();
+            let mut current_session_data = None;
+
+            // If we have the API sessions, use their length to reserve the capacity because
+            // it is cheaper. Otherwise we need to count the list of crypto sessions.
+            let api_sessions_len = api_sessions.len();
+            let capacity = if api_sessions_len > 0 {
+                api_sessions_len
+            } else {
+                crypto_sessions.iter().flat_map(UserDevices::keys).count()
+            };
+            let mut other_sessions_data = Vec::with_capacity(capacity);
+
+            // First, handle the list of devices with a cryptographic identity, i.e. devices
+            // that support encryption.
+            for crypto in crypto_sessions.iter().flat_map(UserDevices::devices) {
+                let data = if let Some(api) = api_sessions.remove(crypto.device_id()) {
+                    UserSessionData::Both { api, crypto }
+                } else {
+                    UserSessionData::Crypto(crypto)
+                };
+
+                if is_own_user && data.device_id() == own_device_id {
+                    current_session_data = Some(data);
+                } else {
+                    other_sessions_data.push(data);
                 }
-            });
+            }
 
-            // Build the full list of IDs while preserving the sorting order.
-            let ids = api_sessions
-                .keys()
-                .cloned()
-                .chain(
-                    crypto_sessions
-                        .iter()
-                        .flat_map(UserDevices::keys)
-                        .map(ToOwned::to_owned),
-                )
-                .collect::<IndexSet<_>>();
+            // If there are remaining devices through the device information API, they do
+            // not support encryption.
+            for api in api_sessions.into_values() {
+                let data = UserSessionData::DevicesApi(api);
 
-            let (current, others) = ids
-                .into_iter()
-                .filter_map(|id| {
-                    let data = match (
-                        api_sessions.shift_remove(&id),
-                        crypto_sessions.as_ref().and_then(|s| s.get(&id)),
-                    ) {
-                        (Some(api), Some(crypto)) => UserSessionData::Both { api, crypto },
-                        (Some(api), None) => UserSessionData::DevicesApi(api),
-                        (None, Some(crypto)) => UserSessionData::Crypto(crypto),
-                        _ => return None,
-                    };
+                if is_own_user && data.device_id() == own_device_id {
+                    current_session_data = Some(data);
+                } else {
+                    other_sessions_data.push(data);
+                }
+            }
 
-                    Some(UserSession::new(&session, data))
-                })
-                .partition::<Vec<_>, _>(UserSession::is_current);
-
-            if let Some(current) = current.into_iter().next() {
-                self.set_current_session(Some(current));
+            if let Some((session, data)) = current_session_data
+                .and_then(|data| self.current_session.borrow().clone().zip(Some(data)))
+            {
+                session.set_data(data);
             }
 
             let was_empty = self.is_empty();
 
-            let removed = self.other_sessions.n_items();
-            self.other_sessions.splice(0, removed, &others);
+            self.other_sessions.update(&session, other_sessions_data);
 
             if self.is_empty() != was_empty {
                 self.obj().notify_is_empty();
             }
 
             self.set_loading_state(LoadingState::Ready);
-        }
-
-        /// Set the current user session.
-        fn set_current_session(&self, user_session: Option<UserSession>) {
-            if *self.current_session.borrow() == user_session {
-                return;
-            }
-
-            let was_empty = self.is_empty();
-
-            self.current_session.replace(user_session);
-
-            let obj = self.obj();
-            obj.notify_current_session();
-
-            if self.is_empty() != was_empty {
-                obj.notify_is_empty();
-            }
         }
 
         /// Set the loading state of the list.
@@ -316,12 +288,12 @@ impl UserSessionsList {
     }
 
     /// Initialize this list with the given session and user ID.
-    pub fn init(&self, session: &Session, user_id: OwnedUserId) {
+    pub(crate) fn init(&self, session: &Session, user_id: OwnedUserId) {
         self.imp().init(session, user_id);
     }
 
     /// Load the list of user sessions.
-    pub async fn load(&self) {
+    pub(crate) async fn load(&self) {
         self.imp().load().await;
     }
 }

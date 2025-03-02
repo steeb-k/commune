@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 use tracing::error;
 
 mod user_session_row;
@@ -40,6 +40,7 @@ mod imp {
         /// The list of user sessions.
         #[property(get, set = Self::set_user_sessions, explicit_notify, nullable)]
         user_sessions: BoundObject<UserSessionsList>,
+        other_sessions_sorted_model: gtk::SortListModel,
         other_sessions_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -80,7 +81,10 @@ mod imp {
         /// Set the ancestor [`AccountSettings`].
         fn set_account_settings(&self, account_settings: Option<&AccountSettings>) {
             self.account_settings.set(account_settings);
-            self.update_other_sessions();
+
+            if let Some(account_settings) = account_settings {
+                self.init_other_sessions(account_settings);
+            }
         }
 
         /// Set the list of user sessions.
@@ -113,6 +117,8 @@ mod imp {
                     .replace(Some(other_sessions_handler));
                 self.other_sessions_group
                     .set_visible(other_sessions.n_items() > 0);
+                self.other_sessions_sorted_model
+                    .set_model(Some(&other_sessions));
 
                 let loading_state_handler = user_sessions.connect_loading_state_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -144,28 +150,33 @@ mod imp {
                         current_session_handler,
                     ],
                 );
+            } else {
+                self.other_sessions_sorted_model
+                    .set_model(None::<&gio::ListModel>);
             }
 
             self.obj().notify_user_sessions();
 
             self.update_current_session();
-            self.update_other_sessions();
             self.update_other_sessions_state();
         }
 
-        /// Update the list of other sessions.
-        fn update_other_sessions(&self) {
-            let Some(account_settings) = self.account_settings.upgrade() else {
-                self.other_sessions.unbind_model();
-                return;
-            };
-            let Some(user_sessions) = self.user_sessions.obj() else {
-                self.other_sessions.unbind_model();
-                return;
-            };
+        /// Initialize the list of other sessions.
+        fn init_other_sessions(&self, account_settings: &AccountSettings) {
+            let last_seen_ts_sorter = gtk::NumericSorter::builder()
+                .expression(UserSession::this_expression("last-seen-ts"))
+                .sort_order(gtk::SortType::Descending)
+                .build();
+            let device_id_sorter =
+                gtk::StringSorter::new(Some(UserSession::this_expression("device-id-string")));
+            let multi_sorter = gtk::MultiSorter::new();
+            multi_sorter.append(last_seen_ts_sorter);
+            multi_sorter.append(device_id_sorter);
+            self.other_sessions_sorted_model
+                .set_sorter(Some(&multi_sorter));
 
             self.other_sessions.bind_model(
-                Some(&user_sessions.other_sessions()),
+                Some(&self.other_sessions_sorted_model),
                 clone!(
                     #[weak]
                     account_settings,

@@ -22,6 +22,11 @@
               <object class="GtkLabel" id="display_name">
                 <property name="xalign">0.0</property>
                 <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="display-name">
+                    <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
+                  </lookup>
+                </binding>
                 <style>
                   <class name="heading"/>
                 </style>
@@ -29,6 +34,11 @@
             </child>
             <child>
               <object class="GtkImage" id="verified_icon">
+                <binding name="visible">
+                  <lookup name="verified">
+                    <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
+                  </lookup>
+                </binding>
                 <property name="icon-name">verified-symbolic</property>
                 <!-- Translators: As in 'A verified session'. -->
                 <property name="tooltip-text" translatable="yes">Verified</property>
@@ -50,8 +60,20 @@
         </child>
         <child>
           <object class="GtkLabel" id="last_seen_ip">
+            <binding name="visible">
+              <closure type="gboolean" function="string_not_empty">
+                <lookup name="last-seen-ip">
+                  <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
+                </lookup>
+              </closure>
+            </binding>
             <property name="xalign">0.0</property>
             <property name="ellipsize">end</property>
+            <binding name="label">
+              <lookup name="last-seen-ip">
+                <lookup name="user-session">AccountSettingsUserSessionRow</lookup>
+              </lookup>
+            </binding>
             <style>
               <class name="dim-label"/>
               <class name="caption"/>
@@ -98,12 +120,6 @@
                     </child>
                   </object>
                 </property>
-              </object>
-            </child>
-            <child>
-              <object class="LoadingButton" id="verify_button">
-                <property name="visible">False</property>
-                <property name="content-label" translatable="yes">Verify Session</property>
               </object>
             </child>
           </object>

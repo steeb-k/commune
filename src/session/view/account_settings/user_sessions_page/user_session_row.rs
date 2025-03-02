@@ -11,7 +11,7 @@ use crate::{
     session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
     system_settings::ClockFormat,
     toast,
-    utils::{oauth, BoundConstructOnlyObject},
+    utils::{oauth, template_callbacks::TemplateCallbacks, BoundConstructOnlyObject, BoundObject},
     Application,
 };
 
@@ -40,11 +40,9 @@ mod imp {
         loading_disconnect_button: TemplateChild<LoadingButton>,
         #[template_child]
         open_url_disconnect_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        verify_button: TemplateChild<LoadingButton>,
         /// The user session displayed by this row.
         #[property(get, set = Self::set_user_session, construct_only)]
-        user_session: RefCell<Option<UserSession>>,
+        user_session: BoundObject<UserSession>,
         /// The ancestor [`AccountSettings`].
         #[property(get, set = Self::set_account_settings, construct_only)]
         account_settings: BoundConstructOnlyObject<AccountSettings>,
@@ -60,6 +58,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -102,23 +101,7 @@ mod imp {
         fn set_user_session(&self, user_session: UserSession) {
             let obj = self.obj();
 
-            let session_name = user_session.display_name();
-            self.display_name.set_label(&session_name);
             obj.set_tooltip_text(Some(user_session.device_id().as_str()));
-
-            self.verified_icon.set_visible(user_session.verified());
-            // TODO: Implement verification
-            // imp.verify_button.set_visible(!device.is_verified());
-
-            let last_seen_ip = user_session.last_seen_ip();
-            if let Some(last_seen_ip) = &last_seen_ip {
-                self.last_seen_ip.set_label(last_seen_ip);
-            }
-            self.last_seen_ip.set_visible(last_seen_ip.is_some());
-
-            self.last_seen_ts
-                .set_visible(user_session.last_seen_ts().is_some());
-
             let disconnect_label = if user_session.is_current() {
                 gettext("Log Out")
             } else {
@@ -127,7 +110,16 @@ mod imp {
             self.loading_disconnect_button
                 .set_content_label(disconnect_label);
 
-            self.user_session.replace(Some(user_session));
+            let last_seen_ts_handler = user_session.connect_last_seen_ts_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_last_seen_ts();
+                }
+            ));
+
+            self.user_session
+                .set(user_session, vec![last_seen_ts_handler]);
 
             obj.notify_user_session();
             self.update_last_seen_ts();
@@ -136,12 +128,10 @@ mod imp {
         /// Update the last seen timestamp according to the current user session
         /// and clock format setting.
         fn update_last_seen_ts(&self) {
-            let Some(datetime) = self
-                .user_session
-                .borrow()
-                .as_ref()
-                .and_then(UserSession::last_seen_ts)
+            let Some(datetime) = self.user_session.obj().and_then(|s| s.last_seen_datetime())
             else {
+                self.last_seen_ts.set_visible(false);
+
                 return;
             };
 
@@ -260,6 +250,7 @@ mod imp {
                 .format(&format)
                 .expect("formatting GDateTime works");
             self.last_seen_ts.set_label(&label);
+            self.last_seen_ts.set_visible(true);
         }
 
         /// Set the ancestor [`AccountSettings`].
@@ -281,7 +272,7 @@ mod imp {
 
         /// Update the visible disconnect button.
         fn update_disconnect_button(&self) {
-            let Some(user_session) = self.user_session.borrow().clone() else {
+            let Some(user_session) = self.user_session.obj() else {
                 return;
             };
             let use_account_management_url =
@@ -296,7 +287,7 @@ mod imp {
         /// Disconnect the user session by making a request to the homeserver.
         #[template_callback]
         async fn disconnect_with_request(&self) {
-            let Some(user_session) = self.user_session.borrow().clone() else {
+            let Some(user_session) = self.user_session.obj() else {
                 return;
             };
             let obj = self.obj();
@@ -332,12 +323,7 @@ mod imp {
         // Open the account management URL to disconnect the session.
         #[template_callback]
         async fn open_disconnect_url(&self) {
-            let Some(device_id) = self
-                .user_session
-                .borrow()
-                .as_ref()
-                .map(|s| s.device_id().into())
-            else {
+            let Some(device_id) = self.user_session.obj().map(|s| s.device_id().clone()) else {
                 return;
             };
             let Some(mut url) = self.account_management_url() else {
