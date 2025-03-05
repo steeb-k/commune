@@ -28,6 +28,7 @@ use ruma::{
     RoomId, RoomOrAliasId, UserId,
 };
 use thiserror::Error;
+use tracing::error;
 
 pub mod ext_traits;
 mod media_message;
@@ -327,6 +328,10 @@ pub async fn client_with_stored_session(
     let client = client_builder.build().await?;
 
     client.restore_session(session_data).await?;
+
+    if let Err(error) = client.event_cache().enable_storage() {
+        error!("Failed to enable event cache storage: {error}");
+    }
 
     Ok(client)
 }
