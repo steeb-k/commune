@@ -58,6 +58,8 @@ pub(crate) trait SecretExt {
 /// The fallback `Secret` API, to use on platforms where it is unimplemented.
 #[cfg(not(target_os = "linux"))]
 mod unimplemented {
+    use super::*;
+
     #[derive(Debug)]
     pub(crate) struct UnimplementedSecret;
 
