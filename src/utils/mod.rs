@@ -32,7 +32,7 @@ use gtk::{gio, glib, prelude::*};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
-pub use self::{
+pub(crate) use self::{
     dummy_object::DummyObject,
     expression_list_model::ExpressionListModel,
     location::{Location, LocationError, LocationExt},
