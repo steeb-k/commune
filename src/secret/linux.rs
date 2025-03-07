@@ -162,7 +162,7 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     let keyring = Keyring::new().await?;
 
     let attributes = session.attributes();
-    let secret = oo7::Secret::text(session.passphrase);
+    let secret = session.passphrase;
 
     keyring
         .create_item(
@@ -255,8 +255,8 @@ impl StoredSession {
                 } else {
                     // Even if we store the secret as plain text, the file backend always returns a
                     // blob so let's always treat it as a byte slice.
-                    match String::from_utf8(secret.as_bytes().to_owned()) {
-                        Ok(passphrase) => (passphrase.clone(), None),
+                    match String::from_utf8(secret.as_slice().to_owned()) {
+                        Ok(passphrase) => (passphrase, None),
                         Err(error) => {
                             error!("Could not get secret in stored session: {error}");
                             return Err(LinuxSecretFieldError::Invalid.into());
@@ -348,7 +348,7 @@ impl StoredSession {
             info!("Migrating to version 7…");
 
             let new_attributes = self.attributes();
-            let new_secret = oo7::Secret::text(&self.passphrase);
+            let new_secret = self.passphrase.clone();
 
             spawn_tokio!(async move {
                 if let Err(error) = item.set_secret(new_secret).await {
@@ -488,15 +488,15 @@ impl From<oo7::Error> for SecretError {
 impl UserFacingError for oo7::Error {
     fn to_user_facing(&self) -> String {
         match self {
-            oo7::Error::File(error) => error.to_user_facing(),
+            oo7::Error::Portal(error) => error.to_user_facing(),
             oo7::Error::DBus(error) => error.to_user_facing(),
         }
     }
 }
 
-impl UserFacingError for oo7::file::Error {
+impl UserFacingError for oo7::portal::Error {
     fn to_user_facing(&self) -> String {
-        use oo7::file::Error;
+        use oo7::portal::Error;
 
         match self {
             Error::FileHeaderMismatch(_) |
@@ -508,8 +508,6 @@ impl UserFacingError for oo7::file::Error {
             Error::SaltSizeMismatch(_, _) |
             Error::ChecksumMismatch |
             Error::AlgorithmMismatch(_) |
-            Error::IncorrectSecret |
-            Error::Crypto(_) |
             Error::Utf8(_) => gettext(
                 "The secret storage file is corrupted.",
             ),
@@ -523,14 +521,14 @@ impl UserFacingError for oo7::file::Error {
             Error::TargetFileChanged(_) => gettext(
                 "The secret storage file has been changed by another process.",
             ),
-            Error::Portal(ashpd::Error::Portal(ashpd::PortalError::Cancelled(_))) => gettext(
+            Error::PortalBus(_) => gettext(
+                "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
+            ),
+            Error::CancelledPortalRequest => gettext(
                 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
             ),
-            Error::Portal(ashpd::Error::PortalNotFound(_)) => gettext(
+            Error::PortalNotAvailable => gettext(
                 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0.",
-            ),
-            Error::Portal(_) => gettext(
-                "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
             ),
             Error::WeakKey(_) => gettext(
                 "The Flatpak Secret Portal provided a key that is too weak to be secure.",
@@ -553,13 +551,13 @@ impl UserFacingError for oo7::dbus::Error {
                 ServiceError::ZBus(_) => gettext(
                     "An unexpected error occurred when interacting with the D-Bus Secret Service.",
                 ),
-                ServiceError::IsLocked(_) => gettext(
+                ServiceError::IsLocked => gettext(
                     "The collection or item is locked.",
                 ),
-                ServiceError::NoSession(_) => gettext(
+                ServiceError::NoSession => gettext(
                     "The D-Bus Secret Service session does not exist.",
                 ),
-                ServiceError::NoSuchObject(_) => gettext(
+                ServiceError::NoSuchObject => gettext(
                     "The collection or item does not exist.",
                 ),
             },
@@ -569,9 +567,7 @@ impl UserFacingError for oo7::dbus::Error {
             Error::NotFound(_) => gettext(
                 "Could not access the default collection. Make sure a keyring was created and set as default.",
             ),
-            Error::ZBus(_) |
-            Error::Utf8(_) |
-            Error::Crypto(_) |
+            Error::Zbus(_) |
             Error::IO(_) => gettext(
                 "An unexpected error occurred when interacting with the D-Bus Secret Service.",
             ),
