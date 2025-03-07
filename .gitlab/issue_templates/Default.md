@@ -12,9 +12,10 @@ or videos showing the issue.
 ## Information
 
 * [ ] This bug is reproducible from the latest nightly build <!-- Check this box if the bug happens on Fractal's development version -->
+* [ ] This bug is reproducible with an [officially supported flatpak](https://gitlab.gnome.org/World/fractal#installation-instructions)
+  <!-- ⚠️ Issue with third party packages (distribution repository, AUR, snap, Fedora flatpak…) should be reported to your distributor -->
 * **Fractal Version**: <!-- The version of Fractal you were using when the bug occurred. Check the "About Fractal" dialog for this information -->
 * **OS Version**: <!-- Operating system version, e.g. Fedora 36 -->
-* **Installation Source**: <!-- Where you installed Fractal from, e.g. Flathub, GNOME Apps Nightly, AUR, or distro repositories -->
 * **Homeserver**: <!-- The homeserver for your matrix account, e.g. matrix.org, gnome.org, … You can mention several of them if this is reproducible on multiple ones. -->
 
 <!-- If you have error logs or a crash report, use the "Attach A File" button in the issue editor to attach it, or paste it in a code block below.
