@@ -253,7 +253,8 @@ mod imp {
                 .map(timestamp_to_date)
         }
 
-        /// The last time the user session was used, as a `GDateTime`.
+        /// The last time the user session was used, as a localized formatted
+        /// string.
         pub(super) fn last_seen_datetime_string(&self) -> Option<String> {
             let datetime = self.last_seen_datetime()?;
 
