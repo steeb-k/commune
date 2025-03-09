@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-02-21 11:01+0000\n"
-"PO-Revision-Date: 2025-02-22 11:10+0100\n"
+"POT-Creation-Date: 2025-03-08 18:01+0000\n"
+"PO-Revision-Date: 2025-03-09 10:08+0100\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -196,7 +196,7 @@ msgstr "Potrdi spremembo"
 
 #: src/components/action_button.ui:52 src/components/rows/loading_row.ui:27
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:142
-#: src/session/view/account_settings/user_sessions_page/mod.ui:79
+#: src/session/view/account_settings/user_sessions_page/mod.ui:81
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
@@ -1323,7 +1323,6 @@ msgstr "Pošlji novo zahtevo"
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
 #: src/identity_verification_view/scan_qr_code_page.rs:153
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:106
 msgid "Verify Session"
 msgstr "Preveri sejo"
 
@@ -1784,42 +1783,26 @@ msgstr "Prijavi se z {brand}"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fraktal: poverilnice Matrix za {user_id}"
 
-#: src/secret/linux.rs:514
+#: src/secret/linux.rs:512
 msgid "The secret storage file is corrupted."
 msgstr "Skrivna datoteka za shranjevanje je poškodovana."
 
-#: src/secret/linux.rs:518
+#: src/secret/linux.rs:516
 msgid "Could not access the secret storage file location."
 msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
-#: src/secret/linux.rs:521
+#: src/secret/linux.rs:519
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do "
 "nepričakovane napake."
 
-#: src/secret/linux.rs:524
+#: src/secret/linux.rs:522
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
 
-#: src/secret/linux.rs:527
-msgid ""
-"The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
-"any prompt asking to access it."
-msgstr ""
-"Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
-"pozive, ki zahtevajo dostop do njega."
-
-#: src/secret/linux.rs:530
-msgid ""
-"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
-"installed, and it is at least at version 1.5.0."
-msgstr ""
-"Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
-"nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
-
-#: src/secret/linux.rs:533
+#: src/secret/linux.rs:525
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1827,35 +1810,51 @@ msgstr ""
 "Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
 "nepričakovane napake."
 
-#: src/secret/linux.rs:536
+#: src/secret/linux.rs:528
+msgid ""
+"The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
+"any prompt asking to access it."
+msgstr ""
+"Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
+"pozive, ki zahtevajo dostop do njega."
+
+#: src/secret/linux.rs:531
+msgid ""
+"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
+"installed, and it is at least at version 1.5.0."
+msgstr ""
+"Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
+"nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
+
+#: src/secret/linux.rs:534
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, "
 "da bi bil varen."
 
-#: src/secret/linux.rs:550
+#: src/secret/linux.rs:548
 msgid "The item was deleted."
 msgstr "Element je bil izbrisan."
 
-#: src/secret/linux.rs:554 src/secret/linux.rs:576
+#: src/secret/linux.rs:552 src/secret/linux.rs:572
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
 
-#: src/secret/linux.rs:557
+#: src/secret/linux.rs:555
 msgid "The collection or item is locked."
 msgstr "Zbirka ali predmet je zaklenjen."
 
-#: src/secret/linux.rs:560
+#: src/secret/linux.rs:558
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Seja tajne storitve D-Bus ne obstaja."
 
-#: src/secret/linux.rs:563
+#: src/secret/linux.rs:561
 msgid "The collection or item does not exist."
 msgstr "Zbirka ali predmet ne obstaja."
 
-#: src/secret/linux.rs:567
+#: src/secret/linux.rs:565
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1863,7 +1862,7 @@ msgstr ""
 "Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
 "zahtevajo dostop do nje."
 
-#: src/secret/linux.rs:570
+#: src/secret/linux.rs:568
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1990,6 +1989,91 @@ msgstr "Razišči"
 msgid "Forget Room"
 msgstr "Pozabi klepetalnico"
 
+#. Translators: Time in 24h format, i.e. "23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:298
+msgid "Last seen at %H:%M"
+msgstr "Nazadnje videni %H:%M"
+
+#. Translators: Time in 12h format, i.e. "11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:303
+msgid "Last seen at %I:%M %p"
+msgstr "Nazadnje videni %I:%M %p"
+
+#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:313
+#, no-c-format
+msgid "Last seen yesterday at %H:%M"
+msgstr "Nazadnje videni včeraj ob %H:%M"
+
+#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+#. PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:320
+#, no-c-format
+msgid "Last seen yesterday at %I:%M %p"
+msgstr "Nazadnje videni včeraj ob %I:%M %p"
+
+#. Translators: this is the name of the week day followed by a time in 24h
+#. format, i.e. "Last seen Monday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:331
+#, no-c-format
+msgid "Last seen %A at %H:%M"
+msgstr "Nazadnje videni v %A ob %H:%M"
+
+#. Translators: this is the week day name followed by a time in 12h format, i.e.
+#. "Last seen Monday at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:338
+#, no-c-format
+msgid "Last seen %A at %I:%M %p"
+msgstr "Nazadnje videni v %A ob %I:%M %p"
+
+#. Translators: this is the month and day and the time in 24h format, i.e. "Last
+#. seen February 3 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:347
+#, no-c-format
+msgid "Last seen %B %-e at %H:%M"
+msgstr "Nazadnje videni: %-e. %B ob %H:%M"
+
+#. Translators: this is the month and day and the time in 12h format, i.e. "Last
+#. seen February 3 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:354
+#, no-c-format
+msgid "Last seen %B %-e at %I:%M %p"
+msgstr "Nazadnje videni: %-e. %B ob %I:%M %p"
+
+#. Translators: this is the full date and the time in 24h format, i.e. "Last
+#. seen February 3 2015 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:362
+#, no-c-format
+msgid "Last seen %B %-e %Y at %H:%M"
+msgstr "Nazadnje videni: %-e. %B %Y ob %H:%M"
+
+#. Translators: this is the full date and the time in 12h format, i.e. "Last
+#. seen February 3 2015 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/model/user_sessions_list/user_session.rs:369
+#, no-c-format
+msgid "Last seen %B %-e %Y at %I:%M %p"
+msgstr "Nazadnje videni: %-e. %B %Y ob %I:%M %p"
+
 #: src/session/view/account_settings/general_page/change_password_subpage.rs:151
 msgid "Password must be at least 8 characters long"
 msgstr "Geslo mora biti dolgo vsaj 8 znakov"
@@ -2104,7 +2188,7 @@ msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 #: src/session/view/account_settings/general_page/mod.ui:118
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:123
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:103
 msgid "Log Out"
 msgstr "Odjava"
 
@@ -2231,14 +2315,17 @@ msgid "Homeserver address copied to clipboard"
 msgstr "Naslov domačega strežnika je kopiran v odložišče"
 
 #: src/session/view/account_settings/general_page/mod.ui:101
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:22
 msgid "Session ID"
 msgstr "ID seje"
 
 #: src/session/view/account_settings/general_page/mod.ui:103
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:24
 msgid "Copy Session ID"
 msgstr "Kopiraj ID seje"
 
 #: src/session/view/account_settings/general_page/mod.ui:104
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:25
 msgid "Session ID copied to clipboard"
 msgstr "ID seje je kopiran v odložišče"
 
@@ -2617,113 +2704,49 @@ msgstr "Seje"
 msgid "Current Session"
 msgstr "Trenutna seja"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:24
-#: src/session/view/account_settings/user_sessions_page/mod.ui:48
+#: src/session/view/account_settings/user_sessions_page/mod.ui:25
+#: src/session/view/account_settings/user_sessions_page/mod.ui:49
 msgid "Other Active Sessions"
 msgstr "Druge aktivne seje"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:70
+#: src/session/view/account_settings/user_sessions_page/mod.ui:72
 msgid "Could not load the list of connected devices"
 msgstr "Seznama priključenih naprav ni bilo mogoče naložiti"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:125
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:87
-msgid "Disconnect Session"
-msgstr "Prekini povezavo s sejo"
+#. Translators: As in 'The session is verified'.
+#. Translators: As in 'A verified session'.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:43
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:110
+msgid "Verified"
+msgstr "Overjeno"
 
-#. Translators: Time in 24h format, i.e. "23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:185
-msgid "Last seen at %H:%M"
-msgstr "Nazadnje videni %H:%M"
+#. Translators: As in 'The session is not verified'.
+#. Translators: As in 'A verified session'.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:60
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:114
+msgid "Not verified"
+msgstr "Nepreverjeno"
 
-#. Translators: Time in 12h format, i.e. "11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:190
-msgid "Last seen at %I:%M %p"
-msgstr "Nazadnje videni %I:%M %p"
-
-#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:200
-#, no-c-format
-msgid "Last seen yesterday at %H:%M"
-msgstr "Nazadnje videni včeraj ob %H:%M"
-
-#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
-#. PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:207
-#, no-c-format
-msgid "Last seen yesterday at %I:%M %p"
-msgstr "Nazadnje videni včeraj ob %I:%M %p"
-
-#. Translators: this is the name of the week day followed by a time in 24h
-#. format, i.e. "Last seen Monday at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:218
-#, no-c-format
-msgid "Last seen %A at %H:%M"
-msgstr "Nazadnje videni v %A ob %H:%M"
-
-#. Translators: this is the week day name followed by a time in 12h format, i.e.
-#. "Last seen Monday at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:225
-#, no-c-format
-msgid "Last seen %A at %I:%M %p"
-msgstr "Nazadnje videni v %A ob %I:%M %p"
-
-#. Translators: this is the month and day and the time in 24h format, i.e. "Last
-#. seen February 3 at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:234
-#, no-c-format
-msgid "Last seen %B %-e at %H:%M"
-msgstr "Nazadnje videni: %-e. %B ob %H:%M"
-
-#. Translators: this is the month and day and the time in 12h format, i.e. "Last
-#. seen February 3 at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:241
-#, no-c-format
-msgid "Last seen %B %-e at %I:%M %p"
-msgstr "Nazadnje videni: %-e. %B ob %I:%M %p"
-
-#. Translators: this is the full date and the time in 24h format, i.e. "Last
-#. seen February 3 2015 at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:249
-#, no-c-format
-msgid "Last seen %B %-e %Y at %H:%M"
-msgstr "Nazadnje videni: %-e. %B %Y ob %H:%M"
-
-#. Translators: this is the full date and the time in 12h format, i.e. "Last
-#. seen February 3 2015 at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:256
-#, no-c-format
-msgid "Last seen %B %-e %Y at %I:%M %p"
-msgstr "Nazadnje videni: %-e. %B %Y ob %I:%M %p"
-
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:322
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:179
 msgid "Could not disconnect device “{device_name}”"
 msgstr "Povezave z napravo »{device_name}« ni bilo mogoče prekiniti"
 
-#. Translators: As in 'A verified session'.
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
-msgid "Verified"
-msgstr "Overjeno"
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:40
+msgid "Public Name"
+msgstr "Javno ime"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:58
+msgid "Last Seen"
+msgstr "Zadnjič videno"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:80
+msgid "Last Location"
+msgstr "Zadnja lokacija"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:114
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:124
+msgid "Disconnect"
+msgstr "Prekini povezavo"
 
 #: src/session/view/content/explore/mod.ui:20
 msgid "Public Rooms Search"
@@ -5031,45 +5054,45 @@ msgstr "Trgovine ni bilo mogoče odpreti."
 msgid "Could not save file"
 msgstr "Datoteke ni mogoče shraniti"
 
-#: src/utils/matrix/mod.rs:190
+#: src/utils/matrix/mod.rs:191
 msgid "{user} sent an audio file."
 msgstr "{user} je poslal/a zvočno datoteko."
 
-#: src/utils/matrix/mod.rs:193
+#: src/utils/matrix/mod.rs:194
 msgid "{user} sent a file."
 msgstr "Uporabnik {user} je poslal datoteko."
 
-#: src/utils/matrix/mod.rs:195
+#: src/utils/matrix/mod.rs:196
 msgid "{user} sent an image."
 msgstr "{user} je poslal/a sliko."
 
-#: src/utils/matrix/mod.rs:198
+#: src/utils/matrix/mod.rs:199
 msgid "{user} sent their location."
 msgstr "{user} je poslal/a svojo lokacijo."
 
-#: src/utils/matrix/mod.rs:210
+#: src/utils/matrix/mod.rs:211
 msgid "{user} sent a video."
 msgstr "{user} je poslal/a video."
 
-#: src/utils/matrix/mod.rs:217
+#: src/utils/matrix/mod.rs:218
 msgid "{user} sent a sticker."
 msgstr "{user} je poslal/a nalepko."
 
-#: src/utils/matrix/mod.rs:227
+#: src/utils/matrix/mod.rs:228
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix/mod.rs:251
+#: src/utils/matrix/mod.rs:252
 msgid "{user} invited you"
 msgstr "{user} vas je povabil/a"
 
-#: src/utils/matrix/mod.rs:280
+#: src/utils/matrix/mod.rs:281
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
 
-#: src/utils/matrix/mod.rs:281
+#: src/utils/matrix/mod.rs:282
 msgid "Could not access the session tokens"
 msgstr "Ni bilo mogoče dostopati do žetonov seje"
 
