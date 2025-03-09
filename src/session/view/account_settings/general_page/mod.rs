@@ -266,7 +266,7 @@ impl GeneralPage {
         } else {
             // No action is ongoing, we don't need to do anything.
             return;
-        };
+        }
 
         // Reset the state.
         imp.changing_avatar.take();

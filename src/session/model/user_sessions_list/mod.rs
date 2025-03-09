@@ -191,7 +191,7 @@ mod imp {
             if api_sessions.is_none() && crypto_sessions.is_none() {
                 self.set_loading_state(LoadingState::Error);
                 return;
-            };
+            }
 
             // Convert API sessions to a map.
             let mut api_sessions = api_sessions

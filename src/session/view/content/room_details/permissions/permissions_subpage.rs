@@ -736,7 +736,7 @@ impl PermissionsSubpage {
         if imp.update_in_progress.get() {
             // No need to run checks.
             return;
-        };
+        }
 
         imp.update_changed();
     }
@@ -748,7 +748,7 @@ impl PermissionsSubpage {
         if imp.update_in_progress.get() {
             // No need to run checks.
             return;
-        };
+        }
 
         let redact_own = imp.redact_own_row.selected_power_level();
         let redact_others = imp.redact_others_row.selected_power_level();
@@ -773,7 +773,7 @@ impl PermissionsSubpage {
         if imp.update_in_progress.get() {
             // No need to run checks.
             return;
-        };
+        }
 
         let redact_own = imp.redact_own_row.selected_power_level();
         let redact_others = imp.redact_others_row.selected_power_level();
@@ -798,7 +798,7 @@ impl PermissionsSubpage {
         if imp.update_in_progress.get() {
             // No need to run checks.
             return;
-        };
+        }
 
         imp.update_in_progress.set(true);
 

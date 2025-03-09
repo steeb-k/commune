@@ -614,7 +614,7 @@ mod imp {
 
                         return;
                     }
-                };
+                }
             }
 
             let Some(geo_uri) = geo_uri_wrapper else {

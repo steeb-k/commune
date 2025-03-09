@@ -384,7 +384,7 @@ pub trait UserExt: IsA<User> {
             Err(error) => {
                 error!("Could not load user profile for {user_id}: {error}");
             }
-        };
+        }
     }
 
     /// Whether this user is currently ignored.

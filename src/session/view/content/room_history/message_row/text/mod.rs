@@ -268,7 +268,7 @@ mod imp {
             if pills.is_empty() {
                 self.build_plain_text(result);
                 return;
-            };
+            }
 
             let ellipsize = self.format.get() == ContentFormat::Ellipsized;
             for pill in &pills {

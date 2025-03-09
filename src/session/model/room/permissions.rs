@@ -364,7 +364,7 @@ mod imp {
 
             if self.can_change_avatar.get() == can_change_avatar {
                 return;
-            };
+            }
 
             self.can_change_avatar.set(can_change_avatar);
             self.obj().notify_can_change_avatar();
@@ -377,7 +377,7 @@ mod imp {
 
             if self.can_change_name.get() == can_change_name {
                 return;
-            };
+            }
 
             self.can_change_name.set(can_change_name);
             self.obj().notify_can_change_name();
@@ -390,7 +390,7 @@ mod imp {
 
             if self.can_change_topic.get() == can_change_topic {
                 return;
-            };
+            }
 
             self.can_change_topic.set(can_change_topic);
             self.obj().notify_can_change_topic();
@@ -402,7 +402,7 @@ mod imp {
 
             if self.can_invite.get() == can_invite {
                 return;
-            };
+            }
 
             self.can_invite.set(can_invite);
             self.obj().notify_can_invite();
@@ -416,7 +416,7 @@ mod imp {
 
             if self.can_send_message.get() == can_send_message {
                 return;
-            };
+            }
 
             self.can_send_message.set(can_send_message);
             self.obj().notify_can_send_message();
@@ -430,7 +430,7 @@ mod imp {
 
             if self.can_send_reaction.get() == can_send_reaction {
                 return;
-            };
+            }
 
             self.can_send_reaction.set(can_send_reaction);
             self.obj().notify_can_send_reaction();
@@ -442,7 +442,7 @@ mod imp {
 
             if self.can_redact_own.get() == can_redact_own {
                 return;
-            };
+            }
 
             self.can_redact_own.set(can_redact_own);
             self.obj().notify_can_redact_own();
@@ -454,7 +454,7 @@ mod imp {
 
             if self.can_redact_other.get() == can_redact_other {
                 return;
-            };
+            }
 
             self.can_redact_other.set(can_redact_other);
             self.obj().notify_can_redact_other();
@@ -468,7 +468,7 @@ mod imp {
 
             if self.can_notify_room.get() == can_notify_room {
                 return;
-            };
+            }
 
             self.can_notify_room.set(can_notify_room);
             self.obj().notify_can_notify_room();

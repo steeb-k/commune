@@ -447,7 +447,7 @@ mod imp {
 
                 self.set_has_avatar(true);
                 return;
-            };
+            }
 
             self.set_has_avatar(false);
 
@@ -621,7 +621,7 @@ mod imp {
                     .set(room_tombstone.replacement_room)
                     .expect("successor ID is uninitialized");
                 obj.notify_successor_id_string();
-            };
+            }
 
             // Try to get the successor.
             self.update_successor();
@@ -1175,7 +1175,7 @@ mod imp {
             let matrix_room = self.matrix_room();
             if matrix_room.state() != RoomState::Joined {
                 return;
-            };
+            }
 
             let (typing_drop_guard, receiver) = matrix_room.subscribe_to_typing_notifications();
             let stream = BroadcastStream::new(receiver);
@@ -1681,7 +1681,7 @@ impl Room {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return;
-        };
+        }
 
         let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.typing_notice(is_typing).await });
@@ -1690,7 +1690,7 @@ impl Room {
             match handle.await.expect("task was not aborted") {
                 Ok(()) => {}
                 Err(error) => error!("Could not send typing notification: {error}"),
-            };
+            }
         });
     }
 
@@ -1706,7 +1706,7 @@ impl Room {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return Ok(());
-        };
+        }
 
         let events_clone = events.to_owned();
         let matrix_room = matrix_room.clone();

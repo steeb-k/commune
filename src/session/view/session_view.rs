@@ -318,7 +318,7 @@ impl SessionView {
                 .section_from_room_category(room.category())
         }) {
             section.set_is_expanded(true);
-        };
+        }
 
         // Now scroll to the room to make sure that it is in the viewport, and that it
         // is focused in the list for users using keyboard navigation.

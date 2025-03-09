@@ -513,7 +513,7 @@ mod imp {
 
             if let Err(error) = handle.await.expect("task was not aborted") {
                 error!("Could not cache session profile: {error}");
-            };
+            }
         }
 
         /// Start listening to notifications.

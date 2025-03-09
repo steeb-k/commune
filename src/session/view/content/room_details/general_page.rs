@@ -1124,7 +1124,7 @@ impl GeneralPage {
         if dialog.choose_future(self).await != "enable" {
             self.update_encryption();
             return;
-        };
+        }
 
         if room.enable_encryption().await.is_err() {
             toast!(self, gettext("Could not enable encryption"));

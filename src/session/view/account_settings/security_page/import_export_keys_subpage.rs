@@ -233,7 +233,7 @@ impl ImportExportKeysSubpage {
                     toast!(self, gettext("Could not access file"));
                 }
             }
-        };
+        }
     }
 
     /// Validate the passphrase confirmation.

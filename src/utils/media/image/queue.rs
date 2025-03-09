@@ -401,7 +401,7 @@ impl ImageRequest {
             if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.replace(source)) {
                 // This should not happen, but cancel the old timeout if we have one.
                 source.remove();
-            };
+            }
 
             let result = data.await;
 

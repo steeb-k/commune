@@ -681,7 +681,7 @@ impl IdentityVerification {
 
         if let Some(handle) = imp.verification_changes_abort_handle.take() {
             handle.abort();
-        };
+        }
 
         let obj_weak = glib::SendWeakRef::from(self.downgrade());
         let handle = match &verification {

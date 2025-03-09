@@ -577,7 +577,7 @@ mod imp {
                 obj.remove_css_class("drop-disabled");
                 obj.remove_css_class("drop-empty");
                 obj.remove_css_class("drop-active");
-            };
+            }
 
             if let Some(section_row) = obj.child().and_downcast::<SidebarSectionRow>() {
                 section_row.set_show_label_for_room_category(source_category);

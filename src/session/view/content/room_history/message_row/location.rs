@@ -91,7 +91,7 @@ mod imp {
                     )));
                     self.overlay_error.set_visible(true);
                 }
-            };
+            }
 
             let obj = self.obj();
             if compact {

@@ -89,7 +89,7 @@ async fn generate_video_thumbnail(file: &gio::File, widget: &gtk::Widget) -> Opt
                                 send_video_thumbnail_result(&sender, Err(()));
 
                                 return glib::ControlFlow::Break;
-                            };
+                            }
 
                             started = true;
                         }

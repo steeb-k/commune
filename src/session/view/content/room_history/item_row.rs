@@ -116,7 +116,7 @@ mod imp {
                 // There are no possible actions.
                 obj.set_popover(None);
                 return;
-            };
+            }
 
             let menu = room_history.item_context_menu();
 
@@ -601,7 +601,7 @@ mod imp {
                         }
                     ))
                     .build()]);
-            };
+            }
 
             // Send/redact a reaction.
             if event.can_be_reacted_to() {
@@ -660,7 +660,7 @@ mod imp {
                                 .is_err()
                             {
                                 error!("Could not activate `room-history.reply` action");
-                            };
+                            }
                         }
                     ))
                     .build()]);
@@ -866,7 +866,7 @@ mod imp {
                 .is_err()
             {
                 error!("Could not activate `room-history.edit` action");
-            };
+            }
         }
 
         /// Save the media file of this row.

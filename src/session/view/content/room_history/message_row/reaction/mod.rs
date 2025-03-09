@@ -237,7 +237,7 @@ mod imp {
             if self.list.n_items() == 0 {
                 // No popover.
                 return;
-            };
+            }
 
             let popover = ReactionPopover::new(&self.list);
             popover.set_parent(&*self.button);

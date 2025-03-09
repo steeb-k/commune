@@ -83,7 +83,7 @@ impl LinuxSystemSettings {
                 error!("Could not access clock format system setting: {error}");
                 return;
             }
-        };
+        }
 
         let clock_format_changed_stream = match spawn_tokio!(async move {
             proxy

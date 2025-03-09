@@ -142,7 +142,7 @@ mod imp {
             } else {
                 // No action is ongoing, we don't need to do anything.
                 return;
-            };
+            }
 
             // Reset the state.
             self.changing_avatar.take();
@@ -325,7 +325,7 @@ mod imp {
             } else {
                 // No action is ongoing, we don't need to do anything.
                 return;
-            };
+            }
 
             let obj = self.obj();
             toast!(obj, gettext("Room name saved successfully"));
@@ -436,7 +436,7 @@ mod imp {
             } else {
                 // No action is ongoing, we don't need to do anything.
                 return;
-            };
+            }
 
             let obj = self.obj();
             toast!(obj, gettext("Room description saved successfully"));

@@ -645,7 +645,7 @@ mod imp {
             if self.selection_model().n_items() == 0 {
                 // We definitely want events if the history is empty.
                 return true;
-            };
+            }
 
             // Load more messages when the user gets close to the top of the known room
             // history. Use the page size twice to detect if the user gets close to

@@ -102,7 +102,7 @@ impl SessionListSettings {
 
         if let Some(session) = sessions.borrow().get(session_id) {
             return session.clone();
-        };
+        }
 
         let session = SessionSettings::new(session_id);
         sessions

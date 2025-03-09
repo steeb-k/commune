@@ -186,7 +186,7 @@ mod imp {
                     let obj = self.obj();
                     toast!(obj, error.to_user_facing());
                 }
-            };
+            }
 
             self.next_button.set_is_loading(false);
             login.unfreeze();
@@ -252,7 +252,7 @@ mod imp {
                     // Drop the client because it is bound to the homeserver.
                     login.drop_client();
                 }
-            };
+            }
         }
 
         /// Construct a [`ClientBuilder`] with the proper configuration.

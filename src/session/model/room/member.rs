@@ -216,7 +216,7 @@ impl Member {
         if member.user_id() != self.user_id() {
             error!("Tried Member update from RoomMember with wrong user ID.");
             return;
-        };
+        }
 
         self.set_name(member.display_name().map(ToOwned::to_owned));
         self.set_is_name_ambiguous(member.name_ambiguous());

@@ -129,7 +129,7 @@ mod imp {
                         child.set_text(&message);
                     } else {
                         self.content.set_child(Some(&text(&message)));
-                    };
+                    }
                 }
                 WidgetType::Creation(widget) => self.content.set_child(Some(&widget)),
                 WidgetType::Tombstone(widget) => self.content.set_child(Some(&widget)),
@@ -247,7 +247,7 @@ mod imp {
                 child.set_text(&message);
             } else {
                 self.content.set_child(Some(&text(&message)));
-            };
+            }
         }
 
         /// Convert a received membership change to a supported membership
@@ -372,7 +372,7 @@ mod imp {
                 child.set_text(&message);
             } else {
                 self.content.set_child(Some(&text(&message)));
-            };
+            }
         }
     }
 }

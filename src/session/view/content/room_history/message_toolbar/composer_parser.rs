@@ -134,7 +134,7 @@ impl<'a> ComposerParser<'a> {
                             let _ = write!(formatted_body, "[{name}]({uri})");
                         } else {
                             let _ = write!(formatted_body, "<a href=\"{uri}\">{name}</a>");
-                        };
+                        }
 
                         if let Some(user_id) = user_id {
                             mentions.user_ids.insert(user_id);
@@ -253,7 +253,7 @@ impl<'a> ComposerParser<'a> {
                         plain_text.push_str(AT_ROOM);
                     } else {
                         unreachable!()
-                    };
+                    }
 
                     plain_text.push_str(MENTION_END_TAG);
                 }

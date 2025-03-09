@@ -155,7 +155,7 @@ impl RoomCreation {
             // The room is public.
             request.visibility = Visibility::Public;
             request.room_alias_name = Some(imp.room_address.text().to_string());
-        };
+        }
 
         let client = session.client();
         let handle = spawn_tokio!(async move { client.create_room(request).await });
@@ -174,7 +174,7 @@ impl RoomCreation {
                 error!("Could not create a new room: {error}");
                 self.handle_error(&error);
             }
-        };
+        }
     }
 
     /// Display the error that occurred during creation.
