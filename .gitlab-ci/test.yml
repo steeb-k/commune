@@ -41,8 +41,6 @@ build-docs:
     - flatpak
   script:
     - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//24.08
-    # Latest nightly has a regression, use the previous commit.
-    - flatpak update --user --noninteractive --commit=aa00da8e848af18f397f0df9f21c4ede196cd21c761a2d8a656b1a3044e6a696 org.freedesktop.Sdk.Extension.rust-nightly//24.08
     # We want to use the nightly toolchain inside the build terminal.
     - sed -i 's|"org.freedesktop.Sdk.Extension.rust-stable"|"org.freedesktop.Sdk.Extension.rust-nightly"|g' ${MANIFEST_PATH}
     - sed -i 's|/rust-stable/bin|/rust-nightly/extra/sdk/rust-nightly/bin|g' ${MANIFEST_PATH}
