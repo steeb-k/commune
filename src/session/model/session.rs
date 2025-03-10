@@ -542,12 +542,12 @@ mod imp {
 
         /// Update the stored session tokens.
         async fn store_tokens(&self) {
-            let Some(sdk_session) = self.client().session() else {
+            let Some(session_tokens) = self.client().session_tokens() else {
                 return;
             };
 
             debug!("Storing updated session tokens…");
-            self.obj().info().store_tokens(sdk_session.into()).await;
+            self.obj().info().store_tokens(session_tokens).await;
         }
 
         /// Clean up this session after it was logged out.
@@ -669,7 +669,7 @@ impl Session {
         homeserver: Url,
         data: MatrixSession,
     ) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::new(homeserver, data.meta, data.tokens.into()).await?;
+        let stored_session = StoredSession::new(homeserver, data.meta, data.tokens).await?;
         let settings = Application::default()
             .session_list()
             .settings()

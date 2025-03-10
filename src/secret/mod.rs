@@ -3,13 +3,12 @@
 use std::{fmt, path::PathBuf};
 
 use gtk::glib;
-use matrix_sdk::{authentication::matrix::MatrixSessionTokens, AuthSession, SessionMeta};
+use matrix_sdk::{SessionMeta, SessionTokens};
 use rand::{
     distr::{Alphanumeric, SampleString},
     rng,
 };
 use ruma::{OwnedDeviceId, OwnedUserId};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::fs;
 use tracing::{debug, error};
@@ -255,49 +254,6 @@ impl StoredSession {
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             error!("Could not store session tokens: {error}");
-        }
-    }
-}
-
-/// The tokens of a user session.
-#[derive(Serialize, Deserialize)]
-pub(crate) struct SessionTokens {
-    pub(crate) access_token: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) refresh_token: Option<String>,
-}
-
-impl From<MatrixSessionTokens> for SessionTokens {
-    fn from(value: MatrixSessionTokens) -> Self {
-        let MatrixSessionTokens {
-            access_token,
-            refresh_token,
-        } = value;
-        SessionTokens {
-            access_token,
-            refresh_token,
-        }
-    }
-}
-
-impl From<SessionTokens> for MatrixSessionTokens {
-    fn from(value: SessionTokens) -> Self {
-        let SessionTokens {
-            access_token,
-            refresh_token,
-        } = value;
-        MatrixSessionTokens {
-            access_token,
-            refresh_token,
-        }
-    }
-}
-
-impl From<AuthSession> for SessionTokens {
-    fn from(value: AuthSession) -> Self {
-        Self {
-            access_token: value.access_token().to_owned(),
-            refresh_token: value.get_refresh_token().map(ToOwned::to_owned),
         }
     }
 }

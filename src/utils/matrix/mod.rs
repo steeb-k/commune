@@ -9,7 +9,7 @@ use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
-    Client, ClientBuildError, SessionMeta,
+    Client, ClientBuildError, SessionMeta, SessionTokens,
 };
 use ruma::{
     events::{
@@ -38,7 +38,7 @@ use crate::{
     components::Pill,
     gettext_f,
     prelude::*,
-    secret::{SessionTokens, StoredSession},
+    secret::StoredSession,
     session::model::{RemoteRoom, Room},
 };
 
@@ -303,7 +303,7 @@ pub async fn client_with_stored_session(
 
     let session_data = MatrixSession {
         meta: SessionMeta { user_id, device_id },
-        tokens: tokens.into(),
+        tokens,
     };
 
     let encryption_settings = EncryptionSettings {
