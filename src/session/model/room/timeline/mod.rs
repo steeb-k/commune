@@ -208,6 +208,14 @@ mod imp {
 
             let (values, timeline_stream) = matrix_timeline.subscribe().await;
 
+            if *IS_AT_TRACE_LEVEL {
+                tracing::trace!(
+                    room = self.room().human_readable_id(),
+                    items = ?sdk_items_to_log(&values),
+                    "Initial timeline items",
+                );
+            }
+
             if !values.is_empty() {
                 self.update_with_single_diff(VectorDiff::Append { values });
             }
