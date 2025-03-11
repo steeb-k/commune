@@ -13,8 +13,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-03-08 11:23+0000\n"
-"PO-Revision-Date: 2025-03-08 09:24-0300\n"
+"POT-Creation-Date: 2025-03-11 12:06+0000\n"
+"PO-Revision-Date: 2025-03-11 19:56-0300\n"
 "Last-Translator: Álvaro Burns <>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
@@ -1993,21 +1993,21 @@ msgstr "Esquecer da sala"
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:297
+#: src/session/model/user_sessions_list/user_session.rs:298
 msgid "Last seen at %H:%M"
 msgstr "Visto pela última vez às %H:%M"
 
 #. Translators: Time in 12h format, i.e. "11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:302
+#: src/session/model/user_sessions_list/user_session.rs:303
 msgid "Last seen at %I:%M %p"
 msgstr "Visto pela última vez às %I:%M %p"
 
 #. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:312
+#: src/session/model/user_sessions_list/user_session.rs:313
 #, no-c-format
 msgid "Last seen yesterday at %H:%M"
 msgstr "Visto pela última vez ontem às %H:%M"
@@ -2016,7 +2016,7 @@ msgstr "Visto pela última vez ontem às %H:%M"
 #. PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:319
+#: src/session/model/user_sessions_list/user_session.rs:320
 #, no-c-format
 msgid "Last seen yesterday at %I:%M %p"
 msgstr "Visto pela última vez ontem às %I:%M %p"
@@ -2025,7 +2025,7 @@ msgstr "Visto pela última vez ontem às %I:%M %p"
 #. format, i.e. "Last seen Monday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:330
+#: src/session/model/user_sessions_list/user_session.rs:331
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Visto pela última vez na(o) %A às %H:%M"
@@ -2034,7 +2034,7 @@ msgstr "Visto pela última vez na(o) %A às %H:%M"
 #. "Last seen Monday at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:337
+#: src/session/model/user_sessions_list/user_session.rs:338
 #, no-c-format
 msgid "Last seen %A at %I:%M %p"
 msgstr "Visto pela última vez em %A às %I:%M %p"
@@ -2043,7 +2043,7 @@ msgstr "Visto pela última vez em %A às %I:%M %p"
 #. seen February 3 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:346
+#: src/session/model/user_sessions_list/user_session.rs:347
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Visto pela última vez em %-e de %B às %H:%M"
@@ -2052,7 +2052,7 @@ msgstr "Visto pela última vez em %-e de %B às %H:%M"
 #. seen February 3 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:353
+#: src/session/model/user_sessions_list/user_session.rs:354
 #, no-c-format
 msgid "Last seen %B %-e at %I:%M %p"
 msgstr "Visto pela última vez em %-e de %B às %I:%M %p"
@@ -2061,7 +2061,7 @@ msgstr "Visto pela última vez em %-e de %B às %I:%M %p"
 #. seen February 3 2015 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:361
+#: src/session/model/user_sessions_list/user_session.rs:362
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Visto pela última vez em %-e de %B de %Y às %H:%M"
@@ -2070,7 +2070,7 @@ msgstr "Visto pela última vez em %-e de %B de %Y às %H:%M"
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/model/user_sessions_list/user_session.rs:368
+#: src/session/model/user_sessions_list/user_session.rs:369
 #, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
 msgstr "Visto pela última vez em %-e de %B de %Y às %I:%M %p"
@@ -2749,10 +2749,8 @@ msgstr "Última localização"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:114
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:124
-#, fuzzy
-#| msgid "Disconnect Session"
 msgid "Disconnect"
-msgstr "Desconectar sessão"
+msgstr "Desconectar"
 
 #: src/session/view/content/explore/mod.ui:20
 msgid "Public Rooms Search"
