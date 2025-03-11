@@ -1098,15 +1098,15 @@ mod imp {
         async fn update_is_encrypted(&self) {
             let matrix_room = self.matrix_room();
             let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move { matrix_room_clone.is_encrypted().await });
+            let handle =
+                spawn_tokio!(async move { matrix_room_clone.latest_encryption_state().await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(true) => {
-                    self.is_encrypted.set(true);
-                    self.obj().notify_is_encrypted();
-                }
-                Ok(false) => {
-                    // Ignore as the room encryption cannot be disabled.
+                Ok(state) => {
+                    if state.is_encrypted() {
+                        self.is_encrypted.set(true);
+                        self.obj().notify_is_encrypted();
+                    }
                 }
                 Err(error) => {
                     // It can be expected to not be allowed to access the encryption state if the
