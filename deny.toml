@@ -4,6 +4,7 @@ ignore = [
     { id = "RUSTSEC-2024-0384", reason = "instant is used by backoff" },
     { id = "RUSTSEC-2025-0012", reason = "backoff is unmaintained but doesn't have a suitable replacement yet" },
     { id = "RUSTSEC-2024-0436", reason = "paste is used by decancer, we need to wait for it to update its dependency" },
+    { id = "RUSTSEC-2025-0014", reason = "humantime is used by env_logger, we need to wait for it to update its dependency"},
 ]
 
 [bans]
