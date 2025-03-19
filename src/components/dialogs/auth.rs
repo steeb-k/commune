@@ -192,11 +192,11 @@ mod imp {
                             .await
                             .expect("task was not aborted")?;
                     }
-                    CrossSigningResetAuthType::Oidc(_) => {
+                    CrossSigningResetAuthType::OAuth(_) => {
                         // According to the code, this is only used with the `experimental-oidc`
                         // feature. Return an error in case this changes.
                         error!(
-                            "Could not perform cross-signing reset: received unexpected OIDC stage"
+                            "Could not perform cross-signing reset: received unexpected OAuth 2.0 stage"
                         );
                         return Err(AuthError::Unknown);
                     }
