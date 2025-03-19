@@ -28,6 +28,7 @@
     </accessibility>
     <style>
       <class name="image-button"/>
+      <class name="circular"/>
     </style>
     <property name="child">
       <object class="Avatar">
