@@ -28,10 +28,13 @@ build@aarch64:
 
 # Test builds with the stable runtime to make sure that the Flatpak will build on Flathub.
 # Should be run manually before tagging a new release.
+#
+# To get a list of available GNOME and LLVM versions, see:
+# https://gitlab.gnome.org/GNOME/gnome-runtime-images/-/blob/master/.gitlab-ci.yml
 .build-stable:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-${GNOME_STABLE_VERSION}'
   variables:
-    GNOME_STABLE_VERSION: "47"
+    GNOME_STABLE_VERSION: "48"
     LLVM_NIGHTLY_VERSION: "18"
     LLVM_STABLE_VERSION: "18"
     RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
