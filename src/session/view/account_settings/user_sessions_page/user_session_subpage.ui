@@ -33,18 +33,24 @@
                   </object>
                 </child>
                 <child>
-                  <object class="AdwActionRow">
-                    <style>
-                      <class name="property"/>
-                    </style>
+                  <object class="AdwEntryRow" id="display_name">
                     <property name="title" translatable="yes">Public Name</property>
-                    <binding name="subtitle">
+                    <binding name="text">
                       <lookup name="display-name">
                         <lookup name="user-session">
                           UserSessionSubpage
                         </lookup>
                       </lookup>
                     </binding>
+                    <signal name="changed" handler="display_name_changed" swapped="yes"/>
+                    <signal name="entry-activated" handler="rename_user_session" swapped="yes"/>
+                    <child type="suffix">
+                      <object class="ActionButton" id="display_name_button">
+                        <property name="visible">False</property>
+                        <property name="state">confirm</property>
+                        <signal name="clicked" handler="rename_user_session" swapped="yes"/>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>

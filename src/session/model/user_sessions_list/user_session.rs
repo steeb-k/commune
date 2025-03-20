@@ -5,7 +5,7 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::encryption::identities::Device as CryptoDevice;
+use matrix_sdk::{encryption::identities::Device as CryptoDevice, HttpError};
 use ruma::{api::client::device::Device as DeviceData, DeviceId, OwnedDeviceId};
 use tracing::{debug, error};
 
@@ -13,6 +13,7 @@ use crate::{
     components::{AuthDialog, AuthError},
     prelude::*,
     session::model::Session,
+    spawn_tokio,
     system_settings::ClockFormat,
     utils::matrix::timestamp_to_date,
     Application,
@@ -38,6 +39,21 @@ impl UserSessionData {
         match self {
             UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => &api.device_id,
             UserSessionData::Crypto(crypto) => crypto.device_id(),
+        }
+    }
+
+    /// Set the display name of user session.
+    fn set_display_name(&mut self, name: String) {
+        match self {
+            UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => {
+                api.display_name = Some(name);
+            }
+            UserSessionData::Crypto(crypto) => {
+                *self = UserSessionData::Both {
+                    api: DeviceData::new(crypto.device_id().into()),
+                    crypto: crypto.to_owned(),
+                }
+            }
         }
     }
 
@@ -205,6 +221,16 @@ mod imp {
                 .and_then(UserSessionData::api)
                 .and_then(|d| d.display_name.clone())
                 .unwrap_or_default()
+        }
+
+        /// Set the display name of the device.
+        pub(super) fn set_display_name(&self, name: String) {
+            if let Some(data) = &mut *self.data.borrow_mut() {
+                data.set_display_name(name);
+            }
+
+            self.obj().notify_display_name();
+            self.obj().notify_display_name_or_device_id();
         }
 
         /// The display name of the device, or the device id as a fallback.
@@ -412,6 +438,34 @@ impl UserSession {
     /// Set the user session data.
     pub(super) fn set_data(&self, data: UserSessionData) {
         self.imp().set_data(data);
+    }
+
+    /// Renames the user session.
+    pub(crate) async fn rename(&self, display_name: String) -> Result<(), HttpError> {
+        let Some(client) = self.session().map(|s| s.client()) else {
+            return Ok(());
+        };
+        let device_id = self.imp().device_id().clone();
+
+        let cloned_display_name = display_name.clone();
+        let res =
+            spawn_tokio!(
+                async move { client.rename_device(&device_id, &cloned_display_name).await }
+            )
+            .await
+            .expect("task was not aborted");
+
+        match res {
+            Ok(_) => {
+                self.imp().set_display_name(display_name);
+                Ok(())
+            }
+            Err(error) => {
+                let device_id = self.device_id();
+                error!("Could not rename user session {device_id}: {error}");
+                Err(error)
+            }
+        }
     }
 
     /// Deletes the `UserSession`.

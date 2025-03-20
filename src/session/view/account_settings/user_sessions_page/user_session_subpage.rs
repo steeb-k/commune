@@ -6,7 +6,7 @@ use tracing::error;
 
 use super::AccountSettings;
 use crate::{
-    components::{AuthError, LoadingButtonRow},
+    components::{ActionButton, ActionState, AuthError, LoadingButtonRow},
     gettext_f,
     session::model::UserSession,
     toast,
@@ -24,6 +24,10 @@ mod imp {
     )]
     #[properties(wrapper_type = super::UserSessionSubpage)]
     pub struct UserSessionSubpage {
+        #[template_child]
+        display_name: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        display_name_button: TemplateChild<ActionButton>,
         #[template_child]
         verified_status: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -98,6 +102,7 @@ mod imp {
             obj.notify_user_session();
         }
 
+        /// Update the verified status.
         fn update_verified(&self) {
             let Some(user_session) = self.user_session.obj() else {
                 return;
@@ -153,6 +158,59 @@ mod imp {
                 self.loading_disconnect_button.set_visible(true);
                 self.open_url_disconnect_button.set_visible(false);
             }
+        }
+
+        /// Update the display name button when the display name is changed by
+        /// the user.
+        #[template_callback]
+        fn display_name_changed(&self) {
+            self.display_name_button
+                .set_visible(self.has_display_name_changed());
+            self.display_name_button.set_state(ActionState::Confirm);
+        }
+
+        /// Whether the display name in the entry row is different than the user
+        /// session's.
+        fn has_display_name_changed(&self) -> bool {
+            let Some(user_session) = self.user_session.obj() else {
+                return false;
+            };
+
+            self.display_name.text().trim() != user_session.display_name().trim()
+        }
+
+        /// Update the display name of the user session by making a request to
+        /// the homeserver.
+        #[template_callback]
+        async fn rename_user_session(&self) {
+            if !self.has_display_name_changed() {
+                // Nothing to do.
+                return;
+            }
+            let obj = self.obj();
+            let Some(user_session) = self.user_session.obj() else {
+                return;
+            };
+
+            let new_display_name = self.display_name.text().trim().to_owned();
+
+            self.display_name.set_editable(false);
+            self.display_name.add_css_class("dimmed");
+            self.display_name_button.set_state(ActionState::Loading);
+
+            if let Ok(()) = user_session.rename(new_display_name).await {
+                self.display_name_button.set_visible(false);
+                self.display_name_button.set_state(ActionState::Confirm);
+                let confirmation_message = gettext("Session renamed");
+                toast!(obj, confirmation_message);
+            } else {
+                self.display_name_button.set_state(ActionState::Retry);
+                let error_message = gettext("Could not rename session");
+                toast!(obj, error_message);
+            }
+
+            self.display_name.set_editable(true);
+            self.display_name.remove_css_class("dimmed");
         }
 
         /// Disconnect the user session by making a request to the homeserver.
