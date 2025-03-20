@@ -58,7 +58,7 @@ webp = { version = "0.3", default-features = false }
 zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
-adw = { package = "libadwaita", version = "0.7", features = ["v1_6"] }
+adw = { package = "libadwaita", version = "0.7", features = ["v1_7"] }
 glycin = { version = "2", default-features = false, features = ["tokio", "gdk4"] }
 gst = { version = "0.23", package = "gstreamer" }
 gst_app = { version = "0.23", package = "gstreamer-app" }

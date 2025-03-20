@@ -39,7 +39,7 @@
                   <object class="GtkLabel" id="entry_prefix_label">
                     <property name="label">#</property>
                     <style>
-                      <class name="dim-label"/>
+                      <class name="dimmed"/>
                     </style>
                   </object>
                 </child>
@@ -75,7 +75,7 @@
                   <object class="GtkLabel" id="entry_suffix_label">
                     <property name="label">:matrix.org</property>
                     <style>
-                      <class name="dim-label"/>
+                      <class name="dimmed"/>
                     </style>
                   </object>
                 </child>

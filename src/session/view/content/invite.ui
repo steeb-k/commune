@@ -78,7 +78,7 @@
                               </lookup>
                             </binding>
                             <style>
-                              <class name="dim-label"/>
+                              <class name="dimmed"/>
                             </style>
                           </object>
                         </child>
@@ -96,7 +96,7 @@
                           </lookup>
                         </binding>
                         <style>
-                          <class name="dim-label"/>
+                          <class name="dimmed"/>
                         </style>
                       </object>
                     </child>

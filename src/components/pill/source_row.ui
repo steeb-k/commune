@@ -42,7 +42,7 @@
                   </lookup>
                 </binding>
                 <style>
-                  <class name="dim-label"/>
+                  <class name="dimmed"/>
                   <class name="caption"/>
                 </style>
               </object>

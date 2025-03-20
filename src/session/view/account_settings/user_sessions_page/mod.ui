@@ -71,7 +71,7 @@
                         <property name="wrap-mode">word-char</property>
                         <property name="label" translatable="yes">Could not load the list of connected devices</property>
                         <style>
-                          <class name="dim-label"/>
+                          <class name="dimmed"/>
                         </style>
                       </object>
                     </child>

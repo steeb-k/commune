@@ -95,7 +95,7 @@ mod imp {
             }
 
             self.room.disconnect_signals();
-            self.display_name.remove_css_class("dim-label");
+            self.display_name.remove_css_class("dimmed");
 
             if let Some(room) = room {
                 let highlight_handler = room.connect_highlight_notify(clone!(
@@ -128,7 +128,7 @@ mod imp {
                 ));
 
                 if room.category() == RoomCategory::Left {
-                    self.display_name.add_css_class("dim-label");
+                    self.display_name.add_css_class("dimmed");
                 }
 
                 self.room.set(
@@ -232,7 +232,7 @@ mod imp {
                     let icon = gtk::Image::builder()
                         .icon_name("person-symbolic")
                         .icon_size(gtk::IconSize::Normal)
-                        .css_classes(["dim-label"])
+                        .css_classes(["dimmed"])
                         .build();
 
                     self.display_name_box.prepend(&icon);

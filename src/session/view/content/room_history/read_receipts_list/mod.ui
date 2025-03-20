@@ -14,7 +14,7 @@
             <property name="margin-start">2</property>
             <style>
               <class name="caption"/>
-              <class name="dim-label"/>
+              <class name="dimmed"/>
             </style>
           </object>
         </child>

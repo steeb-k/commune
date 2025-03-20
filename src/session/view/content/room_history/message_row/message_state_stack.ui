@@ -85,7 +85,7 @@
             <property name="child">
               <object class="GtkImage">
                 <style>
-                  <class name="dim-label"/>
+                  <class name="dimmed"/>
                 </style>
                 <property name="icon-name">edit-symbolic</property>
                 <!-- Translators: As in 'Edited message'. -->

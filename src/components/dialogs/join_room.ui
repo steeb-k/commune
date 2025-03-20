@@ -150,7 +150,7 @@
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
                                 <style>
-                                  <class name="dim-label"/>
+                                  <class name="dimmed"/>
                                 </style>
                               </object>
                             </child>
@@ -172,14 +172,14 @@
                                     <property name="icon-name">users-symbolic</property>
                                     <property name="accessible-role">presentation</property>
                                     <style>
-                                      <class name="dim-label"/>
+                                      <class name="dimmed"/>
                                     </style>
                                   </object>
                                 </child>
                                 <child>
                                   <object class="GtkLabel" id="room_members_count">
                                     <style>
-                                      <class name="dim-label"/>
+                                      <class name="dimmed"/>
                                     </style>
                                   </object>
                                 </child>

@@ -30,7 +30,7 @@
                 <property name="hexpand">True</property>
                 <property name="ellipsize">end</property>
                 <style>
-                  <class name="dim-label"/>
+                  <class name="dimmed"/>
                   <class name="caption"/>
                 </style>
               </object>

@@ -39,7 +39,7 @@
                 <style>
                   <class name="caption"/>
                   <class name="timestamp"/>
-                  <class name="dim-label"/>
+                  <class name="dimmed"/>
                 </style>
               </object>
             </child>

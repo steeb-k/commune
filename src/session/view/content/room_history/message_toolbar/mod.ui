@@ -54,7 +54,7 @@
                           <object class="ContentMessageContent" id="related_event_content">
                             <style>
                               <class name="related-event-content"/>
-                              <class name="dim-label"/>
+                              <class name="dimmed"/>
                             </style>
                             <property name="format">ellipsized</property>
                           </object>

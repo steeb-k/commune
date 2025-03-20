@@ -398,7 +398,7 @@ enum WidgetType {
 /// Construct a `GtkLabel` for the given text.
 fn text(label: &str) -> gtk::Label {
     let child = gtk::Label::new(Some(label));
-    child.set_css_classes(&["event-content", "dim-label"]);
+    child.set_css_classes(&["event-content", "dimmed"]);
     child.set_wrap(true);
     child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
     child.set_xalign(0.0);

@@ -12,7 +12,7 @@
             <property name="ellipsize">end</property>
             <property name="label" bind-source="SidebarSectionRow" bind-property="label" bind-flags="sync-create"/>
             <style>
-              <class name="dim-label"/>
+              <class name="dimmed"/>
             </style>
           </object>
         </child>
@@ -22,7 +22,7 @@
             <property name="accessible-role">presentation</property>
             <style>
               <class name="arrow"/>
-              <class name="dim-label"/>
+              <class name="dimmed"/>
             </style>
           </object>
         </child>
