@@ -53,6 +53,7 @@
                             <child>
                               <object class="GtkLabel">
                                 <property name="halign">center</property>
+                                <property name="justify">center</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="label" translatable="yes">Fetching Account Data…</property>
