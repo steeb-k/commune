@@ -63,7 +63,8 @@ mod imp {
 glib::wrapper! {
     /// An `AdwPreferencesRow` usable as a button, that optionally displays a count.
     pub struct ButtonCountRow(ObjectSubclass<imp::ButtonCountRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
+        @implements gtk::Accessible;
 }
 
 impl ButtonCountRow {
