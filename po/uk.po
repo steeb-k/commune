@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-03-08 18:01+0000\n"
-"PO-Revision-Date: 2025-03-08 22:30+0200\n"
+"POT-Creation-Date: 2025-03-25 16:33+0000\n"
+"PO-Revision-Date: 2025-03-25 23:04+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -231,7 +231,7 @@ msgstr "Попередження"
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
-#: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:93
+#: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:94
 msgid "Error"
 msgstr "Помилка"
 
@@ -282,7 +282,7 @@ msgid "Viewfinder"
 msgstr "Видошукач"
 
 #: src/components/crypto/identity_setup_view.rs:384
-#: src/identity_verification_view/cancelled_page.rs:190
+#: src/identity_verification_view/cancelled_page.rs:195
 msgid "Could not send a new verification request"
 msgstr "Не вдалося надіслати новий запит щодо перевірки"
 
@@ -544,7 +544,7 @@ msgstr "Копіювати ключ відновлення"
 
 #: src/components/crypto/recovery_setup_view.ui:408
 #: src/components/crypto/recovery_setup_view.ui:494
-#: src/identity_verification_view/cancelled_page.ui:52
+#: src/identity_verification_view/cancelled_page.ui:46
 #: src/identity_verification_view/completed_page.ui:48
 #: src/identity_verification_view/room_left_page.ui:44
 msgid "_Done"
@@ -582,11 +582,14 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Крім того, ви можете скинути відновлення облікового запису"
 
-#: src/components/dialogs/auth.rs:275
-msgid "Please authenticate the operation with your password"
-msgstr "Будь ласка, пройдіть розпізнавання, ввівши пароль"
+#: src/components/dialogs/auth/in_browser_page.ui:35
+#: src/components/dialogs/auth/mod.ui:4
+#: src/components/dialogs/auth/password_page.ui:35
+#: src/login/in_browser_page.ui:5 src/login/in_browser_page.ui:40
+msgid "Authentication"
+msgstr "Розпізнавання"
 
-#: src/components/dialogs/auth.rs:312
+#: src/components/dialogs/auth/in_browser_page.ui:50
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
@@ -594,24 +597,36 @@ msgstr ""
 "Будь ласка, пройдіть розпізнавання за допомогою браузера, а потім "
 "поверніться сюди і натисніть кнопку «Підтвердити»"
 
-#: src/components/dialogs/auth.ui:4 src/login/in_browser_page.ui:5
-#: src/login/in_browser_page.ui:40
-msgid "Authentication"
-msgstr "Розпізнавання"
-
-#: src/components/dialogs/auth.ui:33 src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.ui:73
+#: src/login/in_browser_page.ui:74
 msgid "Contin_ue"
 msgstr "Продов_жити"
 
-#: src/components/dialogs/auth.ui:64
+#: src/components/dialogs/auth/in_browser_page.ui:107
+#: src/components/dialogs/auth/password_page.ui:83
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Скасувати"
 
-#: src/components/dialogs/auth.ui:65
+#: src/components/dialogs/auth/in_browser_page.ui:115
+#: src/components/dialogs/auth/password_page.ui:91
 msgid "C_onfirm"
 msgstr "_Підтвердити"
+
+#: src/components/dialogs/auth/mod.rs:308
+#| msgid "The provided username or password is invalid."
+msgid "The password is invalid."
+msgstr "Пароль є некоректним."
+
+#: src/components/dialogs/auth/mod.rs:310 src/user_facing_error.rs:81
+#: src/user_facing_error.rs:95
+msgid "An unexpected error occurred."
+msgstr "Сталася неочікувана помилка."
+
+#: src/components/dialogs/auth/password_page.ui:50
+msgid "Please authenticate the operation with your password"
+msgstr "Будь ласка, пройдіть розпізнавання, ввівши пароль"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
@@ -695,7 +710,7 @@ msgstr ""
 "кімнати без запрошення."
 
 #: src/components/dialogs/message_dialogs.rs:32
-#: src/identity_verification_view/accept_request_page.ui:46
+#: src/identity_verification_view/accept_request_page.ui:52
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Відхилити"
@@ -726,7 +741,7 @@ msgstr "Полишити"
 #: src/components/dialogs/message_dialogs.rs:318
 #: src/components/dialogs/message_dialogs.rs:379
 #: src/components/dialogs/message_dialogs.rs:414
-#: src/identity_verification_view/confirm_qr_code_page.ui:61
+#: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:375
 #: src/session/view/content/room_details/edit_details_subpage.rs:271
 #: src/session/view/content/room_details/edit_details_subpage.rs:550
@@ -1184,7 +1199,7 @@ msgid "Security"
 msgstr "Безпека"
 
 #: src/components/user_page.ui:212
-#: src/identity_verification_view/accept_request_page.ui:57
+#: src/identity_verification_view/accept_request_page.ui:63
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1331,7 +1346,7 @@ msgstr "Перевірку скасовано"
 msgid "Verification Error"
 msgstr "Помилка перевірки"
 
-#: src/identity_verification_view/cancelled_page.ui:41
+#: src/identity_verification_view/cancelled_page.ui:56
 msgid "Send New Request"
 msgstr "Надіслати новий запит"
 
@@ -1438,7 +1453,7 @@ msgstr "Не вдалося підтвердити сканування QR-ко�
 msgid "Confirm Scan"
 msgstr "Підтвердити сканування"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:47
+#: src/identity_verification_view/confirm_qr_code_page.ui:66
 msgid "Confirm"
 msgstr "Підтвердити"
 
@@ -1594,12 +1609,12 @@ msgid "Could not send confirmation that the data matches"
 msgstr "Не вдалося надіслати підтвердження відповідності даних"
 
 #. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
-#: src/identity_verification_view/sas_page.ui:57
+#: src/identity_verification_view/sas_page.ui:62
 msgid "Do Not Match"
 msgstr "Не збігається"
 
 #. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
-#: src/identity_verification_view/sas_page.ui:69
+#: src/identity_verification_view/sas_page.ui:74
 msgid "Match"
 msgstr "Збігається"
 
@@ -1749,7 +1764,7 @@ msgstr "Додаткові надавачі SSO"
 msgid "Login via SSO"
 msgstr "Вхід за допомогою SSO"
 
-#: src/login/method_page.ui:5 src/window.ui:75
+#: src/login/method_page.ui:5 src/window.ui:76
 msgid "Log In"
 msgstr "Увійти"
 
@@ -1785,7 +1800,7 @@ msgstr "Почати спілкування"
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:58
+#: src/login/session_setup_view.ui:43 src/window.ui:59
 msgid "Fetching Account Data…"
 msgstr "Отримуємо дані облікового запису…"
 
@@ -1803,36 +1818,28 @@ msgstr "Увійти за допомогою {brand}"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/secret/linux.rs:512
+#: src/secret/linux.rs:514
 msgid "The secret storage file is corrupted."
 msgstr "Файл сховища реєстраційних даних пошкоджено."
 
-#: src/secret/linux.rs:516
+#: src/secret/linux.rs:518
 msgid "Could not access the secret storage file location."
 msgstr ""
 "Не вдалося отримати доступ до місця зберігання файл сховища реєстраційних "
 "даних."
 
-#: src/secret/linux.rs:519
+#: src/secret/linux.rs:521
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Під час спроби доступу до файла сховища реєстраційних даних сталася "
 "неочікувана помилка"
 
-#: src/secret/linux.rs:522
+#: src/secret/linux.rs:524
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
-#: src/secret/linux.rs:525
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr ""
-"Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
-"сталася неочікувана помилка"
-
-#: src/secret/linux.rs:528
+#: src/secret/linux.rs:527
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1840,7 +1847,7 @@ msgstr ""
 "Запит до порталу реєстраційних даних Flatpak було скасовано. Переконайтеся, "
 "що прийнято усі запити, що вимагають доступу до нього."
 
-#: src/secret/linux.rs:531
+#: src/secret/linux.rs:530
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1848,37 +1855,45 @@ msgstr ""
 "Немає доступу до порталу реєстраційних даних Flatpak. Переконайтеся, що "
 "встановлено пакунок xdg-desktop-portal версії, яка є не меншою за 1.5.0."
 
-#: src/secret/linux.rs:534
+#: src/secret/linux.rs:533
+msgid ""
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
+"backend."
+msgstr ""
+"Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
+"сталася неочікувана помилка"
+
+#: src/secret/linux.rs:536
 msgid ""
 "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
 
-#: src/secret/linux.rs:548
+#: src/secret/linux.rs:550
 msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
-#: src/secret/linux.rs:552 src/secret/linux.rs:572
+#: src/secret/linux.rs:554 src/secret/linux.rs:576
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Під час роботи із службою реєстраційних даних за допомогою D-Bus сталася "
 "неочікувана помилка"
 
-#: src/secret/linux.rs:555
+#: src/secret/linux.rs:557
 msgid "The collection or item is locked."
 msgstr "Збірку або запис замкнено."
 
-#: src/secret/linux.rs:558
+#: src/secret/linux.rs:560
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Сеансу D-Bus «Секретної служби» не існує."
 
-#: src/secret/linux.rs:561
+#: src/secret/linux.rs:563
 msgid "The collection or item does not exist."
 msgstr "Збірки або запису не існує."
 
-#: src/secret/linux.rs:565
+#: src/secret/linux.rs:567
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1887,7 +1902,7 @@ msgstr ""
 "скасовано. Переконайтеся, що прийнято усі запити, що вимагають доступу до "
 "неї."
 
-#: src/secret/linux.rs:568
+#: src/secret/linux.rs:570
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -2755,7 +2770,6 @@ msgstr "Перевірено"
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:60
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:114
-#| msgid "Verified"
 msgid "Not verified"
 msgstr "Не перевірено"
 
@@ -2764,23 +2778,19 @@ msgid "Could not disconnect device “{device_name}”"
 msgstr "Не вдалося від'єднати пристрій «{device_name}»."
 
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:40
-#| msgid "Public"
 msgid "Public Name"
 msgstr "Відкрита назва"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:58
-#| msgid "Last edited %c"
 msgid "Last Seen"
 msgstr "Останнє відвідування"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:80
-#| msgid "User Location"
 msgid "Last Location"
 msgstr "Останнє місце"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:114
 #: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:124
-#| msgid "Disconnect Session"
 msgid "Disconnect"
 msgstr "Від’єднатися"
 
@@ -5081,10 +5091,6 @@ msgstr "Сталася неочікувана помилка з'єднання."
 msgid "Could not decrypt the event."
 msgstr "Не вдалося розшифрувати подію."
 
-#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unexpected error occurred."
-msgstr "Сталася неочікувана помилка."
-
 #: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
 msgstr "Адреса не є коректною."
@@ -5169,7 +5175,7 @@ msgstr "звук"
 msgid "file"
 msgstr "файл"
 
-#: src/window.ui:84
+#: src/window.ui:85
 msgid "Session"
 msgstr "Сеанс"
 
