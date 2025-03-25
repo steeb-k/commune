@@ -367,7 +367,10 @@ mod imp {
             self.set_state(SessionState::InitialSync);
             self.sync();
 
-            debug!("A new session was prepared");
+            debug!(
+                session = self.obj().session_id(),
+                "A new session was prepared"
+            );
         }
 
         /// Watch the changes of the session, like being logged out or the
@@ -447,7 +450,9 @@ mod imp {
 
         /// Handle the response received via sync.
         fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
-            debug!("Received sync response");
+            let obj = self.obj();
+            let session_id = obj.session_id();
+            debug!(session = session_id, "Received sync response");
 
             match response {
                 Ok(response) => {
@@ -469,7 +474,7 @@ mod imp {
                     } else {
                         self.missed_sync_count.set(missed_sync_count);
                     }
-                    error!("Could not perform sync: {error}");
+                    error!(session = session_id, "Could not perform sync: {error}");
                 }
             }
         }
@@ -488,13 +493,19 @@ mod imp {
                 Ok(Some(bytes)) => match serde_json::from_slice::<UserProfile>(&bytes) {
                     Ok(profile) => profile,
                     Err(error) => {
-                        error!("Failed to deserialize session profile: {error}");
+                        error!(
+                            session = self.obj().session_id(),
+                            "Failed to deserialize session profile: {error}"
+                        );
                         return;
                     }
                 },
                 Ok(None) => return,
                 Err(error) => {
-                    error!("Could not load cached session profile: {error}");
+                    error!(
+                        session = self.obj().session_id(),
+                        "Could not load cached session profile: {error}"
+                    );
                     return;
                 }
             };
@@ -522,7 +533,10 @@ mod imp {
                     profile
                 }
                 Err(error) => {
-                    error!("Could not fetch session profile: {error}");
+                    error!(
+                        session = self.obj().session_id(),
+                        "Could not fetch session profile: {error}"
+                    );
                     return;
                 }
             };
@@ -550,7 +564,10 @@ mod imp {
             let value = match value {
                 Ok(value) => value,
                 Err(error) => {
-                    error!("Failed to serialize session profile: {error}");
+                    error!(
+                        session = self.obj().session_id(),
+                        "Failed to serialize session profile: {error}"
+                    );
                     return;
                 }
             };
@@ -563,7 +580,10 @@ mod imp {
             });
 
             if let Err(error) = handle.await.expect("task was not aborted") {
-                error!("Could not cache session profile: {error}");
+                error!(
+                    session = self.obj().session_id(),
+                    "Could not cache session profile: {error}"
+                );
             }
         }
 
@@ -597,7 +617,10 @@ mod imp {
                 return;
             };
 
-            debug!("Storing updated session tokens…");
+            debug!(
+                session = self.obj().session_id(),
+                "Storing updated session tokens…"
+            );
             self.obj().info().store_tokens(session_tokens).await;
         }
 
@@ -606,6 +629,7 @@ mod imp {
         /// This should only be called if the session has been logged out
         /// without calling `Session::log_out`.
         pub(super) async fn clean_up(&self) {
+            let obj = self.obj();
             self.set_state(SessionState::LoggedOut);
 
             if let Some(handle) = self.sync_handle.take() {
@@ -616,11 +640,14 @@ mod imp {
                 settings.delete();
             }
 
-            self.obj().info().clone().delete().await;
+            obj.info().clone().delete().await;
 
             self.notifications.clear();
 
-            debug!("The logged out session was cleaned up");
+            debug!(
+                session = obj.session_id(),
+                "The logged out session was cleaned up"
+            );
         }
 
         /// The OAuth 2.0 authorization provider, if any.
@@ -654,15 +681,18 @@ mod imp {
                         let auth_issuer = imp.auth_issuer().await.ok_or(())?.clone();
 
                         let client = imp.client().clone();
-                        spawn_tokio!(async move {
-                            oauth::discover_account_management_url(&client, auth_issuer)
-                                .await
-                                .map_err(|error| {
-                                    warn!("Could not discover account management URL: {error}");
-                                })
+                        let result = spawn_tokio!(async move {
+                            oauth::discover_account_management_url(&client, auth_issuer).await
                         })
                         .await
-                        .expect("task was not aborted")
+                        .expect("task was not aborted");
+
+                        result.map_err(|error| {
+                            warn!(
+                                session = imp.obj().session_id(),
+                                "Could not discover account management URL: {error}"
+                            );
+                        })
                     }
                 ))
                 .await
@@ -756,7 +786,10 @@ impl Session {
 
     /// Log out of this session.
     pub(crate) async fn log_out(&self) -> Result<(), String> {
-        debug!("The session is about to be logged out");
+        debug!(
+            session = self.session_id(),
+            "The session is about to be logged out"
+        );
 
         let client = self.client();
         let handle = spawn_tokio!(async move { client.matrix_auth().logout().await });
@@ -767,7 +800,10 @@ impl Session {
                 Ok(())
             }
             Err(error) => {
-                error!("Could not log the session out: {error}");
+                error!(
+                    session = self.session_id(),
+                    "Could not log the session out: {error}"
+                );
                 Err(gettext("Could not log the session out"))
             }
         }
