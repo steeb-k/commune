@@ -1,13 +1,8 @@
 use std::time::Duration;
 
-use futures_util::StreamExt;
+use futures_util::{lock::Mutex, StreamExt};
 use gettextrs::gettext;
-use gtk::{
-    gio, glib,
-    glib::{clone, signal::SignalHandlerId},
-    prelude::*,
-    subclass::prelude::*,
-};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     authentication::matrix::MatrixSession, config::SyncSettings, media::MediaRetentionPolicy,
     sync::SyncResponse, Client, SessionChange,
@@ -21,7 +16,7 @@ use ruma::{
 };
 use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 use url::Url;
 
 use super::{
@@ -108,7 +103,9 @@ mod imp {
         security: SessionSecurity,
         session_changes_handle: RefCell<Option<AbortHandle>>,
         sync_handle: RefCell<Option<AbortHandle>>,
-        network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
+        network_monitor_handler_id: RefCell<Option<glib::SignalHandlerId>>,
+        homeserver_reachable_lock: Mutex<()>,
+        homeserver_reachable_source: RefCell<Option<glib::SourceId>>,
         /// The number of missed synchonizations in a row.
         ///
         /// Capped at `MISSED_SYNC_MAX_COUNT - 1`.
@@ -154,6 +151,10 @@ mod imp {
             // Needs to be disconnected or else it may restart the sync
             if let Some(handler_id) = self.network_monitor_handler_id.take() {
                 gio::NetworkMonitor::default().disconnect(handler_id);
+            }
+
+            if let Some(source) = self.homeserver_reachable_source.take() {
+                source.remove();
             }
 
             if let Some(handle) = self.session_changes_handle.take() {
@@ -224,20 +225,45 @@ mod imp {
             self.obj().notify_state();
         }
 
-        /// Update whether the homeserver is reachable.
-        pub(super) async fn update_homeserver_reachable(&self) {
+        /// The homeserver URL as a `GNetworkAddress`.
+        fn homeserver_address(&self) -> gio::NetworkAddress {
             let obj = self.obj();
-            let monitor = gio::NetworkMonitor::default();
+            let homeserver = obj.homeserver();
+            let default_port = if homeserver.scheme() == "http" {
+                80
+            } else {
+                443
+            };
 
-            let is_homeserver_reachable = if monitor.is_network_available() {
-                let homeserver = obj.homeserver();
-                let address = gio::NetworkAddress::parse_uri(homeserver.as_ref(), 80)
-                    .expect("url is parsed successfully");
+            gio::NetworkAddress::parse_uri(homeserver.as_str(), default_port)
+                .expect("url is parsed successfully")
+        }
+
+        /// Check whether the homeserver is reachable.
+        pub(super) async fn update_homeserver_reachable(&self) {
+            // If there is a timeout, remove it, we will add a new one later if needed.
+            if let Some(source) = self.homeserver_reachable_source.take() {
+                source.remove();
+            }
+            let Some(_guard) = self.homeserver_reachable_lock.try_lock() else {
+                // There is an ongoing check.
+                return;
+            };
+
+            let monitor = gio::NetworkMonitor::default();
+            let is_network_available = monitor.is_network_available();
+
+            let is_homeserver_reachable = if is_network_available {
+                // Check if we can reach the homeserver.
+                let address = self.homeserver_address();
 
                 match monitor.can_reach_future(&address).await {
                     Ok(()) => true,
                     Err(error) => {
-                        error!("Homeserver {homeserver} is not reachable: {error}");
+                        error!(
+                            session = self.obj().session_id(),
+                            "Homeserver is not reachable: {error}"
+                        );
                         false
                     }
                 }
@@ -245,17 +271,42 @@ mod imp {
                 false
             };
 
-            if self.is_homeserver_reachable.get() == is_homeserver_reachable {
+            self.set_is_homeserver_reachable(is_homeserver_reachable);
+
+            if is_network_available && !is_homeserver_reachable {
+                // Check again later if the homeserver is reachable.
+                let source = glib::timeout_add_seconds_local_once(
+                    10,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            spawn!(async move {
+                                imp.update_homeserver_reachable().await;
+                            });
+                        }
+                    ),
+                );
+                self.homeserver_reachable_source.replace(Some(source));
+            }
+        }
+
+        /// Set whether the homeserver is reachable.
+        fn set_is_homeserver_reachable(&self, is_reachable: bool) {
+            if self.is_homeserver_reachable.get() == is_reachable {
                 return;
             }
+            let obj = self.obj();
 
-            self.is_homeserver_reachable.set(is_homeserver_reachable);
+            self.is_homeserver_reachable.set(is_reachable);
 
             if let Some(handle) = self.sync_handle.take() {
                 handle.abort();
             }
 
-            if is_homeserver_reachable {
+            if is_reachable {
+                info!(session = obj.session_id(), "Homeserver is reachable");
+
                 // Restart the sync loop.
                 self.sync();
             } else {
