@@ -43,31 +43,38 @@
                   </object>
                 </child>
                 <child>
-                  <object class="LoadingButton" id="confirm_btn">
-                    <property name="content-label" translatable="yes">Confirm</property>
-                    <property name="halign">center</property>
-                    <signal name="clicked" handler="confirm_scanned" swapped="yes"/>
-                    <accessibility>
-                      <relation name="described-by">question</relation>
-                    </accessibility>
-                    <style>
-                      <class name="suggested-action"/>
-                      <class name="pill"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="LoadingButton" id="cancel_btn">
-                    <property name="content-label" translatable="yes">Cancel</property>
-                    <property name="halign">center</property>
-                    <signal name="clicked" handler="cancel" swapped="yes"/>
-                    <accessibility>
-                      <relation name="described-by">question</relation>
-                    </accessibility>
-                    <style>
-                      <class name="destructive-action"/>
-                      <class name="pill"/>
-                    </style>
+                  <object class="AdwWrapBox">
+                    <property name="child-spacing">12</property>
+                    <property name="line-spacing">12</property>
+                    <property name="align">0.5</property>
+                    <child>
+                      <object class="LoadingButton" id="cancel_btn">
+                        <property name="content-label" translatable="yes">Cancel</property>
+                        <property name="halign">center</property>
+                        <signal name="clicked" handler="cancel" swapped="yes"/>
+                        <accessibility>
+                          <relation name="described-by">question</relation>
+                        </accessibility>
+                        <style>
+                          <class name="destructive-action"/>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="LoadingButton" id="confirm_btn">
+                        <property name="content-label" translatable="yes">Confirm</property>
+                        <property name="halign">center</property>
+                        <signal name="clicked" handler="confirm_scanned" swapped="yes"/>
+                        <accessibility>
+                          <relation name="described-by">question</relation>
+                        </accessibility>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

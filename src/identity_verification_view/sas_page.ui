@@ -52,27 +52,34 @@
                   </object>
                 </child>
                 <child>
-                  <object class="LoadingButton" id="mismatch_btn">
-                    <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis do not match. -->
-                    <property name="content-label" translatable="yes">Do Not Match</property>
-                    <property name="halign">center</property>
-                    <signal name="clicked" handler="data_mismatch" swapped="yes"/>
-                    <style>
-                      <class name="destructive-action"/>
-                      <class name="pill"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="LoadingButton" id="match_btn">
-                    <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis match. -->
-                    <property name="content-label" translatable="yes">Match</property>
-                    <property name="halign">center</property>
-                    <signal name="clicked" handler="data_match" swapped="yes"/>
-                    <style>
-                      <class name="suggested-action"/>
-                      <class name="pill"/>
-                    </style>
+                  <object class="AdwWrapBox">
+                    <property name="child-spacing">12</property>
+                    <property name="line-spacing">12</property>
+                    <property name="align">0.5</property>
+                    <child>
+                      <object class="LoadingButton" id="mismatch_btn">
+                        <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis do not match. -->
+                        <property name="content-label" translatable="yes">Do Not Match</property>
+                        <property name="halign">center</property>
+                        <signal name="clicked" handler="data_mismatch" swapped="yes"/>
+                        <style>
+                          <class name="destructive-action"/>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="LoadingButton" id="match_btn">
+                        <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis match. -->
+                        <property name="content-label" translatable="yes">Match</property>
+                        <property name="halign">center</property>
+                        <signal name="clicked" handler="data_match" swapped="yes"/>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

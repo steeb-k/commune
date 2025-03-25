@@ -168,6 +168,11 @@ impl CancelledPage {
             gettext("Verification Error")
         };
         imp.title.set_text(&title);
+
+        // If the verification was started by one of our other devices, let it offer to
+        // try again.
+        let offer_to_retry = !verification.is_self_verification() || verification.started_by_us();
+        imp.try_again_btn.set_visible(offer_to_retry);
     }
 
     /// Reset the UI to its initial state.

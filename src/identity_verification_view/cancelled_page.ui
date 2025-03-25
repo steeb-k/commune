@@ -36,24 +36,31 @@
                   </object>
                 </child>
                 <child>
-                  <object class="LoadingButton" id="try_again_btn">
-                    <property name="halign">center</property>
-                    <property name="content-label" translatable="yes">Send New Request</property>
-                    <signal name="clicked" handler="try_again" swapped="yes"/>
-                    <style>
-                      <class name="suggested-action"/>
-                      <class name="pill"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="LoadingButton" id="dismiss_btn">
-                    <property name="halign">center</property>
-                    <property name="content-label" translatable="yes">_Done</property>
-                    <signal name="clicked" handler="dismiss" swapped="yes"/>
-                    <style>
-                      <class name="pill"/>
-                    </style>
+                  <object class="AdwWrapBox">
+                    <property name="child-spacing">12</property>
+                    <property name="line-spacing">12</property>
+                    <property name="align">0.5</property>
+                    <child>
+                      <object class="LoadingButton" id="dismiss_btn">
+                        <property name="halign">center</property>
+                        <property name="content-label" translatable="yes">_Done</property>
+                        <signal name="clicked" handler="dismiss" swapped="yes"/>
+                        <style>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="LoadingButton" id="try_again_btn">
+                        <property name="halign">center</property>
+                        <property name="content-label" translatable="yes">Send New Request</property>
+                        <signal name="clicked" handler="try_again" swapped="yes"/>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="pill"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

@@ -431,6 +431,11 @@ impl IdentityVerification {
         self.request().is_self_verification()
     }
 
+    /// Whether we started this verification.
+    pub fn started_by_us(&self) -> bool {
+        self.request().we_started()
+    }
+
     /// The ID of the other device that is being verified.
     pub fn other_device_id(&self) -> Option<OwnedDeviceId> {
         let request_state = self.request().state();
