@@ -19,8 +19,10 @@ src/components/crypto/identity_setup_view.rs
 src/components/crypto/identity_setup_view.ui
 src/components/crypto/recovery_setup_view.rs
 src/components/crypto/recovery_setup_view.ui
-src/components/dialogs/auth.rs
-src/components/dialogs/auth.ui
+src/components/dialogs/auth/in_browser_page.ui
+src/components/dialogs/auth/mod.rs
+src/components/dialogs/auth/mod.ui
+src/components/dialogs/auth/password_page.ui
 src/components/dialogs/join_room.rs
 src/components/dialogs/join_room.ui
 src/components/dialogs/message_dialogs.rs

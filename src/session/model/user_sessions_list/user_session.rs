@@ -419,7 +419,7 @@ impl UserSession {
     /// Requires a widget because it might show a dialog for UIAA.
     pub(crate) async fn delete(&self, parent: &impl IsA<gtk::Widget>) -> Result<(), AuthError> {
         let Some(session) = self.session() else {
-            return Err(AuthError::NoSession);
+            return Err(AuthError::Unknown);
         };
         let device_id = self.imp().device_id().clone();
 

@@ -14,7 +14,9 @@
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/identity_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/recovery_setup_view.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/in_browser_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/password_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/join_room.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/toastable.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/user_profile.ui</file>
