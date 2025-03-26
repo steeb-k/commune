@@ -74,7 +74,7 @@ mod imp {
         #[template_child]
         main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        message_entry: TemplateChild<sourceview::View>,
+        pub(super) message_entry: TemplateChild<sourceview::View>,
         #[template_child]
         send_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -163,7 +163,20 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for MessageToolbar {}
+    impl WidgetImpl for MessageToolbar {
+        fn grab_focus(&self) -> bool {
+            if self
+                .main_stack
+                .visible_child_name()
+                .is_none_or(|name| name == "disabled")
+            {
+                return false;
+            }
+
+            self.message_entry.grab_focus()
+        }
+    }
+
     impl BinImpl for MessageToolbar {}
 
     #[gtk::template_callbacks]
@@ -201,7 +214,6 @@ mod imp {
             self.timeline.set(timeline);
 
             self.send_message_permission_updated();
-            self.message_entry.grab_focus();
 
             obj.notify_timeline();
             self.update_current_composer_state(old_timeline);

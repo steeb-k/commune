@@ -108,7 +108,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Explore {}
+    impl WidgetImpl for Explore {
+        fn grab_focus(&self) -> bool {
+            self.search_entry.grab_focus()
+        }
+    }
+
     impl BinImpl for Explore {}
 
     impl Explore {
@@ -173,8 +178,6 @@ impl Explore {
         if let Some(public_room_list) = &*imp.public_room_list.borrow() {
             public_room_list.init();
         }
-
-        self.imp().search_entry.grab_focus();
     }
 
     /// The header bar of the explorer.

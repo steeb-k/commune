@@ -45,6 +45,8 @@ mod imp {
         #[template_child]
         pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
+        account_switcher_button: TemplateChild<AccountSwitcherButton>,
+        #[template_child]
         security_banner: TemplateChild<adw::Banner>,
         #[template_child]
         scrolled_window: TemplateChild<gtk::ScrolledWindow>,
@@ -79,7 +81,6 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            AccountSwitcherButton::ensure_type();
             OfflineBanner::ensure_type();
 
             Self::bind_template(klass);
@@ -171,7 +172,16 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Sidebar {}
+    impl WidgetImpl for Sidebar {
+        fn grab_focus(&self) -> bool {
+            if self.listview.grab_focus() {
+                true
+            } else {
+                self.account_switcher_button.grab_focus()
+            }
+        }
+    }
+
     impl NavigationPageImpl for Sidebar {}
 
     #[gtk::template_callbacks]

@@ -135,7 +135,7 @@
           <object class="AdwHeaderBar" id="header_bar">
             <property name="centering-policy">strict</property>
             <child type="title">
-              <object class="RoomHistoryTitle">
+              <object class="RoomHistoryTitle" id="room_title">
                 <binding name="room">
                   <lookup name="room">
                     <lookup name="timeline">ContentRoomHistory</lookup>

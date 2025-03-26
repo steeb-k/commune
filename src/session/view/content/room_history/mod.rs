@@ -63,6 +63,8 @@ mod imp {
         #[template_child]
         pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
+        room_title: TemplateChild<RoomHistoryTitle>,
+        #[template_child]
         room_menu: TemplateChild<gtk::MenuButton>,
         #[template_child]
         listview: TemplateChild<gtk::ListView>,
@@ -122,7 +124,6 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            RoomHistoryTitle::ensure_type();
             ItemRow::ensure_type();
             VerificationInfoBar::ensure_type();
 
@@ -237,7 +238,16 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for RoomHistory {}
+    impl WidgetImpl for RoomHistory {
+        fn grab_focus(&self) -> bool {
+            if self.message_toolbar.grab_focus() {
+                true
+            } else {
+                self.room_title.grab_focus()
+            }
+        }
+    }
+
     impl BinImpl for RoomHistory {}
 
     #[gtk::template_callbacks]
@@ -477,8 +487,7 @@ mod imp {
             self.update_tombstoned_banner();
             self.update_invite_action();
 
-            let obj = self.obj();
-            obj.notify_timeline();
+            self.obj().notify_timeline();
         }
 
         /// The room of the current timeline, if any.
@@ -1034,7 +1043,7 @@ impl RoomHistory {
     }
 
     /// The message toolbar of the room history.
-    fn message_toolbar(&self) -> &MessageToolbar {
+    pub(super) fn message_toolbar(&self) -> &MessageToolbar {
         &self.imp().message_toolbar
     }
 

@@ -113,7 +113,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Invite {}
+    impl WidgetImpl for Invite {
+        fn grab_focus(&self) -> bool {
+            self.accept_button.grab_focus()
+        }
+    }
+
     impl BinImpl for Invite {}
 
     impl Invite {

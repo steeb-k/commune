@@ -99,7 +99,7 @@
           <object class="AdwHeaderBar" id="header_bar">
             <property name="show-title">False</property>
             <child type="start">
-              <object class="AccountSwitcherButton">
+              <object class="AccountSwitcherButton" id="account_switcher_button">
                 <property name="valign">center</property>
               </object>
             </child>

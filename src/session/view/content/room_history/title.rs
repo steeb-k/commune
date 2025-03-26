@@ -49,7 +49,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for RoomHistoryTitle {}
 
-    impl WidgetImpl for RoomHistoryTitle {}
+    impl WidgetImpl for RoomHistoryTitle {
+        fn grab_focus(&self) -> bool {
+            self.button.grab_focus()
+        }
+    }
+
     impl BinImpl for RoomHistoryTitle {}
 
     impl RoomHistoryTitle {

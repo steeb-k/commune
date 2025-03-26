@@ -197,6 +197,13 @@ mod imp {
                                 .list_model()
                                 .is_some_and(|m| m.selection_model().selected_item().is_some());
                             imp.split_view.set_show_content(show_content);
+
+                            // Only grab focus for the sidebar here. We handle the other case in
+                            // `Content::set_item()` directly, because we need to grab focus only
+                            // after the visible content changed.
+                            if !show_content {
+                                imp.sidebar.grab_focus();
+                            }
                         }
                     ),
                 );

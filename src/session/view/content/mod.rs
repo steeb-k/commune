@@ -208,6 +208,10 @@ mod imp {
 
             self.update_visible_child();
             self.obj().notify_item();
+
+            if let Some(page) = self.stack.visible_child() {
+                page.grab_focus();
+            }
         }
 
         /// Update the visible child according to the current item.
