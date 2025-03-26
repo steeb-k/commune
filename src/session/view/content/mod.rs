@@ -14,12 +14,13 @@ use crate::{
     session::model::{
         IdentityVerification, Room, RoomCategory, Session, SidebarIconItem, SidebarIconItemType,
     },
+    utils::BoundObject,
 };
 
 /// A page of the content stack.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
 #[strum(serialize_all = "kebab-case")]
-pub enum ContentPage {
+enum ContentPage {
     /// The placeholder page when no content is presented.
     Empty,
     /// The history of the selected room.
@@ -43,35 +44,34 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/mod.ui")]
     #[properties(wrapper_type = super::Content)]
     pub struct Content {
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        room_history: TemplateChild<RoomHistory>,
+        #[template_child]
+        invite: TemplateChild<Invite>,
+        #[template_child]
+        explore: TemplateChild<Explore>,
+        #[template_child]
+        empty_page: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        empty_page_header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        verification_page: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        verification_page_header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        identity_verification_widget: TemplateChild<IdentityVerificationView>,
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// Whether this is the only visible view, i.e. there is no sidebar.
         #[property(get, set)]
-        pub only_view: Cell<bool>,
-        pub item_binding: RefCell<Option<glib::Binding>>,
+        only_view: Cell<bool>,
+        item_binding: RefCell<Option<glib::Binding>>,
         /// The item currently displayed.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<glib::Object>>,
-        pub signal_handler: RefCell<Option<glib::SignalHandlerId>>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub room_history: TemplateChild<RoomHistory>,
-        #[template_child]
-        pub invite: TemplateChild<Invite>,
-        #[template_child]
-        pub explore: TemplateChild<Explore>,
-        #[template_child]
-        pub empty_page: TemplateChild<adw::ToolbarView>,
-        #[template_child]
-        pub empty_page_header_bar: TemplateChild<adw::HeaderBar>,
-        #[template_child]
-        pub verification_page: TemplateChild<adw::ToolbarView>,
-        #[template_child]
-        pub verification_page_header_bar: TemplateChild<adw::HeaderBar>,
-        #[template_child]
-        pub identity_verification_widget: TemplateChild<IdentityVerificationView>,
+        item: BoundObject<glib::Object>,
     }
 
     #[glib::object_subclass]
@@ -82,6 +82,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
@@ -105,7 +106,9 @@ mod imp {
                     }
                 }
             ));
+        }
 
+        fn dispose(&self) {
             if let Some(binding) = self.item_binding.take() {
                 binding.unbind();
             }
@@ -125,8 +128,19 @@ mod imp {
         pub(super) fn visible_page(&self) -> ContentPage {
             self.stack
                 .visible_child_name()
-                .and_then(|s| s.as_str().try_into().ok())
-                .unwrap()
+                .expect("stack should always have a visible child name")
+                .as_str()
+                .try_into()
+                .expect("stack child name should be convertible to a ContentPage")
+        }
+
+        /// Set the visible page of the content.
+        fn set_visible_page(&self, page: ContentPage) {
+            if self.visible_page() == page {
+                return;
+            }
+
+            self.stack.set_visible_child_name(page.as_ref());
         }
 
         /// Set the current session.
@@ -158,43 +172,88 @@ mod imp {
 
         /// Set the item currently displayed.
         fn set_item(&self, item: Option<glib::Object>) {
-            if *self.item.borrow() == item {
+            if self.item.obj() == item {
                 return;
             }
-            let obj = self.obj();
 
-            if let Some(item) = self.item.take() {
-                if let Some(signal_handler) = self.signal_handler.take() {
-                    item.disconnect(signal_handler);
-                }
-            }
+            self.item.disconnect_signals();
 
-            if let Some(item) = &item {
-                if let Some(room) = item.downcast_ref::<Room>() {
-                    let handler_id = room.connect_category_notify(clone!(
-                        #[weak]
-                        obj,
+            if let Some(item) = item {
+                let handler = if let Some(room) = item.downcast_ref::<Room>() {
+                    let category_handler = room.connect_category_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
                         move |_| {
-                            obj.update_visible_child();
+                            imp.update_visible_child();
                         }
                     ));
 
-                    self.signal_handler.replace(Some(handler_id));
+                    Some(category_handler)
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let handler_id = verification.connect_dismiss(clone!(
-                        #[weak]
-                        obj,
+                    let dismiss_handler = verification.connect_dismiss(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
                         move |_| {
-                            obj.set_item(None::<glib::Object>);
+                            imp.set_item(None);
                         }
                     ));
-                    self.signal_handler.replace(Some(handler_id));
-                }
+
+                    Some(dismiss_handler)
+                } else {
+                    None
+                };
+
+                self.item.set(item, handler.into_iter().collect());
             }
 
-            self.item.replace(item);
-            obj.update_visible_child();
-            obj.notify_item();
+            self.update_visible_child();
+            self.obj().notify_item();
+        }
+
+        /// Update the visible child according to the current item.
+        fn update_visible_child(&self) {
+            let Some(item) = self.item.obj() else {
+                self.set_visible_page(ContentPage::Empty);
+                return;
+            };
+
+            if let Some(room) = item.downcast_ref::<Room>() {
+                if room.category() == RoomCategory::Invited {
+                    self.invite.set_room(Some(room.clone()));
+                    self.set_visible_page(ContentPage::Invite);
+                } else {
+                    self.room_history.set_timeline(Some(room.live_timeline()));
+                    self.set_visible_page(ContentPage::RoomHistory);
+                }
+            } else if item
+                .downcast_ref::<SidebarIconItem>()
+                .is_some_and(|i| i.item_type() == SidebarIconItemType::Explore)
+            {
+                self.explore.init();
+                self.set_visible_page(ContentPage::Explore);
+            } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                self.identity_verification_widget
+                    .set_verification(Some(verification.clone()));
+                self.set_visible_page(ContentPage::Verification);
+            }
+        }
+
+        /// Handle a paste action.
+        pub(super) fn handle_paste_action(&self) {
+            if self.visible_page() == ContentPage::RoomHistory {
+                self.room_history.handle_paste_action();
+            }
+        }
+
+        /// All the header bars of the children of the content.
+        pub(super) fn header_bars(&self) -> [&adw::HeaderBar; 5] {
+            [
+                &self.empty_page_header_bar,
+                self.room_history.header_bar(),
+                self.invite.header_bar(),
+                self.explore.header_bar(),
+                &self.verification_page_header_bar,
+            ]
         }
     }
 }
@@ -210,65 +269,13 @@ impl Content {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Set the visible page of the content.
-    fn set_visible_page(&self, name: ContentPage) {
-        self.imp().stack.set_visible_child_name(name.as_ref());
-    }
-
     /// Handle a paste action.
-    pub fn handle_paste_action(&self) {
-        let imp = self.imp();
-        if imp.visible_page() == ContentPage::RoomHistory {
-            imp.room_history.handle_paste_action();
-        }
-    }
-
-    /// Update the visible child according to the current item.
-    fn update_visible_child(&self) {
-        let imp = self.imp();
-
-        match self.item() {
-            None => {
-                imp.stack.set_visible_child(&*imp.empty_page);
-            }
-            Some(o) if o.is::<Room>() => {
-                if let Ok(room) = o.downcast::<Room>() {
-                    if room.category() == RoomCategory::Invited {
-                        imp.invite.set_room(Some(room));
-                        self.set_visible_page(ContentPage::Invite);
-                    } else {
-                        imp.room_history.set_timeline(Some(room.live_timeline()));
-                        self.set_visible_page(ContentPage::RoomHistory);
-                    }
-                }
-            }
-            Some(o)
-                if o.downcast_ref::<SidebarIconItem>()
-                    .is_some_and(|i| i.item_type() == SidebarIconItemType::Explore) =>
-            {
-                imp.explore.init();
-                self.set_visible_page(ContentPage::Explore);
-            }
-            Some(o) if o.is::<IdentityVerification>() => {
-                if let Ok(verification) = o.downcast::<IdentityVerification>() {
-                    imp.identity_verification_widget
-                        .set_verification(Some(verification));
-                    self.set_visible_page(ContentPage::Verification);
-                }
-            }
-            _ => {}
-        }
+    pub(crate) fn handle_paste_action(&self) {
+        self.imp().handle_paste_action();
     }
 
     /// All the header bars of the children of the content.
-    pub fn header_bars(&self) -> [&adw::HeaderBar; 5] {
-        let imp = self.imp();
-        [
-            &imp.empty_page_header_bar,
-            imp.room_history.header_bar(),
-            imp.invite.header_bar(),
-            imp.explore.header_bar(),
-            &imp.verification_page_header_bar,
-        ]
+    pub(crate) fn header_bars(&self) -> [&adw::HeaderBar; 5] {
+        self.imp().header_bars()
     }
 }
