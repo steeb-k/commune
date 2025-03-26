@@ -4,7 +4,7 @@ use gtk::{glib, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::{
-    components::{CopyableRow, ToastableDialog},
+    components::{CopyableRow, ToastableDialog, UserProfileDialog},
     prelude::*,
     session::model::Event,
     toast, utils,
@@ -80,6 +80,18 @@ mod imp {
             self.source_view.buffer().set_text(source);
             self.source_page.set_title(title);
             self.navigation_view.push_by_tag("source");
+        }
+
+        /// Open the profile of the sender.
+        #[template_callback]
+        fn open_sender_profile(&self) {
+            let Some(sender) = self.event.borrow().as_ref().map(Event::sender) else {
+                return;
+            };
+
+            let dialog = UserProfileDialog::new();
+            dialog.set_room_member(sender);
+            dialog.present(Some(&*self.obj()));
         }
 
         /// View the original source.

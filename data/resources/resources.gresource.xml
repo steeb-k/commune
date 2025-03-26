@@ -61,6 +61,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/sync-off-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/sync-on-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/sync-partial-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/user-info-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/users-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-danger-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>

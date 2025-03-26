@@ -88,16 +88,27 @@
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="CopyableRow" id="sender_id_row">
-                                        <property name="main-title">subtitle</property>
+                                      <object class="AdwActionRow" id="sender_id_row">
                                         <property name="title" translatable="yes">Sender ID</property>
                                         <binding name="subtitle">
                                           <lookup name="sender-id-string">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Sender ID</property>
-                                        <property name="toast-text" translatable="yes">Sender ID copied to clipboard</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="valign">center</property>
+                                            <property name="icon-name">user-info-symbolic</property>
+                                            <property name="tooltip-text">View Profile</property>
+                                            <signal name="clicked" handler="open_sender_profile" swapped="yes"/>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                        </child>
                                       </object>
                                     </child>
                                     <child>
