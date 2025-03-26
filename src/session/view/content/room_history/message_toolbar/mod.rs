@@ -12,12 +12,12 @@ use matrix_sdk::{
     attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
     room::edit::EditedContent,
 };
-use matrix_sdk_ui::timeline::{AttachmentSource, RepliedToInfo, TimelineItemContent};
+use matrix_sdk_ui::timeline::{
+    AttachmentSource, EnforceThread, RepliedToInfo, TimelineItemContent,
+};
 use ruma::{
     events::{
-        room::message::{
-            ForwardThread, LocationMessageEventContent, MessageType, RoomMessageEventContent,
-        },
+        room::message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
         Mentions,
     },
     OwnedRoomId,
@@ -485,7 +485,7 @@ mod imp {
                 Some(RelationInfo::Reply(replied_to_info)) => {
                     let handle = spawn_tokio!(async move {
                         matrix_timeline
-                            .send_reply(content, replied_to_info, ForwardThread::Yes)
+                            .send_reply(content, replied_to_info, EnforceThread::MaybeThreaded)
                             .await
                     });
                     if let Err(error) = handle.await.unwrap() {

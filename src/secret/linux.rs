@@ -570,7 +570,6 @@ impl UserFacingError for oo7::dbus::Error {
                 "Could not access the default collection. Make sure a keyring was created and set as default.",
             ),
             Error::ZBus(_) |
-            Error::Utf8(_) |
             Error::Crypto(_) |
             Error::IO(_) => gettext(
                 "An unexpected error occurred when interacting with the D-Bus Secret Service.",
