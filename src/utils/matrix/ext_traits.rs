@@ -168,7 +168,7 @@ impl TimelineItemContentExt for TimelineItemContent {
                         | MessageType::Video(_)
                 )
             }
-            TimelineItemContent::Sticker(_) => true,
+            TimelineItemContent::Sticker(_) | TimelineItemContent::UnableToDecrypt(_) => true,
             _ => false,
         }
     }
