@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-03-08 18:01+0000\n"
-"PO-Revision-Date: 2025-03-09 11:34+0800\n"
+"POT-Creation-Date: 2025-03-25 22:02+0000\n"
+"PO-Revision-Date: 2025-03-26 18:05+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Gtranslator 47.1\n"
+"X-Generator: Gtranslator 48.0\n"
 "X-DL-Lang: zh_CN\n"
 "X-DL-Module: fractal\n"
 "X-DL-Branch: main\n"
@@ -221,7 +221,7 @@ msgstr "警告"
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
-#: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:93
+#: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:94
 msgid "Error"
 msgstr "错误"
 
@@ -272,7 +272,7 @@ msgid "Viewfinder"
 msgstr "视口查找器"
 
 #: src/components/crypto/identity_setup_view.rs:384
-#: src/identity_verification_view/cancelled_page.rs:190
+#: src/identity_verification_view/cancelled_page.rs:195
 msgid "Could not send a new verification request"
 msgstr "无法发送新的验证请求"
 
@@ -506,7 +506,7 @@ msgstr "复制恢复密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:408
 #: src/components/crypto/recovery_setup_view.ui:494
-#: src/identity_verification_view/cancelled_page.ui:52
+#: src/identity_verification_view/cancelled_page.ui:46
 #: src/identity_verification_view/completed_page.ui:48
 #: src/identity_verification_view/room_left_page.ui:44
 msgid "_Done"
@@ -542,34 +542,48 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "或者，您可以重置账号恢复"
 
-#: src/components/dialogs/auth.rs:275
-msgid "Please authenticate the operation with your password"
-msgstr "请使用您的密码认证该操作"
+#: src/components/dialogs/auth/in_browser_page.ui:35
+#: src/components/dialogs/auth/mod.ui:4
+#: src/components/dialogs/auth/password_page.ui:35
+#: src/login/in_browser_page.ui:5 src/login/in_browser_page.ui:40
+msgid "Authentication"
+msgstr "认证"
 
-#: src/components/dialogs/auth.rs:312
+#: src/components/dialogs/auth/in_browser_page.ui:50
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
 msgstr "请通过浏览器认证该操作并在完成后按确认"
 
-#: src/components/dialogs/auth.ui:4 src/login/in_browser_page.ui:5
-#: src/login/in_browser_page.ui:40
-msgid "Authentication"
-msgstr "认证"
-
-#: src/components/dialogs/auth.ui:33 src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.ui:73
+#: src/login/in_browser_page.ui:74
 msgid "Contin_ue"
 msgstr "继续(_U)"
 
-#: src/components/dialogs/auth.ui:64
+#: src/components/dialogs/auth/in_browser_page.ui:107
+#: src/components/dialogs/auth/password_page.ui:83
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "取消(_C)"
 
-#: src/components/dialogs/auth.ui:65
+#: src/components/dialogs/auth/in_browser_page.ui:115
+#: src/components/dialogs/auth/password_page.ui:91
 msgid "C_onfirm"
 msgstr "确认(_O)"
+
+#: src/components/dialogs/auth/mod.rs:308
+msgid "The password is invalid."
+msgstr "密码无效。"
+
+#: src/components/dialogs/auth/mod.rs:310 src/user_facing_error.rs:81
+#: src/user_facing_error.rs:95
+msgid "An unexpected error occurred."
+msgstr "发生了意外错误。"
+
+#: src/components/dialogs/auth/password_page.ui:50
+msgid "Please authenticate the operation with your password"
+msgstr "请使用您的密码认证该操作"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:204
@@ -643,7 +657,7 @@ msgid ""
 msgstr "您确定想要拒绝该邀请吗？您将无法在未受邀请的情况下加入该聊天室。"
 
 #: src/components/dialogs/message_dialogs.rs:32
-#: src/identity_verification_view/accept_request_page.ui:46
+#: src/identity_verification_view/accept_request_page.ui:52
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "拒绝"
@@ -671,7 +685,7 @@ msgstr "离开"
 #: src/components/dialogs/message_dialogs.rs:318
 #: src/components/dialogs/message_dialogs.rs:379
 #: src/components/dialogs/message_dialogs.rs:414
-#: src/identity_verification_view/confirm_qr_code_page.ui:61
+#: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:375
 #: src/session/view/content/room_details/edit_details_subpage.rs:271
 #: src/session/view/content/room_details/edit_details_subpage.rs:550
@@ -1095,7 +1109,7 @@ msgid "Security"
 msgstr "安全"
 
 #: src/components/user_page.ui:212
-#: src/identity_verification_view/accept_request_page.ui:57
+#: src/identity_verification_view/accept_request_page.ui:63
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:313
 msgid "Verify"
@@ -1232,7 +1246,7 @@ msgstr "验证已取消"
 msgid "Verification Error"
 msgstr "验证出错"
 
-#: src/identity_verification_view/cancelled_page.ui:41
+#: src/identity_verification_view/cancelled_page.ui:56
 msgid "Send New Request"
 msgstr "发送新请求"
 
@@ -1336,7 +1350,7 @@ msgstr "无法确认二维码已被扫描"
 msgid "Confirm Scan"
 msgstr "确认扫描"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:47
+#: src/identity_verification_view/confirm_qr_code_page.ui:66
 msgid "Confirm"
 msgstr "确认"
 
@@ -1472,12 +1486,12 @@ msgid "Could not send confirmation that the data matches"
 msgstr "无法发送数据匹配的确认"
 
 #. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
-#: src/identity_verification_view/sas_page.ui:57
+#: src/identity_verification_view/sas_page.ui:62
 msgid "Do Not Match"
 msgstr "不匹配"
 
 #. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
-#: src/identity_verification_view/sas_page.ui:69
+#: src/identity_verification_view/sas_page.ui:74
 msgid "Match"
 msgstr "匹配"
 
@@ -1623,7 +1637,7 @@ msgstr "更多 SSO 提供者"
 msgid "Login via SSO"
 msgstr "通过 SSO 登录"
 
-#: src/login/method_page.ui:5 src/window.ui:75
+#: src/login/method_page.ui:5 src/window.ui:76
 msgid "Log In"
 msgstr "登录"
 
@@ -1659,7 +1673,7 @@ msgstr "开始聊天"
 msgid "Session Setup"
 msgstr "会话设置"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:58
+#: src/login/session_setup_view.ui:43 src/window.ui:59
 msgid "Fetching Account Data…"
 msgstr "正在获取账号数据…"
 
@@ -1677,35 +1691,29 @@ msgstr "使用 {brand} 登录"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal：用于 {user_id} 的 Matrix 证书"
 
-#: src/secret/linux.rs:512
+#: src/secret/linux.rs:514
 msgid "The secret storage file is corrupted."
 msgstr "该保密存储文件已损坏。"
 
-#: src/secret/linux.rs:516
+#: src/secret/linux.rs:518
 msgid "Could not access the secret storage file location."
 msgstr "无法访问保密存储文件位置。"
 
-#: src/secret/linux.rs:519
+#: src/secret/linux.rs:521
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr "访问保密存储文件时发生意外错误。"
 
-#: src/secret/linux.rs:522
+#: src/secret/linux.rs:524
 msgid "The secret storage file has been changed by another process."
 msgstr "保密存储文件已被其它进程修改。"
 
-#: src/secret/linux.rs:525
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr "与 D-Bus 保密服务门户后端交互时发生意外错误。"
-
-#: src/secret/linux.rs:528
+#: src/secret/linux.rs:527
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 Flatpak 保密门户的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:531
+#: src/secret/linux.rs:530
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1713,44 +1721,50 @@ msgstr ""
 "Flatpak 保密门户不可用。请确保 xdg-desktop-portal 已安装，且其版本至少为 "
 "1.5.0。"
 
-#: src/secret/linux.rs:534
+#: src/secret/linux.rs:533
+msgid ""
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
+"backend."
+msgstr "与 D-Bus 保密服务门户后端交互时发生意外错误。"
+
+#: src/secret/linux.rs:536
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr "Flatpak 保密门户提供了一个太弱而不安全的密钥。"
 
-#: src/secret/linux.rs:548
+#: src/secret/linux.rs:550
 msgid "The item was deleted."
 msgstr "该项目已删除。"
 
-#: src/secret/linux.rs:552 src/secret/linux.rs:572
+#: src/secret/linux.rs:554 src/secret/linux.rs:576
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr "与 D-Bus 保密服务交互时发生意外错误。"
 
-#: src/secret/linux.rs:555
+#: src/secret/linux.rs:557
 msgid "The collection or item is locked."
 msgstr "该集合或项目已锁定。"
 
-#: src/secret/linux.rs:558
+#: src/secret/linux.rs:560
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Bus 保密服务会话不存在。"
 
-#: src/secret/linux.rs:561
+#: src/secret/linux.rs:563
 msgid "The collection or item does not exist."
 msgstr "该集合或项目不存在。"
 
-#: src/secret/linux.rs:565
+#: src/secret/linux.rs:567
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 D-Bus 保密服务的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:568
+#: src/secret/linux.rs:570
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:720
+#: src/session/model/session.rs:807
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -4825,10 +4839,6 @@ msgstr "发生了意外连接错误。"
 msgid "Could not decrypt the event."
 msgstr "无法解密该事件。"
 
-#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unexpected error occurred."
-msgstr "发生了意外错误。"
-
 #: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
 msgstr "这不是有效的网址。"
@@ -4911,7 +4921,7 @@ msgstr "音频"
 msgid "file"
 msgstr "文件"
 
-#: src/window.ui:84
+#: src/window.ui:85
 msgid "Session"
 msgstr "会话"
 
