@@ -3,7 +3,7 @@ use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
-use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
+use super::{Content, CreateDmDialog, CreateRoomDialog, MediaViewer, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
     intent::SessionIntent,
@@ -85,8 +85,8 @@ mod imp {
                 },
             );
 
-            klass.install_action("session.room-creation", None, |obj, _, _| {
-                obj.imp().show_room_creation_dialog();
+            klass.install_action("session.create-room", None, |obj, _, _| {
+                obj.imp().create_room();
             });
 
             klass.install_action("session.show-join-room", None, |obj, _, _| {
@@ -457,12 +457,12 @@ mod imp {
         }
 
         /// Show the dialog to create a room.
-        fn show_room_creation_dialog(&self) {
+        fn create_room(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
 
-            let dialog = RoomCreation::new(&session);
+            let dialog = CreateRoomDialog::new(&session);
             dialog.present(Some(&*self.obj()));
         }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="RoomCreation" parent="ToastableDialog">
+  <template class="CreateRoomDialog" parent="ToastableDialog">
     <property name="default-widget">create_button</property>
     <property name="content-width">380</property>
     <property name="child-content">

@@ -8,7 +8,7 @@
       </item>
       <item>
         <attribute name="label" translatable="yes">_New Room…</attribute>
-        <attribute name="action">session.room-creation</attribute>
+        <attribute name="action">session.create-room</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Join Room…</attribute>

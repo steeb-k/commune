@@ -178,12 +178,12 @@ src/session/view/content/room_history/typing_row.rs
 src/session/view/content/room_history/verification_info_bar.rs
 src/session/view/create_dm_dialog/mod.rs
 src/session/view/create_dm_dialog/mod.ui
+src/session/view/create_room_dialog.rs
+src/session/view/create_room_dialog.ui
 src/session/view/event_details_dialog.rs
 src/session/view/event_details_dialog.ui
 src/session/view/media_viewer.rs
 src/session/view/media_viewer.ui
-src/session/view/room_creation.rs
-src/session/view/room_creation.ui
 src/session/view/sidebar/mod.rs
 src/session/view/sidebar/mod.ui
 src/session/view/sidebar/room_row.rs
