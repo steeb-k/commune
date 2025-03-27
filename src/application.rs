@@ -19,45 +19,7 @@ use crate::{
 };
 
 /// The key for the current session setting.
-pub const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
-
-/// The state of the network.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum NetworkState {
-    /// The network is available.
-    Unavailable,
-    /// The network is available with the given connectivity.
-    Available(gio::NetworkConnectivity),
-}
-
-impl NetworkState {
-    /// Construct the network state with the given network monitor.
-    fn with_monitor(monitor: &gio::NetworkMonitor) -> Self {
-        if monitor.is_network_available() {
-            Self::Available(monitor.connectivity())
-        } else {
-            Self::Unavailable
-        }
-    }
-
-    /// Log this network state.
-    fn log(self) {
-        match self {
-            Self::Unavailable => {
-                info!("Network is unavailable");
-            }
-            Self::Available(connectivity) => {
-                info!("Network connectivity is {connectivity:?}");
-            }
-        }
-    }
-}
-
-impl Default for NetworkState {
-    fn default() -> Self {
-        Self::Available(gio::NetworkConnectivity::Full)
-    }
-}
+pub(crate) const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
 
 mod imp {
     use std::cell::Cell;
@@ -67,12 +29,12 @@ mod imp {
     #[derive(Debug)]
     pub struct Application {
         /// The application settings.
-        pub settings: gio::Settings,
+        pub(super) settings: gio::Settings,
         /// The system settings.
-        pub system_settings: SystemSettings,
+        pub(super) system_settings: SystemSettings,
         /// The list of logged-in sessions.
-        pub session_list: SessionList,
-        pub intent_handler: BoundObjectWeakRef<glib::Object>,
+        pub(super) session_list: SessionList,
+        intent_handler: BoundObjectWeakRef<glib::Object>,
         last_network_state: Cell<NetworkState>,
     }
 
@@ -98,19 +60,18 @@ mod imp {
     impl ObjectImpl for Application {
         fn constructed(&self) {
             self.parent_constructed();
-            let app = self.obj();
 
             // Initialize actions and accelerators.
-            app.set_up_gactions();
-            app.set_up_accels();
+            self.set_up_gactions();
+            self.set_up_accels();
 
             // Listen to errors in the session list.
             self.session_list.connect_error_notify(clone!(
-                #[weak]
-                app,
+                #[weak(rename_to = imp)]
+                self,
                 move |session_list| {
                     if let Some(message) = session_list.error() {
-                        let window = app.present_main_window();
+                        let window = imp.present_main_window();
                         window.show_secret_error(&message);
                     }
                 }
@@ -150,7 +111,7 @@ mod imp {
 
             debug!("Application::activate");
 
-            self.obj().present_main_window();
+            self.present_main_window();
         }
 
         fn startup(&self) {
@@ -163,14 +124,14 @@ mod imp {
         fn open(&self, files: &[gio::File], _hint: &str) {
             debug!("Application::open");
 
-            self.obj().present_main_window();
+            self.present_main_window();
 
             if files.len() > 1 {
                 warn!("Trying to open several URIs, only the first one will be processed");
             }
 
             if let Some(uri) = files.first().map(FileExt::uri) {
-                self.obj().process_uri(&uri);
+                self.process_uri(&uri);
             } else {
                 debug!("No URI to open");
             }
@@ -179,9 +140,309 @@ mod imp {
 
     impl GtkApplicationImpl for Application {}
     impl AdwApplicationImpl for Application {}
+
+    impl Application {
+        /// Get or create the main window and make sure it is visible.
+        ///
+        /// Returns the main window.
+        fn present_main_window(&self) -> Window {
+            let window = if let Some(window) = self.obj().active_window().and_downcast() {
+                window
+            } else {
+                Window::new(&self.obj())
+            };
+
+            window.present();
+            window
+        }
+
+        /// Set up the application actions.
+        fn set_up_gactions(&self) {
+            self.obj().add_action_entries([
+                // Quit
+                gio::ActionEntry::builder("quit")
+                    .activate(|obj: &super::Application, _, _| {
+                        if let Some(window) = obj.active_window() {
+                            // This is needed to trigger the delete event
+                            // and saving the window state
+                            window.close();
+                        }
+
+                        obj.quit();
+                    })
+                    .build(),
+                // About
+                gio::ActionEntry::builder("about")
+                    .activate(|obj: &super::Application, _, _| {
+                        obj.imp().show_about_dialog();
+                    })
+                    .build(),
+                // Show a room. This is the action triggered when clicking a notification about a
+                // message.
+                gio::ActionEntry::builder(SessionIntentType::ShowMatrixId.action_name())
+                    .parameter_type(Some(&SessionIntentType::static_variant_type()))
+                    .activate(|obj: &super::Application, _, variant| {
+                        let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
+                            SessionIntentType::ShowMatrixId,
+                            variant,
+                        ) else {
+                            error!(
+                                "Triggered `{}` action without the proper payload",
+                                SessionIntentType::ShowMatrixId.action_name()
+                            );
+                            return;
+                        };
+
+                        obj.imp().process_session_intent(session_id, intent);
+                    })
+                    .build(),
+                // Show an identity verification. This is the action triggered when clicking a
+                // notification about a new verification.
+                gio::ActionEntry::builder(
+                    SessionIntentType::ShowIdentityVerification.action_name(),
+                )
+                .parameter_type(Some(&SessionIntentType::static_variant_type()))
+                .activate(|obj: &super::Application, _, variant| {
+                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
+                        SessionIntentType::ShowIdentityVerification,
+                        variant,
+                    ) else {
+                        error!(
+                            "Triggered `{}` action without the proper payload",
+                            SessionIntentType::ShowIdentityVerification.action_name()
+                        );
+                        return;
+                    };
+
+                    obj.imp().process_session_intent(session_id, intent);
+                })
+                .build(),
+            ]);
+        }
+
+        /// Sets up keyboard shortcuts for application and window actions.
+        fn set_up_accels(&self) {
+            let obj = self.obj();
+            obj.set_accels_for_action("app.quit", &["<Control>q"]);
+            obj.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
+            obj.set_accels_for_action("window.close", &["<Control>w"]);
+        }
+
+        /// Show the dialog with information about the application.
+        fn show_about_dialog(&self) {
+            let dialog = adw::AboutDialog::builder()
+                .application_name("Fractal")
+                .application_icon(config::APP_ID)
+                .developer_name(gettext("The Fractal Team"))
+                .license_type(gtk::License::Gpl30)
+                .website("https://gitlab.gnome.org/World/fractal/")
+                .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
+                .support_url("https://matrix.to/#/#fractal:gnome.org")
+                .version(config::VERSION)
+                .copyright(gettext("© The Fractal Team"))
+                .developers([
+                    "Alejandro Domínguez",
+                    "Alexandre Franke",
+                    "Bilal Elmoussaoui",
+                    "Christopher Davis",
+                    "Daniel García Moreno",
+                    "Eisha Chen-yen-su",
+                    "Jordan Petridis",
+                    "Julian Sparber",
+                    "Kévin Commaille",
+                    "Saurav Sachidanand",
+                ])
+                .designers(["Tobias Bernard"])
+                .translator_credits(gettext("translator-credits"))
+                .build();
+
+            // This can't be added via the builder
+            dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
+
+            // If the user wants our support room, try to open it ourselves.
+            dialog.connect_activate_link(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[weak]
+                dialog,
+                #[upgrade_or]
+                false,
+                move |_, uri| {
+                    if uri == "https://matrix.to/#/#fractal:gnome.org"
+                        && imp.session_list.has_session_ready()
+                    {
+                        imp.process_uri(uri);
+                        dialog.close();
+                        return true;
+                    }
+
+                    false
+                }
+            ));
+
+            dialog.present(Some(&self.present_main_window()));
+        }
+
+        /// Process the given URI.
+        fn process_uri(&self, uri: &str) {
+            match MatrixIdUri::parse(uri) {
+                Ok(matrix_id) => {
+                    self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id));
+                }
+                Err(error) => warn!("Invalid Matrix URI: {error}"),
+            }
+        }
+
+        /// Select a session to handle the given intent as soon as possible.
+        fn select_session_for_intent(&self, intent: SessionIntent) {
+            debug!("Selecting session for intent {intent:?}");
+
+            // We only handle a single intent at time, the latest one.
+            self.intent_handler.disconnect_signals();
+
+            if self.session_list.state() == LoadingState::Ready {
+                match self.session_list.n_items() {
+                    0 => {
+                        warn!("Cannot open URI with no logged in session");
+                    }
+                    1 => {
+                        let session = self
+                            .session_list
+                            .first()
+                            .expect("There should be one session");
+                        self.process_session_intent(session.session_id(), intent);
+                    }
+                    _ => {
+                        spawn!(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            async move {
+                                obj.ask_session_for_intent(intent).await;
+                            }
+                        ));
+                    }
+                }
+            } else {
+                // Wait for the list to be ready.
+                let cell = Rc::new(RefCell::new(Some(intent)));
+                let handler = self.session_list.connect_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[strong]
+                    cell,
+                    move |session_list| {
+                        if session_list.state() == LoadingState::Ready {
+                            imp.intent_handler.disconnect_signals();
+
+                            if let Some(intent) = cell.take() {
+                                imp.select_session_for_intent(intent);
+                            }
+                        }
+                    }
+                ));
+                self.intent_handler
+                    .set(self.session_list.upcast_ref(), vec![handler]);
+            }
+        }
+
+        /// Ask the user to choose a session to process the given Matrix ID URI.
+        ///
+        /// The session list needs to be ready.
+        async fn ask_session_for_intent(&self, intent: SessionIntent) {
+            let main_window = self.present_main_window();
+
+            let Some(session_id) = main_window.ask_session().await else {
+                warn!("No session selected to show intent");
+                return;
+            };
+
+            self.process_session_intent(session_id, intent);
+        }
+
+        /// Process the given intent for the given session, as soon as the
+        /// session is ready.
+        fn process_session_intent(&self, session_id: String, intent: SessionIntent) {
+            debug!(session = session_id, "Processing session intent {intent:?}");
+
+            let Some(session_info) = self.session_list.get(&session_id) else {
+                warn!("Could not find session to process intent {intent:?}");
+                toast!(self.present_main_window(), gettext("Session not found"));
+                return;
+            };
+
+            if session_info.is::<FailedSession>() {
+                // We can't do anything, it should show an error screen.
+                warn!("Could not process intent {intent:?} for failed session");
+            } else if let Some(session) = session_info.downcast_ref::<Session>() {
+                if session.state() == SessionState::Ready {
+                    self.present_main_window()
+                        .process_session_intent(session.session_id(), intent);
+                } else {
+                    // Wait for the session to be ready.
+                    let cell = Rc::new(RefCell::new(Some((session_id, intent))));
+                    let handler = session.connect_ready(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        #[strong]
+                        cell,
+                        move |_| {
+                            imp.intent_handler.disconnect_signals();
+
+                            if let Some((session_id, intent)) = cell.take() {
+                                imp.present_main_window()
+                                    .process_session_intent(&session_id, intent);
+                            }
+                        }
+                    ));
+                    self.intent_handler.set(session.upcast_ref(), vec![handler]);
+                }
+            } else {
+                // Wait for the session to be a `Session`.
+                let cell = Rc::new(RefCell::new(Some((session_id, intent))));
+                let handler = self.session_list.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[strong]
+                    cell,
+                    move |session_list, pos, _, added| {
+                        if added == 0 {
+                            return;
+                        }
+                        let Some(session_id) = cell
+                            .borrow()
+                            .as_ref()
+                            .map(|(session_id, _)| session_id.clone())
+                        else {
+                            return;
+                        };
+
+                        for i in pos..pos + added {
+                            let Some(session_info) =
+                                session_list.item(i).and_downcast::<SessionInfo>()
+                            else {
+                                break;
+                            };
+
+                            if session_info.session_id() == session_id {
+                                imp.intent_handler.disconnect_signals();
+
+                                if let Some((session_id, intent)) = cell.take() {
+                                    imp.process_session_intent(session_id, intent);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                ));
+                self.intent_handler
+                    .set(self.session_list.upcast_ref(), vec![handler]);
+            }
+        }
+    }
 }
 
 glib::wrapper! {
+    /// The Fractal application.
     pub struct Application(ObjectSubclass<imp::Application>)
         @extends gio::Application, gtk::Application, adw::Application,
         @implements gio::ActionMap, gio::ActionGroup;
@@ -196,316 +457,23 @@ impl Application {
             .build()
     }
 
-    /// Get or create the main window and make sure it is visible.
-    ///
-    /// Returns the main window.
-    fn present_main_window(&self) -> Window {
-        let window = if let Some(window) = self.active_window().and_downcast() {
-            window
-        } else {
-            Window::new(self)
-        };
-
-        window.present();
-        window
-    }
-
     /// The application settings.
-    pub fn settings(&self) -> gio::Settings {
+    pub(crate) fn settings(&self) -> gio::Settings {
         self.imp().settings.clone()
     }
 
     /// The system settings.
-    pub fn system_settings(&self) -> SystemSettings {
+    pub(crate) fn system_settings(&self) -> SystemSettings {
         self.imp().system_settings.clone()
     }
 
     /// The list of logged-in sessions.
-    pub fn session_list(&self) -> &SessionList {
+    pub(crate) fn session_list(&self) -> &SessionList {
         &self.imp().session_list
     }
 
-    /// Set up the application actions.
-    fn set_up_gactions(&self) {
-        self.add_action_entries([
-            // Quit
-            gio::ActionEntry::builder("quit")
-                .activate(|app: &Application, _, _| {
-                    if let Some(window) = app.active_window() {
-                        // This is needed to trigger the delete event
-                        // and saving the window state
-                        window.close();
-                    }
-
-                    app.quit();
-                })
-                .build(),
-            // About
-            gio::ActionEntry::builder("about")
-                .activate(|app: &Application, _, _| {
-                    app.show_about_dialog();
-                })
-                .build(),
-            // Show a room. This is the action triggered when clicking a notification about a
-            // message.
-            gio::ActionEntry::builder(SessionIntentType::ShowMatrixId.action_name())
-                .parameter_type(Some(&SessionIntentType::static_variant_type()))
-                .activate(|app: &Application, _, variant| {
-                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
-                        SessionIntentType::ShowMatrixId,
-                        variant,
-                    ) else {
-                        error!(
-                            "Triggered `{}` action without the proper payload",
-                            SessionIntentType::ShowMatrixId.action_name()
-                        );
-                        return;
-                    };
-
-                    app.process_session_intent(session_id, intent);
-                })
-                .build(),
-            // Show an identity verification. This is the action triggered when clicking a
-            // notification about a new verification.
-            gio::ActionEntry::builder(SessionIntentType::ShowIdentityVerification.action_name())
-                .parameter_type(Some(&SessionIntentType::static_variant_type()))
-                .activate(|app: &Application, _, variant| {
-                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
-                        SessionIntentType::ShowIdentityVerification,
-                        variant,
-                    ) else {
-                        error!(
-                            "Triggered `{}` action without the proper payload",
-                            SessionIntentType::ShowIdentityVerification.action_name()
-                        );
-                        return;
-                    };
-
-                    app.process_session_intent(session_id, intent);
-                })
-                .build(),
-        ]);
-    }
-
-    /// Sets up keyboard shortcuts for application and window actions.
-    fn set_up_accels(&self) {
-        self.set_accels_for_action("app.quit", &["<Control>q"]);
-        self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
-        self.set_accels_for_action("window.close", &["<Control>w"]);
-    }
-
-    fn show_about_dialog(&self) {
-        let dialog = adw::AboutDialog::builder()
-            .application_name("Fractal")
-            .application_icon(config::APP_ID)
-            .developer_name(gettext("The Fractal Team"))
-            .license_type(gtk::License::Gpl30)
-            .website("https://gitlab.gnome.org/World/fractal/")
-            .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
-            .support_url("https://matrix.to/#/#fractal:gnome.org")
-            .version(config::VERSION)
-            .copyright(gettext("© The Fractal Team"))
-            .developers(vec![
-                "Alejandro Domínguez".to_string(),
-                "Alexandre Franke".to_string(),
-                "Bilal Elmoussaoui".to_string(),
-                "Christopher Davis".to_string(),
-                "Daniel García Moreno".to_string(),
-                "Eisha Chen-yen-su".to_string(),
-                "Jordan Petridis".to_string(),
-                "Julian Sparber".to_string(),
-                "Kévin Commaille".to_string(),
-                "Saurav Sachidanand".to_string(),
-            ])
-            .designers(vec!["Tobias Bernard".to_string()])
-            .translator_credits(gettext("translator-credits"))
-            .build();
-
-        // This can't be added via the builder
-        dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
-
-        // If the user wants our support room, try to open it ourselves.
-        dialog.connect_activate_link(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            #[weak]
-            dialog,
-            #[upgrade_or]
-            false,
-            move |_, uri| {
-                if uri == "https://matrix.to/#/#fractal:gnome.org"
-                    && obj.session_list().has_session_ready()
-                {
-                    obj.process_uri(uri);
-                    dialog.close();
-                    return true;
-                }
-
-                false
-            }
-        ));
-
-        dialog.present(Some(&self.present_main_window()));
-    }
-
-    /// Process the given URI.
-    fn process_uri(&self, uri: &str) {
-        match MatrixIdUri::parse(uri) {
-            Ok(matrix_id) => self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id)),
-            Err(error) => warn!("Invalid Matrix URI: {error}"),
-        }
-    }
-
-    /// Select a session to handle the given intent as soon as possible.
-    fn select_session_for_intent(&self, intent: SessionIntent) {
-        debug!("Selecting session for intent {intent:?}");
-
-        // We only handle a single intent at time, the latest one.
-        self.imp().intent_handler.disconnect_signals();
-
-        let session_list = self.session_list();
-
-        if session_list.state() == LoadingState::Ready {
-            match session_list.n_items() {
-                0 => {
-                    warn!("Cannot open URI with no logged in session");
-                }
-                1 => {
-                    let session = session_list.first().expect("There should be one session");
-                    self.process_session_intent(session.session_id(), intent);
-                }
-                _ => {
-                    spawn!(clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        async move {
-                            obj.ask_session_for_intent(intent).await;
-                        }
-                    ));
-                }
-            }
-        } else {
-            // Wait for the list to be ready.
-            let cell = Rc::new(RefCell::new(Some(intent)));
-            let handler = session_list.connect_state_notify(clone!(
-                #[weak(rename_to = obj)]
-                self,
-                #[strong]
-                cell,
-                move |session_list| {
-                    if session_list.state() == LoadingState::Ready {
-                        obj.imp().intent_handler.disconnect_signals();
-
-                        if let Some(intent) = cell.take() {
-                            obj.select_session_for_intent(intent);
-                        }
-                    }
-                }
-            ));
-            self.imp()
-                .intent_handler
-                .set(session_list.upcast_ref(), vec![handler]);
-        }
-    }
-
-    /// Ask the user to choose a session to process the given Matrix ID URI.
-    ///
-    /// The session list needs to be ready.
-    async fn ask_session_for_intent(&self, intent: SessionIntent) {
-        let main_window = self.present_main_window();
-
-        let Some(session_id) = main_window.ask_session().await else {
-            warn!("No session selected to show intent");
-            return;
-        };
-
-        self.process_session_intent(session_id, intent);
-    }
-
-    /// Process the given intent for the given session, as soon as the session
-    /// is ready.
-    fn process_session_intent(&self, session_id: String, intent: SessionIntent) {
-        debug!(session = session_id, "Processing session intent {intent:?}");
-
-        let Some(session_info) = self.session_list().get(&session_id) else {
-            warn!("Could not find session to process intent {intent:?}");
-            toast!(self.present_main_window(), gettext("Session not found"));
-            return;
-        };
-
-        if session_info.is::<FailedSession>() {
-            // We can't do anything, it should show an error screen.
-            warn!("Could not process intent {intent:?} for failed session");
-        } else if let Some(session) = session_info.downcast_ref::<Session>() {
-            if session.state() == SessionState::Ready {
-                self.present_main_window()
-                    .process_session_intent(session.session_id(), intent);
-            } else {
-                // Wait for the session to be ready.
-                let cell = Rc::new(RefCell::new(Some((session_id, intent))));
-                let handler = session.connect_ready(clone!(
-                    #[weak(rename_to = obj)]
-                    self,
-                    #[strong]
-                    cell,
-                    move |_| {
-                        obj.imp().intent_handler.disconnect_signals();
-
-                        if let Some((session_id, intent)) = cell.take() {
-                            obj.present_main_window()
-                                .process_session_intent(&session_id, intent);
-                        }
-                    }
-                ));
-                self.imp()
-                    .intent_handler
-                    .set(session.upcast_ref(), vec![handler]);
-            }
-        } else {
-            // Wait for the session to be a `Session`.
-            let session_list = self.session_list();
-            let cell = Rc::new(RefCell::new(Some((session_id, intent))));
-            let handler = session_list.connect_items_changed(clone!(
-                #[weak(rename_to = obj)]
-                self,
-                #[strong]
-                cell,
-                move |session_list, pos, _, added| {
-                    if added == 0 {
-                        return;
-                    }
-                    let Some(session_id) = cell
-                        .borrow()
-                        .as_ref()
-                        .map(|(session_id, _)| session_id.clone())
-                    else {
-                        return;
-                    };
-
-                    for i in pos..pos + added {
-                        let Some(session_info) = session_list.item(i).and_downcast::<SessionInfo>()
-                        else {
-                            break;
-                        };
-
-                        if session_info.session_id() == session_id {
-                            obj.imp().intent_handler.disconnect_signals();
-
-                            if let Some((session_id, intent)) = cell.take() {
-                                obj.process_session_intent(session_id, intent);
-                            }
-                            break;
-                        }
-                    }
-                }
-            ));
-            self.imp()
-                .intent_handler
-                .set(session_list.upcast_ref(), vec![handler]);
-        }
-    }
-
-    pub fn run(&self) {
+    /// Run Fractal.
+    pub(crate) fn run(&self) {
         info!("Fractal ({})", config::APP_ID);
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
         info!("Datadir: {}", config::PKGDATADIR);
@@ -518,14 +486,14 @@ impl Default for Application {
     fn default() -> Self {
         gio::Application::default()
             .and_downcast::<Application>()
-            .unwrap()
+            .expect("application should always be available")
     }
 }
 
 /// The profile that was built.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
-pub enum AppProfile {
+pub(crate) enum AppProfile {
     /// A stable release.
     Stable,
     /// A beta release.
@@ -536,7 +504,7 @@ pub enum AppProfile {
 
 impl AppProfile {
     /// The string representation of this `AppProfile`.
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         match self {
             Self::Stable => "stable",
             Self::Beta => "beta",
@@ -545,12 +513,12 @@ impl AppProfile {
     }
 
     /// Whether this `AppProfile` should use the `.devel` CSS class on windows.
-    pub fn should_use_devel_class(self) -> bool {
+    pub(crate) fn should_use_devel_class(self) -> bool {
         matches!(self, Self::Devel)
     }
 
     /// The name of the directory where to put data for this profile.
-    pub fn dir_name(self) -> Cow<'static, str> {
+    pub(crate) fn dir_name(self) -> Cow<'static, str> {
         match self {
             AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
             _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{self}")),
@@ -561,5 +529,43 @@ impl AppProfile {
 impl fmt::Display for AppProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
+    }
+}
+
+/// The state of the network.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NetworkState {
+    /// The network is available.
+    Unavailable,
+    /// The network is available with the given connectivity.
+    Available(gio::NetworkConnectivity),
+}
+
+impl NetworkState {
+    /// Construct the network state with the given network monitor.
+    fn with_monitor(monitor: &gio::NetworkMonitor) -> Self {
+        if monitor.is_network_available() {
+            Self::Available(monitor.connectivity())
+        } else {
+            Self::Unavailable
+        }
+    }
+
+    /// Log this network state.
+    fn log(self) {
+        match self {
+            Self::Unavailable => {
+                info!("Network is unavailable");
+            }
+            Self::Available(connectivity) => {
+                info!("Network connectivity is {connectivity:?}");
+            }
+        }
+    }
+}
+
+impl Default for NetworkState {
+    fn default() -> Self {
+        Self::Available(gio::NetworkConnectivity::Full)
     }
 }
