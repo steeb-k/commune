@@ -71,6 +71,33 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="11~beta" type="development" date="2025-03-27">
+      <description>
+        <p>
+          It’s the beginning of bee season! 🌸🌺🌼 🐝 B like beta! 
+        </p>
+        <ul>
+          <li>
+            New shortcuts Ctrl + Page Up and Ctrl + Page Down go to the previous/next room in the
+            list.
+          </li>
+          <li>
+            The media cache will now be periodically cleaned up.
+          </li>
+          <li>
+            The page that lists user sessions has been overhauled, with details moved to subpages,
+            for a less cluttered feel, and paving the way to a new feature!
+          </li>
+          <li>
+            A couple of small cosmetic changes have landed as well.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+      </description>
+    </release>
     <release version="10.1" type="stable" date="2025-02-10">
       <description>
         <p>
