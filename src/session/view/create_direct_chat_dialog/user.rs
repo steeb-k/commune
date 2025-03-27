@@ -11,30 +11,30 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::DmUser)]
-    pub struct DmUser {
+    #[properties(wrapper_type = super::DirectChatUser)]
+    pub struct DirectChatUser {
         /// The direct chat with this user, if any.
         #[property(get, set = Self::set_direct_chat, explicit_notify, nullable)]
-        pub direct_chat: glib::WeakRef<Room>,
+        direct_chat: glib::WeakRef<Room>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for DmUser {
-        const NAME: &'static str = "CreateDmDialogUser";
-        type Type = super::DmUser;
+    impl ObjectSubclass for DirectChatUser {
+        const NAME: &'static str = "DirectChatUser";
+        type Type = super::DirectChatUser;
         type ParentType = User;
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for DmUser {}
+    impl ObjectImpl for DirectChatUser {}
 
-    impl PillSourceImpl for DmUser {
+    impl PillSourceImpl for DirectChatUser {
         fn identifier(&self) -> String {
             self.obj().upcast_ref::<User>().user_id_string()
         }
     }
 
-    impl DmUser {
+    impl DirectChatUser {
         /// Set the direct chat with this user.
         fn set_direct_chat(&self, direct_chat: Option<&Room>) {
             if self.direct_chat.upgrade().as_ref() == direct_chat {
@@ -49,10 +49,11 @@ mod imp {
 
 glib::wrapper! {
     /// A User in the context of creating a direct chat.
-    pub struct DmUser(ObjectSubclass<imp::DmUser>) @extends PillSource, User;
+    pub struct DirectChatUser(ObjectSubclass<imp::DirectChatUser>)
+        @extends PillSource, User;
 }
 
-impl DmUser {
+impl DirectChatUser {
     pub fn new(
         session: &Session,
         user_id: OwnedUserId,

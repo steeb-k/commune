@@ -3,7 +3,7 @@ use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
-use super::{Content, CreateDmDialog, CreateRoomDialog, MediaViewer, Sidebar};
+use super::{Content, CreateDirectChatDialog, CreateRoomDialog, MediaViewer, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
     intent::SessionIntent,
@@ -93,8 +93,8 @@ mod imp {
                 obj.imp().show_join_room_dialog(None);
             });
 
-            klass.install_action_async("session.create-dm", None, |obj, _, _| async move {
-                obj.imp().show_create_dm_dialog().await;
+            klass.install_action("session.create-direct-chat", None, |obj, _, _| {
+                obj.imp().create_direct_chat();
             });
 
             klass.install_action("session.toggle-room-search", None, |obj, _, _| {
@@ -467,13 +467,13 @@ mod imp {
         }
 
         /// Show the dialog to create a direct chat.
-        async fn show_create_dm_dialog(&self) {
+        fn create_direct_chat(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
 
-            let dialog = CreateDmDialog::new(&session);
-            dialog.start_direct_chat(&*self.obj()).await;
+            let dialog = CreateDirectChatDialog::new(&session);
+            dialog.present(Some(&*self.obj()));
         }
 
         /// Show the dialog to join a room.

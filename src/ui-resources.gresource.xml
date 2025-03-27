@@ -132,7 +132,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/create_direct_chat_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/media_viewer.ui</file>

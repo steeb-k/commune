@@ -176,8 +176,8 @@ src/session/view/content/room_history/state_row/tombstone.ui
 src/session/view/content/room_history/title.ui
 src/session/view/content/room_history/typing_row.rs
 src/session/view/content/room_history/verification_info_bar.rs
-src/session/view/create_dm_dialog/mod.rs
-src/session/view/create_dm_dialog/mod.ui
+src/session/view/create_direct_chat_dialog/mod.rs
+src/session/view/create_direct_chat_dialog/mod.ui
 src/session/view/create_room_dialog.rs
 src/session/view/create_room_dialog.ui
 src/session/view/event_details_dialog.rs

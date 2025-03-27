@@ -4,7 +4,7 @@
     <section>
       <item>
         <attribute name="label" translatable="yes">New _Direct Chat…</attribute>
-        <attribute name="action">session.create-dm</attribute>
+        <attribute name="action">session.create-direct-chat</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_New Room…</attribute>
