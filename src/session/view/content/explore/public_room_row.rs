@@ -234,14 +234,10 @@ impl PublicRoomRow {
         let Some(public_room) = self.public_room() else {
             return;
         };
-        let room_list = public_room.room_list();
-        let Some(session) = room_list.session() else {
-            return;
-        };
 
         if let Some(room) = public_room.room() {
             if let Some(window) = self.root().and_downcast::<Window>() {
-                window.show_room(session.session_id(), room.room_id());
+                window.session_view().select_room(room);
             }
         } else if let Some(matrix_public_room) = public_room.matrix_public_room() {
             // Prefer the alias as we are sure the server can find the room that way.
@@ -257,6 +253,7 @@ impl PublicRoomRow {
                 |id| (id.into(), vec![]),
             );
 
+            let room_list = public_room.room_list();
             spawn!(clone!(
                 #[weak(rename_to = obj)]
                 self,

@@ -309,7 +309,7 @@ mod imp {
             };
 
             if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
-                main_window.show_room(user.session().session_id(), room.room_id());
+                main_window.session_view().select_room(room);
             }
 
             parent_window.close();
@@ -708,7 +708,9 @@ mod imp {
             };
 
             if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
-                main_window.show_identity_verification(user.session().session_id(), verification);
+                main_window
+                    .session_view()
+                    .select_identity_verification(verification);
             }
 
             parent_window.close();

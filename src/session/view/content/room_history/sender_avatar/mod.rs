@@ -559,7 +559,7 @@ mod imp {
                 return;
             };
 
-            main_window.show_room(sender.session().session_id(), room.room_id());
+            main_window.session_view().select_room(room);
         }
 
         /// Invite the sender to the room.

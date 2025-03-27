@@ -90,7 +90,7 @@
                 <property name="name">session</property>
                 <property name="title" translatable="yes">Session</property>
                 <property name="child">
-                  <object class="SessionView" id="session"/>
+                  <object class="SessionView" id="session_view"/>
                 </property>
               </object>
             </child>

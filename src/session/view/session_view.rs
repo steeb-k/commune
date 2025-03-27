@@ -578,11 +578,6 @@ impl SessionView {
         self.imp().select_room(room);
     }
 
-    /// Select the room with the given ID in this view.
-    pub(crate) fn select_room_by_id(&self, room_id: &RoomId) {
-        self.imp().select_room_by_id(room_id);
-    }
-
     /// Select the room with the given identifier in this view, if it exists.
     ///
     /// Returns `true` if the room was found.

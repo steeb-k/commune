@@ -1,8 +1,7 @@
 use std::cell::Cell;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{self, gdk, gio, glib, glib::clone, CompositeTemplate};
-use ruma::RoomId;
+use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::{error, warn};
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
     prelude::*,
     secret::SESSION_ID_LENGTH,
     session::{
-        model::{IdentityVerification, Session, SessionState},
+        model::{Session, SessionState},
         view::{AccountSettings, SessionView},
     },
     session_list::{FailedSession, SessionInfo},
@@ -27,7 +26,7 @@ use crate::{
 /// A page of the main window stack.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
 #[strum(serialize_all = "kebab-case")]
-pub enum WindowPage {
+enum WindowPage {
     /// The loading page.
     Loading,
     /// The login view.
@@ -48,29 +47,30 @@ mod imp {
     #[properties(wrapper_type = super::Window)]
     pub struct Window {
         #[template_child]
-        pub main_stack: TemplateChild<gtk::Stack>,
+        main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub loading: TemplateChild<gtk::WindowHandle>,
+        loading: TemplateChild<gtk::WindowHandle>,
         #[template_child]
-        pub login: TemplateChild<Login>,
+        login: TemplateChild<Login>,
         #[template_child]
-        pub error_page: TemplateChild<ErrorPage>,
+        error_page: TemplateChild<ErrorPage>,
         #[template_child]
-        pub session: TemplateChild<SessionView>,
+        pub(super) session_view: TemplateChild<SessionView>,
         #[template_child]
-        pub toast_overlay: TemplateChild<adw::ToastOverlay>,
+        toast_overlay: TemplateChild<adw::ToastOverlay>,
         /// Whether the window should be in compact view.
         ///
         /// It means that the horizontal size is not large enough to hold all
         /// the content.
         #[property(get, set = Self::set_compact, explicit_notify)]
-        pub compact: Cell<bool>,
+        compact: Cell<bool>,
         /// The selection of the logged-in sessions.
         ///
         /// The one that is selected being the one that is visible.
         #[property(get)]
-        pub session_selection: gtk::SingleSelection,
-        pub account_switcher: AccountSwitcherPopover,
+        session_selection: gtk::SingleSelection,
+        /// The account switcher popover.
+        pub(super) account_switcher: AccountSwitcherPopover,
     }
 
     #[glib::object_subclass]
@@ -88,7 +88,7 @@ mod imp {
             klass.add_binding_action(gdk::Key::v, gdk::ModifierType::CONTROL_MASK, "win.paste");
             klass.add_binding_action(gdk::Key::Insert, gdk::ModifierType::SHIFT_MASK, "win.paste");
             klass.install_action("win.paste", None, |obj, _, _| {
-                obj.imp().session.handle_paste_action();
+                obj.imp().session_view.handle_paste_action();
             });
 
             klass.install_action(
@@ -96,16 +96,16 @@ mod imp {
                 Some(&String::static_variant_type()),
                 |obj, _, variant| {
                     if let Some(session_id) = variant.and_then(glib::Variant::get::<String>) {
-                        obj.open_account_settings(&session_id);
+                        obj.imp().open_account_settings(&session_id);
                     }
                 },
             );
 
             klass.install_action("win.new-session", None, |obj, _, _| {
-                obj.set_visible_page(WindowPage::Login);
+                obj.imp().set_visible_page(WindowPage::Login);
             });
             klass.install_action("win.show-session", None, |obj, _, _| {
-                obj.show_selected_session();
+                obj.imp().show_selected_session();
             });
 
             klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
@@ -129,7 +129,9 @@ mod imp {
             let obj = self.obj();
 
             let builder = gtk::Builder::from_resource("/org/gnome/Fractal/ui/shortcuts.ui");
-            let shortcuts = builder.object("shortcuts").unwrap();
+            let shortcuts = builder
+                .object("shortcuts")
+                .expect("shortcuts object should exist in UI template");
             obj.set_help_overlay(Some(&shortcuts));
 
             // Development Profile
@@ -152,22 +154,24 @@ mod imp {
                 .set_session_selection(Some(self.session_selection.clone()));
 
             self.session_selection.connect_selected_item_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_| {
-                    obj.show_selected_session();
+                    imp.show_selected_session();
                 }
             ));
             self.session_selection.connect_items_changed(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |session_selection, pos, removed, added| {
+                    let obj = imp.obj();
+
                     let n_items = session_selection.n_items();
                     obj.action_set_enabled("win.show-session", n_items > 0);
 
                     if removed > 0 && n_items == 0 {
                         // There are no more sessions.
-                        obj.set_visible_page(WindowPage::Login);
+                        imp.set_visible_page(WindowPage::Login);
                         return;
                     }
 
@@ -214,15 +218,15 @@ mod imp {
 
             if session_list.state() == LoadingState::Ready {
                 if session_list.is_empty() {
-                    obj.set_visible_page(WindowPage::Login);
+                    self.set_visible_page(WindowPage::Login);
                 }
             } else {
                 session_list.connect_state_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to=imp)]
+                    self,
                     move |session_list| {
                         if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                            obj.set_visible_page(WindowPage::Login);
+                            imp.set_visible_page(WindowPage::Login);
                         }
                     }
                 ));
@@ -249,7 +253,7 @@ mod imp {
             match self.visible_page() {
                 WindowPage::Loading => false,
                 WindowPage::Login => self.login.grab_focus(),
-                WindowPage::Session => self.session.grab_focus(),
+                WindowPage::Session => self.session_view.grab_focus(),
                 WindowPage::Error => self.error_page.grab_focus(),
             }
         }
@@ -312,8 +316,10 @@ mod imp {
         pub(super) fn visible_page(&self) -> WindowPage {
             self.main_stack
                 .visible_child_name()
-                .and_then(|s| s.as_str().try_into().ok())
-                .unwrap()
+                .expect("stack should always have a visible child name")
+                .as_str()
+                .try_into()
+                .expect("stack child name should be convertible to a WindowPage")
         }
 
         /// The ID of the currently visible session, if any.
@@ -322,6 +328,103 @@ mod imp {
                 .selected_item()
                 .and_downcast::<SessionInfo>()
                 .map(|s| s.session_id())
+        }
+
+        /// Set the current session by its ID.
+        ///
+        /// Returns `true` if the session was set as the current session.
+        pub(super) fn set_current_session_by_id(&self, session_id: &str) -> bool {
+            let Some(index) = Application::default().session_list().index(session_id) else {
+                return false;
+            };
+
+            let index = index as u32;
+            let prev_selected = self.session_selection.selected();
+
+            if index == prev_selected {
+                // Make sure the session is displayed;
+                self.show_selected_session();
+            } else {
+                self.session_selection.set_selected(index);
+            }
+
+            true
+        }
+
+        /// Show the selected session.
+        ///
+        /// The displayed view will change according to the current session.
+        fn show_selected_session(&self) {
+            let Some(session) = self
+                .session_selection
+                .selected_item()
+                .and_downcast::<SessionInfo>()
+            else {
+                return;
+            };
+
+            if let Some(session) = session.downcast_ref::<Session>() {
+                self.session_view.set_session(Some(session));
+
+                if session.state() == SessionState::Ready {
+                    self.set_visible_page(WindowPage::Session);
+                } else {
+                    session.connect_ready(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.set_visible_page(WindowPage::Session);
+                        }
+                    ));
+                    self.set_visible_page(WindowPage::Loading);
+                }
+
+                // We need to grab the focus so that keyboard shortcuts work.
+                self.session_view.grab_focus();
+
+                return;
+            }
+
+            if let Some(failed) = session.downcast_ref::<FailedSession>() {
+                self.error_page
+                    .display_session_error(&failed.error().to_user_facing());
+                self.set_visible_page(WindowPage::Error);
+            } else {
+                self.set_visible_page(WindowPage::Loading);
+            }
+
+            self.session_view.set_session(None::<Session>);
+        }
+
+        /// Set the visible page of the window.
+        fn set_visible_page(&self, name: WindowPage) {
+            self.main_stack.set_visible_child_name(name.as_ref());
+        }
+
+        /// Open the error page and display the given secret error message.
+        pub(super) fn show_secret_error(&self, message: &str) {
+            self.error_page.display_secret_error(message);
+            self.set_visible_page(WindowPage::Error);
+        }
+
+        /// Add the given toast to the queue.
+        pub(super) fn add_toast(&self, toast: adw::Toast) {
+            self.toast_overlay.add_toast(toast);
+        }
+
+        /// Open the account settings for the session with the given ID.
+        fn open_account_settings(&self, session_id: &str) {
+            let Some(session) = Application::default()
+                .session_list()
+                .get(session_id)
+                .and_downcast::<Session>()
+            else {
+                error!("Tried to open account settings of unknown session with ID '{session_id}'");
+                return;
+            };
+
+            let dialog = AccountSettings::new(&session);
+            dialog.present(Some(&*self.obj()));
         }
     }
 }
@@ -342,145 +445,34 @@ impl Window {
     }
 
     /// Add the given session to the session list and select it.
-    pub fn add_session(&self, session: Session) {
+    pub(crate) fn add_session(&self, session: Session) {
         let index = Application::default().session_list().insert(session);
         self.session_selection().set_selected(index as u32);
     }
 
     /// The ID of the currently visible session, if any.
-    pub fn current_session_id(&self) -> Option<String> {
+    pub(crate) fn current_session_id(&self) -> Option<String> {
         self.imp().current_session_id()
     }
 
-    /// Set the current session by its ID.
-    ///
-    /// Returns `true` if the session was set as the current session.
-    pub fn set_current_session_by_id(&self, session_id: &str) -> bool {
-        let imp = self.imp();
-
-        let Some(index) = Application::default().session_list().index(session_id) else {
-            return false;
-        };
-
-        let index = index as u32;
-        let prev_selected = imp.session_selection.selected();
-
-        if index == prev_selected {
-            // Make sure the session is displayed;
-            self.show_selected_session();
-        } else {
-            imp.session_selection.set_selected(index);
-        }
-
-        true
-    }
-
-    /// Show the selected session.
-    ///
-    /// The displayed view will change according to the current session.
-    pub fn show_selected_session(&self) {
-        let imp = self.imp();
-
-        let Some(session) = imp
-            .session_selection
-            .selected_item()
-            .and_downcast::<SessionInfo>()
-        else {
-            return;
-        };
-
-        if let Some(session) = session.downcast_ref::<Session>() {
-            imp.session.set_session(Some(session));
-
-            if session.state() == SessionState::Ready {
-                self.set_visible_page(WindowPage::Session);
-            } else {
-                session.connect_ready(clone!(
-                    #[weak(rename_to = obj)]
-                    self,
-                    move |_| {
-                        obj.set_visible_page(WindowPage::Session);
-                    }
-                ));
-                self.set_visible_page(WindowPage::Loading);
-            }
-
-            // We need to grab the focus so that keyboard shortcuts work.
-            imp.session.grab_focus();
-
-            return;
-        }
-
-        if let Some(failed) = session.downcast_ref::<FailedSession>() {
-            imp.error_page
-                .display_session_error(&failed.error().to_user_facing());
-            self.set_visible_page(WindowPage::Error);
-        } else {
-            self.set_visible_page(WindowPage::Loading);
-        }
-
-        imp.session.set_session(None::<Session>);
-    }
-
-    /// Set the visible page of the window.
-    pub fn set_visible_page(&self, name: WindowPage) {
-        self.imp().main_stack.set_visible_child_name(name.as_ref());
-    }
-
-    /// This appends a new toast to the list
-    pub fn add_toast(&self, toast: adw::Toast) {
-        self.imp().toast_overlay.add_toast(toast);
+    /// Add the given toast to the queue.
+    pub(crate) fn add_toast(&self, toast: adw::Toast) {
+        self.imp().add_toast(toast);
     }
 
     /// The account switcher popover.
-    pub fn account_switcher(&self) -> &AccountSwitcherPopover {
+    pub(crate) fn account_switcher(&self) -> &AccountSwitcherPopover {
         &self.imp().account_switcher
     }
 
     /// The `SessionView` of this window.
-    pub fn session_view(&self) -> &SessionView {
-        &self.imp().session
-    }
-
-    /// Show the given room for the given session.
-    pub fn show_room(&self, session_id: &str, room_id: &RoomId) {
-        if self.set_current_session_by_id(session_id) {
-            self.imp().session.select_room_by_id(room_id);
-
-            self.present();
-        }
-    }
-
-    /// Open the account settings for the session with the given ID.
-    pub fn open_account_settings(&self, session_id: &str) {
-        let Some(session) = Application::default()
-            .session_list()
-            .get(session_id)
-            .and_downcast::<Session>()
-        else {
-            error!("Tried to open account settings of unknown session with ID '{session_id}'");
-            return;
-        };
-
-        let dialog = AccountSettings::new(&session);
-        dialog.present(Some(self));
+    pub(crate) fn session_view(&self) -> &SessionView {
+        &self.imp().session_view
     }
 
     /// Open the error page and display the given secret error message.
-    pub fn show_secret_error(&self, message: &str) {
-        self.imp().error_page.display_secret_error(message);
-        self.set_visible_page(WindowPage::Error);
-    }
-
-    /// Show the given identity verification for the session with the given ID.
-    pub fn show_identity_verification(&self, session_id: &str, verification: IdentityVerification) {
-        if self.set_current_session_by_id(session_id) {
-            self.imp()
-                .session
-                .select_identity_verification(verification);
-
-            self.present();
-        }
+    pub(crate) fn show_secret_error(&self, message: &str) {
+        self.imp().show_secret_error(message);
     }
 
     /// Ask the user to choose a session.
@@ -488,7 +480,7 @@ impl Window {
     /// The session list must be ready.
     ///
     /// Returns the ID of the selected session, if any.
-    pub async fn ask_session(&self) -> Option<String> {
+    pub(crate) async fn ask_session(&self) -> Option<String> {
         let dialog = AccountChooserDialog::new(Application::default().session_list());
         dialog.choose_account(self).await
     }
@@ -496,12 +488,12 @@ impl Window {
     /// Process the given session intent.
     ///
     /// The session must be ready.
-    pub fn process_session_intent(&self, session_id: &str, intent: SessionIntent) {
-        if !self.set_current_session_by_id(session_id) {
+    pub(crate) fn process_session_intent(&self, session_id: &str, intent: SessionIntent) {
+        if !self.imp().set_current_session_by_id(session_id) {
             error!("Cannot switch to unknown session with ID `{session_id}`");
             return;
         }
 
-        self.imp().session.process_intent(intent);
+        self.session_view().process_intent(intent);
     }
 }
