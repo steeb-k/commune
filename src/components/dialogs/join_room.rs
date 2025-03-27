@@ -199,7 +199,11 @@ mod imp {
             let id = uri.id.clone();
             self.uri.replace(Some(uri));
 
-            if session.room_list().joined_room(&id).is_some() {
+            if session
+                .room_list()
+                .get_by_identifier(&id)
+                .is_some_and(|room| room.is_joined())
+            {
                 // Translators: This is a verb, as in 'View Room'.
                 self.look_up_btn.set_content_label(gettext("View"));
             } else {

@@ -424,8 +424,8 @@ fn we_pass_restricted_allow_rule(room: &Room, rule: AllowRule) -> bool {
     match rule {
         AllowRule::RoomMembership(room_membership) => room.session().is_some_and(|s| {
             s.room_list()
-                .joined_room((&*room_membership.room_id).into())
-                .is_some()
+                .get_by_identifier((&*room_membership.room_id).into())
+                .is_some_and(|room| room.is_joined())
         }),
         _ => false,
     }

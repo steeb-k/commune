@@ -312,7 +312,7 @@ mod imp {
         pub(super) fn select_room_if_exists(&self, identifier: &RoomOrAliasId) -> bool {
             if let Some(room) = self
                 .room_list()
-                .and_then(|room_list| room_list.joined_room(identifier))
+                .and_then(|room_list| room_list.get_by_identifier(identifier))
             {
                 self.select_room(room);
                 true
