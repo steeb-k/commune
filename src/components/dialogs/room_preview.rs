@@ -24,9 +24,9 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/join_room.ui")]
-    #[properties(wrapper_type = super::JoinRoomDialog)]
-    pub struct JoinRoomDialog {
+    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/room_preview.ui")]
+    #[properties(wrapper_type = super::RoomPreviewDialog)]
+    pub struct RoomPreviewDialog {
         #[template_child]
         go_back_btn: TemplateChild<gtk::Button>,
         #[template_child]
@@ -64,9 +64,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for JoinRoomDialog {
-        const NAME: &'static str = "JoinRoomDialog";
-        type Type = super::JoinRoomDialog;
+    impl ObjectSubclass for RoomPreviewDialog {
+        const NAME: &'static str = "RoomPreviewDialog";
+        type Type = super::RoomPreviewDialog;
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
@@ -80,7 +80,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for JoinRoomDialog {
+    impl ObjectImpl for RoomPreviewDialog {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -107,12 +107,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for JoinRoomDialog {}
-    impl AdwDialogImpl for JoinRoomDialog {}
-    impl ToastableDialogImpl for JoinRoomDialog {}
+    impl WidgetImpl for RoomPreviewDialog {}
+    impl AdwDialogImpl for RoomPreviewDialog {}
+    impl ToastableDialogImpl for RoomPreviewDialog {}
 
     #[gtk::template_callbacks]
-    impl JoinRoomDialog {
+    impl RoomPreviewDialog {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
             self.session.set(session);
@@ -361,13 +361,14 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Dialog to join a room.
-    pub struct JoinRoomDialog(ObjectSubclass<imp::JoinRoomDialog>)
-        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
+    /// Dialog to preview a room and eventually join it.
+    pub struct RoomPreviewDialog(ObjectSubclass<imp::RoomPreviewDialog>)
+        @extends gtk::Widget, adw::Dialog, ToastableDialog,
+        @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl JoinRoomDialog {
+impl RoomPreviewDialog {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }

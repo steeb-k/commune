@@ -23,9 +23,9 @@ src/components/dialogs/auth/in_browser_page.ui
 src/components/dialogs/auth/mod.rs
 src/components/dialogs/auth/mod.ui
 src/components/dialogs/auth/password_page.ui
-src/components/dialogs/join_room.rs
-src/components/dialogs/join_room.ui
 src/components/dialogs/message_dialogs.rs
+src/components/dialogs/room_preview.rs
+src/components/dialogs/room_preview.ui
 src/components/dialogs/user_profile.ui
 src/components/offline_banner.rs
 src/components/media/content_viewer.rs

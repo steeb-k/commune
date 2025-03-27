@@ -17,7 +17,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/in_browser_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/password_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/join_room.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/room_preview.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/toastable.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/dialogs/user_profile.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading/bin.ui</file>

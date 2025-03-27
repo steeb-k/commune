@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="JoinRoomDialog" parent="ToastableDialog">
+  <template class="RoomPreviewDialog" parent="ToastableDialog">
     <property name="title" translatable="yes">Join a Room</property>
     <property name="content-width">480</property>
     <property name="content-height">500</property>

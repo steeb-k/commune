@@ -12,7 +12,7 @@
       </item>
       <item>
         <attribute name="label" translatable="yes">_Join Room…</attribute>
-        <attribute name="action">session.show-join-room</attribute>
+        <attribute name="action">session.join-room</attribute>
       </item>
     </section>
     <section>

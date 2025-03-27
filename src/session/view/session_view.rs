@@ -5,7 +5,7 @@ use tracing::{error, warn};
 
 use super::{Content, CreateDirectChatDialog, CreateRoomDialog, MediaViewer, Sidebar};
 use crate::{
-    components::{JoinRoomDialog, UserProfileDialog},
+    components::{RoomPreviewDialog, UserProfileDialog},
     intent::SessionIntent,
     prelude::*,
     session::model::{
@@ -89,8 +89,8 @@ mod imp {
                 obj.imp().create_room();
             });
 
-            klass.install_action("session.show-join-room", None, |obj, _, _| {
-                obj.imp().show_join_room_dialog(None);
+            klass.install_action("session.join-room", None, |obj, _, _| {
+                obj.imp().preview_room(None);
             });
 
             klass.install_action("session.create-direct-chat", None, |obj, _, _| {
@@ -476,10 +476,10 @@ mod imp {
             dialog.present(Some(&*self.obj()));
         }
 
-        /// Show the dialog to join a room.
+        /// Show the dialog to preview a room.
         ///
         /// If no room URI is provided, the user will have to enter one.
-        pub(super) fn show_join_room_dialog(&self, room_uri: Option<MatrixRoomIdUri>) {
+        pub(super) fn preview_room(&self, room_uri: Option<MatrixRoomIdUri>) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -490,7 +490,7 @@ mod imp {
                 }
             }
 
-            let dialog = JoinRoomDialog::new(&session);
+            let dialog = RoomPreviewDialog::new(&session);
 
             if let Some(uri) = room_uri {
                 dialog.set_uri(uri);
@@ -546,7 +546,7 @@ mod imp {
             match uri {
                 MatrixIdUri::Room(room_uri)
                 | MatrixIdUri::Event(MatrixEventIdUri { room_uri, .. }) => {
-                    self.show_join_room_dialog(Some(room_uri));
+                    self.preview_room(Some(room_uri));
                 }
                 MatrixIdUri::User(user_id) => {
                     self.show_user_profile_dialog(user_id);

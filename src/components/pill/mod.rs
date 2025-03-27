@@ -12,7 +12,7 @@ pub use self::{
     source::{PillSource, PillSourceExt, PillSourceImpl},
     source_row::PillSourceRow,
 };
-use super::{Avatar, JoinRoomDialog, UserProfileDialog};
+use super::{Avatar, RoomPreviewDialog, UserProfileDialog};
 use crate::{
     prelude::*,
     session::{
@@ -207,7 +207,7 @@ mod imp {
                     return;
                 };
 
-                let dialog = JoinRoomDialog::new(&session);
+                let dialog = RoomPreviewDialog::new(&session);
                 dialog.set_room(room);
                 dialog.present(Some(&*obj));
             }
