@@ -6,6 +6,7 @@ use tracing::{error, warn};
 use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
+    intent::SessionIntent,
     prelude::*,
     session::model::{
         Event, IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
@@ -320,6 +321,27 @@ mod imp {
             }
         }
 
+        /// Select the identity verification with the given key in this view.
+        pub(super) fn select_identity_verification_by_id(&self, key: &VerificationKey) {
+            if let Some(verification) = self
+                .session
+                .upgrade()
+                .and_then(|s| s.verification_list().get(key))
+            {
+                self.select_identity_verification(verification);
+            } else {
+                warn!(
+                    "Identity verification for user {} with flow ID {} could not be found",
+                    key.user_id, key.flow_id
+                );
+            }
+        }
+
+        /// Select the given identity verification in this view.
+        pub(super) fn select_identity_verification(&self, verification: IdentityVerification) {
+            self.select_item(Some(verification.upcast()));
+        }
+
         /// Withdraw the notifications for the currently selected item.
         fn withdraw_selected_item_notifications(&self) {
             let Some(session) = self.session.upgrade() else {
@@ -507,6 +529,18 @@ mod imp {
             dialog.present(Some(&*self.obj()));
         }
 
+        /// Process the given intent.
+        pub(super) fn process_intent(&self, intent: SessionIntent) {
+            match intent {
+                SessionIntent::ShowMatrixId(matrix_uri) => {
+                    self.show_matrix_uri(matrix_uri);
+                }
+                SessionIntent::ShowIdentityVerification(key) => {
+                    self.select_identity_verification_by_id(&key);
+                }
+            }
+        }
+
         /// Show the given `MatrixIdUri`.
         pub(super) fn show_matrix_uri(&self, uri: MatrixIdUri) {
             match uri {
@@ -556,28 +590,9 @@ impl SessionView {
         self.imp().select_room_if_exists(identifier)
     }
 
-    /// Select the identity verification with the given key in this view.
-    pub(crate) fn select_identity_verification_by_id(&self, key: &VerificationKey) {
-        if let Some(verification) = self.session().and_then(|s| s.verification_list().get(key)) {
-            self.select_identity_verification(verification);
-        } else {
-            warn!(
-                "Identity verification for user {} with flow ID {} could not be found",
-                key.user_id, key.flow_id
-            );
-        }
-    }
-
     /// Select the given identity verification in this view.
     pub(crate) fn select_identity_verification(&self, verification: IdentityVerification) {
-        self.imp().select_item(Some(verification.upcast()));
-    }
-
-    /// Offer to the user to join a room.
-    ///
-    /// If no room URI is provided, the user will have to enter one.
-    pub(crate) fn show_join_room_dialog(&self, room_uri: Option<MatrixRoomIdUri>) {
-        self.imp().show_join_room_dialog(room_uri);
+        self.imp().select_identity_verification(verification);
     }
 
     /// Handle when the paste action was activated.
@@ -590,14 +605,14 @@ impl SessionView {
         self.imp().show_media(event, source_widget.upcast_ref());
     }
 
-    /// Show the profile of the given user.
-    pub(crate) fn show_user_profile_dialog(&self, user_id: OwnedUserId) {
-        self.imp().show_user_profile_dialog(user_id);
-    }
-
     /// Show the given `MatrixIdUri`.
     pub(crate) fn show_matrix_uri(&self, uri: MatrixIdUri) {
         self.imp().show_matrix_uri(uri);
+    }
+
+    /// Process the given intent.
+    pub(crate) fn process_intent(&self, intent: SessionIntent) {
+        self.imp().process_intent(intent);
     }
 }
 

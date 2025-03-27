@@ -6,7 +6,9 @@ use gtk::{gio, glib, glib::clone};
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    config, intent,
+    config,
+    intent::{SessionIntent, SessionIntentType},
+    prelude::*,
     session::model::{Session, SessionState},
     session_list::{FailedSession, SessionInfo, SessionList},
     spawn,
@@ -244,28 +246,42 @@ impl Application {
                     app.show_about_dialog();
                 })
                 .build(),
-            // Show a room. This is the action triggered when clicking a notification about a message.
-            gio::ActionEntry::builder("show-room")
-                .parameter_type(Some(&intent::ShowRoomPayload::static_variant_type()))
-                .activate(|app: &Application, _, v| {
-                    let Some(payload) = v.and_then(glib::Variant::get::<intent::ShowRoomPayload>) else {
-                        error!("Triggered `show-room` action without the proper payload");
+            // Show a room. This is the action triggered when clicking a notification about a
+            // message.
+            gio::ActionEntry::builder(SessionIntentType::ShowMatrixId.action_name())
+                .parameter_type(Some(&SessionIntentType::static_variant_type()))
+                .activate(|app: &Application, _, variant| {
+                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
+                        SessionIntentType::ShowMatrixId,
+                        variant,
+                    ) else {
+                        error!(
+                            "Triggered `{}` action without the proper payload",
+                            SessionIntentType::ShowMatrixId.action_name()
+                        );
                         return;
                     };
 
-                    app.process_intent(intent::SessionIntent::ShowRoom(payload));
+                    app.process_session_intent(session_id, intent);
                 })
                 .build(),
-            // Show an identity verification. This is the action triggered when clicking a notification about a new verification.
-            gio::ActionEntry::builder("show-identity-verification")
-                .parameter_type(Some(&intent::ShowIdentityVerificationPayload::static_variant_type()))
-                .activate(|app: &Application, _, v| {
-                    let Some(payload) = v.and_then(glib::Variant::get::<intent::ShowIdentityVerificationPayload>) else {
-                        error!("Triggered `show-identity-verification` action without the proper payload");
+            // Show an identity verification. This is the action triggered when clicking a
+            // notification about a new verification.
+            gio::ActionEntry::builder(SessionIntentType::ShowIdentityVerification.action_name())
+                .parameter_type(Some(&SessionIntentType::static_variant_type()))
+                .activate(|app: &Application, _, variant| {
+                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
+                        SessionIntentType::ShowIdentityVerification,
+                        variant,
+                    ) else {
+                        error!(
+                            "Triggered `{}` action without the proper payload",
+                            SessionIntentType::ShowIdentityVerification.action_name()
+                        );
                         return;
                     };
 
-                    app.process_intent(intent::SessionIntent::ShowIdentityVerification(payload));
+                    app.process_session_intent(session_id, intent);
                 })
                 .build(),
         ]);
@@ -335,15 +351,14 @@ impl Application {
     /// Process the given URI.
     fn process_uri(&self, uri: &str) {
         match MatrixIdUri::parse(uri) {
-            Ok(matrix_id) => self.process_intent(matrix_id),
+            Ok(matrix_id) => self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id)),
             Err(error) => warn!("Invalid Matrix URI: {error}"),
         }
     }
 
-    /// Process the given intent, as soon as possible.
-    fn process_intent(&self, intent: impl Into<intent::AppIntent>) {
-        let intent = intent.into();
-        debug!("Processing intent {intent:?}");
+    /// Select a session to handle the given intent as soon as possible.
+    fn select_session_for_intent(&self, intent: SessionIntent) {
+        debug!("Selecting session for intent {intent:?}");
 
         // We only handle a single intent at time, the latest one.
         self.imp().intent_handler.disconnect_signals();
@@ -351,32 +366,23 @@ impl Application {
         let session_list = self.session_list();
 
         if session_list.state() == LoadingState::Ready {
-            match intent {
-                intent::AppIntent::WithSession(session_intent) => {
-                    self.process_session_intent(session_intent);
+            match session_list.n_items() {
+                0 => {
+                    warn!("Cannot open URI with no logged in session");
                 }
-                intent::AppIntent::ShowMatrixId(matrix_uri) => match session_list.n_items() {
-                    0 => {
-                        warn!("Cannot open URI with no logged in session");
-                    }
-                    1 => {
-                        let session = session_list.first().expect("There should be one session");
-                        let session_intent = intent::SessionIntent::with_matrix_uri(
-                            session.session_id(),
-                            matrix_uri,
-                        );
-                        self.process_session_intent(session_intent);
-                    }
-                    _ => {
-                        spawn!(clone!(
-                            #[weak(rename_to = obj)]
-                            self,
-                            async move {
-                                obj.choose_session_for_uri(matrix_uri).await;
-                            }
-                        ));
-                    }
-                },
+                1 => {
+                    let session = session_list.first().expect("There should be one session");
+                    self.process_session_intent(session.session_id(), intent);
+                }
+                _ => {
+                    spawn!(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        async move {
+                            obj.ask_session_for_intent(intent).await;
+                        }
+                    ));
+                }
             }
         } else {
             // Wait for the list to be ready.
@@ -391,7 +397,7 @@ impl Application {
                         obj.imp().intent_handler.disconnect_signals();
 
                         if let Some(intent) = cell.take() {
-                            obj.process_intent(intent);
+                            obj.select_session_for_intent(intent);
                         }
                     }
                 }
@@ -405,35 +411,38 @@ impl Application {
     /// Ask the user to choose a session to process the given Matrix ID URI.
     ///
     /// The session list needs to be ready.
-    async fn choose_session_for_uri(&self, matrix_uri: MatrixIdUri) {
+    async fn ask_session_for_intent(&self, intent: SessionIntent) {
         let main_window = self.present_main_window();
 
-        let Some(session_id) = main_window.choose_session_for_uri().await else {
-            warn!("No session selected to show URI");
+        let Some(session_id) = main_window.ask_session().await else {
+            warn!("No session selected to show intent");
             return;
         };
 
-        let session_intent = intent::SessionIntent::with_matrix_uri(session_id, matrix_uri);
-        self.process_session_intent(session_intent);
+        self.process_session_intent(session_id, intent);
     }
 
-    /// Process the given for a session, as soon as the session is ready.
-    fn process_session_intent(&self, intent: intent::SessionIntent) {
-        let Some(session_info) = self.session_list().get(intent.session_id()) else {
+    /// Process the given intent for the given session, as soon as the session
+    /// is ready.
+    fn process_session_intent(&self, session_id: String, intent: SessionIntent) {
+        debug!(session = session_id, "Processing session intent {intent:?}");
+
+        let Some(session_info) = self.session_list().get(&session_id) else {
             warn!("Could not find session to process intent {intent:?}");
             toast!(self.present_main_window(), gettext("Session not found"));
             return;
         };
+
         if session_info.is::<FailedSession>() {
             // We can't do anything, it should show an error screen.
             warn!("Could not process intent {intent:?} for failed session");
         } else if let Some(session) = session_info.downcast_ref::<Session>() {
             if session.state() == SessionState::Ready {
                 self.present_main_window()
-                    .process_session_intent_ready(intent);
+                    .process_session_intent(session.session_id(), intent);
             } else {
                 // Wait for the session to be ready.
-                let cell = Rc::new(RefCell::new(Some(intent)));
+                let cell = Rc::new(RefCell::new(Some((session_id, intent))));
                 let handler = session.connect_ready(clone!(
                     #[weak(rename_to = obj)]
                     self,
@@ -442,9 +451,9 @@ impl Application {
                     move |_| {
                         obj.imp().intent_handler.disconnect_signals();
 
-                        if let Some(intent) = cell.take() {
+                        if let Some((session_id, intent)) = cell.take() {
                             obj.present_main_window()
-                                .process_session_intent_ready(intent);
+                                .process_session_intent(&session_id, intent);
                         }
                     }
                 ));
@@ -455,7 +464,7 @@ impl Application {
         } else {
             // Wait for the session to be a `Session`.
             let session_list = self.session_list();
-            let cell = Rc::new(RefCell::new(Some(intent)));
+            let cell = Rc::new(RefCell::new(Some((session_id, intent))));
             let handler = session_list.connect_items_changed(clone!(
                 #[weak(rename_to = obj)]
                 self,
@@ -465,8 +474,10 @@ impl Application {
                     if added == 0 {
                         return;
                     }
-                    let Some(session_id) =
-                        cell.borrow().as_ref().map(|i| i.session_id().to_owned())
+                    let Some(session_id) = cell
+                        .borrow()
+                        .as_ref()
+                        .map(|(session_id, _)| session_id.clone())
                     else {
                         return;
                     };
@@ -480,8 +491,8 @@ impl Application {
                         if session_info.session_id() == session_id {
                             obj.imp().intent_handler.disconnect_signals();
 
-                            if let Some(intent) = cell.take() {
-                                obj.process_session_intent(intent);
+                            if let Some((session_id, intent)) = cell.take() {
+                                obj.process_session_intent(session_id, intent);
                             }
                             break;
                         }

@@ -1,6 +1,6 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, fmt, str::FromStr};
 
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
@@ -501,6 +501,32 @@ impl MatrixIdUri {
             Self::Event(_) => None,
         }
     }
+
+    /// Get this ID as a `matrix:` URI.
+    pub fn as_matrix_uri(&self) -> MatrixUri {
+        match self {
+            MatrixIdUri::Room(room_uri) => match <&RoomId>::try_from(&*room_uri.id) {
+                Ok(room_id) => room_id.matrix_uri_via(room_uri.via.clone(), false),
+                Err(room_alias) => room_alias.matrix_uri(false),
+            },
+            MatrixIdUri::User(user_id) => user_id.matrix_uri(false),
+            MatrixIdUri::Event(event_uri) => {
+                let room_id = <&RoomId>::try_from(&*event_uri.room_uri.id)
+                    .expect("room alias should not be used to construct event URI");
+
+                room_id.matrix_event_uri_via(
+                    event_uri.event_id.clone(),
+                    event_uri.room_uri.via.clone(),
+                )
+            }
+        }
+    }
+}
+
+impl fmt::Display for MatrixIdUri {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_matrix_uri().fmt(f)
+    }
 }
 
 impl TryFrom<&MatrixUri> for MatrixIdUri {
@@ -578,6 +604,12 @@ impl TryFrom<AnchorUri> for MatrixIdUri {
 impl StaticVariantType for MatrixIdUri {
     fn static_variant_type() -> Cow<'static, glib::VariantTy> {
         String::static_variant_type()
+    }
+}
+
+impl ToVariant for MatrixIdUri {
+    fn to_variant(&self) -> glib::Variant {
+        self.to_string().to_variant()
     }
 }
 

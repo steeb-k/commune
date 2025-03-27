@@ -11,10 +11,14 @@ pub use self::notifications_settings::{
 };
 use super::{IdentityVerification, Session, VerificationKey};
 use crate::{
-    gettext_f, intent,
+    gettext_f,
+    intent::{SessionIntent, SessionIntentType},
     prelude::*,
     spawn_tokio,
-    utils::matrix::{get_event_body, AnySyncOrStrippedTimelineEvent},
+    utils::matrix::{
+        get_event_body, AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri,
+        MatrixRoomIdUri,
+    },
     Application, Window,
 };
 
@@ -189,25 +193,37 @@ impl Notifications {
         let room_id = room.room_id().to_owned();
         let event_id = event.event_id();
 
-        let payload = intent::ShowRoomPayload {
-            session_id: session_id.to_owned(),
-            room_id: room_id.clone(),
+        let room_uri = MatrixRoomIdUri {
+            id: room_id.clone().into(),
+            via: vec![],
+        };
+        let matrix_uri = if let Some(event_id) = event_id {
+            MatrixIdUri::Event(MatrixEventIdUri {
+                event_id: event_id.to_owned(),
+                room_uri,
+            })
+        } else {
+            MatrixIdUri::Room(room_uri)
         };
 
-        let icon = room.avatar_data().as_notification_icon().await;
-
-        let id = if let Some(event_id) = event_id {
-            format!("{session_id}//{room_id}//{event_id}")
+        let id = if event_id.is_some() {
+            format!("{session_id}//{matrix_uri}")
         } else {
             let random_id = glib::uuid_string_random();
-            format!("{session_id}//{room_id}//{random_id}")
+            format!("{session_id}//{matrix_uri}//{random_id}")
         };
+        let payload =
+            SessionIntent::ShowMatrixId(matrix_uri).to_variant_with_session_id(session_id);
+        let icon = room.avatar_data().as_notification_icon().await;
 
         Self::send_notification(
             &id,
             &room.display_name(),
             &body,
-            ("app.show-room", payload.to_variant()),
+            (
+                SessionIntentType::ShowMatrixId.app_action_name(),
+                payload.to_variant(),
+            ),
             icon.as_ref(),
         );
 
@@ -249,10 +265,8 @@ impl Notifications {
             &[("user", &user.display_name())],
         );
 
-        let payload = intent::ShowIdentityVerificationPayload {
-            session_id: session_id.to_owned(),
-            key: verification.key(),
-        };
+        let payload = SessionIntent::ShowIdentityVerification(verification.key())
+            .to_variant_with_session_id(session_id);
 
         let icon = user.avatar_data().as_notification_icon().await;
 
@@ -261,7 +275,10 @@ impl Notifications {
             &id,
             &title,
             &body,
-            ("app.show-identity-verification", payload.to_variant()),
+            (
+                SessionIntentType::ShowIdentityVerification.app_action_name(),
+                payload.to_variant(),
+            ),
             icon.as_ref(),
         );
 
@@ -312,10 +329,8 @@ impl Notifications {
             &[("name", display_name)],
         );
 
-        let payload = intent::ShowIdentityVerificationPayload {
-            session_id: session_id.to_owned(),
-            key: verification.key(),
-        };
+        let payload = SessionIntent::ShowIdentityVerification(verification.key())
+            .to_variant_with_session_id(session_id);
 
         let id = format!("{session_id}//{other_device_id}//{flow_id}");
 
@@ -323,7 +338,10 @@ impl Notifications {
             &id,
             &title,
             &body,
-            ("app.show-identity-verification", payload.to_variant()),
+            (
+                SessionIntentType::ShowIdentityVerification.app_action_name(),
+                payload.to_variant(),
+            ),
             None,
         );
 

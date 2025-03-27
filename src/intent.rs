@@ -1,159 +1,102 @@
 use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
-use ruma::{OwnedRoomId, OwnedUserId, RoomId, UserId};
+use ruma::OwnedUserId;
 
-use crate::{
-    session::model::VerificationKey,
-    utils::matrix::{MatrixIdUri, MatrixRoomIdUri},
-};
+use crate::{session::model::VerificationKey, utils::matrix::MatrixIdUri};
 
-/// An intent when opening or activating the application.
-///
-/// This can be received either via D-Bus or via the command line.
+/// An intent that can be handled by a session.
 ///
 /// It cannot be cloned intentionnally, so it is handled only once.
 #[derive(Debug)]
-pub enum AppIntent {
-    /// An intent for a given session.
-    WithSession(SessionIntent),
+pub(crate) enum SessionIntent {
     /// Show the target of a Matrix ID URI.
     ShowMatrixId(MatrixIdUri),
-}
-
-impl From<SessionIntent> for AppIntent {
-    fn from(value: SessionIntent) -> Self {
-        Self::WithSession(value)
-    }
-}
-
-impl From<MatrixIdUri> for AppIntent {
-    fn from(value: MatrixIdUri) -> Self {
-        Self::ShowMatrixId(value)
-    }
-}
-
-/// An intent for a given session.
-///
-/// It cannot be cloned intentionnally, so it is handled only once.
-#[derive(Debug)]
-pub enum SessionIntent {
-    /// Show an existing room.
-    ShowRoom(ShowRoomPayload),
     /// Show an ongoing identity verification.
-    ShowIdentityVerification(ShowIdentityVerificationPayload),
-    /// Join a room.
-    JoinRoom(JoinRoomPayload),
-    /// Show a user.
-    ShowUser(ShowUserPayload),
+    ShowIdentityVerification(VerificationKey),
 }
 
 impl SessionIntent {
-    /// Constructs an `AppIntent` with the given Matrix ID URI and session ID.
-    pub fn with_matrix_uri(session_id: String, matrix_uri: MatrixIdUri) -> Self {
-        match matrix_uri {
-            MatrixIdUri::Room(room_uri) => Self::JoinRoom(JoinRoomPayload {
-                session_id,
-                room_uri,
-            }),
-            MatrixIdUri::User(user_id) => Self::ShowUser(ShowUserPayload {
-                session_id,
-                user_id,
-            }),
-            // FIXME: We don't support showing specific events in the room history.
-            MatrixIdUri::Event(event_uri) => Self::JoinRoom(JoinRoomPayload {
-                session_id,
-                room_uri: event_uri.room_uri,
-            }),
-        }
+    /// Construct a `SessionIntent` from its type and a payload in a `GVariant`.
+    ///
+    /// Returns the intent on success. Returns `None` if the payload could not
+    /// be parsed successfully.
+    pub(crate) fn parse(intent_type: SessionIntentType, payload: &glib::Variant) -> Option<Self> {
+        let intent = match intent_type {
+            SessionIntentType::ShowMatrixId => Self::ShowMatrixId(payload.get::<MatrixIdUri>()?),
+            SessionIntentType::ShowIdentityVerification => {
+                let (user_id_str, flow_id) = payload.get::<(String, String)>()?;
+                let user_id = OwnedUserId::try_from(user_id_str).ok()?;
+                Self::ShowIdentityVerification(VerificationKey { user_id, flow_id })
+            }
+        };
+
+        Some(intent)
     }
 
-    /// The ID of the session that should process this intent.
-    pub fn session_id(&self) -> &str {
+    /// Construct a `SessionIntent` from its type and a payload in a `GVariant`
+    /// containing a session ID.
+    ///
+    /// Returns a `(session_id, intent)` tuple on success. Returns `None` if the
+    /// payload could not be parsed successfully.
+    pub(crate) fn parse_with_session_id(
+        intent_type: SessionIntentType,
+        payload: Option<&glib::Variant>,
+    ) -> Option<(String, Self)> {
+        let (session_id, payload) = payload?.get::<(String, glib::Variant)>()?;
+        let intent = Self::parse(intent_type, &payload)?;
+        Some((session_id, intent))
+    }
+
+    /// Convert this intent to a `GVariant` with the given session ID.
+    pub(crate) fn to_variant_with_session_id(&self, session_id: &str) -> glib::Variant {
+        let payload = self.to_variant();
+        (session_id, payload).to_variant()
+    }
+}
+
+impl ToVariant for SessionIntent {
+    fn to_variant(&self) -> glib::Variant {
         match self {
-            Self::ShowRoom(p) => &p.session_id,
-            Self::ShowIdentityVerification(p) => &p.session_id,
-            Self::JoinRoom(p) => &p.session_id,
-            Self::ShowUser(p) => &p.session_id,
+            SessionIntent::ShowMatrixId(matrix_uri) => matrix_uri.to_variant(),
+            SessionIntent::ShowIdentityVerification(verification_key) => (
+                verification_key.user_id.as_str(),
+                verification_key.flow_id.as_str(),
+            )
+                .to_variant(),
         }
     }
 }
 
-/// The payload to show a room.
-#[derive(Debug)]
-pub struct ShowRoomPayload {
-    pub session_id: String,
-    pub room_id: OwnedRoomId,
+/// The type of an intent that can be handled by a session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SessionIntentType {
+    /// Show the target of a Matrix ID URI.
+    ShowMatrixId,
+    /// Show an ongoing identity verification.
+    ShowIdentityVerification,
 }
 
-impl StaticVariantType for ShowRoomPayload {
+impl SessionIntentType {
+    /// Get the action name for this session intent type.
+    pub(crate) fn action_name(self) -> &'static str {
+        match self {
+            SessionIntentType::ShowMatrixId => "show-matrix-id",
+            SessionIntentType::ShowIdentityVerification => "show-identity-verification",
+        }
+    }
+
+    /// Get the application action name for this session intent type.
+    pub(crate) fn app_action_name(self) -> &'static str {
+        match self {
+            SessionIntentType::ShowMatrixId => "app.show-matrix-id",
+            SessionIntentType::ShowIdentityVerification => "app.show-identity-verification",
+        }
+    }
+}
+
+impl StaticVariantType for SessionIntentType {
     fn static_variant_type() -> Cow<'static, glib::VariantTy> {
-        <(String, String)>::static_variant_type()
+        <(String, glib::Variant)>::static_variant_type()
     }
-}
-
-impl ToVariant for ShowRoomPayload {
-    fn to_variant(&self) -> glib::Variant {
-        (&self.session_id, self.room_id.as_str()).to_variant()
-    }
-}
-
-impl FromVariant for ShowRoomPayload {
-    fn from_variant(variant: &glib::Variant) -> Option<Self> {
-        let (session_id, room_id) = variant.get::<(String, String)>()?;
-        let room_id = RoomId::parse(room_id).ok()?;
-        Some(Self {
-            session_id,
-            room_id,
-        })
-    }
-}
-
-/// The payload to show an ongoing identity verification.
-#[derive(Debug)]
-pub struct ShowIdentityVerificationPayload {
-    pub session_id: String,
-    pub key: VerificationKey,
-}
-
-impl StaticVariantType for ShowIdentityVerificationPayload {
-    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
-        <(String, String, String)>::static_variant_type()
-    }
-}
-
-impl ToVariant for ShowIdentityVerificationPayload {
-    fn to_variant(&self) -> glib::Variant {
-        (
-            &self.session_id,
-            self.key.user_id.as_str(),
-            &self.key.flow_id,
-        )
-            .to_variant()
-    }
-}
-
-impl FromVariant for ShowIdentityVerificationPayload {
-    fn from_variant(variant: &glib::Variant) -> Option<Self> {
-        let (session_id, user_id, flow_id) = variant.get::<(String, String, String)>()?;
-        let user_id = UserId::parse(user_id).ok()?;
-        Some(Self {
-            session_id,
-            key: VerificationKey::new(user_id, flow_id),
-        })
-    }
-}
-
-/// The payload to join a room.
-#[derive(Debug)]
-pub struct JoinRoomPayload {
-    pub session_id: String,
-    pub room_uri: MatrixRoomIdUri,
-}
-
-/// The payload to show a user.
-#[derive(Debug)]
-pub struct ShowUserPayload {
-    pub session_id: String,
-    pub user_id: OwnedUserId,
 }
