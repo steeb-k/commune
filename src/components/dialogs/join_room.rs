@@ -323,7 +323,7 @@ mod imp {
 
                     if let Some(room) = room_list.get_wait(&room_id).await {
                         if let Some(window) = obj.root().and_downcast_ref::<Window>() {
-                            window.session_view().select_room(Some(room));
+                            window.session_view().select_room(room);
                         }
                     }
 

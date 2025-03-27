@@ -194,7 +194,7 @@ impl CreateDmDialog {
                 return;
             };
 
-            window.session_view().select_room(Some(room));
+            window.session_view().select_room(room);
             self.close();
         } else {
             self.show_error(&gettext("Could not create a new Direct Chat"));

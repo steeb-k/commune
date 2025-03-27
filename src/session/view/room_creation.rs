@@ -165,8 +165,9 @@ impl RoomCreation {
                 let Some(window) = self.root().and_downcast::<Window>() else {
                     return;
                 };
-                let room = session.room_list().get_wait(matrix_room.room_id()).await;
-                window.session_view().select_room(room);
+                if let Some(room) = session.room_list().get_wait(matrix_room.room_id()).await {
+                    window.session_view().select_room(room);
+                }
 
                 self.close();
             }

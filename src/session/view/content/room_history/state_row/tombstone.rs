@@ -99,7 +99,7 @@ mod imp {
                     return;
                 };
 
-                window.session_view().select_room(Some(successor));
+                window.session_view().select_room(successor);
             } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
                 let via = successor_id
                     .server_name()
