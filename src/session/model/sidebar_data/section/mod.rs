@@ -6,7 +6,9 @@ mod room_category_filter;
 pub use self::name::SidebarSectionName;
 use self::room_category_filter::RoomCategoryFilter;
 use crate::{
-    session::model::{Room, RoomCategory, RoomList, SessionSettings, VerificationList},
+    session::model::{
+        room::HighlightFlags, Room, RoomCategory, RoomList, SessionSettings, VerificationList,
+    },
     utils::ExpressionListModel,
 };
 
@@ -40,6 +42,19 @@ mod imp {
         /// Whether this section is expanded.
         #[property(get, set = Self::set_is_expanded, explicit_notify)]
         is_expanded: Cell<bool>,
+        /// Whether any of the rooms in this section have unread notifications.
+        #[property(get)]
+        has_notifications: Cell<bool>,
+        /// Total number of unread notifications over all the rooms in this
+        /// section.
+        #[property(get)]
+        notification_count: Cell<u64>,
+        /// Whether all the messages of all the rooms in this section are read.
+        #[property(get)]
+        is_read: Cell<bool>,
+        /// The highlight state of the section.
+        #[property(get)]
+        highlight: Cell<HighlightFlags>,
     }
 
     #[glib::object_subclass]
@@ -111,10 +126,27 @@ mod imp {
 
                 let latest_activity_expr_model = ExpressionListModel::new();
                 latest_activity_expr_model.set_expressions(vec![room_latest_activity.upcast()]);
-                latest_activity_expr_model.set_model(Some(filter_model));
+                latest_activity_expr_model.set_model(Some(filter_model.clone()));
 
                 let sort_model =
                     gtk::SortListModel::new(Some(latest_activity_expr_model), Some(sorter));
+
+                let room_notification_count = Room::this_expression("notification-count");
+                let room_highlight = Room::this_expression("highlight");
+                let notification_and_highlight_expr_model = ExpressionListModel::new();
+                notification_and_highlight_expr_model.set_expressions(vec![
+                    room_notification_count.upcast(),
+                    room_highlight.upcast(),
+                ]);
+                notification_and_highlight_expr_model.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |model, _, _, _| {
+                        imp.update_notification_count_and_highlight(model);
+                    }
+                ));
+                notification_and_highlight_expr_model.set_model(Some(filter_model));
+
                 sort_model.upcast()
             } else {
                 model
@@ -133,6 +165,50 @@ mod imp {
             self.inner_model
                 .set(inner_model)
                 .expect("inner model should be uninitialized");
+        }
+
+        /// Update each of the properties if needed and emit corresponding
+        /// signals.
+        fn update_notification_count_and_highlight(&self, model: &ExpressionListModel) {
+            // Aggregate properties over rooms in the section.
+
+            // property:notification-count
+            let mut notification_count = 0;
+            // property:is-read
+            let mut is_read = true;
+            // property:highlight
+            let mut highlight = HighlightFlags::empty();
+
+            for room in model.iter::<glib::Object>() {
+                if let Some(room) = room.ok().and_downcast::<Room>() {
+                    notification_count += room.notification_count();
+                    is_read &= room.is_read();
+                    highlight |= room.highlight();
+                }
+            }
+
+            // property:has-notification
+            let has_notifications = notification_count > 0;
+
+            if self.notification_count.get() != notification_count {
+                self.notification_count.set(notification_count);
+                self.obj().notify_notification_count();
+            }
+
+            if self.has_notifications.get() != has_notifications {
+                self.has_notifications.set(has_notifications);
+                self.obj().notify_has_notifications();
+            }
+
+            if self.highlight.get() != highlight {
+                self.highlight.set(highlight);
+                self.obj().notify_highlight();
+            }
+
+            if self.is_read.get() != is_read {
+                self.is_read.set(is_read);
+                self.obj().notify_is_read();
+            }
         }
 
         /// The inner model of this section.

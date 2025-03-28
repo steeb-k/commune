@@ -1,8 +1,11 @@
 use adw::subclass::prelude::BinImpl;
 use gettextrs::gettext;
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::model::{RoomCategory, SidebarSection, SidebarSectionName};
+use crate::{
+    session::model::{HighlightFlags, RoomCategory, SidebarSection, SidebarSectionName},
+    utils::{BoundObject, TemplateCallbacks},
+};
 
 mod imp {
     use std::{
@@ -20,7 +23,7 @@ mod imp {
     pub struct SidebarSectionRow {
         /// The section of this row.
         #[property(get, set = Self::set_section, explicit_notify, nullable)]
-        section: RefCell<Option<SidebarSection>>,
+        section: BoundObject<SidebarSection>,
         section_binding: RefCell<Option<glib::Binding>>,
         /// Whether this row is expanded.
         #[property(get, set = Self::set_is_expanded, explicit_notify, construct, default = true)]
@@ -37,6 +40,10 @@ mod imp {
         /// The label showing the category name.
         #[template_child]
         pub(super) display_name: TemplateChild<gtk::Label>,
+        #[template_child]
+        notification_status: TemplateChild<gtk::Stack>,
+        #[template_child]
+        notification_count: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -48,6 +55,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_css_name("sidebar-section");
         }
@@ -73,32 +81,43 @@ mod imp {
     impl SidebarSectionRow {
         /// Set the section represented by this row.
         fn set_section(&self, section: Option<SidebarSection>) {
-            if *self.section.borrow() == section {
+            if self.section.obj() == section {
                 return;
             }
 
             if let Some(binding) = self.section_binding.take() {
                 binding.unbind();
             }
+            self.section.disconnect_signals();
+
             let obj = self.obj();
 
-            if let Some(section) = &section {
+            if let Some(section) = section {
                 let section_binding = section
                     .bind_property("is-expanded", &*obj, "is-expanded")
                     .sync_create()
                     .build();
                 self.section_binding.replace(Some(section_binding));
+
+                let highlight_handler = section.connect_highlight_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_highlight();
+                    }
+                ));
+
+                self.section.set(section, vec![highlight_handler]);
             }
 
-            self.section.replace(section);
-
+            self.update_highlight();
             obj.notify_section();
             obj.notify_label();
         }
 
         /// The label to show for this row.
         fn label(&self) -> Option<String> {
-            let target_section_name = self.section.borrow().as_ref()?.name();
+            let target_section_name = self.section.obj().as_ref()?.name();
             let source_room_category = self.show_label_for_room_category.get();
 
             let label = match source_room_category {
@@ -162,7 +181,25 @@ mod imp {
 
             self.is_expanded.set(is_expanded);
             self.update_expanded_accessibility_state();
+            self.update_highlight();
             obj.notify_is_expanded();
+        }
+
+        /// Update how this row is highlighted according to the current state of
+        /// rooms in this section.
+        fn update_highlight(&self) {
+            let highlight = self
+                .section
+                .obj()
+                .as_ref()
+                .map(SidebarSection::highlight)
+                .unwrap_or_default();
+
+            if !self.is_expanded.get() && highlight.contains(HighlightFlags::HIGHLIGHT) {
+                self.notification_count.add_css_class("highlight");
+            } else {
+                self.notification_count.remove_css_class("highlight");
+            }
         }
 
         /// Update the expanded state of this row for a11y.

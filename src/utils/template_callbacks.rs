@@ -36,4 +36,27 @@ impl TemplateCallbacks {
     pub fn guint_is_zero(u: u32) -> bool {
         u == 0
     }
+
+    /// Returns logical AND of two boolean values.
+    #[template_callback]
+    pub fn logical_and(lhs: bool, rhs: bool) -> bool {
+        lhs && rhs
+    }
+
+    /// Returns logical OR of two boolean values.
+    #[template_callback]
+    pub fn logical_or(lhs: bool, rhs: bool) -> bool {
+        lhs || rhs
+    }
+
+    /// String ternary operator returns one of the two arguments based on truth
+    /// value of test.
+    #[template_callback]
+    pub fn ternary_string(test: bool, positive: String, negative: String) -> String {
+        if test {
+            positive
+        } else {
+            negative
+        }
+    }
 }
