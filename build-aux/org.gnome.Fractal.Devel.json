@@ -15,7 +15,7 @@
         "--share=network",
         "--share=ipc",
         "--device=dri",
-        "--env=RUST_LOG=fractal=debug,aperture=debug,warn",
+        "--env=RUST_LOG=fractal=debug,warn",
         "--env=G_MESSAGES_DEBUG=none",
         "--env=RUST_BACKTRACE=1"
     ],
@@ -123,7 +123,8 @@
                     "type": "git",
                     "url": "https://gitlab.gnome.org/sophie-h/glycin.git",
                     "tag": "1.2.0",
-                    "commit": "c886add2e54f916a8158e491ed973581a2c7b3d0"
+                    "commit": "c886add2e54f916a8158e491ed973581a2c7b3d0",
+                    "disable-submodules": true
                 }
             ]
         },
