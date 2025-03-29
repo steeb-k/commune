@@ -4,11 +4,14 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{ComposerDraft, ComposerDraftType};
-use matrix_sdk_ui::timeline::{Message, RepliedToInfo, TimelineEventItemId};
+use matrix_sdk::{deserialized_responses::TimelineEvent, ComposerDraft, ComposerDraftType};
+use matrix_sdk_ui::timeline::Message;
 use ruma::{
-    events::room::message::{MessageFormat, MessageType},
-    OwnedEventId, RoomOrAliasId, UserId,
+    events::{
+        room::message::{MessageFormat, MessageType, OriginalSyncRoomMessageEvent},
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+    },
+    OwnedEventId, OwnedUserId, RoomOrAliasId, UserId,
 };
 use sourceview::prelude::*;
 use tracing::{error, warn};
@@ -17,7 +20,7 @@ use super::ComposerParser;
 use crate::{
     components::{Pill, PillSource},
     prelude::*,
-    session::model::{Member, Room, Timeline},
+    session::model::{Event, Member, Room, Timeline},
     spawn, spawn_tokio,
     utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
 };
@@ -265,7 +268,7 @@ mod imp {
             let matrix_room = timeline.room().matrix_room().clone();
             let handle = spawn_tokio!(async move { matrix_room.load_composer_draft().await });
 
-            match handle.await.unwrap() {
+            match handle.await.expect("task was not aborted") {
                 Ok(Some(draft)) => self.restore_from_draft(timeline, draft).await,
                 Ok(None) => {}
                 Err(error) => {
@@ -279,7 +282,7 @@ mod imp {
             let room = timeline.room();
 
             // Restore the relation.
-            self.restore_related_to_from_draft(timeline, draft.draft_type.clone())
+            self.restore_related_to_from_draft(&room, draft.draft_type.clone())
                 .await;
 
             // Make sure we start from an empty state.
@@ -326,33 +329,8 @@ mod imp {
         }
 
         /// Restore the relation from the given draft content.
-        async fn restore_related_to_from_draft(
-            &self,
-            timeline: &Timeline,
-            draft_type: ComposerDraftType,
-        ) {
-            let related_to = match draft_type {
-                ComposerDraftType::NewMessage => None,
-                ComposerDraftType::Reply { event_id } => {
-                    let matrix_timeline = timeline.matrix_timeline();
-
-                    let handle = spawn_tokio!(async move {
-                        matrix_timeline
-                            .replied_to_info_from_event_id(&event_id)
-                            .await
-                    });
-
-                    match handle.await.unwrap() {
-                        Ok(info) => Some(RelationInfo::Reply(info)),
-                        Err(error) => {
-                            warn!("Could not fetch replied-to event content of draft: {error}");
-                            None
-                        }
-                    }
-                }
-                ComposerDraftType::Edit { event_id } => Some(RelationInfo::Edit(event_id)),
-            };
-
+        async fn restore_related_to_from_draft(&self, room: &Room, draft_type: ComposerDraftType) {
+            let related_to = RelationInfo::from_draft(room, draft_type).await;
             self.related_to.replace(related_to);
 
             let obj = self.obj();
@@ -537,27 +515,60 @@ impl ComposerState {
 /// The possible relations to send with a message.
 #[derive(Debug, Clone)]
 pub(crate) enum RelationInfo {
-    /// Send a reply with the given replied to info.
-    Reply(RepliedToInfo),
+    /// Send a reply to the given event.
+    Reply(MessageEventSource),
 
     /// Send an edit to the event with the given ID.
     Edit(OwnedEventId),
 }
 
 impl RelationInfo {
+    /// Construct a relation info from a composer draft, if possible.
+    pub(crate) async fn from_draft(room: &Room, draft_type: ComposerDraftType) -> Option<Self> {
+        match draft_type {
+            ComposerDraftType::NewMessage => None,
+            ComposerDraftType::Reply { event_id } => {
+                // We need to fetch the event and extract its content, so we can display it.
+                let matrix_room = room.matrix_room().clone();
+                let event_id_clone = event_id.clone();
+
+                let handle = spawn_tokio!(async move {
+                    matrix_room.load_or_fetch_event(&event_id_clone, None).await
+                });
+
+                let event = match handle.await.expect("task was not aborted") {
+                    Ok(event) => event,
+                    Err(error) => {
+                        warn!("Could not fetch replied-to event content of draft: {error}");
+                        return None;
+                    }
+                };
+
+                // We only reply to messages.
+                let Some(message_event) = MessageEventSource::from_original_event(&event) else {
+                    warn!("Could not fetch replied-to event content of draft: unsupported event");
+                    return None;
+                };
+
+                Some(RelationInfo::Reply(message_event))
+            }
+            ComposerDraftType::Edit { event_id } => Some(RelationInfo::Edit(event_id)),
+        }
+    }
+
     /// The unique global identifier of the related event.
-    pub(crate) fn identifier(&self) -> TimelineEventItemId {
+    pub(crate) fn event_id(&self) -> OwnedEventId {
         match self {
-            RelationInfo::Reply(info) => TimelineEventItemId::EventId(info.event_id().to_owned()),
-            RelationInfo::Edit(event_id) => TimelineEventItemId::EventId(event_id.clone()),
+            RelationInfo::Reply(message_event) => message_event.event_id(),
+            RelationInfo::Edit(event_id) => event_id.clone(),
         }
     }
 
     /// Get this `RelationInfo` as a draft type.
     pub(crate) fn as_draft_type(&self) -> ComposerDraftType {
         match self {
-            Self::Reply(info) => ComposerDraftType::Reply {
-                event_id: info.event_id().to_owned(),
+            Self::Reply(message_event) => ComposerDraftType::Reply {
+                event_id: message_event.event_id(),
             },
             Self::Edit(event_id) => ComposerDraftType::Edit {
                 event_id: event_id.clone(),
@@ -630,4 +641,85 @@ struct DetectedMention {
     start: usize,
     /// The end of the mention in the text.
     end: usize,
+}
+
+/// The possible sources of a message event.
+#[derive(Debug, Clone)]
+pub(crate) enum MessageEventSource {
+    /// An original event.
+    OriginalEvent(OriginalSyncRoomMessageEvent),
+    /// An [`Event`].
+    Event(Event),
+}
+
+impl MessageEventSource {
+    /// Try to construct a `MessageEventSource` from the given
+    /// [`TimelineEvent`].
+    ///
+    /// Returns `None` if the event is not a message.
+    fn from_original_event(event: &TimelineEvent) -> Option<Self> {
+        let event = event.raw().deserialize().ok()?;
+        match event {
+            AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
+                SyncMessageLikeEvent::Original(message_event),
+            )) => Some(Self::OriginalEvent(message_event)),
+            _ => None,
+        }
+    }
+
+    /// Try to construct a `MessageEventSource` from the given [`Event`].
+    ///
+    /// Returns `None` if the event is not a message.
+    pub(crate) fn from_event(event: Event) -> Option<Self> {
+        (event.event_id().is_some() && event.is_message()).then_some(Self::Event(event))
+    }
+
+    /// The ID of the underlying event.
+    pub(crate) fn event_id(&self) -> OwnedEventId {
+        match self {
+            Self::OriginalEvent(event) => event.event_id.clone(),
+            Self::Event(event) => event
+                .event_id()
+                .expect("replied-to event should always have an event ID"),
+        }
+    }
+
+    /// The ID of the sender of the event.
+    pub(crate) fn sender(&self) -> OwnedUserId {
+        match self {
+            Self::OriginalEvent(event) => event.sender.clone(),
+            Self::Event(event) => event.sender_id(),
+        }
+    }
+
+    /// The message content of the event.
+    ///
+    /// Returns `None` if the event was redacted after being selected to be
+    /// replied to.
+    pub(crate) fn msgtype(&self) -> Option<MessageType> {
+        match self {
+            Self::OriginalEvent(event) => Some(event.content.msgtype.clone()),
+            Self::Event(event) => Some(event.message()?.msgtype().clone()),
+        }
+    }
+
+    /// Whether the message was edited.
+    pub(crate) fn is_edited(&self) -> bool {
+        match self {
+            Self::OriginalEvent(event) => event.unsigned.relations.has_replacement(),
+            Self::Event(event) => event.is_edited(),
+        }
+    }
+
+    /// Whether this message might contain an `@room` mention.
+    pub(crate) fn can_contain_at_room(&self) -> bool {
+        match self {
+            Self::OriginalEvent(event) => event
+                .content
+                .mentions
+                .as_ref()
+                .is_none_or(|mentions| mentions.room),
+            Self::Event(event) => event.can_contain_at_room(),
+        }
+    }
 }

@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, EventTimelineItem, MembershipChange, Message,
+    AnyOtherFullStateEventContent, EventTimelineItem, MembershipChange, Message, MsgLikeKind,
     TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
@@ -26,7 +26,10 @@ pub(crate) trait AtMentionExt {
 impl AtMentionExt for TimelineItemContent {
     fn can_contain_at_room(&self) -> bool {
         match self {
-            TimelineItemContent::Message(msg) => msg.can_contain_at_room(),
+            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => message.can_contain_at_room(),
+                _ => false,
+            },
             _ => false,
         }
     }
@@ -34,11 +37,7 @@ impl AtMentionExt for TimelineItemContent {
 
 impl AtMentionExt for Message {
     fn can_contain_at_room(&self) -> bool {
-        let Some(mentions) = self.mentions() else {
-            return true;
-        };
-
-        mentions.room
+        self.mentions().is_none_or(|mentions| mentions.room)
     }
 }
 
@@ -108,10 +107,13 @@ pub(crate) trait TimelineItemContentExt {
 impl TimelineItemContentExt for TimelineItemContent {
     fn counts_as_unread(&self) -> bool {
         match self {
-            TimelineItemContent::Message(message) => {
-                !matches!(message.msgtype(), MessageType::Notice(_))
-            }
-            TimelineItemContent::Sticker(_) => true,
+            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => {
+                    !matches!(message.msgtype(), MessageType::Notice(_))
+                }
+                MsgLikeKind::Sticker(_) => true,
+                _ => false,
+            },
             TimelineItemContent::OtherState(state) => matches!(
                 state.content(),
                 AnyOtherFullStateEventContent::RoomTombstone(_)
@@ -156,26 +158,31 @@ impl TimelineItemContentExt for TimelineItemContent {
 
     fn can_show_header(&self) -> bool {
         match self {
-            TimelineItemContent::Message(message) => {
-                matches!(
-                    message.msgtype(),
-                    MessageType::Audio(_)
-                        | MessageType::File(_)
-                        | MessageType::Image(_)
-                        | MessageType::Location(_)
-                        | MessageType::Notice(_)
-                        | MessageType::Text(_)
-                        | MessageType::Video(_)
-                )
-            }
-            TimelineItemContent::Sticker(_) | TimelineItemContent::UnableToDecrypt(_) => true,
+            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => {
+                    matches!(
+                        message.msgtype(),
+                        MessageType::Audio(_)
+                            | MessageType::File(_)
+                            | MessageType::Image(_)
+                            | MessageType::Location(_)
+                            | MessageType::Notice(_)
+                            | MessageType::Text(_)
+                            | MessageType::Video(_)
+                    )
+                }
+                MsgLikeKind::Sticker(_) | MsgLikeKind::UnableToDecrypt(_) => true,
+                _ => false,
+            },
             _ => false,
         }
     }
 
     fn is_edited(&self) -> bool {
         match self {
-            TimelineItemContent::Message(msg) => msg.is_edited(),
+            TimelineItemContent::MsgLike(msg_like) => {
+                matches!(&msg_like.kind, MsgLikeKind::Message(message) if message.is_edited())
+            }
             _ => false,
         }
     }

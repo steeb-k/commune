@@ -1,9 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
-use matrix_sdk_ui::timeline::{
-    Message, RepliedToInfo, ReplyContent, TimelineDetails, TimelineItemContent,
-};
+use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
 use ruma::{events::room::message::MessageType, OwnedEventId, OwnedTransactionId};
 use tracing::{error, warn};
 
@@ -13,7 +11,10 @@ use super::{
 };
 use crate::{
     prelude::*,
-    session::model::{Event, Member, Room, Session},
+    session::{
+        model::{Event, Member, Room, Session},
+        view::content::room_history::message_toolbar::MessageEventSource,
+    },
     spawn,
     utils::matrix::MediaMessage,
 };
@@ -188,20 +189,24 @@ impl MessageContent {
     }
 
     /// Update this widget to present the given related event.
-    pub(crate) fn update_for_related_event(&self, info: &RepliedToInfo, sender: &Member) {
-        let ReplyContent::Message(message) = info.content() else {
-            return;
-        };
-
-        let detect_at_room = message.can_contain_at_room() && sender.can_notify_room();
+    pub(crate) fn update_for_related_event(
+        &self,
+        msgtype: &MessageType,
+        message_event: &MessageEventSource,
+        sender: &Member,
+    ) {
+        let detect_at_room = message_event.can_contain_at_room() && sender.can_notify_room();
 
         self.build_message_content(
-            message,
+            msgtype,
             self.format(),
             sender,
             detect_at_room,
-            None,
-            Some(info.event_id().to_owned()),
+            MessageCacheKey {
+                transaction_id: None,
+                event_id: Some(message_event.event_id()),
+                is_edited: message_event.is_edited(),
+            },
         );
     }
 
@@ -246,73 +251,78 @@ trait MessageContentContainer: IsA<gtk::Widget> {
         let room = sender.room();
 
         match content {
-            TimelineItemContent::Message(message) => {
-                self.build_message_content(
-                    &message,
-                    format,
-                    sender,
-                    detect_at_room,
-                    transaction_id,
-                    event_id,
-                );
-            }
-            TimelineItemContent::Sticker(sticker) => {
-                self.build_media_message_content(
-                    sticker.content().clone().into(),
-                    format,
-                    &room,
-                    detect_at_room,
-                    MessageCacheKey {
-                        transaction_id,
-                        event_id,
-                        is_edited: false,
-                    },
-                );
-            }
-            TimelineItemContent::UnableToDecrypt(_) => {
-                let child = self.reuse_child_or_default::<MessageText>();
-                child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
-            }
-            TimelineItemContent::RedactedMessage => {
-                let child = self.reuse_child_or_default::<MessageText>();
-                child.with_plain_text(gettext("This message was removed."), format);
-            }
+            TimelineItemContent::MsgLike(msg_like) => match msg_like.kind {
+                MsgLikeKind::Message(message) => {
+                    self.build_message_content(
+                        message.msgtype(),
+                        format,
+                        sender,
+                        detect_at_room,
+                        MessageCacheKey {
+                            transaction_id,
+                            event_id,
+                            is_edited: message.is_edited(),
+                        },
+                    );
+                }
+                MsgLikeKind::Sticker(sticker) => {
+                    self.build_media_message_content(
+                        sticker.content().clone().into(),
+                        format,
+                        &room,
+                        detect_at_room,
+                        MessageCacheKey {
+                            transaction_id,
+                            event_id,
+                            is_edited: false,
+                        },
+                    );
+                }
+                MsgLikeKind::UnableToDecrypt(_) => {
+                    let child = self.reuse_child_or_default::<MessageText>();
+                    child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
+                }
+                msg_like_kind => {
+                    warn!("Unsupported message-like event content: {msg_like_kind:?}");
+                    self.build_unsupported_content(format);
+                }
+            },
             content => {
                 warn!("Unsupported event content: {content:?}");
-                let child = self.reuse_child_or_default::<MessageText>();
-                child.with_plain_text(gettext("Unsupported event"), format);
+                self.build_unsupported_content(format);
             }
         }
+    }
+
+    /// Build the widget of an unsupported content as a child of this widget.
+    fn build_unsupported_content(&self, format: ContentFormat) {
+        let child = self.reuse_child_or_default::<MessageText>();
+        child.with_plain_text(gettext("Unsupported event"), format);
     }
 
     /// Build the content widget of the given message as a child of this widget.
     fn build_message_content(
         &self,
-        message: &Message,
+        msgtype: &MessageType,
         format: ContentFormat,
         sender: &Member,
         detect_at_room: bool,
-        transaction_id: Option<OwnedTransactionId>,
-        event_id: Option<OwnedEventId>,
+        cache_key: MessageCacheKey,
     ) {
         let room = sender.room();
 
-        if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
+        if let Some(media_message) = MediaMessage::from_message(msgtype) {
             self.build_media_message_content(
                 media_message,
                 format,
                 &room,
                 detect_at_room,
-                MessageCacheKey {
-                    transaction_id,
-                    event_id,
-                    is_edited: message.is_edited(),
-                },
+                cache_key,
             );
             return;
         }
 
-        match message.msgtype() {
+        match msgtype {
             MessageType::Emote(message) => {
                 let child = self.reuse_child_or_default::<MessageText>();
                 child.with_emote(

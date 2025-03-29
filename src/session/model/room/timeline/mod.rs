@@ -90,9 +90,6 @@ mod imp {
         /// Whether we have reached the start of the timeline.
         #[property(get)]
         has_reached_start: Cell<bool>,
-        /// Whether the timeline has the `m.room.create` event of the room.
-        #[property(get)]
-        has_room_create: Cell<bool>,
         diff_handle: OnceCell<AbortHandle>,
         back_pagination_status_handle: OnceCell<AbortHandle>,
         read_receipts_changed_handle: OnceCell<AbortHandle>,
@@ -121,7 +118,6 @@ mod imp {
                 is_loading_start: Default::default(),
                 is_empty: Default::default(),
                 has_reached_start: Default::default(),
-                has_room_create: Default::default(),
                 preload: Default::default(),
                 diff_handle: Default::default(),
                 back_pagination_status_handle: Default::default(),
@@ -311,44 +307,14 @@ mod imp {
 
             self.has_reached_start.set(has_reached_start);
 
-            self.update_start_items();
             self.obj().notify_has_reached_start();
-        }
-
-        /// Set whether the timeline has the `m.room.create` event of the room.
-        fn set_has_room_create(&self, has_room_create: bool) {
-            if self.has_room_create.get() == has_room_create {
-                return;
-            }
-
-            self.has_room_create.set(has_room_create);
-
-            self.update_start_items();
-            self.obj().notify_has_room_create();
         }
 
         /// Update the virtual items at the start of the timeline.
         fn update_start_items(&self) {
             let n_items = self.start_items.n_items();
 
-            if self.has_reached_start.get() {
-                let has_room_create = self.has_room_create.get();
-                let has_item = self
-                    .start_items
-                    .item(0)
-                    .and_downcast::<VirtualItem>()
-                    .is_some_and(|item| item.is_timeline_start());
-
-                if has_room_create && n_items > 0 {
-                    self.start_items.remove_all();
-                } else if !has_room_create && !has_item {
-                    self.start_items.splice(
-                        0,
-                        n_items,
-                        &[VirtualItem::timeline_start(&self.obj())],
-                    );
-                }
-            } else if self.is_loading_start.get() {
+            if self.is_loading_start.get() {
                 let has_item = self
                     .start_items
                     .item(0)
@@ -357,7 +323,7 @@ mod imp {
 
                 if !has_item {
                     self.start_items
-                        .splice(0, n_items, &[VirtualItem::spinner(&self.obj())]);
+                        .splice(0, 0, &[VirtualItem::spinner(&self.obj())]);
                 }
             } else if n_items > 0 {
                 self.start_items.remove_all();
@@ -370,7 +336,6 @@ mod imp {
         /// optimized by the caller of the function.
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
-            self.set_has_room_create(false);
             self.set_has_reached_start(false);
         }
 
@@ -593,7 +558,6 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
-                let mut removed_from_map = false;
                 let mut event_map = self.event_map.borrow_mut();
 
                 // We need to remove both the transaction ID and the event ID.
@@ -612,12 +576,7 @@ mod imp {
 
                     if found {
                         event_map.remove(&id);
-                        removed_from_map = true;
                     }
-                }
-
-                if removed_from_map && event.is_room_create_event() {
-                    self.set_has_room_create(false);
                 }
             }
         }
@@ -769,10 +728,6 @@ mod imp {
                         let member = members.get_or_create(event.sender_id());
                         member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                     }
-                }
-
-                if event.is_room_create_event() {
-                    self.set_has_room_create(true);
                 }
             }
 

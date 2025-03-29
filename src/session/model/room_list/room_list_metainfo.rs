@@ -39,7 +39,7 @@ impl RoomListMetainfo {
         let client_clone = client.clone();
         let handle = spawn_tokio!(async move {
             client_clone
-                .store()
+                .state_store()
                 .get_custom_value(ROOMS_METAINFO_KEY.as_bytes())
                 .await
         });
@@ -155,7 +155,7 @@ impl RoomListMetainfoInner {
         let client = session.client();
         let handle = spawn_tokio!(async move {
             client
-                .store()
+                .state_store()
                 .set_custom_value(ROOMS_METAINFO_KEY.as_bytes(), value)
                 .await
         });

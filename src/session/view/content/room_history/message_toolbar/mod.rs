@@ -10,11 +10,9 @@ use gtk::{
 };
 use matrix_sdk::{
     attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
-    room::edit::EditedContent,
+    room::{edit::EditedContent, reply::EnforceThread},
 };
-use matrix_sdk_ui::timeline::{
-    AttachmentSource, EnforceThread, RepliedToInfo, TimelineItemContent,
-};
+use matrix_sdk_ui::timeline::{AttachmentSource, TimelineEventItemId, TimelineItemContent};
 use ruma::{
     events::{
         room::message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
@@ -29,7 +27,7 @@ mod completion;
 mod composer_parser;
 mod composer_state;
 
-pub(crate) use self::composer_state::{ComposerState, RelationInfo};
+pub(crate) use self::composer_state::{ComposerState, MessageEventSource, RelationInfo};
 use self::{
     attachment_dialog::AttachmentDialog, completion::CompletionPopover,
     composer_parser::ComposerParser,
@@ -331,8 +329,8 @@ mod imp {
             let composer_state = self.current_composer_state();
 
             match composer_state.related_to() {
-                Some(RelationInfo::Reply(info)) => {
-                    self.update_for_reply(&info);
+                Some(RelationInfo::Reply(event)) => {
+                    self.update_for_reply(&event);
                 }
                 Some(RelationInfo::Edit(_)) => {
                     self.update_for_edit();
@@ -341,8 +339,13 @@ mod imp {
             }
         }
 
-        /// Update the displayed related event for the given reply.
-        fn update_for_reply(&self, info: &RepliedToInfo) {
+        /// Update the displayed related event for the given replied-to event.
+        fn update_for_reply(&self, message_event: &MessageEventSource) {
+            let Some(msgtype) = message_event.msgtype() else {
+                // The event was probably redacted, we cannot reply to it anymore.
+                self.clear_related_event();
+                return;
+            };
             let Some(timeline) = self.timeline.upgrade() else {
                 return;
             };
@@ -350,7 +353,7 @@ mod imp {
             let room = timeline.room();
             let sender = room
                 .get_or_create_members()
-                .get_or_create(info.sender().to_owned());
+                .get_or_create(message_event.sender());
 
             let label = gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}',
@@ -364,7 +367,7 @@ mod imp {
                 .set_label_and_widgets(label, vec![pill]);
 
             self.related_event_content
-                .update_for_related_event(info, &sender);
+                .update_for_related_event(&msgtype, message_event, &sender);
             self.related_event_content.set_visible(true);
         }
 
@@ -400,18 +403,22 @@ mod imp {
         }
 
         /// Set the event to reply to.
-        pub(super) fn set_reply_to(&self, event: &Event) {
+        pub(super) fn set_reply_to(&self, event: Event) {
             if !self.can_compose_message() {
                 return;
             }
 
-            let Ok(info) = event.item().replied_to_info() else {
+            if event.event_id().is_none() {
+                warn!("Cannot send reply for event that is not sent yet");
+                return;
+            };
+            let Some(message_event) = MessageEventSource::from_event(event) else {
                 warn!("Unsupported event type for reply");
                 return;
             };
 
             self.current_composer_state()
-                .set_related_to(Some(RelationInfo::Reply(info)));
+                .set_related_to(Some(RelationInfo::Reply(message_event)));
 
             self.message_entry.grab_focus();
         }
@@ -428,13 +435,17 @@ mod imp {
                 warn!("Cannot send edit for event that is not sent yet");
                 return;
             };
-            let TimelineItemContent::Message(message) = item.content() else {
+            let TimelineItemContent::MsgLike(msg_like) = item.content() else {
+                warn!("Unsupported event type for edit");
+                return;
+            };
+            let Some(message) = msg_like.as_message() else {
                 warn!("Unsupported event type for edit");
                 return;
             };
 
             self.current_composer_state()
-                .set_edit_source(event_id.to_owned(), message);
+                .set_edit_source(event_id.to_owned(), &message);
 
             self.message_entry.grab_focus();
         }
@@ -494,13 +505,16 @@ mod imp {
 
             // Send event depending on relation.
             match composer_state.related_to() {
-                Some(RelationInfo::Reply(replied_to_info)) => {
+                Some(RelationInfo::Reply(message_event)) => {
+                    let event_id = message_event.event_id();
+
                     let handle = spawn_tokio!(async move {
                         matrix_timeline
-                            .send_reply(content, replied_to_info, EnforceThread::MaybeThreaded)
+                            .send_reply(content, event_id, EnforceThread::MaybeThreaded)
                             .await
                     });
-                    if let Err(error) = handle.await.unwrap() {
+
+                    if let Err(error) = handle.await.expect("task was not aborted") {
                         error!("Could not send reply: {error}");
                         let obj = self.obj();
                         toast!(obj, gettext("Could not send reply"));
@@ -900,7 +914,7 @@ mod imp {
                 self.obj()
                     .activate_action(
                         "room-history.scroll-to-event",
-                        Some(&related_to.identifier().to_variant()),
+                        Some(&TimelineEventItemId::EventId(related_to.event_id()).to_variant()),
                     )
                     .expect("action exists");
             }
@@ -999,7 +1013,7 @@ impl MessageToolbar {
     }
 
     /// Set the event to reply to.
-    pub(crate) fn set_reply_to(&self, event: &Event) {
+    pub(crate) fn set_reply_to(&self, event: Event) {
         self.imp().set_reply_to(event);
     }
 

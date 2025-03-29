@@ -484,7 +484,7 @@ mod imp {
             let client = self.client().clone();
             let handle = spawn_tokio!(async move {
                 client
-                    .store()
+                    .state_store()
                     .get_custom_value(SESSION_PROFILE_KEY.as_bytes())
                     .await
             });
@@ -574,7 +574,7 @@ mod imp {
 
             let handle = spawn_tokio!(async move {
                 client
-                    .store()
+                    .state_store()
                     .set_custom_value(SESSION_PROFILE_KEY.as_bytes(), value)
                     .await
             });

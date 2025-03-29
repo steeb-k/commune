@@ -186,7 +186,7 @@ mod imp {
                     imp.update_for_related_event(
                         composer_state
                             .related_to()
-                            .map(|info| info.identifier())
+                            .map(|info| TimelineEventItemId::EventId(info.event_id()))
                             .as_ref(),
                     );
                 }
@@ -197,7 +197,7 @@ mod imp {
             self.update_for_related_event(
                 composer_state
                     .related_to()
-                    .map(|info| info.identifier())
+                    .map(|info| TimelineEventItemId::EventId(info.event_id()))
                     .as_ref(),
             );
         }
@@ -575,7 +575,7 @@ mod imp {
             room: &Room,
             event: &Event,
         ) {
-            if !event.is_message() {
+            if !event.is_message_like() {
                 return;
             }
 
@@ -678,7 +678,7 @@ mod imp {
             room: &Room,
             event: &Event,
         ) {
-            let TimelineItemContent::Message(message) = event.content() else {
+            let Some(message) = event.message() else {
                 return;
             };
 
@@ -819,8 +819,8 @@ mod imp {
                 error!("Could not copy text of timeline item that is not an event");
                 return;
             };
-            let TimelineItemContent::Message(message) = event.content() else {
-                error!("Could not copy text of event that is not a textual message");
+            let Some(message) = event.message() else {
+                error!("Could not copy text of event that is not a message");
                 return;
             };
 

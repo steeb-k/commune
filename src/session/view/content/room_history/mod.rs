@@ -182,7 +182,7 @@ mod imp {
                         return;
                     };
 
-                    obj.imp().message_toolbar.set_reply_to(&event);
+                    obj.imp().message_toolbar.set_reply_to(event);
                 },
             );
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
+    Error as TimelineError, EventSendState, EventTimelineItem, Message, MsgLikeKind,
     RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
@@ -355,9 +355,10 @@ mod imp {
                 }
             }
 
-            match item.content() {
-                TimelineItemContent::Message(msg) if msg.is_edited() => MessageState::Edited,
-                _ => MessageState::None,
+            if item.content().is_edited() {
+                MessageState::Edited
+            } else {
+                MessageState::None
             }
         }
 
@@ -575,28 +576,53 @@ impl Event {
         self.item().content().clone()
     }
 
+    /// The content of this event, if it is a message.
+    ///
+    /// This definition matches the `m.room.message` event type.
+    pub(crate) fn message(&self) -> Option<Message> {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => msg_like.as_message(),
+            _ => None,
+        }
+    }
+
     /// Whether this event contains a message.
     ///
-    /// Message events include the following variants of
-    /// [`TimelineItemContent`]:
-    ///
-    /// - `Message`
-    /// - `Sticker`
-    ///
-    /// Note that this differs from the SDK/Matrix definition that only includes
-    /// `m.room.message` events, and from the Ruma definition (e.g. used for
-    /// `AnySyncMessageLikeEvent`) which includes all non-state events.
+    /// This definition matches the `m.room.message` event type.
     pub(crate) fn is_message(&self) -> bool {
-        matches!(
-            self.content(),
-            TimelineItemContent::Message(_) | TimelineItemContent::Sticker(_)
-        )
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => {
+                matches!(msg_like.kind, MsgLikeKind::Message(_))
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether this event contains a message-like content.
+    ///
+    /// This definition matches the following event types:
+    ///
+    /// - `m.room.message`
+    /// - `m.sticker`
+    pub(crate) fn is_message_like(&self) -> bool {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => {
+                matches!(
+                    msg_like.kind,
+                    MsgLikeKind::Message(_) | MsgLikeKind::Sticker(_)
+                )
+            }
+            _ => false,
+        }
     }
 
     /// The media message of this event, if any.
     pub(crate) fn media_message(&self) -> Option<MediaMessage> {
         match self.item().content() {
-            TimelineItemContent::Message(msg) => MediaMessage::from_message(msg.msgtype()),
+            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => MediaMessage::from_message(message.msgtype()),
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -604,7 +630,12 @@ impl Event {
     /// The visual media message of this event, if any.
     pub(crate) fn visual_media_message(&self) -> Option<VisualMediaMessage> {
         match self.item().content() {
-            TimelineItemContent::Message(msg) => VisualMediaMessage::from_message(msg.msgtype()),
+            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => {
+                    VisualMediaMessage::from_message(message.msgtype())
+                }
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -617,22 +648,11 @@ impl Event {
         self.item().content().can_contain_at_room()
     }
 
-    /// Whether this is an `m.room.create` event.
-    pub(crate) fn is_room_create_event(&self) -> bool {
-        match self.item().content() {
-            TimelineItemContent::OtherState(other_state) => matches!(
-                other_state.content(),
-                AnyOtherFullStateEventContent::RoomCreate(_)
-            ),
-            _ => false,
-        }
-    }
-
     /// Get the ID of the event this event replies to, if any.
     pub(crate) fn reply_to_id(&self) -> Option<OwnedEventId> {
         match self.item().content() {
-            TimelineItemContent::Message(message) => {
-                message.in_reply_to().map(|d| d.event_id.clone())
+            TimelineItemContent::MsgLike(msg_like) => {
+                msg_like.in_reply_to.as_ref().map(|d| d.event_id.clone())
             }
             _ => None,
         }
@@ -643,7 +663,9 @@ impl Event {
     /// Returns `None(_)` if this event is not a reply.
     pub(crate) fn reply_to_event_content(&self) -> Option<TimelineDetails<Box<RepliedToEvent>>> {
         match self.item().content() {
-            TimelineItemContent::Message(message) => message.in_reply_to().map(|d| d.event.clone()),
+            TimelineItemContent::MsgLike(msg_like) => {
+                msg_like.in_reply_to.as_ref().map(|d| d.event.clone())
+            }
             _ => None,
         }
     }

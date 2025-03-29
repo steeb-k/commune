@@ -151,9 +151,9 @@ dependencies = [
 
 [[package]]
 name = "as_variant"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f38fa22307249f86fb7fad906fcae77f2564caeb56d7209103c551cd1cf4798f"
+checksum = "9dbc3a507a82b17ba0d98f6ce8fd6954ea0c8152e98009d36a40d8dcc8ce078a"
 
 [[package]]
 name = "ashpd"
@@ -2045,9 +2045,9 @@ dependencies = [
 
 [[package]]
 name = "gufo-exif"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca82b09b4055d19955579ac4d3fc9ead97392d616624863bd55af500d3232ff0"
+checksum = "1448d72e2458b35dd10c0f148ea913b38c61b649552b22a97fa836ec376189ff"
 dependencies = [
  "gufo-common",
  "thiserror 2.0.12",
@@ -2334,9 +2334,9 @@ dependencies = [
 
 [[package]]
 name = "icu_locid_transform_data"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdc8ff3388f852bede6b579ad4e978ab004f139284d7b28715f773507b946f6e"
+checksum = "7515e6d781098bf9f7205ab3fc7e9709d34554ae0b21ddbcb5febfa4bc7df11d"
 
 [[package]]
 name = "icu_normalizer"
@@ -2358,9 +2358,9 @@ dependencies = [
 
 [[package]]
 name = "icu_normalizer_data"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8cafbf7aa791e9b22bec55a167906f9e1215fd475cd22adfcf660e03e989516"
+checksum = "c5e8338228bdc8ab83303f16b797e177953730f601a96c25d10cb3ab0daa0cb7"
 
 [[package]]
 name = "icu_properties"
@@ -2379,9 +2379,9 @@ dependencies = [
 
 [[package]]
 name = "icu_properties_data"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67a8effbc3dd3e4ba1afa8ad918d5684b8868b3b26500753effea8d2eed19569"
+checksum = "85fb8799753b75aee8d2a21d7c14d9f38921b54b3dbda10f5a3c7a7b82dba5e2"
 
 [[package]]
 name = "icu_provider"
@@ -3006,7 +3006,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "anymap2",
  "aquamarine",
@@ -3063,7 +3063,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "as_variant",
  "async-trait",
@@ -3090,7 +3090,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "async-trait",
  "eyeball-im",
@@ -3113,7 +3113,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "aes",
  "aquamarine",
@@ -3154,7 +3154,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-indexeddb"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3182,7 +3182,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-qrcode"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "byteorder",
  "qrcode",
@@ -3194,7 +3194,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-sqlite"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "async-trait",
  "deadpool-sqlite",
@@ -3202,6 +3202,7 @@ dependencies = [
  "matrix-sdk-base",
  "matrix-sdk-crypto",
  "matrix-sdk-store-encryption",
+ "num_cpus",
  "rmp-serde",
  "ruma",
  "rusqlite",
@@ -3216,7 +3217,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-store-encryption"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "base64",
  "blake3",
@@ -3235,7 +3236,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-ui"
 version = "0.10.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=f8236a8b96ff685b23a80c6eb8c479c56f445174#f8236a8b96ff685b23a80c6eb8c479c56f445174"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=192cf0154a5182847e38a621549313d54400b6d8#192cf0154a5182847e38a621549313d54400b6d8"
 dependencies = [
  "as_variant",
  "async-once-cell",

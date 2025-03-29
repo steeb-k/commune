@@ -102,6 +102,7 @@ impl VirtualItem {
         let kind = match item {
             VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
             VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
+            VirtualTimelineItem::TimelineStart => VirtualItemKind::TimelineStart,
         };
 
         Self::new(timeline, kind, timeline_id)
@@ -112,6 +113,7 @@ impl VirtualItem {
         let kind = match item {
             VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
             VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
+            VirtualTimelineItem::TimelineStart => VirtualItemKind::TimelineStart,
         };
 
         self.set_kind(kind.boxed());
@@ -134,19 +136,5 @@ impl VirtualItem {
     /// Create a typing virtual item.
     pub(crate) fn typing(timeline: &Timeline) -> Self {
         Self::new(timeline, VirtualItemKind::Typing, "VirtualItemKind::Typing")
-    }
-
-    /// Create a timeline start virtual item.
-    pub(crate) fn timeline_start(timeline: &Timeline) -> Self {
-        Self::new(
-            timeline,
-            VirtualItemKind::TimelineStart,
-            "VirtualItemKind::TimelineStart",
-        )
-    }
-
-    /// Whether this is a timeline start virtual item.
-    pub(crate) fn is_timeline_start(&self) -> bool {
-        self.kind().0 == VirtualItemKind::TimelineStart
     }
 }
