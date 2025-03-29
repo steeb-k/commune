@@ -16,7 +16,7 @@ use ruma::{
 };
 use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 use url::Url;
 
 use super::{
@@ -31,7 +31,7 @@ use crate::{
     spawn, spawn_tokio,
     utils::{
         matrix::{self, ClientSetupError},
-        oauth, TokioDrop,
+        TokioDrop,
     },
     Application,
 };
@@ -60,8 +60,6 @@ pub struct BoxedClient(Client);
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
-
-    use async_once_cell::OnceCell as AsyncOnceCell;
 
     use super::*;
 
@@ -110,11 +108,6 @@ mod imp {
         ///
         /// Capped at `MISSED_SYNC_MAX_COUNT - 1`.
         missed_sync_count: Cell<u8>,
-        /// The OIDC authentication issuer, if any.
-        auth_issuer: AsyncOnceCell<Url>,
-        /// The account management URL of the OIDC authentication issuer, if
-        /// any.
-        account_management_url: AsyncOnceCell<Url>,
     }
 
     #[glib::object_subclass]
@@ -649,55 +642,6 @@ mod imp {
                 "The logged out session was cleaned up"
             );
         }
-
-        /// The OAuth 2.0 authorization provider, if any.
-        async fn auth_issuer(&self) -> Option<&Url> {
-            self.auth_issuer
-                .get_or_try_init(clone!(
-                    #[strong(rename_to = imp)]
-                    self,
-                    async move {
-                        let client = imp.client().clone();
-
-                        spawn_tokio!(
-                            async move { oauth::fetch_auth_issuer(&client).await.ok_or(()) }
-                        )
-                        .await
-                        .expect("task was not aborted")
-                    }
-                ))
-                .await
-                .ok()
-        }
-
-        /// The account management URL of the OAuth 2.0 authorization provider,
-        /// if any.
-        pub(super) async fn account_management_url(&self) -> Option<&Url> {
-            self.account_management_url
-                .get_or_try_init(clone!(
-                    #[strong(rename_to = imp)]
-                    self,
-                    async move {
-                        let auth_issuer = imp.auth_issuer().await.ok_or(())?.clone();
-
-                        let client = imp.client().clone();
-                        let result = spawn_tokio!(async move {
-                            oauth::discover_account_management_url(&client, auth_issuer).await
-                        })
-                        .await
-                        .expect("task was not aborted");
-
-                        result.map_err(|error| {
-                            warn!(
-                                session = imp.obj().session_id(),
-                                "Could not discover account management URL: {error}"
-                            );
-                        })
-                    }
-                ))
-                .await
-                .ok()
-        }
     }
 }
 
@@ -777,11 +721,6 @@ impl Session {
     /// The Matrix client.
     pub(crate) fn client(&self) -> Client {
         self.imp().client().clone()
-    }
-
-    /// The account management URL of the OIDC authentication issuer, if any.
-    pub(crate) async fn account_management_url(&self) -> Option<&Url> {
-        self.imp().account_management_url().await
     }
 
     /// Log out of this session.

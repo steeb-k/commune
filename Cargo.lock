@@ -1219,7 +1219,6 @@ dependencies = [
  "aperture",
  "ashpd",
  "assert_matches2",
- "async-once-cell",
  "cfg-if",
  "diff",
  "djb_hash",

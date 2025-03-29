@@ -9,7 +9,6 @@ pub mod macros;
 pub mod matrix;
 pub mod media;
 pub mod notifications;
-pub(crate) mod oauth;
 mod single_item_list_model;
 pub mod sourceview;
 pub mod string;

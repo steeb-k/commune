@@ -5,9 +5,9 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
+use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
 use ruma::{api::client::discovery::get_capabilities::Capabilities, OwnedMxcUri};
 use tracing::error;
-use url::Url;
 
 mod change_password_subpage;
 mod deactivate_account_subpage;
@@ -23,7 +23,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::FileInfo, oauth, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
+    utils::{media::FileInfo, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
 };
 
 mod imp {
@@ -166,7 +166,7 @@ mod imp {
             self.account_settings.set(account_settings);
 
             if let Some(account_settings) = account_settings {
-                account_settings.connect_account_management_url_changed(clone!(
+                account_settings.connect_account_management_url_builder_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -178,11 +178,12 @@ mod imp {
             self.update_capabilities();
         }
 
-        /// The account management URL of the authentication issuer, if any.
-        fn account_management_url(&self) -> Option<Url> {
+        /// The builder for the account management URL of the OAuth 2.0
+        /// authorization server, if any.
+        fn account_management_url_builder(&self) -> Option<AccountManagementUrlBuilder> {
             self.account_settings
                 .upgrade()
-                .and_then(|s| s.account_management_url())
+                .and_then(|s| s.account_management_url_builder())
         }
 
         /// Load the possible changes on the user account.
@@ -208,7 +209,7 @@ mod imp {
         /// Update the possible changes on the user account with the current
         /// state.
         fn update_capabilities(&self) {
-            let has_account_management_url = self.account_management_url().is_some();
+            let has_account_management_url = self.account_management_url_builder().is_some();
             let capabilities = self.capabilities.borrow();
 
             self.avatar
@@ -224,14 +225,16 @@ mod imp {
         /// Open the URL to manage the account.
         #[template_callback]
         async fn manage_account(&self) {
-            let Some(mut url) = self.account_management_url() else {
+            let Some(url_builder) = self.account_management_url_builder() else {
                 error!("Could not find open account management URL");
                 return;
             };
 
-            oauth::AccountManagementAction::Profile.add_to_account_management_url(&mut url);
+            let url = url_builder
+                .action(AccountManagementActionFull::Profile)
+                .build();
 
-            if let Err(error) = gtk::UriLauncher::new(url.as_ref())
+            if let Err(error) = gtk::UriLauncher::new(url.as_str())
                 .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
                 .await
             {

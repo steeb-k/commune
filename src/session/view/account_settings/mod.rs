@@ -4,8 +4,10 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use tracing::error;
-use url::Url;
+use matrix_sdk::authentication::oauth::{
+    error::OAuthDiscoveryError, AccountManagementUrlBuilder, OAuthError,
+};
+use tracing::{error, warn};
 
 mod general_page;
 mod notifications_page;
@@ -23,7 +25,7 @@ use self::{
 use crate::{
     components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
     session::model::Session,
-    spawn,
+    spawn, spawn_tokio,
     utils::BoundObjectWeakRef,
 };
 
@@ -68,9 +70,9 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: BoundObjectWeakRef<Session>,
-        /// The account management URL of the OIDC authentication issuer, if
-        /// any.
-        account_management_url: RefCell<Option<Url>>,
+        /// The builder for the account management URL of the OAuth 2.0
+        /// authorization server, if any.
+        account_management_url_builder: RefCell<Option<AccountManagementUrlBuilder>>,
     }
 
     #[glib::object_subclass]
@@ -133,8 +135,9 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for AccountSettings {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("account-management-url-changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![Signal::builder("account-management-url-builder-changed").build()]
+            });
             SIGNALS.as_ref()
         }
     }
@@ -152,7 +155,7 @@ mod imp {
             let obj = self.obj();
 
             self.session.disconnect_signals();
-            self.set_account_management_url(None);
+            self.set_account_management_url_builder(None);
 
             if let Some(session) = session {
                 let logged_out_handler = session.connect_logged_out(clone!(
@@ -177,11 +180,8 @@ mod imp {
                 spawn!(clone!(
                     #[weak(rename_to = imp)]
                     self,
-                    #[weak]
-                    session,
                     async move {
-                        let account_management_url = session.account_management_url().await;
-                        imp.set_account_management_url(account_management_url.cloned());
+                        imp.load_account_management_url_builder().await;
                     }
                 ));
             }
@@ -189,21 +189,47 @@ mod imp {
             obj.notify_session();
         }
 
-        /// Set the account management URL of the OIDC authentication issuer.
-        fn set_account_management_url(&self, url: Option<Url>) {
-            if *self.account_management_url.borrow() == url {
+        /// Load the builder for the account management URL of the OAuth 2.0
+        /// authorization server.
+        async fn load_account_management_url_builder(&self) {
+            let Some(session) = self.session.obj() else {
                 return;
-            }
+            };
 
-            self.account_management_url.replace(url);
-            self.obj()
-                .emit_by_name::<()>("account-management-url-changed", &[]);
+            let oauth = session.client().oauth();
+            let handle = spawn_tokio!(async move { oauth.account_management_url().await });
+
+            let url_builder = match handle.await.expect("task was not aborted") {
+                Ok(url_builder) => url_builder,
+                Err(error) => {
+                    // Ignore the error that says that OAuth 2.0 is not supported, it can happen.
+                    if !matches!(
+                        error,
+                        OAuthError::Discovery(OAuthDiscoveryError::NotSupported)
+                    ) {
+                        warn!("Could not fetch OAuth 2.0 account management URL: {error}");
+                    }
+                    None
+                }
+            };
+            self.set_account_management_url_builder(url_builder);
         }
 
-        /// The account management URL of the OIDC authentication issuer, if
-        /// any.
-        pub(super) fn account_management_url(&self) -> Option<Url> {
-            self.account_management_url.borrow().clone()
+        /// Set the builder for the account management URL of the OAuth 2.0
+        /// authorization server.
+        fn set_account_management_url_builder(
+            &self,
+            url_builder: Option<AccountManagementUrlBuilder>,
+        ) {
+            self.account_management_url_builder.replace(url_builder);
+            self.obj()
+                .emit_by_name::<()>("account-management-url-builder-changed", &[]);
+        }
+
+        /// The builder for the account management URL of the OAuth 2.0
+        /// authorization server, if any.
+        pub(super) fn account_management_url_builder(&self) -> Option<AccountManagementUrlBuilder> {
+            self.account_management_url_builder.borrow().clone()
         }
 
         /// Reload the sessions from the server.
@@ -229,9 +255,10 @@ impl AccountSettings {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The account management URL of the OIDC authentication issuer, if any.
-    fn account_management_url(&self) -> Option<Url> {
-        self.imp().account_management_url()
+    /// The builder for the account management URL of the OAuth 2.0
+    /// authorization server, if any.
+    fn account_management_url_builder(&self) -> Option<AccountManagementUrlBuilder> {
+        self.imp().account_management_url_builder()
     }
 
     /// Show the given subpage.
@@ -324,13 +351,14 @@ impl AccountSettings {
         self.push_subpage(&page);
     }
 
-    /// Connect to the signal emitted when the account management URL changed.
-    pub fn connect_account_management_url_changed<F: Fn(&Self) + 'static>(
+    /// Connect to the signal emitted when the builder for the OAuth 2.0 account
+    /// management URL changed.
+    pub fn connect_account_management_url_builder_changed<F: Fn(&Self) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
         self.connect_closure(
-            "account-management-url-changed",
+            "account-management-url-builder-changed",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);

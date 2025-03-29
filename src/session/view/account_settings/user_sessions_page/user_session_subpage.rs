@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
+use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
 use tracing::error;
-use url::Url;
 
 use super::AccountSettings;
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
     gettext_f,
     session::model::UserSession,
     toast,
-    utils::{oauth, template_callbacks::TemplateCallbacks, BoundConstructOnlyObject, BoundObject},
+    utils::{template_callbacks::TemplateCallbacks, BoundConstructOnlyObject, BoundObject},
 };
 
 mod imp {
@@ -118,7 +118,7 @@ mod imp {
 
         /// Set the ancestor [`AccountSettings`].
         fn set_account_settings(&self, account_settings: AccountSettings) {
-            let handler = account_settings.connect_account_management_url_changed(clone!(
+            let handler = account_settings.connect_account_management_url_builder_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
@@ -128,9 +128,10 @@ mod imp {
             self.account_settings.set(account_settings, vec![handler]);
         }
 
-        /// The account management URL of the authentication issuer, if any.
-        fn account_management_url(&self) -> Option<Url> {
-            self.account_settings.obj().account_management_url()
+        /// The builder for the account management URL of the OAuth 2.0
+        /// authorization server, if any.
+        fn account_management_url_builder(&self) -> Option<AccountManagementUrlBuilder> {
+            self.account_settings.obj().account_management_url_builder()
         }
 
         /// Update the visible disconnect button.
@@ -143,7 +144,7 @@ mod imp {
                 self.log_out_button.set_visible(true);
                 self.loading_disconnect_button.set_visible(false);
                 self.open_url_disconnect_button.set_visible(false);
-            } else if self.account_management_url().is_some() {
+            } else if self.account_management_url_builder().is_some() {
                 self.log_out_button.set_visible(false);
                 self.loading_disconnect_button.set_visible(false);
                 self.open_url_disconnect_button.set_visible(true);
@@ -193,15 +194,16 @@ mod imp {
             };
 
             let device_id = user_session.device_id_string().into();
-            let Some(mut url) = self.account_management_url() else {
-                error!("Could not find open account management URL");
+            let Some(url_builder) = self.account_management_url_builder() else {
+                error!("Could not find account management URL");
                 return;
             };
 
-            oauth::AccountManagementAction::SessionEnd { device_id }
-                .add_to_account_management_url(&mut url);
+            let url = url_builder
+                .action(AccountManagementActionFull::SessionEnd { device_id })
+                .build();
 
-            if let Err(error) = gtk::UriLauncher::new(url.as_ref())
+            if let Err(error) = gtk::UriLauncher::new(url.as_str())
                 .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
                 .await
             {
