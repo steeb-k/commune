@@ -499,7 +499,7 @@ impl UserSession {
                 if matches!(error, AuthError::UserCancelled) {
                     debug!("Deletion of user session {device_id} cancelled by user");
                 } else {
-                    error!("Could not delete user session {device_id}: {error:?}");
+                    error!("Could not delete user session {device_id}: {error}");
                 }
                 Err(error)
             }
