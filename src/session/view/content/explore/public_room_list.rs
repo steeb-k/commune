@@ -1,48 +1,41 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::{
-    api::client::directory::get_public_rooms_filtered::v3::{
-        Request as PublicRoomsRequest, Response as PublicRoomsResponse,
-    },
+use ruma::{
+    api::client::directory::get_public_rooms_filtered,
     assign,
-    directory::{Filter, RoomNetwork},
-    uint, ServerName,
+    directory::{Filter, RoomNetwork, RoomTypeFilter},
+    OwnedServerName,
 };
-use ruma::directory::RoomTypeFilter;
+use tokio::task::AbortHandle;
 use tracing::error;
 
-use super::{PublicRoom, Server};
-use crate::{session::model::Session, spawn, spawn_tokio};
+use super::{ExploreServer, PublicRoom};
+use crate::{session::model::Session, spawn, spawn_tokio, utils::LoadingState};
+
+/// The maximum size of a batch of public rooms.
+const PUBLIC_ROOMS_BATCH_SIZE: u32 = 20;
 
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        marker::PhantomData,
-    };
+    use std::cell::{Cell, RefCell};
 
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::PublicRoomList)]
     pub struct PublicRoomList {
-        pub list: RefCell<Vec<PublicRoom>>,
-        pub search_term: RefCell<Option<String>>,
-        pub network: RefCell<Option<String>>,
-        pub server: RefCell<Option<String>>,
-        pub next_batch: RefCell<Option<String>>,
-        pub request_sent: Cell<bool>,
-        pub total_room_count_estimate: Cell<Option<u64>>,
         /// The current session.
         #[property(get, construct_only)]
-        pub session: glib::WeakRef<Session>,
-        /// Whether the list is loading.
-        #[property(get = Self::loading)]
-        pub loading: PhantomData<bool>,
-        /// Whether the list is empty.
-        #[property(get = Self::empty)]
-        pub empty: PhantomData<bool>,
-        /// Whether all results for the current search were loaded.
-        #[property(get = Self::complete)]
-        pub complete: PhantomData<bool>,
+        session: glib::WeakRef<Session>,
+        /// The list of rooms.
+        list: RefCell<Vec<PublicRoom>>,
+        /// The current search.
+        search: RefCell<PublicRoomsSearch>,
+        /// The next batch to continue the search, if any.
+        next_batch: RefCell<Option<String>>,
+        /// The loading state of the list.
+        #[property(get, builder(LoadingState::default()))]
+        loading_state: Cell<LoadingState>,
+        /// The abort handle for the current request.
+        abort_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -68,25 +61,145 @@ mod imp {
             self.list
                 .borrow()
                 .get(position as usize)
-                .map(glib::object::Cast::upcast_ref::<glib::Object>)
                 .cloned()
+                .and_upcast()
         }
     }
 
     impl PublicRoomList {
-        /// Whether the list is loading.
-        fn loading(&self) -> bool {
-            self.request_sent.get() && self.list.borrow().is_empty()
+        /// Set the current search.
+        pub(super) fn set_search(&self, search: PublicRoomsSearch) {
+            if *self.search.borrow() == search {
+                return;
+            }
+
+            self.search.replace(search);
+
+            // Trigger a new search.
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.load(true).await;
+                }
+            ));
+        }
+
+        /// Set the loading state.
+        fn set_loading_state(&self, state: LoadingState) {
+            if self.loading_state.get() == state {
+                return;
+            }
+
+            self.loading_state.set(state);
+            self.obj().notify_loading_state();
         }
 
         /// Whether the list is empty.
-        fn empty(&self) -> bool {
-            !self.request_sent.get() && self.list.borrow().is_empty()
+        pub(super) fn is_empty(&self) -> bool {
+            self.list.borrow().is_empty()
         }
 
-        /// Whether all results for the current search were loaded.
-        fn complete(&self) -> bool {
-            self.next_batch.borrow().is_none()
+        /// Whether we can load more rooms with the current search.
+        pub(super) fn can_load_more(&self) -> bool {
+            self.loading_state.get() != LoadingState::Loading && self.next_batch.borrow().is_some()
+        }
+
+        /// Load rooms.
+        ///
+        /// If `clear` is `true`, we start a new search and replace the list of
+        /// rooms, otherwise we use the `next_batch` and add more rooms.
+        pub(super) async fn load(&self, clear: bool) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            // Only make a request if we can load more items or we want to replace the
+            // current list.
+            if !clear && !self.can_load_more() {
+                return;
+            }
+
+            if clear {
+                // Clear the list.
+                let removed = self.list.borrow().len();
+                self.list.borrow_mut().clear();
+                self.next_batch.take();
+
+                // Abort any ongoing request.
+                if let Some(handle) = self.abort_handle.take() {
+                    handle.abort();
+                }
+
+                self.obj().items_changed(0, removed as u32, 0);
+            }
+
+            self.set_loading_state(LoadingState::Loading);
+
+            let next_batch = self.next_batch.borrow().clone();
+            let search = self.search.borrow().clone();
+            let request = search.as_request(next_batch);
+
+            let client = session.client();
+            let handle = spawn_tokio!(async move { client.public_rooms_filtered(request).await });
+
+            self.abort_handle.replace(Some(handle.abort_handle()));
+
+            let Ok(result) = handle.await else {
+                // The request was aborted.
+                self.abort_handle.take();
+                return;
+            };
+
+            self.abort_handle.take();
+
+            if *self.search.borrow() != search {
+                // This is not the current search anymore, ignore the response.
+                return;
+            }
+
+            match result {
+                Ok(response) => self.add_rooms(&search, response),
+                Err(error) => {
+                    self.set_loading_state(LoadingState::Error);
+                    error!("Could not search public rooms: {error}");
+                }
+            }
+        }
+
+        /// Add the rooms from the given response to this list.
+        fn add_rooms(
+            &self,
+            search: &PublicRoomsSearch,
+            response: get_public_rooms_filtered::v3::Response,
+        ) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let room_list = session.room_list();
+
+            self.next_batch.replace(response.next_batch);
+
+            let (position, added) = {
+                let mut list = self.list.borrow_mut();
+                let position = list.len();
+                let added = response.chunk.len();
+
+                list.extend(
+                    response
+                        .chunk
+                        .into_iter()
+                        .map(|data| PublicRoom::new(&room_list, search.server.clone(), data)),
+                );
+
+                (position, added)
+            };
+
+            if added > 0 {
+                self.obj().items_changed(position as u32, 0, added as u32);
+            }
+            self.set_loading_state(LoadingState::Ready);
         }
     }
 }
@@ -102,183 +215,64 @@ impl PublicRoomList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Whether a request is in progress.
-    fn request_sent(&self) -> bool {
-        self.imp().request_sent.get()
-    }
-
-    /// Set whether a request is in progress.
-    fn set_request_sent(&self, request_sent: bool) {
-        self.imp().request_sent.set(request_sent);
-
-        self.notify_loading();
-        self.notify_empty();
-        self.notify_complete();
-    }
-
-    pub fn init(&self) {
-        // Initialize the list if it's not loading nor loaded.
-        if !self.request_sent() && self.imp().list.borrow().is_empty() {
-            self.load_public_rooms(true);
-        }
+    /// Whether the list is empty.
+    pub(crate) fn is_empty(&self) -> bool {
+        self.imp().is_empty()
     }
 
     /// Search the given term on the given server.
-    pub fn search(&self, search_term: Option<String>, server: &Server) {
-        let imp = self.imp();
-        let network = Some(server.network());
-        let server = server.server();
-
-        if *imp.search_term.borrow() == search_term
-            && *imp.server.borrow() == server
-            && *imp.network.borrow() == network
-        {
-            return;
-        }
-
-        imp.search_term.replace(search_term);
-        imp.server.replace(server);
-        imp.network.replace(network);
-        self.load_public_rooms(true);
+    pub(crate) fn search(&self, search_term: Option<String>, server: &ExploreServer) {
+        let search = PublicRoomsSearch {
+            search_term,
+            server: server.server().cloned(),
+            third_party_network: server.third_party_network(),
+        };
+        self.imp().set_search(search);
     }
 
-    fn handle_public_rooms_response(&self, response: PublicRoomsResponse) {
+    /// Load more rooms.
+    pub(crate) fn load_more(&self) {
         let imp = self.imp();
-        let session = self.session().unwrap();
-        let room_list = session.room_list();
 
-        imp.next_batch.replace(response.next_batch);
-        imp.total_room_count_estimate
-            .replace(response.total_room_count_estimate.map(Into::into));
+        if imp.can_load_more() {
+            spawn!(clone!(
+                #[weak]
+                imp,
+                async move { imp.load(false).await }
+            ));
+        }
+    }
+}
 
-        let (position, removed, added) = {
-            let mut list = imp.list.borrow_mut();
-            let position = list.len();
-            let added = response.chunk.len();
-            let server = imp.server.borrow().clone().unwrap_or_default();
-            let mut new_rooms = response
-                .chunk
-                .into_iter()
-                .map(|matrix_room| {
-                    let room = PublicRoom::new(&room_list, &server);
-                    room.set_matrix_public_room(matrix_room);
-                    room
-                })
-                .collect();
+/// Data about a search in the public rooms directory.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct PublicRoomsSearch {
+    /// The term to search.
+    search_term: Option<String>,
+    /// The server to search.
+    server: Option<OwnedServerName>,
+    /// The network to search.
+    third_party_network: Option<String>,
+}
 
-            let empty_row = list
-                .pop()
-                .unwrap_or_else(|| PublicRoom::new(&room_list, &server));
-            list.append(&mut new_rooms);
-
-            if !self.complete() {
-                list.push(empty_row);
-                if position == 0 {
-                    (position, 0, added + 1)
-                } else {
-                    (position - 1, 0, added)
-                }
-            } else if position == 0 {
-                (position, 0, added)
-            } else {
-                (position - 1, 1, added)
-            }
+impl PublicRoomsSearch {
+    /// Convert this `PublicRoomsSearch` to a request.
+    fn as_request(&self, next_batch: Option<String>) -> get_public_rooms_filtered::v3::Request {
+        let room_network = if let Some(third_party_network) = &self.third_party_network {
+            RoomNetwork::ThirdParty(third_party_network.clone())
+        } else {
+            RoomNetwork::Matrix
         };
 
-        if added > 0 {
-            self.items_changed(position as u32, removed, added as u32);
-        }
-        self.set_request_sent(false);
-    }
-
-    /// Whether this is the response for the latest request that was sent.
-    fn is_valid_response(
-        &self,
-        search_term: Option<&str>,
-        server: Option<&str>,
-        network: Option<&str>,
-    ) -> bool {
-        let imp = self.imp();
-        imp.search_term.borrow().as_deref() == search_term
-            && imp.server.borrow().as_deref() == server
-            && imp.network.borrow().as_deref() == network
-    }
-
-    pub fn load_public_rooms(&self, clear: bool) {
-        let imp = self.imp();
-
-        if self.request_sent() && !clear {
-            return;
-        }
-
-        if clear {
-            // Clear the previous list
-            let removed = imp.list.borrow().len();
-            imp.list.borrow_mut().clear();
-            let _ = imp.next_batch.take();
-            self.items_changed(0, removed as u32, 0);
-        }
-
-        self.set_request_sent(true);
-
-        let next_batch = imp.next_batch.borrow().clone();
-
-        if next_batch.is_none() && !clear {
-            return;
-        }
-
-        let client = self.session().unwrap().client();
-        let search_term = imp.search_term.borrow().clone();
-        let server = imp.server.borrow().clone();
-        let network = imp.network.borrow().clone();
-        let current_search_term = search_term.clone();
-        let current_server = server.clone();
-        let current_network = network.clone();
-
-        let handle = spawn_tokio!(async move {
-            let room_network = match network.as_deref() {
-                Some("matrix") => RoomNetwork::Matrix,
-                Some("all") => RoomNetwork::All,
-                Some(custom) => RoomNetwork::ThirdParty(custom.to_owned()),
-                _ => RoomNetwork::default(),
-            };
-            let server = server.and_then(|server| ServerName::parse(server).ok());
-
-            let request = assign!(PublicRoomsRequest::new(), {
-                limit: Some(uint!(20)),
-                since: next_batch,
-                room_network,
-                server,
-                filter: assign!(
-                    Filter::new(),
-                    { generic_search_term: search_term, room_types: vec![RoomTypeFilter::Default] }
-                ),
-            });
-            client.public_rooms_filtered(request).await
-        });
-
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                async move {
-                    // If the search term changed we ignore the response
-                    if obj.is_valid_response(
-                        current_search_term.as_deref(),
-                        current_server.as_deref(),
-                        current_network.as_deref(),
-                    ) {
-                        match handle.await.unwrap() {
-                            Ok(response) => obj.handle_public_rooms_response(response),
-                            Err(error) => {
-                                obj.set_request_sent(false);
-                                error!("Error loading public rooms: {error}");
-                            }
-                        }
-                    }
-                }
-            )
-        );
+        assign!( get_public_rooms_filtered::v3::Request::new(), {
+            limit: Some(PUBLIC_ROOMS_BATCH_SIZE.into()),
+            since: next_batch,
+            room_network,
+            server: self.server.clone(),
+            filter: assign!(
+                Filter::new(),
+                { generic_search_term: self.search_term.clone(), room_types: vec![RoomTypeFilter::Default] }
+            ),
+        })
     }
 }

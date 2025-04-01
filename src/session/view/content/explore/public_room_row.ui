@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentPublicRoomRow" parent="AdwBin">
+  <template class="PublicRoomRow" parent="AdwBin">
     <accessibility>
       <relation name="labelled-by">display_name</relation>
       <relation name="described-by">description</relation>
@@ -59,6 +59,7 @@
                 <child>
                   <object class="LoadingButton" id="button">
                     <property name="valign">center</property>
+                    <signal name="clicked" handler="join_or_view" swapped="yes"/>
                     <style>
                       <class name="padded-button"/>
                     </style>

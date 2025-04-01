@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
+use indexmap::IndexSet;
+use ruma::OwnedServerName;
 use serde::{Deserialize, Serialize};
 
 use super::SidebarSectionName;
@@ -10,8 +12,8 @@ use crate::Application;
 #[boxed_type(name = "StoredSessionSettings")]
 pub struct StoredSessionSettings {
     /// Custom servers to explore.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    explore_custom_servers: Vec<String>,
+    #[serde(default, skip_serializing_if = "IndexSet::is_empty")]
+    explore_custom_servers: IndexSet<OwnedServerName>,
 
     /// Whether notifications are enabled for this session.
     #[serde(
@@ -178,7 +180,7 @@ impl SessionSettings {
     }
 
     /// Custom servers to explore.
-    pub fn explore_custom_servers(&self) -> Vec<String> {
+    pub(crate) fn explore_custom_servers(&self) -> IndexSet<OwnedServerName> {
         self.imp()
             .stored_settings
             .borrow()
@@ -187,7 +189,7 @@ impl SessionSettings {
     }
 
     /// Set the custom servers to explore.
-    pub fn set_explore_custom_servers(&self, servers: Vec<String>) {
+    pub fn set_explore_custom_servers(&self, servers: IndexSet<OwnedServerName>) {
         if self.explore_custom_servers() == servers {
             return;
         }

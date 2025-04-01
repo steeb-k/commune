@@ -1,12 +1,13 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
 use ruma::ServerName;
+use tracing::error;
 
-use super::{ExploreServerRow, Server, ServerList};
+use super::{ExploreServer, ExploreServerList, ExploreServerRow};
 use crate::session::model::Session;
 
 mod imp {
-    use std::cell::RefCell;
+    use std::marker::PhantomData;
 
     use glib::subclass::InitializingObject;
 
@@ -16,37 +17,49 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/servers_popover.ui")]
     #[properties(wrapper_type = super::ExploreServersPopover)]
     pub struct ExploreServersPopover {
+        #[template_child]
+        pub(super) listbox: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        server_entry: TemplateChild<gtk::Entry>,
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The server list.
         #[property(get)]
-        pub server_list: RefCell<Option<ServerList>>,
-        #[template_child]
-        pub listbox: TemplateChild<gtk::ListBox>,
-        #[template_child]
-        pub server_entry: TemplateChild<gtk::Entry>,
+        server_list: ExploreServerList,
+        /// The selected server, if any.
+        #[property(get = Self::selected_server)]
+        selected_server: PhantomData<Option<ExploreServer>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for ExploreServersPopover {
-        const NAME: &'static str = "ContentExploreServersPopover";
+        const NAME: &'static str = "ExploreServersPopover";
         type Type = super::ExploreServersPopover;
         type ParentType = gtk::Popover;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.install_action("explore-servers-popover.add-server", None, |obj, _, _| {
-                obj.add_server();
+                obj.imp().add_server();
             });
+
             klass.install_action(
                 "explore-servers-popover.remove-server",
                 Some(&String::static_variant_type()),
                 |obj, _, variant| {
-                    if let Some(variant) = variant.and_then(String::from_variant) {
-                        obj.remove_server(&variant);
-                    }
+                    let Some(value) = variant.and_then(String::from_variant) else {
+                        error!("Could not remove server without a server name");
+                        return;
+                    };
+                    let Ok(server_name) = ServerName::parse(&value) else {
+                        error!("Could not remove server with an invalid server name");
+                        return;
+                    };
+
+                    obj.imp().remove_server(&server_name);
                 },
             );
         }
@@ -60,26 +73,24 @@ mod imp {
     impl ObjectImpl for ExploreServersPopover {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
-            self.server_entry.connect_changed(clone!(
-                #[weak]
-                obj,
-                move |_| obj.update_add_server_state()
-            ));
-            self.server_entry.connect_activate(clone!(
-                #[weak]
-                obj,
-                move |_| obj.add_server()
-            ));
+            self.listbox.bind_model(Some(&self.server_list), |obj| {
+                let Some(server) = obj.downcast_ref::<ExploreServer>() else {
+                    error!("explore servers GtkListBox did not receive an ExploreServer");
+                    return adw::Bin::new().upcast();
+                };
 
-            obj.update_add_server_state();
+                ExploreServerRow::new(server).upcast()
+            });
+
+            self.update_add_server_state();
         }
     }
 
     impl WidgetImpl for ExploreServersPopover {}
     impl PopoverImpl for ExploreServersPopover {}
 
+    #[gtk::template_callbacks]
     impl ExploreServersPopover {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
@@ -89,6 +100,98 @@ mod imp {
 
             self.session.set(session);
             self.obj().notify_session();
+        }
+
+        /// Load the list of servers, if needed.
+        pub(super) fn load(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            if self.server_list.session().is_some_and(|s| s == session) {
+                // Nothing to do.
+                return;
+            }
+
+            self.server_list.set_session(&session);
+
+            // Select the first server by default.
+            self.listbox
+                .select_row(self.listbox.row_at_index(0).as_ref());
+        }
+
+        /// Handle when the selected server has changed.
+        #[template_callback]
+        fn selected_server_changed(&self) {
+            self.obj().notify_selected_server();
+        }
+
+        /// Handle when the user selected a server.
+        #[template_callback]
+        fn server_activated(&self) {
+            self.obj().popdown();
+        }
+
+        /// The server that is currently selected, if any.
+        fn selected_server(&self) -> Option<ExploreServer> {
+            self.listbox
+                .selected_row()
+                .and_downcast_ref()
+                .and_then(ExploreServerRow::server)
+        }
+
+        /// Whether the server currently in the text entry can be added.
+        fn can_add_server(&self) -> bool {
+            let Ok(server_name) = ServerName::parse(self.server_entry.text()) else {
+                return false;
+            };
+
+            // Don't allow duplicates
+            !self.server_list.contains_matrix_server(&server_name)
+        }
+
+        /// Update the state of the action to add a server according to the
+        /// current state.
+        #[template_callback]
+        fn update_add_server_state(&self) {
+            self.obj()
+                .action_set_enabled("explore-servers-popover.add-server", self.can_add_server());
+        }
+
+        /// Add the server currently in the text entry.
+        #[template_callback]
+        fn add_server(&self) {
+            if !self.can_add_server() {
+                return;
+            }
+
+            let Ok(server_name) = ServerName::parse(self.server_entry.text()) else {
+                return;
+            };
+            self.server_entry.set_text("");
+
+            self.server_list.add_custom_server(server_name);
+
+            // Select the new server, it should be the last row in the list.
+            let index = i32::try_from(self.server_list.n_items()).unwrap_or(i32::MAX);
+            self.listbox
+                .select_row(self.listbox.row_at_index(index - 1).as_ref());
+        }
+
+        /// Remove the given server.
+        fn remove_server(&self, server_name: &ServerName) {
+            // If the selected server is gonna be removed, select the first one.
+            if self
+                .selected_server()
+                .as_ref()
+                .and_then(|server| server.server())
+                .is_some_and(|s| s == server_name)
+            {
+                self.listbox
+                    .select_row(self.listbox.row_at_index(0).as_ref());
+            }
+
+            self.server_list.remove_custom_server(server_name);
         }
     }
 }
@@ -104,103 +207,8 @@ impl ExploreServersPopover {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Initialize the list of servers.
-    pub fn init(&self) {
-        let Some(session) = &self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let server_list = ServerList::new(session);
-
-        imp.listbox.bind_model(Some(&server_list), |obj| {
-            ExploreServerRow::new(obj.downcast_ref::<Server>().unwrap()).upcast()
-        });
-
-        // Select the first server by default.
-        imp.listbox.select_row(imp.listbox.row_at_index(0).as_ref());
-
-        imp.server_list.replace(Some(server_list));
-        self.notify_server_list();
-    }
-
-    /// The server that is currently selected, if any.
-    pub fn selected_server(&self) -> Option<Server> {
-        self.imp()
-            .listbox
-            .selected_row()
-            .and_downcast::<ExploreServerRow>()
-            .and_then(|row| row.server())
-    }
-
-    pub fn connect_selected_server_changed<F: Fn(&Self, Option<Server>) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.imp().listbox.connect_row_selected(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |_, row| {
-                f(
-                    &obj,
-                    row.and_then(|row| row.downcast_ref::<ExploreServerRow>())
-                        .and_then(ExploreServerRow::server),
-                );
-            }
-        ))
-    }
-
-    /// Whether the server currently in the text entry can be added.
-    fn can_add_server(&self) -> bool {
-        let server = self.imp().server_entry.text();
-        ServerName::parse(server.as_str()).is_ok()
-            // Don't allow duplicates
-            && self
-                .server_list()
-                .filter(|l| !l.contains_matrix_server(&server))
-                .is_some()
-    }
-
-    /// Update the state of the action to add a server according to the current
-    /// state.
-    fn update_add_server_state(&self) {
-        self.action_set_enabled("explore-servers-popover.add-server", self.can_add_server());
-    }
-
-    /// Add the server currently in the text entry.
-    fn add_server(&self) {
-        if !self.can_add_server() {
-            return;
-        }
-        let Some(server_list) = self.server_list() else {
-            return;
-        };
-
-        let imp = self.imp();
-
-        let server = imp.server_entry.text();
-        imp.server_entry.set_text("");
-
-        server_list.add_custom_matrix_server(server.into());
-
-        let index = i32::try_from(server_list.n_items()).unwrap_or(i32::MAX);
-        let row = imp.listbox.row_at_index(index - 1);
-        imp.listbox.select_row(row.as_ref());
-    }
-
-    /// Remove the given server.
-    fn remove_server(&self, server: &str) {
-        let Some(server_list) = self.server_list() else {
-            return;
-        };
-
-        let imp = self.imp();
-
-        // If the selected server is gonna be removed, select the first one.
-        if self.selected_server().and_then(|s| s.server()).as_deref() == Some(server) {
-            imp.listbox.select_row(imp.listbox.row_at_index(0).as_ref());
-        }
-
-        server_list.remove_custom_matrix_server(server);
+    /// Load the list of servers, if needed.
+    pub(crate) fn load(&self) {
+        self.imp().load();
     }
 }

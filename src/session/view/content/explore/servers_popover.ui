@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentExploreServersPopover" parent="GtkPopover">
+  <template class="ExploreServersPopover" parent="GtkPopover">
     <property name="has-arrow">false</property>
     <property name="position">bottom</property>
     <property name="width-request">260</property>
@@ -22,6 +22,8 @@
                   <property name="label" translatable="yes">Server List</property>
                 </accessibility>
                 <property name="selection-mode">browse</property>
+                <signal name="row-selected" handler="selected_server_changed" swapped="yes"/>
+                <signal name="row-activated" handler="server_activated" swapped="yes"/>
               </object>
             </child>
             <child>
@@ -36,6 +38,8 @@
                   <object class="GtkEntry" id="server_entry">
                     <property name="hexpand">true</property>
                     <property name="placeholder-text" translatable="yes">Add Server</property>
+                    <signal name="changed" handler="update_add_server_state" swapped="yes"/>
+                    <signal name="activate" handler="add_server" swapped="yes"/>
                   </object>
                 </child>
                 <child>

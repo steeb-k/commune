@@ -1,6 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::server::Server;
+use super::ExploreServer;
+use crate::utils::template_callbacks::TemplateCallbacks;
 
 mod imp {
     use std::cell::RefCell;
@@ -13,11 +14,11 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/server_row.ui")]
     #[properties(wrapper_type = super::ExploreServerRow)]
     pub struct ExploreServerRow {
-        /// The server displayed by this row.
-        #[property(get, construct_only)]
-        pub server: RefCell<Option<Server>>,
         #[template_child]
-        pub remove_button: TemplateChild<gtk::Button>,
+        remove_button: TemplateChild<gtk::Button>,
+        /// The server displayed by this row.
+        #[property(get, set = Self::set_server, construct_only)]
+        server: RefCell<Option<ExploreServer>>,
     }
 
     #[glib::object_subclass]
@@ -28,6 +29,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -36,20 +38,23 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for ExploreServerRow {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            if let Some(server) = self.obj().server().and_then(|s| s.server()) {
-                self.remove_button.set_action_target(Some(&server));
-                self.remove_button
-                    .set_action_name(Some("explore-servers-popover.remove-server"));
-            }
-        }
-    }
+    impl ObjectImpl for ExploreServerRow {}
 
     impl WidgetImpl for ExploreServerRow {}
     impl ListBoxRowImpl for ExploreServerRow {}
+
+    impl ExploreServerRow {
+        /// Set the server displayed by this row.
+        fn set_server(&self, server: ExploreServer) {
+            if let Some(server_string) = server.server_string() {
+                self.remove_button.set_action_target(Some(server_string));
+                self.remove_button
+                    .set_action_name(Some("explore-servers-popover.remove-server"));
+            }
+
+            self.server.replace(Some(server));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -59,7 +64,7 @@ glib::wrapper! {
 }
 
 impl ExploreServerRow {
-    pub fn new(server: &Server) -> Self {
+    pub fn new(server: &ExploreServer) -> Self {
         glib::Object::builder().property("server", server).build()
     }
 }
