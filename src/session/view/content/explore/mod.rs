@@ -35,7 +35,9 @@ mod imp {
         #[template_child]
         pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
-        stack: TemplateChild<gtk::Stack>,
+        second_top_bar: TemplateChild<adw::Bin>,
+        #[template_child]
+        search_clamp: TemplateChild<adw::Clamp>,
         #[template_child]
         search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
@@ -43,9 +45,11 @@ mod imp {
         #[template_child]
         servers_popover: TemplateChild<ExploreServersPopover>,
         #[template_child]
-        listview: TemplateChild<gtk::ListView>,
+        stack: TemplateChild<gtk::Stack>,
         #[template_child]
         scrolled_window: TemplateChild<gtk::ScrolledWindow>,
+        #[template_child]
+        listview: TemplateChild<gtk::ListView>,
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify)]
         session: glib::WeakRef<Session>,
@@ -61,7 +65,7 @@ mod imp {
     impl ObjectSubclass for Explore {
         const NAME: &'static str = "ContentExplore";
         type Type = super::Explore;
-        type ParentType = adw::Bin;
+        type ParentType = adw::BreakpointBin;
 
         fn class_init(klass: &mut Self::Class) {
             PublicRoom::ensure_type();
@@ -147,7 +151,7 @@ mod imp {
         }
     }
 
-    impl BinImpl for Explore {}
+    impl BreakpointBinImpl for Explore {}
 
     #[gtk::template_callbacks]
     impl Explore {
@@ -209,6 +213,52 @@ mod imp {
                 model.append(self.end_items());
                 model
             })
+        }
+
+        /// Update the header when the view is narrow.
+        #[template_callback]
+        fn switch_to_narrow_mode(&self) {
+            if self
+                .header_bar
+                .title_widget()
+                .is_some_and(|widget| widget == *self.servers_button)
+            {
+                // We are already in narrow mode, nothing to do.
+                return;
+            }
+
+            // Unparent the children.
+            self.header_bar.remove(&*self.search_clamp);
+            self.header_bar.remove(&*self.servers_button);
+
+            // In narrow mode, the servers button is in the header bar, and the search entry
+            // is in the second top bar.
+            self.header_bar
+                .set_title_widget(Some(&*self.servers_button));
+            self.second_top_bar.set_child(Some(&*self.search_clamp));
+            self.second_top_bar.set_visible(true);
+        }
+
+        /// Update the header when the view is wide.
+        #[template_callback]
+        fn switch_to_wide_mode(&self) {
+            if self
+                .header_bar
+                .title_widget()
+                .is_some_and(|widget| widget == *self.search_clamp)
+            {
+                // We are already be in wide mode, nothing to do.
+                return;
+            }
+
+            // Unparent the children.
+            self.header_bar.remove(&*self.servers_button);
+            self.second_top_bar.set_child(None::<&gtk::Widget>);
+            self.second_top_bar.set_visible(false);
+
+            // In wide mode, both widgets are in the header bar.
+            self.header_bar.set_title_widget(Some(&*self.search_clamp));
+            self.header_bar.pack_end(&*self.servers_button);
         }
 
         /// Make sure that the view is initialized.
@@ -288,7 +338,7 @@ mod imp {
 glib::wrapper! {
     /// A view to explore rooms in the public directory of homeservers.
     pub struct Explore(ObjectSubclass<imp::Explore>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::BreakpointBin, @implements gtk::Accessible;
 }
 
 impl Explore {

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentExplore" parent="AdwBin">
+  <template class="ContentExplore" parent="AdwBreakpointBin">
     <property name="vexpand">True</property>
     <property name="hexpand">True</property>
+    <property name="width-request">360</property>
+    <property name="height-request">294</property>
     <style>
       <class name="view"/>
     </style>
-    <child>
+    <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar" id="header_bar">
             <child type="title">
-              <object class="AdwClamp">
+              <object class="AdwClamp" id="search_clamp">
                 <property name="maximum-size">400</property>
                 <property name="hexpand">True</property>
                 <property name="child">
@@ -39,6 +41,14 @@
                 </property>
               </object>
             </child>
+          </object>
+        </child>
+        <child type="top">
+          <object class="AdwBin" id="second_top_bar">
+            <property name="visible">False</property>
+            <style>
+              <class name="padded-top-bar"/>
+            </style>
           </object>
         </child>
         <property name="content">
@@ -138,6 +148,13 @@
             </child>
           </object>
         </property>
+      </object>
+    </property>
+    <child>
+      <object class="AdwBreakpoint">
+        <condition>max-width: 700px</condition>
+        <signal name="apply" handler="switch_to_narrow_mode" swapped="yes"/>
+        <signal name="unapply" handler="switch_to_wide_mode" swapped="yes"/>
       </object>
     </child>
   </template>
