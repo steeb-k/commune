@@ -235,7 +235,7 @@ mod imp {
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
                     let error_message = gettext_f(
-                        "Could not disconnect device “{device_name}”",
+                        "Could not disconnect session “{device_name}”",
                         &[("device_name", &device_name)],
                     );
                     toast!(obj, error_message);
