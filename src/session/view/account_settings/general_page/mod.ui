@@ -122,7 +122,7 @@
           </object>
         </child>
         <child>
-          <object class="AdwButtonRow">
+          <object class="AdwButtonRow" id="deactivate_account_button">
             <style>
               <class name="destructive-action"/>
             </style>

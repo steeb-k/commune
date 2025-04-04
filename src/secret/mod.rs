@@ -3,7 +3,7 @@
 use std::{fmt, path::PathBuf};
 
 use gtk::glib;
-use matrix_sdk::{SessionMeta, SessionTokens};
+use matrix_sdk::{authentication::oauth::ClientId, Client, SessionMeta, SessionTokens};
 use rand::{
     distr::{Alphanumeric, SampleString},
     rng,
@@ -107,6 +107,8 @@ pub struct StoredSession {
     ///
     /// This is the name of the directories where the session data lives.
     pub id: String,
+    /// The unique identifier of the client with the homeserver.
+    pub client_id: Option<ClientId>,
     /// The passphrase used to encrypt the local databases.
     pub passphrase: Zeroizing<String>,
 }
@@ -123,17 +125,11 @@ impl fmt::Debug for StoredSession {
 }
 
 impl StoredSession {
-    /// Construct a `StoredSession` from the given SDK user session data.
+    /// Construct a `StoredSession` from the session of the given Matrix client.
     ///
     /// Returns an error if we failed to generate a unique session ID for the
     /// new session.
-    pub(crate) async fn new(
-        homeserver: Url,
-        meta: SessionMeta,
-        tokens: SessionTokens,
-    ) -> Result<Self, ClientSetupError> {
-        let SessionMeta { user_id, device_id } = meta;
-
+    pub(crate) async fn new(client: &Client) -> Result<Self, ClientSetupError> {
         // Generate a unique random session ID.
         let mut id = None;
         let data_path = data_dir_path(DataType::Persistent);
@@ -154,6 +150,17 @@ impl StoredSession {
             return Err(ClientSetupError::NoSessionId);
         };
 
+        let homeserver = client.homeserver();
+        let SessionMeta { user_id, device_id } = client
+            .session_meta()
+            .expect("logged-in client should have session meta")
+            .clone();
+        let tokens = client
+            .session_tokens()
+            .expect("logged-in client should have session tokens")
+            .clone();
+        let client_id = client.oauth().client_id().cloned();
+
         let passphrase = Alphanumeric.sample_string(&mut rng(), PASSPHRASE_LENGTH);
 
         let session = Self {
@@ -161,6 +168,7 @@ impl StoredSession {
             user_id,
             device_id,
             id,
+            client_id,
             passphrase: passphrase.into(),
         };
 

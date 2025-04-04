@@ -85,7 +85,7 @@
                                       <class name="destructive-action"/>
                                     </style>
                                     <property name="title" translatable="yes">Continue</property>
-                                    <signal name="activated" handler="logout" swapped="yes"/>
+                                    <signal name="activated" handler="log_out" swapped="yes"/>
                                   </object>
                                 </child>
                               </object>
@@ -140,7 +140,7 @@
                                       <class name="destructive-action"/>
                                     </style>
                                     <property name="title" translatable="yes">Try Again</property>
-                                    <signal name="activated" handler="logout" swapped="yes"/>
+                                    <signal name="activated" handler="log_out" swapped="yes"/>
                                   </object>
                                 </child>
                               </object>

@@ -5,11 +5,14 @@ use std::{borrow::Cow, fmt, str::FromStr};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
-    authentication::matrix::MatrixSession,
+    authentication::{
+        matrix::MatrixSession,
+        oauth::{OAuthSession, UserSession},
+    },
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
-    Client, ClientBuildError, SessionMeta, SessionTokens,
+    AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
 };
 use ruma::{
     events::{
@@ -298,12 +301,19 @@ pub async fn client_with_stored_session(
         user_id,
         device_id,
         passphrase,
+        client_id,
         ..
     } = session;
 
-    let session_data = MatrixSession {
-        meta: SessionMeta { user_id, device_id },
-        tokens,
+    let meta = SessionMeta { user_id, device_id };
+    let session_data: AuthSession = if let Some(client_id) = client_id {
+        OAuthSession {
+            user: UserSession { meta, tokens },
+            client_id,
+        }
+        .into()
+    } else {
+        MatrixSession { meta, tokens }.into()
     };
 
     let encryption_settings = EncryptionSettings {

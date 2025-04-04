@@ -4,6 +4,7 @@
 use std::{collections::HashMap, path::Path};
 
 use gettextrs::gettext;
+use matrix_sdk::authentication::oauth::ClientId;
 use oo7::{Item, Keyring};
 use ruma::UserId;
 use serde::Deserialize;
@@ -40,6 +41,8 @@ mod keys {
     pub(super) const DB_PATH: &str = "db-path";
     /// The attribute for the session ID.
     pub(super) const ID: &str = "id";
+    /// The attribute for the client ID.
+    pub(super) const CLIENT_ID: &str = "client-id";
 }
 
 /// Secret API under Linux.
@@ -193,7 +196,7 @@ async fn log_out_session(session: StoredSession, access_token: String) {
     spawn_tokio!(async move {
         match matrix::client_with_stored_session(session, tokens).await {
             Ok(client) => {
-                if let Err(error) = client.matrix_auth().logout().await {
+                if let Err(error) = client.logout().await {
                     error!("Could not log out session: {error}");
                 }
             }
@@ -219,6 +222,7 @@ impl StoredSession {
         let homeserver = parse_attribute(&attributes, keys::HOMESERVER, Url::parse)?;
         let user_id = parse_attribute(&attributes, keys::USER, |s| UserId::parse(s))?;
         let device_id = get_attribute(&attributes, keys::DEVICE_ID)?.as_str().into();
+
         let id = if version <= 5 {
             let string = get_attribute(&attributes, keys::DB_PATH)?;
             Path::new(string)
@@ -230,6 +234,9 @@ impl StoredSession {
         } else {
             get_attribute(&attributes, keys::ID)?.clone()
         };
+
+        let client_id = attributes.get(keys::CLIENT_ID).cloned().map(ClientId::new);
+
         let (passphrase, access_token) = match item.secret().await {
             Ok(secret) => {
                 if version <= 6 {
@@ -275,6 +282,7 @@ impl StoredSession {
             user_id,
             device_id,
             id,
+            client_id,
             passphrase: passphrase.into(),
         };
 
@@ -292,7 +300,7 @@ impl StoredSession {
 
     /// Get the attributes from `self`.
     fn attributes(&self) -> HashMap<&'static str, String> {
-        HashMap::from([
+        let mut attributes = HashMap::from([
             (keys::HOMESERVER, self.homeserver.to_string()),
             (keys::USER, self.user_id.to_string()),
             (keys::DEVICE_ID, self.device_id.to_string()),
@@ -300,7 +308,13 @@ impl StoredSession {
             (keys::VERSION, CURRENT_VERSION.to_string()),
             (keys::PROFILE, PROFILE.to_string()),
             (keys::XDG_SCHEMA, APP_ID.to_owned()),
-        ])
+        ]);
+
+        if let Some(client_id) = &self.client_id {
+            attributes.insert(keys::CLIENT_ID, client_id.as_str().to_owned());
+        }
+
+        attributes
     }
 
     /// Migrate this session to the current version.

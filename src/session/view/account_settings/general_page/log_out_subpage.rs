@@ -131,7 +131,7 @@ impl LogOutSubpage {
 
     /// Log out the current session.
     #[template_callback]
-    async fn logout(&self) {
+    async fn log_out(&self) {
         let Some(session) = self.session() else {
             return;
         };

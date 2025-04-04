@@ -8,6 +8,7 @@ use super::AccountSettings;
 use crate::{
     components::{ActionButton, ActionState, AuthError, LoadingButtonRow},
     gettext_f,
+    prelude::*,
     session::model::UserSession,
     toast,
     utils::{template_callbacks::TemplateCallbacks, BoundConstructOnlyObject, BoundObject},
@@ -149,10 +150,19 @@ mod imp {
                 self.log_out_button.set_visible(true);
                 self.loading_disconnect_button.set_visible(false);
                 self.open_url_disconnect_button.set_visible(false);
-            } else if self.account_management_url_builder().is_some() {
+                return;
+            }
+
+            let Some(session) = user_session.session() else {
+                return;
+            };
+
+            if session.uses_oauth_api() {
+                let has_account_management_url = self.account_management_url_builder().is_some();
                 self.log_out_button.set_visible(false);
                 self.loading_disconnect_button.set_visible(false);
-                self.open_url_disconnect_button.set_visible(true);
+                self.open_url_disconnect_button
+                    .set_visible(has_account_management_url);
             } else {
                 self.log_out_button.set_visible(false);
                 self.loading_disconnect_button.set_visible(true);

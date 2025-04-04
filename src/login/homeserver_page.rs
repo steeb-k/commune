@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 use matrix_sdk::{
     config::RequestConfig, sanitize_server_name, Client, ClientBuildError, ClientBuilder,
 };
@@ -124,12 +124,17 @@ mod imp {
             self.update_next_state();
         }
 
+        /// The current text from the homeserver entry.
+        pub(super) fn homeserver(&self) -> glib::GString {
+            self.homeserver_entry.text()
+        }
+
         /// Whether the current state allows to go to the next step.
         fn can_go_next(&self) -> bool {
             let Some(login) = self.login.obj() else {
                 return false;
             };
-            let homeserver = self.homeserver_entry.text();
+            let homeserver = self.homeserver();
 
             if login.autodiscovery() {
                 sanitize_server_name(homeserver.as_str()).is_ok()
@@ -144,14 +149,9 @@ mod imp {
             self.next_button.set_sensitive(self.can_go_next());
         }
 
-        /// Fetch the login details of the homeserver.
-        #[template_callback]
-        async fn fetch_homeserver_details(&self) {
-            self.check_homeserver().await;
-        }
-
         /// Check if the homeserver that was entered is valid.
-        pub(super) async fn check_homeserver(&self) {
+        #[template_callback]
+        async fn check_homeserver(&self) {
             if !self.can_go_next() {
                 return;
             }
@@ -164,27 +164,15 @@ mod imp {
             login.freeze();
 
             let autodiscovery = login.autodiscovery();
-
-            let res = if autodiscovery {
-                self.discover_homeserver().await
-            } else {
-                self.detect_homeserver().await
-            };
+            let res = self.build_client(autodiscovery).await;
 
             match res {
                 Ok(client) => {
-                    let server_name = autodiscovery
-                        .then(|| self.homeserver_entry.text())
-                        .and_then(|s| sanitize_server_name(&s).ok());
-
-                    login.set_domain(server_name);
                     login.set_client(Some(client.clone()));
-
-                    self.homeserver_login_types(client).await;
+                    self.discover_login_api(client).await;
                 }
                 Err(error) => {
-                    let obj = self.obj();
-                    toast!(obj, error.to_user_facing());
+                    self.abort_on_error(&error.to_user_facing());
                 }
             }
 
@@ -192,9 +180,21 @@ mod imp {
             login.unfreeze();
         }
 
-        /// Try to discover the homeserver.
-        async fn discover_homeserver(&self) -> Result<Client, ClientBuildError> {
-            let homeserver = self.homeserver_entry.text();
+        /// Try to build a client with the current homeserver.
+        pub(super) async fn build_client(
+            &self,
+            autodiscovery: bool,
+        ) -> Result<Client, ClientBuildError> {
+            if autodiscovery {
+                self.build_client_with_autodiscovery().await
+            } else {
+                self.build_client_with_url().await
+            }
+        }
+
+        /// Try to build a client by using homeserver autodiscovery.
+        async fn build_client_with_autodiscovery(&self) -> Result<Client, ClientBuildError> {
+            let homeserver = self.homeserver();
             let handle = spawn_tokio!(async move {
                 Self::client_builder()
                     .server_name_or_homeserver_url(homeserver)
@@ -211,9 +211,9 @@ mod imp {
             }
         }
 
-        /// Check if the URL points to a homeserver.
-        async fn detect_homeserver(&self) -> Result<Client, ClientBuildError> {
-            let homeserver = self.homeserver_entry.text();
+        /// Try to build a client by using the homeserver's URL.
+        async fn build_client_with_url(&self) -> Result<Client, ClientBuildError> {
+            let homeserver = self.homeserver();
             spawn_tokio!(async move {
                 let client = Self::client_builder()
                     .respect_login_well_known(false)
@@ -221,9 +221,9 @@ mod imp {
                     .build()
                     .await?;
 
-                // This method calls the `GET /versions` endpoint if it was not called
-                // previously.
-                client.unstable_features().await?;
+                // Call the `GET /versions` endpoint to make sure that the URL belongs to a
+                // Matrix homeserver.
+                client.server_versions().await?;
 
                 Ok(client)
             })
@@ -231,26 +231,28 @@ mod imp {
             .expect("task was not aborted")
         }
 
-        /// Fetch the login types supported by the homeserver.
-        async fn homeserver_login_types(&self, client: Client) {
+        /// Discover the login API supported by the homeserver.
+        async fn discover_login_api(&self, client: Client) {
             let Some(login) = self.login.obj() else {
                 return;
             };
 
-            let handle = spawn_tokio!(async move { client.matrix_auth().get_login_types().await });
+            // Check if the server supports the OAuth 2.0 API.
+            let oauth = client.oauth();
+            let handle = spawn_tokio!(async move { oauth.server_metadata().await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(res) => {
-                    login.set_login_types(res.flows);
-                    login.show_login_page();
+                Ok(_) => {
+                    login.init_oauth_login().await;
                 }
                 Err(error) => {
-                    warn!("Could not get available login types: {error}");
-                    let obj = self.obj();
-                    toast!(obj, "Could not get available login types");
-
-                    // Drop the client because it is bound to the homeserver.
-                    login.drop_client();
+                    if error.is_not_supported() {
+                        // Fallback to the Matrix native API.
+                        login.init_matrix_login().await;
+                    } else {
+                        warn!("Could not get authorization server metadata: {error}");
+                        self.abort_on_error(&gettext("Could not set up login"));
+                    }
                 }
             }
         }
@@ -258,6 +260,17 @@ mod imp {
         /// Construct a [`ClientBuilder`] with the proper configuration.
         fn client_builder() -> ClientBuilder {
             Client::builder().request_config(RequestConfig::new().retry_limit(2))
+        }
+
+        /// Show the given error and abort the current login.
+        fn abort_on_error(&self, error: &str) {
+            let obj = self.obj();
+            toast!(obj, error);
+
+            // Drop the client because it is bound to the homeserver.
+            if let Some(login) = self.login.obj() {
+                login.drop_client();
+            }
         }
     }
 }
@@ -273,13 +286,21 @@ impl LoginHomeserverPage {
         glib::Object::new()
     }
 
+    /// The current text from the homeserver entry.
+    pub(super) fn homeserver(&self) -> glib::GString {
+        self.imp().homeserver()
+    }
+
     /// Reset this page.
-    pub(crate) fn clean(&self) {
+    pub(super) fn clean(&self) {
         self.imp().clean();
     }
 
-    /// Check if the homeserver that was entered is valid.
-    pub(crate) async fn check_homeserver(&self) {
-        self.imp().check_homeserver().await;
+    /// Try to build a client with the current homeserver.
+    pub(super) async fn build_client(
+        &self,
+        autodiscovery: bool,
+    ) -> Result<Client, ClientBuildError> {
+        self.imp().build_client(autodiscovery).await
     }
 }

@@ -1,4 +1,5 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
+use matrix_sdk::authentication::oauth::ClientId;
 use ruma::{OwnedDeviceId, OwnedUserId};
 use url::Url;
 
@@ -115,6 +116,16 @@ pub trait SessionInfoExt: 'static {
     /// The Matrix session's homeserver.
     fn homeserver(&self) -> &Url {
         &self.info().homeserver
+    }
+
+    /// The OAuth 2.0 client ID, if any.
+    fn client_id(&self) -> Option<&ClientId> {
+        self.info().client_id.as_ref()
+    }
+
+    /// Whether this session uses the OAuth 2.0 API.
+    fn uses_oauth_api(&self) -> bool {
+        self.client_id().is_some()
     }
 
     /// The Matrix session's device ID.

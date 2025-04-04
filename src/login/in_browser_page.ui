@@ -87,7 +87,7 @@
                               </object>
                             </property>
                             <property name="halign">center</property>
-                            <signal name="clicked" handler="login_with_sso" swapped="yes" />
+                            <signal name="clicked" handler="launch_url" swapped="yes" />
                           </object>
                         </child>
                       </object>

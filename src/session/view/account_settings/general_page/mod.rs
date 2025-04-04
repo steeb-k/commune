@@ -55,6 +55,8 @@ mod imp {
         pub user_id: TemplateChild<CopyableRow>,
         #[template_child]
         pub session_id: TemplateChild<CopyableRow>,
+        #[template_child]
+        deactivate_account_button: TemplateChild<adw::ButtonRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -209,6 +211,11 @@ mod imp {
         /// Update the possible changes on the user account with the current
         /// state.
         fn update_capabilities(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let uses_oauth_api = session.uses_oauth_api();
             let has_account_management_url = self.account_management_url_builder().is_some();
             let capabilities = self.capabilities.borrow();
 
@@ -220,6 +227,8 @@ mod imp {
                 .set_visible(!has_account_management_url && capabilities.change_password.enabled);
             self.manage_account_group
                 .set_visible(has_account_management_url);
+            self.deactivate_account_button
+                .set_visible(!uses_oauth_api || has_account_management_url);
         }
 
         /// Open the URL to manage the account.

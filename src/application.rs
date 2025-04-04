@@ -20,6 +20,10 @@ use crate::{
 
 /// The key for the current session setting.
 pub(crate) const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
+/// The name of the application.
+pub(crate) const APP_NAME: &str = "Fractal";
+/// The URL of the homepage of the application.
+pub(crate) const APP_HOMEPAGE_URL: &str = "https://gitlab.gnome.org/World/fractal/";
 
 mod imp {
     use std::cell::Cell;
@@ -231,11 +235,11 @@ mod imp {
         /// Show the dialog with information about the application.
         fn show_about_dialog(&self) {
             let dialog = adw::AboutDialog::builder()
-                .application_name("Fractal")
+                .application_name(APP_NAME)
                 .application_icon(config::APP_ID)
                 .developer_name(gettext("The Fractal Team"))
                 .license_type(gtk::License::Gpl30)
-                .website("https://gitlab.gnome.org/World/fractal/")
+                .website(APP_HOMEPAGE_URL)
                 .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
                 .support_url("https://matrix.to/#/#fractal:gnome.org")
                 .version(config::VERSION)

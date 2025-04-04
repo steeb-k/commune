@@ -60,11 +60,6 @@
                               <object class="GtkBox">
                                 <property name="spacing">6</property>
                                 <property name="halign">center</property>
-                                <binding name="visible">
-                                  <lookup name="autodiscovery">
-                                    <lookup name="login">LoginMethodPage</lookup>
-                                  </lookup>
-                                </binding>
                                 <property name="tooltip-text" translatable="yes">Homeserver URL</property>
                                 <child>
                                   <object class="GtkImage">
@@ -77,11 +72,6 @@
                                     <style>
                                       <class name="body"/>
                                     </style>
-                                    <binding name="label">
-                                      <lookup name="homeserver-url-string">
-                                        <lookup name="login">LoginMethodPage</lookup>
-                                      </lookup>
-                                    </binding>
                                     <property name="ellipsize">end</property>
                                   </object>
                                 </child>

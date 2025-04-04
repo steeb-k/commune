@@ -1,16 +1,19 @@
+use std::net::{Ipv4Addr, Ipv6Addr};
+
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gio, glib,
-    glib::{clone, closure_local},
-    CompositeTemplate,
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use matrix_sdk::{
+    authentication::oauth::{
+        registration::{ApplicationType, ClientMetadata, Localized, OAuthGrantType},
+        ClientRegistrationData,
+    },
+    sanitize_server_name,
+    utils::local_server::{LocalServerBuilder, LocalServerRedirectHandle, LocalServerResponse},
+    Client,
 };
-use matrix_sdk::Client;
-use ruma::{
-    api::client::session::{get_login_types::v3::LoginType, login},
-    OwnedServerName,
-};
-use tracing::warn;
+use ruma::{api::client::session::get_login_types::v3::LoginType, serde::Raw, OwnedServerName};
+use tracing::{error, warn};
 use url::Url;
 
 mod advanced_dialog;
@@ -22,13 +25,17 @@ mod session_setup_view;
 mod sso_idp_button;
 
 use self::{
-    advanced_dialog::LoginAdvancedDialog, greeter::Greeter, homeserver_page::LoginHomeserverPage,
-    in_browser_page::LoginInBrowserPage, method_page::LoginMethodPage,
+    advanced_dialog::LoginAdvancedDialog,
+    greeter::Greeter,
+    homeserver_page::LoginHomeserverPage,
+    in_browser_page::{LoginInBrowserData, LoginInBrowserPage},
+    method_page::LoginMethodPage,
     session_setup_view::SessionSetupView,
 };
 use crate::{
-    components::OfflineBanner, prelude::*, secret::Secret, session::model::Session, spawn, toast,
-    Application, Window, RUNTIME, SETTINGS_KEY_CURRENT_SESSION,
+    components::OfflineBanner, prelude::*, secret::Secret, session::model::Session, spawn,
+    spawn_tokio, toast, Application, Window, APP_HOMEPAGE_URL, APP_NAME, RUNTIME,
+    SETTINGS_KEY_CURRENT_SESSION,
 };
 
 /// A page of the login stack.
@@ -52,13 +59,9 @@ enum LoginPage {
 }
 
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        marker::PhantomData,
-        sync::LazyLock,
-    };
+    use std::cell::{Cell, RefCell};
 
-    use glib::subclass::{InitializingObject, Signal};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
@@ -81,18 +84,6 @@ mod imp {
         /// Whether auto-discovery is enabled.
         #[property(get, set = Self::set_autodiscovery, construct, explicit_notify, default = true)]
         autodiscovery: Cell<bool>,
-        /// The login types supported by the homeserver.
-        login_types: RefCell<Vec<LoginType>>,
-        /// The domain of the homeserver to log into.
-        domain: RefCell<Option<OwnedServerName>>,
-        /// The domain of the homeserver to log into, as a string.
-        #[property(get = Self::domain_string)]
-        domain_string: PhantomData<Option<String>>,
-        /// The URL of the homeserver to log into.
-        homeserver_url: RefCell<Option<Url>>,
-        /// The URL of the homeserver to log into, as a string.
-        #[property(get = Self::homeserver_url_string)]
-        homeserver_url_string: PhantomData<Option<String>>,
         /// The Matrix client used to log in.
         client: RefCell<Option<Client>>,
         /// The session that was just logged in.
@@ -118,8 +109,8 @@ mod imp {
                 "login.sso",
                 Some(&Option::<String>::static_variant_type()),
                 |obj, _, variant| async move {
-                    let sso_idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
-                    obj.imp().show_in_browser_page(sso_idp_id, false);
+                    let idp = variant.and_then(|v| v.get::<Option<String>>()).flatten();
+                    obj.imp().init_matrix_sso_login(idp).await;
                 },
             );
 
@@ -135,21 +126,9 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Login {
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![
-                    // The login types changed.
-                    Signal::builder("login-types-changed").build(),
-                ]
-            });
-            SIGNALS.as_ref()
-        }
-
         fn constructed(&self) {
-            let obj = self.obj();
-            obj.action_set_enabled("login.next", false);
-
             self.parent_constructed();
+            let obj = self.obj();
 
             let monitor = gio::NetworkMonitor::default();
             monitor.connect_network_changed(clone!(
@@ -255,19 +234,15 @@ mod imp {
             }
 
             // If the client was dropped, try to recreate it.
-            self.homeserver_page.check_homeserver().await;
-            if let Some(client) = self.client.borrow().clone() {
-                return Some(client);
-            }
+            let autodiscovery = self.autodiscovery.get();
+            let client = self.homeserver_page.build_client(autodiscovery).await.ok();
+            self.set_client(client.clone());
 
-            None
+            client
         }
 
         /// Set the Matrix client.
         pub(super) fn set_client(&self, client: Option<Client>) {
-            let homeserver = client.as_ref().map(Client::homeserver);
-
-            self.set_homeserver_url(homeserver);
             self.client.replace(client);
         }
 
@@ -289,63 +264,6 @@ mod imp {
             }
         }
 
-        /// Set the domain of the homeserver to log into.
-        pub(super) fn set_domain(&self, domain: Option<OwnedServerName>) {
-            if *self.domain.borrow() == domain {
-                return;
-            }
-
-            self.domain.replace(domain);
-            self.obj().notify_domain_string();
-        }
-
-        /// The domain of the homeserver to log into.
-        ///
-        /// If autodiscovery is enabled, this is the server name, otherwise,
-        /// this is the prettified homeserver URL.
-        fn domain_string(&self) -> Option<String> {
-            if self.autodiscovery.get() {
-                self.domain.borrow().clone().map(Into::into)
-            } else {
-                self.homeserver_url_string()
-            }
-        }
-
-        /// The pretty-formatted URL of the homeserver to log into.
-        fn homeserver_url_string(&self) -> Option<String> {
-            self.homeserver_url
-                .borrow()
-                .as_ref()
-                .map(|url| url.as_ref().trim_end_matches('/').to_owned())
-        }
-
-        /// Set the URL of the homeserver to log into.
-        fn set_homeserver_url(&self, homeserver: Option<Url>) {
-            if *self.homeserver_url.borrow() == homeserver {
-                return;
-            }
-
-            self.homeserver_url.replace(homeserver);
-
-            let obj = self.obj();
-            obj.notify_homeserver_url_string();
-
-            if !self.autodiscovery.get() {
-                obj.notify_domain_string();
-            }
-        }
-
-        /// Set the login types supported by the homeserver.
-        pub(super) fn set_login_types(&self, types: Vec<LoginType>) {
-            self.login_types.replace(types);
-            self.obj().emit_by_name::<()>("login-types-changed", &[]);
-        }
-
-        /// The login types supported by the homeserver.
-        pub(super) fn login_types(&self) -> Vec<LoginType> {
-            self.login_types.borrow().clone()
-        }
-
         /// Open the login advanced dialog.
         async fn open_advanced_dialog(&self) {
             let obj = self.obj();
@@ -357,49 +275,150 @@ mod imp {
             dialog.run_future(&*obj).await;
         }
 
-        /// Show the appropriate login page given the current login types.
-        pub(super) fn show_login_page(&self) {
-            let mut oidc_compatibility = false;
-            let mut supports_password = false;
+        /// Prepare to log in via the OAuth 2.0 API.
+        pub(super) async fn init_oauth_login(&self) {
+            let Some(client) = self.client.borrow().clone() else {
+                return;
+            };
 
-            for login_type in self.login_types.borrow().iter() {
-                match login_type {
-                    LoginType::Sso(sso) if sso.delegated_oidc_compatibility => {
-                        oidc_compatibility = true;
-                        // We do not care about password support at this point.
-                        break;
-                    }
-                    LoginType::Password(_) => {
-                        supports_password = true;
-                    }
-                    _ => {}
+            let Ok((redirect_uri, local_server_handle)) = self.spawn_local_server().await else {
+                return;
+            };
+
+            let oauth = client.oauth();
+            let handle = spawn_tokio!(async move {
+                oauth
+                    .login(redirect_uri, None, Some(client_registration_data()))
+                    .build()
+                    .await
+            });
+
+            let authorization_data = match handle.await.expect("task was not aborted") {
+                Ok(authorization_data) => authorization_data,
+                Err(error) => {
+                    warn!("Could not construct OAuth 2.0 authorization URL: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not set up login"));
+                    return;
                 }
-            }
+            };
 
-            if oidc_compatibility || !supports_password {
-                self.show_in_browser_page(None, oidc_compatibility);
+            self.show_in_browser_page(
+                local_server_handle,
+                LoginInBrowserData::Oauth(authorization_data),
+            );
+        }
+
+        /// Prepare to log in via the Matrix native API.
+        pub(super) async fn init_matrix_login(&self) {
+            let Some(client) = self.client.borrow().clone() else {
+                return;
+            };
+
+            let matrix_auth = client.matrix_auth();
+            let handle = spawn_tokio!(async move { matrix_auth.get_login_types().await });
+
+            let login_types = match handle.await.expect("task was not aborted") {
+                Ok(response) => response.flows,
+                Err(error) => {
+                    warn!("Could not get available Matrix login types: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not set up login"));
+                    return;
+                }
+            };
+
+            let supports_password = login_types
+                .iter()
+                .any(|login_type| matches!(login_type, LoginType::Password(_)));
+
+            if supports_password {
+                let server_name = self
+                    .autodiscovery
+                    .get()
+                    .then(|| self.homeserver_page.homeserver())
+                    .and_then(|s| sanitize_server_name(&s).ok());
+
+                self.show_method_page(&client.homeserver(), server_name.as_ref(), login_types);
             } else {
-                self.navigation.push_by_tag(LoginPage::Method.as_ref());
+                self.init_matrix_sso_login(None).await;
             }
         }
 
-        /// Show the page to log in with the browser with the given parameters.
-        fn show_in_browser_page(&self, sso_idp_id: Option<String>, oidc_compatibility: bool) {
-            self.in_browser_page.set_sso_idp_id(sso_idp_id);
-            self.in_browser_page
-                .set_oidc_compatibility(oidc_compatibility);
+        /// Prepare to log in via the Matrix SSO API.
+        pub(super) async fn init_matrix_sso_login(&self, idp: Option<String>) {
+            let Some(client) = self.client.borrow().clone() else {
+                return;
+            };
 
+            let Ok((redirect_uri, local_server_handle)) = self.spawn_local_server().await else {
+                return;
+            };
+
+            let matrix_auth = client.matrix_auth();
+            let handle = spawn_tokio!(async move {
+                matrix_auth
+                    .get_sso_login_url(redirect_uri.as_str(), idp.as_deref())
+                    .await
+            });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(url) => {
+                    let url = Url::parse(&url).expect("Matrix SSO URL should be a valid URL");
+                    self.show_in_browser_page(local_server_handle, LoginInBrowserData::Matrix(url));
+                }
+                Err(error) => {
+                    warn!("Could not build Matrix SSO URL: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not set up login"));
+                }
+            }
+        }
+
+        /// Spawn a local server for listening to redirects.
+        async fn spawn_local_server(&self) -> Result<(Url, LocalServerRedirectHandle), ()> {
+            spawn_tokio!(async move {
+                LocalServerBuilder::new()
+                    .response(local_server_landing_page())
+                    .spawn()
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                warn!("Could not spawn local server: {error}");
+                let obj = self.obj();
+                toast!(obj, gettext("Could not set up login"));
+            })
+        }
+
+        /// Show the page to chose a login method with the given data.
+        fn show_method_page(
+            &self,
+            homeserver: &Url,
+            server_name: Option<&OwnedServerName>,
+            login_types: Vec<LoginType>,
+        ) {
+            self.method_page
+                .update(homeserver, server_name, login_types);
+            self.navigation.push_by_tag(LoginPage::Method.as_ref());
+        }
+
+        /// Show the page to log in with the browser with the given data.
+        fn show_in_browser_page(
+            &self,
+            local_server_handle: LocalServerRedirectHandle,
+            data: LoginInBrowserData,
+        ) {
+            self.in_browser_page.set_up(local_server_handle, data);
             self.navigation.push_by_tag(LoginPage::InBrowser.as_ref());
         }
 
-        /// Handle the given response after successfully logging in.
-        pub(super) async fn handle_login_response(&self, response: login::v3::Response) {
-            let client = self.client().await.expect("client was constructed");
-            // The homeserver could have changed with the login response so get it from the
-            // Client.
-            let homeserver = client.homeserver();
+        /// Create the session after a successful login.
+        pub(super) async fn create_session(&self) {
+            let client = self.client().await.expect("client should be constructed");
 
-            match Session::create(homeserver, (&response).into()).await {
+            match Session::create(&client).await {
                 Ok(session) => {
                     self.init_session(session).await;
                 }
@@ -468,9 +487,6 @@ mod imp {
 
             // Clean data.
             self.set_autodiscovery(true);
-            self.set_login_types(vec![]);
-            self.set_domain(None);
-            self.set_homeserver_url(None);
             self.drop_client();
             self.drop_session();
 
@@ -517,31 +533,6 @@ impl Login {
         self.imp().drop_client();
     }
 
-    /// Set the domain of the homeserver to log into.
-    fn set_domain(&self, domain: Option<OwnedServerName>) {
-        self.imp().set_domain(domain);
-    }
-
-    /// Set the login types supported by the homeserver.
-    fn set_login_types(&self, types: Vec<LoginType>) {
-        self.imp().set_login_types(types);
-    }
-
-    /// The login types supported by the homeserver.
-    fn login_types(&self) -> Vec<LoginType> {
-        self.imp().login_types()
-    }
-
-    /// Handle the given response after successfully logging in.
-    async fn handle_login_response(&self, response: login::v3::Response) {
-        self.imp().handle_login_response(response).await;
-    }
-
-    /// Show the appropriate login screen given the current login types.
-    fn show_login_page(&self) {
-        self.imp().show_login_page();
-    }
-
     /// Freeze the login screen.
     fn freeze(&self) {
         self.imp().freeze();
@@ -552,17 +543,151 @@ impl Login {
         self.imp().unfreeze();
     }
 
-    /// Connect to the signal emitted when the login types changed.
-    pub fn connect_login_types_changed<F: Fn(&Self) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "login-types-changed",
-            true,
-            closure_local!(move |obj: Self| {
-                f(&obj);
-            }),
-        )
+    /// Prepare to log in via the OAuth 2.0 API.
+    async fn init_oauth_login(&self) {
+        self.imp().init_oauth_login().await;
     }
+
+    /// Prepare to log in via the Matrix native API.
+    async fn init_matrix_login(&self) {
+        self.imp().init_matrix_login().await;
+    }
+
+    /// Create the session after a successful login.
+    async fn create_session(&self) {
+        self.imp().create_session().await;
+    }
+}
+
+/// Client registration data for the OAuth 2.0 API.
+fn client_registration_data() -> ClientRegistrationData {
+    // Register the IPv4 and IPv6 localhost APIs as we use a local server for the
+    // redirection.
+    let ipv4_localhost_uri = Url::parse(&format!("http://{}/", Ipv4Addr::LOCALHOST))
+        .expect("IPv4 localhost address should be a valid URL");
+    let ipv6_localhost_uri = Url::parse(&format!("http://[{}]/", Ipv6Addr::LOCALHOST))
+        .expect("IPv6 localhost address should be a valid URL");
+
+    let client_uri =
+        Url::parse(APP_HOMEPAGE_URL).expect("application homepage URL should be a valid URL");
+
+    let mut client_metadata = ClientMetadata::new(
+        ApplicationType::Native,
+        vec![OAuthGrantType::AuthorizationCode {
+            redirect_uris: vec![ipv4_localhost_uri, ipv6_localhost_uri],
+        }],
+        Localized::new(client_uri, None),
+    );
+    client_metadata.client_name = Some(Localized::new(APP_NAME.to_owned(), None));
+
+    Raw::new(&client_metadata)
+        .expect("client metadata should serialize to JSON successfully")
+        .into()
+}
+
+/// The landing page, after the user performed the authentication and is
+/// redirected to the local server.
+fn local_server_landing_page() -> LocalServerResponse {
+    let title = gettext("Authorization Completed");
+    let message = gettext(
+        "The authorization step is complete. You can close this page and go back to Fractal.",
+    );
+    let icon = svg_icon().unwrap_or_default();
+
+    let css = "
+        /* Add support for light and dark schemes. */
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            /* Make sure that the page takes all the visible height. */
+            height: 100vh;
+
+            /* Cancel default margin in some browsers. */
+            margin: 0;
+
+            /* Apply the same colors as libadwaita. */
+            color: light-dark(RGB(0 0 6 / 80%), #ffffff);
+            background-color: light-dark(#ffffff, #1d1d20);
+        }
+
+        .content {
+            /* Center the content in the page. */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+
+            /* It looks better if the content is not absolutely vertically
+             * centered, so we cheat by reducing the height of the container.
+             */
+            height: 80%;
+
+            /* Use the GNOME default font if possible.
+             * Since Adwaita Sans is based on Inter, use it as a fallback.
+             */
+            font-family: \"Adwaita Sans\", Inter, sans-serif;
+
+            /* Add padding to have space around the text when the window is
+             * narrow.
+             */
+            padding: 12px;
+        }
+        ";
+    let html = format!(
+        "\
+        <!doctype html>
+        <html>
+            <head>
+                <meta charset=\"utf-8\">
+                <title>{APP_NAME} - {title}</title>
+                <style>{css}</style>
+            </head>
+            <body>
+                <div class=\"content\">
+                    {icon}
+                    <h1>{title}</h1>
+                    <p>{message}</p>
+                </div>
+            </body>
+        </html>
+        "
+    );
+
+    LocalServerResponse::Html(html)
+}
+
+/// Get the application SVG icon, ready to be embedded in HTML code.
+///
+/// Returns `None` if it failed to be imported.
+fn svg_icon() -> Option<String> {
+    // Load the icon from the application resources.
+    let Ok(bytes) = gio::resources_lookup_data(
+        "/org/gnome/Fractal/icons/scalable/apps/org.gnome.Fractal.svg",
+        gio::ResourceLookupFlags::NONE,
+    ) else {
+        error!("Could not find application icon in GResources");
+        return None;
+    };
+
+    // Convert the bytes to a string, since it should be SVG.
+    let Ok(icon) = String::from_utf8(bytes.to_vec()) else {
+        error!("Could not parse application icon as a UTF-8 string");
+        return None;
+    };
+
+    // Remove the XML prologue, to inline the SVG directly into the HTML.
+    let Some(stripped_icon) = icon
+        .trim()
+        .strip_prefix(r#"<?xml version="1.0" encoding="UTF-8"?>"#)
+    else {
+        error!("Could not strip XML prologue of application icon");
+        return None;
+    };
+
+    // Wrap the SVG into a div that is hidden in the accessibility tree, since the
+    // icon is only here for presentation purposes.
+    Some(format!(r#"<div aria-hidden="true">{stripped_icon}</div>"#))
 }

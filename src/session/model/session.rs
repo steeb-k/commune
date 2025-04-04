@@ -4,8 +4,7 @@ use futures_util::{lock::Mutex, StreamExt};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
-    authentication::matrix::MatrixSession, config::SyncSettings, media::MediaRetentionPolicy,
-    sync::SyncResponse, Client, SessionChange,
+    config::SyncSettings, media::MediaRetentionPolicy, sync::SyncResponse, Client, SessionChange,
 };
 use ruma::{
     api::client::{
@@ -17,7 +16,6 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
-use url::Url;
 
 use super::{
     IgnoredUsers, Notifications, RoomList, SessionSecurity, SessionSettings, SidebarItemList,
@@ -386,6 +384,10 @@ mod imp {
                             if let Some(obj) = obj_weak.upgrade() {
                                 match change {
                                     SessionChange::UnknownToken { .. } => {
+                                        info!(
+                                            session = obj.session_id(),
+                                            "The access token is invalid, cleaning up the session…"
+                                        );
                                         obj.imp().clean_up().await;
                                     }
                                     SessionChange::TokensRefreshed => {
@@ -689,12 +691,9 @@ impl Session {
             .build())
     }
 
-    /// Create a new session after login.
-    pub(crate) async fn create(
-        homeserver: Url,
-        data: MatrixSession,
-    ) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::new(homeserver, data.meta, data.tokens).await?;
+    /// Create a new session from the session of the given Matrix client.
+    pub(crate) async fn create(client: &Client) -> Result<Self, ClientSetupError> {
+        let stored_session = StoredSession::new(client).await?;
         let settings = Application::default()
             .session_list()
             .settings()
@@ -731,10 +730,10 @@ impl Session {
         );
 
         let client = self.client();
-        let handle = spawn_tokio!(async move { client.matrix_auth().logout().await });
+        let handle = spawn_tokio!(async move { client.logout().await });
 
         match handle.await.expect("task was not aborted") {
-            Ok(_) => {
+            Ok(()) => {
                 self.imp().clean_up().await;
                 Ok(())
             }

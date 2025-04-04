@@ -1,13 +1,12 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, glib, glib::clone, CompositeTemplate};
-use ruma::api::client::session::get_login_types::v3::LoginType;
+use gtk::{self, glib, CompositeTemplate};
+use ruma::{api::client::session::get_login_types::v3::LoginType, OwnedServerName};
 use tracing::warn;
+use url::Url;
 
 use super::{sso_idp_button::SsoIdpButton, Login};
-use crate::{
-    components::LoadingButton, gettext_f, prelude::*, spawn_tokio, toast, utils::BoundObjectWeakRef,
-};
+use crate::{components::LoadingButton, gettext_f, prelude::*, spawn_tokio, toast};
 
 mod imp {
     use std::cell::RefCell;
@@ -23,6 +22,8 @@ mod imp {
         #[template_child]
         title: TemplateChild<gtk::Label>,
         #[template_child]
+        homeserver_url: TemplateChild<gtk::Label>,
+        #[template_child]
         username_entry: TemplateChild<adw::EntryRow>,
         #[template_child]
         password_entry: TemplateChild<adw::PasswordEntryRow>,
@@ -34,8 +35,8 @@ mod imp {
         #[template_child]
         next_button: TemplateChild<LoadingButton>,
         /// The parent `Login` object.
-        #[property(get, set = Self::set_login, nullable)]
-        login: BoundObjectWeakRef<Login>,
+        #[property(get, set, nullable)]
+        login: glib::WeakRef<Login>,
     }
 
     #[glib::object_subclass]
@@ -71,35 +72,6 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl LoginMethodPage {
-        /// Set the parent `Login` object.
-        fn set_login(&self, login: Option<&Login>) {
-            self.login.disconnect_signals();
-
-            if let Some(login) = login {
-                let domain_handler = login.connect_domain_string_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_domain_name();
-                    }
-                ));
-                let login_types_handler = login.connect_login_types_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_sso();
-                    }
-                ));
-
-                self.login
-                    .set(login, vec![domain_handler, login_types_handler]);
-            }
-
-            self.update_domain_name();
-            self.update_sso();
-            self.update_next_state();
-        }
-
         /// The username entered by the user.
         fn username(&self) -> glib::GString {
             self.username_entry.text()
@@ -110,35 +82,33 @@ mod imp {
             self.password_entry.text()
         }
 
-        /// Update the domain name displayed in the title.
-        fn update_domain_name(&self) {
-            let Some(login) = self.login.obj() else {
-                return;
-            };
-
-            let title = &self.title;
-            if let Some(domain) = login.domain_string() {
-                title.set_markup(&gettext_f(
+        /// Update the domain name and URL displayed in the title.
+        pub(super) fn update_title(
+            &self,
+            homeserver_url: &Url,
+            server_name: Option<&OwnedServerName>,
+        ) {
+            let title = if let Some(server_name) = server_name {
+                gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
                     "Log in to {domain_name}",
                     &[(
                         "domain_name",
-                        &format!("<span segment=\"word\">{domain}</span>"),
+                        &format!("<span segment=\"word\">{server_name}</span>"),
                     )],
-                ));
+                )
             } else {
-                title.set_markup(&gettext("Log in"));
-            }
+                gettext("Log in")
+            };
+            self.title.set_markup(&title);
+
+            let homeserver_url = homeserver_url.as_str().trim_end_matches('/');
+            self.homeserver_url.set_label(homeserver_url);
         }
 
         /// Update the SSO group.
-        fn update_sso(&self) {
-            let Some(login) = self.login.obj() else {
-                return;
-            };
-
-            let login_types = login.login_types();
+        pub(super) fn update_sso(&self, login_types: Vec<LoginType>) {
             let Some(sso_login) = login_types.into_iter().find_map(|t| match t {
                 LoginType::Sso(sso) => Some(sso),
                 _ => None,
@@ -188,7 +158,7 @@ mod imp {
 
         /// Update the state of the "Next" button.
         #[template_callback]
-        fn update_next_state(&self) {
+        pub(super) fn update_next_state(&self) {
             self.next_button
                 .set_sensitive(self.can_login_with_password());
         }
@@ -200,7 +170,7 @@ mod imp {
                 return;
             }
 
-            let Some(login) = self.login.obj() else {
+            let Some(login) = self.login.upgrade() else {
                 return;
             };
 
@@ -220,9 +190,9 @@ mod imp {
                     .await
             });
 
-            match handle.await.unwrap() {
-                Ok(response) => {
-                    login.handle_login_response(response).await;
+            match handle.await.expect("task was not aborted") {
+                Ok(_) => {
+                    login.create_session().await;
                 }
                 Err(error) => {
                     warn!("Could not log in: {error}");
@@ -262,6 +232,19 @@ glib::wrapper! {
 impl LoginMethodPage {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// Update this page with the given data.
+    pub(crate) fn update(
+        &self,
+        homeserver_url: &Url,
+        domain_name: Option<&OwnedServerName>,
+        login_types: Vec<LoginType>,
+    ) {
+        let imp = self.imp();
+        imp.update_title(homeserver_url, domain_name);
+        imp.update_sso(login_types);
+        imp.update_next_state();
     }
 
     /// Reset this page.

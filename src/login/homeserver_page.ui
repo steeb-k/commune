@@ -71,7 +71,7 @@
                                   <object class="AdwEntryRow" id="homeserver_entry">
                                     <property name="selectable">false</property>
                                     <signal name="changed" handler="update_next_state" swapped="yes"/>
-                                    <signal name="entry-activated" handler="fetch_homeserver_details" swapped="yes"/>
+                                    <signal name="entry-activated" handler="check_homeserver" swapped="yes"/>
                                     <accessibility>
                                       <relation name="described-by">homeserver_help</relation>
                                     </accessibility>
@@ -99,7 +99,7 @@
                           <object class="LoadingButton" id="next_button">
                             <property name="content-label" translatable="yes">Next</property>
                             <property name="halign">center</property>
-                            <signal name="clicked" handler="fetch_homeserver_details" swapped="yes"/>
+                            <signal name="clicked" handler="check_homeserver" swapped="yes"/>
                             <style>
                               <class name="suggested-action"/>
                               <class name="standalone-button"/>
