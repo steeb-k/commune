@@ -411,7 +411,7 @@ mod imp {
             if event.event_id().is_none() {
                 warn!("Cannot send reply for event that is not sent yet");
                 return;
-            };
+            }
             let Some(message_event) = MessageEventSource::from_event(event) else {
                 warn!("Unsupported event type for reply");
                 return;
