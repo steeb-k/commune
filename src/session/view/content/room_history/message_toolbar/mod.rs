@@ -10,7 +10,10 @@ use gtk::{
 };
 use matrix_sdk::{
     attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
-    room::{edit::EditedContent, reply::EnforceThread},
+    room::{
+        edit::EditedContent,
+        reply::{EnforceThread, Reply},
+    },
 };
 use matrix_sdk_ui::timeline::{AttachmentSource, TimelineEventItemId, TimelineItemContent};
 use ruma::{
@@ -506,13 +509,15 @@ mod imp {
             // Send event depending on relation.
             match composer_state.related_to() {
                 Some(RelationInfo::Reply(message_event)) => {
-                    let event_id = message_event.event_id();
+                    let reply = Reply {
+                        event_id: message_event.event_id(),
+                        enforce_thread: EnforceThread::MaybeThreaded,
+                    };
 
-                    let handle = spawn_tokio!(async move {
-                        matrix_timeline
-                            .send_reply(content, event_id, EnforceThread::MaybeThreaded)
-                            .await
-                    });
+                    let handle =
+                        spawn_tokio!(
+                            async move { matrix_timeline.send_reply(content, reply).await }
+                        );
 
                     if let Err(error) = handle.await.expect("task was not aborted") {
                         error!("Could not send reply: {error}");
