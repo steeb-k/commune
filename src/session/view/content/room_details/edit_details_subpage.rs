@@ -322,8 +322,7 @@ mod imp {
                 return;
             }
 
-            let obj = self.obj();
-            toast!(obj, gettext("Room name saved successfully"));
+            toast!(self.obj(), gettext("Room name saved successfully"));
 
             // Reset state.
             self.changing_name.take();
@@ -394,8 +393,7 @@ mod imp {
                 if weak_action.is_ongoing() {
                     self.changing_name.take();
                     error!("Could not change room name: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not change room name"));
+                    toast!(self.obj(), gettext("Could not change room name"));
                     self.name_entry_row.set_sensitive(true);
                     self.name_button.set_state(ActionState::Retry);
                 }
@@ -433,8 +431,7 @@ mod imp {
                 return;
             }
 
-            let obj = self.obj();
-            toast!(obj, gettext("Room description saved successfully"));
+            toast!(self.obj(), gettext("Room description saved successfully"));
 
             // Reset state.
             self.changing_topic.take();
@@ -510,8 +507,7 @@ mod imp {
                 if weak_action.is_ongoing() {
                     self.changing_topic.take();
                     error!("Could not change room description: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not change room description"));
+                    toast!(self.obj(), gettext("Could not change room description"));
                     self.topic_text_view.set_sensitive(true);
                     self.save_topic_button.set_is_loading(false);
                 }

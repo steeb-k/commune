@@ -196,8 +196,7 @@ mod imp {
                 }
                 Err(error) => {
                     warn!("Could not log in: {error}");
-                    let obj = self.obj();
-                    toast!(obj, error.to_user_facing());
+                    toast!(self.obj(), error.to_user_facing());
                 }
             }
 

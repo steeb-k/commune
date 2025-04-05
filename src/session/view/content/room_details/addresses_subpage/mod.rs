@@ -501,8 +501,7 @@ mod imp {
             };
 
             if result.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not remove public address"));
+                toast!(self.obj(), gettext("Could not remove public address"));
                 self.public_addresses_list.set_sensitive(true);
                 row.set_is_loading(false);
             }
@@ -527,8 +526,7 @@ mod imp {
             button.set_is_loading(true);
 
             if aliases.set_canonical_alias(alias).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not set main public address"));
+                toast!(self.obj(), gettext("Could not set main public address"));
                 self.public_addresses_list.set_sensitive(true);
                 button.set_is_loading(false);
             }
@@ -576,8 +574,7 @@ mod imp {
                     row.set_text("");
                 }
                 Err(error) => {
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not add public address"));
+                    toast!(self.obj(), gettext("Could not add public address"));
 
                     let label = match error {
                         AddAltAliasError::NotRegistered => {
@@ -679,8 +676,7 @@ mod imp {
             row.set_is_loading(true);
 
             if aliases.unregister_local_alias(alias).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not unregister local address"));
+                toast!(self.obj(), gettext("Could not unregister local address"));
             }
 
             self.update_local_addresses().await;
@@ -750,8 +746,7 @@ mod imp {
                     row.set_text("");
                 }
                 Err(error) => {
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not register local address"));
+                    toast!(self.obj(), gettext("Could not register local address"));
 
                     if let RegisterLocalAliasError::AlreadyInUse = error {
                         self.local_addresses_error

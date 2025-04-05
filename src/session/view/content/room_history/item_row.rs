@@ -936,8 +936,7 @@ mod imp {
             };
 
             if event.room().toggle_reaction(key, &event).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not toggle reaction"));
+                toast!(self.obj(), gettext("Could not toggle reaction"));
             }
         }
 
@@ -1011,8 +1010,7 @@ mod imp {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not discard local event: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not discard message"));
+                toast!(self.obj(), gettext("Could not discard message"));
             }
         }
     }

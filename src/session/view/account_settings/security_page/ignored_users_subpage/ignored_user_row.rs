@@ -82,8 +82,7 @@ mod imp {
             self.stop_ignoring_button.set_is_loading(true);
 
             if ignored_users.remove(&user_id).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not stop ignoring user"));
+                toast!(self.obj(), gettext("Could not stop ignoring user"));
                 self.stop_ignoring_button.set_is_loading(false);
             }
         }

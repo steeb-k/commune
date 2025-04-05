@@ -1,6 +1,7 @@
 //! Collection of common methods and types.
 
 use std::{
+    borrow::Cow,
     cell::{Cell, OnceCell, RefCell},
     fmt, fs,
     io::{self, Write},
@@ -30,6 +31,7 @@ mod single_item_list_model;
 pub(crate) mod sourceview;
 pub(crate) mod string;
 mod template_callbacks;
+pub(crate) mod toast;
 
 pub(crate) use self::{
     dummy_object::DummyObject,
@@ -86,11 +88,11 @@ pub(crate) async fn timeout_future<T>(
 ///
 /// The expected format to replace is `{name}`, where `name` is the first string
 /// in the dictionary entry tuple.
-pub(crate) fn freplace(s: String, args: &[(&str, &str)]) -> String {
-    let mut s = s;
+pub(crate) fn freplace<'a>(s: &'a str, args: &[(&str, &str)]) -> Cow<'a, str> {
+    let mut s = Cow::Borrowed(s);
 
     for (k, v) in args {
-        s = s.replace(&format!("{{{k}}}"), v);
+        s = Cow::Owned(s.replace(&format!("{{{k}}}"), v));
     }
 
     s

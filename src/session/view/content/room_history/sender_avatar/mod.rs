@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
+use gettextrs::{gettext, ngettext};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
@@ -8,7 +8,7 @@ use crate::{
         confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog, Avatar,
         RoomMemberDestructiveAction, UserProfileDialog,
     },
-    gettext_f, ngettext_f,
+    gettext_f,
     prelude::*,
     session::{
         model::{Member, MemberRole, Membership, User},
@@ -753,14 +753,14 @@ mod imp {
             let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
             toast!(
                 obj,
-                ngettext_f(
+                ngettext(
                     // Translators: Do NOT translate the content between '{' and '}',
                     // this is a variable name.
                     "Removing 1 message sent by the user…",
                     "Removing {n} messages sent by the user…",
                     n,
-                    &[("n", &n.to_string())]
-                )
+                ),
+                n,
             );
 
             let room = sender.room();
@@ -769,14 +769,14 @@ mod imp {
                 let n = u32::try_from(failed_events.len()).unwrap_or(u32::MAX);
                 toast!(
                     obj,
-                    ngettext_f(
+                    ngettext(
                         // Translators: Do NOT translate the content between '{' and '}',
                         // this is a variable name.
                         "Could not remove 1 message sent by the user",
                         "Could not remove {n} messages sent by the user",
                         n,
-                        &[("n", &n.to_string())]
-                    )
+                    ),
+                    n,
                 );
             }
         }

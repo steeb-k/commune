@@ -264,8 +264,7 @@ mod imp {
 
         /// Show the given error and abort the current login.
         fn abort_on_error(&self, error: &str) {
-            let obj = self.obj();
-            toast!(obj, error);
+            toast!(self.obj(), error);
 
             // Drop the client because it is bound to the homeserver.
             if let Some(login) = self.login.obj() {

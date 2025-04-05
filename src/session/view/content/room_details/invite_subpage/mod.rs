@@ -220,9 +220,8 @@ mod imp {
                         let first_failed =
                             invite_list.first_invitee().map(|item| item.user()).unwrap();
 
-                        let obj = self.obj();
                         toast!(
-                            obj,
+                            self.obj(),
                             ngettext(
                                 // Translators: Do NOT translate the content between '{' and '}', these
                                 // are variable names.
@@ -232,7 +231,7 @@ mod imp {
                             ),
                             @user = first_failed,
                             @room,
-                            n = n.to_string(),
+                            n,
                         );
                     }
                 }

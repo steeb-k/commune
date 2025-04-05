@@ -238,8 +238,7 @@ mod imp {
                 }
             }
 
-            let obj = self.obj();
-            toast!(obj, error.to_user_facing());
+            toast!(self.obj(), error.to_user_facing());
         }
     }
 }

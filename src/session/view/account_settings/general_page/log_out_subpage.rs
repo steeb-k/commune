@@ -139,8 +139,7 @@ mod imp {
                 if is_logout_page {
                     self.stack.set_visible_child_name("failed");
                 } else {
-                    let obj = self.obj();
-                    toast!(obj, error);
+                    toast!(self.obj(), error);
                 }
             }
 

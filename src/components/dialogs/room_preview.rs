@@ -334,8 +334,7 @@ mod imp {
                     obj.close();
                 }
                 Err(error) => {
-                    let obj = self.obj();
-                    toast!(obj, error);
+                    toast!(self.obj(), error);
 
                     self.join_btn.set_is_loading(false);
                     self.go_back_btn.set_sensitive(true);

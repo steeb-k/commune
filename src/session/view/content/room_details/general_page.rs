@@ -626,8 +626,7 @@ mod imp {
                         .await
                         .is_err()
                     {
-                        let obj = imp.obj();
-                        toast!(obj, gettext("Could not change notifications setting"));
+                        toast!(imp.obj(), gettext("Could not change notifications setting"));
                     }
 
                     imp.set_notifications_loading(false, setting);
@@ -802,8 +801,7 @@ mod imp {
             row.set_read_only(true);
 
             if join_rule.set_value(value).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not change who can join"));
+                toast!(self.obj(), gettext("Could not change who can join"));
                 self.update_join_rule();
             }
         }
@@ -851,8 +849,7 @@ mod imp {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not change guest access: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not change guest access"));
+                toast!(self.obj(), gettext("Could not change guest access"));
                 self.update_guest_access();
             }
         }
@@ -948,8 +945,7 @@ mod imp {
                 } else {
                     gettext("Could not unpublish room from directory")
                 };
-                let obj = self.obj();
-                toast!(obj, text);
+                toast!(self.obj(), text);
             }
 
             self.update_publish().await;
@@ -1024,8 +1020,7 @@ mod imp {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not change room history visibility: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not change who can read history"));
+                toast!(self.obj(), gettext("Could not change who can read history"));
 
                 self.update_history_visibility();
             }

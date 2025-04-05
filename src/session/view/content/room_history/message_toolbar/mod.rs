@@ -520,8 +520,7 @@ mod imp {
 
                     if let Err(error) = handle.await.expect("task was not aborted") {
                         error!("Could not send reply: {error}");
-                        let obj = self.obj();
-                        toast!(obj, gettext("Could not send reply"));
+                        toast!(self.obj(), gettext("Could not send reply"));
                     }
                 }
                 Some(RelationInfo::Edit(event_id)) => {
@@ -537,8 +536,7 @@ mod imp {
                     });
                     if let Err(error) = handle.await.unwrap() {
                         error!("Could not send edit: {error}");
-                        let obj = self.obj();
-                        toast!(obj, gettext("Could not send edit"));
+                        toast!(self.obj(), gettext("Could not send edit"));
                     }
                 }
                 _ => {
@@ -549,8 +547,7 @@ mod imp {
                     });
                     if let Err(error) = handle.await.unwrap() {
                         error!("Could not send message: {error}");
-                        let obj = self.obj();
-                        toast!(obj, gettext("Could not send message"));
+                        toast!(self.obj(), gettext("Could not send message"));
                     }
                 }
             }
@@ -679,8 +676,7 @@ mod imp {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not send location: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not send location"));
+                toast!(self.obj(), gettext("Could not send location"));
             }
         }
 
@@ -692,8 +688,7 @@ mod imp {
                 LocationError::Other => gettext("Could not retrieve current location"),
             };
 
-            let obj = self.obj();
-            toast!(obj, msg);
+            toast!(self.obj(), msg);
         }
 
         /// Send the attachment with the given data.
@@ -721,8 +716,7 @@ mod imp {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not send file: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not send file"));
+                toast!(self.obj(), gettext("Could not send file"));
             }
         }
 

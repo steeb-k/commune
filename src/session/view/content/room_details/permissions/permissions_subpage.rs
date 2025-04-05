@@ -593,8 +593,7 @@ mod imp {
             };
 
             if permissions.set_power_levels(power_levels).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not save permissions"));
+                toast!(self.obj(), gettext("Could not save permissions"));
                 self.save_button.set_is_loading(false);
             }
         }

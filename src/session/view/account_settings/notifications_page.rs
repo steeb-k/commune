@@ -271,8 +271,7 @@ mod imp {
                 } else {
                     gettext("Could not disable account notifications")
                 };
-                let obj = self.obj();
-                toast!(obj, msg);
+                toast!(self.obj(), msg);
             }
 
             self.set_account_loading(false);
@@ -317,10 +316,9 @@ mod imp {
             self.set_global_loading(true, setting);
 
             if settings.set_global_setting(setting).await.is_err() {
-                let obj = self.obj();
                 toast!(
-                    obj,
-                    gettext("Could not change global notifications setting")
+                    self.obj(),
+                    gettext("Could not change global notifications setting"),
                 );
             }
 
@@ -438,8 +436,7 @@ mod imp {
             let keyword = self.keywords_add_row.text().into();
 
             if settings.add_keyword(keyword).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not add notification keyword"));
+                toast!(self.obj(), gettext("Could not add notification keyword"));
             } else {
                 // Adding the keyword was successful, reset the entry.
                 self.keywords_add_row.set_text("");

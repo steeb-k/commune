@@ -8,7 +8,7 @@ use crate::utils::freplace;
 /// in the dictionary entry tuple.
 pub fn gettext_f(msgid: &str, args: &[(&str, &str)]) -> String {
     let s = gettext(msgid);
-    freplace(s, args)
+    freplace(&s, args).into_owned()
 }
 
 /// Like `ngettext`, but replaces named variables with the given dictionary.
@@ -17,7 +17,7 @@ pub fn gettext_f(msgid: &str, args: &[(&str, &str)]) -> String {
 /// in the dictionary entry tuple.
 pub fn ngettext_f(msgid: &str, msgid_plural: &str, n: u32, args: &[(&str, &str)]) -> String {
     let s = ngettext(msgid, msgid_plural, n);
-    freplace(s, args)
+    freplace(&s, args).into_owned()
 }
 
 #[cfg(test)]

@@ -97,8 +97,7 @@ mod imp {
                 .await
             {
                 error!("Could not launch URI: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not open URL"));
+                toast!(self.obj(), gettext("Could not open URL"));
                 return;
             }
 
@@ -225,7 +224,7 @@ mod imp {
 
             // We need to restart the server if the user wants to try again, so let's go
             // back to the previous screen.
-            let _ = self.obj().activate_action("navigation.pop", None);
+            let _ = obj.activate_action("navigation.pop", None);
         }
 
         /// Reset this page.

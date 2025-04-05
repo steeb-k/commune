@@ -129,7 +129,7 @@ mod imp {
                             obj.pop_subpage();
                             toast!(
                                 obj,
-                                gettext("The user is not in the room members list anymore")
+                                gettext("The user is not in the room members list anymore"),
                             );
                         }
                     ));

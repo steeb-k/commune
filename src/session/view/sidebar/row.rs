@@ -766,9 +766,8 @@ mod imp {
         /// Forget the given room.
         async fn forget_room(&self, room: &Room) {
             if room.forget().await.is_err() {
-                let obj = self.obj();
                 toast!(
-                    obj,
+                    self.obj(),
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
                     gettext("Could not forget {room}"),
                     @room,
@@ -788,12 +787,12 @@ mod imp {
                     error!("Could not mark room as direct chat: {error}");
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    toast!(obj, gettext("Could not mark {room} as direct chat"), @room,);
+                    toast!(obj, gettext("Could not mark {room} as direct chat"), @room);
                 } else {
                     error!("Could not unmark room as direct chat: {error}");
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    toast!(obj, gettext("Could not unmark {room} as direct chat"), @room,);
+                    toast!(obj, gettext("Could not unmark {room} as direct chat"), @room);
                 }
             }
         }

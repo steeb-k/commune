@@ -380,8 +380,10 @@ mod imp {
             self.send_request_btn.set_is_loading(true);
 
             if let Err(()) = session.verification_list().create(None).await {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not send a new verification request"));
+                toast!(
+                    self.obj(),
+                    gettext("Could not send a new verification request")
+                );
             }
 
             // On success, the verification should be shown automatically.
@@ -432,7 +434,7 @@ mod imp {
                 }
                 Err(error) => {
                     error!("Could not bootstrap cross-signing: {error:?}");
-                    toast!(obj, gettext("Could not create the crypto identity",));
+                    toast!(obj, gettext("Could not create the crypto identity"));
                 }
             }
 

@@ -287,8 +287,7 @@ mod imp {
                 Ok(info) => info,
                 Err(error) => {
                     error!("Could not load user avatar file info: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not load file"));
+                    toast!(self.obj(), gettext("Could not load file"));
                     avatar.reset();
                     return;
                 }
@@ -298,8 +297,7 @@ mod imp {
                 Ok((data, _)) => data,
                 Err(error) => {
                     error!("Could not load user avatar file: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not load file"));
+                    toast!(self.obj(), gettext("Could not load file"));
                     avatar.reset();
                     return;
                 }
@@ -318,8 +316,7 @@ mod imp {
                 Ok(res) => res.content_uri,
                 Err(error) => {
                     error!("Could not upload user avatar: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not upload avatar"));
+                    toast!(self.obj(), gettext("Could not upload avatar"));
                     avatar.reset();
                     return;
                 }
@@ -350,8 +347,7 @@ mod imp {
                     if weak_action.is_ongoing() {
                         self.changing_avatar.take();
                         error!("Could not change user avatar: {error}");
-                        let obj = self.obj();
-                        toast!(obj, gettext("Could not change avatar"));
+                        toast!(self.obj(), gettext("Could not change avatar"));
                         avatar.reset();
                     }
                 }
@@ -456,8 +452,7 @@ mod imp {
             entry.set_sensitive(true);
             button.set_visible(false);
             button.set_state(ActionState::Confirm);
-            let obj = self.obj();
-            toast!(obj, gettext("Name changed successfully"));
+            toast!(self.obj(), gettext("Name changed successfully"));
         }
 
         /// Change the display name of the user.
@@ -507,8 +502,7 @@ mod imp {
                     if weak_action.is_ongoing() {
                         self.changing_display_name.take();
                         error!("Could not change user display name: {error}");
-                        let obj = self.obj();
-                        toast!(obj, gettext("Could not change display name"));
+                        toast!(self.obj(), gettext("Could not change display name"));
                         button.set_state(ActionState::Retry);
                         entry.add_css_class("error");
                         entry.set_sensitive(true);

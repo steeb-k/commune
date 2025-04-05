@@ -1,12 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
+use gettextrs::{gettext, ngettext};
 use gtk::{gio, glib, CompositeTemplate};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
-use crate::{
-    components::LoadingButtonRow, ngettext_f, session::model::Session, spawn_tokio, toast,
-};
+use crate::{components::LoadingButtonRow, session::model::Session, spawn_tokio, toast};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -325,12 +323,12 @@ mod imp {
                         let n = nb.try_into().unwrap_or(u32::MAX);
                         toast!(
                             obj,
-                            ngettext_f(
+                            ngettext(
                                 "Imported 1 room encryption key",
                                 "Imported {n} room encryption keys",
                                 n,
-                                &[("n", &n.to_string())]
-                            )
+                            ),
+                            n,
                         );
                     }
 
@@ -355,7 +353,7 @@ mod imp {
                             obj,
                             gettext(
                                 "The passphrase doesn't match the one used to export the keys."
-                            )
+                            ),
                         );
                     } else {
                         error!("Could not import the keys: {error}");

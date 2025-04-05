@@ -297,8 +297,7 @@ mod imp {
                 Ok(authorization_data) => authorization_data,
                 Err(error) => {
                     warn!("Could not construct OAuth 2.0 authorization URL: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not set up login"));
+                    toast!(self.obj(), gettext("Could not set up login"));
                     return;
                 }
             };
@@ -322,8 +321,7 @@ mod imp {
                 Ok(response) => response.flows,
                 Err(error) => {
                     warn!("Could not get available Matrix login types: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not set up login"));
+                    toast!(self.obj(), gettext("Could not set up login"));
                     return;
                 }
             };
@@ -369,8 +367,7 @@ mod imp {
                 }
                 Err(error) => {
                     warn!("Could not build Matrix SSO URL: {error}");
-                    let obj = self.obj();
-                    toast!(obj, gettext("Could not set up login"));
+                    toast!(self.obj(), gettext("Could not set up login"));
                 }
             }
         }
@@ -387,8 +384,7 @@ mod imp {
             .expect("task was not aborted")
             .map_err(|error| {
                 warn!("Could not spawn local server: {error}");
-                let obj = self.obj();
-                toast!(obj, gettext("Could not set up login"));
+                toast!(self.obj(), gettext("Could not set up login"));
             })
         }
 
@@ -424,8 +420,7 @@ mod imp {
                 }
                 Err(error) => {
                     warn!("Could not create session: {error}");
-                    let obj = self.obj();
-                    toast!(obj, error.to_user_facing());
+                    toast!(self.obj(), error.to_user_facing());
 
                     self.navigation.pop();
                 }
@@ -458,8 +453,7 @@ mod imp {
             let session_info = session.info().clone();
 
             if Secret::store_session(session_info).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not store session"));
+                toast!(self.obj(), gettext("Could not store session"));
             }
 
             session.prepare().await;

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::{gettext, pgettext};
+use gettextrs::{gettext, ngettext, pgettext};
 use gtk::{
     glib,
     glib::{clone, closure_local},
@@ -13,8 +13,7 @@ use crate::{
         confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog,
         confirm_set_room_member_power_level_same_as_own_dialog, RoomMemberDestructiveAction,
     },
-    i18n::gettext_f,
-    ngettext_f,
+    gettext_f,
     prelude::*,
     session::model::{Member, Membership, Permissions, Room, User},
     toast,
@@ -496,8 +495,7 @@ mod imp {
             let user_id = member.user_id().clone();
 
             if room.invite(&[user_id]).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not invite user"));
+                toast!(self.obj(), gettext("Could not invite user"));
             }
 
             self.reset_room();
@@ -610,8 +608,7 @@ mod imp {
             let user_id = member.user_id().clone();
 
             if room.unban(&[(user_id, None)]).await.is_err() {
-                let obj = self.obj();
-                toast!(obj, gettext("Could not unban user"));
+                toast!(self.obj(), gettext("Could not unban user"));
             }
 
             self.reset_room();
@@ -653,18 +650,17 @@ mod imp {
         ) {
             if let Err(events) = room.redact(&events, reason).await {
                 let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
-                let obj = self.obj();
 
                 toast!(
-                    obj,
-                    ngettext_f(
+                    self.obj(),
+                    ngettext(
                         // Translators: Do NOT translate the content between '{' and '}',
                         // this is a variable name.
                         "Could not remove 1 message sent by the user",
                         "Could not remove {n} messages sent by the user",
                         n,
-                        &[("n", &n.to_string())]
-                    )
+                    ),
+                    n,
                 );
             }
         }
