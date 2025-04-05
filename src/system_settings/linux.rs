@@ -27,19 +27,95 @@ mod imp {
     impl ObjectImpl for LinuxSystemSettings {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
             spawn!(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 async move {
-                    obj.init().await;
+                    imp.init().await;
                 }
             ));
         }
     }
 
     impl SystemSettingsImpl for LinuxSystemSettings {}
+
+    impl LinuxSystemSettings {
+        /// Initialize the system settings.
+        async fn init(&self) {
+            let obj = self.obj();
+
+            let proxy = match spawn_tokio!(async move { SettingsProxy::new().await })
+                .await
+                .expect("task was not aborted")
+            {
+                Ok(proxy) => proxy,
+                Err(error) => {
+                    error!("Could not access settings portal: {error}");
+                    return;
+                }
+            };
+            let proxy = Arc::new(proxy);
+
+            let proxy_clone = proxy.clone();
+            match spawn_tokio!(async move {
+                proxy_clone
+                    .read::<ClockFormat>(GNOME_DESKTOP_NAMESPACE, CLOCK_FORMAT_KEY)
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            {
+                Ok(clock_format) => obj
+                    .upcast_ref::<SystemSettings>()
+                    .set_clock_format(clock_format),
+                Err(error) => {
+                    error!("Could not access clock format system setting: {error}");
+                    return;
+                }
+            }
+
+            let clock_format_changed_stream = match spawn_tokio!(async move {
+                proxy
+                    .receive_setting_changed_with_args::<ClockFormat>(
+                        GNOME_DESKTOP_NAMESPACE,
+                        CLOCK_FORMAT_KEY,
+                    )
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            {
+                Ok(stream) => stream,
+                Err(error) => {
+                    error!(
+                        "Could not listen to changes of the clock format system setting: {error}"
+                    );
+                    return;
+                }
+            };
+
+            let obj_weak = obj.downgrade();
+            clock_format_changed_stream.for_each(move |value| {
+                    let obj_weak = obj_weak.clone();
+                    async move {
+                        let clock_format = match value {
+                            Ok(clock_format) => clock_format,
+                            Err(error) => {
+                                error!("Could not update clock format setting: {error}");
+                                return;
+                            }
+                        };
+
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.upcast_ref::<SystemSettings>().set_clock_format(clock_format);
+                        } else {
+                            error!("Could not update clock format setting: could not upgrade weak reference");
+                        }
+                    }
+                }).await;
+        }
+    }
 }
 
 glib::wrapper! {
@@ -51,77 +127,6 @@ glib::wrapper! {
 impl LinuxSystemSettings {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Initialize the system settings.
-    async fn init(&self) {
-        let proxy = match spawn_tokio!(async move { SettingsProxy::new().await })
-            .await
-            .unwrap()
-        {
-            Ok(proxy) => proxy,
-            Err(error) => {
-                error!("Could not access settings portal: {error}");
-                return;
-            }
-        };
-        let proxy = Arc::new(proxy);
-
-        let proxy_clone = proxy.clone();
-        match spawn_tokio!(async move {
-            proxy_clone
-                .read::<ClockFormat>(GNOME_DESKTOP_NAMESPACE, CLOCK_FORMAT_KEY)
-                .await
-        })
-        .await
-        .unwrap()
-        {
-            Ok(clock_format) => self
-                .upcast_ref::<SystemSettings>()
-                .set_clock_format(clock_format),
-            Err(error) => {
-                error!("Could not access clock format system setting: {error}");
-                return;
-            }
-        }
-
-        let clock_format_changed_stream = match spawn_tokio!(async move {
-            proxy
-                .receive_setting_changed_with_args::<ClockFormat>(
-                    GNOME_DESKTOP_NAMESPACE,
-                    CLOCK_FORMAT_KEY,
-                )
-                .await
-        })
-        .await
-        .unwrap()
-        {
-            Ok(stream) => stream,
-            Err(error) => {
-                error!("Could not listen to changes of the clock format system setting: {error}");
-                return;
-            }
-        };
-
-        let obj_weak = self.downgrade();
-        clock_format_changed_stream.for_each(move |value| {
-            let obj_weak = obj_weak.clone();
-            async move {
-                let clock_format = match value {
-                    Ok(clock_format) => clock_format,
-                    Err(error) => {
-                        error!("Could not update clock format setting: {error}");
-                        return;
-                    }
-                };
-
-                if let Some(obj) = obj_weak.upgrade() {
-                    obj.upcast_ref::<SystemSettings>().set_clock_format(clock_format);
-                } else {
-                    error!("Could not update clock format setting: could not upgrade weak reference");
-                }
-            }
-        }).await;
     }
 }
 

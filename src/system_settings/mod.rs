@@ -6,13 +6,12 @@ mod linux;
 
 /// The clock format setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, glib::Enum)]
-#[repr(u32)]
 #[enum_type(name = "ClockFormat")]
 pub enum ClockFormat {
     /// The 12h format, i.e. AM/PM.
-    TwelveHours = 0,
+    TwelveHours,
     /// The 24h format.
-    TwentyFourHours = 1,
+    TwentyFourHours,
 }
 
 impl Default for ClockFormat {
@@ -39,7 +38,7 @@ mod imp {
 
     #[repr(C)]
     pub struct SystemSettingsClass {
-        pub parent_class: glib::object::Class<glib::Object>,
+        parent_class: glib::object::Class<glib::Object>,
     }
 
     unsafe impl ClassStruct for SystemSettingsClass {
@@ -51,7 +50,7 @@ mod imp {
     pub struct SystemSettings {
         /// The clock format setting.
         #[property(get, builder(ClockFormat::default()))]
-        pub clock_format: Cell<ClockFormat>,
+        pub(super) clock_format: Cell<ClockFormat>,
     }
 
     #[glib::object_subclass]
