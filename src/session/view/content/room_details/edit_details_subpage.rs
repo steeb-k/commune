@@ -18,8 +18,7 @@ use crate::{
     spawn_tokio, toast,
     utils::{
         media::{image::ImageInfoLoader, FileInfo},
-        template_callbacks::TemplateCallbacks,
-        BoundObjectWeakRef, OngoingAsyncAction,
+        BoundObjectWeakRef, OngoingAsyncAction, TemplateCallbacks,
     },
 };
 

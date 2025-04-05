@@ -11,10 +11,10 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::ExpressionListModel)]
     pub struct ExpressionListModel {
-        #[property(get)]
-        pub model: BoundObject<gio::ListModel>,
-        pub expressions: RefCell<Vec<gtk::Expression>>,
-        pub watches: RefCell<Vec<Vec<gtk::ExpressionWatch>>>,
+        #[property(get, set = Self::set_model, explicit_notify, nullable)]
+        model: BoundObject<gio::ListModel>,
+        expressions: RefCell<Vec<gtk::Expression>>,
+        watches: RefCell<Vec<Vec<gtk::ExpressionWatch>>>,
     }
 
     #[glib::object_subclass]
@@ -48,6 +48,115 @@ mod imp {
             self.model.obj().and_then(|m| m.item(position))
         }
     }
+
+    impl ExpressionListModel {
+        /// Set the underlying model.
+        fn set_model(&self, model: Option<gio::ListModel>) {
+            if self.model.obj() == model {
+                return;
+            }
+
+            let obj = self.obj();
+            let removed = self.n_items();
+
+            self.model.disconnect_signals();
+            for watch in self.watches.take().iter().flatten() {
+                watch.unwatch();
+            }
+
+            let added = if let Some(model) = model {
+                let items_changed_handler = model.connect_items_changed(clone!(
+                    #[strong]
+                    obj,
+                    move |_, pos, removed, added| {
+                        obj.imp().watch_items(pos, removed, added);
+                        obj.items_changed(pos, removed, added);
+                    }
+                ));
+
+                let added = model.n_items();
+                self.model.set(model, vec![items_changed_handler]);
+
+                self.watch_items(0, 0, added);
+                added
+            } else {
+                0
+            };
+
+            let obj = self.obj();
+            obj.items_changed(0, removed, added);
+            obj.notify_model();
+        }
+
+        /// Set the expressions to watch.
+        pub(super) fn set_expressions(&self, expressions: Vec<gtk::Expression>) {
+            for watch in self.watches.take().iter().flatten() {
+                watch.unwatch();
+            }
+
+            self.expressions.replace(expressions);
+            self.watch_items(0, 0, self.n_items());
+        }
+
+        /// Watch and unwatch items according to changes in the underlying
+        /// model.
+        fn watch_items(&self, pos: u32, removed: u32, added: u32) {
+            let Some(model) = self.model.obj() else {
+                return;
+            };
+
+            let expressions = self.expressions.borrow().clone();
+            if expressions.is_empty() {
+                return;
+            }
+
+            let mut new_watches = Vec::with_capacity(added as usize);
+            for item_pos in pos..pos + added {
+                let Some(item) = model.item(item_pos) else {
+                    error!("Out of bounds item");
+                    break;
+                };
+
+                let obj = self.obj();
+                let mut item_watches = Vec::with_capacity(expressions.len());
+                for expression in &expressions {
+                    item_watches.push(expression.watch(
+                        Some(&item),
+                        clone!(
+                            #[strong]
+                            obj,
+                            #[weak]
+                            item,
+                            move || {
+                                obj.imp().item_expr_changed(&item);
+                            }
+                        ),
+                    ));
+                }
+
+                new_watches.push(item_watches);
+            }
+
+            let mut watches = self.watches.borrow_mut();
+            let removed_range = (pos as usize)..((pos + removed) as usize);
+            for watch in watches.splice(removed_range, new_watches).flatten() {
+                watch.unwatch();
+            }
+        }
+
+        fn item_expr_changed(&self, item: &glib::Object) {
+            let Some(model) = self.model.obj() else {
+                return;
+            };
+
+            for (pos, obj) in model.snapshot().iter().enumerate() {
+                if obj == item {
+                    self.obj().items_changed(pos as u32, 1, 1);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -61,115 +170,9 @@ impl ExpressionListModel {
         glib::Object::new()
     }
 
-    /// Set the underlying model.
-    pub fn set_model(&self, model: Option<impl IsA<gio::ListModel>>) {
-        let imp = self.imp();
-        let model = model.and_upcast();
-
-        let removed = self.n_items();
-
-        imp.model.disconnect_signals();
-        for watch in imp.watches.take().iter().flatten() {
-            watch.unwatch();
-        }
-
-        let added = if let Some(model) = model {
-            let items_changed_handler = model.connect_items_changed(clone!(
-                #[strong(rename_to = obj)]
-                self,
-                move |_, pos, removed, added| {
-                    obj.watch_items(pos, removed, added);
-                    obj.items_changed(pos, removed, added);
-                }
-            ));
-
-            let added = model.n_items();
-            imp.model.set(model, vec![items_changed_handler]);
-
-            self.watch_items(0, 0, added);
-            added
-        } else {
-            0
-        };
-
-        self.items_changed(0, removed, added);
-        self.notify_model();
-    }
-
-    /// The expressions to watch.
-    pub fn expressions(&self) -> Vec<gtk::Expression> {
-        self.imp().expressions.borrow().clone()
-    }
-
     /// Set the expressions to watch.
-    pub fn set_expressions(&self, expressions: Vec<gtk::Expression>) {
-        let imp = self.imp();
-
-        for watch in imp.watches.take().iter().flatten() {
-            watch.unwatch();
-        }
-
-        imp.expressions.replace(expressions);
-        self.watch_items(0, 0, self.n_items());
-    }
-
-    /// Watch and unwatch items according to changes in the underlying model.
-    fn watch_items(&self, pos: u32, removed: u32, added: u32) {
-        let Some(model) = self.model() else {
-            return;
-        };
-
-        let expressions = self.expressions();
-        if expressions.is_empty() {
-            return;
-        }
-
-        let imp = self.imp();
-
-        let mut new_watches = Vec::with_capacity(added as usize);
-        for item_pos in pos..pos + added {
-            let Some(item) = model.item(item_pos) else {
-                error!("Out of bounds item");
-                break;
-            };
-
-            let mut item_watches = Vec::with_capacity(expressions.len());
-            for expression in &expressions {
-                item_watches.push(expression.watch(
-                    Some(&item),
-                    clone!(
-                        #[strong(rename_to = obj)]
-                        self,
-                        #[weak]
-                        item,
-                        move || {
-                            obj.item_expr_changed(&item);
-                        }
-                    ),
-                ));
-            }
-
-            new_watches.push(item_watches);
-        }
-
-        let mut watches = imp.watches.borrow_mut();
-        let removed_range = (pos as usize)..((pos + removed) as usize);
-        for watch in watches.splice(removed_range, new_watches).flatten() {
-            watch.unwatch();
-        }
-    }
-
-    fn item_expr_changed(&self, item: &glib::Object) {
-        let Some(model) = self.model() else {
-            return;
-        };
-
-        for (pos, obj) in model.snapshot().iter().enumerate() {
-            if obj == item {
-                self.items_changed(pos as u32, 1, 1);
-                break;
-            }
-        }
+    pub(crate) fn set_expressions(&self, expressions: Vec<gtk::Expression>) {
+        self.imp().set_expressions(expressions);
     }
 }
 

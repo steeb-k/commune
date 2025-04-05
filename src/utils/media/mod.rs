@@ -8,8 +8,8 @@ use matrix_sdk::attachment::BaseAudioInfo;
 use mime::Mime;
 use ruma::UInt;
 
-pub mod image;
-pub mod video;
+pub(crate) mod image;
+pub(crate) mod video;
 
 /// Get a default filename for a mime type.
 ///
@@ -18,7 +18,7 @@ pub mod video;
 /// If the mime type is unknown, it uses the name for `fallback`. The fallback
 /// mime types that are recognized are `mime::IMAGE`, `mime::VIDEO` and
 /// `mime::AUDIO`, other values will behave the same as `None`.
-pub fn filename_for_mime(mime_type: Option<&str>, fallback: Option<mime::Name>) -> String {
+pub(crate) fn filename_for_mime(mime_type: Option<&str>, fallback: Option<mime::Name>) -> String {
     let (type_, extension) =
         if let Some(mime) = mime_type.and_then(|m| m.parse::<mime::Mime>().ok()) {
             let extension =
@@ -118,7 +118,7 @@ async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disc
 }
 
 /// Load information for the audio in the given file.
-pub async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
+pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     let mut info = BaseAudioInfo::default();
 
     let Some(media_info) = load_gstreamer_media_info(file).await else {
@@ -132,7 +132,7 @@ pub async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
 /// All errors that can occur when downloading a media to a file.
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
-pub enum MediaFileError {
+pub(crate) enum MediaFileError {
     /// An error occurred when downloading the media.
     Sdk(#[from] matrix_sdk::Error),
     /// An error occurred when writing the media to a file.
@@ -141,11 +141,11 @@ pub enum MediaFileError {
 
 /// The dimensions of a frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FrameDimensions {
+pub(crate) struct FrameDimensions {
     /// The width of the frame.
-    pub width: u32,
+    pub(crate) width: u32,
     /// The height of the frame.
-    pub height: u32,
+    pub(crate) height: u32,
 }
 
 impl FrameDimensions {

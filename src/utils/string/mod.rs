@@ -25,7 +25,7 @@ const HTTPS_URI_PREFIX: &str = "https://";
 const MATRIX_URI_SCHEME: &str = "matrix";
 
 /// Common extensions to strings.
-pub trait StrExt {
+pub(crate) trait StrExt {
     /// Escape markup for compatibility with Pango.
     fn escape_markup(&self) -> String;
 
@@ -47,7 +47,7 @@ where
 }
 
 /// Common extensions to mutable strings.
-pub trait StrMutExt {
+pub(crate) trait StrMutExt {
     /// Truncate this string at the first newline.
     ///
     /// Appends an ellipsis if the string was truncated.
@@ -108,7 +108,7 @@ impl StrMutExt for String {
 }
 
 /// Common extensions for adding Pango markup to mutable strings.
-pub trait PangoStrMutExt {
+pub(crate) trait PangoStrMutExt {
     /// Append the opening Pango markup link tag of the given URI parts.
     ///
     /// The URI is also used as a title, so users can preview the link on hover.
@@ -173,14 +173,14 @@ impl PangoStrMutExt for String {
 /// Linkify the given text.
 ///
 /// The text will also be escaped with [`StrExt::escape_markup()`].
-pub fn linkify(text: &str) -> String {
+pub(crate) fn linkify(text: &str) -> String {
     let mut linkified = String::with_capacity(text.len());
     Linkifier::new(&mut linkified).linkify(text);
     linkified
 }
 
 /// A helper type to linkify text.
-pub struct Linkifier<'a> {
+pub(crate) struct Linkifier<'a> {
     /// The string containing the result.
     inner: &'a mut String,
     /// The mentions detection setting and results.
@@ -189,7 +189,7 @@ pub struct Linkifier<'a> {
 
 impl<'a> Linkifier<'a> {
     /// Construct a new linkifier that will add text in the given string.
-    pub fn new(inner: &'a mut String) -> Self {
+    pub(crate) fn new(inner: &'a mut String) -> Self {
         Self {
             inner,
             mentions: MentionsMode::NoMentions,
@@ -201,7 +201,7 @@ impl<'a> Linkifier<'a> {
     ///
     /// If `detect_at_room` is `true`, it will also try to detect `@room`
     /// mentions.
-    pub fn detect_mentions(
+    pub(crate) fn detect_mentions(
         mut self,
         room: &'a Room,
         pills: &'a mut Vec<Pill>,
@@ -218,7 +218,7 @@ impl<'a> Linkifier<'a> {
     /// Search and replace links in the given text.
     ///
     /// Returns the list of mentions, if any where found.
-    pub fn linkify(mut self, text: &str) {
+    pub(crate) fn linkify(mut self, text: &str) {
         let mut finder = LinkFinder::new();
         // Allow URLS without a scheme.
         finder.url_must_have_scheme(false);

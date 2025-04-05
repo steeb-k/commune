@@ -35,8 +35,7 @@ use crate::{
     },
     spawn, spawn_tokio, toast,
     utils::{
-        expression, matrix::MatrixIdUri, template_callbacks::TemplateCallbacks, BoundObjectWeakRef,
-        OngoingAsyncAction,
+        expression, matrix::MatrixIdUri, BoundObjectWeakRef, OngoingAsyncAction, TemplateCallbacks,
     },
     Window,
 };

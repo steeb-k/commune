@@ -24,7 +24,7 @@ mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
-    use crate::utils::template_callbacks::TemplateCallbacks;
+    use crate::utils::TemplateCallbacks;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(

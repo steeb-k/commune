@@ -8,7 +8,7 @@ use crate::{
     prelude::*,
     session::model::Event,
     toast, utils,
-    utils::template_callbacks::TemplateCallbacks,
+    utils::TemplateCallbacks,
 };
 
 mod imp {

@@ -19,7 +19,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::FileInfo, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
+    utils::{media::FileInfo, OngoingAsyncAction, TemplateCallbacks},
 };
 
 mod imp {

@@ -45,7 +45,7 @@ macro_rules! filename {
 
 /// A media message.
 #[derive(Debug, Clone)]
-pub enum MediaMessage {
+pub(crate) enum MediaMessage {
     /// An audio.
     Audio(AudioMessageEventContent),
     /// A file.
@@ -60,7 +60,7 @@ pub enum MediaMessage {
 
 impl MediaMessage {
     /// Construct a `MediaMessage` from the given message.
-    pub fn from_message(msgtype: &MessageType) -> Option<Self> {
+    pub(crate) fn from_message(msgtype: &MessageType) -> Option<Self> {
         match msgtype {
             MessageType::Audio(c) => Some(Self::Audio(c.clone())),
             MessageType::File(c) => Some(Self::File(c.clone())),
@@ -73,7 +73,7 @@ impl MediaMessage {
     /// The filename of the media.
     ///
     /// For a sticker, this returns the description of the sticker.
-    pub fn filename(&self) -> String {
+    pub(crate) fn filename(&self) -> String {
         match self {
             Self::Audio(c) => filename!(c, Some(mime::AUDIO)),
             Self::File(c) => filename!(c, None),
@@ -86,7 +86,7 @@ impl MediaMessage {
     /// The caption of the media, if any.
     ///
     /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
+    pub(crate) fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
         match self {
             Self::Audio(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
             Self::File(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
@@ -99,7 +99,7 @@ impl MediaMessage {
     /// Fetch the content of the media with the given client.
     ///
     /// Returns an error if something occurred while fetching the content.
-    pub async fn into_content(self, client: &Client) -> Result<Vec<u8>, matrix_sdk::Error> {
+    pub(crate) async fn into_content(self, client: &Client) -> Result<Vec<u8>, matrix_sdk::Error> {
         let media = client.media();
 
         macro_rules! content {
@@ -128,7 +128,7 @@ impl MediaMessage {
     /// temporary file.
     ///
     /// Returns an error if something occurred while fetching the content.
-    pub async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
+    pub(crate) async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
         let data = self.into_content(client).await?;
         Ok(save_data_to_tmp_file(data).await?)
     }
@@ -136,7 +136,7 @@ impl MediaMessage {
     /// Save the content of the media to a file selected by the user.
     ///
     /// Shows a dialog to the user to select a file on the system.
-    pub async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
+    pub(crate) async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
         let filename = self.filename();
 
         let data = match self.into_content(client).await {
@@ -204,7 +204,7 @@ impl From<StickerEventContent> for MediaMessage {
 
 /// A visual media message.
 #[derive(Debug, Clone)]
-pub enum VisualMediaMessage {
+pub(crate) enum VisualMediaMessage {
     /// An image.
     Image(ImageMessageEventContent),
     /// A video.
@@ -215,7 +215,7 @@ pub enum VisualMediaMessage {
 
 impl VisualMediaMessage {
     /// Construct a `VisualMediaMessage` from the given message.
-    pub fn from_message(msgtype: &MessageType) -> Option<Self> {
+    pub(crate) fn from_message(msgtype: &MessageType) -> Option<Self> {
         match msgtype {
             MessageType::Image(c) => Some(Self::Image(c.clone())),
             MessageType::Video(c) => Some(Self::Video(c.clone())),
@@ -226,7 +226,7 @@ impl VisualMediaMessage {
     /// The filename of the media.
     ///
     /// For a sticker, this returns the description of the sticker.
-    pub fn filename(&self) -> String {
+    pub(crate) fn filename(&self) -> String {
         match self {
             Self::Image(c) => filename!(c, Some(mime::IMAGE)),
             Self::Video(c) => filename!(c, Some(mime::VIDEO)),
@@ -234,19 +234,8 @@ impl VisualMediaMessage {
         }
     }
 
-    /// The caption of the media, if any.
-    ///
-    /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
-        match self {
-            Self::Image(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
-            Self::Video(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
-            Self::Sticker(_) => None,
-        }
-    }
-
     /// The dimensions of the media, if any.
-    pub fn dimensions(&self) -> Option<FrameDimensions> {
+    pub(crate) fn dimensions(&self) -> Option<FrameDimensions> {
         let (width, height) = match self {
             Self::Image(c) => c.info.as_ref().map(|i| (i.width, i.height))?,
             Self::Video(c) => c.info.as_ref().map(|i| (i.width, i.height))?,
@@ -266,7 +255,7 @@ impl VisualMediaMessage {
     ///
     /// Returns an error if something occurred while fetching the content or
     /// loading it.
-    pub async fn thumbnail(
+    pub(crate) async fn thumbnail(
         &self,
         client: Client,
         settings: ThumbnailSettings,
@@ -325,26 +314,19 @@ impl VisualMediaMessage {
             .map(Some)
     }
 
-    /// Fetch the content of the media with the given client.
-    ///
-    /// Returns an error if something occurred while fetching the content.
-    pub async fn into_content(self, client: &Client) -> Result<Vec<u8>, matrix_sdk::Error> {
-        MediaMessage::from(self).into_content(client).await
-    }
-
     /// Fetch the content of the media with the given client and write it to a
     /// temporary file.
     ///
     /// Returns an error if something occurred while fetching the content or
     /// saving the content to a file.
-    pub async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
+    pub(crate) async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
         MediaMessage::from(self).into_tmp_file(client).await
     }
 
     /// Save the content of the media to a file selected by the user.
     ///
     /// Shows a dialog to the user to select a file on the system.
-    pub async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
+    pub(crate) async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
         MediaMessage::from(self).save_to_file(client, parent).await;
     }
 }

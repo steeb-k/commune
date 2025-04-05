@@ -47,8 +47,7 @@ use crate::{
             filename_for_mime, image::ImageInfoLoader, load_audio_info, video::load_video_info,
             FileInfo,
         },
-        template_callbacks::TemplateCallbacks,
-        Location, LocationError, TokioDrop,
+        Location, LocationError, TemplateCallbacks, TokioDrop,
     },
 };
 

@@ -1,7 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::ExploreServer;
-use crate::utils::template_callbacks::TemplateCallbacks;
+use crate::utils::TemplateCallbacks;
 
 mod imp {
     use std::cell::RefCell;

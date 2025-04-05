@@ -16,7 +16,7 @@ type ThumbnailResultSender = oneshot::Sender<Result<gdk::Texture, ()>>;
 
 /// Load information and try to generate a thumbnail for the video in the given
 /// file.
-pub async fn load_video_info(
+pub(crate) async fn load_video_info(
     file: &gio::File,
     widget: &impl IsA<gtk::Widget>,
 ) -> (BaseVideoInfo, Option<Thumbnail>) {

@@ -10,7 +10,7 @@ mod imp {
     pub struct SingleItemListModel {
         /// The item contained by this model.
         #[property(get, construct_only)]
-        pub inner_item: OnceCell<glib::Object>,
+        inner_item: OnceCell<glib::Object>,
     }
 
     #[glib::object_subclass]
@@ -40,7 +40,7 @@ mod imp {
     impl SingleItemListModel {
         /// The item contained by this model.
         fn inner_item(&self) -> &glib::Object {
-            self.inner_item.get().unwrap()
+            self.inner_item.get().expect("inner item was initialized")
         }
     }
 }

@@ -33,10 +33,10 @@ use ruma::{
 use thiserror::Error;
 use tracing::error;
 
-pub mod ext_traits;
+pub(crate) mod ext_traits;
 mod media_message;
 
-pub use self::media_message::{MediaMessage, VisualMediaMessage};
+pub(crate) use self::media_message::{MediaMessage, VisualMediaMessage};
 use crate::{
     components::Pill,
     gettext_f,
@@ -48,21 +48,21 @@ use crate::{
 /// The result of a password validation.
 #[derive(Debug, Default, Clone, Copy)]
 #[allow(clippy::struct_excessive_bools)]
-pub struct PasswordValidity {
+pub(crate) struct PasswordValidity {
     /// Whether the password includes at least one lowercase letter.
-    pub has_lowercase: bool,
+    pub(crate) has_lowercase: bool,
     /// Whether the password includes at least one uppercase letter.
-    pub has_uppercase: bool,
+    pub(crate) has_uppercase: bool,
     /// Whether the password includes at least one number.
-    pub has_number: bool,
+    pub(crate) has_number: bool,
     /// Whether the password includes at least one symbol.
-    pub has_symbol: bool,
+    pub(crate) has_symbol: bool,
     /// Whether the password is at least 8 characters long.
-    pub has_length: bool,
+    pub(crate) has_length: bool,
     /// The percentage of checks passed for the password, between 0 and 100.
     ///
     /// If progress is 100, the password is valid.
-    pub progress: u32,
+    pub(crate) progress: u32,
 }
 
 impl PasswordValidity {
@@ -77,7 +77,7 @@ impl PasswordValidity {
 /// number and a symbol and be at a minimum 8 characters in length.
 ///
 /// See: <https://spec.matrix.org/v1.1/client-server-api/#notes-on-password-management>
-pub fn validate_password(password: &str) -> PasswordValidity {
+pub(crate) fn validate_password(password: &str) -> PasswordValidity {
     let mut validity = PasswordValidity::new();
 
     for char in password.chars() {
@@ -117,7 +117,7 @@ pub fn validate_password(password: &str) -> PasswordValidity {
 
 /// An deserialized event received in a sync response.
 #[derive(Debug, Clone)]
-pub enum AnySyncOrStrippedTimelineEvent {
+pub(crate) enum AnySyncOrStrippedTimelineEvent {
     /// An event from a joined or left room.
     Sync(AnySyncTimelineEvent),
     /// An event from an invited room.
@@ -126,7 +126,9 @@ pub enum AnySyncOrStrippedTimelineEvent {
 
 impl AnySyncOrStrippedTimelineEvent {
     /// Deserialize the given raw event.
-    pub fn from_raw(raw: &RawAnySyncOrStrippedTimelineEvent) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_raw(
+        raw: &RawAnySyncOrStrippedTimelineEvent,
+    ) -> Result<Self, serde_json::Error> {
         let ev = match raw {
             RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?),
             RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => Self::Stripped(ev.deserialize()?),
@@ -136,7 +138,7 @@ impl AnySyncOrStrippedTimelineEvent {
     }
 
     /// The sender of the event.
-    pub fn sender(&self) -> &UserId {
+    pub(crate) fn sender(&self) -> &UserId {
         match self {
             AnySyncOrStrippedTimelineEvent::Sync(ev) => ev.sender(),
             AnySyncOrStrippedTimelineEvent::Stripped(ev) => ev.sender(),
@@ -144,7 +146,7 @@ impl AnySyncOrStrippedTimelineEvent {
     }
 
     /// The ID of the event, if it's not a stripped state event.
-    pub fn event_id(&self) -> Option<&EventId> {
+    pub(crate) fn event_id(&self) -> Option<&EventId> {
         match self {
             AnySyncOrStrippedTimelineEvent::Sync(ev) => Some(ev.event_id()),
             AnySyncOrStrippedTimelineEvent::Stripped(_) => None,
@@ -158,7 +160,7 @@ impl AnySyncOrStrippedTimelineEvent {
 /// localized string.
 ///
 /// Returns `None` if the event type is not supported.
-pub fn get_event_body(
+pub(crate) fn get_event_body(
     event: &AnySyncOrStrippedTimelineEvent,
     sender_name: &str,
     own_user: &UserId,
@@ -180,7 +182,7 @@ pub fn get_event_body(
 /// If it's a media message, this will return a localized body.
 ///
 /// Returns `None` if the message type is not supported.
-pub fn get_message_event_body(
+pub(crate) fn get_message_event_body(
     event: &AnySyncMessageLikeEvent,
     sender_name: &str,
     show_sender: bool,
@@ -241,7 +243,7 @@ fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> Str
 /// This will return a localized body.
 ///
 /// Returns `None` if the state event type is not supported.
-pub fn get_stripped_state_event_body(
+pub(crate) fn get_stripped_state_event_body(
     event: &AnyStrippedStateEvent,
     sender_name: &str,
     own_user: &UserId,
@@ -261,7 +263,7 @@ pub fn get_stripped_state_event_body(
 
 /// All errors that can occur when setting up the Matrix client.
 #[derive(Error, Debug)]
-pub enum ClientSetupError {
+pub(crate) enum ClientSetupError {
     /// An error when building the client.
     #[error(transparent)]
     Client(#[from] ClientBuildError),
@@ -288,7 +290,7 @@ impl UserFacingError for ClientSetupError {
 }
 
 /// Create a [`Client`] with the given stored session.
-pub async fn client_with_stored_session(
+pub(crate) async fn client_with_stored_session(
     session: StoredSession,
     tokens: SessionTokens,
 ) -> Result<Client, ClientSetupError> {
@@ -349,7 +351,7 @@ pub async fn client_with_stored_session(
 /// Find mentions in the given HTML string.
 ///
 /// Returns a list of `(pill, mention_content)` tuples.
-pub fn find_html_mentions(html: &str, room: &Room) -> Vec<(Pill, StrTendril)> {
+pub(crate) fn find_html_mentions(html: &str, room: &Room) -> Vec<(Pill, StrTendril)> {
     let mut mentions = Vec::new();
     let html = Html::parse(html);
 
@@ -400,7 +402,7 @@ fn node_as_mention(node: &NodeRef, room: &Room) -> Option<(Pill, StrTendril)> {
 }
 
 /// The textual representation of a room mention.
-pub const AT_ROOM: &str = "@room";
+pub(crate) const AT_ROOM: &str = "@room";
 
 /// Find `@room` in the given string.
 ///
@@ -408,7 +410,7 @@ pub const AT_ROOM: &str = "@room";
 /// it in the `body`.
 ///
 /// Returns the position of the first match.
-pub fn find_at_room(s: &str) -> Option<usize> {
+pub(crate) fn find_at_room(s: &str) -> Option<usize> {
     for (pos, _) in s.match_indices(AT_ROOM) {
         let is_at_word_start = pos == 0 || s[..pos].ends_with(char_is_ascii_word_boundary);
         if !is_at_word_start {
@@ -435,7 +437,7 @@ fn char_is_ascii_word_boundary(c: char) -> bool {
 }
 
 /// Compare two raw JSON sources.
-pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
+pub(crate) fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
     let Some(lhs) = lhs else {
         // They are equal only if both are `None`.
         return rhs.is_none();
@@ -450,7 +452,7 @@ pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
 
 /// A URI for a Matrix ID.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MatrixIdUri {
+pub(crate) enum MatrixIdUri {
     /// A room.
     Room(MatrixRoomIdUri),
     /// A user.
@@ -486,7 +488,7 @@ impl MatrixIdUri {
     }
 
     /// Try parsing a `&str` into a `MatrixIdUri`.
-    pub fn parse(s: &str) -> Result<Self, MatrixIdUriParseError> {
+    pub(crate) fn parse(s: &str) -> Result<Self, MatrixIdUriParseError> {
         if let Ok(uri) = MatrixToUri::parse(s) {
             return uri.try_into();
         }
@@ -495,7 +497,7 @@ impl MatrixIdUri {
     }
 
     /// Try to construct a [`Pill`] from this ID in the given room.
-    pub fn into_pill(self, room: &Room) -> Option<Pill> {
+    pub(crate) fn into_pill(self, room: &Room) -> Option<Pill> {
         match self {
             Self::Room(room_uri) => {
                 let session = room.session()?;
@@ -517,7 +519,7 @@ impl MatrixIdUri {
     }
 
     /// Get this ID as a `matrix:` URI.
-    pub fn as_matrix_uri(&self) -> MatrixUri {
+    pub(crate) fn as_matrix_uri(&self) -> MatrixUri {
         match self {
             MatrixIdUri::Room(room_uri) => match <&RoomId>::try_from(&*room_uri.id) {
                 Ok(room_id) => room_id.matrix_uri_via(room_uri.via.clone(), false),
@@ -635,16 +637,16 @@ impl FromVariant for MatrixIdUri {
 
 /// A URI for a Matrix room ID.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MatrixRoomIdUri {
+pub(crate) struct MatrixRoomIdUri {
     /// The room ID.
-    pub id: OwnedRoomOrAliasId,
+    pub(crate) id: OwnedRoomOrAliasId,
     /// Matrix servers usable to route a `RoomId`.
-    pub via: Vec<OwnedServerName>,
+    pub(crate) via: Vec<OwnedServerName>,
 }
 
 impl MatrixRoomIdUri {
     /// Try parsing a `&str` into a `MatrixRoomIdUri`.
-    pub fn parse(s: &str) -> Option<MatrixRoomIdUri> {
+    pub(crate) fn parse(s: &str) -> Option<MatrixRoomIdUri> {
         MatrixIdUri::parse(s)
             .ok()
             .and_then(|uri| match uri {
@@ -687,7 +689,7 @@ impl From<&MatrixRoomIdUri> for MatrixUri {
 
 /// A URI for a Matrix event ID.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MatrixEventIdUri {
+pub(crate) struct MatrixEventIdUri {
     /// The event ID.
     pub event_id: OwnedEventId,
     /// The event's room ID URI.
@@ -696,7 +698,7 @@ pub struct MatrixEventIdUri {
 
 /// Errors encountered when parsing a Matrix ID URI.
 #[derive(Debug, Clone, Error)]
-pub enum MatrixIdUriParseError {
+pub(crate) enum MatrixIdUriParseError {
     /// Not a valid Matrix URI.
     #[error(transparent)]
     InvalidUri(#[from] IdParseError),

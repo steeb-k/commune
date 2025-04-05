@@ -29,7 +29,7 @@ use crate::{
 };
 
 /// The default image request queue.
-pub static IMAGE_QUEUE: LazyLock<ImageRequestQueue> = LazyLock::new(ImageRequestQueue::new);
+pub(crate) static IMAGE_QUEUE: LazyLock<ImageRequestQueue> = LazyLock::new(ImageRequestQueue::new);
 
 /// The default limit of the [`ImageRequestQueue`], aka the maximum number of
 /// concurrent image requests.
@@ -53,7 +53,7 @@ const STALLED_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 /// - Watch requests that take too long to:
 ///   - Log them,
 ///   - Ignore them in the count of ongoing requests.
-pub struct ImageRequestQueue {
+pub(crate) struct ImageRequestQueue {
     inner: Arc<AsyncMutex<ImageRequestQueueInner>>,
 }
 
@@ -94,7 +94,7 @@ impl ImageRequestQueue {
     ///
     /// If another request for the same image already exists, this will reuse
     /// the same request.
-    pub async fn add_download_request(
+    pub(crate) async fn add_download_request(
         &self,
         client: Client,
         settings: MediaRequestParameters,
@@ -116,7 +116,7 @@ impl ImageRequestQueue {
     ///
     /// If another request for the same file already exists, this will reuse the
     /// same request.
-    pub async fn add_file_request(
+    pub(crate) async fn add_file_request(
         &self,
         file: File,
         dimensions: Option<FrameDimensions>,
@@ -662,7 +662,7 @@ impl fmt::Display for ImageRequestId {
 
 /// The priority of an image request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ImageRequestPriority {
+pub(crate) enum ImageRequestPriority {
     /// The highest priority.
     ///
     /// A request with this priority will be spawned right away and will not be
@@ -685,7 +685,7 @@ pub enum ImageRequestPriority {
 }
 
 /// A handle for `await`ing an image request.
-pub struct ImageRequestHandle {
+pub(crate) struct ImageRequestHandle {
     receiver: broadcast::Receiver<Result<Image, ImageError>>,
 }
 

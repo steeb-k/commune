@@ -4,7 +4,7 @@ use super::AccountSwitcherPopover;
 use crate::{
     components::Avatar,
     session_list::SessionInfo,
-    utils::{template_callbacks::TemplateCallbacks, BoundObjectWeakRef},
+    utils::{BoundObjectWeakRef, TemplateCallbacks},
     Window,
 };
 

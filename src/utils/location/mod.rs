@@ -56,7 +56,7 @@ mod unimplemented {
 
 /// High-level errors that can occur while fetching the location.
 #[derive(Debug, Clone, Copy)]
-pub enum LocationError {
+pub(crate) enum LocationError {
     /// The user cancelled the request to get the location.
     Cancelled,
     /// The location services are disabled on the system.

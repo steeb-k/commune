@@ -1,19 +1,5 @@
 //! Collection of common methods and types.
 
-mod dummy_object;
-pub mod expression;
-mod expression_list_model;
-pub(crate) mod key_bindings;
-mod location;
-pub mod macros;
-pub mod matrix;
-pub mod media;
-pub mod notifications;
-mod single_item_list_model;
-pub mod sourceview;
-pub mod string;
-pub mod template_callbacks;
-
 use std::{
     cell::{Cell, OnceCell, RefCell},
     fmt, fs,
@@ -31,17 +17,32 @@ use gtk::{gio, glib, prelude::*};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
+mod dummy_object;
+pub(crate) mod expression;
+mod expression_list_model;
+pub(crate) mod key_bindings;
+mod location;
+mod macros;
+pub(crate) mod matrix;
+pub(crate) mod media;
+pub(crate) mod notifications;
+mod single_item_list_model;
+pub(crate) mod sourceview;
+pub(crate) mod string;
+mod template_callbacks;
+
 pub(crate) use self::{
     dummy_object::DummyObject,
     expression_list_model::ExpressionListModel,
     location::{Location, LocationError, LocationExt},
     single_item_list_model::SingleItemListModel,
+    template_callbacks::TemplateCallbacks,
 };
 use crate::{PROFILE, RUNTIME};
 
 /// The path of the directory where data should be stored, depending on its
 /// type.
-pub fn data_dir_path(data_type: DataType) -> PathBuf {
+pub(crate) fn data_dir_path(data_type: DataType) -> PathBuf {
     let mut path = match data_type {
         DataType::Persistent => glib::user_data_dir(),
         DataType::Cache => glib::user_cache_dir(),
@@ -53,14 +54,14 @@ pub fn data_dir_path(data_type: DataType) -> PathBuf {
 
 /// The type of data.
 #[derive(Debug, Clone, Copy)]
-pub enum DataType {
+pub(crate) enum DataType {
     /// Data that should not be deleted.
     Persistent,
     /// Cache that can be deleted freely.
     Cache,
 }
 
-pub enum TimeoutFuture {
+pub(crate) enum TimeoutFuture {
     Timeout,
 }
 
@@ -68,7 +69,7 @@ pub enum TimeoutFuture {
 ///
 /// If the future didn't resolve before the timeout was reached, this returns
 /// an `Err(TimeoutFuture)`.
-pub async fn timeout_future<T>(
+pub(crate) async fn timeout_future<T>(
     timeout: std::time::Duration,
     fut: impl Future<Output = T>,
 ) -> Result<T, TimeoutFuture> {
@@ -85,7 +86,7 @@ pub async fn timeout_future<T>(
 ///
 /// The expected format to replace is `{name}`, where `name` is the first string
 /// in the dictionary entry tuple.
-pub fn freplace(s: String, args: &[(&str, &str)]) -> String {
+pub(crate) fn freplace(s: String, args: &[(&str, &str)]) -> String {
     let mut s = s;
 
     for (k, v) in args {
@@ -96,7 +97,7 @@ pub fn freplace(s: String, args: &[(&str, &str)]) -> String {
 }
 
 /// Regex that matches a string that only includes emojis.
-pub static EMOJI_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+pub(crate) static EMOJI_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?x)
         ^
@@ -113,7 +114,7 @@ pub static EMOJI_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 /// Inner to manage a bound object.
 #[derive(Debug)]
-pub struct BoundObjectInner<T: ObjectType> {
+struct BoundObjectInner<T: ObjectType> {
     obj: T,
     signal_handler_ids: Vec<glib::SignalHandlerId>,
 }
@@ -136,7 +137,7 @@ impl<T: ObjectType> BoundObject<T> {
     ///
     /// Calls `disconnect_signals` first to drop the previous strong reference
     /// and disconnect the previous signal handlers.
-    pub fn set(&self, obj: T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
+    pub(crate) fn set(&self, obj: T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
         self.disconnect_signals();
 
         let inner = BoundObjectInner {
@@ -207,7 +208,7 @@ impl<T: ObjectType> BoundObjectWeakRef<T> {
     ///
     /// Calls `disconnect_signals` first to remove the previous weak reference
     /// and disconnect the previous signal handlers.
-    pub fn set(&self, obj: &T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
+    pub(crate) fn set(&self, obj: &T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
         self.disconnect_signals();
 
         self.weak_obj.set(Some(obj));
@@ -278,7 +279,7 @@ impl<T: ObjectType> BoundConstructOnlyObject<T> {
     /// Set the given object and signal handlers IDs.
     ///
     /// Panics if the object was already set.
-    pub fn set(&self, obj: T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
+    pub(crate) fn set(&self, obj: T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
         self.obj.set(obj).unwrap();
         self.signal_handler_ids.replace(signal_handler_ids);
     }
@@ -343,7 +344,7 @@ impl<T> OngoingAsyncAction<T> {
     /// Create a new async action that sets the given value.
     ///
     /// Returns both a strong and a weak reference.
-    pub fn set(value: T) -> (Self, WeakOngoingAsyncAction<T>) {
+    pub(crate) fn set(value: T) -> (Self, WeakOngoingAsyncAction<T>) {
         let strong = Rc::new(AsyncAction::Set(value));
         let weak = Rc::downgrade(&strong);
         (Self { strong }, WeakOngoingAsyncAction { weak })
@@ -352,25 +353,14 @@ impl<T> OngoingAsyncAction<T> {
     /// Create a new async action that removes a value.
     ///
     /// Returns both a strong and a weak reference.
-    pub fn remove() -> (Self, WeakOngoingAsyncAction<T>) {
+    pub(crate) fn remove() -> (Self, WeakOngoingAsyncAction<T>) {
         let strong = Rc::new(AsyncAction::Remove);
         let weak = Rc::downgrade(&strong);
         (Self { strong }, WeakOngoingAsyncAction { weak })
     }
 
-    /// Create a new weak reference to this async action.
-    pub fn downgrade(&self) -> WeakOngoingAsyncAction<T> {
-        let weak = Rc::downgrade(&self.strong);
-        WeakOngoingAsyncAction { weak }
-    }
-
-    /// The inner action.
-    pub fn action(&self) -> &AsyncAction<T> {
-        &self.strong
-    }
-
     /// Get the inner value, if any.
-    pub fn as_value(&self) -> Option<&T> {
+    pub(crate) fn as_value(&self) -> Option<&T> {
         self.strong.as_value()
     }
 }
@@ -391,7 +381,7 @@ impl<T> WeakOngoingAsyncAction<T> {
 
 /// An async action.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AsyncAction<T> {
+pub(crate) enum AsyncAction<T> {
     /// An async action is ongoing to set this value.
     Set(T),
 
@@ -431,7 +421,7 @@ impl<T> TokioDrop<T> {
     /// Sets the contents of this cell to `value`.
     ///
     /// Returns `Ok(())` if the cell was empty and `Err(value)` if it was full.
-    pub fn set(&self, value: T) -> Result<(), T> {
+    pub(crate) fn set(&self, value: T) -> Result<(), T> {
         self.0.set(value)
     }
 }
@@ -491,7 +481,7 @@ pub enum LoadingState {
 }
 
 /// Convert the given checked `bool` to a `GtkAccessibleTristate`.
-pub fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTristate {
+pub(crate) fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTristate {
     if checked {
         gtk::AccessibleTristate::True
     } else {
@@ -588,7 +578,7 @@ struct InnerCountedRef {
 
 impl CountedRef {
     /// Construct a counted reference.
-    pub fn new<F1, F2>(on_zero: F1, on_non_zero: F2) -> Self
+    pub(crate) fn new<F1, F2>(on_zero: F1, on_non_zero: F2) -> Self
     where
         F1: Fn() + 'static,
         F2: Fn() + 'static,

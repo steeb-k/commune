@@ -138,13 +138,13 @@ impl HistoryViewerEvent {
     }
 
     /// The media message content of this event.
-    pub fn media_message(&self) -> MediaMessage {
+    pub(crate) fn media_message(&self) -> MediaMessage {
         MediaMessage::from_message(&self.matrix_event().content.msgtype)
             .expect("HistoryViewerEvents are all media messages")
     }
 
     /// The visual media message of this event, if any.
-    pub fn visual_media_message(&self) -> Option<VisualMediaMessage> {
+    pub(crate) fn visual_media_message(&self) -> Option<VisualMediaMessage> {
         VisualMediaMessage::from_message(&self.matrix_event().content.msgtype)
     }
 

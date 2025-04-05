@@ -10,7 +10,7 @@ mod imp {
     pub struct DummyObject {
         /// The identifier of this item.
         #[property(get, set)]
-        pub id: RefCell<String>,
+        id: RefCell<String>,
     }
 
     #[glib::object_subclass]

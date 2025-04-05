@@ -30,7 +30,7 @@ use super::{FrameDimensions, MediaFileError};
 use crate::{components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX};
 
 /// The maximum dimensions of a thumbnail in the timeline.
-pub const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
+pub(crate) const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
     width: 600,
     height: 400,
 };
@@ -114,7 +114,7 @@ async fn load_image(
 
 /// An image that was just loaded.
 #[derive(Clone)]
-pub struct Image {
+pub(crate) struct Image {
     /// The file of the image.
     file: File,
     /// The image loader.
@@ -140,7 +140,7 @@ impl From<Image> for gdk::Paintable {
 }
 
 /// An API to load image information.
-pub enum ImageInfoLoader {
+pub(crate) enum ImageInfoLoader {
     /// An image file.
     File(gio::File),
     /// A texture in memory.
@@ -164,7 +164,7 @@ impl ImageInfoLoader {
     }
 
     /// Load the information for this image.
-    pub async fn load_info(self) -> BaseImageInfo {
+    pub(crate) async fn load_info(self) -> BaseImageInfo {
         self.into_first_frame()
             .await
             .map(|f| f.info())
@@ -173,7 +173,7 @@ impl ImageInfoLoader {
 
     /// Load the information for this image and try to generate a thumbnail
     /// given the filesize of the original image.
-    pub async fn load_info_and_thumbnail(
+    pub(crate) async fn load_info_and_thumbnail(
         self,
         filesize: Option<u32>,
         widget: &impl IsA<gtk::Widget>,
@@ -286,7 +286,7 @@ impl Frame {
 /// Extensions to `FrameDimensions` for computing thumbnail dimensions.
 impl FrameDimensions {
     /// Get the maximum dimensions for a thumbnail with the given scale factor.
-    pub fn thumbnail_max_dimensions(scale_factor: i32) -> Self {
+    pub(crate) fn thumbnail_max_dimensions(scale_factor: i32) -> Self {
         let scale_factor = scale_factor.try_into().unwrap_or(1);
         THUMBNAIL_MAX_DIMENSIONS.scale(scale_factor)
     }
@@ -449,15 +449,15 @@ impl TextureThumbnailer {
 
 /// An API to download a thumbnail for a media.
 #[derive(Debug, Clone, Copy)]
-pub struct ThumbnailDownloader<'a> {
+pub(crate) struct ThumbnailDownloader<'a> {
     /// The main source of the image.
     ///
     /// This should be the source with the best quality.
-    pub main: ImageSource<'a>,
+    pub(crate) main: ImageSource<'a>,
     /// An alternative source for the image.
     ///
     /// This should be a source with a lower quality.
-    pub alt: Option<ImageSource<'a>>,
+    pub(crate) alt: Option<ImageSource<'a>>,
 }
 
 impl ThumbnailDownloader<'_> {
@@ -465,7 +465,7 @@ impl ThumbnailDownloader<'_> {
     ///
     /// This might not return a thumbnail at the requested dimensions, depending
     /// on the sources and the homeserver.
-    pub async fn download(
+    pub(crate) async fn download(
         self,
         client: Client,
         settings: ThumbnailSettings,
@@ -518,11 +518,11 @@ impl ThumbnailDownloader<'_> {
 
 /// The source of an image.
 #[derive(Debug, Clone, Copy)]
-pub struct ImageSource<'a> {
+pub(crate) struct ImageSource<'a> {
     /// The source of the image.
-    pub source: MediaSource<'a>,
+    pub(crate) source: MediaSource<'a>,
     /// Information about the image.
-    pub info: Option<ImageSourceInfo<'a>>,
+    pub(crate) info: Option<ImageSourceInfo<'a>>,
 }
 
 impl ImageSource<'_> {
@@ -607,7 +607,7 @@ fn filesize_is_too_big(filesize: Option<u32>) -> bool {
 
 /// The source of a media file.
 #[derive(Debug, Clone, Copy)]
-pub enum MediaSource<'a> {
+pub(crate) enum MediaSource<'a> {
     /// A common media source.
     Common(&'a CommonMediaSource),
     /// The media source of a sticker.
@@ -656,7 +656,7 @@ impl<'a> From<&'a OwnedMxcUri> for MediaSource<'a> {
 
 /// Information about the source of an image.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct ImageSourceInfo<'a> {
+pub(crate) struct ImageSourceInfo<'a> {
     /// The dimensions of the image.
     dimensions: Option<FrameDimensions>,
     /// The MIME type of the image.
@@ -702,13 +702,13 @@ impl<'a> From<&'a AvatarImageInfo> for ImageSourceInfo<'a> {
 
 /// The settings for downloading a thumbnail.
 #[derive(Debug, Clone)]
-pub struct ThumbnailSettings {
+pub(crate) struct ThumbnailSettings {
     /// The requested dimensions of the thumbnail.
-    pub dimensions: FrameDimensions,
+    pub(crate) dimensions: FrameDimensions,
     /// The method to use to resize the thumbnail.
-    pub method: Method,
+    pub(crate) method: Method,
     /// Whether to request an animated thumbnail.
-    pub animated: bool,
+    pub(crate) animated: bool,
     /// Whether we should prefer to get a thumbnail if dimensions are unknown.
     ///
     /// This is particularly useful for avatars where we will prefer to save
@@ -716,7 +716,7 @@ pub struct ThumbnailSettings {
     /// appear several times on the screen. For media messages, we will on the
     /// contrary prefer to download the original content to reduce the space
     /// taken in the media cache.
-    pub prefer_thumbnail: bool,
+    pub(crate) prefer_thumbnail: bool,
 }
 
 impl From<ThumbnailSettings> for MediaThumbnailSettings {
@@ -739,7 +739,7 @@ impl From<ThumbnailSettings> for MediaThumbnailSettings {
 
 /// An error encountered when loading an image.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ImageError {
+pub(crate) enum ImageError {
     /// Could not download the image.
     Download,
     /// Could not save the image to a temporary file.

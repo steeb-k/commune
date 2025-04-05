@@ -35,7 +35,7 @@ use crate::{
         Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,
     },
     spawn, toast,
-    utils::{template_callbacks::TemplateCallbacks, BoundObject, LoadingState},
+    utils::{BoundObject, LoadingState, TemplateCallbacks},
     Window,
 };
 

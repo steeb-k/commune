@@ -11,7 +11,7 @@ use crate::{
     prelude::*,
     session::model::UserSession,
     toast,
-    utils::{template_callbacks::TemplateCallbacks, BoundConstructOnlyObject, BoundObject},
+    utils::{BoundConstructOnlyObject, BoundObject, TemplateCallbacks},
 };
 
 mod imp {

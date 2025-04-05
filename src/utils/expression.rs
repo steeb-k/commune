@@ -5,7 +5,7 @@ use secular::normalized_lower_lay_string;
 
 /// Returns an expression that is the and’ed result of the given boolean
 /// expressions.
-pub fn and(
+pub(crate) fn and(
     a_expr: impl AsRef<gtk::Expression>,
     b_expr: impl AsRef<gtk::Expression>,
 ) -> gtk::ClosureExpression {
@@ -17,7 +17,7 @@ pub fn and(
 
 /// Returns an expression that is the or’ed result of the given boolean
 /// expressions.
-pub fn or(
+pub(crate) fn or(
     a_expr: impl AsRef<gtk::Expression>,
     b_expr: impl AsRef<gtk::Expression>,
 ) -> gtk::ClosureExpression {
@@ -29,7 +29,7 @@ pub fn or(
 
 /// Returns an expression that is the inverted result of the given boolean
 /// expression.
-pub fn not<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
+pub(crate) fn not<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<bool>(
         &[a_expr],
         closure!(|_: Option<glib::Object>, a: bool| { !a }),
@@ -38,7 +38,7 @@ pub fn not<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
 
 /// Returns an expression that is the normalized version of the given string
 /// expression.
-pub fn normalize_string<E: AsRef<gtk::Expression>>(expr: E) -> gtk::ClosureExpression {
+pub(crate) fn normalize_string<E: AsRef<gtk::Expression>>(expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<String>(
         &[expr],
         closure!(|_: Option<glib::Object>, s: &str| { normalized_lower_lay_string(s) }),
