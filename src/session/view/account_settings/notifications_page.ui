@@ -66,6 +66,7 @@
   <object class="EntryAddRow" id="keywords_add_row">
     <property name="title" translatable="yes">Add Keyword</property>
     <property name="add-button-tooltip-text" translatable="yes">Add Keyword</property>
+    <signal name="changed" handler="update_keywords" swapped="yes"/>
     <signal name="add" handler="add_keyword" swapped="yes"/>
     <signal name="entry-activated" handler="add_keyword" swapped="yes"/>
   </object>

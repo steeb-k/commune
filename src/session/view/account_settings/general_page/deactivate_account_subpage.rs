@@ -185,7 +185,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Account settings page about the user and the session.
+    /// Subpage allowing the user to deactivate their account.
     pub struct DeactivateAccountSubpage(ObjectSubclass<imp::DeactivateAccountSubpage>)
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }

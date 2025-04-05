@@ -1,10 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gio,
-    glib::{self, clone},
-    CompositeTemplate,
-};
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
 use ruma::{api::client::discovery::get_capabilities::Capabilities, OwnedMxcUri};
 use tracing::error;
@@ -40,21 +36,21 @@ mod imp {
     #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
         #[template_child]
-        pub avatar: TemplateChild<EditableAvatar>,
+        avatar: TemplateChild<EditableAvatar>,
         #[template_child]
-        pub display_name: TemplateChild<adw::EntryRow>,
+        display_name: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub display_name_button: TemplateChild<ActionButton>,
+        display_name_button: TemplateChild<ActionButton>,
         #[template_child]
-        pub change_password_group: TemplateChild<adw::PreferencesGroup>,
+        change_password_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         manage_account_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub homeserver: TemplateChild<CopyableRow>,
+        homeserver: TemplateChild<CopyableRow>,
         #[template_child]
-        pub user_id: TemplateChild<CopyableRow>,
+        user_id: TemplateChild<CopyableRow>,
         #[template_child]
-        pub session_id: TemplateChild<CopyableRow>,
+        session_id: TemplateChild<CopyableRow>,
         #[template_child]
         deactivate_account_button: TemplateChild<adw::ButtonRow>,
         /// The current session.
@@ -65,10 +61,10 @@ mod imp {
         account_settings: glib::WeakRef<AccountSettings>,
         /// The possible changes on the homeserver.
         capabilities: RefCell<Capabilities>,
-        pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
-        pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
-        pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
-        pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
+        changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
+        changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
+        avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
+        display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -80,7 +76,6 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
-            Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
         }
 
@@ -103,13 +98,15 @@ mod imp {
             if prev_session == session {
                 return;
             }
-            let obj = self.obj();
 
             if let Some(session) = prev_session {
                 let user = session.user();
 
                 if let Some(handler) = self.avatar_uri_handler.take() {
-                    user.avatar_data().image().unwrap().disconnect(handler);
+                    user.avatar_data()
+                        .image()
+                        .expect("user of session always has an avatar image")
+                        .disconnect(handler);
                 }
                 if let Some(handler) = self.display_name_handler.take() {
                     user.disconnect(handler);
@@ -117,7 +114,7 @@ mod imp {
             }
 
             self.session.set(session.as_ref());
-            obj.notify_session();
+            self.obj().notify_session();
 
             let Some(session) = session else {
                 return;
@@ -131,21 +128,21 @@ mod imp {
             let avatar_uri_handler = user
                 .avatar_data()
                 .image()
-                .unwrap()
+                .expect("user of session always has an avatar image")
                 .connect_uri_string_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |avatar_image| {
-                        obj.user_avatar_changed(avatar_image.uri().as_ref());
+                        imp.user_avatar_changed(avatar_image.uri().as_ref());
                     }
                 ));
             self.avatar_uri_handler.replace(Some(avatar_uri_handler));
 
             let display_name_handler = user.connect_display_name_notify(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to=imp)]
+                self,
                 move |user| {
-                    obj.user_display_name_changed(&user.display_name());
+                    imp.user_display_name_changed(&user.display_name());
                 }
             ));
             self.display_name_handler
@@ -196,7 +193,7 @@ mod imp {
             let client = session.client();
 
             let handle = spawn_tokio!(async move { client.get_capabilities().await });
-            let capabilities = match handle.await.unwrap() {
+            let capabilities = match handle.await.expect("task was not aborted") {
                 Ok(capabilities) => capabilities,
                 Err(error) => {
                     error!("Could not get server capabilities: {error}");
@@ -250,6 +247,275 @@ mod imp {
                 error!("Could not launch account management URL: {error}");
             }
         }
+
+        /// Update the view when the user's avatar changed.
+        fn user_avatar_changed(&self, uri: Option<&OwnedMxcUri>) {
+            if let Some(action) = self.changing_avatar.borrow().as_ref() {
+                if uri != action.as_value() {
+                    // This is not the change we expected, maybe another device did a change too.
+                    // Let's wait for another change.
+                    return;
+                }
+            } else {
+                // No action is ongoing, we don't need to do anything.
+                return;
+            }
+
+            // Reset the state.
+            self.changing_avatar.take();
+            self.avatar.success();
+
+            let obj = self.obj();
+            if uri.is_none() {
+                toast!(obj, gettext("Avatar removed successfully"));
+            } else {
+                toast!(obj, gettext("Avatar changed successfully"));
+            }
+        }
+
+        /// Change the avatar of the user with the one in the given file.
+        #[template_callback]
+        async fn change_avatar(&self, file: gio::File) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let avatar = &self.avatar;
+            avatar.edit_in_progress();
+
+            let info = match FileInfo::try_from_file(&file).await {
+                Ok(info) => info,
+                Err(error) => {
+                    error!("Could not load user avatar file info: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not load file"));
+                    avatar.reset();
+                    return;
+                }
+            };
+
+            let data = match file.load_contents_future().await {
+                Ok((data, _)) => data,
+                Err(error) => {
+                    error!("Could not load user avatar file: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not load file"));
+                    avatar.reset();
+                    return;
+                }
+            };
+
+            let client = session.client();
+            let client_clone = client.clone();
+            let handle = spawn_tokio!(async move {
+                client_clone
+                    .media()
+                    .upload(&info.mime, data.into(), None)
+                    .await
+            });
+
+            let uri = match handle.await.expect("task was not aborted") {
+                Ok(res) => res.content_uri,
+                Err(error) => {
+                    error!("Could not upload user avatar: {error}");
+                    let obj = self.obj();
+                    toast!(obj, gettext("Could not upload avatar"));
+                    avatar.reset();
+                    return;
+                }
+            };
+
+            let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
+            self.changing_avatar.replace(Some(action));
+
+            let uri_clone = uri.clone();
+            let handle =
+                spawn_tokio!(
+                    async move { client.account().set_avatar_url(Some(&uri_clone)).await }
+                );
+
+            match handle.await.expect("task was not aborted") {
+                Ok(()) => {
+                    // If the user is in no rooms, we won't receive the update via sync, so change
+                    // the avatar manually if this request succeeds before the avatar is updated.
+                    // Because this action can finish in user_avatar_changed, we must only act if
+                    // this is still the current action.
+                    if weak_action.is_ongoing() {
+                        session.user().set_avatar_url(Some(uri));
+                    }
+                }
+                Err(error) => {
+                    // Because this action can finish in user_avatar_changed, we must only act if
+                    // this is still the current action.
+                    if weak_action.is_ongoing() {
+                        self.changing_avatar.take();
+                        error!("Could not change user avatar: {error}");
+                        let obj = self.obj();
+                        toast!(obj, gettext("Could not change avatar"));
+                        avatar.reset();
+                    }
+                }
+            }
+        }
+
+        /// Remove the current avatar of the user.
+        #[template_callback]
+        async fn remove_avatar(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            // Ask for confirmation.
+            let confirm_dialog = adw::AlertDialog::builder()
+                .default_response("cancel")
+                .heading(gettext("Remove Avatar?"))
+                .body(gettext("Do you really want to remove your avatar?"))
+                .build();
+            confirm_dialog.add_responses(&[
+                ("cancel", &gettext("Cancel")),
+                ("remove", &gettext("Remove")),
+            ]);
+            confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
+
+            let obj = self.obj();
+            if confirm_dialog.choose_future(&*obj).await != "remove" {
+                return;
+            }
+
+            let avatar = &*self.avatar;
+            avatar.removal_in_progress();
+
+            let (action, weak_action) = OngoingAsyncAction::remove();
+            self.changing_avatar.replace(Some(action));
+
+            let client = session.client();
+            let handle = spawn_tokio!(async move { client.account().set_avatar_url(None).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(()) => {
+                    // If the user is in no rooms, we won't receive the update via sync, so change
+                    // the avatar manually if this request succeeds before the avatar is updated.
+                    // Because this action can finish in avatar_changed, we must only act if this is
+                    // still the current action.
+                    if weak_action.is_ongoing() {
+                        session.user().set_avatar_url(None);
+                    }
+                }
+                Err(error) => {
+                    // Because this action can finish in avatar_changed, we must only act if this is
+                    // still the current action.
+                    if weak_action.is_ongoing() {
+                        self.changing_avatar.take();
+                        error!("Could not remove user avatar: {error}");
+                        toast!(obj, gettext("Could not remove avatar"));
+                        avatar.reset();
+                    }
+                }
+            }
+        }
+
+        /// Update the view when the text of the display name changed.
+        #[template_callback]
+        fn display_name_changed(&self) {
+            self.display_name_button
+                .set_visible(self.has_display_name_changed());
+        }
+
+        /// Whether the display name in the entry row is different than the
+        /// user's.
+        fn has_display_name_changed(&self) -> bool {
+            let Some(session) = self.session.upgrade() else {
+                return false;
+            };
+            let text = self.display_name.text();
+            let display_name = session.user().display_name();
+
+            text != display_name
+        }
+
+        /// Update the view when the user's display name changed.
+        fn user_display_name_changed(&self, name: &str) {
+            if let Some(action) = self.changing_display_name.borrow().as_ref() {
+                if action.as_value().map(String::as_str) == Some(name) {
+                    // This is not the change we expected, maybe another device did a change too.
+                    // Let's wait for another change.
+                    return;
+                }
+            } else {
+                // No action is ongoing, we don't need to do anything.
+                return;
+            }
+
+            // Reset state.
+            self.changing_display_name.take();
+
+            let entry = &self.display_name;
+            let button = &self.display_name_button;
+
+            entry.remove_css_class("error");
+            entry.set_sensitive(true);
+            button.set_visible(false);
+            button.set_state(ActionState::Confirm);
+            let obj = self.obj();
+            toast!(obj, gettext("Name changed successfully"));
+        }
+
+        /// Change the display name of the user.
+        #[template_callback]
+        async fn change_display_name(&self) {
+            if !self.has_display_name_changed() {
+                // Nothing to do.
+                return;
+            }
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let entry = &self.display_name;
+            let button = &self.display_name_button;
+
+            entry.set_sensitive(false);
+            button.set_state(ActionState::Loading);
+
+            let display_name = entry.text().trim().to_string();
+
+            let (action, weak_action) = OngoingAsyncAction::set(display_name.clone());
+            self.changing_display_name.replace(Some(action));
+
+            let client = session.client();
+            let display_name_clone = display_name.clone();
+            let handle = spawn_tokio!(async move {
+                client
+                    .account()
+                    .set_display_name(Some(&display_name_clone))
+                    .await
+            });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(()) => {
+                    // If the user is in no rooms, we won't receive the update via sync, so change
+                    // the avatar manually if this request succeeds before the avatar is updated.
+                    // Because this action can finish in user_display_name_changed, we must only act
+                    // if this is still the current action.
+                    if weak_action.is_ongoing() {
+                        session.user().set_name(Some(display_name));
+                    }
+                }
+                Err(error) => {
+                    // Because this action can finish in user_display_name_changed, we must only act
+                    // if this is still the current action.
+                    if weak_action.is_ongoing() {
+                        self.changing_display_name.take();
+                        error!("Could not change user display name: {error}");
+                        let obj = self.obj();
+                        toast!(obj, gettext("Could not change display name"));
+                        button.set_state(ActionState::Retry);
+                        entry.add_css_class("error");
+                        entry.set_sensitive(true);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -259,275 +525,8 @@ glib::wrapper! {
         @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl GeneralPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Update the view when the user's avatar changed.
-    fn user_avatar_changed(&self, uri: Option<&OwnedMxcUri>) {
-        let imp = self.imp();
-
-        if let Some(action) = imp.changing_avatar.borrow().as_ref() {
-            if uri != action.as_value() {
-                // This is not the change we expected, maybe another device did a change too.
-                // Let's wait for another change.
-                return;
-            }
-        } else {
-            // No action is ongoing, we don't need to do anything.
-            return;
-        }
-
-        // Reset the state.
-        imp.changing_avatar.take();
-        imp.avatar.success();
-        if uri.is_none() {
-            toast!(self, gettext("Avatar removed successfully"));
-        } else {
-            toast!(self, gettext("Avatar changed successfully"));
-        }
-    }
-
-    /// Change the avatar of the user with the one in the given file.
-    #[template_callback]
-    async fn change_avatar(&self, file: gio::File) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let avatar = &imp.avatar;
-        avatar.edit_in_progress();
-
-        let info = match FileInfo::try_from_file(&file).await {
-            Ok(info) => info,
-            Err(error) => {
-                error!("Could not load user avatar file info: {error}");
-                toast!(self, gettext("Could not load file"));
-                avatar.reset();
-                return;
-            }
-        };
-
-        let data = match file.load_contents_future().await {
-            Ok((data, _)) => data,
-            Err(error) => {
-                error!("Could not load user avatar file: {error}");
-                toast!(self, gettext("Could not load file"));
-                avatar.reset();
-                return;
-            }
-        };
-
-        let client = session.client();
-        let client_clone = client.clone();
-        let handle = spawn_tokio!(async move {
-            client_clone
-                .media()
-                .upload(&info.mime, data.into(), None)
-                .await
-        });
-
-        let uri = match handle.await.unwrap() {
-            Ok(res) => res.content_uri,
-            Err(error) => {
-                error!("Could not upload user avatar: {error}");
-                toast!(self, gettext("Could not upload avatar"));
-                avatar.reset();
-                return;
-            }
-        };
-
-        let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
-        imp.changing_avatar.replace(Some(action));
-
-        let uri_clone = uri.clone();
-        let handle =
-            spawn_tokio!(async move { client.account().set_avatar_url(Some(&uri_clone)).await });
-
-        match handle.await.unwrap() {
-            Ok(()) => {
-                // If the user is in no rooms, we won't receive the update via sync, so change
-                // the avatar manually if this request succeeds before the avatar is updated.
-                // Because this action can finish in user_avatar_changed, we must only act if
-                // this is still the current action.
-                if weak_action.is_ongoing() {
-                    session.user().set_avatar_url(Some(uri));
-                }
-            }
-            Err(error) => {
-                // Because this action can finish in user_avatar_changed, we must only act if
-                // this is still the current action.
-                if weak_action.is_ongoing() {
-                    imp.changing_avatar.take();
-                    error!("Could not change user avatar: {error}");
-                    toast!(self, gettext("Could not change avatar"));
-                    avatar.reset();
-                }
-            }
-        }
-    }
-
-    /// Remove the current avatar of the user.
-    #[template_callback]
-    async fn remove_avatar(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        // Ask for confirmation.
-        let confirm_dialog = adw::AlertDialog::builder()
-            .default_response("cancel")
-            .heading(gettext("Remove Avatar?"))
-            .body(gettext("Do you really want to remove your avatar?"))
-            .build();
-        confirm_dialog.add_responses(&[
-            ("cancel", &gettext("Cancel")),
-            ("remove", &gettext("Remove")),
-        ]);
-        confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
-
-        if confirm_dialog.choose_future(self).await != "remove" {
-            return;
-        }
-
-        let imp = self.imp();
-        let avatar = &*imp.avatar;
-        avatar.removal_in_progress();
-
-        let (action, weak_action) = OngoingAsyncAction::remove();
-        imp.changing_avatar.replace(Some(action));
-
-        let client = session.client();
-        let handle = spawn_tokio!(async move { client.account().set_avatar_url(None).await });
-
-        match handle.await.unwrap() {
-            Ok(()) => {
-                // If the user is in no rooms, we won't receive the update via sync, so change
-                // the avatar manually if this request succeeds before the avatar is updated.
-                // Because this action can finish in avatar_changed, we must only act if this is
-                // still the current action.
-                if weak_action.is_ongoing() {
-                    session.user().set_avatar_url(None);
-                }
-            }
-            Err(error) => {
-                // Because this action can finish in avatar_changed, we must only act if this is
-                // still the current action.
-                if weak_action.is_ongoing() {
-                    imp.changing_avatar.take();
-                    error!("Could not remove user avatar: {error}");
-                    toast!(self, gettext("Could not remove avatar"));
-                    avatar.reset();
-                }
-            }
-        }
-    }
-
-    /// Update the view when the text of the display name changed.
-    #[template_callback]
-    fn display_name_changed(&self) {
-        self.imp()
-            .display_name_button
-            .set_visible(self.has_display_name_changed());
-    }
-
-    /// Whether the display name in the entry row is different than the user's.
-    fn has_display_name_changed(&self) -> bool {
-        let Some(session) = self.session() else {
-            return false;
-        };
-        let imp = self.imp();
-        let text = imp.display_name.text();
-        let display_name = session.user().display_name();
-
-        text != display_name
-    }
-
-    /// Update the view when the user's display name changed.
-    fn user_display_name_changed(&self, name: &str) {
-        let imp = self.imp();
-
-        if let Some(action) = imp.changing_display_name.borrow().as_ref() {
-            if action.as_value().map(String::as_str) == Some(name) {
-                // This is not the change we expected, maybe another device did a change too.
-                // Let's wait for another change.
-                return;
-            }
-        } else {
-            // No action is ongoing, we don't need to do anything.
-            return;
-        }
-
-        // Reset state.
-        imp.changing_display_name.take();
-
-        let entry = &imp.display_name;
-        let button = &imp.display_name_button;
-
-        entry.remove_css_class("error");
-        entry.set_sensitive(true);
-        button.set_visible(false);
-        button.set_state(ActionState::Confirm);
-        toast!(self, gettext("Name changed successfully"));
-    }
-
-    /// Change the display name of the user.
-    #[template_callback]
-    async fn change_display_name(&self) {
-        if !self.has_display_name_changed() {
-            // Nothing to do.
-            return;
-        }
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let entry = &imp.display_name;
-        let button = &imp.display_name_button;
-
-        entry.set_sensitive(false);
-        button.set_state(ActionState::Loading);
-
-        let display_name = entry.text().trim().to_string();
-
-        let (action, weak_action) = OngoingAsyncAction::set(display_name.clone());
-        imp.changing_display_name.replace(Some(action));
-
-        let client = session.client();
-        let display_name_clone = display_name.clone();
-        let handle = spawn_tokio!(async move {
-            client
-                .account()
-                .set_display_name(Some(&display_name_clone))
-                .await
-        });
-
-        match handle.await.unwrap() {
-            Ok(()) => {
-                // If the user is in no rooms, we won't receive the update via sync, so change
-                // the avatar manually if this request succeeds before the avatar is updated.
-                // Because this action can finish in user_display_name_changed, we must only act
-                // if this is still the current action.
-                if weak_action.is_ongoing() {
-                    session.user().set_name(Some(display_name));
-                }
-            }
-            Err(error) => {
-                // Because this action can finish in user_display_name_changed, we must only act
-                // if this is still the current action.
-                if weak_action.is_ongoing() {
-                    imp.changing_display_name.take();
-                    error!("Could not change user display name: {error}");
-                    toast!(self, gettext("Could not change display name"));
-                    button.set_state(ActionState::Retry);
-                    entry.add_css_class("error");
-                    entry.set_sensitive(true);
-                }
-            }
-        }
     }
 }

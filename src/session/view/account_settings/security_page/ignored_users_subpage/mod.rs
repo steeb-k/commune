@@ -21,18 +21,18 @@ mod imp {
     #[properties(wrapper_type = super::IgnoredUsersSubpage)]
     pub struct IgnoredUsersSubpage {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub search_bar: TemplateChild<gtk::SearchBar>,
+        search_bar: TemplateChild<gtk::SearchBar>,
         #[template_child]
-        pub search_entry: TemplateChild<gtk::SearchEntry>,
+        search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
-        pub filtered_model: gtk::FilterListModel,
+        list_view: TemplateChild<gtk::ListView>,
+        filtered_model: gtk::FilterListModel,
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
-        pub session: glib::WeakRef<Session>,
-        pub items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
+        session: glib::WeakRef<Session>,
+        items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]

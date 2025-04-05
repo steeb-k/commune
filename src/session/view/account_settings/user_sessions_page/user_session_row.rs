@@ -1,5 +1,5 @@
-use adw::prelude::*;
-use gtk::{glib, subclass::prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
 
 use crate::{session::model::UserSession, utils::template_callbacks::TemplateCallbacks};
 

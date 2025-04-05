@@ -22,23 +22,23 @@ mod imp {
     )]
     #[properties(wrapper_type = super::LogOutSubpage)]
     pub struct LogOutSubpage {
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        warning_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        warning_description: TemplateChild<gtk::Label>,
+        #[template_child]
+        warning_button: TemplateChild<adw::ButtonRow>,
+        #[template_child]
+        logout_button: TemplateChild<LoadingButtonRow>,
+        #[template_child]
+        try_again_button: TemplateChild<LoadingButtonRow>,
+        #[template_child]
+        remove_button: TemplateChild<LoadingButtonRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
-        pub session: glib::WeakRef<Session>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub warning_box: TemplateChild<gtk::Box>,
-        #[template_child]
-        pub warning_description: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub warning_button: TemplateChild<adw::ButtonRow>,
-        #[template_child]
-        pub logout_button: TemplateChild<LoadingButtonRow>,
-        #[template_child]
-        pub try_again_button: TemplateChild<LoadingButtonRow>,
-        #[template_child]
-        pub remove_button: TemplateChild<LoadingButtonRow>,
+        session: glib::WeakRef<Session>,
     }
 
     #[glib::object_subclass]
@@ -49,7 +49,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -63,15 +63,15 @@ mod imp {
     impl WidgetImpl for LogOutSubpage {}
     impl NavigationPageImpl for LogOutSubpage {}
 
+    #[gtk::template_callbacks]
     impl LogOutSubpage {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
             self.session.set(session);
-
             self.update_warning();
         }
 
-        /// Update the warning.
+        /// Update the warning message.
         fn update_warning(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
@@ -100,6 +100,71 @@ mod imp {
             // No particular problem, do not show the warning.
             self.warning_box.set_visible(false);
         }
+
+        /// Show the security tab of the settings.
+        #[template_callback]
+        fn view_security(&self) {
+            let Some(dialog) = self
+                .obj()
+                .ancestor(AccountSettings::static_type())
+                .and_downcast::<AccountSettings>()
+            else {
+                return;
+            };
+
+            dialog.pop_subpage();
+            dialog.set_visible_page_name("security");
+        }
+
+        /// Log out the current session.
+        #[template_callback]
+        async fn log_out(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let is_logout_page = self
+                .stack
+                .visible_child_name()
+                .is_some_and(|name| name == "logout");
+
+            if is_logout_page {
+                self.logout_button.set_is_loading(true);
+                self.warning_button.set_sensitive(false);
+            } else {
+                self.try_again_button.set_is_loading(true);
+            }
+
+            if let Err(error) = session.log_out().await {
+                if is_logout_page {
+                    self.stack.set_visible_child_name("failed");
+                } else {
+                    let obj = self.obj();
+                    toast!(obj, error);
+                }
+            }
+
+            if is_logout_page {
+                self.logout_button.set_is_loading(false);
+                self.warning_button.set_sensitive(true);
+            } else {
+                self.try_again_button.set_is_loading(false);
+            }
+        }
+
+        /// Remove the current session.
+        #[template_callback]
+        async fn remove(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.remove_button.set_is_loading(true);
+
+            session.clean_up().await;
+
+            self.remove_button.set_is_loading(false);
+        }
     }
 }
 
@@ -109,74 +174,8 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl LogOutSubpage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Show the security tab of the settings.
-    #[template_callback]
-    fn view_security(&self) {
-        let Some(dialog) = self
-            .ancestor(AccountSettings::static_type())
-            .and_downcast::<AccountSettings>()
-        else {
-            return;
-        };
-
-        dialog.pop_subpage();
-        dialog.set_visible_page_name("security");
-    }
-
-    /// Log out the current session.
-    #[template_callback]
-    async fn log_out(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let is_logout_page = imp
-            .stack
-            .visible_child_name()
-            .is_some_and(|name| name == "logout");
-
-        if is_logout_page {
-            imp.logout_button.set_is_loading(true);
-            imp.warning_button.set_sensitive(false);
-        } else {
-            imp.try_again_button.set_is_loading(true);
-        }
-
-        if let Err(error) = session.log_out().await {
-            if is_logout_page {
-                imp.stack.set_visible_child_name("failed");
-            } else {
-                toast!(self, error);
-            }
-        }
-
-        if is_logout_page {
-            imp.logout_button.set_is_loading(false);
-            imp.warning_button.set_sensitive(true);
-        } else {
-            imp.try_again_button.set_is_loading(false);
-        }
-    }
-
-    /// Remove the current session.
-    #[template_callback]
-    async fn remove(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let imp = self.imp();
-        imp.remove_button.set_is_loading(true);
-
-        session.clean_up().await;
-
-        imp.remove_button.set_is_loading(false);
     }
 }

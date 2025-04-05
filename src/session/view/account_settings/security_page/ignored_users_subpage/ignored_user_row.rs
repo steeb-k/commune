@@ -18,13 +18,13 @@ mod imp {
     #[properties(wrapper_type = super::IgnoredUserRow)]
     pub struct IgnoredUserRow {
         #[template_child]
-        pub stop_ignoring_button: TemplateChild<LoadingButton>,
+        stop_ignoring_button: TemplateChild<LoadingButton>,
         /// The item containing the user ID presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<gtk::StringObject>>,
+        item: RefCell<Option<gtk::StringObject>>,
         /// The current list of ignored users.
         #[property(get, set, nullable)]
-        pub ignored_users: RefCell<Option<IgnoredUsers>>,
+        ignored_users: RefCell<Option<IgnoredUsers>>,
     }
 
     #[glib::object_subclass]
@@ -35,7 +35,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -49,6 +49,7 @@ mod imp {
     impl WidgetImpl for IgnoredUserRow {}
     impl BoxImpl for IgnoredUserRow {}
 
+    #[gtk::template_callbacks]
     impl IgnoredUserRow {
         /// Set the item containing the user ID presented by this row.
         fn set_item(&self, item: Option<gtk::StringObject>) {
@@ -62,6 +63,30 @@ mod imp {
             // Reset the state of the button.
             self.stop_ignoring_button.set_is_loading(false);
         }
+
+        /// Stop ignoring the user of this row.
+        #[template_callback]
+        async fn stop_ignoring_user(&self) {
+            let Some(user_id) = self
+                .item
+                .borrow()
+                .as_ref()
+                .and_then(|string_object| UserId::parse(string_object.string()).ok())
+            else {
+                return;
+            };
+            let Some(ignored_users) = self.ignored_users.borrow().clone() else {
+                return;
+            };
+
+            self.stop_ignoring_button.set_is_loading(true);
+
+            if ignored_users.remove(&user_id).await.is_err() {
+                let obj = self.obj();
+                toast!(obj, gettext("Could not stop ignoring user"));
+                self.stop_ignoring_button.set_is_loading(false);
+            }
+        }
     }
 }
 
@@ -71,34 +96,10 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl IgnoredUserRow {
     pub fn new(ignored_users: &IgnoredUsers) -> Self {
         glib::Object::builder()
             .property("ignored-users", ignored_users)
             .build()
-    }
-
-    /// Stop ignoring the user of this row.
-    #[template_callback]
-    async fn stop_ignoring_user(&self) {
-        let Some(user_id) = self
-            .item()
-            .map(|i| i.string())
-            .and_then(|s| UserId::parse(&s).ok())
-        else {
-            return;
-        };
-        let Some(ignored_users) = self.ignored_users() else {
-            return;
-        };
-
-        let imp = self.imp();
-        imp.stop_ignoring_button.set_is_loading(true);
-
-        if ignored_users.remove(&user_id).await.is_err() {
-            toast!(self, gettext("Could not stop ignoring user"));
-            imp.stop_ignoring_button.set_is_loading(false);
-        }
     }
 }

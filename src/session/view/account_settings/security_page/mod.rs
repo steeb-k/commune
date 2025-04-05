@@ -28,30 +28,30 @@ mod imp {
     #[properties(wrapper_type = super::SecurityPage)]
     pub struct SecurityPage {
         #[template_child]
-        pub public_read_receipts_row: TemplateChild<adw::SwitchRow>,
+        public_read_receipts_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub typing_row: TemplateChild<adw::SwitchRow>,
+        typing_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub ignored_users_row: TemplateChild<ButtonCountRow>,
+        ignored_users_row: TemplateChild<ButtonCountRow>,
         #[template_child]
-        pub crypto_identity_row: TemplateChild<adw::PreferencesRow>,
+        crypto_identity_row: TemplateChild<adw::PreferencesRow>,
         #[template_child]
-        pub crypto_identity_icon: TemplateChild<gtk::Image>,
+        crypto_identity_icon: TemplateChild<gtk::Image>,
         #[template_child]
-        pub crypto_identity_description: TemplateChild<gtk::Label>,
+        crypto_identity_description: TemplateChild<gtk::Label>,
         #[template_child]
-        pub crypto_identity_btn: TemplateChild<gtk::Button>,
+        crypto_identity_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub recovery_row: TemplateChild<adw::PreferencesRow>,
+        recovery_row: TemplateChild<adw::PreferencesRow>,
         #[template_child]
-        pub recovery_icon: TemplateChild<gtk::Image>,
+        recovery_icon: TemplateChild<gtk::Image>,
         #[template_child]
-        pub recovery_description: TemplateChild<gtk::Label>,
+        recovery_description: TemplateChild<gtk::Label>,
         #[template_child]
-        pub recovery_btn: TemplateChild<gtk::Button>,
+        recovery_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
         security_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         bindings: RefCell<Vec<glib::Binding>>,
@@ -103,7 +103,6 @@ mod imp {
             if prev_session.as_ref() == session {
                 return;
             }
-            let obj = self.obj();
 
             if let Some(session) = prev_session {
                 if let Some(handler) = self.ignored_users_count_handler.take() {
@@ -158,25 +157,25 @@ mod imp {
                 let security = session.security();
                 let crypto_identity_state_handler =
                     security.connect_crypto_identity_state_notify(clone!(
-                        #[weak]
-                        obj,
+                        #[weak(rename_to = imp)]
+                        self,
                         move |_| {
-                            obj.update_crypto_identity();
+                            imp.update_crypto_identity();
                         }
                     ));
                 let verification_state_handler =
                     security.connect_verification_state_notify(clone!(
-                        #[weak]
-                        obj,
+                        #[weak(rename_to = imp)]
+                        self,
                         move |_| {
-                            obj.update_crypto_identity();
+                            imp.update_crypto_identity();
                         }
                     ));
                 let recovery_state_handler = security.connect_recovery_state_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_recovery();
+                        imp.update_recovery();
                     }
                 ));
 
@@ -189,10 +188,156 @@ mod imp {
 
             self.session.set(session);
 
-            obj.update_crypto_identity();
-            obj.update_recovery();
+            self.update_crypto_identity();
+            self.update_recovery();
 
-            obj.notify_session();
+            self.obj().notify_session();
+        }
+
+        /// Update the crypto identity section.
+        fn update_crypto_identity(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+            let security = session.security();
+
+            let crypto_identity_state = security.crypto_identity_state();
+            if matches!(
+                crypto_identity_state,
+                CryptoIdentityState::Unknown | CryptoIdentityState::Missing
+            ) {
+                self.crypto_identity_icon
+                    .set_icon_name(Some("verified-danger-symbolic"));
+                self.crypto_identity_icon.remove_css_class("success");
+                self.crypto_identity_icon.remove_css_class("warning");
+                self.crypto_identity_icon.add_css_class("error");
+
+                self.crypto_identity_row
+                    .set_title(&gettext("No Crypto Identity"));
+                self.crypto_identity_description.set_label(&gettext(
+                    "Verifying your own devices or other users is not possible",
+                ));
+
+                self.crypto_identity_btn.set_label(&gettext("Enable…"));
+                self.crypto_identity_btn
+                    .update_property(&[gtk::accessible::Property::Label(&gettext(
+                        "Enable Crypto Identity",
+                    ))]);
+                self.crypto_identity_btn.add_css_class("suggested-action");
+
+                return;
+            }
+
+            let verification_state = security.verification_state();
+            if verification_state == SessionVerificationState::Verified {
+                self.crypto_identity_icon
+                    .set_icon_name(Some("verified-symbolic"));
+                self.crypto_identity_icon.add_css_class("success");
+                self.crypto_identity_icon.remove_css_class("warning");
+                self.crypto_identity_icon.remove_css_class("error");
+
+                self.crypto_identity_row
+                    .set_title(&gettext("Crypto Identity Enabled"));
+                self.crypto_identity_description.set_label(&gettext(
+                    "The crypto identity exists and this device is verified",
+                ));
+
+                self.crypto_identity_btn.set_label(&gettext("Reset…"));
+                self.crypto_identity_btn
+                    .update_property(&[gtk::accessible::Property::Label(&gettext(
+                        "Reset Crypto Identity",
+                    ))]);
+                self.crypto_identity_btn
+                    .remove_css_class("suggested-action");
+            } else {
+                self.crypto_identity_icon
+                    .set_icon_name(Some("verified-warning-symbolic"));
+                self.crypto_identity_icon.remove_css_class("success");
+                self.crypto_identity_icon.add_css_class("warning");
+                self.crypto_identity_icon.remove_css_class("error");
+
+                self.crypto_identity_row
+                    .set_title(&gettext("Crypto Identity Incomplete"));
+                self.crypto_identity_description.set_label(&gettext(
+                    "The crypto identity exists but this device is not verified",
+                ));
+
+                self.crypto_identity_btn.set_label(&gettext("Verify…"));
+                self.crypto_identity_btn
+                    .update_property(&[gtk::accessible::Property::Label(&gettext(
+                        "Verify This Session",
+                    ))]);
+                self.crypto_identity_btn.add_css_class("suggested-action");
+            }
+        }
+
+        /// Update the recovery section.
+        fn update_recovery(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let recovery_state = session.security().recovery_state();
+            match recovery_state {
+                RecoveryState::Unknown | RecoveryState::Disabled => {
+                    self.recovery_icon.set_icon_name(Some("sync-off-symbolic"));
+                    self.recovery_icon.remove_css_class("success");
+                    self.recovery_icon.remove_css_class("warning");
+                    self.recovery_icon.add_css_class("error");
+
+                    self.recovery_row
+                        .set_title(&gettext("Account Recovery Disabled"));
+                    self.recovery_description.set_label(&gettext(
+                        "Enable recovery to be able to restore your account without another device",
+                    ));
+
+                    self.recovery_btn.set_label(&gettext("Enable…"));
+                    self.recovery_btn
+                        .update_property(&[gtk::accessible::Property::Label(&gettext(
+                            "Enable Account Recovery",
+                        ))]);
+                    self.recovery_btn.add_css_class("suggested-action");
+                }
+                RecoveryState::Enabled => {
+                    self.recovery_icon.set_icon_name(Some("sync-on-symbolic"));
+                    self.recovery_icon.add_css_class("success");
+                    self.recovery_icon.remove_css_class("warning");
+                    self.recovery_icon.remove_css_class("error");
+
+                    self.recovery_row
+                        .set_title(&gettext("Account Recovery Enabled"));
+                    self.recovery_description.set_label(&gettext(
+                        "Your signing keys and encryption keys are synchronized",
+                    ));
+
+                    self.recovery_btn.set_label(&gettext("Reset…"));
+                    self.recovery_btn
+                        .update_property(&[gtk::accessible::Property::Label(&gettext(
+                            "Reset Account Recovery Key",
+                        ))]);
+                    self.recovery_btn.remove_css_class("suggested-action");
+                }
+                RecoveryState::Incomplete => {
+                    self.recovery_icon
+                        .set_icon_name(Some("sync-partial-symbolic"));
+                    self.recovery_icon.remove_css_class("success");
+                    self.recovery_icon.add_css_class("warning");
+                    self.recovery_icon.remove_css_class("error");
+
+                    self.recovery_row
+                        .set_title(&gettext("Account Recovery Incomplete"));
+                    self.recovery_description.set_label(&gettext(
+                        "Recover to synchronize your signing keys and encryption keys",
+                    ));
+
+                    self.recovery_btn.set_label(&gettext("Recover…"));
+                    self.recovery_btn
+                        .update_property(&[gtk::accessible::Property::Label(&gettext(
+                            "Recover Account Data",
+                        ))]);
+                    self.recovery_btn.add_css_class("suggested-action");
+                }
+            }
         }
     }
 }
@@ -206,152 +351,5 @@ glib::wrapper! {
 impl SecurityPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Update the crypto identity section.
-    fn update_crypto_identity(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let imp = self.imp();
-        let security = session.security();
-
-        let crypto_identity_state = security.crypto_identity_state();
-        if matches!(
-            crypto_identity_state,
-            CryptoIdentityState::Unknown | CryptoIdentityState::Missing
-        ) {
-            imp.crypto_identity_icon
-                .set_icon_name(Some("verified-danger-symbolic"));
-            imp.crypto_identity_icon.remove_css_class("success");
-            imp.crypto_identity_icon.remove_css_class("warning");
-            imp.crypto_identity_icon.add_css_class("error");
-
-            imp.crypto_identity_row
-                .set_title(&gettext("No Crypto Identity"));
-            imp.crypto_identity_description.set_label(&gettext(
-                "Verifying your own devices or other users is not possible",
-            ));
-
-            imp.crypto_identity_btn.set_label(&gettext("Enable…"));
-            imp.crypto_identity_btn
-                .update_property(&[gtk::accessible::Property::Label(&gettext(
-                    "Enable Crypto Identity",
-                ))]);
-            imp.crypto_identity_btn.add_css_class("suggested-action");
-
-            return;
-        }
-
-        let verification_state = security.verification_state();
-        if verification_state == SessionVerificationState::Verified {
-            imp.crypto_identity_icon
-                .set_icon_name(Some("verified-symbolic"));
-            imp.crypto_identity_icon.add_css_class("success");
-            imp.crypto_identity_icon.remove_css_class("warning");
-            imp.crypto_identity_icon.remove_css_class("error");
-
-            imp.crypto_identity_row
-                .set_title(&gettext("Crypto Identity Enabled"));
-            imp.crypto_identity_description.set_label(&gettext(
-                "The crypto identity exists and this device is verified",
-            ));
-
-            imp.crypto_identity_btn.set_label(&gettext("Reset…"));
-            imp.crypto_identity_btn
-                .update_property(&[gtk::accessible::Property::Label(&gettext(
-                    "Reset Crypto Identity",
-                ))]);
-            imp.crypto_identity_btn.remove_css_class("suggested-action");
-        } else {
-            imp.crypto_identity_icon
-                .set_icon_name(Some("verified-warning-symbolic"));
-            imp.crypto_identity_icon.remove_css_class("success");
-            imp.crypto_identity_icon.add_css_class("warning");
-            imp.crypto_identity_icon.remove_css_class("error");
-
-            imp.crypto_identity_row
-                .set_title(&gettext("Crypto Identity Incomplete"));
-            imp.crypto_identity_description.set_label(&gettext(
-                "The crypto identity exists but this device is not verified",
-            ));
-
-            imp.crypto_identity_btn.set_label(&gettext("Verify…"));
-            imp.crypto_identity_btn
-                .update_property(&[gtk::accessible::Property::Label(&gettext(
-                    "Verify This Session",
-                ))]);
-            imp.crypto_identity_btn.add_css_class("suggested-action");
-        }
-    }
-
-    /// Update the recovery section.
-    fn update_recovery(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let recovery_state = session.security().recovery_state();
-        match recovery_state {
-            RecoveryState::Unknown | RecoveryState::Disabled => {
-                imp.recovery_icon.set_icon_name(Some("sync-off-symbolic"));
-                imp.recovery_icon.remove_css_class("success");
-                imp.recovery_icon.remove_css_class("warning");
-                imp.recovery_icon.add_css_class("error");
-
-                imp.recovery_row
-                    .set_title(&gettext("Account Recovery Disabled"));
-                imp.recovery_description.set_label(&gettext(
-                    "Enable recovery to be able to restore your account without another device",
-                ));
-
-                imp.recovery_btn.set_label(&gettext("Enable…"));
-                imp.recovery_btn
-                    .update_property(&[gtk::accessible::Property::Label(&gettext(
-                        "Enable Account Recovery",
-                    ))]);
-                imp.recovery_btn.add_css_class("suggested-action");
-            }
-            RecoveryState::Enabled => {
-                imp.recovery_icon.set_icon_name(Some("sync-on-symbolic"));
-                imp.recovery_icon.add_css_class("success");
-                imp.recovery_icon.remove_css_class("warning");
-                imp.recovery_icon.remove_css_class("error");
-
-                imp.recovery_row
-                    .set_title(&gettext("Account Recovery Enabled"));
-                imp.recovery_description.set_label(&gettext(
-                    "Your signing keys and encryption keys are synchronized",
-                ));
-
-                imp.recovery_btn.set_label(&gettext("Reset…"));
-                imp.recovery_btn
-                    .update_property(&[gtk::accessible::Property::Label(&gettext(
-                        "Reset Account Recovery Key",
-                    ))]);
-                imp.recovery_btn.remove_css_class("suggested-action");
-            }
-            RecoveryState::Incomplete => {
-                imp.recovery_icon
-                    .set_icon_name(Some("sync-partial-symbolic"));
-                imp.recovery_icon.remove_css_class("success");
-                imp.recovery_icon.add_css_class("warning");
-                imp.recovery_icon.remove_css_class("error");
-
-                imp.recovery_row
-                    .set_title(&gettext("Account Recovery Incomplete"));
-                imp.recovery_description.set_label(&gettext(
-                    "Recover to synchronize your signing keys and encryption keys",
-                ));
-
-                imp.recovery_btn.set_label(&gettext("Recover…"));
-                imp.recovery_btn
-                    .update_property(&[gtk::accessible::Property::Label(&gettext(
-                        "Recover Account Data",
-                    ))]);
-                imp.recovery_btn.add_css_class("suggested-action");
-            }
-        }
     }
 }

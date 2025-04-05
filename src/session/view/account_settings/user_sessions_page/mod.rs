@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 mod user_session_row;
