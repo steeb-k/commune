@@ -25,34 +25,32 @@ mod imp {
     pub struct RemoteRoom {
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The Matrix URI of this room.
-        pub uri: OnceCell<MatrixRoomIdUri>,
-        /// The Matrix ID of this room.
-        pub room_id: RefCell<Option<OwnedRoomId>>,
+        uri: OnceCell<MatrixRoomIdUri>,
         /// The canonical alias of this room.
-        pub alias: RefCell<Option<OwnedRoomAliasId>>,
+        alias: RefCell<Option<OwnedRoomAliasId>>,
         /// The name that is set for this room.
         ///
         /// This can be empty, the display name should be used instead in the
         /// interface.
         #[property(get)]
-        pub name: RefCell<Option<String>>,
+        name: RefCell<Option<String>>,
         /// The topic of this room.
         #[property(get)]
-        pub topic: RefCell<Option<String>>,
+        topic: RefCell<Option<String>>,
         /// The linkified topic of this room.
         ///
         /// This is the string that should be used in the interface when markup
         /// is allowed.
         #[property(get)]
-        pub topic_linkified: RefCell<Option<String>>,
+        topic_linkified: RefCell<Option<String>>,
         /// The number of joined members in the room.
         #[property(get)]
-        pub joined_members_count: Cell<u32>,
+        joined_members_count: Cell<u32>,
         /// The loading state.
         #[property(get, builder(LoadingState::default()))]
-        pub loading_state: Cell<LoadingState>,
+        loading_state: Cell<LoadingState>,
     }
 
     #[glib::object_subclass]
@@ -84,13 +82,26 @@ mod imp {
             )));
         }
 
-        /// Set the Matrix ID of this room.
-        fn set_room_id(&self, room_id: Option<OwnedRoomId>) {
-            if *self.room_id.borrow() == room_id {
-                return;
-            }
+        /// Set the Matrix URI of this room.
+        pub(super) fn set_uri(&self, uri: MatrixRoomIdUri) {
+            self.uri
+                .set(uri)
+                .expect("Matrix URI should be uninitialized");
 
-            self.room_id.replace(room_id);
+            self.update_display_name();
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.load().await;
+                }
+            ));
+        }
+
+        /// The Matrix URI of this room.
+        pub(super) fn uri(&self) -> &MatrixRoomIdUri {
+            self.uri.get().expect("Matrix URI should be initialized")
         }
 
         /// Set the alias of this room.
@@ -101,6 +112,14 @@ mod imp {
 
             self.alias.replace(alias);
             self.update_display_name();
+        }
+
+        /// The canonical alias of this room.
+        pub(super) fn alias(&self) -> Option<OwnedRoomAliasId> {
+            self.alias
+                .borrow()
+                .clone()
+                .or_else(|| self.uri().id.clone().try_into().ok())
         }
 
         /// Set the name of this room.
@@ -174,7 +193,6 @@ mod imp {
 
         /// Update the room data with the given response.
         pub(super) fn update_data(&self, data: SpaceHierarchyRoomsChunk) {
-            self.set_room_id(Some(data.room_id));
             self.set_alias(data.canonical_alias);
             self.set_name(data.name);
             self.set_topic(data.topic);
@@ -186,115 +204,90 @@ mod imp {
 
             self.set_loading_state(LoadingState::Ready);
         }
+
+        /// Load the data of this room.
+        async fn load(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.set_loading_state(LoadingState::Loading);
+
+            let uri = self.uri();
+            let client = session.client();
+
+            let room_id = match OwnedRoomId::try_from(uri.id.clone()) {
+                Ok(room_id) => room_id,
+                Err(alias) => {
+                    let client_clone = client.clone();
+                    let handle =
+                        spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });
+
+                    match handle.await.unwrap() {
+                        Ok(response) => response.room_id,
+                        Err(error) => {
+                            warn!("Could not resolve room alias `{}`: {error}", uri.id);
+                            self.set_loading_state(LoadingState::Error);
+                            return;
+                        }
+                    }
+                }
+            };
+
+            // FIXME: The space hierarchy endpoint gives us the room details we want, but it
+            // doesn't work if the room is not known by the homeserver. We need MSC3266 for
+            // a proper endpoint.
+            let request = assign!(get_hierarchy::v1::Request::new(room_id.clone()), {
+                // We are only interested in the single room.
+                limit: Some(uint!(1))
+            });
+            let handle = spawn_tokio!(async move { client.send(request).await });
+
+            match handle.await.unwrap() {
+                Ok(response) => {
+                    if let Some(chunk) = response
+                        .rooms
+                        .into_iter()
+                        .next()
+                        .filter(|c| c.room_id == room_id)
+                    {
+                        self.update_data(chunk);
+                    } else {
+                        debug!("Endpoint did not return requested room");
+                        self.set_loading_state(LoadingState::Error);
+                    }
+                }
+                Err(error) => {
+                    warn!("Could not get room details for room `{}`: {error}", uri.id);
+                    self.set_loading_state(LoadingState::Error);
+                }
+            }
+        }
     }
 }
 
 glib::wrapper! {
     /// A Room that can only be updated by making remote calls, i.e. it won't be updated via sync.
-    pub struct RemoteRoom(ObjectSubclass<imp::RemoteRoom>) @extends PillSource;
+    pub struct RemoteRoom(ObjectSubclass<imp::RemoteRoom>)
+        @extends PillSource;
 }
 
 impl RemoteRoom {
-    pub fn new(session: &Session, uri: MatrixRoomIdUri) -> Self {
+    pub(crate) fn new(session: &Session, uri: MatrixRoomIdUri) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("session", session)
             .build();
-
-        let imp = obj.imp();
-        imp.uri.set(uri).unwrap();
-        imp.update_display_name();
-
-        spawn!(clone!(
-            #[weak]
-            obj,
-            async move {
-                obj.load().await;
-            }
-        ));
-
+        obj.imp().set_uri(uri);
         obj
     }
 
     /// The Matrix URI of this room.
-    pub fn uri(&self) -> &MatrixRoomIdUri {
-        self.imp().uri.get().unwrap()
-    }
-
-    /// The Matrix ID of this room.
-    pub fn room_id(&self) -> Option<OwnedRoomId> {
-        self.imp()
-            .room_id
-            .borrow()
-            .clone()
-            .or_else(|| self.uri().id.clone().try_into().ok())
+    pub(crate) fn uri(&self) -> &MatrixRoomIdUri {
+        self.imp().uri()
     }
 
     /// The canonical alias of this room.
-    pub fn alias(&self) -> Option<OwnedRoomAliasId> {
-        self.imp()
-            .alias
-            .borrow()
-            .clone()
-            .or_else(|| self.uri().id.clone().try_into().ok())
-    }
-
-    /// Load the data of this room.
-    async fn load(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let imp = self.imp();
-
-        imp.set_loading_state(LoadingState::Loading);
-
-        let uri = self.uri();
-        let client = session.client();
-
-        let room_id = match OwnedRoomId::try_from(uri.id.clone()) {
-            Ok(room_id) => room_id,
-            Err(alias) => {
-                let client_clone = client.clone();
-                let handle =
-                    spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });
-
-                match handle.await.unwrap() {
-                    Ok(response) => response.room_id,
-                    Err(error) => {
-                        warn!("Could not resolve room alias `{}`: {error}", uri.id);
-                        imp.set_loading_state(LoadingState::Error);
-                        return;
-                    }
-                }
-            }
-        };
-
-        // FIXME: The space hierarchy endpoint gives us the room details we want, but it
-        // doesn't work if the room is not known by the homeserver. We need MSC3266 for
-        // a proper endpoint.
-        let request = assign!(get_hierarchy::v1::Request::new(room_id.clone()), {
-            // We are only interested in the single room.
-            limit: Some(uint!(1))
-        });
-        let handle = spawn_tokio!(async move { client.send(request).await });
-
-        match handle.await.unwrap() {
-            Ok(response) => {
-                if let Some(chunk) = response
-                    .rooms
-                    .into_iter()
-                    .next()
-                    .filter(|c| c.room_id == room_id)
-                {
-                    imp.update_data(chunk);
-                } else {
-                    debug!("Endpoint did not return requested room");
-                    imp.set_loading_state(LoadingState::Error);
-                }
-            }
-            Err(error) => {
-                warn!("Could not get room details for room `{}`: {error}", uri.id);
-                imp.set_loading_state(LoadingState::Error);
-            }
-        }
+    pub(crate) fn alias(&self) -> Option<OwnedRoomAliasId> {
+        self.imp().alias()
     }
 }
