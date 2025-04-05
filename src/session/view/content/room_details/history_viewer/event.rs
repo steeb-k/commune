@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::deserialized_responses::TimelineEvent;
 use ruma::{
@@ -15,13 +13,16 @@ use crate::{
     utils::matrix::{MediaMessage, VisualMediaMessage},
 };
 
-/// The types of events that can be displayer in the history viewers.
+/// The types of events that can be displayed in the history viewers.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, glib::Enum)]
 #[enum_type(name = "HistoryViewerEventType")]
 pub enum HistoryViewerEventType {
+    /// A file.
     #[default]
     File,
+    /// An image or a video.
     Media,
+    /// An audio file.
     Audio,
 }
 
@@ -38,18 +39,6 @@ impl HistoryViewerEventType {
     }
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedSyncRoomMessageEvent")]
-pub struct BoxedSyncRoomMessageEvent(pub OriginalSyncRoomMessageEvent);
-
-impl Deref for BoxedSyncRoomMessageEvent {
-    type Target = OriginalSyncRoomMessageEvent;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 mod imp {
     use std::cell::{Cell, OnceCell};
 
@@ -60,13 +49,12 @@ mod imp {
     pub struct HistoryViewerEvent {
         /// The room containing this event.
         #[property(get, construct_only)]
-        pub room: glib::WeakRef<Room>,
+        room: glib::WeakRef<Room>,
         /// The Matrix event.
-        #[property(construct_only)]
-        pub matrix_event: OnceCell<BoxedSyncRoomMessageEvent>,
+        matrix_event: OnceCell<OriginalSyncRoomMessageEvent>,
         /// The type of the event.
         #[property(get, construct_only, builder(HistoryViewerEventType::default()))]
-        pub event_type: Cell<HistoryViewerEventType>,
+        event_type: Cell<HistoryViewerEventType>,
     }
 
     #[glib::object_subclass]
@@ -77,6 +65,22 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for HistoryViewerEvent {}
+
+    impl HistoryViewerEvent {
+        /// Set the Matrix event.
+        pub(super) fn set_matrix_event(&self, event: OriginalSyncRoomMessageEvent) {
+            self.matrix_event
+                .set(event)
+                .expect("Matrix event should be uninitialized");
+        }
+
+        /// The Matrix event.
+        pub(super) fn matrix_event(&self) -> &OriginalSyncRoomMessageEvent {
+            self.matrix_event
+                .get()
+                .expect("Matrix event should be initialized")
+        }
+    }
 }
 
 glib::wrapper! {
@@ -118,22 +122,22 @@ impl HistoryViewerEvent {
 
         let event_type = HistoryViewerEventType::with_msgtype(&message_event.content.msgtype)?;
 
-        let obj: Self = glib::Object::builder()
+        let obj = glib::Object::builder::<Self>()
             .property("room", room)
-            .property("matrix-event", BoxedSyncRoomMessageEvent(message_event))
             .property("event-type", event_type)
             .build();
+        obj.imp().set_matrix_event(message_event);
 
         Some(obj)
     }
 
     /// The Matrix event.
-    fn matrix_event(&self) -> &OriginalSyncRoomMessageEvent {
-        self.imp().matrix_event.get().unwrap()
+    pub(crate) fn matrix_event(&self) -> &OriginalSyncRoomMessageEvent {
+        self.imp().matrix_event()
     }
 
     /// The event ID of the inner event.
-    pub fn event_id(&self) -> OwnedEventId {
+    pub(crate) fn event_id(&self) -> OwnedEventId {
         self.matrix_event().event_id.clone()
     }
 
@@ -149,7 +153,7 @@ impl HistoryViewerEvent {
     }
 
     /// Get the binary content of this event.
-    pub async fn get_file_content(&self) -> Result<Vec<u8>, matrix_sdk::Error> {
+    pub(crate) async fn get_file_content(&self) -> Result<Vec<u8>, matrix_sdk::Error> {
         let Some(room) = self.room() else {
             return Err(matrix_sdk::Error::UnknownError(
                 "Could not upgrade Room".into(),

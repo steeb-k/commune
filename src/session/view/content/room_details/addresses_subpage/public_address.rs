@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::glib;
 use ruma::OwnedRoomAliasId;
 
 mod imp {
@@ -11,10 +11,10 @@ mod imp {
     #[properties(wrapper_type = super::PublicAddress)]
     pub struct PublicAddress {
         /// The room alias.
-        pub alias: OnceCell<OwnedRoomAliasId>,
+        alias: OnceCell<OwnedRoomAliasId>,
         /// Whether this is the main address.
         #[property(get, set = Self::set_is_main, explicit_notify)]
-        pub is_main: Cell<bool>,
+        is_main: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -27,6 +27,16 @@ mod imp {
     impl ObjectImpl for PublicAddress {}
 
     impl PublicAddress {
+        /// Set the room alias.
+        pub(super) fn set_alias(&self, alias: OwnedRoomAliasId) {
+            self.alias.set(alias).expect("alias is uninitialized");
+        }
+
+        /// The room alias.
+        pub(super) fn alias(&self) -> &OwnedRoomAliasId {
+            self.alias.get().expect("alias is initialized")
+        }
+
         /// Set whether this is the main address.
         fn set_is_main(&self, is_main: bool) {
             if self.is_main.get() == is_main {
@@ -50,14 +60,12 @@ impl PublicAddress {
         let obj = glib::Object::builder::<Self>()
             .property("is-main", is_main)
             .build();
-
-        obj.imp().alias.set(alias).unwrap();
-
+        obj.imp().set_alias(alias);
         obj
     }
 
     /// The room alias.
-    pub fn alias(&self) -> &OwnedRoomAliasId {
-        self.imp().alias.get().unwrap()
+    pub(crate) fn alias(&self) -> &OwnedRoomAliasId {
+        self.imp().alias()
     }
 }

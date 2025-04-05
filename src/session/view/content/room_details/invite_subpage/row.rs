@@ -17,12 +17,12 @@ mod imp {
     )]
     #[properties(wrapper_type = super::InviteRow)]
     pub struct InviteRow {
+        #[template_child]
+        check_button: TemplateChild<gtk::CheckButton>,
         /// The item displayed by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<InviteItem>>,
-        pub binding: RefCell<Option<glib::Binding>>,
-        #[template_child]
-        pub check_button: TemplateChild<gtk::CheckButton>,
+        item: RefCell<Option<InviteItem>>,
+        binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]

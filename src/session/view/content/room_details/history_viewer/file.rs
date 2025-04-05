@@ -25,13 +25,13 @@ mod imp {
     )]
     #[properties(wrapper_type = super::FileHistoryViewer)]
     pub struct FileHistoryViewer {
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        list_view: TemplateChild<gtk::ListView>,
         /// The timeline containing the file events.
         #[property(get, set = Self::set_timeline, construct_only)]
-        pub timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
+        timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
     }
 
     #[glib::object_subclass]
@@ -42,7 +42,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("file-history-viewer");
         }
@@ -107,6 +107,7 @@ mod imp {
     impl WidgetImpl for FileHistoryViewer {}
     impl NavigationPageImpl for FileHistoryViewer {}
 
+    #[gtk::template_callbacks]
     impl FileHistoryViewer {
         /// Set the timeline containing the media events.
         fn set_timeline(&self, timeline: HistoryViewerTimeline) {
@@ -171,7 +172,8 @@ mod imp {
         }
 
         /// Load more items in this viewer.
-        pub(super) async fn load_more_items(&self) {
+        #[template_callback]
+        async fn load_more_items(&self) {
             self.timeline
                 .obj()
                 .load(clone!(
@@ -242,17 +244,10 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage;
 }
 
-#[gtk::template_callbacks]
 impl FileHistoryViewer {
     pub fn new(timeline: &HistoryViewerTimeline) -> Self {
         glib::Object::builder()
             .property("timeline", timeline)
             .build()
-    }
-
-    /// Load more items in this viewer.
-    #[template_callback]
-    async fn load_more_items(&self) {
-        self.imp().load_more_items().await;
     }
 }

@@ -18,22 +18,22 @@ mod imp {
     pub struct MemberPowerLevel {
         /// The permissions to watch.
         #[property(get, set = Self::set_permissions, construct_only)]
-        pub permissions: BoundObjectWeakRef<Permissions>,
+        permissions: BoundObjectWeakRef<Permissions>,
         /// The room member or remote user.
         #[property(get, construct_only)]
-        pub user: OnceCell<User>,
+        user: OnceCell<User>,
         /// The wanted power level of the member.
         ///
         /// Initially, it should be the same as the member's, but can change
         /// independently.
         #[property(get, set = Self::set_power_level, explicit_notify,  minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
-        pub power_level: Cell<PowerLevel>,
+        power_level: Cell<PowerLevel>,
         /// The wanted role of the member.
         #[property(get, builder(MemberRole::default()))]
-        pub role: Cell<MemberRole>,
+        role: Cell<MemberRole>,
         /// Whether this member's power level can be edited.
         #[property(get)]
-        pub editable: Cell<bool>,
+        editable: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -150,7 +150,7 @@ impl MemberPowerLevel {
     ///
     /// Returns `None` if the permissions could not be upgraded, or if the power
     /// level is the users default.
-    pub fn to_parts(&self) -> Option<(OwnedUserId, Int)> {
+    pub(crate) fn to_parts(&self) -> Option<(OwnedUserId, Int)> {
         let permissions = self.permissions()?;
 
         let users_default = permissions.default_power_level();

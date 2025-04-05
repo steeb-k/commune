@@ -29,25 +29,25 @@ mod imp {
     #[properties(wrapper_type = super::PermissionsAddMembersSubpage)]
     pub struct PermissionsAddMembersSubpage {
         #[template_child]
-        pub search_entry: TemplateChild<PillSearchEntry>,
+        search_entry: TemplateChild<PillSearchEntry>,
         #[template_child]
-        pub power_level_combo: TemplateChild<PowerLevelSelectionComboBox>,
+        power_level_combo: TemplateChild<PowerLevelSelectionComboBox>,
         #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
+        list_view: TemplateChild<gtk::ListView>,
         #[template_child]
-        pub add_button: TemplateChild<gtk::Button>,
+        add_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        stack: TemplateChild<gtk::Stack>,
         /// The permissions of the room.
         #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
-        pub permissions: glib::WeakRef<Permissions>,
+        permissions: glib::WeakRef<Permissions>,
         power_level_filter: gtk::CustomFilter,
         filtered_model: gtk::FilterListModel,
         /// The list of members with custom power levels.
         #[property(get, set = Self::set_privileged_members, explicit_notify, nullable)]
-        pub privileged_members: glib::WeakRef<PrivilegedMembers>,
+        privileged_members: glib::WeakRef<PrivilegedMembers>,
         /// The selected members in the list.
-        pub selected_members: RefCell<HashMap<OwnedUserId, Member>>,
+        selected_members: RefCell<HashMap<OwnedUserId, Member>>,
     }
 
     #[glib::object_subclass]
@@ -58,7 +58,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -197,6 +197,7 @@ mod imp {
     impl WidgetImpl for PermissionsAddMembersSubpage {}
     impl NavigationPageImpl for PermissionsAddMembersSubpage {}
 
+    #[gtk::template_callbacks]
     impl PermissionsAddMembersSubpage {
         /// Set the permissions of the room.
         fn set_permissions(&self, permissions: Option<&Permissions>) {
@@ -297,6 +298,38 @@ mod imp {
                 self.obj().emit_by_name::<()>("selection-changed", &[]);
             }
         }
+
+        /// Add the selected members to the list of members with custom power
+        /// levels.
+        #[template_callback]
+        fn add_members(&self) {
+            let Some(permissions) = self.permissions.upgrade() else {
+                return;
+            };
+            let Some(privileged_members) = self.privileged_members.upgrade() else {
+                return;
+            };
+
+            let power_level = self.power_level_combo.selected_power_level();
+
+            let members = self
+                .selected_members
+                .take()
+                .into_iter()
+                .map(|(user_id, member)| {
+                    let member = MemberPowerLevel::new(&member, &permissions);
+                    member.set_power_level(power_level);
+
+                    (user_id, member)
+                });
+            privileged_members.add_members(members);
+
+            let obj = self.obj();
+            let _ = obj.activate_action("navigation.pop", None);
+            self.search_entry.clear();
+            self.add_button.set_sensitive(false);
+            obj.emit_by_name::<()>("selection-changed", &[]);
+        }
     }
 }
 
@@ -306,42 +339,9 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl PermissionsAddMembersSubpage {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Add the selected members to the list of members with custom power
-    /// levels.
-    #[template_callback]
-    fn add_members(&self) {
-        let Some(permissions) = self.permissions() else {
-            return;
-        };
-        let Some(privileged_members) = self.privileged_members() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let power_level = imp.power_level_combo.selected_power_level();
-
-        let members = imp
-            .selected_members
-            .take()
-            .into_iter()
-            .map(|(user_id, member)| {
-                let member = MemberPowerLevel::new(&member, &permissions);
-                member.set_power_level(power_level);
-
-                (user_id, member)
-            });
-        privileged_members.add_members(members);
-
-        self.activate_action("navigation.pop", None).unwrap();
-        imp.search_entry.clear();
-        imp.add_button.set_sensitive(false);
-        self.emit_by_name::<()>("selection-changed", &[]);
     }
 
     /// Connect to the signal emitted when the selection changes.

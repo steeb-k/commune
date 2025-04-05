@@ -18,10 +18,10 @@ mod imp {
     pub struct PermissionsSelectMemberRow {
         /// The room member displayed by this row.
         #[property(get, set = Self::set_member, explicit_notify, nullable)]
-        pub member: RefCell<Option<Member>>,
+        member: RefCell<Option<Member>>,
         /// Whether this row is selected.
         #[property(get, set = Self::set_selected, explicit_notify)]
-        pub selected: Cell<bool>,
+        selected: Cell<bool>,
     }
 
     #[glib::object_subclass]

@@ -19,16 +19,16 @@ mod imp {
     )]
     #[properties(wrapper_type = super::FileRow)]
     pub struct FileRow {
+        #[template_child]
+        button: TemplateChild<gtk::Button>,
+        #[template_child]
+        title_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        size_label: TemplateChild<gtk::Label>,
         /// The file event.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
-        pub event: RefCell<Option<HistoryViewerEvent>>,
-        pub file: RefCell<Option<gio::File>>,
-        #[template_child]
-        pub button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub title_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub size_label: TemplateChild<gtk::Label>,
+        event: RefCell<Option<HistoryViewerEvent>>,
+        file: RefCell<Option<gio::File>>,
     }
 
     #[glib::object_subclass]
@@ -39,7 +39,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -53,6 +53,7 @@ mod imp {
     impl WidgetImpl for FileRow {}
     impl BinImpl for FileRow {}
 
+    #[gtk::template_callbacks]
     impl FileRow {
         /// Set the file event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
@@ -100,6 +101,67 @@ mod imp {
                 self.button.set_tooltip_text(Some(&gettext("Save File")));
             }
         }
+
+        /// Handle when the row's button was clicked.
+        #[template_callback]
+        async fn button_clicked(&self) {
+            let file = self.file.borrow().clone();
+
+            // If there is a file, open it.
+            if let Some(file) = file {
+                if let Err(error) =
+                    gio::AppInfo::launch_default_for_uri(&file.uri(), gio::AppLaunchContext::NONE)
+                {
+                    error!("Could not open file: {error}");
+                }
+            } else {
+                // Otherwise save the file.
+                self.save_file().await;
+            }
+        }
+
+        /// Save the file of this row.
+        async fn save_file(&self) {
+            let Some(event) = self.event.borrow().clone() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let data = match event.get_file_content().await {
+                Ok(res) => res,
+                Err(error) => {
+                    error!("Could not get file: {error}");
+                    toast!(obj, error.to_user_facing());
+
+                    return;
+                }
+            };
+            let filename = event.media_message().filename();
+
+            let parent_window = obj.root().and_downcast::<gtk::Window>();
+            let dialog = gtk::FileDialog::builder()
+                .title(gettext("Save File"))
+                .accept_label(gettext("Save"))
+                .initial_name(filename)
+                .build();
+
+            if let Ok(file) = dialog.save_future(parent_window.as_ref()).await {
+                if let Err(error) = file.replace_contents(
+                    &data,
+                    None,
+                    false,
+                    gio::FileCreateFlags::REPLACE_DESTINATION,
+                    gio::Cancellable::NONE,
+                ) {
+                    error!("Could not write file content: {error}");
+                    toast!(obj, gettext("Could not save file"));
+                    return;
+                }
+
+                self.file.replace(Some(file));
+                self.update_button();
+            }
+        }
     }
 }
 
@@ -109,68 +171,9 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin;
 }
 
-#[gtk::template_callbacks]
 impl FileRow {
     /// Construct an empty `FileRow`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Handle when the row's button was clicked.
-    #[template_callback]
-    async fn button_clicked(&self) {
-        let file = self.imp().file.borrow().clone();
-
-        // If there is a file, open it.
-        if let Some(file) = file {
-            if let Err(error) =
-                gio::AppInfo::launch_default_for_uri(&file.uri(), gio::AppLaunchContext::NONE)
-            {
-                error!("Could not open file: {error}");
-            }
-        } else {
-            // Otherwise save the file.
-            self.save_file().await;
-        }
-    }
-
-    /// Save the file of this row.
-    async fn save_file(&self) {
-        let Some(event) = self.event() else {
-            return;
-        };
-        let data = match event.get_file_content().await {
-            Ok(res) => res,
-            Err(error) => {
-                error!("Could not get file: {error}");
-                toast!(self, error.to_user_facing());
-
-                return;
-            }
-        };
-        let filename = event.media_message().filename();
-
-        let parent_window = self.root().and_downcast::<gtk::Window>().unwrap();
-        let dialog = gtk::FileDialog::builder()
-            .title(gettext("Save File"))
-            .accept_label(gettext("Save"))
-            .initial_name(filename)
-            .build();
-
-        if let Ok(file) = dialog.save_future(Some(&parent_window)).await {
-            file.replace_contents(
-                &data,
-                None,
-                false,
-                gio::FileCreateFlags::REPLACE_DESTINATION,
-                gio::Cancellable::NONE,
-            )
-            .unwrap();
-
-            let imp = self.imp();
-
-            imp.file.replace(Some(file));
-            imp.update_button();
-        }
     }
 }

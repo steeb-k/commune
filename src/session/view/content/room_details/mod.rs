@@ -37,7 +37,7 @@ use crate::{components::UserPage, session::model::Room, toast};
 
 /// The possible subpages of the room details.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
-pub enum SubpageName {
+pub(crate) enum SubpageName {
     /// The page to edit the name, topic and avatar of the room.
     EditDetails,
     /// The list of members of the room.
@@ -241,7 +241,7 @@ impl RoomDetails {
     }
 
     /// Show the given subpage as the initial page.
-    pub fn show_initial_subpage(&self, name: SubpageName) {
+    pub(crate) fn show_initial_subpage(&self, name: SubpageName) {
         self.imp().show_subpage(name, true);
     }
 }

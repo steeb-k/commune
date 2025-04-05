@@ -15,16 +15,16 @@ mod imp {
     pub struct InviteItem {
         /// The user data of the item.
         #[property(get, construct_only)]
-        pub user: OnceCell<User>,
+        user: OnceCell<User>,
         /// Whether the user is invited.
         #[property(get, set = Self::set_is_invitee, explicit_notify)]
-        pub is_invitee: Cell<bool>,
+        is_invitee: Cell<bool>,
         /// Whether the user can be invited.
         #[property(get = Self::can_invite)]
-        pub can_invite: PhantomData<bool>,
+        can_invite: PhantomData<bool>,
         /// The reason why the user cannot be invited, when applicable.
         #[property(get, set = Self::set_invite_exception, explicit_notify, nullable)]
-        pub invite_exception: RefCell<Option<String>>,
+        invite_exception: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]

@@ -21,13 +21,13 @@ mod imp {
     #[properties(wrapper_type = super::PrivilegedMembers)]
     pub struct PrivilegedMembers {
         /// The list of members.
-        pub list: RefCell<IndexMap<OwnedUserId, MemberPowerLevel>>,
+        pub(super) list: RefCell<IndexMap<OwnedUserId, MemberPowerLevel>>,
         /// The permissions to watch.
         #[property(get, set = Self::set_permissions, construct_only)]
-        pub permissions: BoundObjectWeakRef<Permissions>,
+        permissions: BoundObjectWeakRef<Permissions>,
         /// Whether this list has changed.
         #[property(get)]
-        pub changed: Cell<bool>,
+        changed: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -219,7 +219,7 @@ impl PrivilegedMembers {
     }
 
     /// Add the given members to the list.
-    pub fn add_members(
+    pub(crate) fn add_members(
         &self,
         members: impl ExactSizeIterator<Item = (OwnedUserId, MemberPowerLevel)>,
     ) {
@@ -244,7 +244,7 @@ impl PrivilegedMembers {
     }
 
     /// Collect the list of members.
-    pub fn collect(&self) -> BTreeMap<OwnedUserId, Int> {
+    pub(crate) fn collect(&self) -> BTreeMap<OwnedUserId, Int> {
         self.imp()
             .list
             .borrow()

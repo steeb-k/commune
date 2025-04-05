@@ -28,15 +28,15 @@ mod imp {
     )]
     #[properties(wrapper_type = super::VisualMediaHistoryViewer)]
     pub struct VisualMediaHistoryViewer {
+        #[template_child]
+        media_viewer: TemplateChild<MediaViewer>,
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        grid_view: TemplateChild<gtk::GridView>,
         /// The timeline containing the media events.
         #[property(get, set = Self::set_timeline, construct_only)]
-        pub timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
-        #[template_child]
-        pub media_viewer: TemplateChild<MediaViewer>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub grid_view: TemplateChild<gtk::GridView>,
+        timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
     }
 
     #[glib::object_subclass]
@@ -47,7 +47,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("visual-media-history-viewer");
         }
@@ -116,6 +116,7 @@ mod imp {
     impl WidgetImpl for VisualMediaHistoryViewer {}
     impl NavigationPageImpl for VisualMediaHistoryViewer {}
 
+    #[gtk::template_callbacks]
     impl VisualMediaHistoryViewer {
         /// Set the timeline containing the media events.
         fn set_timeline(&self, timeline: HistoryViewerTimeline) {
@@ -178,7 +179,8 @@ mod imp {
         }
 
         /// Load more items in this viewer.
-        pub(super) async fn load_more_items(&self) {
+        #[template_callback]
+        async fn load_more_items(&self) {
             self.timeline
                 .obj()
                 .load(clone!(
@@ -240,6 +242,23 @@ mod imp {
             };
             self.stack.set_visible_child_name(visible_child_name);
         }
+
+        /// Show the given media item.
+        pub(super) fn show_media(&self, item: &VisualMediaItem) {
+            let Some(event) = item.event() else {
+                return;
+            };
+            let Some(room) = event.room() else {
+                return;
+            };
+
+            let media_message = event
+                .visual_media_message()
+                .expect("visual media items should contain only visual message content");
+            self.media_viewer
+                .set_message(&room, event.event_id(), media_message);
+            self.media_viewer.reveal(item);
+        }
     }
 }
 
@@ -249,7 +268,6 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage;
 }
 
-#[gtk::template_callbacks]
 impl VisualMediaHistoryViewer {
     pub fn new(timeline: &HistoryViewerTimeline) -> Self {
         glib::Object::builder()
@@ -258,26 +276,7 @@ impl VisualMediaHistoryViewer {
     }
 
     /// Show the given media item.
-    pub fn show_media(&self, item: &VisualMediaItem) {
-        let Some(event) = item.event() else {
-            return;
-        };
-        let Some(room) = event.room() else {
-            return;
-        };
-
-        let imp = self.imp();
-        let media_message = event
-            .visual_media_message()
-            .expect("Visual media items contain only visual message content");
-        imp.media_viewer
-            .set_message(&room, event.event_id(), media_message);
-        imp.media_viewer.reveal(item);
-    }
-
-    /// Load more items in this viewery.
-    #[template_callback]
-    async fn load_more_items(&self) {
-        self.imp().load_more_items().await;
+    pub(crate) fn show_media(&self, item: &VisualMediaItem) {
+        self.imp().show_media(item);
     }
 }

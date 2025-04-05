@@ -30,14 +30,14 @@ mod imp {
     )]
     #[properties(wrapper_type = super::VisualMediaItem)]
     pub struct VisualMediaItem {
+        #[template_child]
+        overlay: TemplateChild<gtk::Overlay>,
+        #[template_child]
+        picture: TemplateChild<gtk::Picture>,
         /// The file event.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
-        pub event: RefCell<Option<HistoryViewerEvent>>,
-        pub overlay_icon: RefCell<Option<gtk::Image>>,
-        #[template_child]
-        pub overlay: TemplateChild<gtk::Overlay>,
-        #[template_child]
-        pub picture: TemplateChild<gtk::Picture>,
+        event: RefCell<Option<HistoryViewerEvent>>,
+        overlay_icon: RefCell<Option<gtk::Image>>,
     }
 
     #[glib::object_subclass]
@@ -48,7 +48,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_css_name("visual-media-history-viewer-item");
 
@@ -87,6 +87,7 @@ mod imp {
         }
     }
 
+    #[gtk::template_callbacks]
     impl VisualMediaItem {
         /// Set the media event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
@@ -184,6 +185,21 @@ mod imp {
                     .set_paintable(Some(&gdk::Paintable::from(image)));
             }
         }
+
+        /// The item was activated.
+        #[template_callback]
+        fn activate(&self) {
+            let obj = self.obj();
+
+            let Some(media_history_viewer) = obj
+                .ancestor(VisualMediaHistoryViewer::static_type())
+                .and_downcast::<VisualMediaHistoryViewer>()
+            else {
+                return;
+            };
+
+            media_history_viewer.show_media(&obj);
+        }
     }
 }
 
@@ -193,20 +209,9 @@ glib::wrapper! {
         @extends gtk::Widget, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl VisualMediaItem {
     /// Construct a new empty `VisualMediaItem`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The item was activated.
-    #[template_callback]
-    fn activate(&self) {
-        let media_history_viewer = self
-            .ancestor(VisualMediaHistoryViewer::static_type())
-            .and_downcast::<VisualMediaHistoryViewer>()
-            .unwrap();
-        media_history_viewer.show_media(self);
     }
 }

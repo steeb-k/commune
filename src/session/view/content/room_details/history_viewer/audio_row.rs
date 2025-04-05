@@ -23,19 +23,19 @@ mod imp {
     )]
     #[properties(wrapper_type = super::AudioRow)]
     pub struct AudioRow {
+        #[template_child]
+        play_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        title_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        duration_label: TemplateChild<gtk::Label>,
         /// The audio event.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
-        pub event: RefCell<Option<HistoryViewerEvent>>,
+        event: RefCell<Option<HistoryViewerEvent>>,
         /// The media file.
         file: RefCell<Option<File>>,
         /// The API for the media file.
-        pub media_file: RefCell<Option<gtk::MediaFile>>,
-        #[template_child]
-        pub play_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub title_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub duration_label: TemplateChild<gtk::Label>,
+        media_file: RefCell<Option<gtk::MediaFile>>,
     }
 
     #[glib::object_subclass]
@@ -46,7 +46,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -60,6 +60,7 @@ mod imp {
     impl WidgetImpl for AudioRow {}
     impl BinImpl for AudioRow {}
 
+    #[gtk::template_callbacks]
     impl AudioRow {
         /// Set the audio event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
@@ -159,6 +160,22 @@ mod imp {
             self.file.replace(Some(file));
             self.media_file.replace(Some(media_file));
         }
+
+        /// Toggle the audio player playing state.
+        #[template_callback]
+        fn toggle_play(&self) {
+            if let Some(media_file) = self.media_file.borrow().as_ref() {
+                if media_file.is_playing() {
+                    media_file.pause();
+                    self.play_button
+                        .set_icon_name("media-playback-start-symbolic");
+                } else {
+                    media_file.play();
+                    self.play_button
+                        .set_icon_name("media-playback-pause-symbolic");
+                }
+            }
+        }
     }
 }
 
@@ -168,28 +185,9 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin;
 }
 
-#[gtk::template_callbacks]
 impl AudioRow {
     /// Construct an empty `AudioRow`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Toggle the audio player playing state.
-    #[template_callback]
-    fn toggle_play(&self) {
-        let imp = self.imp();
-
-        if let Some(media_file) = self.imp().media_file.borrow().as_ref() {
-            if media_file.is_playing() {
-                media_file.pause();
-                imp.play_button
-                    .set_icon_name("media-playback-start-symbolic");
-            } else {
-                media_file.play();
-                imp.play_button
-                    .set_icon_name("media-playback-pause-symbolic");
-            }
-        }
     }
 }

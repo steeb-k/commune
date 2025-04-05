@@ -1,10 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gio,
-    glib::{self, clone},
-    CompositeTemplate,
-};
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::RoomState;
 use ruma::{assign, events::room::avatar::ImageInfo, OwnedMxcUri};
 use tracing::error;
