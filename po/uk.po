@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-05 07:41+0000\n"
-"PO-Revision-Date: 2025-04-05 17:41+0300\n"
+"POT-Creation-Date: 2025-04-05 19:01+0000\n"
+"PO-Revision-Date: 2025-04-06 09:51+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -171,24 +171,24 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:236
+#: src/application.rs:240
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
-#: src/application.rs:242
+#: src/application.rs:246
 msgid "© The Fractal Team"
 msgstr "© Команда «Фрактал»"
 
-#: src/application.rs:256
+#: src/application.rs:260
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:260
+#: src/application.rs:264
 msgid "Name by"
 msgstr "Авторка назви"
 
-#: src/application.rs:369
+#: src/application.rs:373
 msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
@@ -532,8 +532,7 @@ msgstr ""
 #: src/components/crypto/recovery_setup_view.ui:276
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
-msgstr ""
-"Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
+msgstr "Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
 
 #: src/components/crypto/recovery_setup_view.ui:327
 #: src/components/crypto/recovery_setup_view.ui:354
@@ -560,8 +559,7 @@ msgstr "Відновлення облікового запису є неповн
 
 #: src/components/crypto/recovery_setup_view.ui:469
 msgid "The recovery was successful but the recovery data was incomplete."
-msgstr ""
-"Відновлення успішно виконано, але дані для відновлення були неповними."
+msgstr "Відновлення успішно виконано, але дані для відновлення були неповними."
 
 #: src/components/crypto/recovery_setup_view.ui:477
 msgid ""
@@ -620,8 +618,8 @@ msgstr "_Підтвердити"
 msgid "The password is invalid."
 msgstr "Пароль є некоректним."
 
-#: src/components/dialogs/auth/mod.rs:310 src/user_facing_error.rs:81
-#: src/user_facing_error.rs:95
+#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:128
+#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unexpected error occurred."
 msgstr "Сталася неочікувана помилка."
 
@@ -683,7 +681,7 @@ msgstr "Полишити"
 #: src/components/dialogs/message_dialogs.rs:379
 #: src/components/dialogs/message_dialogs.rs:414
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
-#: src/session/view/account_settings/general_page/mod.rs:378
+#: src/session/view/account_settings/general_page/mod.rs:387
 #: src/session/view/content/room_details/edit_details_subpage.rs:271
 #: src/session/view/content/room_details/edit_details_subpage.rs:550
 #: src/session/view/content/room_details/general_page.rs:1119
@@ -842,7 +840,7 @@ msgstr[3] ""
 "може бути скасовано."
 
 #: src/components/dialogs/message_dialogs.rs:227
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:388
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
 #: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
@@ -1576,8 +1574,7 @@ msgstr ""
 "клієнті."
 
 #: src/identity_verification_view/sas_page.rs:154
-msgid ""
-"Check if the same numbers appear in the same order on the other client."
+msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Перевірте, чи ті самі числа було показано у тому самому порядку на іншому "
 "клієнті."
@@ -1720,7 +1717,7 @@ msgstr "Назва домену"
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Домен вашого домашнього сервера Matrix, наприклад gnome.org"
 
-#: src/login/homeserver_page.rs:107 src/login/method_page.ui:68
+#: src/login/homeserver_page.rs:107 src/login/method_page.ui:63
 msgid "Homeserver URL"
 msgstr "Адреса домашнього сервера"
 
@@ -1730,12 +1727,18 @@ msgstr "Адреса домашнього сервера"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Адреса вашого домашнього сервера Matrix, наприклад {address}"
 
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:301 src/login/mod.rs:326
+#: src/login/mod.rs:373 src/login/mod.rs:391
+#| msgid "Could not send location"
+msgid "Could not set up login"
+msgstr "Не вдалося налаштувати вхід до системи"
+
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
 #: src/session/view/account_settings/general_page/mod.ui:93
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
-#: src/login/homeserver_page.ui:100 src/login/method_page.ui:150
+#: src/login/homeserver_page.ui:100 src/login/method_page.ui:140
 msgid "Next"
 msgstr "Далі"
 
@@ -1744,25 +1747,30 @@ msgstr "Далі"
 msgid "Advanced…"
 msgstr "Додатково…"
 
+#: src/login/in_browser_page.rs:101
+#| msgid "Could not open file"
+msgid "Could not open URL"
+msgstr "Не вдалося відкрити адресу"
+
 #: src/login/in_browser_page.ui:55
 msgid "Click on the button below and follow the steps in the browser"
 msgstr "Натисніть розташовану нижче кнопку і виконайте настанови з браузера"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:124
+#: src/login/method_page.rs:95
 msgid "Log in to {domain_name}"
 msgstr "Увійти до {domain_name}"
 
-#: src/login/method_page.rs:131
+#: src/login/method_page.rs:102
 msgid "Log in"
 msgstr "Увійти"
 
-#: src/login/method_page.rs:174
+#: src/login/method_page.rs:144
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
-#: src/login/method_page.rs:177
+#: src/login/method_page.rs:147
 msgid "Login via SSO"
 msgstr "Вхід за допомогою SSO"
 
@@ -1770,21 +1778,34 @@ msgstr "Вхід за допомогою SSO"
 msgid "Log In"
 msgstr "Увійти"
 
-#: src/login/method_page.ui:100
+#: src/login/method_page.ui:90
 msgid "Matrix Username"
 msgstr "Ім'я користувача Matrix"
 
-#: src/login/method_page.ui:116
+#: src/login/method_page.ui:106
 msgid "Password"
 msgstr "Пароль"
 
-#: src/login/method_page.ui:132
+#: src/login/method_page.ui:122
 msgid "Single Sign-On Providers"
 msgstr "Надавачі єдиної системи розпізнавання"
 
-#: src/login/mod.rs:443
+#: src/login/mod.rs:462
 msgid "Could not store session"
 msgstr "Не вдалося зберегти сеанс"
+
+#: src/login/mod.rs:591
+#| msgid "Verification Complete"
+msgid "Authorization Completed"
+msgstr "Уповноваження завершено"
+
+#: src/login/mod.rs:593
+msgid ""
+"The authorization step is complete. You can close this page and go back to "
+"Fractal."
+msgstr ""
+"Крок уповноваження завершено. Ви можете закрити цю сторінку і повернутися до"
+" «Фрактала»"
 
 #: src/login/mod.ui:27 src/login/mod.ui:61
 msgid "Login Complete"
@@ -1816,32 +1837,31 @@ msgstr "Увійти за допомогою {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:172
+#: src/secret/linux.rs:175
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/secret/linux.rs:514
+#: src/secret/linux.rs:528
 msgid "The secret storage file is corrupted."
 msgstr "Файл сховища реєстраційних даних пошкоджено."
 
-#: src/secret/linux.rs:518
+#: src/secret/linux.rs:532
 msgid "Could not access the secret storage file location."
 msgstr ""
 "Не вдалося отримати доступ до місця зберігання файл сховища реєстраційних "
 "даних."
 
-#: src/secret/linux.rs:521
+#: src/secret/linux.rs:535
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Під час спроби доступу до файла сховища реєстраційних даних сталася "
 "неочікувана помилка"
 
-#: src/secret/linux.rs:524
+#: src/secret/linux.rs:538
 msgid "The secret storage file has been changed by another process."
-msgstr ""
-"До файла сховища реєстраційних даних внесено зміни стороннім процесом."
+msgstr "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
-#: src/secret/linux.rs:527
+#: src/secret/linux.rs:541
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1849,7 +1869,7 @@ msgstr ""
 "Запит до порталу реєстраційних даних Flatpak було скасовано. Переконайтеся, "
 "що прийнято усі запити, що вимагають доступу до нього."
 
-#: src/secret/linux.rs:530
+#: src/secret/linux.rs:544
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1857,7 +1877,7 @@ msgstr ""
 "Немає доступу до порталу реєстраційних даних Flatpak. Переконайтеся, що "
 "встановлено пакунок xdg-desktop-portal версії, яка є не меншою за 1.5.0."
 
-#: src/secret/linux.rs:533
+#: src/secret/linux.rs:547
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1865,37 +1885,36 @@ msgstr ""
 "Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
 "сталася неочікувана помилка"
 
-#: src/secret/linux.rs:536
-msgid ""
-"The Flatpak Secret Portal provided a key that is too weak to be secure."
+#: src/secret/linux.rs:550
+msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
 
-#: src/secret/linux.rs:550
+#: src/secret/linux.rs:564
 msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
-#: src/secret/linux.rs:554 src/secret/linux.rs:575
+#: src/secret/linux.rs:568 src/secret/linux.rs:589
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Під час роботи із службою реєстраційних даних за допомогою D-Bus сталася "
 "неочікувана помилка"
 
-#: src/secret/linux.rs:557
+#: src/secret/linux.rs:571
 msgid "The collection or item is locked."
 msgstr "Збірку або запис замкнено."
 
-#: src/secret/linux.rs:560
+#: src/secret/linux.rs:574
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Сеансу D-Bus «Секретної служби» не існує."
 
-#: src/secret/linux.rs:563
+#: src/secret/linux.rs:577
 msgid "The collection or item does not exist."
 msgstr "Збірки або запису не існує."
 
-#: src/secret/linux.rs:567
+#: src/secret/linux.rs:581
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1904,7 +1923,7 @@ msgstr ""
 "скасовано. Переконайтеся, що прийнято усі запити, що вимагають доступу до "
 "неї."
 
-#: src/secret/linux.rs:570
+#: src/secret/linux.rs:584
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1912,7 +1931,7 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/session/model/session.rs:746
+#: src/session/model/session.rs:745
 msgid "Could not log the session out"
 msgstr "Не вдалося вийти з сеансу"
 
@@ -2272,52 +2291,52 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Вилучити сеанс"
 
-#: src/session/view/account_settings/general_page/mod.rs:278
+#: src/session/view/account_settings/general_page/mod.rs:287
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
-#: src/session/view/account_settings/general_page/mod.rs:280
+#: src/session/view/account_settings/general_page/mod.rs:289
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
-#: src/session/view/account_settings/general_page/mod.rs:299
-#: src/session/view/account_settings/general_page/mod.rs:309
+#: src/session/view/account_settings/general_page/mod.rs:308
+#: src/session/view/account_settings/general_page/mod.rs:318
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 #: src/session/view/content/room_details/edit_details_subpage.rs:190
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
-#: src/session/view/account_settings/general_page/mod.rs:328
+#: src/session/view/account_settings/general_page/mod.rs:337
 #: src/session/view/content/room_details/edit_details_subpage.rs:217
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:357
+#: src/session/view/account_settings/general_page/mod.rs:366
 #: src/session/view/content/room_details/edit_details_subpage.rs:240
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:374
+#: src/session/view/account_settings/general_page/mod.rs:383
 #: src/session/view/content/room_details/edit_details_subpage.rs:265
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
-#: src/session/view/account_settings/general_page/mod.rs:375
+#: src/session/view/account_settings/general_page/mod.rs:384
 msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
-#: src/session/view/account_settings/general_page/mod.rs:413
+#: src/session/view/account_settings/general_page/mod.rs:422
 #: src/session/view/content/room_details/edit_details_subpage.rs:297
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:465
+#: src/session/view/account_settings/general_page/mod.rs:474
 msgid "Name changed successfully"
 msgstr "Ім'я успішно змінено"
 
-#: src/session/view/account_settings/general_page/mod.rs:516
+#: src/session/view/account_settings/general_page/mod.rs:525
 msgid "Could not change display name"
 msgstr "Не вдалося змінити показане ім'я"
 
@@ -2765,29 +2784,26 @@ msgstr "Не вдалося завантажити список з'єднани�
 #. Translators: As in 'The session is verified'.
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:43
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:115
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:116
 msgid "Verified"
 msgstr "Перевірено"
 
 #. Translators: As in 'The session is not verified'.
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:60
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:119
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:120
 msgid "Not verified"
 msgstr "Не перевірено"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:204
-#| msgid "Session settings"
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:214
 msgid "Session renamed"
 msgstr "Сеанс перейменовано"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:208
-#| msgid "Could not store session"
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:218
 msgid "Could not rename session"
 msgstr "Не вдалося перейменувати сеанс"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:238
-#| msgid "Could not disconnect device “{device_name}”"
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:248
 msgid "Could not disconnect session “{device_name}”"
 msgstr "Не вдалося від'єднатися від сеансу «{device_name}»."
 
@@ -4057,80 +4073,80 @@ msgstr "Автодоповнення згадки учасника кімнат�
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:361
+#: src/session/view/content/room_history/message_toolbar/mod.rs:364
 msgid "Reply to {user}"
 msgstr "Відповідь {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:377
+#: src/session/view/content/room_history/message_toolbar/mod.rs:380
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редагування"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:520
+#: src/session/view/content/room_history/message_toolbar/mod.rs:525
 msgid "Could not send reply"
 msgstr "Не вдалося надіслати відповідь"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:537
+#: src/session/view/content/room_history/message_toolbar/mod.rs:542
 msgid "Could not send edit"
 msgstr "Не вдалося надіслати зміни"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:549
+#: src/session/view/content/room_history/message_toolbar/mod.rs:554
 msgid "Could not send message"
 msgstr "Не вдалося відіслати повідомлення"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:595
+#: src/session/view/content/room_history/message_toolbar/mod.rs:600
 msgid "Your Location"
 msgstr "Ваше місце перебування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Розташування користувача {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:679
+#: src/session/view/content/room_history/message_toolbar/mod.rs:684
 msgid "Could not send location"
 msgstr "Не вдалося надіслати місце"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:686
+#: src/session/view/content/room_history/message_toolbar/mod.rs:691
 msgid "The location request has been cancelled"
 msgstr "Запит щодо визначення розташування було скасовано"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:687
+#: src/session/view/content/room_history/message_toolbar/mod.rs:692
 msgid "The location services are disabled"
 msgstr "Служби визначення розташування вимкнено"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:688
+#: src/session/view/content/room_history/message_toolbar/mod.rs:693
 msgid "Could not retrieve current location"
 msgstr "Не вдалося отримати дані щодо поточного розташування"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:721
+#: src/session/view/content/room_history/message_toolbar/mod.rs:726
 msgid "Could not send file"
 msgstr "Не вдалося надіслати файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:775
+#: src/session/view/content/room_history/message_toolbar/mod.rs:780
 msgid "Select File"
 msgstr "Виберіть файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:777
+#: src/session/view/content/room_history/message_toolbar/mod.rs:782
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:797
 msgid "Could not open file"
 msgstr "Не вдалося відкрити файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:818
-#: src/session/view/content/room_history/message_toolbar/mod.rs:826
+#: src/session/view/content/room_history/message_toolbar/mod.rs:823
+#: src/session/view/content/room_history/message_toolbar/mod.rs:831
 msgid "Error reading file"
 msgstr "Помилка при зчитуванні файла"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:887
+#: src/session/view/content/room_history/message_toolbar/mod.rs:892
 msgid "Error getting image from clipboard"
 msgstr "Помилка під час отримання зображення з буфера обміну"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:904
+#: src/session/view/content/room_history/message_toolbar/mod.rs:909
 msgid "Error getting file from clipboard"
 msgstr "Помилка під час отримання файла з буфера обміну"
 
@@ -5111,45 +5127,45 @@ msgstr "Не вдалося відкрити сховище."
 msgid "Could not save file"
 msgstr "Не вдалося зберегти файл"
 
-#: src/utils/matrix/mod.rs:191
+#: src/utils/matrix/mod.rs:194
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/utils/matrix/mod.rs:194
+#: src/utils/matrix/mod.rs:197
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/utils/matrix/mod.rs:196
+#: src/utils/matrix/mod.rs:199
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/utils/matrix/mod.rs:199
+#: src/utils/matrix/mod.rs:202
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/utils/matrix/mod.rs:211
+#: src/utils/matrix/mod.rs:214
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/utils/matrix/mod.rs:218
+#: src/utils/matrix/mod.rs:221
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
-#: src/utils/matrix/mod.rs:228
+#: src/utils/matrix/mod.rs:231
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix/mod.rs:252
+#: src/utils/matrix/mod.rs:255
 msgid "{user} invited you"
 msgstr "{user} запросив/запросила вас"
 
-#: src/utils/matrix/mod.rs:281
+#: src/utils/matrix/mod.rs:284
 msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
 
-#: src/utils/matrix/mod.rs:282
+#: src/utils/matrix/mod.rs:285
 msgid "Could not access the session tokens"
 msgstr "Не вдалося отримати доступ до жетонів сеансу"
 
