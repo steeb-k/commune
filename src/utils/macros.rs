@@ -8,12 +8,10 @@
 #[macro_export]
 macro_rules! spawn {
     ($future:expr) => {
-        let ctx = glib::MainContext::default();
-        ctx.spawn_local($future);
+        gtk::glib::MainContext::default().spawn_local($future)
     };
     ($priority:expr, $future:expr) => {
-        let ctx = glib::MainContext::default();
-        ctx.spawn_local_with_priority($priority, $future);
+        gtk::glib::MainContext::default().spawn_local_with_priority($priority, $future)
     };
 }
 
