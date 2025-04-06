@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-05 07:41+0000\n"
-"PO-Revision-Date: 2025-04-05 18:30+0200\n"
+"POT-Creation-Date: 2025-04-05 19:01+0000\n"
+"PO-Revision-Date: 2025-04-06 08:45+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -167,26 +167,26 @@ msgstr "_Dodaj račun"
 msgid "Account Settings"
 msgstr "Nastavitve računa"
 
-#: src/application.rs:236
+#: src/application.rs:240
 msgid "The Fractal Team"
 msgstr "Ekipa Fraktala"
 
-#: src/application.rs:242
+#: src/application.rs:246
 msgid "© The Fractal Team"
 msgstr "© Ekipa Fraktala"
 
-#: src/application.rs:256
+#: src/application.rs:260
 msgid "translator-credits"
 msgstr ""
 "Matej Urbančič <mateju@src.gnome.org>\n"
 "Martin Srebotnjak <miles@filmsi.net>"
 
 #. This can't be added via the builder
-#: src/application.rs:260
+#: src/application.rs:264
 msgid "Name by"
 msgstr "Ime po"
 
-#: src/application.rs:369
+#: src/application.rs:373
 msgid "Session not found"
 msgstr "Seje ni bilo mogoče najti"
 
@@ -609,8 +609,8 @@ msgstr "P_otrdi"
 msgid "The password is invalid."
 msgstr "Geslo je neveljavno."
 
-#: src/components/dialogs/auth/mod.rs:310 src/user_facing_error.rs:81
-#: src/user_facing_error.rs:95
+#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:128
+#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unexpected error occurred."
 msgstr "Prišlo je do nepričakovane napake."
 
@@ -671,7 +671,7 @@ msgstr "Zapusti"
 #: src/components/dialogs/message_dialogs.rs:379
 #: src/components/dialogs/message_dialogs.rs:414
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
-#: src/session/view/account_settings/general_page/mod.rs:378
+#: src/session/view/account_settings/general_page/mod.rs:387
 #: src/session/view/content/room_details/edit_details_subpage.rs:271
 #: src/session/view/content/room_details/edit_details_subpage.rs:550
 #: src/session/view/content/room_details/general_page.rs:1119
@@ -828,7 +828,7 @@ msgstr[3] ""
 "Tega ni mogoče razveljaviti."
 
 #: src/components/dialogs/message_dialogs.rs:227
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:388
 #: src/session/view/content/room_details/edit_details_subpage.rs:272
 #: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
@@ -1700,7 +1700,7 @@ msgstr "Ime domene"
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Domena vašega domačega strežnika Matrix, npr. gnome.org"
 
-#: src/login/homeserver_page.rs:107 src/login/method_page.ui:68
+#: src/login/homeserver_page.rs:107 src/login/method_page.ui:63
 msgid "Homeserver URL"
 msgstr "Naslov URL osnovnega strežnika"
 
@@ -1710,12 +1710,17 @@ msgstr "Naslov URL osnovnega strežnika"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "URL vašega domačega strežnika Matrix, npr. {address}"
 
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:301 src/login/mod.rs:326
+#: src/login/mod.rs:373 src/login/mod.rs:391
+msgid "Could not set up login"
+msgstr "Prijave ni bilo mogoče nastaviti"
+
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
 #: src/session/view/account_settings/general_page/mod.ui:93
 msgid "Homeserver"
 msgstr "Osnovni strežnik"
 
-#: src/login/homeserver_page.ui:100 src/login/method_page.ui:150
+#: src/login/homeserver_page.ui:100 src/login/method_page.ui:140
 msgid "Next"
 msgstr "Naslednji"
 
@@ -1724,25 +1729,29 @@ msgstr "Naslednji"
 msgid "Advanced…"
 msgstr "Napredno ..."
 
+#: src/login/in_browser_page.rs:101
+msgid "Could not open URL"
+msgstr "Ni mogoče odpreti naslova URL"
+
 #: src/login/in_browser_page.ui:55
 msgid "Click on the button below and follow the steps in the browser"
 msgstr "Kliknite spodnji gumb in sledite korakom v brskalniku"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:124
+#: src/login/method_page.rs:95
 msgid "Log in to {domain_name}"
 msgstr "Prijavi se v {domain_name}"
 
-#: src/login/method_page.rs:131
+#: src/login/method_page.rs:102
 msgid "Log in"
 msgstr "Prijava"
 
-#: src/login/method_page.rs:174
+#: src/login/method_page.rs:144
 msgid "More SSO Providers"
 msgstr "Več ponudnikov enotne prijave"
 
-#: src/login/method_page.rs:177
+#: src/login/method_page.rs:147
 msgid "Login via SSO"
 msgstr "Prijava prek enotne prijave"
 
@@ -1750,21 +1759,32 @@ msgstr "Prijava prek enotne prijave"
 msgid "Log In"
 msgstr "Prijavi se"
 
-#: src/login/method_page.ui:100
+#: src/login/method_page.ui:90
 msgid "Matrix Username"
 msgstr "Uporabniško ime Matrix"
 
-#: src/login/method_page.ui:116
+#: src/login/method_page.ui:106
 msgid "Password"
 msgstr "Geslo"
 
-#: src/login/method_page.ui:132
+#: src/login/method_page.ui:122
 msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
-#: src/login/mod.rs:443
+#: src/login/mod.rs:462
 msgid "Could not store session"
 msgstr "Seje ni mogoče shraniti"
+
+#: src/login/mod.rs:591
+msgid "Authorization Completed"
+msgstr "Overitev je končana"
+
+#: src/login/mod.rs:593
+msgid ""
+"The authorization step is complete. You can close this page and go back to "
+"Fractal."
+msgstr ""
+"Korak avtorizacije je končan. To stran lahko zaprete in se vrnete k Fraktalu."
 
 #: src/login/mod.ui:27 src/login/mod.ui:61
 msgid "Login Complete"
@@ -1796,30 +1816,30 @@ msgstr "Prijavi se z {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:172
+#: src/secret/linux.rs:175
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fraktal: poverilnice Matrix za {user_id}"
 
-#: src/secret/linux.rs:514
+#: src/secret/linux.rs:528
 msgid "The secret storage file is corrupted."
 msgstr "Skrivna datoteka za shranjevanje je poškodovana."
 
-#: src/secret/linux.rs:518
+#: src/secret/linux.rs:532
 msgid "Could not access the secret storage file location."
 msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
-#: src/secret/linux.rs:521
+#: src/secret/linux.rs:535
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do "
 "nepričakovane napake."
 
-#: src/secret/linux.rs:524
+#: src/secret/linux.rs:538
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
 
-#: src/secret/linux.rs:527
+#: src/secret/linux.rs:541
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1827,7 +1847,7 @@ msgstr ""
 "Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
 "pozive, ki zahtevajo dostop do njega."
 
-#: src/secret/linux.rs:530
+#: src/secret/linux.rs:544
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1835,7 +1855,7 @@ msgstr ""
 "Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
 "nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
 
-#: src/secret/linux.rs:533
+#: src/secret/linux.rs:547
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1843,35 +1863,35 @@ msgstr ""
 "Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
 "nepričakovane napake."
 
-#: src/secret/linux.rs:536
+#: src/secret/linux.rs:550
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, "
 "da bi bil varen."
 
-#: src/secret/linux.rs:550
+#: src/secret/linux.rs:564
 msgid "The item was deleted."
 msgstr "Element je bil izbrisan."
 
-#: src/secret/linux.rs:554 src/secret/linux.rs:575
+#: src/secret/linux.rs:568 src/secret/linux.rs:589
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
 
-#: src/secret/linux.rs:557
+#: src/secret/linux.rs:571
 msgid "The collection or item is locked."
 msgstr "Zbirka ali predmet je zaklenjen."
 
-#: src/secret/linux.rs:560
+#: src/secret/linux.rs:574
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Seja tajne storitve D-Bus ne obstaja."
 
-#: src/secret/linux.rs:563
+#: src/secret/linux.rs:577
 msgid "The collection or item does not exist."
 msgstr "Zbirka ali predmet ne obstaja."
 
-#: src/secret/linux.rs:567
+#: src/secret/linux.rs:581
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1879,7 +1899,7 @@ msgstr ""
 "Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
 "zahtevajo dostop do nje."
 
-#: src/secret/linux.rs:570
+#: src/secret/linux.rs:584
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1887,7 +1907,7 @@ msgstr ""
 "Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
 "ključev ustvarjena in nastavljena kot privzeta."
 
-#: src/session/model/session.rs:746
+#: src/session/model/session.rs:745
 msgid "Could not log the session out"
 msgstr "Seje ni bilo mogoče odjaviti"
 
@@ -2246,52 +2266,52 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Odstrani sejo"
 
-#: src/session/view/account_settings/general_page/mod.rs:278
+#: src/session/view/account_settings/general_page/mod.rs:287
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Avatar uspešno odstranjen"
 
-#: src/session/view/account_settings/general_page/mod.rs:280
+#: src/session/view/account_settings/general_page/mod.rs:289
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Avatar se je uspešno spremenil"
 
-#: src/session/view/account_settings/general_page/mod.rs:299
-#: src/session/view/account_settings/general_page/mod.rs:309
+#: src/session/view/account_settings/general_page/mod.rs:308
+#: src/session/view/account_settings/general_page/mod.rs:318
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 #: src/session/view/content/room_details/edit_details_subpage.rs:190
 msgid "Could not load file"
 msgstr "Napaka pri odpiranju datoteke: »%s«"
 
-#: src/session/view/account_settings/general_page/mod.rs:328
+#: src/session/view/account_settings/general_page/mod.rs:337
 #: src/session/view/content/room_details/edit_details_subpage.rs:217
 msgid "Could not upload avatar"
 msgstr "Avatarja ni bilo mogoče naložiti"
 
-#: src/session/view/account_settings/general_page/mod.rs:357
+#: src/session/view/account_settings/general_page/mod.rs:366
 #: src/session/view/content/room_details/edit_details_subpage.rs:240
 msgid "Could not change avatar"
 msgstr "Avatarja ni bilo mogoče spremeniti"
 
-#: src/session/view/account_settings/general_page/mod.rs:374
+#: src/session/view/account_settings/general_page/mod.rs:383
 #: src/session/view/content/room_details/edit_details_subpage.rs:265
 msgid "Remove Avatar?"
 msgstr "Želite odstraniti avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:375
+#: src/session/view/account_settings/general_page/mod.rs:384
 msgid "Do you really want to remove your avatar?"
 msgstr "Ali res želite odstraniti svoj avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:413
+#: src/session/view/account_settings/general_page/mod.rs:422
 #: src/session/view/content/room_details/edit_details_subpage.rs:297
 msgid "Could not remove avatar"
 msgstr "Avatarja ni bilo mogoče odstraniti"
 
-#: src/session/view/account_settings/general_page/mod.rs:465
+#: src/session/view/account_settings/general_page/mod.rs:474
 msgid "Name changed successfully"
 msgstr "Ime je uspešno spremenjeno"
 
-#: src/session/view/account_settings/general_page/mod.rs:516
+#: src/session/view/account_settings/general_page/mod.rs:525
 msgid "Could not change display name"
 msgstr "Prikaznega imena ni bilo mogoče spremeniti"
 
@@ -2734,26 +2754,26 @@ msgstr "Seznama priključenih naprav ni bilo mogoče naložiti"
 #. Translators: As in 'The session is verified'.
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:43
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:115
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:116
 msgid "Verified"
 msgstr "Overjeno"
 
 #. Translators: As in 'The session is not verified'.
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:60
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:119
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:120
 msgid "Not verified"
 msgstr "Nepreverjeno"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:204
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:214
 msgid "Session renamed"
 msgstr "Seja preimenovana"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:208
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:218
 msgid "Could not rename session"
 msgstr "Seje ni bilo možno preimenovati"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:238
+#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:248
 msgid "Could not disconnect session “{device_name}”"
 msgstr "Povezave s sejo »{device_name}« ni bilo mogoče prekiniti"
 
@@ -4016,80 +4036,80 @@ msgstr "Samodokončanje omemba člana klepetalnice"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:361
+#: src/session/view/content/room_history/message_toolbar/mod.rs:364
 msgid "Reply to {user}"
 msgstr "Odgovori {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:377
+#: src/session/view/content/room_history/message_toolbar/mod.rs:380
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Uredi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:520
+#: src/session/view/content/room_history/message_toolbar/mod.rs:525
 msgid "Could not send reply"
 msgstr "Odgovora ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:537
+#: src/session/view/content/room_history/message_toolbar/mod.rs:542
 msgid "Could not send edit"
 msgstr "Urejanja ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:549
+#: src/session/view/content/room_history/message_toolbar/mod.rs:554
 msgid "Could not send message"
 msgstr "Ni mogoče poslati sporočila."
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:595
+#: src/session/view/content/room_history/message_toolbar/mod.rs:600
 msgid "Your Location"
 msgstr "Vaša lokacija"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:656
+#: src/session/view/content/room_history/message_toolbar/mod.rs:661
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Lokacija uporabnika {geo_uri} ob {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:679
+#: src/session/view/content/room_history/message_toolbar/mod.rs:684
 msgid "Could not send location"
 msgstr "Lokacije ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:686
+#: src/session/view/content/room_history/message_toolbar/mod.rs:691
 msgid "The location request has been cancelled"
 msgstr "Zahteva za lokacijo je preklicana"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:687
+#: src/session/view/content/room_history/message_toolbar/mod.rs:692
 msgid "The location services are disabled"
 msgstr "Lokacijske storitve so onemogočene"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:688
+#: src/session/view/content/room_history/message_toolbar/mod.rs:693
 msgid "Could not retrieve current location"
 msgstr "Ni mogoče pridobiti trenutne lokacije"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:721
+#: src/session/view/content/room_history/message_toolbar/mod.rs:726
 msgid "Could not send file"
 msgstr "Ni mogoče poslati datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:775
+#: src/session/view/content/room_history/message_toolbar/mod.rs:780
 msgid "Select File"
 msgstr "Izbor datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:777
+#: src/session/view/content/room_history/message_toolbar/mod.rs:782
 msgid "Select"
 msgstr "Izberi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:792
+#: src/session/view/content/room_history/message_toolbar/mod.rs:797
 msgid "Could not open file"
 msgstr "Datoteke ni mogoče odpreti"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:818
-#: src/session/view/content/room_history/message_toolbar/mod.rs:826
+#: src/session/view/content/room_history/message_toolbar/mod.rs:823
+#: src/session/view/content/room_history/message_toolbar/mod.rs:831
 msgid "Error reading file"
 msgstr "Napaka pri branju datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:887
+#: src/session/view/content/room_history/message_toolbar/mod.rs:892
 msgid "Error getting image from clipboard"
 msgstr "Napaka pri pridobivanju slike iz odložišča"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:904
+#: src/session/view/content/room_history/message_toolbar/mod.rs:909
 msgid "Error getting file from clipboard"
 msgstr "Napaka pri pridobivanju datoteke iz odložišča"
 
@@ -5064,45 +5084,45 @@ msgstr "Trgovine ni bilo mogoče odpreti."
 msgid "Could not save file"
 msgstr "Datoteke ni mogoče shraniti"
 
-#: src/utils/matrix/mod.rs:191
+#: src/utils/matrix/mod.rs:194
 msgid "{user} sent an audio file."
 msgstr "{user} je poslal/a zvočno datoteko."
 
-#: src/utils/matrix/mod.rs:194
+#: src/utils/matrix/mod.rs:197
 msgid "{user} sent a file."
 msgstr "Uporabnik {user} je poslal datoteko."
 
-#: src/utils/matrix/mod.rs:196
+#: src/utils/matrix/mod.rs:199
 msgid "{user} sent an image."
 msgstr "{user} je poslal/a sliko."
 
-#: src/utils/matrix/mod.rs:199
+#: src/utils/matrix/mod.rs:202
 msgid "{user} sent their location."
 msgstr "{user} je poslal/a svojo lokacijo."
 
-#: src/utils/matrix/mod.rs:211
+#: src/utils/matrix/mod.rs:214
 msgid "{user} sent a video."
 msgstr "{user} je poslal/a video."
 
-#: src/utils/matrix/mod.rs:218
+#: src/utils/matrix/mod.rs:221
 msgid "{user} sent a sticker."
 msgstr "{user} je poslal/a nalepko."
 
-#: src/utils/matrix/mod.rs:228
+#: src/utils/matrix/mod.rs:231
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix/mod.rs:252
+#: src/utils/matrix/mod.rs:255
 msgid "{user} invited you"
 msgstr "{user} vas je povabil/a"
 
-#: src/utils/matrix/mod.rs:281
+#: src/utils/matrix/mod.rs:284
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
 
-#: src/utils/matrix/mod.rs:282
+#: src/utils/matrix/mod.rs:285
 msgid "Could not access the session tokens"
 msgstr "Ni bilo mogoče dostopati do žetonov seje"
 
