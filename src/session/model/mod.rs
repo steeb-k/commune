@@ -12,7 +12,7 @@ mod user;
 mod user_sessions_list;
 mod verification;
 
-pub use self::{
+pub(crate) use self::{
     ignored_users::IgnoredUsers,
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,

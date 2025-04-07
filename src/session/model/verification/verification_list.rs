@@ -29,7 +29,7 @@ mod imp {
     #[properties(wrapper_type = super::VerificationList)]
     pub struct VerificationList {
         /// The ongoing verification requests.
-        pub list: RefCell<IndexMap<VerificationKey, IdentityVerification>>,
+        pub(super) list: RefCell<IndexMap<VerificationKey, IdentityVerification>>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -282,7 +282,7 @@ impl VerificationList {
     }
 
     /// Remove the verification with the given key.
-    pub fn remove(&self, key: &VerificationKey) {
+    pub(crate) fn remove(&self, key: &VerificationKey) {
         let Some((pos, ..)) = self.imp().list.borrow_mut().shift_remove_full(key) else {
             return;
         };
@@ -295,7 +295,7 @@ impl VerificationList {
     }
 
     /// Get the verification with the given key.
-    pub fn get(&self, key: &VerificationKey) -> Option<IdentityVerification> {
+    pub(crate) fn get(&self, key: &VerificationKey) -> Option<IdentityVerification> {
         self.imp().list.borrow().get(key).cloned()
     }
 

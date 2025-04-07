@@ -167,8 +167,8 @@ mod imp {
                 gio::ActionEntry::builder("quit")
                     .activate(|obj: &super::Application, _, _| {
                         if let Some(window) = obj.active_window() {
-                            // This is needed to trigger the delete event
-                            // and saving the window state
+                            // This is needed to trigger the close request and save the window
+                            // state.
                             window.close();
                         }
 
@@ -186,12 +186,19 @@ mod imp {
                 gio::ActionEntry::builder(SessionIntentType::ShowMatrixId.action_name())
                     .parameter_type(Some(&SessionIntentType::static_variant_type()))
                     .activate(|obj: &super::Application, _, variant| {
-                        let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
-                            SessionIntentType::ShowMatrixId,
-                            variant,
-                        ) else {
+                        debug!(
+                            "`app.{}` action activated",
+                            SessionIntentType::ShowMatrixId.action_name()
+                        );
+
+                        let Some((session_id, intent)) = variant.and_then(|variant| {
+                            SessionIntent::from_variant_with_session_id(
+                                SessionIntentType::ShowMatrixId,
+                                variant,
+                            )
+                        }) else {
                             error!(
-                                "Triggered `{}` action without the proper payload",
+                                "Activated `app.{}` action without the proper payload",
                                 SessionIntentType::ShowMatrixId.action_name()
                             );
                             return;
@@ -207,12 +214,19 @@ mod imp {
                 )
                 .parameter_type(Some(&SessionIntentType::static_variant_type()))
                 .activate(|obj: &super::Application, _, variant| {
-                    let Some((session_id, intent)) = SessionIntent::parse_with_session_id(
-                        SessionIntentType::ShowIdentityVerification,
-                        variant,
-                    ) else {
+                    debug!(
+                        "`app.{}` action activated",
+                        SessionIntentType::ShowIdentityVerification.action_name()
+                    );
+
+                    let Some((session_id, intent)) = variant.and_then(|variant| {
+                        SessionIntent::from_variant_with_session_id(
+                            SessionIntentType::ShowIdentityVerification,
+                            variant,
+                        )
+                    }) else {
                         error!(
-                            "Triggered `{}` action without the proper payload",
+                            "Activated `app.{}` action without the proper payload",
                             SessionIntentType::ShowIdentityVerification.action_name()
                         );
                         return;
@@ -289,6 +303,7 @@ mod imp {
 
         /// Process the given URI.
         fn process_uri(&self, uri: &str) {
+            debug!(uri, "Processing URI…");
             match MatrixIdUri::parse(uri) {
                 Ok(matrix_id) => {
                     self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id));
@@ -299,7 +314,7 @@ mod imp {
 
         /// Select a session to handle the given intent as soon as possible.
         fn select_session_for_intent(&self, intent: SessionIntent) {
-            debug!("Selecting session for intent {intent:?}");
+            debug!(?intent, "Selecting session for intent…");
 
             // We only handle a single intent at time, the latest one.
             self.intent_handler.disconnect_signals();
@@ -307,26 +322,27 @@ mod imp {
             if self.session_list.state() == LoadingState::Ready {
                 match self.session_list.n_items() {
                     0 => {
-                        warn!("Cannot open URI with no logged in session");
+                        warn!("Cannot process intent with no logged in session");
                     }
                     1 => {
                         let session = self
                             .session_list
                             .first()
-                            .expect("There should be one session");
+                            .expect("there should be one session");
                         self.process_session_intent(session.session_id(), intent);
                     }
                     _ => {
                         spawn!(clone!(
-                            #[weak(rename_to = obj)]
+                            #[weak(rename_to = imp)]
                             self,
                             async move {
-                                obj.ask_session_for_intent(intent).await;
+                                imp.ask_session_for_intent(intent).await;
                             }
                         ));
                     }
                 }
             } else {
+                debug!(?intent, "Session list is not ready, queuing intent…");
                 // Wait for the list to be ready.
                 let cell = Rc::new(RefCell::new(Some(intent)));
                 let handler = self.session_list.connect_state_notify(clone!(
@@ -353,6 +369,7 @@ mod imp {
         ///
         /// The session list needs to be ready.
         async fn ask_session_for_intent(&self, intent: SessionIntent) {
+            debug!(?intent, "Asking to select a session to process intent…");
             let main_window = self.present_main_window();
 
             let Some(session_id) = main_window.ask_session().await else {
@@ -366,22 +383,35 @@ mod imp {
         /// Process the given intent for the given session, as soon as the
         /// session is ready.
         fn process_session_intent(&self, session_id: String, intent: SessionIntent) {
-            debug!(session = session_id, "Processing session intent {intent:?}");
-
             let Some(session_info) = self.session_list.get(&session_id) else {
-                warn!("Could not find session to process intent {intent:?}");
+                warn!(
+                    session = session_id,
+                    ?intent,
+                    "Could not find session to process intent"
+                );
                 toast!(self.present_main_window(), gettext("Session not found"));
                 return;
             };
 
+            debug!(session = session_id, ?intent, "Processing session intent…");
+
             if session_info.is::<FailedSession>() {
                 // We can't do anything, it should show an error screen.
-                warn!("Could not process intent {intent:?} for failed session");
+                warn!(
+                    session = session_id,
+                    ?intent,
+                    "Could not process intent for failed session"
+                );
             } else if let Some(session) = session_info.downcast_ref::<Session>() {
                 if session.state() == SessionState::Ready {
                     self.present_main_window()
                         .process_session_intent(session.session_id(), intent);
                 } else {
+                    debug!(
+                        session = session_id,
+                        ?intent,
+                        "Session is not ready, queuing intent…"
+                    );
                     // Wait for the session to be ready.
                     let cell = Rc::new(RefCell::new(Some((session_id, intent))));
                     let handler = session.connect_ready(clone!(
@@ -401,6 +431,11 @@ mod imp {
                     self.intent_handler.set(session.upcast_ref(), vec![handler]);
                 }
             } else {
+                debug!(
+                    session = session_id,
+                    ?intent,
+                    "Session is still loading, queuing intent…"
+                );
                 // Wait for the session to be a `Session`.
                 let cell = Rc::new(RefCell::new(Some((session_id, intent))));
                 let handler = self.session_list.connect_items_changed(clone!(

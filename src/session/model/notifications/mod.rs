@@ -6,13 +6,13 @@ use tracing::{debug, warn};
 
 mod notifications_settings;
 
-pub use self::notifications_settings::{
+pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
 };
 use super::{IdentityVerification, Session, VerificationKey};
 use crate::{
     gettext_f,
-    intent::{SessionIntent, SessionIntentType},
+    intent::SessionIntent,
     prelude::*,
     spawn_tokio,
     utils::matrix::{
@@ -35,18 +35,18 @@ mod imp {
     pub struct Notifications {
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
         /// The push notifications that were presented.
         ///
         /// A map of room ID to list of notification IDs.
-        pub push: RefCell<HashMap<OwnedRoomId, HashSet<String>>>,
+        pub(super) push: RefCell<HashMap<OwnedRoomId, HashSet<String>>>,
         /// The identity verification notifications that were presented.
         ///
         /// A map of verification key to notification ID.
-        pub identity_verifications: RefCell<HashMap<VerificationKey, String>>,
+        pub(super) identity_verifications: RefCell<HashMap<VerificationKey, String>>,
         /// The notifications settings for this session.
         #[property(get)]
-        pub settings: NotificationsSettings,
+        settings: NotificationsSettings,
     }
 
     #[glib::object_subclass]
@@ -84,7 +84,7 @@ impl Notifications {
     }
 
     /// Whether notifications are enabled for the current session.
-    pub fn enabled(&self) -> bool {
+    pub(crate) fn enabled(&self) -> bool {
         let settings = self.settings();
         settings.account_enabled() && settings.session_enabled()
     }
@@ -94,7 +94,8 @@ impl Notifications {
         id: &str,
         title: &str,
         body: &str,
-        default_action: (&str, glib::Variant),
+        session_id: &str,
+        intent: &SessionIntent,
         icon: Option<&gdk::Texture>,
     ) {
         let notification = gio::Notification::new(title);
@@ -102,7 +103,8 @@ impl Notifications {
         notification.set_priority(gio::NotificationPriority::High);
         notification.set_body(Some(body));
 
-        let (action, target_value) = default_action;
+        let action = intent.app_action_name();
+        let target_value = intent.to_variant_with_session_id(session_id);
         notification.set_default_action_and_target_value(action, Some(&target_value));
 
         if let Some(notification_icon) = icon {
@@ -116,7 +118,11 @@ impl Notifications {
     ///
     /// The notification will not be shown if the application is active and the
     /// room of the event is displayed.
-    pub async fn show_push(&self, matrix_notification: Notification, matrix_room: MatrixRoom) {
+    pub(crate) async fn show_push(
+        &self,
+        matrix_notification: Notification,
+        matrix_room: MatrixRoom,
+    ) {
         // Do not show notifications if they are disabled.
         if !self.enabled() {
             return;
@@ -164,7 +170,7 @@ impl Notifications {
         let handle =
             spawn_tokio!(async move { matrix_room.get_member_no_sync(&owned_sender_id).await });
 
-        let sender = match handle.await.unwrap() {
+        let sender = match handle.await.expect("task was not aborted") {
             Ok(member) => member,
             Err(error) => {
                 warn!("Could not get member for notification: {error}");
@@ -212,18 +218,14 @@ impl Notifications {
             let random_id = glib::uuid_string_random();
             format!("{session_id}//{matrix_uri}//{random_id}")
         };
-        let payload =
-            SessionIntent::ShowMatrixId(matrix_uri).to_variant_with_session_id(session_id);
         let icon = room.avatar_data().as_notification_icon().await;
 
         Self::send_notification(
             &id,
             &room.display_name(),
             &body,
-            (
-                SessionIntentType::ShowMatrixId.app_action_name(),
-                payload.to_variant(),
-            ),
+            session_id,
+            &SessionIntent::ShowMatrixId(matrix_uri),
             icon.as_ref(),
         );
 
@@ -236,7 +238,10 @@ impl Notifications {
     }
 
     /// Show a notification for the given in-room identity verification.
-    pub async fn show_in_room_identity_verification(&self, verification: &IdentityVerification) {
+    pub(crate) async fn show_in_room_identity_verification(
+        &self,
+        verification: &IdentityVerification,
+    ) {
         // Do not show notifications if they are disabled.
         if !self.enabled() {
             return;
@@ -265,9 +270,6 @@ impl Notifications {
             &[("user", &user.display_name())],
         );
 
-        let payload = SessionIntent::ShowIdentityVerification(verification.key())
-            .to_variant_with_session_id(session_id);
-
         let icon = user.avatar_data().as_notification_icon().await;
 
         let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
@@ -275,10 +277,8 @@ impl Notifications {
             &id,
             &title,
             &body,
-            (
-                SessionIntentType::ShowIdentityVerification.app_action_name(),
-                payload.to_variant(),
-            ),
+            session_id,
+            &SessionIntent::ShowIdentityVerification(verification.key()),
             icon.as_ref(),
         );
 
@@ -289,7 +289,10 @@ impl Notifications {
     }
 
     /// Show a notification for the given to-device identity verification.
-    pub async fn show_to_device_identity_verification(&self, verification: &IdentityVerification) {
+    pub(crate) async fn show_to_device_identity_verification(
+        &self,
+        verification: &IdentityVerification,
+    ) {
         // Do not show notifications if they are disabled.
         if !self.enabled() {
             return;
@@ -310,7 +313,7 @@ impl Notifications {
         let request = get_device::v3::Request::new(other_device_id.clone());
         let handle = spawn_tokio!(async move { client.send(request).await });
 
-        let display_name = match handle.await.unwrap() {
+        let display_name = match handle.await.expect("task was not aborted") {
             Ok(res) => res.device.display_name,
             Err(error) => {
                 warn!("Could not get device for notification: {error}");
@@ -329,19 +332,14 @@ impl Notifications {
             &[("name", display_name)],
         );
 
-        let payload = SessionIntent::ShowIdentityVerification(verification.key())
-            .to_variant_with_session_id(session_id);
-
         let id = format!("{session_id}//{other_device_id}//{flow_id}");
 
         Self::send_notification(
             &id,
             &title,
             &body,
-            (
-                SessionIntentType::ShowIdentityVerification.app_action_name(),
-                payload.to_variant(),
-            ),
+            session_id,
+            &SessionIntent::ShowIdentityVerification(verification.key()),
             None,
         );
 
@@ -356,7 +354,7 @@ impl Notifications {
     ///
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
-    pub fn withdraw_all_for_room(&self, room_id: &RoomId) {
+    pub(crate) fn withdraw_all_for_room(&self, room_id: &RoomId) {
         if let Some(notifications) = self.imp().push.borrow_mut().remove(room_id) {
             let app = Application::default();
 
@@ -368,7 +366,7 @@ impl Notifications {
 
     /// Ask the system to remove the known notification for the identity
     /// verification with the given key.
-    pub fn withdraw_identity_verification(&self, key: &VerificationKey) {
+    pub(crate) fn withdraw_identity_verification(&self, key: &VerificationKey) {
         if let Some(id) = self.imp().identity_verifications.borrow_mut().remove(key) {
             let app = Application::default();
             app.withdraw_notification(&id);
@@ -379,7 +377,7 @@ impl Notifications {
     ///
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
-    pub fn clear(&self) {
+    pub(crate) fn clear(&self) {
         let app = Application::default();
 
         for id in self.imp().push.take().values().flatten() {

@@ -235,7 +235,6 @@ mod imp {
     }
 
     impl WindowImpl for Window {
-        // save window state on delete event
         fn close_request(&self) -> glib::Propagation {
             if let Err(error) = self.save_window_size() {
                 warn!("Could not save window state: {error}");

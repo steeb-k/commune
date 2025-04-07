@@ -422,7 +422,7 @@ impl IdentityVerification {
     }
 
     /// The unique identifying key of this verification.
-    pub fn key(&self) -> VerificationKey {
+    pub(crate) fn key(&self) -> VerificationKey {
         VerificationKey::from_request(self.request())
     }
 
