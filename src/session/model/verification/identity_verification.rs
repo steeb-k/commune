@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use futures_util::StreamExt;
 use gtk::{
     glib,
@@ -22,23 +20,10 @@ use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
     components::QrCodeScanner,
     prelude::*,
-    session::model::{Member, Membership, Room, Session, User},
+    session::model::{Member, Membership, Room, User},
     spawn, spawn_tokio,
     utils::BoundConstructOnlyObject,
 };
-
-/// A boxed [`VerificationRequest`].
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedVerificationRequest")]
-pub struct BoxedVerificationRequest(pub VerificationRequest);
-
-impl Deref for BoxedVerificationRequest {
-    type Target = VerificationRequest;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 #[glib::flags(name = "VerificationSupportedMethods")]
 pub enum VerificationSupportedMethods {
@@ -71,7 +56,6 @@ impl Default for VerificationSupportedMethods {
 }
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
 #[enum_type(name = "VerificationState")]
 pub enum VerificationState {
     /// We created and sent the request.
@@ -131,52 +115,51 @@ mod imp {
     #[properties(wrapper_type = super::IdentityVerification)]
     pub struct IdentityVerification {
         /// The SDK's verification request.
-        #[property(set = Self::set_request, construct_only)]
-        pub request: OnceCell<BoxedVerificationRequest>,
-        pub request_changes_abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
+        request: OnceCell<VerificationRequest>,
+        request_changes_abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
         /// The SDK's verification, if one was started.
-        pub verification: RefCell<Option<Verification>>,
-        pub verification_changes_abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
+        verification: RefCell<Option<Verification>>,
+        verification_changes_abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
         /// The user to verify.
         #[property(get, set = Self::set_user, construct_only)]
-        pub user: BoundConstructOnlyObject<User>,
+        user: BoundConstructOnlyObject<User>,
         /// The room of this verification, if any.
         #[property(get, set = Self::set_room, construct_only)]
-        pub room: glib::WeakRef<Room>,
+        room: glib::WeakRef<Room>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The state of this verification
         #[property(get, set = Self::set_state, construct_only, builder(VerificationState::default()))]
-        pub state: Cell<VerificationState>,
+        state: Cell<VerificationState>,
         /// Whether the verification request was accepted.
         ///
         /// It means that the verification reached at least the `Ready` state.
         #[property(get)]
-        pub was_accepted: Cell<bool>,
+        was_accepted: Cell<bool>,
         /// Whether this verification is finished.
         #[property(get = Self::is_finished)]
         is_finished: PhantomData<bool>,
         /// The supported methods of the verification request.
         #[property(get = Self::supported_methods, type = VerificationSupportedMethods)]
-        pub supported_methods: RefCell<Vec<VerificationMethod>>,
+        supported_methods: RefCell<Vec<VerificationMethod>>,
         /// The flow ID of this verification.
         #[property(get = Self::flow_id)]
         flow_id: PhantomData<String>,
         /// The time and date when the verification request was received.
         #[property(get)]
-        pub received_time: OnceCell<glib::DateTime>,
-        pub received_timeout_source: RefCell<Option<glib::SourceId>>,
+        received_time: OnceCell<glib::DateTime>,
+        received_timeout_source: RefCell<Option<glib::SourceId>>,
         /// The display name of this verification.
         #[property(get = Self::display_name)]
         display_name: PhantomData<String>,
         /// The QR Code, if the `QrCodeShowV1` method is supported.
-        pub qr_code: RefCell<Option<QrCode>>,
+        pub(super) qr_code: RefCell<Option<QrCode>>,
         /// The QR code scanner, if the user wants to scan a QR Code and we
         /// have access to the camera.
         #[property(get)]
-        pub qrcode_scanner: RefCell<Option<QrCodeScanner>>,
+        pub(super) qrcode_scanner: RefCell<Option<QrCodeScanner>>,
         /// Whether this verification was viewed by the user.
         #[property(get, set = Self::set_was_viewed, explicit_notify)]
-        pub was_viewed: Cell<bool>,
+        was_viewed: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -214,8 +197,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            let obj = self.obj();
-
             if let Some(handler) = self.membership_handler.take() {
                 if let Some(room) = self.room.upgrade() {
                     room.own_member().disconnect(handler);
@@ -231,7 +212,7 @@ mod imp {
                 source.remove();
             }
 
-            let request = obj.request().clone();
+            let request = self.request().clone();
             if !request.is_done() && !request.is_passive() && !request.is_cancelled() {
                 spawn_tokio!(async move {
                     if let Err(error) = request.cancel().await {
@@ -244,7 +225,7 @@ mod imp {
 
     impl IdentityVerification {
         /// Set the SDK's verification request.
-        fn set_request(&self, request: BoxedVerificationRequest) {
+        pub(super) async fn set_request(&self, request: VerificationRequest) {
             let request = self.request.get_or_init(|| request);
 
             let Ok(datetime) = glib::DateTime::now_local() else {
@@ -270,7 +251,35 @@ mod imp {
                 self.received_timeout_source.replace(Some(source_id));
             }
 
-            self.received_time.set(datetime).unwrap();
+            self.received_time
+                .set(datetime)
+                .expect("received time should be uninitialized");
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let fut = request.changes().for_each(move |state| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().handle_request_state(state).await;
+                            }
+                        });
+                    });
+                }
+            });
+
+            self.request_changes_abort_handle
+                .replace(Some(spawn_tokio!(fut).abort_handle()));
+
+            let state = request.state();
+            self.handle_request_state(state).await;
+        }
+
+        /// The SDK's verification request.
+        pub(super) fn request(&self) -> &VerificationRequest {
+            self.request.get().expect("request should be initialized")
         }
 
         /// Set the user to verify.
@@ -322,7 +331,7 @@ mod imp {
         }
 
         /// Set the state of this verification.
-        pub fn set_state(&self, state: VerificationState) {
+        pub(super) fn set_state(&self, state: VerificationState) {
             if self.state.get() == state {
                 return;
             }
@@ -358,6 +367,16 @@ mod imp {
             )
         }
 
+        /// Set the supported methods of this verification.
+        fn set_supported_methods(&self, supported_methods: Vec<VerificationMethod>) {
+            if *self.supported_methods.borrow() == supported_methods {
+                return;
+            }
+
+            self.supported_methods.replace(supported_methods);
+            self.obj().notify_supported_methods();
+        }
+
         /// The supported methods of this verifications.
         fn supported_methods(&self) -> VerificationSupportedMethods {
             self.supported_methods.borrow().as_slice().into()
@@ -377,7 +396,7 @@ mod imp {
 
         /// The flow ID of this verification request.
         fn flow_id(&self) -> String {
-            self.request.get().unwrap().flow_id().to_owned()
+            self.request().flow_id().to_owned()
         }
 
         /// Set whether this verification was viewed by the user.
@@ -389,6 +408,274 @@ mod imp {
 
             self.was_viewed.set(was_viewed);
             self.obj().notify_was_viewed();
+        }
+
+        /// Set whether this request was accepted.
+        fn set_was_accepted(&self, was_accepted: bool) {
+            if !was_accepted || self.was_accepted.get() {
+                // The state cannot go backwards.
+                return;
+            }
+
+            self.was_accepted.set(true);
+            self.obj().notify_was_accepted();
+        }
+
+        /// Handle a change in the request's state.
+        async fn handle_request_state(&self, state: VerificationRequestState) {
+            let request = self.request();
+
+            if !matches!(state, VerificationRequestState::Requested { .. }) {
+                if let Some(source) = self.received_timeout_source.take() {
+                    source.remove();
+                }
+            }
+            if !matches!(
+                state,
+                VerificationRequestState::Created { .. }
+                    | VerificationRequestState::Requested { .. }
+            ) {
+                self.set_was_accepted(true);
+            }
+
+            match state {
+                VerificationRequestState::Created { .. } => {}
+                VerificationRequestState::Requested { their_methods, .. } => {
+                    let our_methods = load_supported_verification_methods().await;
+                    let supported_methods = intersect_methods(our_methods, &their_methods);
+
+                    if supported_methods.is_empty() {
+                        self.set_state(VerificationState::NoSupportedMethods);
+                    } else {
+                        self.set_state(VerificationState::Requested);
+                    }
+                }
+                VerificationRequestState::Ready {
+                    their_methods,
+                    our_methods,
+                    ..
+                } => {
+                    let mut supported_methods = intersect_methods(our_methods, &their_methods);
+
+                    // Remove the reciprocate method, it's not a flow in itself.
+                    let reciprocate_idx =
+                        supported_methods.iter().enumerate().find_map(|(idx, m)| {
+                            (*m == VerificationMethod::ReciprocateV1).then_some(idx)
+                        });
+                    if let Some(idx) = reciprocate_idx {
+                        supported_methods.remove(idx);
+                    }
+
+                    // Check that we can get the QR Code, to avoid exposing the method if it doesn't
+                    // work.
+                    let show_qr_idx = supported_methods.iter().enumerate().find_map(|(idx, m)| {
+                        (*m == VerificationMethod::QrCodeShowV1).then_some(idx)
+                    });
+                    if let Some(idx) = show_qr_idx {
+                        if !self.load_qr_code().await {
+                            supported_methods.remove(idx);
+                        }
+                    }
+
+                    if supported_methods.is_empty() {
+                        // This should not happen.
+                        error!("Invalid verification: no methods are supported by both sessions, cancelling…");
+                        if self.obj().cancel().await.is_err() {
+                            self.set_state(VerificationState::NoSupportedMethods);
+                        }
+                    } else {
+                        self.set_supported_methods(supported_methods.clone());
+
+                        if supported_methods.len() == 1
+                            && !request.we_started()
+                            && supported_methods[0] == VerificationMethod::SasV1
+                        {
+                            // We only go forward for SAS, because QrCodeShow is the
+                            // same screen as the one to choose a method and we need
+                            // to tell the user we are going to need to access the
+                            // camera for QrCodeScan.
+                            if self.obj().start_sas().await.is_ok() {
+                                return;
+                            }
+                        }
+
+                        self.set_state(VerificationState::Ready);
+                    }
+                }
+                VerificationRequestState::Transitioned { verification } => {
+                    self.set_verification(verification).await;
+                }
+                VerificationRequestState::Done => {
+                    self.set_state(VerificationState::Done);
+                }
+                VerificationRequestState::Cancelled(info) => self.handle_cancelled_state(&info),
+            }
+        }
+
+        /// Handle when the request was cancelled.
+        fn handle_cancelled_state(&self, cancel_info: &CancelInfo) {
+            debug!("Verification was cancelled: {cancel_info:?}");
+            let cancel_code = cancel_info.cancel_code();
+
+            if cancel_info.cancelled_by_us() && *cancel_code == CancelCode::User {
+                // We should handle this already.
+                return;
+            }
+
+            if *cancel_code == CancelCode::Accepted && !self.was_viewed.get() {
+                // We can safely remove it.
+                self.obj().dismiss();
+                return;
+            }
+
+            self.obj().emit_by_name::<()>("cancel-info-changed", &[]);
+            self.set_state(VerificationState::Cancelled);
+        }
+
+        /// Set the SDK's Verification.
+        async fn set_verification(&self, verification: Verification) {
+            if let Some(handle) = self.verification_changes_abort_handle.take() {
+                handle.abort();
+            }
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let handle = match &verification {
+                Verification::SasV1(sas_verification) => {
+                    let fut = sas_verification.changes().for_each(move |state| {
+                        let obj_weak = obj_weak.clone();
+                        async move {
+                            let ctx = glib::MainContext::default();
+                            ctx.spawn(async move {
+                                spawn!(async move {
+                                    if let Some(obj) = obj_weak.upgrade() {
+                                        obj.imp().handle_sas_verification_state(state).await;
+                                    }
+                                });
+                            });
+                        }
+                    });
+                    spawn_tokio!(fut).abort_handle()
+                }
+                Verification::QrV1(qr_verification) => {
+                    let fut = qr_verification.changes().for_each(move |state| {
+                        let obj_weak = obj_weak.clone();
+                        async move {
+                            let ctx = glib::MainContext::default();
+                            ctx.spawn(async move {
+                                spawn!(async move {
+                                    if let Some(obj) = obj_weak.upgrade() {
+                                        obj.imp().handle_qr_verification_state(state);
+                                    }
+                                });
+                            });
+                        }
+                    });
+                    spawn_tokio!(fut).abort_handle()
+                }
+                _ => {
+                    error!("We only support SAS and QR verification");
+                    self.set_state(VerificationState::Error);
+                    return;
+                }
+            };
+
+            self.verification.replace(Some(verification.clone()));
+            self.verification_changes_abort_handle.replace(Some(handle));
+
+            match verification {
+                Verification::SasV1(sas_verification) => {
+                    self.handle_sas_verification_state(sas_verification.state())
+                        .await;
+                }
+                Verification::QrV1(qr_verification) => {
+                    self.handle_qr_verification_state(qr_verification.state());
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        /// Handle a change in the QR verification's state.
+        fn handle_qr_verification_state(&self, state: QrVerificationState) {
+            match state {
+                QrVerificationState::Started
+                | QrVerificationState::Confirmed
+                | QrVerificationState::Reciprocated => {}
+                QrVerificationState::Scanned => self.set_state(VerificationState::QrConfirm),
+                QrVerificationState::Done { .. } => self.set_state(VerificationState::Done),
+                QrVerificationState::Cancelled(info) => self.handle_cancelled_state(&info),
+            }
+        }
+
+        /// The SDK's QR verification, if one was started.
+        pub(super) fn qr_verification(&self) -> Option<QrVerification> {
+            match self.verification.borrow().as_ref()? {
+                Verification::QrV1(v) => Some(v.clone()),
+                _ => None,
+            }
+        }
+
+        /// Handle a change in the SAS verification's state.
+        async fn handle_sas_verification_state(&self, state: SasState) {
+            let Some(sas_verification) = self.sas_verification() else {
+                return;
+            };
+
+            match state {
+                SasState::Created { .. } | SasState::Accepted { .. } | SasState::Confirmed => {}
+                SasState::Started { .. } => {
+                    let handle = spawn_tokio!(async move { sas_verification.accept().await });
+                    if let Err(error) = handle.await.expect("task was not aborted") {
+                        error!("Could not accept SAS verification: {error}");
+                        self.set_state(VerificationState::Error);
+                    }
+                }
+                SasState::KeysExchanged { .. } => {
+                    self.obj().emit_by_name::<()>("sas-data-changed", &[]);
+                    self.set_state(VerificationState::SasConfirm);
+                }
+                SasState::Done { .. } => self.set_state(VerificationState::Done),
+                SasState::Cancelled(info) => self.handle_cancelled_state(&info),
+            }
+        }
+
+        /// The SDK's SAS verification, if one was started.
+        pub(super) fn sas_verification(&self) -> Option<SasVerification> {
+            match self.verification.borrow().as_ref()? {
+                Verification::SasV1(v) => Some(v.clone()),
+                _ => None,
+            }
+        }
+
+        /// Try to load the QR Code.
+        ///
+        /// Return `true` if it was successfully loaded, `false` otherwise.
+        async fn load_qr_code(&self) -> bool {
+            let request = self.request().clone();
+
+            let handle = spawn_tokio!(async move { request.generate_qr_code().await });
+
+            let qr_verification = match handle.await.expect("task was not aborted") {
+                Ok(Some(qr_verification)) => qr_verification,
+                Ok(None) => {
+                    error!("Could not start QR verification generation: unknown reason");
+                    return false;
+                }
+                Err(error) => {
+                    error!("Could not start QR verification generation: {error}");
+                    return false;
+                }
+            };
+
+            match qr_verification.to_qr_code() {
+                Ok(qr_code) => {
+                    self.qr_code.replace(Some(qr_code));
+                    true
+                }
+                Err(error) => {
+                    error!("Could not generate verification QR code: {error}");
+                    false
+                }
+            }
         }
     }
 }
@@ -402,43 +689,31 @@ impl IdentityVerification {
     /// Construct a verification for the given request.
     pub async fn new(request: VerificationRequest, user: &User, room: Option<&Room>) -> Self {
         let obj = glib::Object::builder::<Self>()
-            .property("request", BoxedVerificationRequest(request))
             .property("user", user)
             .property("room", room)
             .build();
-
-        obj.init().await;
+        obj.imp().set_request(request).await;
         obj
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.user().session()
-    }
-
-    /// The SDK's verification request.
-    fn request(&self) -> &VerificationRequest {
-        self.imp().request.get().unwrap()
     }
 
     /// The unique identifying key of this verification.
     pub(crate) fn key(&self) -> VerificationKey {
-        VerificationKey::from_request(self.request())
+        VerificationKey::from_request(self.imp().request())
     }
 
     /// Whether this is a self-verification.
-    pub fn is_self_verification(&self) -> bool {
-        self.request().is_self_verification()
+    pub(crate) fn is_self_verification(&self) -> bool {
+        self.imp().request().is_self_verification()
     }
 
     /// Whether we started this verification.
-    pub fn started_by_us(&self) -> bool {
-        self.request().we_started()
+    pub(crate) fn started_by_us(&self) -> bool {
+        self.imp().request().we_started()
     }
 
     /// The ID of the other device that is being verified.
-    pub fn other_device_id(&self) -> Option<OwnedDeviceId> {
-        let request_state = self.request().state();
+    pub(crate) fn other_device_id(&self) -> Option<OwnedDeviceId> {
+        let request_state = self.imp().request().state();
         let other_device_data = match &request_state {
             VerificationRequestState::Requested {
                 other_device_data, ..
@@ -459,168 +734,16 @@ impl IdentityVerification {
         Some(other_device_data.device_id().to_owned())
     }
 
-    /// Set whether this request was accepted.
-    fn set_was_accepted(&self, was_accepted: bool) {
-        if !was_accepted || self.was_accepted() {
-            // The state cannot go backwards.
-            return;
-        }
-
-        self.imp().was_accepted.set(true);
-        self.notify_was_accepted();
-    }
-
     /// Information about the verification cancellation, if any.
-    pub fn cancel_info(&self) -> Option<CancelInfo> {
-        self.request().cancel_info()
-    }
-
-    /// Initialize this verification to listen to changes in the request's
-    /// state.
-    async fn init(&self) {
-        let request = self.request();
-
-        let obj_weak = glib::SendWeakRef::from(self.downgrade());
-        let fut = request.changes().for_each(move |state| {
-            let obj_weak = obj_weak.clone();
-            async move {
-                let ctx = glib::MainContext::default();
-                ctx.spawn(async move {
-                    spawn!(async move {
-                        if let Some(obj) = obj_weak.upgrade() {
-                            obj.handle_request_state(state).await;
-                        }
-                    });
-                });
-            }
-        });
-        let handle = spawn_tokio!(fut).abort_handle();
-
-        self.imp()
-            .request_changes_abort_handle
-            .replace(Some(handle));
-
-        let state = request.state();
-        self.handle_request_state(state).await;
-    }
-
-    /// Handle a change in the request's state.
-    async fn handle_request_state(&self, state: VerificationRequestState) {
-        let imp = self.imp();
-        let request = self.request();
-
-        if !matches!(state, VerificationRequestState::Requested { .. }) {
-            if let Some(source) = imp.received_timeout_source.take() {
-                source.remove();
-            }
-        }
-        if !matches!(
-            state,
-            VerificationRequestState::Created { .. } | VerificationRequestState::Requested { .. }
-        ) {
-            self.set_was_accepted(true);
-        }
-
-        match state {
-            VerificationRequestState::Created { .. } => {}
-            VerificationRequestState::Requested { their_methods, .. } => {
-                let our_methods = load_supported_verification_methods().await;
-                let supported_methods = intersect_methods(our_methods, &their_methods);
-
-                if supported_methods.is_empty() {
-                    imp.set_state(VerificationState::NoSupportedMethods);
-                } else {
-                    imp.set_state(VerificationState::Requested);
-                }
-            }
-            VerificationRequestState::Ready {
-                their_methods,
-                our_methods,
-                ..
-            } => {
-                let mut supported_methods = intersect_methods(our_methods, &their_methods);
-
-                // Remove the reciprocate method, it's not a flow in itself.
-                let reciprocate_idx = supported_methods
-                    .iter()
-                    .enumerate()
-                    .find_map(|(idx, m)| (*m == VerificationMethod::ReciprocateV1).then_some(idx));
-                if let Some(idx) = reciprocate_idx {
-                    supported_methods.remove(idx);
-                }
-
-                // Check that we can get the QR Code, to avoid exposing the method if it doesn't
-                // work.
-                let show_qr_idx = supported_methods
-                    .iter()
-                    .enumerate()
-                    .find_map(|(idx, m)| (*m == VerificationMethod::QrCodeShowV1).then_some(idx));
-                if let Some(idx) = show_qr_idx {
-                    if !self.load_qr_code().await {
-                        supported_methods.remove(idx);
-                    }
-                }
-
-                if supported_methods.is_empty() {
-                    // This should not happen.
-                    error!("Invalid verification: no methods are supported by both sessions, cancelling…");
-                    if self.cancel().await.is_err() {
-                        imp.set_state(VerificationState::NoSupportedMethods);
-                    }
-                } else {
-                    self.set_supported_methods(supported_methods.clone());
-
-                    if supported_methods.len() == 1
-                        && !request.we_started()
-                        && supported_methods[0] == VerificationMethod::SasV1
-                    {
-                        // We only go forward for SAS, because QrCodeShow is the
-                        // same screen as the one to choose a method and we need
-                        // to tell the user we are going to need to access the
-                        // camera for QrCodeScan.
-                        if self.start_sas().await.is_ok() {
-                            return;
-                        }
-                    }
-
-                    imp.set_state(VerificationState::Ready);
-                }
-            }
-            VerificationRequestState::Transitioned { verification } => {
-                self.set_verification(verification).await;
-            }
-            VerificationRequestState::Done => {
-                imp.set_state(VerificationState::Done);
-            }
-            VerificationRequestState::Cancelled(info) => self.handle_cancelled_state(&info),
-        }
-    }
-
-    /// Handle when the request was cancelled.
-    fn handle_cancelled_state(&self, cancel_info: &CancelInfo) {
-        debug!("Verification was cancelled: {cancel_info:?}");
-        let cancel_code = cancel_info.cancel_code();
-
-        if cancel_info.cancelled_by_us() && *cancel_code == CancelCode::User {
-            // We should handle this already.
-            return;
-        }
-
-        if *cancel_code == CancelCode::Accepted && !self.was_viewed() {
-            // We can safely remove it.
-            self.dismiss();
-            return;
-        }
-
-        self.emit_by_name::<()>("cancel-info-changed", &[]);
-        self.imp().set_state(VerificationState::Cancelled);
+    pub(crate) fn cancel_info(&self) -> Option<CancelInfo> {
+        self.imp().request().cancel_info()
     }
 
     /// Cancel the verification request.
     ///
     /// This can be used to decline the request or cancel it at any time.
-    pub async fn cancel(&self) -> Result<(), matrix_sdk::Error> {
-        let request = self.request().clone();
+    pub(crate) async fn cancel(&self) -> Result<(), matrix_sdk::Error> {
+        let request = self.imp().request().clone();
 
         if request.is_done() || request.is_passive() || request.is_cancelled() {
             return Err(matrix_sdk::Error::UnknownError(
@@ -630,7 +753,7 @@ impl IdentityVerification {
 
         let handle = spawn_tokio!(async move { request.cancel().await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(()) => {
                 self.dismiss();
                 Ok(())
@@ -643,8 +766,8 @@ impl IdentityVerification {
     }
 
     /// Accept the verification request.
-    pub async fn accept(&self) -> Result<(), ()> {
-        let request = self.request().clone();
+    pub(crate) async fn accept(&self) -> Result<(), ()> {
+        let request = self.imp().request().clone();
 
         let VerificationRequestState::Requested { their_methods, .. } = request.state() else {
             error!("Cannot accept verification that is not in the requested state");
@@ -655,7 +778,7 @@ impl IdentityVerification {
 
         let handle = spawn_tokio!(async move { request.accept_with_methods(methods).await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not accept verification request: {error}");
@@ -664,209 +787,40 @@ impl IdentityVerification {
         }
     }
 
-    /// Set the supported methods of this verification.
-    fn set_supported_methods(&self, supported_methods: Vec<VerificationMethod>) {
-        let imp = self.imp();
-        if *imp.supported_methods.borrow() == supported_methods {
-            return;
-        }
-
-        imp.supported_methods.replace(supported_methods);
-        self.notify_supported_methods();
-    }
-
     /// Go back to the state to choose a verification method.
-    pub fn choose_method(&self) {
+    pub(crate) fn choose_method(&self) {
         self.imp().set_state(VerificationState::Ready);
     }
 
-    /// Set the SDK's Verification.
-    async fn set_verification(&self, verification: Verification) {
-        let imp = self.imp();
-
-        if let Some(handle) = imp.verification_changes_abort_handle.take() {
-            handle.abort();
-        }
-
-        let obj_weak = glib::SendWeakRef::from(self.downgrade());
-        let handle = match &verification {
-            Verification::SasV1(sas_verification) => {
-                let fut = sas_verification.changes().for_each(move |state| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.handle_sas_verification_state(state).await;
-                                }
-                            });
-                        });
-                    }
-                });
-                spawn_tokio!(fut).abort_handle()
-            }
-            Verification::QrV1(qr_verification) => {
-                let fut = qr_verification.changes().for_each(move |state| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.handle_qr_verification_state(state);
-                                }
-                            });
-                        });
-                    }
-                });
-                spawn_tokio!(fut).abort_handle()
-            }
-            _ => {
-                error!("We only support SAS and QR verification");
-                imp.set_state(VerificationState::Error);
-                return;
-            }
-        };
-
-        imp.verification.replace(Some(verification.clone()));
-        imp.verification_changes_abort_handle.replace(Some(handle));
-
-        match verification {
-            Verification::SasV1(sas_verification) => {
-                self.handle_sas_verification_state(sas_verification.state())
-                    .await;
-            }
-            Verification::QrV1(qr_verification) => {
-                self.handle_qr_verification_state(qr_verification.state());
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    /// Handle a change in the QR verification's state.
-    fn handle_qr_verification_state(&self, state: QrVerificationState) {
-        let imp = self.imp();
-
-        match state {
-            QrVerificationState::Started
-            | QrVerificationState::Confirmed
-            | QrVerificationState::Reciprocated => {}
-            QrVerificationState::Scanned => imp.set_state(VerificationState::QrConfirm),
-            QrVerificationState::Done { .. } => imp.set_state(VerificationState::Done),
-            QrVerificationState::Cancelled(info) => self.handle_cancelled_state(&info),
-        }
-    }
-
-    /// The SDK's QR verification, if one was started.
-    fn qr_verification(&self) -> Option<QrVerification> {
-        match self.imp().verification.borrow().as_ref()? {
-            Verification::QrV1(v) => Some(v.clone()),
-            _ => None,
-        }
-    }
-
-    /// Handle a change in the SAS verification's state.
-    async fn handle_sas_verification_state(&self, state: SasState) {
-        let Some(sas_verification) = self.sas_verification() else {
-            return;
-        };
-        let imp = self.imp();
-
-        match state {
-            SasState::Created { .. } | SasState::Accepted { .. } | SasState::Confirmed => {}
-            SasState::Started { .. } => {
-                let handle = spawn_tokio!(async move { sas_verification.accept().await });
-                if let Err(error) = handle.await.unwrap() {
-                    error!("Could not accept SAS verification: {error}");
-                    imp.set_state(VerificationState::Error);
-                }
-            }
-            SasState::KeysExchanged { .. } => {
-                self.emit_by_name::<()>("sas-data-changed", &[]);
-                imp.set_state(VerificationState::SasConfirm);
-            }
-            SasState::Done { .. } => imp.set_state(VerificationState::Done),
-            SasState::Cancelled(info) => self.handle_cancelled_state(&info),
-        }
-    }
-
-    /// The SDK's SAS verification, if one was started.
-    fn sas_verification(&self) -> Option<SasVerification> {
-        match self.imp().verification.borrow().as_ref()? {
-            Verification::SasV1(v) => Some(v.clone()),
-            _ => None,
-        }
-    }
-
     /// Whether the current SAS verification supports emoji.
-    pub fn sas_supports_emoji(&self) -> bool {
-        match self.imp().verification.borrow().as_ref() {
-            Some(Verification::SasV1(v)) => v.supports_emoji(),
-            _ => false,
-        }
+    pub(crate) fn sas_supports_emoji(&self) -> bool {
+        self.imp()
+            .sas_verification()
+            .is_some_and(|v| v.supports_emoji())
     }
 
     /// The list of emojis for the current SAS verification, if any.
-    pub fn sas_emoji(&self) -> Option<[Emoji; 7]> {
-        match self.imp().verification.borrow().as_ref()? {
-            Verification::SasV1(v) => v.emoji(),
-            _ => None,
-        }
+    pub(crate) fn sas_emoji(&self) -> Option<[Emoji; 7]> {
+        self.imp().sas_verification()?.emoji()
     }
 
     /// The list of decimals for the current SAS verification, if any.
-    pub fn sas_decimals(&self) -> Option<(u16, u16, u16)> {
-        match self.imp().verification.borrow().as_ref()? {
-            Verification::SasV1(v) => v.decimals(),
-            _ => None,
-        }
-    }
-
-    /// Try to load the QR Code.
-    ///
-    /// Return `true` if it was successfully loaded, `false` otherwise.
-    async fn load_qr_code(&self) -> bool {
-        let request = self.request().clone();
-
-        let handle = spawn_tokio!(async move { request.generate_qr_code().await });
-
-        let qr_verification = match handle.await.unwrap() {
-            Ok(Some(qr_verification)) => qr_verification,
-            Ok(None) => {
-                error!("Could not start QR verification generation: unknown reason");
-                return false;
-            }
-            Err(error) => {
-                error!("Could not start QR verification generation: {error}");
-                return false;
-            }
-        };
-
-        match qr_verification.to_qr_code() {
-            Ok(qr_code) => {
-                self.imp().qr_code.replace(Some(qr_code));
-                true
-            }
-            Err(error) => {
-                error!("Could not generate verification QR code: {error}");
-                false
-            }
-        }
+    pub(crate) fn sas_decimals(&self) -> Option<(u16, u16, u16)> {
+        self.imp().sas_verification()?.decimals()
     }
 
     /// The QR Code, if the `QrCodeShowV1` method is supported.
-    pub fn qr_code(&self) -> Option<QrCode> {
+    pub(crate) fn qr_code(&self) -> Option<QrCode> {
         self.imp().qr_code.borrow().clone()
     }
 
     /// Whether we have the QR code.
-    pub fn has_qr_code(&self) -> bool {
+    pub(crate) fn has_qr_code(&self) -> bool {
         self.imp().qr_code.borrow().is_some()
     }
 
     /// Start a QR Code scan.
-    pub async fn start_qr_code_scan(&self) -> Result<(), ()> {
+    pub(crate) async fn start_qr_code_scan(&self) -> Result<(), ()> {
         let imp = self.imp();
 
         match QrCodeScanner::new().await {
@@ -883,13 +837,14 @@ impl IdentityVerification {
     }
 
     /// The QR Code was scanned.
-    pub async fn qr_code_scanned(&self, data: QrVerificationData) -> Result<(), ()> {
-        self.imp().set_state(VerificationState::QrScanned);
-        let request = self.request().clone();
+    pub(crate) async fn qr_code_scanned(&self, data: QrVerificationData) -> Result<(), ()> {
+        let imp = self.imp();
+        imp.set_state(VerificationState::QrScanned);
+        let request = imp.request().clone();
 
         let handle = spawn_tokio!(async move { request.scan_qr_code(data).await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(Some(_)) => Ok(()),
             Ok(None) => {
                 error!("Could not validate scanned verification QR code: unknown reason");
@@ -903,15 +858,15 @@ impl IdentityVerification {
     }
 
     /// Confirm that the QR Code was scanned by the other party.
-    pub async fn confirm_qr_code_scanned(&self) -> Result<(), ()> {
-        let Some(qr_verification) = self.qr_verification() else {
+    pub(crate) async fn confirm_qr_code_scanned(&self) -> Result<(), ()> {
+        let Some(qr_verification) = self.imp().qr_verification() else {
             error!("Cannot confirm QR Code scan without an ongoing QR verification");
             return Err(());
         };
 
         let handle = spawn_tokio!(async move { qr_verification.confirm().await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not confirm scanned verification QR code: {error}");
@@ -921,11 +876,11 @@ impl IdentityVerification {
     }
 
     /// Start a SAS verification.
-    pub async fn start_sas(&self) -> Result<(), ()> {
-        let request = self.request().clone();
+    pub(crate) async fn start_sas(&self) -> Result<(), ()> {
+        let request = self.imp().request().clone();
         let handle = spawn_tokio!(async move { request.start_sas().await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(Some(_)) => Ok(()),
             Ok(None) => {
                 error!("Could not start SAS verification: unknown reason");
@@ -939,15 +894,15 @@ impl IdentityVerification {
     }
 
     /// The SAS data does not match.
-    pub async fn sas_mismatch(&self) -> Result<(), ()> {
-        let Some(sas_verification) = self.sas_verification() else {
+    pub(crate) async fn sas_mismatch(&self) -> Result<(), ()> {
+        let Some(sas_verification) = self.imp().sas_verification() else {
             error!("Cannot send SAS mismatch without an ongoing SAS verification");
             return Err(());
         };
 
         let handle = spawn_tokio!(async move { sas_verification.mismatch().await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not send SAS verification mismatch: {error}");
@@ -957,15 +912,15 @@ impl IdentityVerification {
     }
 
     /// The SAS data matches.
-    pub async fn sas_match(&self) -> Result<(), ()> {
-        let Some(sas_verification) = self.sas_verification() else {
+    pub(crate) async fn sas_match(&self) -> Result<(), ()> {
+        let Some(sas_verification) = self.imp().sas_verification() else {
             error!("Cannot send SAS match without an ongoing SAS verification");
             return Err(());
         };
 
         let handle = spawn_tokio!(async move { sas_verification.confirm().await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(()) => Ok(()),
             Err(error) => {
                 error!("Could not send SAS verification match: {error}");
@@ -975,7 +930,7 @@ impl IdentityVerification {
     }
 
     /// Restart this verification with a new one to the same user.
-    pub async fn restart(&self) -> Result<Self, ()> {
+    pub(crate) async fn restart(&self) -> Result<Self, ()> {
         let user = self.user();
         let verification_list = user.session().verification_list();
 
@@ -995,7 +950,7 @@ impl IdentityVerification {
     /// The verification can be dismissed.
     ///
     /// Also removes it from the verification list.
-    pub fn dismiss(&self) {
+    pub(crate) fn dismiss(&self) {
         self.remove_from_list();
         self.emit_by_name::<()>("dismiss", &[]);
     }
@@ -1005,7 +960,7 @@ impl IdentityVerification {
     /// You will usually want to use [`IdentityVerification::dismiss()`] because
     /// the interface listens for the signal it emits, and it calls this method
     /// internally.
-    pub fn remove_from_list(&self) {
+    pub(crate) fn remove_from_list(&self) {
         self.emit_by_name::<()>("remove-from-list", &[]);
     }
 

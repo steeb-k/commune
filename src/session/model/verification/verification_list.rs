@@ -32,7 +32,7 @@ mod imp {
         pub(super) list: RefCell<IndexMap<VerificationKey, IdentityVerification>>,
         /// The current session.
         #[property(get, construct_only)]
-        pub session: glib::WeakRef<Session>,
+        session: glib::WeakRef<Session>,
     }
 
     #[glib::object_subclass]
@@ -67,6 +67,129 @@ mod imp {
                 .map(|(_, item)| item.clone().upcast())
         }
     }
+
+    impl VerificationList {
+        /// Add a verification received via a to-device event.
+        pub(super) async fn add_to_device_request(&self, request: VerificationRequest) {
+            if request.is_done() || request.is_cancelled() || request.is_passive() {
+                // Ignore requests that are already finished.
+                return;
+            }
+
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let verification = IdentityVerification::new(request, &session.user(), None).await;
+            self.add(verification.clone());
+
+            if verification.state() == VerificationState::Requested {
+                session
+                    .notifications()
+                    .show_to_device_identity_verification(&verification)
+                    .await;
+            }
+        }
+
+        /// Add a verification received via an in-room event.
+        pub(super) async fn add_in_room_request(
+            &self,
+            request: VerificationRequest,
+            room_id: &RoomId,
+        ) {
+            if request.is_done() || request.is_cancelled() || request.is_passive() {
+                // Ignore requests that are already finished.
+                return;
+            }
+
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+            let Some(room) = session.room_list().get(room_id) else {
+                error!(
+                    "Room for verification request `({}, {})` not found",
+                    request.other_user_id(),
+                    request.flow_id()
+                );
+                return;
+            };
+
+            if matches!(
+                room.own_member().membership(),
+                Membership::Leave | Membership::Ban
+            ) {
+                // Ignore requests where the user is not in the room anymore.
+                return;
+            }
+
+            let other_user_id = request.other_user_id().to_owned();
+            let member = room.members().map_or_else(
+                || Member::new(&room, other_user_id.clone()),
+                |l| l.get_or_create(other_user_id.clone()),
+            );
+
+            // Ensure the member is up-to-date.
+            let matrix_room = room.matrix_room().clone();
+            let handle =
+                spawn_tokio!(async move { matrix_room.get_member_no_sync(&other_user_id).await });
+            match handle.await.expect("task was not aborted") {
+                Ok(Some(matrix_member)) => member.update_from_room_member(&matrix_member),
+                Ok(None) => {
+                    error!(
+                        "Room member for verification request `({}, {})` not found",
+                        request.other_user_id(),
+                        request.flow_id()
+                    );
+                    return;
+                }
+                Err(error) => {
+                    error!(
+                        "Could not get room member for verification request `({}, {})`: {error}",
+                        request.other_user_id(),
+                        request.flow_id()
+                    );
+                    return;
+                }
+            }
+
+            let verification =
+                IdentityVerification::new(request, member.upcast_ref(), Some(&room)).await;
+
+            room.set_verification(Some(&verification));
+
+            self.add(verification.clone());
+
+            if verification.state() == VerificationState::Requested {
+                session
+                    .notifications()
+                    .show_in_room_identity_verification(&verification)
+                    .await;
+            }
+        }
+
+        /// Add the given verification to the list.
+        pub(super) fn add(&self, verification: IdentityVerification) {
+            let key = verification.key();
+
+            // Don't add request that already exists.
+            if self.list.borrow().contains_key(&key) {
+                return;
+            }
+
+            let obj = self.obj();
+            verification.connect_remove_from_list(clone!(
+                #[weak]
+                obj,
+                move |verification| {
+                    obj.remove(&verification.key());
+                }
+            ));
+
+            let (pos, _) = self.list.borrow_mut().insert_full(key, verification);
+
+            obj.items_changed(pos as u32, 0, 1);
+        }
+    }
 }
 
 glib::wrapper! {
@@ -82,7 +205,7 @@ impl VerificationList {
     }
 
     /// Initialize this list to listen to new verification requests.
-    pub fn init(&self) {
+    pub(crate) fn init(&self) {
         let Some(session) = self.session() else {
             return;
         };
@@ -121,7 +244,7 @@ impl VerificationList {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.add_to_device_request(request).await;
+                                obj.imp().add_to_device_request(request).await;
                             }
                         });
                     });
@@ -154,131 +277,13 @@ impl VerificationList {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.add_in_room_request(request, &room_id).await;
+                                obj.imp().add_in_room_request(request, &room_id).await;
                             }
                         });
                     });
                 }
             },
         );
-    }
-
-    /// Add a verification received via a to-device event.
-    async fn add_to_device_request(&self, request: VerificationRequest) {
-        if request.is_done() || request.is_cancelled() || request.is_passive() {
-            // Ignore requests that are already finished.
-            return;
-        }
-
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        let verification = IdentityVerification::new(request, &session.user(), None).await;
-        self.add(verification.clone());
-
-        if verification.state() == VerificationState::Requested {
-            session
-                .notifications()
-                .show_to_device_identity_verification(&verification)
-                .await;
-        }
-    }
-
-    /// Add a verification received via an in-room event.
-    async fn add_in_room_request(&self, request: VerificationRequest, room_id: &RoomId) {
-        if request.is_done() || request.is_cancelled() || request.is_passive() {
-            // Ignore requests that are already finished.
-            return;
-        }
-
-        let Some(session) = self.session() else {
-            return;
-        };
-        let Some(room) = session.room_list().get(room_id) else {
-            error!(
-                "Room for verification request `({}, {})` not found",
-                request.other_user_id(),
-                request.flow_id()
-            );
-            return;
-        };
-
-        if matches!(
-            room.own_member().membership(),
-            Membership::Leave | Membership::Ban
-        ) {
-            // Ignore requests where the user is not in the room anymore.
-            return;
-        }
-
-        let other_user_id = request.other_user_id().to_owned();
-        let member = room.members().map_or_else(
-            || Member::new(&room, other_user_id.clone()),
-            |l| l.get_or_create(other_user_id.clone()),
-        );
-
-        // Ensure the member is up-to-date.
-        let matrix_room = room.matrix_room().clone();
-        let handle =
-            spawn_tokio!(async move { matrix_room.get_member_no_sync(&other_user_id).await });
-        match handle.await.unwrap() {
-            Ok(Some(matrix_member)) => member.update_from_room_member(&matrix_member),
-            Ok(None) => {
-                error!(
-                    "Room member for verification request `({}, {})` not found",
-                    request.other_user_id(),
-                    request.flow_id()
-                );
-                return;
-            }
-            Err(error) => {
-                error!(
-                    "Could not get room member for verification request `({}, {})`: {error}",
-                    request.other_user_id(),
-                    request.flow_id()
-                );
-                return;
-            }
-        }
-
-        let verification =
-            IdentityVerification::new(request, member.upcast_ref(), Some(&room)).await;
-
-        room.set_verification(Some(&verification));
-
-        self.add(verification.clone());
-
-        if verification.state() == VerificationState::Requested {
-            session
-                .notifications()
-                .show_in_room_identity_verification(&verification)
-                .await;
-        }
-    }
-
-    /// Add the given verification to the list.
-    fn add(&self, verification: IdentityVerification) {
-        let imp = self.imp();
-
-        let key = verification.key();
-
-        // Don't add request that already exists.
-        if imp.list.borrow().contains_key(&key) {
-            return;
-        }
-
-        verification.connect_remove_from_list(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |verification| {
-                obj.remove(&verification.key());
-            }
-        ));
-
-        let (pos, _) = imp.list.borrow_mut().insert_full(key, verification);
-
-        self.items_changed(pos as u32, 0, 1);
     }
 
     /// Remove the verification with the given key.
@@ -300,7 +305,7 @@ impl VerificationList {
     }
 
     // Returns the ongoing session verification, if any.
-    pub fn ongoing_session_verification(&self) -> Option<IdentityVerification> {
+    pub(crate) fn ongoing_session_verification(&self) -> Option<IdentityVerification> {
         let list = self.imp().list.borrow();
         list.values()
             .find(|v| v.is_self_verification() && !v.is_finished())
@@ -308,7 +313,10 @@ impl VerificationList {
     }
 
     // Returns the ongoing verification in the given room, if any.
-    pub fn ongoing_room_verification(&self, room_id: &RoomId) -> Option<IdentityVerification> {
+    pub(crate) fn ongoing_room_verification(
+        &self,
+        room_id: &RoomId,
+    ) -> Option<IdentityVerification> {
         let list = self.imp().list.borrow();
         list.values()
             .find(|v| v.room().is_some_and(|room| room.room_id() == room_id) && !v.is_finished())
@@ -319,7 +327,7 @@ impl VerificationList {
     ///
     /// If `user` is `None`, a new session verification is started for our own
     /// user and sent to other devices.
-    pub async fn create(&self, user: Option<User>) -> Result<IdentityVerification, ()> {
+    pub(crate) async fn create(&self, user: Option<User>) -> Result<IdentityVerification, ()> {
         let Some(session) = self.session() else {
             error!("Could not create identity verification: failed to upgrade session");
             return Err(());
@@ -340,7 +348,7 @@ impl VerificationList {
                 .await
         });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(request) => {
                 let room = if let Some(room_id) = request.room_id() {
                     let Some(room) = session.room_list().get(room_id) else {
@@ -357,7 +365,7 @@ impl VerificationList {
                 };
 
                 let verification = IdentityVerification::new(request, &user, room.as_ref()).await;
-                self.add(verification.clone());
+                self.imp().add(verification.clone());
 
                 Ok(verification)
             }
