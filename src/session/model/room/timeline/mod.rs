@@ -71,6 +71,10 @@ mod imp {
         start_items: OnceCell<SingleItemListModel>,
         /// Items provided by the SDK timeline.
         sdk_items: OnceCell<gio::ListStore>,
+        /// Filter for the list of items provided by the SDK timeline.
+        filter: gtk::CustomFilter,
+        /// Filtered list of items provided by the SDK timeline.
+        filtered_sdk_items: gtk::FilterListModel,
         /// Items added at the end of the timeline.
         ///
         /// Currently this can only contain one item at a time.
@@ -96,6 +100,9 @@ mod imp {
         /// Whether we have reached the start of the timeline.
         #[property(get)]
         has_reached_start: Cell<bool>,
+        /// Whether we have the `m.room.create` event in the timeline.
+        #[property(get)]
+        has_room_create: Cell<bool>,
         diff_handle: OnceCell<AbortHandle>,
         back_pagination_status_handle: OnceCell<AbortHandle>,
         read_receipts_changed_handle: OnceCell<AbortHandle>,
@@ -113,6 +120,25 @@ mod imp {
             static SIGNALS: LazyLock<Vec<Signal>> =
                 LazyLock::new(|| vec![Signal::builder("read-change-trigger").build()]);
             SIGNALS.as_ref()
+        }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.filter.set_filter_func(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                true,
+                move |obj| {
+                    // Hide the timeline start item if we have the `m.room.create` event too.
+                    obj.downcast_ref::<VirtualItem>().is_none_or(|item| {
+                        !(imp.has_room_create.get()
+                            && item.kind() == VirtualItemKind::TimelineStart)
+                    })
+                }
+            ));
+            self.filtered_sdk_items.set_filter(Some(&self.filter));
         }
 
         fn dispose(&self) {
@@ -244,8 +270,11 @@ mod imp {
 
         /// Items provided by the SDK timeline.
         pub(super) fn sdk_items(&self) -> &gio::ListStore {
-            self.sdk_items
-                .get_or_init(gio::ListStore::new::<TimelineItem>)
+            self.sdk_items.get_or_init(|| {
+                let sdk_items = gio::ListStore::new::<TimelineItem>();
+                self.filtered_sdk_items.set_model(Some(&sdk_items));
+                sdk_items
+            })
         }
 
         /// Items added at the end of the timeline.
@@ -263,7 +292,7 @@ mod imp {
                 .get_or_init(|| {
                     let model_list = gio::ListStore::new::<gio::ListModel>();
                     model_list.append(self.start_items());
-                    model_list.append(self.sdk_items());
+                    model_list.append(&self.filtered_sdk_items);
                     model_list.append(self.end_items());
                     gtk::FlattenListModel::new(Some(model_list))
                 })
@@ -272,7 +301,7 @@ mod imp {
 
         /// Whether the timeline is empty.
         fn is_empty(&self) -> bool {
-            self.sdk_items().n_items() == 0
+            self.filtered_sdk_items.n_items() == 0
         }
 
         /// Set the loading state of the timeline.
@@ -322,6 +351,24 @@ mod imp {
             self.obj().notify_has_reached_start();
         }
 
+        /// Set whether the timeline has the `m.room.create` event of the room.
+        fn set_has_room_create(&self, has_room_create: bool) {
+            if self.has_room_create.get() == has_room_create {
+                return;
+            }
+
+            self.has_room_create.set(has_room_create);
+
+            let change = if has_room_create {
+                gtk::FilterChange::MoreStrict
+            } else {
+                gtk::FilterChange::LessStrict
+            };
+            self.filter.changed(change);
+
+            self.obj().notify_has_room_create();
+        }
+
         /// Clear the state of the timeline.
         ///
         /// This doesn't handle removing items in `sdk_items` because it can be
@@ -329,6 +376,7 @@ mod imp {
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
             self.set_has_reached_start(false);
+            self.set_has_room_create(false);
         }
 
         /// Set whether the timeline should be pre-loaded when it is ready.
@@ -356,7 +404,7 @@ mod imp {
 
         /// Preload the timeline, if there are not enough items.
         async fn preload(&self) {
-            if self.sdk_items().n_items() < u32::from(MAX_BATCH_SIZE) {
+            if self.filtered_sdk_items.n_items() < u32::from(MAX_BATCH_SIZE) {
                 self.paginate_backwards(|| ControlFlow::Break(())).await;
             }
         }
@@ -550,6 +598,7 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
+                let mut removed_from_map = false;
                 let mut event_map = self.event_map.borrow_mut();
 
                 // We need to remove both the transaction ID and the event ID.
@@ -562,13 +611,18 @@ mod imp {
                 for id in identifiers {
                     // We check if we are removing the right event, in case we receive a diff that
                     // adds an existing event to another place, making us create a new event, before
-                    // another diff that removes it from its old place, making
-                    // us remove the old event.
+                    // another diff that removes it from its old place, making us remove the old
+                    // event.
                     let found = event_map.get(&id).is_some_and(|e| e == event);
 
                     if found {
                         event_map.remove(&id);
+                        removed_from_map = true;
                     }
+                }
+
+                if removed_from_map && event.is_room_create() {
+                    self.set_has_room_create(false);
                 }
             }
         }
@@ -711,6 +765,10 @@ mod imp {
                         let member = members.get_or_create(event.sender_id());
                         member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                     }
+                }
+
+                if event.is_room_create() {
+                    self.set_has_room_create(true);
                 }
             }
 

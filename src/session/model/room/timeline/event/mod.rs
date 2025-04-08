@@ -3,8 +3,9 @@ use std::sync::Arc;
 use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
-    Error as TimelineError, EventSendState, EventTimelineItem, Message, MsgLikeKind,
-    RepliedToEvent, TimelineDetails, TimelineEventItemId, TimelineItemContent,
+    AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
+    Message, MsgLikeKind, RepliedToEvent, TimelineDetails, TimelineEventItemId,
+    TimelineItemContent,
 };
 use ruma::{
     events::{receipt::Receipt, AnySyncTimelineEvent, TimelineEventType},
@@ -598,6 +599,19 @@ impl Event {
                 matches!(
                     msg_like.kind,
                     MsgLikeKind::Message(_) | MsgLikeKind::Sticker(_)
+                )
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether this is the `m.room.create` event of the room.
+    pub(crate) fn is_room_create(&self) -> bool {
+        match self.item().content() {
+            TimelineItemContent::OtherState(other_state) => {
+                matches!(
+                    other_state.content(),
+                    AnyOtherFullStateEventContent::RoomCreate(_),
                 )
             }
             _ => false,
