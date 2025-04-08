@@ -1,12 +1,13 @@
 use std::hash::Hasher;
 
 use djb_hash::{x33a_u32::X33aU32, HasherU32};
-use gtk::{gdk, graphene, gsk, pango, prelude::*};
+use gtk::{gdk, glib, graphene, gsk, pango, prelude::*};
 
 /// The notification icon size, according to GNOME Shell's code.
 const NOTIFICATION_ICON_SIZE: i32 = 48;
 
 /// The colors for avatars, according to libadwaita.
+// From: https://gitlab.gnome.org/GNOME/libadwaita/-/blob/817dcaa883a7a366a266c9cd626b2cf2b21e5919/src/stylesheet/widgets/_avatar.scss#L10
 const AVATAR_COLOR_LIST: [(&str, &str, &str); 14] = [
     ("#cfe1f5", "#83b6ec", "#337fdc"), // blue
     ("#caeaf2", "#7ad9f1", "#0f9ac8"), // cyan
@@ -84,7 +85,9 @@ pub(crate) fn paintable_as_notification_icon(
     snapshot.pop();
 
     // Render the avatar.
-    let node = snapshot.to_node().unwrap();
+    let node = snapshot
+        .to_node()
+        .expect("snapshot should convert to a node successfully");
     renderer.render_texture(node, None)
 }
 
@@ -119,17 +122,34 @@ pub(crate) fn string_as_notification_icon(
         &graphene::Point::new(0.0, 0.0),
         &graphene::Point::new(0.0, icon_size),
         &[
-            gsk::ColorStop::new(0.0, gdk::RGBA::parse(colors.1).unwrap()),
-            gsk::ColorStop::new(1.0, gdk::RGBA::parse(colors.2).unwrap()),
+            gsk::ColorStop::new(
+                0.0,
+                gdk::RGBA::parse(colors.1).expect("hex color should parse successfully"),
+            ),
+            gsk::ColorStop::new(
+                1.0,
+                gdk::RGBA::parse(colors.2).expect("hex color should parse successfully"),
+            ),
         ],
     );
 
     snapshot.pop();
 
     // Add initials.
-    let initials = string
-        .split(char::is_whitespace)
-        .filter_map(|s| s.chars().next())
+    // Logic copied from: https://gitlab.gnome.org/GNOME/libadwaita/-/blob/817dcaa883a7a366a266c9cd626b2cf2b21e5919/src/adw-avatar.c#L85
+    let normalized = glib::normalize(string, glib::NormalizeMode::DefaultCompose);
+    let first_initial = normalized
+        .chars()
+        .next()
+        .and_then(|c| c.to_uppercase().next());
+    let last_initial = normalized
+        .rfind(' ')
+        .and_then(|idx| (idx != normalized.len()).then(|| &normalized[idx + 1..]))
+        .and_then(|s| s.chars().next())
+        .and_then(|c| c.to_uppercase().next());
+    let initials = first_initial
+        .into_iter()
+        .chain(last_initial)
         .collect::<String>();
     layout.set_text(&initials);
 
@@ -156,9 +176,14 @@ pub(crate) fn string_as_notification_icon(
     let pos_y = (icon_size - lay_height as f32 - lay_padding as f32) / 2.0;
     snapshot.translate(&graphene::Point::new(0.0, pos_y));
 
-    snapshot.append_layout(layout, &gdk::RGBA::parse(colors.0).unwrap());
+    snapshot.append_layout(
+        layout,
+        &gdk::RGBA::parse(colors.0).expect("hex color should parse successfully"),
+    );
 
     // Render the avatar.
-    let node = snapshot.to_node().unwrap();
+    let node = snapshot
+        .to_node()
+        .expect("snapshot should convert to a node successfully");
     renderer.render_texture(node, None)
 }
