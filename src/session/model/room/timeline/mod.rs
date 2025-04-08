@@ -36,7 +36,11 @@ pub(crate) use self::{
     virtual_item::{VirtualItem, VirtualItemKind},
 };
 use super::Room;
-use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
+use crate::{
+    prelude::*,
+    spawn, spawn_tokio,
+    utils::{LoadingState, SingleItemListModel},
+};
 
 /// The number of events to request when loading more history.
 const MAX_BATCH_SIZE: u16 = 20;
@@ -53,7 +57,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Timeline)]
     pub struct Timeline {
         /// The room containing this timeline.
@@ -64,14 +68,16 @@ mod imp {
         /// Items added at the start of the timeline.
         ///
         /// Currently this can only contain one item at a time.
-        start_items: gio::ListStore,
+        start_items: OnceCell<SingleItemListModel>,
         /// Items provided by the SDK timeline.
-        pub(super) sdk_items: gio::ListStore,
+        sdk_items: OnceCell<gio::ListStore>,
         /// Items added at the end of the timeline.
-        end_items: gio::ListStore,
+        ///
+        /// Currently this can only contain one item at a time.
+        end_items: OnceCell<SingleItemListModel>,
         /// The `GListModel` containing all the timeline items.
-        #[property(get)]
-        items: gtk::FlattenListModel,
+        #[property(get = Self::items)]
+        items: OnceCell<gtk::FlattenListModel>,
         /// A Hashmap linking a `TimelineEventItemId` to the corresponding
         /// `Event`.
         pub(super) event_map: RefCell<HashMap<TimelineEventItemId, Event>>,
@@ -93,37 +99,6 @@ mod imp {
         diff_handle: OnceCell<AbortHandle>,
         back_pagination_status_handle: OnceCell<AbortHandle>,
         read_receipts_changed_handle: OnceCell<AbortHandle>,
-    }
-
-    impl Default for Timeline {
-        fn default() -> Self {
-            let start_items = gio::ListStore::new::<TimelineItem>();
-            let sdk_items = gio::ListStore::new::<TimelineItem>();
-            let end_items = gio::ListStore::new::<TimelineItem>();
-
-            let model_list = gio::ListStore::new::<gio::ListModel>();
-            model_list.append(&start_items);
-            model_list.append(&sdk_items);
-            model_list.append(&end_items);
-
-            Self {
-                room: Default::default(),
-                matrix_timeline: Default::default(),
-                start_items,
-                sdk_items,
-                end_items,
-                items: gtk::FlattenListModel::new(Some(model_list)),
-                event_map: Default::default(),
-                state: Default::default(),
-                is_loading_start: Default::default(),
-                is_empty: Default::default(),
-                has_reached_start: Default::default(),
-                preload: Default::default(),
-                diff_handle: Default::default(),
-                back_pagination_status_handle: Default::default(),
-                read_receipts_changed_handle: Default::default(),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -240,7 +215,7 @@ mod imp {
             let diff_handle = spawn_tokio!(fut);
             self.diff_handle
                 .set(diff_handle.abort_handle())
-                .expect("handle is uninitialized");
+                .expect("handle should be uninitialized");
 
             self.watch_read_receipts().await;
 
@@ -255,12 +230,49 @@ mod imp {
         pub(super) fn matrix_timeline(&self) -> &Arc<SdkTimeline> {
             self.matrix_timeline
                 .get()
-                .expect("matrix timeline is initialized")
+                .expect("matrix timeline should be initialized")
+        }
+
+        /// Items added at the start of the timeline.
+        fn start_items(&self) -> &SingleItemListModel {
+            self.start_items.get_or_init(|| {
+                let model = SingleItemListModel::new(&VirtualItem::spinner(&self.obj()));
+                model.set_is_hidden(true);
+                model
+            })
+        }
+
+        /// Items provided by the SDK timeline.
+        pub(super) fn sdk_items(&self) -> &gio::ListStore {
+            self.sdk_items
+                .get_or_init(gio::ListStore::new::<TimelineItem>)
+        }
+
+        /// Items added at the end of the timeline.
+        fn end_items(&self) -> &SingleItemListModel {
+            self.end_items.get_or_init(|| {
+                let model = SingleItemListModel::new(&VirtualItem::typing(&self.obj()));
+                model.set_is_hidden(true);
+                model
+            })
+        }
+
+        /// The `GListModel` containing all the timeline items.
+        fn items(&self) -> gtk::FlattenListModel {
+            self.items
+                .get_or_init(|| {
+                    let model_list = gio::ListStore::new::<gio::ListModel>();
+                    model_list.append(self.start_items());
+                    model_list.append(self.sdk_items());
+                    model_list.append(self.end_items());
+                    gtk::FlattenListModel::new(Some(model_list))
+                })
+                .clone()
         }
 
         /// Whether the timeline is empty.
         fn is_empty(&self) -> bool {
-            self.sdk_items.n_items() == 0
+            self.sdk_items().n_items() == 0
         }
 
         /// Set the loading state of the timeline.
@@ -294,7 +306,7 @@ mod imp {
             self.is_loading_start.set(is_loading_start);
 
             self.update_loading_state();
-            self.update_start_items();
+            self.start_items().set_is_hidden(!is_loading_start);
             self.obj().notify_is_loading_start();
         }
 
@@ -308,26 +320,6 @@ mod imp {
             self.has_reached_start.set(has_reached_start);
 
             self.obj().notify_has_reached_start();
-        }
-
-        /// Update the virtual items at the start of the timeline.
-        fn update_start_items(&self) {
-            let n_items = self.start_items.n_items();
-
-            if self.is_loading_start.get() {
-                let has_item = self
-                    .start_items
-                    .item(0)
-                    .and_downcast::<VirtualItem>()
-                    .is_some_and(|item| item.is_spinner());
-
-                if !has_item {
-                    self.start_items
-                        .splice(0, 0, &[VirtualItem::spinner(&self.obj())]);
-                }
-            } else if n_items > 0 {
-                self.start_items.remove_all();
-            }
         }
 
         /// Clear the state of the timeline.
@@ -364,7 +356,7 @@ mod imp {
 
         /// Preload the timeline, if there are not enough items.
         async fn preload(&self) {
-            if self.sdk_items.n_items() < u32::from(MAX_BATCH_SIZE) {
+            if self.sdk_items().n_items() < u32::from(MAX_BATCH_SIZE) {
                 self.paginate_backwards(|| ControlFlow::Break(())).await;
             }
         }
@@ -425,10 +417,10 @@ mod imp {
                         .map(|item| self.create_item(&item))
                         .collect::<Vec<_>>();
 
-                    self.update_items(self.sdk_items.n_items(), 0, &new_list);
+                    self.update_items(self.sdk_items().n_items(), 0, &new_list);
                 }
                 VectorDiff::Clear => {
-                    self.sdk_items.remove_all();
+                    self.sdk_items().remove_all();
                     self.clear();
                 }
                 VectorDiff::PushFront { value } => {
@@ -437,13 +429,13 @@ mod imp {
                 }
                 VectorDiff::PushBack { value } => {
                     let item = self.create_item(&value);
-                    self.update_items(self.sdk_items.n_items(), 0, &[item]);
+                    self.update_items(self.sdk_items().n_items(), 0, &[item]);
                 }
                 VectorDiff::PopFront => {
                     self.update_items(0, 1, &[]);
                 }
                 VectorDiff::PopBack => {
-                    self.update_items(self.sdk_items.n_items().saturating_sub(1), 1, &[]);
+                    self.update_items(self.sdk_items().n_items().saturating_sub(1), 1, &[]);
                 }
                 VectorDiff::Insert { index, value } => {
                     let item = self.create_item(&value);
@@ -470,14 +462,14 @@ mod imp {
                 }
                 VectorDiff::Truncate { length } => {
                     let length = length as u32;
-                    let old_len = self.sdk_items.n_items();
+                    let old_len = self.sdk_items().n_items();
                     self.update_items(length, old_len.saturating_sub(length), &[]);
                 }
                 VectorDiff::Reset { values } => {
                     // Reset the state.
                     self.clear();
 
-                    let removed = self.sdk_items.n_items();
+                    let removed = self.sdk_items().n_items();
                     let new_list = values
                         .into_iter()
                         .map(|item| self.create_item(&item))
@@ -490,7 +482,7 @@ mod imp {
 
         /// Get the item at the given position.
         fn item_at(&self, pos: u32) -> Option<TimelineItem> {
-            self.sdk_items.item(pos).and_downcast()
+            self.sdk_items().item(pos).and_downcast()
         }
 
         /// Update the items at the given position by removing the given number
@@ -506,7 +498,7 @@ mod imp {
                 self.remove_item(&item);
             }
 
-            self.sdk_items.splice(pos, n_removals, additions);
+            self.sdk_items().splice(pos, n_removals, additions);
 
             // Update the header visibility of all the new additions, and the first item
             // after this batch.
@@ -523,7 +515,7 @@ mod imp {
         /// Update the headers of the item at the given position and the given
         /// number of items after it.
         fn update_items_headers(&self, pos: u32, nb: u32) {
-            let sdk_items = &self.sdk_items;
+            let sdk_items = self.sdk_items();
 
             let mut previous_sender = if pos > 0 {
                 sdk_items
@@ -639,27 +631,18 @@ mod imp {
             }
         }
 
-        /// Whether the timeline has a typing row.
-        fn has_typing_row(&self) -> bool {
-            self.end_items.n_items() > 0
-        }
-
         /// Add the typing row to the timeline, if it isn't present already.
         fn add_typing_row(&self) {
-            if self.has_typing_row() {
-                return;
-            }
-
-            self.end_items.append(&VirtualItem::typing(&self.obj()));
+            self.end_items().set_is_hidden(false);
         }
 
         /// Remove the typing row from the timeline.
         pub(super) fn remove_empty_typing_row(&self) {
-            if !self.has_typing_row() || !self.room().typing_list().is_empty() {
+            if !self.room().typing_list().is_empty() {
                 return;
             }
 
-            self.end_items.remove_all();
+            self.end_items().set_is_hidden(true);
         }
 
         /// Listen to read receipts changes.
@@ -704,7 +687,7 @@ mod imp {
         type Data = Arc<SdkTimelineItem>;
 
         fn items(&self) -> Vec<TimelineItem> {
-            self.sdk_items
+            self.sdk_items()
                 .snapshot()
                 .into_iter()
                 .map(|obj| {
@@ -820,7 +803,7 @@ mod imp {
         /// Log the items in this timeline.
         fn log_items(&self) {
             let items = self
-                .sdk_items
+                .sdk_items()
                 .iter::<TimelineItem>()
                 .filter_map(|item| item.as_ref().map(item_to_log).ok())
                 .collect::<Vec<_>>();
@@ -852,7 +835,7 @@ mod imp {
 
     fn item_to_log(item: &TimelineItem) -> String {
         if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
-            format!("virtual::{:?}", virtual_item.kind().0)
+            format!("virtual::{:?}", virtual_item.kind())
         } else if let Some(event) = item.downcast_ref::<Event>() {
             format!("event::{:?}", event.identifier())
         } else {
@@ -962,7 +945,7 @@ impl Timeline {
         .await
         .expect("task was not aborted");
 
-        let sdk_items = &self.imp().sdk_items;
+        let sdk_items = self.imp().sdk_items();
         let count = sdk_items.n_items();
 
         for pos in (0..count).rev() {
@@ -990,7 +973,7 @@ impl Timeline {
     pub(crate) fn redactable_events_for(&self, user_id: &UserId) -> Vec<OwnedEventId> {
         let mut events = vec![];
 
-        for item in self.imp().sdk_items.iter::<glib::Object>() {
+        for item in self.imp().sdk_items().iter::<glib::Object>() {
             let Ok(item) = item else {
                 // The iterator is broken.
                 break;

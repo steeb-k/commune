@@ -8,7 +8,7 @@ use crate::{
     i18n::gettext_f,
     session::model::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
-    utils::{BoundObjectWeakRef, DummyObject},
+    utils::{BoundObjectWeakRef, DummyObject, SingleItemListModel},
 };
 
 mod imp {
@@ -123,8 +123,7 @@ mod imp {
                     ],
                 );
 
-                let extra_items = gio::ListStore::new::<glib::Object>();
-                extra_items.append(&DummyObject::new("add"));
+                let extra_items = SingleItemListModel::new(&DummyObject::new("add"));
 
                 let all_items = gio::ListStore::new::<glib::Object>();
                 all_items.append(&settings.keywords_list());

@@ -20,7 +20,7 @@ use crate::{
             image::{ImageError, IMAGE_QUEUE},
             FrameDimensions,
         },
-        BoundObject, BoundObjectWeakRef, CountedRef,
+        BoundObject, BoundObjectWeakRef, CountedRef, SingleItemListModel,
     },
 };
 
@@ -505,12 +505,11 @@ impl EditableAvatar {
 
     /// Choose a new avatar.
     pub(super) async fn choose_avatar(&self) {
-        let filters = gio::ListStore::new::<gtk::FileFilter>();
-
         let image_filter = gtk::FileFilter::new();
         image_filter.set_name(Some(&gettext("Images")));
         image_filter.add_mime_type("image/*");
-        filters.append(&image_filter);
+
+        let filters = SingleItemListModel::new(&image_filter);
 
         let dialog = gtk::FileDialog::builder()
             .title(gettext("Choose Avatar"))

@@ -13,7 +13,12 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::HistoryViewerEvent;
-use crate::{components::LoadingRow, session::model::Room, spawn_tokio, utils::LoadingState};
+use crate::{
+    components::LoadingRow,
+    session::model::Room,
+    spawn_tokio,
+    utils::{LoadingState, SingleItemListModel},
+};
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -41,8 +46,7 @@ mod imp {
         /// [`HistoryViewerEvent`]s.
         model_with_loading_item: OnceCell<gtk::FlattenListModel>,
         /// A model containing a [`LoadingRow`] when the timeline is loading.
-        loading_item_model: OnceCell<gio::ListStore>,
-        loading_row: LoadingRow,
+        loading_item_model: OnceCell<SingleItemListModel>,
     }
 
     #[glib::object_subclass]
@@ -85,14 +89,8 @@ mod imp {
 
             self.state.set(state);
 
-            let loading_item_model = self.loading_item_model();
-            if state == LoadingState::Loading {
-                if loading_item_model.n_items() == 0 {
-                    loading_item_model.append(&self.loading_row);
-                }
-            } else if loading_item_model.n_items() != 0 {
-                loading_item_model.remove_all();
-            }
+            self.loading_item_model()
+                .set_is_hidden(state != LoadingState::Loading);
 
             self.obj().notify_state();
         }
@@ -122,9 +120,12 @@ mod imp {
         }
 
         /// A model containing a [`LoadingRow`] when the timeline is loading.
-        pub(super) fn loading_item_model(&self) -> &gio::ListStore {
-            self.loading_item_model
-                .get_or_init(gio::ListStore::new::<LoadingRow>)
+        pub(super) fn loading_item_model(&self) -> &SingleItemListModel {
+            self.loading_item_model.get_or_init(|| {
+                let model = SingleItemListModel::new(&LoadingRow::new());
+                model.set_is_hidden(true);
+                model
+            })
         }
 
         /// A wrapper model with an extra loading item at the end when

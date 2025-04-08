@@ -18,7 +18,7 @@ use self::{server::ExploreServer, server_list::ExploreServerList, server_row::Ex
 use crate::{
     components::LoadingRow,
     session::model::Session,
-    utils::{BoundObject, LoadingState},
+    utils::{BoundObject, LoadingState, SingleItemListModel},
 };
 
 mod imp {
@@ -56,7 +56,7 @@ mod imp {
         /// The list of public rooms.
         public_room_list: BoundObject<PublicRoomList>,
         /// The items added at the end of the list.
-        end_items: OnceCell<gio::ListStore>,
+        end_items: OnceCell<SingleItemListModel>,
         /// The full list model.
         full_model: OnceCell<gio::ListStore>,
     }
@@ -201,9 +201,12 @@ mod imp {
         }
 
         /// The items added at the end of the list.
-        fn end_items(&self) -> &gio::ListStore {
-            self.end_items
-                .get_or_init(gio::ListStore::new::<LoadingRow>)
+        fn end_items(&self) -> &SingleItemListModel {
+            self.end_items.get_or_init(|| {
+                let model = SingleItemListModel::new(&LoadingRow::new());
+                model.set_is_hidden(true);
+                model
+            })
         }
 
         /// The full list model.
@@ -278,16 +281,8 @@ mod imp {
             let is_empty = public_room_list.is_empty();
 
             // Create or remove the loading row, as needed.
-            let end_items = self.end_items();
-            if matches!(loading_state, LoadingState::Loading) && !is_empty {
-                if end_items.n_items() == 0 {
-                    // We need a loading row.
-                    end_items.append(&LoadingRow::new());
-                }
-            } else if end_items.n_items() > 0 {
-                // We do not need a loading row.
-                end_items.remove(0);
-            }
+            let show_loading_row = matches!(loading_state, LoadingState::Loading) && !is_empty;
+            self.end_items().set_is_hidden(!show_loading_row);
 
             // Update the visible page.
             let page_name = match loading_state {

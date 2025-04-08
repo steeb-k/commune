@@ -312,7 +312,7 @@ mod imp {
             self.obj().set_popover(None);
             self.update_event_actions(None);
 
-            let kind_handler = virtual_item.connect_kind_notify(clone!(
+            let kind_handler = virtual_item.connect_kind_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |virtual_item| {
@@ -327,7 +327,7 @@ mod imp {
         /// Construct the widget for the given virtual item.
         fn build_virtual_item(&self, virtual_item: &VirtualItem) {
             let obj = self.obj();
-            let kind = &*virtual_item.kind();
+            let kind = &virtual_item.kind();
 
             match kind {
                 VirtualItemKind::Spinner => {

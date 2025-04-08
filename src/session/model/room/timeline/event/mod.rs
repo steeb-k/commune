@@ -61,7 +61,7 @@ pub struct UserReadReceipt {
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
         sync::LazyLock,
     };
@@ -70,7 +70,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Event)]
     pub struct Event {
         /// The underlying SDK timeline item.
@@ -128,35 +128,11 @@ mod imp {
         #[property(get)]
         reactions: ReactionList,
         /// The read receipts on this event.
-        #[property(get)]
-        read_receipts: gio::ListStore,
+        #[property(get = Self::read_receipts_owned)]
+        read_receipts: OnceCell<gio::ListStore>,
         /// Whether this event has any read receipt.
         #[property(get = Self::has_read_receipts)]
         has_read_receipts: PhantomData<bool>,
-    }
-
-    impl Default for Event {
-        fn default() -> Self {
-            Self {
-                item: Default::default(),
-                event_id_string: Default::default(),
-                sender_id_string: Default::default(),
-                timestamp: Default::default(),
-                formatted_timestamp: Default::default(),
-                source: Default::default(),
-                has_source: Default::default(),
-                state: Default::default(),
-                is_edited: Default::default(),
-                latest_edit_source: Default::default(),
-                latest_edit_event_id_string: Default::default(),
-                latest_edit_timestamp: Default::default(),
-                latest_edit_formatted_timestamp: Default::default(),
-                is_highlighted: Default::default(),
-                reactions: Default::default(),
-                read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
-                has_read_receipts: Default::default(),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -430,16 +406,27 @@ mod imp {
             self.item().is_highlighted()
         }
 
+        /// The read receipts on this event.
+        fn read_receipts(&self) -> &gio::ListStore {
+            self.read_receipts
+                .get_or_init(gio::ListStore::new::<glib::BoxedAnyObject>)
+        }
+
+        /// The owned read receipts on this event.
+        fn read_receipts_owned(&self) -> gio::ListStore {
+            self.read_receipts().clone()
+        }
+
         /// Update the read receipts list with the given receipts.
         fn update_read_receipts(&self, new_read_receipts: &IndexMap<OwnedUserId, Receipt>) {
-            let old_count = self.read_receipts.n_items();
+            let old_count = self.read_receipts().n_items();
             let new_count = new_read_receipts.len() as u32;
 
             if old_count == new_count {
                 let mut is_all_same = true;
                 for (i, new_user_id) in new_read_receipts.keys().enumerate() {
                     let Some(old_receipt) = self
-                        .read_receipts
+                        .read_receipts()
                         .item(i as u32)
                         .and_downcast::<glib::BoxedAnyObject>()
                     else {
@@ -467,7 +454,8 @@ mod imp {
                     })
                 })
                 .collect::<Vec<_>>();
-            self.read_receipts.splice(0, old_count, &new_read_receipts);
+            self.read_receipts()
+                .splice(0, old_count, &new_read_receipts);
 
             let prev_has_read_receipts = old_count > 0;
             let has_read_receipts = new_count > 0;
@@ -479,7 +467,7 @@ mod imp {
 
         /// Whether this event has any read receipt.
         fn has_read_receipts(&self) -> bool {
-            self.read_receipts.n_items() > 0
+            self.read_receipts().n_items() > 0
         }
     }
 }

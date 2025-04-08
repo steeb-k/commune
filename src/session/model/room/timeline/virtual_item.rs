@@ -1,15 +1,12 @@
-use std::ops::Deref;
-
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::VirtualTimelineItem;
-use ruma::MilliSecondsSinceUnixEpoch;
 
 use super::{Timeline, TimelineItem, TimelineItemImpl};
 use crate::utils::matrix::timestamp_to_date;
 
 /// The kind of virtual item.
-#[derive(Debug, Default, Eq, PartialEq, Clone)]
-pub enum VirtualItemKind {
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
+pub(crate) enum VirtualItemKind {
     /// A spinner, when the timeline is loading.
     #[default]
     Spinner,
@@ -26,41 +23,27 @@ pub enum VirtualItemKind {
 }
 
 impl VirtualItemKind {
-    /// Construct the `DayDivider` from the given timestamp.
-    fn with_timestamp(ts: MilliSecondsSinceUnixEpoch) -> Self {
-        Self::DayDivider(timestamp_to_date(ts))
-    }
-
-    /// Convert this into a [`BoxedVirtualItemKind`].
-    fn boxed(self) -> BoxedVirtualItemKind {
-        BoxedVirtualItemKind(self)
-    }
-}
-
-/// A boxed [`VirtualItemKind`].
-#[derive(Clone, Debug, Default, PartialEq, Eq, glib::Boxed)]
-#[boxed_type(name = "BoxedVirtualItemKind")]
-pub struct BoxedVirtualItemKind(pub(super) VirtualItemKind);
-
-impl Deref for BoxedVirtualItemKind {
-    type Target = VirtualItemKind;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    /// Construct a `VirtualItemKind` from the given item.
+    fn with_item(item: &VirtualTimelineItem) -> Self {
+        match item {
+            VirtualTimelineItem::DateDivider(ts) => Self::DayDivider(timestamp_to_date(*ts)),
+            VirtualTimelineItem::ReadMarker => Self::NewMessages,
+            VirtualTimelineItem::TimelineStart => Self::TimelineStart,
+        }
     }
 }
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, sync::LazyLock};
+
+    use glib::subclass::Signal;
 
     use super::*;
 
-    #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::VirtualItem)]
+    #[derive(Debug, Default)]
     pub struct VirtualItem {
         /// The kind of virtual item.
-        #[property(get, set, construct)]
-        kind: RefCell<BoxedVirtualItemKind>,
+        kind: RefCell<VirtualItemKind>,
     }
 
     #[glib::object_subclass]
@@ -70,10 +53,28 @@ mod imp {
         type ParentType = TimelineItem;
     }
 
-    #[glib::derived_properties]
-    impl ObjectImpl for VirtualItem {}
+    impl ObjectImpl for VirtualItem {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("kind-changed").build()]);
+            SIGNALS.as_ref()
+        }
+    }
 
     impl TimelineItemImpl for VirtualItem {}
+
+    impl VirtualItem {
+        /// Set the kind of virtual item.
+        pub(super) fn set_kind(&self, kind: VirtualItemKind) {
+            self.kind.replace(kind);
+            self.obj().emit_by_name::<()>("kind-changed", &[]);
+        }
+
+        /// The kind of virtual item.
+        pub(super) fn kind(&self) -> VirtualItemKind {
+            self.kind.borrow().clone()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -86,11 +87,12 @@ glib::wrapper! {
 impl VirtualItem {
     /// Create a new `VirtualItem`.
     fn new(timeline: &Timeline, kind: VirtualItemKind, timeline_id: &str) -> Self {
-        glib::Object::builder()
+        let obj = glib::Object::builder::<Self>()
             .property("timeline", timeline)
-            .property("kind", kind.boxed())
             .property("timeline-id", timeline_id)
-            .build()
+            .build();
+        obj.imp().set_kind(kind);
+        obj
     }
 
     /// Create a new `VirtualItem` from a virtual timeline item.
@@ -99,24 +101,19 @@ impl VirtualItem {
         item: &VirtualTimelineItem,
         timeline_id: &str,
     ) -> Self {
-        let kind = match item {
-            VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
-            VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
-            VirtualTimelineItem::TimelineStart => VirtualItemKind::TimelineStart,
-        };
-
+        let kind = VirtualItemKind::with_item(item);
         Self::new(timeline, kind, timeline_id)
+    }
+
+    /// The kind of virtual item.
+    pub(crate) fn kind(&self) -> VirtualItemKind {
+        self.imp().kind()
     }
 
     /// Update this `VirtualItem` with the given virtual timeline item.
     pub(crate) fn update_with_item(&self, item: &VirtualTimelineItem) {
-        let kind = match item {
-            VirtualTimelineItem::DateDivider(ts) => VirtualItemKind::with_timestamp(*ts),
-            VirtualTimelineItem::ReadMarker => VirtualItemKind::NewMessages,
-            VirtualTimelineItem::TimelineStart => VirtualItemKind::TimelineStart,
-        };
-
-        self.set_kind(kind.boxed());
+        let kind = VirtualItemKind::with_item(item);
+        self.imp().set_kind(kind);
     }
 
     /// Create a spinner virtual item.
@@ -128,13 +125,19 @@ impl VirtualItem {
         )
     }
 
-    /// Whether this is a spinner virtual item.
-    pub(crate) fn is_spinner(&self) -> bool {
-        self.kind().0 == VirtualItemKind::Spinner
-    }
-
     /// Create a typing virtual item.
     pub(crate) fn typing(timeline: &Timeline) -> Self {
         Self::new(timeline, VirtualItemKind::Typing, "VirtualItemKind::Typing")
+    }
+
+    /// Connect to the signal emitted when the kind changed.
+    pub fn connect_kind_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "kind-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }
