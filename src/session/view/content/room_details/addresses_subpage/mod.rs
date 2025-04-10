@@ -14,7 +14,7 @@ use crate::{
     prelude::*,
     session::model::{AddAltAliasError, RegisterLocalAliasError, Room},
     spawn, toast,
-    utils::{DummyObject, SingleItemListModel},
+    utils::{PlaceholderObject, SingleItemListModel},
 };
 
 mod imp {
@@ -83,7 +83,7 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let add_item = SingleItemListModel::new(&DummyObject::new("add"));
+            let add_item = SingleItemListModel::new(&PlaceholderObject::new("add"));
 
             // Public addresses.
             let public_items = gio::ListStore::new::<glib::Object>();

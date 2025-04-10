@@ -18,15 +18,16 @@ use gtk::{gio, glib, prelude::*};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
-mod dummy_object;
 pub(crate) mod expression;
 mod expression_list_model;
+mod grouping_list_model;
 pub(crate) mod key_bindings;
 mod location;
 mod macros;
 pub(crate) mod matrix;
 pub(crate) mod media;
 pub(crate) mod notifications;
+mod placeholder_object;
 mod single_item_list_model;
 pub(crate) mod sourceview;
 pub(crate) mod string;
@@ -34,9 +35,9 @@ mod template_callbacks;
 pub(crate) mod toast;
 
 pub(crate) use self::{
-    dummy_object::DummyObject,
     expression_list_model::ExpressionListModel,
     location::{Location, LocationError, LocationExt},
+    placeholder_object::PlaceholderObject,
     single_item_list_model::SingleItemListModel,
     template_callbacks::TemplateCallbacks,
 };
