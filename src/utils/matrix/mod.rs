@@ -341,10 +341,6 @@ pub(crate) async fn client_with_stored_session(
 
     client.restore_session(session_data).await?;
 
-    if let Err(error) = client.event_cache().enable_storage() {
-        error!("Failed to enable event cache storage: {error}");
-    }
-
     Ok(client)
 }
 
