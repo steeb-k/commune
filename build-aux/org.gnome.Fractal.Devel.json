@@ -84,8 +84,8 @@
                 {
                     "type": "git",
                     "url": "https://github.com/protobuf-c/protobuf-c.git",
-                    "tag": "v1.5.1",
-                    "commit": "185beed28e65494be7505b30c1afeaf199e19b23"
+                    "tag": "v1.5.2",
+                    "commit": "4719fdd7760624388c2c5b9d6759eb6a47490626"
                 }
             ]
         },
