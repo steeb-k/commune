@@ -568,9 +568,9 @@ mod imp {
             let mut previous_sender = if pos > 0 {
                 sdk_items
                     .item(pos - 1)
-                    .and_downcast::<TimelineItem>()
-                    .filter(TimelineItem::can_hide_header)
-                    .and_then(|item| item.event_sender_id())
+                    .and_downcast::<Event>()
+                    .filter(Event::can_show_header)
+                    .map(|event| event.sender_id())
             } else {
                 None
             };
@@ -580,15 +580,22 @@ mod imp {
                 let Some(current) = self.item_at(i) else {
                     break;
                 };
+                let Ok(current) = current.downcast::<Event>() else {
+                    previous_sender = None;
+                    continue;
+                };
 
-                let current_sender = current.event_sender_id();
+                let current_sender = current.sender_id();
 
-                if !current.can_hide_header() {
+                if !current.can_show_header() {
                     current.set_show_header(false);
                     previous_sender = None;
-                } else if current_sender != previous_sender {
+                } else if previous_sender
+                    .as_ref()
+                    .is_none_or(|previous_sender| current_sender != *previous_sender)
+                {
                     current.set_show_header(true);
-                    previous_sender = current_sender;
+                    previous_sender = Some(current_sender);
                 } else {
                     current.set_show_header(false);
                 }

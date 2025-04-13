@@ -1,44 +1,22 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::{TimelineItem as SdkTimelineItem, TimelineItemKind};
-use ruma::OwnedUserId;
 use tracing::error;
 
 use super::{Event, Timeline, VirtualItem};
 use crate::session::model::Room;
 
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell, RefCell},
-        marker::PhantomData,
-    };
+    use std::cell::{OnceCell, RefCell};
 
     use super::*;
 
     #[repr(C)]
     pub struct TimelineItemClass {
         parent_class: glib::object::ObjectClass,
-        pub(super) selectable: fn(&super::TimelineItem) -> bool,
-        pub(super) can_hide_header: fn(&super::TimelineItem) -> bool,
-        pub(super) event_sender_id: fn(&super::TimelineItem) -> Option<OwnedUserId>,
     }
 
     unsafe impl ClassStruct for TimelineItemClass {
         type Type = TimelineItem;
-    }
-
-    pub(super) fn timeline_item_selectable(this: &super::TimelineItem) -> bool {
-        let klass = this.class();
-        (klass.as_ref().selectable)(this)
-    }
-
-    pub(super) fn timeline_item_can_hide_header(this: &super::TimelineItem) -> bool {
-        let klass = this.class();
-        (klass.as_ref().can_hide_header)(this)
-    }
-
-    pub(super) fn timeline_item_event_sender_id(this: &super::TimelineItem) -> Option<OwnedUserId> {
-        let klass = this.class();
-        (klass.as_ref().event_sender_id)(this)
     }
 
     #[derive(Debug, Default, glib::Properties)]
@@ -50,26 +28,6 @@ mod imp {
         /// A unique ID for this `TimelineItem` in the local timeline.
         #[property(get, construct_only)]
         timeline_id: RefCell<String>,
-        /// Whether this `TimelineItem` is selectable.
-        ///
-        /// Defaults to `false`.
-        #[property(get = Self::selectable)]
-        selectable: PhantomData<bool>,
-        /// Whether this `TimelineItem` should show its header.
-        ///
-        /// Defaults to `false`.
-        #[property(get, set = Self::set_show_header, explicit_notify)]
-        show_header: Cell<bool>,
-        /// Whether this `TimelineItem` is allowed to hide its header.
-        ///
-        /// Defaults to `false`.
-        #[property(get = Self::can_hide_header)]
-        can_hide_header: PhantomData<bool>,
-        /// If this is a Matrix event, the sender of the event.
-        ///
-        /// Defaults to `None`.
-        #[property(get = Self::event_sender_id)]
-        event_sender_id: PhantomData<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -82,39 +40,6 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for TimelineItem {}
-
-    impl TimelineItem {
-        /// Whether this `TimelineItem` is selectable.
-        ///
-        /// Defaults to `false`.
-        fn selectable(&self) -> bool {
-            imp::timeline_item_selectable(&self.obj())
-        }
-
-        /// Set whether this `TimelineItem` should show its header.
-        fn set_show_header(&self, show: bool) {
-            if self.show_header.get() == show {
-                return;
-            }
-
-            self.show_header.set(show);
-            self.obj().notify_show_header();
-        }
-
-        /// Whether this `TimelineItem` is allowed to hide its header.
-        ///
-        /// Defaults to `false`.
-        fn can_hide_header(&self) -> bool {
-            imp::timeline_item_can_hide_header(&self.obj())
-        }
-
-        /// If this is a Matrix event, the sender of the event.
-        ///
-        /// Defaults to `None`.
-        fn event_sender_id(&self) -> Option<String> {
-            imp::timeline_item_event_sender_id(&self.obj()).map(Into::into)
-        }
-    }
 }
 
 glib::wrapper! {
@@ -184,29 +109,6 @@ pub(crate) trait TimelineItemExt: 'static {
 
     /// A unique ID for this `TimelineItem` in the local timeline.
     fn timeline_id(&self) -> String;
-
-    /// Whether this `TimelineItem` is selectable.
-    ///
-    /// Defaults to `false`.
-    fn selectable(&self) -> bool;
-
-    /// Whether this `TimelineItem` should show its header.
-    ///
-    /// Defaults to `false`.
-    fn show_header(&self) -> bool;
-
-    /// Set whether this `TimelineItem` should show its header.
-    fn set_show_header(&self, show: bool);
-
-    /// Whether this `TimelineItem` is allowed to hide its header.
-    ///
-    /// Defaults to `false`.
-    fn can_hide_header(&self) -> bool;
-
-    /// If this is a Matrix event, the sender of the event.
-    ///
-    /// Defaults to `None`.
-    fn event_sender_id(&self) -> Option<OwnedUserId>;
 }
 
 impl<O: IsA<TimelineItem>> TimelineItemExt for O {
@@ -217,26 +119,6 @@ impl<O: IsA<TimelineItem>> TimelineItemExt for O {
     fn timeline_id(&self) -> String {
         self.upcast_ref().timeline_id()
     }
-
-    fn selectable(&self) -> bool {
-        self.upcast_ref().selectable()
-    }
-
-    fn show_header(&self) -> bool {
-        self.upcast_ref().show_header()
-    }
-
-    fn set_show_header(&self, show: bool) {
-        self.upcast_ref().set_show_header(show);
-    }
-
-    fn can_hide_header(&self) -> bool {
-        self.upcast_ref().can_hide_header()
-    }
-
-    fn event_sender_id(&self) -> Option<OwnedUserId> {
-        imp::timeline_item_event_sender_id(self.upcast_ref())
-    }
 }
 
 /// Public trait that must be implemented for everything that derives from
@@ -244,19 +126,7 @@ impl<O: IsA<TimelineItem>> TimelineItemExt for O {
 ///
 /// Overriding a method from this Trait overrides also its behavior in
 /// `TimelineItemExt`.
-pub(crate) trait TimelineItemImpl: ObjectImpl {
-    fn selectable(&self) -> bool {
-        false
-    }
-
-    fn can_hide_header(&self) -> bool {
-        false
-    }
-
-    fn event_sender_id(&self) -> Option<OwnedUserId> {
-        None
-    }
-}
+pub(crate) trait TimelineItemImpl: ObjectImpl {}
 
 // Make `TimelineItem` subclassable.
 unsafe impl<T> IsSubclassable<T> for TimelineItem
@@ -266,39 +136,5 @@ where
 {
     fn class_init(class: &mut glib::Class<Self>) {
         Self::parent_class_init::<T>(class.upcast_ref_mut());
-
-        let klass = class.as_mut();
-
-        klass.selectable = selectable_trampoline::<T>;
-        klass.can_hide_header = can_hide_header_trampoline::<T>;
-        klass.event_sender_id = event_sender_id_trampoline::<T>;
     }
-}
-
-// Virtual method implementation trampolines.
-fn selectable_trampoline<T>(this: &TimelineItem) -> bool
-where
-    T: ObjectSubclass + TimelineItemImpl,
-    T::Type: IsA<TimelineItem>,
-{
-    let this = this.downcast_ref::<T::Type>().unwrap();
-    this.imp().selectable()
-}
-
-fn can_hide_header_trampoline<T>(this: &TimelineItem) -> bool
-where
-    T: ObjectSubclass + TimelineItemImpl,
-    T::Type: IsA<TimelineItem>,
-{
-    let this = this.downcast_ref::<T::Type>().unwrap();
-    this.imp().can_hide_header()
-}
-
-fn event_sender_id_trampoline<T>(this: &TimelineItem) -> Option<OwnedUserId>
-where
-    T: ObjectSubclass + TimelineItemImpl,
-    T::Type: IsA<TimelineItem>,
-{
-    let this = this.downcast_ref::<T::Type>().unwrap();
-    this.imp().event_sender_id()
 }

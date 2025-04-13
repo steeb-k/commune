@@ -134,6 +134,9 @@ mod imp {
         /// Whether this event has any read receipt.
         #[property(get = Self::has_read_receipts)]
         has_read_receipts: PhantomData<bool>,
+        /// Whether this event should show its header in the room history.
+        #[property(get, set = Self::set_show_header, explicit_notify)]
+        show_header: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -160,19 +163,7 @@ mod imp {
         }
     }
 
-    impl TimelineItemImpl for Event {
-        fn can_hide_header(&self) -> bool {
-            self.item().content().can_show_header()
-        }
-
-        fn event_sender_id(&self) -> Option<OwnedUserId> {
-            Some(self.sender_id())
-        }
-
-        fn selectable(&self) -> bool {
-            true
-        }
-    }
+    impl TimelineItemImpl for Event {}
 
     impl Event {
         /// Set the underlying SDK timeline item.
@@ -470,6 +461,16 @@ mod imp {
         fn has_read_receipts(&self) -> bool {
             self.read_receipts().n_items() > 0
         }
+
+        /// Set whether this event should show its header in the room history.
+        fn set_show_header(&self, show: bool) {
+            if self.show_header.get() == show {
+                return;
+            }
+
+            self.show_header.set(show);
+            self.obj().notify_show_header();
+        }
     }
 }
 
@@ -636,6 +637,11 @@ impl Event {
     /// intentional mentions and `room` is set to `true`.
     pub(crate) fn can_contain_at_room(&self) -> bool {
         self.item().content().can_contain_at_room()
+    }
+
+    /// Whether this event can show a header.
+    pub(crate) fn can_show_header(&self) -> bool {
+        self.item().content().can_show_header()
     }
 
     /// Get the ID of the event this event replies to, if any.
