@@ -143,9 +143,9 @@ src/session/view/content/room_details/permissions/permissions_subpage.rs
 src/session/view/content/room_details/permissions/permissions_subpage.ui
 src/session/view/content/room_details/room_upgrade_dialog.rs
 src/session/view/content/room_history/divider_row.rs
-src/session/view/content/room_history/event_context_menu.ui
-src/session/view/content/room_history/item_row.rs
-src/session/view/content/room_history/item_row_context_menu.rs
+src/session/view/content/room_history/event_row.rs
+src/session/view/content/room_history/event_row_context_menu.rs
+src/session/view/content/room_history/event_row_context_menu.ui
 src/session/view/content/room_history/message_row/audio.rs
 src/session/view/content/room_history/message_row/content.rs
 src/session/view/content/room_history/message_row/file.rs

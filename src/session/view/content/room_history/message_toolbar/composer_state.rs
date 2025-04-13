@@ -671,7 +671,7 @@ impl MessageEventSource {
     ///
     /// Returns `None` if the event is not a message.
     pub(crate) fn from_event(event: Event) -> Option<Self> {
-        (event.event_id().is_some() && event.is_message()).then_some(Self::Event(event))
+        (event.can_be_replied_to()).then_some(Self::Event(event))
     }
 
     /// The ID of the underlying event.

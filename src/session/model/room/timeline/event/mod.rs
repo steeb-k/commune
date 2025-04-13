@@ -575,18 +575,6 @@ impl Event {
         }
     }
 
-    /// Whether this event contains a message.
-    ///
-    /// This definition matches the `m.room.message` event type.
-    pub(crate) fn is_message(&self) -> bool {
-        match self.item().content() {
-            TimelineItemContent::MsgLike(msg_like) => {
-                matches!(msg_like.kind, MsgLikeKind::Message(_))
-            }
-            _ => false,
-        }
-    }
-
     /// Whether this event contains a message-like content.
     ///
     /// This definition matches the following event types:
@@ -688,13 +676,15 @@ impl Event {
 
     /// Whether this event can be replied to.
     pub(crate) fn can_be_replied_to(&self) -> bool {
-        // We only allow to reply to messages.
-        if !self.is_message() {
+        let item = self.item();
+
+        // We only allow to reply to messages (but not stickers).
+        if !item.content().is_message() {
             return false;
         }
 
         // The SDK API has its own rules.
-        if !self.item().can_be_replied_to() {
+        if !item.can_be_replied_to() {
             return false;
         }
 
@@ -704,8 +694,8 @@ impl Event {
 
     /// Whether this event can be reacted to.
     pub(crate) fn can_be_reacted_to(&self) -> bool {
-        // We only allow to react to messages.
-        if !self.is_message() {
+        // We only allow to react to messages (but not stickers).
+        if !self.item().content().is_message() {
             return false;
         }
 

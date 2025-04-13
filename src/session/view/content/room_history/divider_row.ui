@@ -4,6 +4,9 @@
     <accessibility>
       <relation name="labelled-by">inner_label</relation>
     </accessibility>
+    <style>
+      <class name="room-history-row"/>
+    </style>
     <property name="can-focus">False</property>
     <property name="margin-top">20</property>
     <property name="margin-bottom">10</property>

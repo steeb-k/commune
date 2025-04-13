@@ -5,16 +5,16 @@ use matrix_sdk_ui::timeline::{TimelineEventItemId, TimelineItemContent};
 use ruma::events::room::message::MessageType;
 use tracing::error;
 
-use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
+use super::{MessageRow, RoomHistory, StateRow};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
     session::{
-        model::{Event, MessageState, Room, TimelineItem, VirtualItem, VirtualItemKind},
+        model::{Event, MessageState, Room},
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, spawn_tokio, toast,
-    utils::BoundObjectWeakRef,
+    utils::{BoundObject, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -23,36 +23,34 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::ItemRow)]
-    pub struct ItemRow {
+    #[properties(wrapper_type = super::EventRow)]
+    pub struct EventRow {
         /// The ancestor room history of this row.
         #[property(get, set = Self::set_room_history, construct_only)]
         room_history: glib::WeakRef<RoomHistory>,
         message_toolbar_handler: RefCell<Option<glib::SignalHandlerId>>,
         composer_state: BoundObjectWeakRef<ComposerState>,
-        /// The [`TimelineItem`] presented by this row.
-        #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        item: RefCell<Option<TimelineItem>>,
-        item_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        /// The event presented by this row.
+        #[property(get, set = Self::set_event, explicit_notify, nullable)]
+        event: BoundObject<Event>,
         /// The event action group of this row.
         #[property(get, set = Self::set_action_group)]
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
-        binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for ItemRow {
-        const NAME: &'static str = "RoomHistoryItemRow";
-        type Type = super::ItemRow;
+    impl ObjectSubclass for EventRow {
+        const NAME: &'static str = "RoomHistoryEventRow";
+        type Type = super::EventRow;
         type ParentType = ContextMenuBin;
 
         fn class_init(klass: &mut Self::Class) {
-            klass.set_css_name("room-history-row");
+            klass.set_css_name("event-row");
             klass.set_accessible_role(gtk::AccessibleRole::ListItem);
 
             klass.install_action(
-                "room-history-row.enable-copy-image",
+                "event-row.enable-copy-image",
                 Some(&bool::static_variant_type()),
                 |obj, _, param| {
                     let enable = param
@@ -79,17 +77,19 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for ItemRow {
+    impl ObjectImpl for EventRow {
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
 
-            self.obj().connect_parent_notify(|obj| {
+            obj.connect_parent_notify(|obj| {
                 obj.imp().update_highlight();
             });
+            obj.add_css_class("room-history-row");
         }
 
         fn dispose(&self) {
-            self.disconnect_item_signals();
+            self.disconnect_event_signals();
 
             if let Some(handler) = self.message_toolbar_handler.take() {
                 if let Some(room_history) = self.room_history.upgrade() {
@@ -99,16 +99,16 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for ItemRow {}
+    impl WidgetImpl for EventRow {}
 
-    impl ContextMenuBinImpl for ItemRow {
+    impl ContextMenuBinImpl for EventRow {
         fn menu_opened(&self) {
             let Some(room_history) = self.room_history.upgrade() else {
                 return;
             };
 
             let obj = self.obj();
-            let Some(event) = self.item.borrow().clone().and_downcast::<Event>() else {
+            let Some(event) = self.event.obj() else {
                 obj.set_popover(None);
                 return;
             };
@@ -118,7 +118,7 @@ mod imp {
                 return;
             }
 
-            let menu = room_history.item_context_menu();
+            let menu = room_history.event_context_menu();
 
             // Reset the state when the popover is closed.
             let closed_handler_cell: Rc<RefCell<Option<glib::signal::SignalHandlerId>>> =
@@ -154,7 +154,7 @@ mod imp {
         }
     }
 
-    impl ItemRow {
+    impl EventRow {
         /// Set the ancestor room history of this row.
         fn set_room_history(&self, room_history: &RoomHistory) {
             self.room_history.set(Some(room_history));
@@ -202,167 +202,82 @@ mod imp {
             );
         }
 
-        /// Disconnect the signal handlers depending on the item.
-        fn disconnect_item_signals(&self) {
-            if let Some(item) = self.item.borrow().clone() {
-                for handler in self.item_handlers.borrow_mut().drain(..) {
-                    item.disconnect(handler);
-                }
+        /// Disconnect the signal handlers.
+        fn disconnect_event_signals(&self) {
+            if let Some(event) = self.event.obj() {
+                self.event.disconnect_signals();
 
-                if let Some(event) = item.downcast_ref::<Event>() {
-                    if let Some(handler) = self.permissions_handler.take() {
-                        event.room().permissions().disconnect(handler);
-                    }
+                if let Some(handler) = self.permissions_handler.take() {
+                    event.room().permissions().disconnect(handler);
                 }
-            }
-
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
             }
         }
 
-        /// Set the [`TimelineItem`] presented by this row.
-        ///
-        /// This tries to reuse the widget and only update the content whenever
-        /// possible, but it will create a new widget and drop the old one if it
-        /// has to.
-        fn set_item(&self, item: Option<TimelineItem>) {
+        /// Set the event presented by this row.
+        fn set_event(&self, event: Option<Event>) {
             // Reinitialize the header.
             self.obj().remove_css_class("has-header");
 
-            self.disconnect_item_signals();
+            self.disconnect_event_signals();
 
-            if let Some(item) = &item {
-                if let Some(event) = item.downcast_ref::<Event>() {
-                    self.set_event(event);
-                } else if let Some(item) = item.downcast_ref::<VirtualItem>() {
-                    self.set_virtual_item(item);
-                }
+            if let Some(event) = event {
+                let permissions_handler = event.room().permissions().connect_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[weak]
+                    event,
+                    move |_| {
+                        imp.update_actions(&event);
+                    }
+                ));
+                self.permissions_handler.replace(Some(permissions_handler));
+
+                let state_notify_handler = event.connect_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |event| {
+                        imp.update_actions(event);
+                    }
+                ));
+                let source_notify_handler = event.connect_source_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |event| {
+                        imp.build_event_widget(event.clone());
+                        imp.update_actions(event);
+                    }
+                ));
+                let edit_source_notify_handler = event.connect_latest_edit_source_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |event| {
+                        imp.build_event_widget(event.clone());
+                        imp.update_actions(event);
+                    }
+                ));
+                let is_highlighted_notify_handler = event.connect_is_highlighted_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_highlight();
+                    }
+                ));
+
+                self.event.set(
+                    event.clone(),
+                    vec![
+                        state_notify_handler,
+                        source_notify_handler,
+                        edit_source_notify_handler,
+                        is_highlighted_notify_handler,
+                    ],
+                );
+
+                self.update_actions(&event);
+                self.build_event_widget(event);
             }
-            self.item.replace(item);
 
             self.update_highlight();
-        }
-
-        /// The event displayed by this row, if any.
-        fn event(&self) -> Option<Event> {
-            self.item.borrow().clone().and_downcast()
-        }
-
-        /// Set the event to display.
-        fn set_event(&self, event: &Event) {
-            let state_notify_handler = event.connect_state_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |event| {
-                    imp.update_event_actions(Some(event.upcast_ref()));
-                }
-            ));
-
-            let source_notify_handler = event.connect_source_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |event| {
-                    imp.build_event_widget(event.clone());
-                    imp.update_event_actions(Some(event.upcast_ref()));
-                }
-            ));
-
-            let edit_source_notify_handler = event.connect_latest_edit_source_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |event| {
-                    imp.build_event_widget(event.clone());
-                    imp.update_event_actions(Some(event.upcast_ref()));
-                }
-            ));
-
-            let is_highlighted_notify_handler = event.connect_is_highlighted_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_| {
-                    imp.update_highlight();
-                }
-            ));
-
-            self.item_handlers.borrow_mut().extend([
-                state_notify_handler,
-                source_notify_handler,
-                edit_source_notify_handler,
-                is_highlighted_notify_handler,
-            ]);
-
-            let permissions_handler = event.room().permissions().connect_changed(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                #[weak]
-                event,
-                move |_| {
-                    imp.update_event_actions(Some(event.upcast_ref()));
-                }
-            ));
-            self.permissions_handler.replace(Some(permissions_handler));
-
-            self.build_event_widget(event.clone());
-            self.update_event_actions(Some(event.upcast_ref()));
-        }
-
-        /// Set the virtual item to display.
-        fn set_virtual_item(&self, virtual_item: &VirtualItem) {
-            self.obj().set_popover(None);
-            self.update_event_actions(None);
-
-            let kind_handler = virtual_item.connect_kind_changed(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |virtual_item| {
-                    imp.build_virtual_item(virtual_item);
-                }
-            ));
-            self.item_handlers.borrow_mut().push(kind_handler);
-
-            self.build_virtual_item(virtual_item);
-        }
-
-        /// Construct the widget for the given virtual item.
-        fn build_virtual_item(&self, virtual_item: &VirtualItem) {
-            let obj = self.obj();
-            let kind = &virtual_item.kind();
-
-            match kind {
-                VirtualItemKind::Spinner => {
-                    if !obj
-                        .child()
-                        .is_some_and(|widget| widget.is::<adw::Spinner>())
-                    {
-                        obj.set_child(Some(&spinner()));
-                    }
-                }
-                VirtualItemKind::Typing => {
-                    let child = if let Some(child) = obj.child().and_downcast::<TypingRow>() {
-                        child
-                    } else {
-                        let child = TypingRow::new();
-                        obj.set_child(Some(&child));
-                        child
-                    };
-
-                    let typing_list = virtual_item.room().typing_list();
-                    child.set_list(Some(typing_list));
-                }
-                VirtualItemKind::TimelineStart
-                | VirtualItemKind::DayDivider(_)
-                | VirtualItemKind::NewMessages => {
-                    let divider = if let Some(divider) = obj.child().and_downcast::<DividerRow>() {
-                        divider
-                    } else {
-                        let divider = DividerRow::new();
-                        obj.set_child(Some(&divider));
-                        divider
-                    };
-                    divider.set_kind(kind);
-                }
-            }
         }
 
         /// Set the event action group of this row.
@@ -408,7 +323,7 @@ mod imp {
         fn update_highlight(&self) {
             let obj = self.obj();
 
-            let highlight = self.event().is_some_and(|event| event.is_highlighted());
+            let highlight = self.event.obj().is_some_and(|event| event.is_highlighted());
             if highlight {
                 obj.add_css_class("highlight");
             } else {
@@ -452,7 +367,8 @@ mod imp {
             let obj = self.obj();
 
             if related_event_id.is_some_and(|identifier| {
-                self.event()
+                self.event
+                    .obj()
                     .is_some_and(|event| event.matches_identifier(identifier))
             }) {
                 obj.add_css_class("selected");
@@ -462,17 +378,8 @@ mod imp {
         }
 
         /// Update the actions available for the given event.
-        ///
-        /// Unsets the actions if `event` is `None`.
-        fn update_event_actions(&self, event: Option<&Event>) {
+        fn update_actions(&self, event: &Event) {
             let obj = self.obj();
-
-            let Some(event) = event else {
-                obj.insert_action_group("event", None::<&gio::ActionGroup>);
-                self.set_action_group(None);
-                obj.set_has_context_menu(false);
-                return;
-            };
 
             let action_group = gio::SimpleActionGroup::new();
             let room = event.room();
@@ -487,7 +394,7 @@ mod imp {
                             obj,
                             move |_, _, _| {
                                 spawn!(async move {
-                                    let Some(event) = obj.imp().event() else {
+                                    let Some(event) = obj.imp().event.obj() else {
                                         return;
                                     };
                                     let Some(permalink) = event.matrix_to_uri().await else {
@@ -506,7 +413,7 @@ mod imp {
                             #[weak]
                             obj,
                             move |_, _, _| {
-                                let Some(event) = obj.imp().event() else {
+                                let Some(event) = obj.imp().event.obj() else {
                                     return;
                                 };
 
@@ -557,7 +464,7 @@ mod imp {
                 }
             }
 
-            self.add_message_actions(&action_group, &room, event);
+            self.add_message_like_actions(&action_group, &room, event);
 
             obj.insert_action_group("event", Some(&action_group));
             self.set_action_group(Some(action_group));
@@ -565,11 +472,11 @@ mod imp {
         }
 
         /// Add actions to the given action group for the given event, if it is
-        /// a message.
+        /// message-like.
         ///
-        /// See [`Event::is_message`] for the definition of a message-like
+        /// See [`Event::is_message_like()`] for the definition of a message
         /// event.
-        fn add_message_actions(
+        fn add_message_like_actions(
             &self,
             action_group: &gio::SimpleActionGroup,
             room: &Room,
@@ -642,7 +549,7 @@ mod imp {
                         #[weak(rename_to = imp)]
                         self,
                         move |_, _, _| {
-                            let Some(event) = imp.event() else {
+                            let Some(event) = imp.event.obj() else {
                                 error!("Could not reply to timeline item that is not an event");
                                 return;
                             };
@@ -666,13 +573,13 @@ mod imp {
                     .build()]);
             }
 
-            self.add_message_content_actions(action_group, room, event);
+            self.add_message_actions(action_group, room, event);
         }
 
         /// Add actions to the given action group for the given event, if it
-        /// includes message content.
+        /// is a message.
         #[allow(clippy::too_many_lines)]
-        fn add_message_content_actions(
+        fn add_message_actions(
             &self,
             action_group: &gio::SimpleActionGroup,
             room: &Room,
@@ -751,7 +658,7 @@ mod imp {
                                         .child()
                                         .and_downcast::<MessageRow>()
                                         .and_then(|r| r.texture())
-                                        .expect("An ItemRow with an image should have a texture");
+                                        .expect("An EventRow with an image should have a texture");
 
                                     obj.clipboard().set_texture(&texture);
                                     toast!(obj, gettext("Thumbnail copied to clipboard"));
@@ -815,7 +722,7 @@ mod imp {
 
         /// Copy the text of this row.
         fn copy_text(&self) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not copy text of timeline item that is not an event");
                 return;
             };
@@ -851,12 +758,12 @@ mod imp {
 
         /// Edit the message of this row.
         fn edit_message(&self) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not edit timeline item that is not an event");
                 return;
             };
             let Some(event_id) = event.event_id() else {
-                error!("Event to edit does not have an event ID");
+                error!("Could not edit event without an event ID");
                 return;
             };
 
@@ -875,7 +782,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    let Some(event) = imp.event() else {
+                    let Some(event) = imp.event.obj() else {
                         error!("Could not save file of timeline item that is not an event");
                         return;
                     };
@@ -896,7 +803,7 @@ mod imp {
 
         /// Redact the event of this row.
         async fn redact_message(&self) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not redact timeline item that is not an event");
                 return;
             };
@@ -930,7 +837,7 @@ mod imp {
 
         /// Toggle the reaction with the given key for the event of this row.
         async fn toggle_reaction(&self, key: String) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not toggle reaction on timeline item that is not an event");
                 return;
             };
@@ -942,7 +849,7 @@ mod imp {
 
         /// Report the current event.
         async fn report_event(&self) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not report timeline item that is not an event");
                 return;
             };
@@ -998,7 +905,7 @@ mod imp {
 
         /// Cancel sending the event of this row.
         async fn cancel_send(&self) {
-            let Some(event) = self.event() else {
+            let Some(event) = self.event.obj() else {
                 error!("Could not discard timeline item that is not an event");
                 return;
             };
@@ -1017,25 +924,15 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A row presenting an item in the room history.
-    pub struct ItemRow(ObjectSubclass<imp::ItemRow>)
+    /// A row presenting an event in the room history.
+    pub struct EventRow(ObjectSubclass<imp::EventRow>)
         @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
 }
 
-impl ItemRow {
+impl EventRow {
     pub fn new(room_history: &RoomHistory) -> Self {
         glib::Object::builder()
             .property("room-history", room_history)
             .build()
     }
-}
-
-/// Create a spinner widget.
-fn spinner() -> adw::Spinner {
-    adw::Spinner::builder()
-        .margin_top(12)
-        .margin_bottom(12)
-        .height_request(24)
-        .width_request(24)
-        .build()
 }

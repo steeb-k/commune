@@ -9,8 +9,8 @@ use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
 use tracing::{error, warn};
 
 mod divider_row;
-mod item_row;
-mod item_row_context_menu;
+mod event_row;
+mod event_row_context_menu;
 mod member_timestamp;
 mod message_row;
 mod message_toolbar;
@@ -22,7 +22,7 @@ mod typing_row;
 mod verification_info_bar;
 
 use self::{
-    divider_row::DividerRow, item_row::ItemRow, item_row_context_menu::ItemRowContextMenu,
+    divider_row::DividerRow, event_row::EventRow, event_row_context_menu::EventRowContextMenu,
     message_row::MessageRow, message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
     sender_avatar::SenderAvatar, state_row::StateRow, title::RoomHistoryTitle,
     typing_row::TypingRow, verification_info_bar::VerificationInfoBar,
@@ -33,6 +33,7 @@ use crate::{
     prelude::*,
     session::model::{
         Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,
+        VirtualItem, VirtualItemKind,
     },
     spawn, toast,
     utils::{BoundObject, LoadingState, TemplateCallbacks},
@@ -88,7 +89,7 @@ mod imp {
         tombstoned_banner: TemplateChild<adw::Banner>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
-        item_context_menu: OnceCell<ItemRowContextMenu>,
+        event_context_menu: OnceCell<EventRowContextMenu>,
         sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The timeline currently displayed.
         #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
@@ -124,7 +125,6 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            ItemRow::ensure_type();
             VerificationInfoBar::ensure_type();
 
             Self::bind_template(klass);
@@ -257,19 +257,45 @@ mod imp {
             let obj = self.obj();
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(
+            factory.connect_setup(move |_, list_item| {
+                let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+                    error!("List item factory did not receive a list item: {list_item:?}");
+                    return;
+                };
+
+                list_item.set_activatable(false);
+                list_item.set_selectable(false);
+            });
+            factory.connect_bind(clone!(
                 #[weak]
                 obj,
-                move |_, item| {
-                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-                        error!("List item factory did not receive a list item: {item:?}");
+                move |_, list_item| {
+                    let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {list_item:?}");
                         return;
                     };
-                    let row = ItemRow::new(&obj);
-                    item.set_child(Some(&row));
-                    item.bind_property("item", &row, "item").build();
-                    item.set_activatable(false);
-                    item.set_selectable(false);
+                    let Some(item) = list_item.item() else {
+                        list_item.set_child(None::<&gtk::Widget>);
+                        return;
+                    };
+
+                    if let Some(event) = item.downcast_ref::<Event>() {
+                        let child =
+                            if let Some(child) = list_item.child().and_downcast::<EventRow>() {
+                                child
+                            } else {
+                                let child = EventRow::new(&obj);
+                                list_item.set_child(Some(&child));
+                                child
+                            };
+                        child.set_event(Some(event.clone()));
+                    } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
+                        set_virtual_item_child(list_item, virtual_item);
+                    } else {
+                        error!(
+                            "Could not build widget for unsupported room history item: {item:?}"
+                        );
+                    }
                 }
             ));
             self.listview.set_factory(Some(&factory));
@@ -840,9 +866,8 @@ mod imp {
                 if top_in_view || bottom_in_view || content_in_view {
                     if let Some(event_id) = item
                         .first_child()
-                        .and_downcast::<ItemRow>()
-                        .and_then(|row| row.item())
-                        .and_downcast::<Event>()
+                        .and_downcast::<EventRow>()
+                        .and_then(|row| row.event())
                         .and_then(|event| event.event_id())
                     {
                         return Some(event_id);
@@ -1004,9 +1029,9 @@ mod imp {
             }
         }
 
-        /// The context menu for the item rows.
-        pub(super) fn item_context_menu(&self) -> &ItemRowContextMenu {
-            self.item_context_menu.get_or_init(Default::default)
+        /// The context menu for the [`EventRow`]s.
+        pub(super) fn event_context_menu(&self) -> &EventRowContextMenu {
+            self.event_context_menu.get_or_init(Default::default)
         }
 
         /// The context menu for the sender avatars.
@@ -1079,13 +1104,64 @@ impl RoomHistory {
         self.imp().message_toolbar.handle_paste_action();
     }
 
-    /// The context menu for the item rows.
-    fn item_context_menu(&self) -> &ItemRowContextMenu {
-        self.imp().item_context_menu()
+    /// The context menu for the [`EventRow`]s.
+    fn event_context_menu(&self) -> &EventRowContextMenu {
+        self.imp().event_context_menu()
     }
 
     /// The context menu for the sender avatars.
     fn sender_context_menu(&self) -> &gtk::PopoverMenu {
         self.imp().sender_context_menu()
+    }
+}
+
+/// Set the proper child of the given `GtkListItem` for the given
+/// [`VirtualItem`].
+///
+/// Constructs or reuses the child widget as necessary.
+fn set_virtual_item_child(list_item: &gtk::ListItem, virtual_item: &VirtualItem) {
+    let kind = &virtual_item.kind();
+
+    match kind {
+        VirtualItemKind::Spinner => {
+            if !list_item
+                .child()
+                .is_some_and(|widget| widget.is::<adw::Spinner>())
+            {
+                let spinner = adw::Spinner::builder()
+                    .margin_top(12)
+                    .margin_bottom(12)
+                    .height_request(24)
+                    .width_request(24)
+                    .build();
+                spinner.add_css_class("room-history-row");
+                spinner.set_accessible_role(gtk::AccessibleRole::ListItem);
+                list_item.set_child(Some(&spinner));
+            }
+        }
+        VirtualItemKind::Typing => {
+            let child = if let Some(child) = list_item.child().and_downcast::<TypingRow>() {
+                child
+            } else {
+                let child = TypingRow::new();
+                list_item.set_child(Some(&child));
+                child
+            };
+
+            let typing_list = virtual_item.room().typing_list();
+            child.set_list(Some(typing_list));
+        }
+        VirtualItemKind::TimelineStart
+        | VirtualItemKind::DayDivider(_)
+        | VirtualItemKind::NewMessages => {
+            let divider = if let Some(divider) = list_item.child().and_downcast::<DividerRow>() {
+                divider
+            } else {
+                let divider = DividerRow::new();
+                list_item.set_child(Some(&divider));
+                divider
+            };
+            divider.set_virtual_item(Some(virtual_item));
+        }
     }
 }

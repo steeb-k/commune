@@ -42,7 +42,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.set_css_name("typing-row");
-            klass.set_accessible_role(gtk::AccessibleRole::Status);
+            klass.set_accessible_role(gtk::AccessibleRole::ListItem);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

@@ -620,13 +620,10 @@ mod imp {
 
             if self
                 .obj()
-                .activate_action(
-                    "room-history-row.enable-copy-image",
-                    Some(&enable.to_variant()),
-                )
+                .activate_action("event-row.enable-copy-image", Some(&enable.to_variant()))
                 .is_err()
             {
-                error!("Could not change state of copy-image action: `room-history-row.enable-copy-image` action not found");
+                error!("Could not change state of copy-image action: `event-row.enable-copy-image` action not found");
             }
         }
 

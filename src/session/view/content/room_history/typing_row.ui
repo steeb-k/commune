@@ -4,6 +4,9 @@
     <accessibility>
       <relation name="labelled-by">label</relation>
     </accessibility>
+    <style>
+      <class name="room-history-row"/>
+    </style>
     <child>
       <object class="GtkRevealer">
         <property name="transition-type">slide-up</property>

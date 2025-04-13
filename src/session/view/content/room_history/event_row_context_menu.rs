@@ -8,9 +8,11 @@ use gtk::{
 
 use crate::{session::model::ReactionList, utils::BoundObject};
 
-/// Helper struct for the context menu of an `ItemRow`.
+/// Helper struct for the context menu of an [`EventRow`].
+///
+/// [`EventRow`]: super::EventRow
 #[derive(Debug)]
-pub(super) struct ItemRowContextMenu {
+pub(super) struct EventRowContextMenu {
     /// The popover of the context menu.
     pub(super) popover: gtk::PopoverMenu,
     /// The menu model of the popover.
@@ -19,7 +21,7 @@ pub(super) struct ItemRowContextMenu {
     quick_reaction_chooser: QuickReactionChooser,
 }
 
-impl ItemRowContextMenu {
+impl EventRowContextMenu {
     /// The identifier in the context menu for the quick reaction chooser.
     const QUICK_REACTION_CHOOSER_ID: &str = "quick-reaction-chooser";
 
@@ -29,7 +31,7 @@ impl ItemRowContextMenu {
             .menu_model
             .item_link(0, gio::MENU_LINK_SECTION)
             .and_downcast::<gio::Menu>()
-            .expect("item row context menu has at least one section");
+            .expect("event row context menu should have at least one section");
         first_section
             .item_attribute_value(0, "custom", Some(&String::static_variant_type()))
             .and_then(|variant| variant.get::<String>())
@@ -69,13 +71,13 @@ impl ItemRowContextMenu {
     }
 }
 
-impl Default for ItemRowContextMenu {
+impl Default for EventRowContextMenu {
     fn default() -> Self {
         let menu_model = gtk::Builder::from_resource(
-            "/org/gnome/Fractal/ui/session/view/content/room_history/event_context_menu.ui",
+            "/org/gnome/Fractal/ui/session/view/content/room_history/event_row_context_menu.ui",
         )
         .object::<gio::Menu>("event-menu")
-        .expect("resource and menu exist");
+        .expect("GResource and menu should exist");
 
         let popover = gtk::PopoverMenu::builder()
             .has_arrow(false)

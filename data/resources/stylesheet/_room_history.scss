@@ -13,7 +13,7 @@
   }
 }
 
-room-history-row {
+.room-history-row {
   padding-top: 2px;
   padding-bottom: 2px;
   padding-left: 8px;
@@ -114,7 +114,7 @@ room-history-row {
   }
 }
 
-room-history-row .event-content .quote,
+.room-history-row .event-content .quote,
 .related-event-content {
   border-left: 2px solid var(--accent-bg-color);
   padding-left: 6px;
@@ -238,7 +238,7 @@ typing-row {
   min-height: 30px;
 }
 
-room-history-row, .related-event-content {
+.room-history-row, .related-event-content {
   .h1 {
     font-weight: 800;
     font-size: 15pt;
@@ -270,7 +270,7 @@ room-history-row, .related-event-content {
   }
 }
 
-room-history-row expander-widget > box > {
+.room-history-row expander-widget > box > {
   title {
     border-spacing: 6px;
   }
@@ -311,7 +311,7 @@ room-title {
 sender-avatar {
   padding: 3px;
   border-radius: 100%;
-  
+
   @include vendor.focus-ring();
 
   &:hover {

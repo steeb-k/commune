@@ -1,19 +1,26 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
-use crate::session::model::VirtualItemKind;
+use crate::{
+    session::model::{VirtualItem, VirtualItemKind},
+    utils::BoundObject,
+};
 
 mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/divider_row.ui")]
+    #[properties(wrapper_type = super::DividerRow)]
     pub struct DividerRow {
         #[template_child]
         inner_label: TemplateChild<gtk::Label>,
+        /// The virtual item presented by this row.
+        #[property(get, set = Self::set_virtual_item, explicit_notify, nullable)]
+        virtual_item: BoundObject<VirtualItem>,
     }
 
     #[glib::object_subclass]
@@ -26,6 +33,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.set_css_name("divider-row");
+            klass.set_accessible_role(gtk::AccessibleRole::ListItem);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -33,18 +41,51 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DividerRow {}
 
     impl WidgetImpl for DividerRow {}
     impl BinImpl for DividerRow {}
 
     impl DividerRow {
-        /// Set the kind of this divider.
+        /// Set the virtual item presented by this row.
+        fn set_virtual_item(&self, virtual_item: Option<VirtualItem>) {
+            if self.virtual_item.obj() == virtual_item {
+                return;
+            }
+
+            self.virtual_item.disconnect_signals();
+
+            if let Some(virtual_item) = virtual_item {
+                let kind_handler = virtual_item.connect_kind_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update();
+                    }
+                ));
+
+                self.virtual_item.set(virtual_item, vec![kind_handler]);
+            }
+
+            self.update();
+            self.obj().notify_virtual_item();
+        }
+
+        /// Update this row for the current kind.
         ///
         /// Panics if the kind is not `TimelineStart`, `DayDivider` or
         /// `NewMessages`.
-        pub(super) fn set_kind(&self, kind: &VirtualItemKind) {
-            let label = match kind {
+        fn update(&self) {
+            let Some(kind) = self
+                .virtual_item
+                .obj()
+                .map(|virtual_item| virtual_item.kind())
+            else {
+                return;
+            };
+
+            let label = match &kind {
                 VirtualItemKind::TimelineStart => {
                     gettext("This is the start of the visible history")
                 }
@@ -96,13 +137,5 @@ glib::wrapper! {
 impl DividerRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Set the kind of this divider.
-    ///
-    /// Panics if the kind is not `TimelineStart`, `DayDivider` or
-    /// `NewMessages`.
-    pub(crate) fn set_kind(&self, kind: &VirtualItemKind) {
-        self.imp().set_kind(kind);
     }
 }

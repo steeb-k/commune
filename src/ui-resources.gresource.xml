@@ -107,7 +107,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/permissions_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/select_member_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_context_menu.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_row_context_menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/member_timestamp/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/audio.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/file.ui</file>
