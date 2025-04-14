@@ -2,16 +2,13 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-mod ignored_users_subpage;
 mod import_export_keys_subpage;
 
-pub use self::{
-    ignored_users_subpage::IgnoredUsersSubpage,
-    import_export_keys_subpage::{ImportExportKeysSubpage, ImportExportKeysSubpageMode},
+pub(super) use self::import_export_keys_subpage::{
+    ImportExportKeysSubpage, ImportExportKeysSubpageMode,
 };
-use crate::{
-    components::ButtonCountRow,
-    session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
+use crate::session::model::{
+    CryptoIdentityState, RecoveryState, Session, SessionVerificationState,
 };
 
 mod imp {
@@ -23,16 +20,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/security_page/mod.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/encryption_page/mod.ui"
     )]
-    #[properties(wrapper_type = super::SecurityPage)]
-    pub struct SecurityPage {
-        #[template_child]
-        public_read_receipts_row: TemplateChild<adw::SwitchRow>,
-        #[template_child]
-        typing_row: TemplateChild<adw::SwitchRow>,
-        #[template_child]
-        ignored_users_row: TemplateChild<ButtonCountRow>,
+    #[properties(wrapper_type = super::EncryptionPage)]
+    pub struct EncryptionPage {
         #[template_child]
         crypto_identity_row: TemplateChild<adw::PreferencesRow>,
         #[template_child]
@@ -52,15 +43,13 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
-        ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
         security_handlers: RefCell<Vec<glib::SignalHandlerId>>,
-        bindings: RefCell<Vec<glib::Binding>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SecurityPage {
-        const NAME: &'static str = "SecurityPage";
-        type Type = super::SecurityPage;
+    impl ObjectSubclass for EncryptionPage {
+        const NAME: &'static str = "EncryptionPage";
+        type Type = super::EncryptionPage;
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
@@ -73,29 +62,21 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for SecurityPage {
+    impl ObjectImpl for EncryptionPage {
         fn dispose(&self) {
             if let Some(session) = self.session.upgrade() {
-                if let Some(handler) = self.ignored_users_count_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
-
                 let security = session.security();
                 for handler in self.security_handlers.take() {
                     security.disconnect(handler);
                 }
             }
-
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
         }
     }
 
-    impl WidgetImpl for SecurityPage {}
-    impl PreferencesPageImpl for SecurityPage {}
+    impl WidgetImpl for EncryptionPage {}
+    impl PreferencesPageImpl for EncryptionPage {}
 
-    impl SecurityPage {
+    impl EncryptionPage {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
             let prev_session = self.session.upgrade();
@@ -105,55 +86,13 @@ mod imp {
             }
 
             if let Some(session) = prev_session {
-                if let Some(handler) = self.ignored_users_count_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
-
                 let security = session.security();
                 for handler in self.security_handlers.take() {
                     security.disconnect(handler);
                 }
             }
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
 
             if let Some(session) = session {
-                let ignored_users = session.ignored_users();
-                let ignored_users_count_handler = ignored_users.connect_items_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |ignored_users, _, _, _| {
-                        imp.ignored_users_row
-                            .set_count(ignored_users.n_items().to_string());
-                    }
-                ));
-                self.ignored_users_row
-                    .set_count(ignored_users.n_items().to_string());
-
-                self.ignored_users_count_handler
-                    .replace(Some(ignored_users_count_handler));
-
-                let session_settings = session.settings();
-
-                let public_read_receipts_binding = session_settings
-                    .bind_property(
-                        "public-read-receipts-enabled",
-                        &*self.public_read_receipts_row,
-                        "active",
-                    )
-                    .bidirectional()
-                    .sync_create()
-                    .build();
-                let typing_binding = session_settings
-                    .bind_property("typing-enabled", &*self.typing_row, "active")
-                    .bidirectional()
-                    .sync_create()
-                    .build();
-
-                self.bindings
-                    .replace(vec![public_read_receipts_binding, typing_binding]);
-
                 let security = session.security();
                 let crypto_identity_state_handler =
                     security.connect_crypto_identity_state_notify(clone!(
@@ -343,12 +282,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Security settings page.
-    pub struct SecurityPage(ObjectSubclass<imp::SecurityPage>)
+    /// Encryption settings page.
+    pub struct EncryptionPage(ObjectSubclass<imp::EncryptionPage>)
         @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
 }
 
-impl SecurityPage {
+impl EncryptionPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }

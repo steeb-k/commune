@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SafetyPage" parent="AdwPreferencesPage">
+    <property name="icon-name">safety-symbolic</property>
+    <property name="title" translatable="yes">Safety</property>
+    <property name="name">safety</property>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <child>
+          <object class="ButtonCountRow" id="ignored_users_row">
+            <property name="title" translatable="yes">Ignored Users</property>
+            <property name="subtitle" translatable="yes">All messages or invitations sent by these users will be ignored. You will still see some of their activity, like when they join or leave a room.</property>
+            <property name="action-name">account-settings.show-subpage</property>
+            <property name="action-target">'ignored-users'</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Privacy</property>
+        <child>
+          <object class="AdwSwitchRow" id="public_read_receipts_row">
+            <property name="selectable">False</property>
+            <property name="title" translatable="yes">Send Read Receipts</property>
+            <property name="subtitle" translatable="yes">Allow other members of the rooms you participate in to track which messages you have seen</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwSwitchRow" id="typing_row">
+            <property name="selectable">False</property>
+            <property name="title" translatable="yes">Send Typing Notifications</property>
+            <property name="subtitle" translatable="yes">Allow other members of the rooms you participate in to see when you are typing a message</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

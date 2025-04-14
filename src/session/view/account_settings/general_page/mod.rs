@@ -15,7 +15,7 @@ pub use self::{
 };
 use super::AccountSettings;
 use crate::{
-    components::{ActionButton, ActionState, CopyableRow, EditableAvatar},
+    components::{ActionButton, ActionState, ButtonCountRow, CopyableRow, EditableAvatar},
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
@@ -42,13 +42,15 @@ mod imp {
         #[template_child]
         display_name_button: TemplateChild<ActionButton>,
         #[template_child]
-        change_password_group: TemplateChild<adw::PreferencesGroup>,
+        user_id: TemplateChild<CopyableRow>,
         #[template_child]
-        manage_account_group: TemplateChild<adw::PreferencesGroup>,
+        user_sessions_row: TemplateChild<ButtonCountRow>,
+        #[template_child]
+        change_password_row: TemplateChild<adw::ButtonRow>,
+        #[template_child]
+        manage_account_row: TemplateChild<adw::ButtonRow>,
         #[template_child]
         homeserver: TemplateChild<CopyableRow>,
-        #[template_child]
-        user_id: TemplateChild<CopyableRow>,
         #[template_child]
         session_id: TemplateChild<CopyableRow>,
         #[template_child]
@@ -65,6 +67,7 @@ mod imp {
         changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
         display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
+        user_sessions_count_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -111,6 +114,9 @@ mod imp {
                 if let Some(handler) = self.display_name_handler.take() {
                     user.disconnect(handler);
                 }
+                if let Some(handler) = self.user_sessions_count_handler.take() {
+                    session.user_sessions().other_sessions().disconnect(handler);
+                }
             }
 
             self.session.set(session.as_ref());
@@ -122,7 +128,7 @@ mod imp {
 
             self.user_id.set_subtitle(session.user_id().as_str());
             self.homeserver.set_subtitle(session.homeserver().as_str());
-            self.session_id.set_subtitle(session.device_id().as_str());
+            self.session_id.set_subtitle(session.session_id());
 
             let user = session.user();
             let avatar_uri_handler = user
@@ -147,6 +153,20 @@ mod imp {
             ));
             self.display_name_handler
                 .replace(Some(display_name_handler));
+
+            let other_user_sessions = session.user_sessions().other_sessions();
+            let user_sessions_count_handler = other_user_sessions.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |other_user_sessions, _, _, _| {
+                    imp.user_sessions_row
+                        .set_count((other_user_sessions.n_items() + 1).to_string());
+                }
+            ));
+            self.user_sessions_row
+                .set_count((other_user_sessions.n_items() + 1).to_string());
+            self.user_sessions_count_handler
+                .replace(Some(user_sessions_count_handler));
 
             spawn!(
                 glib::Priority::LOW,
@@ -220,9 +240,9 @@ mod imp {
                 .set_editable(capabilities.set_avatar_url.enabled);
             self.display_name
                 .set_editable(capabilities.set_displayname.enabled);
-            self.change_password_group
+            self.change_password_row
                 .set_visible(!has_account_management_url && capabilities.change_password.enabled);
-            self.manage_account_group
+            self.manage_account_row
                 .set_visible(has_account_management_url);
             self.deactivate_account_button
                 .set_visible(!uses_oauth_api || has_account_management_url);

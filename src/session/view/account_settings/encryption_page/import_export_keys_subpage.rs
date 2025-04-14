@@ -27,7 +27,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/security_page/import_export_keys_subpage.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/encryption_page/import_export_keys_subpage.ui"
     )]
     #[properties(wrapper_type = super::ImportExportKeysSubpage)]
     pub struct ImportExportKeysSubpage {

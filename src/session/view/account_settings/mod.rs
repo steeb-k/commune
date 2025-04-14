@@ -9,18 +9,18 @@ use matrix_sdk::authentication::oauth::{
 };
 use tracing::{error, warn};
 
+mod encryption_page;
 mod general_page;
 mod notifications_page;
-mod security_page;
-mod user_sessions_page;
+mod safety_page;
+mod user_session;
 
 use self::{
+    encryption_page::{EncryptionPage, ImportExportKeysSubpage, ImportExportKeysSubpageMode},
     general_page::{ChangePasswordSubpage, DeactivateAccountSubpage, GeneralPage, LogOutSubpage},
     notifications_page::NotificationsPage,
-    security_page::{
-        IgnoredUsersSubpage, ImportExportKeysSubpage, ImportExportKeysSubpageMode, SecurityPage,
-    },
-    user_sessions_page::{UserSessionSubpage, UserSessionsPage},
+    safety_page::{IgnoredUsersSubpage, SafetyPage},
+    user_session::{UserSessionListSubpage, UserSessionSubpage},
 };
 use crate::{
     components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
@@ -34,6 +34,8 @@ use crate::{
 pub(crate) enum AccountSettingsSubpage {
     /// A form to change the account's password.
     ChangePassword,
+    /// A page to view the list of account's sessions.
+    UserSessionList,
     /// A page to confirm the logout.
     LogOut,
     /// A page to confirm the deactivation of the password.
@@ -61,12 +63,6 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/mod.ui")]
     #[properties(wrapper_type = super::AccountSettings)]
     pub struct AccountSettings {
-        #[template_child]
-        general_page: TemplateChild<GeneralPage>,
-        #[template_child]
-        sessions_page: TemplateChild<UserSessionsPage>,
-        #[template_child]
-        security_page: TemplateChild<SecurityPage>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: BoundObjectWeakRef<Session>,
@@ -82,7 +78,10 @@ mod imp {
         type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
+            GeneralPage::ensure_type();
             NotificationsPage::ensure_type();
+            SafetyPage::ensure_type();
+            EncryptionPage::ensure_type();
 
             Self::bind_template(klass);
 
@@ -269,6 +268,9 @@ impl AccountSettings {
 
         let page: adw::NavigationPage = match subpage {
             AccountSettingsSubpage::ChangePassword => ChangePasswordSubpage::new(&session).upcast(),
+            AccountSettingsSubpage::UserSessionList => {
+                UserSessionListSubpage::new(&session).upcast()
+            }
             AccountSettingsSubpage::LogOut => LogOutSubpage::new(&session).upcast(),
             AccountSettingsSubpage::DeactivateAccount => {
                 DeactivateAccountSubpage::new(&session, self).upcast()

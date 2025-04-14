@@ -19,10 +19,10 @@
               <object class="AdwPreferencesGroup">
                 <child>
                   <object class="CopyableRow">
-                    <property name="title" translatable="yes">Session ID</property>
+                    <property name="title" translatable="yes">Matrix Session ID</property>
                     <property name="main-title">subtitle</property>
-                    <property name="copy-button-tooltip-text" translatable="yes">Copy Session ID</property>
-                    <property name="toast-text" translatable="yes">Session ID copied to clipboard</property>
+                    <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix Session ID</property>
+                    <property name="toast-text" translatable="yes">Matrix session ID copied to clipboard</property>
                     <binding name="subtitle">
                       <lookup name="device-id-string">
                         <lookup name="user-session">

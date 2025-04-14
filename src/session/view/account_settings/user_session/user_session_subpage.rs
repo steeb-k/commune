@@ -4,12 +4,11 @@ use gtk::{glib, glib::clone, CompositeTemplate};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
 use tracing::error;
 
-use super::AccountSettings;
 use crate::{
     components::{ActionButton, ActionState, AuthError, LoadingButtonRow},
     gettext_f,
     prelude::*,
-    session::model::UserSession,
+    session::{model::UserSession, view::AccountSettings},
     toast,
     utils::{BoundConstructOnlyObject, BoundObject, TemplateCallbacks},
 };
@@ -21,7 +20,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_sessions_page/user_session_subpage.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_session/user_session_subpage.ui"
     )]
     #[properties(wrapper_type = super::UserSessionSubpage)]
     pub struct UserSessionSubpage {

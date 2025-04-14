@@ -2,14 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
-mod user_session_row;
-mod user_session_subpage;
-
-use self::user_session_row::UserSessionRow;
-pub use self::user_session_subpage::UserSessionSubpage;
-use super::AccountSettings;
+use super::UserSessionRow;
 use crate::{
-    session::model::{UserSession, UserSessionsList},
+    session::model::{Session, UserSession, UserSessionsList},
     utils::{BoundObject, LoadingState},
 };
 
@@ -22,10 +17,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_sessions_page/mod.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_session/user_session_list_subpage.ui"
     )]
-    #[properties(wrapper_type = super::UserSessionsPage)]
-    pub struct UserSessionsPage {
+    #[properties(wrapper_type = super::UserSessionListSubpage)]
+    pub struct UserSessionListSubpage {
         #[template_child]
         current_session_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
@@ -44,10 +39,10 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for UserSessionsPage {
-        const NAME: &'static str = "UserSessionsPage";
-        type Type = super::UserSessionsPage;
-        type ParentType = adw::PreferencesPage;
+    impl ObjectSubclass for UserSessionListSubpage {
+        const NAME: &'static str = "UserSessionListSubpage";
+        type Type = super::UserSessionListSubpage;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -60,7 +55,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for UserSessionsPage {
+    impl ObjectImpl for UserSessionListSubpage {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -79,11 +74,11 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for UserSessionsPage {}
-    impl PreferencesPageImpl for UserSessionsPage {}
+    impl WidgetImpl for UserSessionListSubpage {}
+    impl NavigationPageImpl for UserSessionListSubpage {}
 
     #[gtk::template_callbacks]
-    impl UserSessionsPage {
+    impl UserSessionListSubpage {
         /// Set the list of user sessions.
         fn set_user_sessions(&self, user_sessions: Option<UserSessionsList>) {
             let prev_user_sessions = self.user_sessions.obj();
@@ -237,21 +232,17 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Page to present the sessions of a user.
-    pub struct UserSessionsPage(ObjectSubclass<imp::UserSessionsPage>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesPage,
+    /// Subpage to present the sessions of a user.
+    pub struct UserSessionListSubpage(ObjectSubclass<imp::UserSessionListSubpage>)
+        @extends gtk::Widget, adw::NavigationPage,
         @implements gtk::Accessible;
 }
 
-impl UserSessionsPage {
-    /// Construct a new empty `UserSessionsPage`.
-    pub fn new() -> Self {
-        glib::Object::new()
-    }
-}
-
-impl Default for UserSessionsPage {
-    fn default() -> Self {
-        Self::new()
+impl UserSessionListSubpage {
+    /// Construct a new `UserSessionListSubpage` for the given session.
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder()
+            .property("user-sessions", session.user_sessions())
+            .build()
     }
 }
