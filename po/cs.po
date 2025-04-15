@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-10 20:01+0000\n"
-"PO-Revision-Date: 2025-04-13 12:52+0200\n"
+"POT-Creation-Date: 2025-04-14 16:50+0000\n"
+"PO-Revision-Date: 2025-04-15 13:18+0200\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.6\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
@@ -191,7 +191,7 @@ msgstr "Potvrdit změnu"
 
 #: src/components/action_button.ui:52 src/components/rows/loading_row.ui:27
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:142
-#: src/session/view/account_settings/user_sessions_page/mod.ui:81
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:86
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
@@ -239,7 +239,7 @@ msgid "Choose Avatar"
 msgstr "Výběr avataru"
 
 #: src/components/avatar/editable.rs:517
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:184
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:184
 msgid "Choose"
 msgstr "Vybrat"
 
@@ -351,7 +351,7 @@ msgstr "Nastavit"
 #: src/components/crypto/identity_setup_view.ui:200
 #: src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
-#: src/session/view/account_settings/security_page/mod.rs:248
+#: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
 msgstr "Resetovat šifrovací identitu"
 
@@ -540,7 +540,7 @@ msgstr "_Hotovo"
 
 #: src/components/crypto/recovery_setup_view.ui:431
 #: src/components/crypto/recovery_setup_view.ui:458
-#: src/session/view/account_settings/security_page/mod.rs:328
+#: src/session/view/account_settings/encryption_page/mod.rs:267
 msgid "Account Recovery Incomplete"
 msgstr "Obnovení účtu nekompletní"
 
@@ -665,7 +665,7 @@ msgstr "Opustit"
 #: src/components/dialogs/message_dialogs.rs:379
 #: src/components/dialogs/message_dialogs.rs:414
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
-#: src/session/view/account_settings/general_page/mod.rs:371
+#: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:266
 #: src/session/view/content/room_details/edit_details_subpage.rs:541
 #: src/session/view/content/room_details/general_page.rs:1070
@@ -815,7 +815,7 @@ msgstr[2] ""
 "smazat {n} zpráv odeslaných uživatelem {user_id}? Toto nelze vrátit zpět."
 
 #: src/components/dialogs/message_dialogs.rs:227
-#: src/session/view/account_settings/general_page/mod.rs:372
+#: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_history/item_row.rs:918
 msgid "Remove"
@@ -1004,7 +1004,7 @@ msgid "Confirm Custom Role"
 msgstr "Potvrdit vlastní roli"
 
 #: src/components/user_page.rs:251
-#: src/session/view/account_settings/general_page/mod.ui:88
+#: src/session/view/account_settings/general_page/mod.ui:60
 #: src/session/view/content/room_history/sender_avatar/mod.rs:77
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID uživatele Matrixu bylo zkopírováno do schránky"
@@ -1116,7 +1116,7 @@ msgid "Ignored"
 msgstr "Ignorován"
 
 #: src/components/user_page.rs:724
-#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Přestaňte ignorovat"
 
@@ -1129,7 +1129,7 @@ msgid "Ignore"
 msgstr "Ignorovat"
 
 #: src/components/user_page.rs:745
-#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:85
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs:85
 #: src/session/view/content/room_history/sender_avatar/mod.rs:801
 msgid "Could not stop ignoring user"
 msgstr "Ignorování uživatele se nezdařilo zrušit"
@@ -1141,7 +1141,7 @@ msgid "Could not ignore user"
 msgstr "Ignorování uživatele se nezdařilo"
 
 #: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:87
+#: src/session/view/account_settings/general_page/mod.ui:59
 #: src/session/view/content/room_history/sender_avatar/mod.ui:28
 msgid "Copy Matrix User ID"
 msgstr "Kopírovat uživatelské ID Matrixu"
@@ -1165,7 +1165,6 @@ msgid "Remove Messages"
 msgstr "Smazat zprávy"
 
 #: src/components/user_page.ui:185
-#: src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
 msgstr "Zabezpečení"
 
@@ -1700,7 +1699,7 @@ msgid "Could not set up login"
 msgstr "Nezdařilo se nastavit přihlášení"
 
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
-#: src/session/view/account_settings/general_page/mod.ui:93
+#: src/session/view/account_settings/general_page/mod.ui:128
 msgid "Homeserver"
 msgstr "Domovský server"
 
@@ -2091,6 +2090,231 @@ msgstr "Naposledy online %-e. %B, %Y v %H:%M"
 msgid "Last seen %B %-e %Y at %I:%M %p"
 msgstr "Naposledy online %-e. %B, %Y v %I:%M %p"
 
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:150
+#: src/session/view/account_settings/encryption_page/mod.ui:141
+msgid "Export Room Encryption Keys"
+msgstr "Exportovat šifrovací klíče místnosti"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:153
+msgid ""
+"Exporting your room encryption keys allows you to make a backup to be able "
+"to decrypt your messages in end-to-end encrypted rooms on another device or "
+"with another Matrix client."
+msgstr ""
+"Exportování šifrovacích klíčů místnosti vám umožní vytvořit zálohu, abyste "
+"mohli dešifrovat své zprávy v místnostech s koncovým šifrováním na jiném "
+"zařízení nebo pomocí jiného klienta Matrixu."
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:156
+msgid ""
+"The backup must be stored in a safe place and must be protected with a "
+"strong passphrase that will be used to encrypt the data."
+msgstr ""
+"Záloha musí být uložena na bezpečném místě a musí být chráněna silnou "
+"přístupovou frází, která bude použita k šifrování dat."
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:159
+msgid "Export Keys"
+msgstr "Exportovat klíče"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:162
+#: src/session/view/account_settings/encryption_page/mod.ui:151
+msgid "Import Room Encryption Keys"
+msgstr "Importovat šifrovací klíče místnosti"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:165
+msgid ""
+"Importing your room encryption keys allows you to decrypt your messages in "
+"end-to-end encrypted rooms with a previous backup from a Matrix client."
+msgstr ""
+"Importování šifrovacích klíčů místnosti vám umožní dešifrovat vaše zprávy v "
+"místnostech s koncovým šifrováním pomocí předchozí zálohy z klienta Matrixu."
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:168
+msgid "Enter the passphrase provided when the backup file was created."
+msgstr "Zadejte přístupové heslo poskytnuté při vytváření záložního souboru."
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:171
+msgid "Import Keys"
+msgstr "Importovat klíče"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:193
+msgid "fractal-encryption-keys"
+msgstr "fractal-šifrovací-klíče"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:199
+msgid "Save Encryption Keys To…"
+msgstr "Uložit šifrovací klíče do…"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:202
+msgid "Import Encryption Keys From…"
+msgstr "Importovat šifrovací klíče z…"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
+#: src/utils/matrix/media_message.rs:180
+msgid "Could not access file"
+msgstr "Nezdařilo se získat přístup k souboru"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:244
+msgid "Passphrases do not match"
+msgstr "Přístupové fráze se neshodují"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:321
+msgid "Room encryption keys exported successfully"
+msgstr "Šifrovací klíče místnosti byly úspěšně exportovány"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:327
+msgid "Imported 1 room encryption key"
+msgid_plural "Imported {n} room encryption keys"
+msgstr[0] "Byl importován šifrovací klíč 1 místnosti"
+msgstr[1] "Byly importovány šifrovací klíče {n} místností"
+msgstr[2] "Byly importovány šifrovací klíče {n} místností"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:341
+msgid "Could not export the keys"
+msgstr "Nezdařilo se exportovat klíče"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:355
+msgid "The passphrase doesn't match the one used to export the keys."
+msgstr "Přístupová fráze se neshoduje s heslem použitým k exportu klíčů."
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:360
+msgid "Could not import the keys"
+msgstr "Nezdařilo se importovat klíče"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.ui:61
+msgid "Passphrase"
+msgstr "Přístupová fráze"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.ui:81
+msgid "Confirm Passphrase"
+msgstr "Potvrdit přístupovou frázi"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.ui:116
+#: src/session/view/content/room_details/history_viewer/file.ui:4
+#: src/session/view/content/room_history/message_row/file.rs:65
+msgid "File"
+msgstr "Soubor"
+
+#: src/session/view/account_settings/encryption_page/import_export_keys_subpage.ui:120
+msgid "Choose…"
+msgstr "Vybrat…"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:155
+msgid "No Crypto Identity"
+msgstr "Žádná šifrovací identita"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:157
+msgid "Verifying your own devices or other users is not possible"
+msgstr "Ověření vlastních zařízení nebo jiných uživatelů není možné"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:160
+#: src/session/view/account_settings/encryption_page/mod.rs:233
+msgid "Enable…"
+msgstr "Povolit…"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:163
+msgid "Enable Crypto Identity"
+msgstr "Povolit šifrovací identitu"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:179
+msgid "Crypto Identity Enabled"
+msgstr "Šifrovací identita povolena"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:181
+msgid "The crypto identity exists and this device is verified"
+msgstr "Šifrovací identita existuje a toto zařízení je ověřeno"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:184
+#: src/session/view/account_settings/encryption_page/mod.rs:252
+msgid "Reset…"
+msgstr "Resetovat…"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:199
+msgid "Crypto Identity Incomplete"
+msgstr "Šifrovací identita neúplná"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:201
+msgid "The crypto identity exists but this device is not verified"
+msgstr "Šifrovací identita existuje, ale toto zařízení není ověřeno"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:204
+msgid "Verify…"
+msgstr "Ověřit…"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:207
+msgid "Verify This Session"
+msgstr "Ověřit toto sezení"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:228
+msgid "Account Recovery Disabled"
+msgstr "Obnovení účtu zakázáno"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:230
+msgid ""
+"Enable recovery to be able to restore your account without another device"
+msgstr "Povolte obnovení, abyste mohli obnovit svůj účet bez dalšího zařízení"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:236
+msgid "Enable Account Recovery"
+msgstr "Povolit obnovení účtu"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:247
+msgid "Account Recovery Enabled"
+msgstr "Obnovení účtu povoleno"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:249
+msgid "Your signing keys and encryption keys are synchronized"
+msgstr "Vaše podpisové klíče a šifrovací klíče jsou synchronizovány"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:255
+msgid "Reset Account Recovery Key"
+msgstr "Resetovat klíč obnovení účtu"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:269
+msgid "Recover to synchronize your signing keys and encryption keys"
+msgstr "Obnovit pro synchronizaci podpisových klíčů a šifrovacích klíčů"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:272
+msgid "Recover…"
+msgstr "Obnovit…"
+
+#: src/session/view/account_settings/encryption_page/mod.rs:275
+msgid "Recover Account Data"
+msgstr "Obnovit data účtu"
+
+#: src/session/view/account_settings/encryption_page/mod.ui:5
+msgid "Encryption"
+msgstr "Šifrování"
+
+#: src/session/view/account_settings/encryption_page/mod.ui:9
+msgid "Crypto Identity"
+msgstr "Šifrovací identita"
+
+#: src/session/view/account_settings/encryption_page/mod.ui:10
+msgid ""
+"Allows you to verify other Matrix accounts and automatically trust their "
+"verified sessions"
+msgstr ""
+"Umožňuje ověřit další účty Matrix a automaticky důvěřovat jejich ověřeným "
+"sezením"
+
+#: src/session/view/account_settings/encryption_page/mod.ui:72
+msgid "Account Recovery"
+msgstr "Obnovení účtu"
+
+#: src/session/view/account_settings/encryption_page/mod.ui:73
+msgid ""
+"Allows to fully recover your account with a recovery key or passphrase, if "
+"you ever lose access to all your sessions"
+msgstr ""
+"Umožňuje plně obnovit váš účet pomocí klíče pro obnovení nebo přístupové "
+"fráze, pokud někdy ztratíte přístup ke všem svým sezením"
+
 #: src/session/view/account_settings/general_page/change_password_subpage.rs:104
 msgid "Password must be at least 8 characters long"
 msgstr "Heslo musí mít nejméně 8 znaků"
@@ -2128,7 +2352,7 @@ msgid "Could not change password"
 msgstr "Nezdařilo se změnit heslo"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/session/view/account_settings/general_page/mod.ui:79
 msgid "Change Password"
 msgstr "Změna hesla"
 
@@ -2162,7 +2386,7 @@ msgstr "Nezdařilo se deaktivovat účet"
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
-#: src/session/view/account_settings/general_page/mod.ui:131
+#: src/session/view/account_settings/general_page/mod.ui:113
 msgid "Deactivate Account"
 msgstr "Deaktivovat účet"
 
@@ -2205,8 +2429,8 @@ msgstr ""
 "své šifrovací klíče."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:118
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:109
+#: src/session/view/account_settings/general_page/mod.ui:100
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:109
 msgid "Log Out"
 msgstr "Odhlásit se"
 
@@ -2247,52 +2471,52 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Smazat sezení"
 
-#: src/session/view/account_settings/general_page/mod.rs:270
+#: src/session/view/account_settings/general_page/mod.rs:290
 #: src/session/view/content/room_details/edit_details_subpage.rs:148
 msgid "Avatar removed successfully"
 msgstr "Avatar byl úspěšně odstraněn"
 
-#: src/session/view/account_settings/general_page/mod.rs:272
+#: src/session/view/account_settings/general_page/mod.rs:292
 #: src/session/view/content/room_details/edit_details_subpage.rs:150
 msgid "Avatar changed successfully"
 msgstr "Avatar byl úspěšně změněn"
 
-#: src/session/view/account_settings/general_page/mod.rs:290
-#: src/session/view/account_settings/general_page/mod.rs:300
+#: src/session/view/account_settings/general_page/mod.rs:310
+#: src/session/view/account_settings/general_page/mod.rs:320
 #: src/session/view/content/room_details/edit_details_subpage.rs:175
 #: src/session/view/content/room_details/edit_details_subpage.rs:185
 msgid "Could not load file"
 msgstr "Nezdařilo se načíst soubor"
 
-#: src/session/view/account_settings/general_page/mod.rs:319
+#: src/session/view/account_settings/general_page/mod.rs:339
 #: src/session/view/content/room_details/edit_details_subpage.rs:212
 msgid "Could not upload avatar"
 msgstr "Nezdařilo se nahrát avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:350
+#: src/session/view/account_settings/general_page/mod.rs:370
 #: src/session/view/content/room_details/edit_details_subpage.rs:235
 msgid "Could not change avatar"
 msgstr "Nezdařilo se změnit avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:367
+#: src/session/view/account_settings/general_page/mod.rs:387
 #: src/session/view/content/room_details/edit_details_subpage.rs:260
 msgid "Remove Avatar?"
 msgstr "Odebrat avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:368
+#: src/session/view/account_settings/general_page/mod.rs:388
 msgid "Do you really want to remove your avatar?"
 msgstr "Opravdu chcete odebrat váš avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:406
+#: src/session/view/account_settings/general_page/mod.rs:426
 #: src/session/view/content/room_details/edit_details_subpage.rs:292
 msgid "Could not remove avatar"
 msgstr "Nezdařilo se odstranit avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:455
+#: src/session/view/account_settings/general_page/mod.rs:475
 msgid "Name changed successfully"
 msgstr "Jméno bylo úspěšně změněno"
 
-#: src/session/view/account_settings/general_page/mod.rs:505
+#: src/session/view/account_settings/general_page/mod.rs:525
 msgid "Could not change display name"
 msgstr "Nezdařilo se změnit zobrazované jméno"
 
@@ -2312,41 +2536,46 @@ msgstr "Avatar účtu"
 msgid "Name"
 msgstr "Název"
 
-#: src/session/view/account_settings/general_page/mod.ui:73
+#: src/session/view/account_settings/general_page/mod.ui:57
+msgid "Matrix User ID"
+msgstr "Uživatelské ID Matrixu"
+
+#: src/session/view/account_settings/general_page/mod.ui:65
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:4
+msgid "Sessions"
+msgstr "Sezení"
+
+#: src/session/view/account_settings/general_page/mod.ui:89
 msgid "Manage Account"
 msgstr "Správa účtu"
 
-#: src/session/view/account_settings/general_page/mod.ui:82
+#: src/session/view/account_settings/general_page/mod.ui:125
 #: src/session/view/content/room_details/general_page.ui:291
 msgid "Advanced Information"
 msgstr "Upřesňující informace"
 
-#: src/session/view/account_settings/general_page/mod.ui:85
-msgid "Matrix User ID"
-msgstr "Uživatelské ID Matrixu"
-
-#: src/session/view/account_settings/general_page/mod.ui:95
+#: src/session/view/account_settings/general_page/mod.ui:130
 msgid "Copy Homeserver Address"
 msgstr "Kopírovat adresu domovského serveru"
 
-#: src/session/view/account_settings/general_page/mod.ui:96
+#: src/session/view/account_settings/general_page/mod.ui:131
 msgid "Homeserver address copied to clipboard"
 msgstr "Adresa domovského serveru byla zkopírována do schránky"
 
-#: src/session/view/account_settings/general_page/mod.ui:101
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:22
-msgid "Session ID"
-msgstr "ID sezení"
+#. Translators: local refers to the ID, not the session.
+#: src/session/view/account_settings/general_page/mod.ui:137
+msgid "Local Session ID"
+msgstr "ID místního sezení"
 
-#: src/session/view/account_settings/general_page/mod.ui:103
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:24
-msgid "Copy Session ID"
-msgstr "Kopírovat ID sezení"
+#. Translators: local refers to the ID, not the session.
+#: src/session/view/account_settings/general_page/mod.ui:140
+msgid "Copy Local Session ID"
+msgstr "Kopírovat ID místního sezení"
 
-#: src/session/view/account_settings/general_page/mod.ui:104
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:25
-msgid "Session ID copied to clipboard"
-msgstr "ID sezení bylo zkopírováno do schránky"
+#. Translators: local refers to the ID, not the session.
+#: src/session/view/account_settings/general_page/mod.ui:142
+msgid "Local session ID copied to clipboard"
+msgstr "ID místního sezení bylo zkopírováno do schránky"
 
 #: src/session/view/account_settings/notifications_page.rs:269
 msgid "Could not enable account notifications"
@@ -2428,254 +2657,33 @@ msgstr ""
 msgid "Add Keyword"
 msgstr "Přidat klíčové slovo"
 
-#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:4
-#: src/session/view/account_settings/security_page/mod.ui:26
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:4
+#: src/session/view/account_settings/safety_page/mod.ui:11
 msgid "Ignored Users"
 msgstr "Ignorovaní uživatelé"
 
-#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:18
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:18
 msgid "Toggle Ignored Users Search"
 msgstr "Přepnout hledání ignorovaných uživatelů"
 
-#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:33
 msgid "Search for ignored users"
 msgstr "Hledat ignorované uživatele"
 
-#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:74
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:74
 msgid "No Ignored Users"
 msgstr "Žádní ignorovaní uživatelé"
 
-#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
+#: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:75
 msgid "You can add users to this list from their room member profile"
 msgstr ""
 "Do tohoto seznamu můžete přidat uživatele z jejich profilu člena místnosti"
 
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:150
-#: src/session/view/account_settings/security_page/mod.ui:168
-msgid "Export Room Encryption Keys"
-msgstr "Exportovat šifrovací klíče místnosti"
+#: src/session/view/account_settings/safety_page/mod.ui:5
+msgid "Safety"
+msgstr "Bezpečnost"
 
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:153
-msgid ""
-"Exporting your room encryption keys allows you to make a backup to be able "
-"to decrypt your messages in end-to-end encrypted rooms on another device or "
-"with another Matrix client."
-msgstr ""
-"Exportování šifrovacích klíčů místnosti vám umožní vytvořit zálohu, abyste "
-"mohli dešifrovat své zprávy v místnostech s koncovým šifrováním na jiném "
-"zařízení nebo pomocí jiného klienta Matrixu."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:156
-msgid ""
-"The backup must be stored in a safe place and must be protected with a "
-"strong passphrase that will be used to encrypt the data."
-msgstr ""
-"Záloha musí být uložena na bezpečném místě a musí být chráněna silnou "
-"přístupovou frází, která bude použita k šifrování dat."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:159
-msgid "Export Keys"
-msgstr "Exportovat klíče"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:162
-#: src/session/view/account_settings/security_page/mod.ui:178
-msgid "Import Room Encryption Keys"
-msgstr "Importovat šifrovací klíče místnosti"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:165
-msgid ""
-"Importing your room encryption keys allows you to decrypt your messages in "
-"end-to-end encrypted rooms with a previous backup from a Matrix client."
-msgstr ""
-"Importování šifrovacích klíčů místnosti vám umožní dešifrovat vaše zprávy v "
-"místnostech s koncovým šifrováním pomocí předchozí zálohy z klienta Matrixu."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:168
-msgid "Enter the passphrase provided when the backup file was created."
-msgstr "Zadejte přístupové heslo poskytnuté při vytváření záložního souboru."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:171
-msgid "Import Keys"
-msgstr "Importovat klíče"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:193
-msgid "fractal-encryption-keys"
-msgstr "fractal-šifrovací-klíče"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:199
-msgid "Save Encryption Keys To…"
-msgstr "Uložit šifrovací klíče do…"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
-msgid "Import Encryption Keys From…"
-msgstr "Importovat šifrovací klíče z…"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:180
-msgid "Could not access file"
-msgstr "Nezdařilo se získat přístup k souboru"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:244
-msgid "Passphrases do not match"
-msgstr "Přístupové fráze se neshodují"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:321
-msgid "Room encryption keys exported successfully"
-msgstr "Šifrovací klíče místnosti byly úspěšně exportovány"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:327
-msgid "Imported 1 room encryption key"
-msgid_plural "Imported {n} room encryption keys"
-msgstr[0] "Byl importován šifrovací klíč 1 místnosti"
-msgstr[1] "Byly importovány šifrovací klíče {n} místností"
-msgstr[2] "Byly importovány šifrovací klíče {n} místností"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:341
-msgid "Could not export the keys"
-msgstr "Nezdařilo se exportovat klíče"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:355
-msgid "The passphrase doesn't match the one used to export the keys."
-msgstr "Přístupová fráze se neshoduje s heslem použitým k exportu klíčů."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:360
-msgid "Could not import the keys"
-msgstr "Nezdařilo se importovat klíče"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:61
-msgid "Passphrase"
-msgstr "Přístupová fráze"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
-msgid "Confirm Passphrase"
-msgstr "Potvrdit přístupovou frázi"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
-#: src/session/view/content/room_details/history_viewer/file.ui:4
-#: src/session/view/content/room_history/message_row/file.rs:65
-msgid "File"
-msgstr "Soubor"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:120
-msgid "Choose…"
-msgstr "Vybrat…"
-
-#: src/session/view/account_settings/security_page/mod.rs:216
-msgid "No Crypto Identity"
-msgstr "Žádná šifrovací identita"
-
-#: src/session/view/account_settings/security_page/mod.rs:218
-msgid "Verifying your own devices or other users is not possible"
-msgstr "Ověření vlastních zařízení nebo jiných uživatelů není možné"
-
-#: src/session/view/account_settings/security_page/mod.rs:221
-#: src/session/view/account_settings/security_page/mod.rs:294
-msgid "Enable…"
-msgstr "Povolit…"
-
-#: src/session/view/account_settings/security_page/mod.rs:224
-msgid "Enable Crypto Identity"
-msgstr "Povolit šifrovací identitu"
-
-#: src/session/view/account_settings/security_page/mod.rs:240
-msgid "Crypto Identity Enabled"
-msgstr "Šifrovací identita povolena"
-
-#: src/session/view/account_settings/security_page/mod.rs:242
-msgid "The crypto identity exists and this device is verified"
-msgstr "Šifrovací identita existuje a toto zařízení je ověřeno"
-
-#: src/session/view/account_settings/security_page/mod.rs:245
-#: src/session/view/account_settings/security_page/mod.rs:313
-msgid "Reset…"
-msgstr "Resetovat…"
-
-#: src/session/view/account_settings/security_page/mod.rs:260
-msgid "Crypto Identity Incomplete"
-msgstr "Šifrovací identita neúplná"
-
-#: src/session/view/account_settings/security_page/mod.rs:262
-msgid "The crypto identity exists but this device is not verified"
-msgstr "Šifrovací identita existuje, ale toto zařízení není ověřeno"
-
-#: src/session/view/account_settings/security_page/mod.rs:265
-msgid "Verify…"
-msgstr "Ověřit…"
-
-#: src/session/view/account_settings/security_page/mod.rs:268
-msgid "Verify This Session"
-msgstr "Ověřit toto sezení"
-
-#: src/session/view/account_settings/security_page/mod.rs:289
-msgid "Account Recovery Disabled"
-msgstr "Obnovení účtu zakázáno"
-
-#: src/session/view/account_settings/security_page/mod.rs:291
-msgid ""
-"Enable recovery to be able to restore your account without another device"
-msgstr "Povolte obnovení, abyste mohli obnovit svůj účet bez dalšího zařízení"
-
-#: src/session/view/account_settings/security_page/mod.rs:297
-msgid "Enable Account Recovery"
-msgstr "Povolit obnovení účtu"
-
-#: src/session/view/account_settings/security_page/mod.rs:308
-msgid "Account Recovery Enabled"
-msgstr "Obnovení účtu povoleno"
-
-#: src/session/view/account_settings/security_page/mod.rs:310
-msgid "Your signing keys and encryption keys are synchronized"
-msgstr "Vaše podpisové klíče a šifrovací klíče jsou synchronizovány"
-
-#: src/session/view/account_settings/security_page/mod.rs:316
-msgid "Reset Account Recovery Key"
-msgstr "Resetovat klíč obnovení účtu"
-
-#: src/session/view/account_settings/security_page/mod.rs:330
-msgid "Recover to synchronize your signing keys and encryption keys"
-msgstr "Obnovit pro synchronizaci podpisových klíčů a šifrovacích klíčů"
-
-#: src/session/view/account_settings/security_page/mod.rs:333
-msgid "Recover…"
-msgstr "Obnovit…"
-
-#: src/session/view/account_settings/security_page/mod.rs:336
-msgid "Recover Account Data"
-msgstr "Obnovit data účtu"
-
-#: src/session/view/account_settings/security_page/mod.ui:9
-msgid "Privacy"
-msgstr "Soukromí"
-
-#: src/session/view/account_settings/security_page/mod.ui:13
-msgid "Send Read Receipts"
-msgstr "Odesílat potvrzení o přečtení"
-
-#: src/session/view/account_settings/security_page/mod.ui:14
-msgid ""
-"Allow other members of the rooms you participate in to track which messages "
-"you have seen"
-msgstr ""
-"Umožnit ostatním členům místností, kterých jste členem, aby mohli sledovat, "
-"které zprávy jste viděli"
-
-#: src/session/view/account_settings/security_page/mod.ui:20
-msgid "Send Typing Notifications"
-msgstr "Odesílat upozornění o psaní"
-
-#: src/session/view/account_settings/security_page/mod.ui:21
-msgid ""
-"Allow other members of the rooms you participate in to see when you are "
-"typing a message"
-msgstr ""
-"Umožnit ostatním členům místností, kterých jste členem, aby viděli, když "
-"píšete zprávu"
-
-#: src/session/view/account_settings/security_page/mod.ui:27
+#: src/session/view/account_settings/safety_page/mod.ui:12
 msgid ""
 "All messages or invitations sent by these users will be ignored. You will "
 "still see some of their activity, like when they join or leave a room."
@@ -2684,88 +2692,100 @@ msgstr ""
 "Stále uvidíte část jejich aktivity, například když se připojí nebo opustí "
 "místnost."
 
-#: src/session/view/account_settings/security_page/mod.ui:36
-msgid "Crypto Identity"
-msgstr "Šifrovací identita"
+#: src/session/view/account_settings/safety_page/mod.ui:21
+msgid "Privacy"
+msgstr "Soukromí"
 
-#: src/session/view/account_settings/security_page/mod.ui:37
+#: src/session/view/account_settings/safety_page/mod.ui:25
+msgid "Send Read Receipts"
+msgstr "Odesílat potvrzení o přečtení"
+
+#: src/session/view/account_settings/safety_page/mod.ui:26
 msgid ""
-"Allows you to verify other Matrix accounts and automatically trust their "
-"verified sessions"
+"Allow other members of the rooms you participate in to track which messages "
+"you have seen"
 msgstr ""
-"Umožňuje ověřit další účty Matrix a automaticky důvěřovat jejich ověřeným "
-"sezením"
+"Umožnit ostatním členům místností, kterých jste členem, aby mohli sledovat, "
+"které zprávy jste viděli"
 
-#: src/session/view/account_settings/security_page/mod.ui:99
-msgid "Account Recovery"
-msgstr "Obnovení účtu"
+#: src/session/view/account_settings/safety_page/mod.ui:32
+msgid "Send Typing Notifications"
+msgstr "Odesílat upozornění o psaní"
 
-#: src/session/view/account_settings/security_page/mod.ui:100
+#: src/session/view/account_settings/safety_page/mod.ui:33
 msgid ""
-"Allows to fully recover your account with a recovery key or passphrase, if "
-"you ever lose access to all your sessions"
+"Allow other members of the rooms you participate in to see when you are "
+"typing a message"
 msgstr ""
-"Umožňuje plně obnovit váš účet pomocí klíče pro obnovení nebo přístupové "
-"fráze, pokud někdy ztratíte přístup ke všem svým sezením"
+"Umožnit ostatním členům místností, kterých jste členem, aby viděli, když "
+"píšete zprávu"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:5
-msgid "Sessions"
-msgstr "Sezení"
-
-#: src/session/view/account_settings/user_sessions_page/mod.ui:9
-#: src/session/view/account_settings/user_sessions_page/mod.ui:13
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:14
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:18
 msgid "Current Session"
 msgstr "Současné sezení"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:25
-#: src/session/view/account_settings/user_sessions_page/mod.ui:49
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:30
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:54
 msgid "Other Active Sessions"
 msgstr "Další aktivní sezení"
 
-#: src/session/view/account_settings/user_sessions_page/mod.ui:72
+#: src/session/view/account_settings/user_session/user_session_list_subpage.ui:77
 msgid "Could not load the list of connected devices"
 msgstr "Nezdařilo se načíst seznam připojených zařízení"
 
 #. Translators: As in 'The session is verified'.
 #. Translators: As in 'A verified session'.
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:43
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:116
+#: src/session/view/account_settings/user_session/user_session_row.ui:43
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:115
 msgid "Verified"
 msgstr "Ověřeno"
 
 #. Translators: As in 'The session is not verified'.
 #. Translators: As in 'A verified session'.
-#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:60
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:120
+#: src/session/view/account_settings/user_session/user_session_row.ui:60
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:119
 msgid "Not verified"
 msgstr "Není ověřeno"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:214
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:213
 msgid "Session renamed"
 msgstr "Sezení přejmenováno"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:218
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:217
 msgid "Could not rename session"
 msgstr "Nezdařilo se přejmenovat sezení"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.rs:248
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:247
 msgid "Could not disconnect session “{device_name}”"
 msgstr "Nezdařilo se odpojit sezení „{device_name}“"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:37
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:22
+msgid "Matrix Session ID"
+msgstr "ID sezení Matrixu"
+
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:24
+msgid "Copy Matrix Session ID"
+msgstr "Kopírovat ID sezení Matrixu"
+
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:25
+msgid "Matrix session ID copied to clipboard"
+msgstr "ID sezení Matrixu bylo zkopírováno do schránky"
+
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:37
 msgid "Public Name"
 msgstr "Veřejné jméno"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:64
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:64
 msgid "Last Seen"
 msgstr "Naposledy online"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:86
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:86
 msgid "Last Location"
 msgstr "Poslední poloha"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:120
-#: src/session/view/account_settings/user_sessions_page/user_session_subpage.ui:130
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:120
+#: src/session/view/account_settings/user_session/user_session_subpage.ui:130
 msgid "Disconnect"
 msgstr "Odpojit"
 
