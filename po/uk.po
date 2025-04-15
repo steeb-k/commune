@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-14 16:50+0000\n"
-"PO-Revision-Date: 2025-04-15 13:10+0300\n"
+"POT-Creation-Date: 2025-04-15 12:59+0000\n"
+"PO-Revision-Date: 2025-04-15 20:37+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -2204,7 +2204,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Імпортувати ключі шифрування з…"
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:180
+#: src/utils/matrix/media_message.rs:181
 msgid "Could not access file"
 msgstr "Не вдалося отримати доступ до файла"
 
@@ -2341,7 +2341,6 @@ msgid "Recover Account Data"
 msgstr "Відновити дані облікового запису"
 
 #: src/session/view/account_settings/encryption_page/mod.ui:5
-#| msgid "Enable Encryption"
 msgid "Encryption"
 msgstr "Шифрування"
 
@@ -2618,19 +2617,16 @@ msgstr "Адресу домашнього сервера скопійовано 
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.ui:137
-#| msgid "Copy Session ID"
 msgid "Local Session ID"
 msgstr "Локальний ідентифікатор сеансу"
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.ui:140
-#| msgid "Copy Session ID"
 msgid "Copy Local Session ID"
 msgstr "Скопіювати ідентифікатор локального сеансу"
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.ui:142
-#| msgid "Session ID copied to clipboard"
 msgid "Local session ID copied to clipboard"
 msgstr "Ідентифікатор локального сеансу скопійовано до буфера обміну"
 
@@ -2779,6 +2775,33 @@ msgstr ""
 "Дозволити іншим учасникам кімнати, у роботі якої ви берете участь, бачити, "
 "чи набираєте ви повідомлення."
 
+#: src/session/view/account_settings/safety_page/mod.ui:40
+msgid "Media Previews"
+msgstr "Перегляд мультимедіа"
+
+#: src/session/view/account_settings/safety_page/mod.ui:41
+msgid ""
+"Which rooms automatically show previews for images and videos. Hidden "
+"previews can always be shown by clicking on the media."
+msgstr ""
+"У яких кімнатах автоматично показувати попередній перегляд зображень і"
+" відео. Прихованім попереднім переглядом завжди можна скористатися,"
+" клацнувши на пункті мультимедійних даних."
+
+#: src/session/view/account_settings/safety_page/mod.ui:44
+#| msgid "Join a Room"
+msgid "Show in all rooms"
+msgstr "Показувати в усіх кімнатах"
+
+#: src/session/view/account_settings/safety_page/mod.ui:51
+msgid "Show only in private rooms"
+msgstr "Показувати лише у приватних кімнатах"
+
+#: src/session/view/account_settings/safety_page/mod.ui:58
+#| msgid "All messages in all rooms"
+msgid "Hide in all rooms"
+msgstr "Приховувати в усіх кімнатах"
+
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:14
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:18
 msgid "Current Session"
@@ -2820,17 +2843,14 @@ msgid "Could not disconnect session “{device_name}”"
 msgstr "Не вдалося від'єднатися від сеансу «{device_name}»."
 
 #: src/session/view/account_settings/user_session/user_session_subpage.ui:22
-#| msgid "Session ID"
 msgid "Matrix Session ID"
 msgstr "Ідентифікатор сеансу matrix"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.ui:24
-#| msgid "Copy Session ID"
 msgid "Copy Matrix Session ID"
 msgstr "Скопіювати ідентифікатор сеансу matrix"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.ui:25
-#| msgid "Matrix user ID copied to clipboard"
 msgid "Matrix session ID copied to clipboard"
 msgstr "Ідентифікатор сеансу Matrix скопійовано до буфера обміну"
 
@@ -3146,7 +3166,7 @@ msgstr "Опис"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:553
-#: src/utils/matrix/media_message.rs:155
+#: src/utils/matrix/media_message.rs:156
 msgid "Save"
 msgstr "Зберегти"
 
@@ -3459,12 +3479,12 @@ msgstr "Відкрити файл"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:153
+#: src/utils/matrix/media_message.rs:154
 msgid "Save File"
 msgstr "Зберегти файл"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:172
+#: src/utils/matrix/media_message.rs:173
 msgid "Could not save file"
 msgstr "Не вдалося зберегти файл"
 
@@ -3901,7 +3921,7 @@ msgid "Re_move"
 msgstr "В_илучити"
 
 #: src/session/view/content/room_history/item_row.rs:498
-#: src/session/view/media_viewer.rs:502
+#: src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Посилання на повідомлення скопійовано до буфера обміну"
 
@@ -4057,39 +4077,47 @@ msgstr "У відповідь на"
 msgid "Details"
 msgstr "Подробиці"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:364
+#: src/session/view/content/room_history/message_row/visual_media.rs:443
 msgid "Image"
 msgstr "Зображення"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:365
+#: src/session/view/content/room_history/message_row/visual_media.rs:444
 msgid "Sticker"
 msgstr "Наліпка"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:366
+#: src/session/view/content/room_history/message_row/visual_media.rs:445
 msgid "Video"
 msgstr "Відео"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:371
+#: src/session/view/content/room_history/message_row/visual_media.rs:450
 msgid "Image: {filename}"
 msgstr "Зображення: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:374
+#: src/session/view/content/room_history/message_row/visual_media.rs:453
 msgid "Sticker: {filename}"
 msgstr "Наліпка: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:377
+#: src/session/view/content/room_history/message_row/visual_media.rs:456
 msgid "Video: {filename}"
 msgstr "Відео: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:487
+#: src/session/view/content/room_history/message_row/visual_media.rs:653
 #: src/utils/media/image/mod.rs:762
 msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:531
+#: src/session/view/content/room_history/message_row/visual_media.rs:702
 #: src/utils/media/image/mod.rs:765
 msgid "An unexpected error occurred"
 msgstr "Сталася неочікувана помилка."
+
+#: src/session/view/content/room_history/message_row/visual_media.ui:54
+msgid "Click to show preview"
+msgstr "Клацніть, щоб попередньо переглянути"
+
+#: src/session/view/content/room_history/message_row/visual_media.ui:82
+msgid "Hide media preview"
+msgstr "Приховати перегляд мультимедіа"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
@@ -4821,7 +4849,7 @@ msgstr "Найсвіжіше редагування"
 msgid "Copy Source"
 msgstr "Скопіювати джерело"
 
-#: src/session/view/media_viewer.rs:469
+#: src/session/view/media_viewer.rs:466
 msgid "Image copied to clipboard"
 msgstr "Зображення скопійовано до буфера обміну"
 
