@@ -27,7 +27,40 @@
           </object>
         </child>
         <child type="overlay">
+          <object class="GtkBox" id="preview_instructions">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
+            <child>
+              <object class="GtkImage" id="preview_instructions_icon">
+                <style>
+                  <class name="dimmed"/>
+                </style>
+                <property name="icon-size">large</property>
+                <property name="accessible-role">presentation</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <binding name="visible">
+                  <closure type="gboolean" function="invert_boolean">
+                    <lookup name="compact">ContentMessageVisualMedia</lookup>
+                  </closure>
+                </binding>
+                <property name="label" translatable="yes">Click to show preview</property>
+                <property name="wrap">True</property>
+                <property name="wrap-mode">word-char</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="AdwSpinner" id="spinner">
+            <property name="visible">False</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
             <layout>
@@ -36,11 +69,27 @@
           </object>
         </child>
         <child type="overlay">
+          <object class="GtkButton" id="hide_preview_button">
+            <style>
+              <class name="osd"/>
+            </style>
+            <property name="visible">False</property>
+            <property name="halign">end</property>
+            <property name="valign">start</property>
+            <property name="margin-end">3</property>
+            <property name="margin-top">3</property>
+            <property name="icon-name">hide-symbolic</property>
+            <property name="tooltip-text" translatable="yes">Hide media preview</property>
+            <signal name="clicked" handler="hide_media" swapped="yes"/>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="GtkImage" id="error">
             <style>
               <class name="osd"/>
               <class name="circular"/>
             </style>
+            <property name="visible">False</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
             <property name="icon-name">error-symbolic</property>

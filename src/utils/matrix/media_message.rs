@@ -11,6 +11,7 @@ use ruma::events::{
 use tracing::{debug, error};
 
 use crate::{
+    components::ContentType,
     prelude::*,
     toast,
     utils::{
@@ -244,6 +245,23 @@ impl VisualMediaMessage {
         FrameDimensions::from_options(width, height)
     }
 
+    /// The type of the media.
+    pub(crate) fn visual_media_type(&self) -> VisualMediaType {
+        match self {
+            Self::Image(_) => VisualMediaType::Image,
+            Self::Sticker(_) => VisualMediaType::Sticker,
+            Self::Video(_) => VisualMediaType::Video,
+        }
+    }
+
+    /// The content type of the media.
+    pub(crate) fn content_type(&self) -> ContentType {
+        match self {
+            Self::Image(_) | Self::Sticker(_) => ContentType::Image,
+            Self::Video(_) => ContentType::Video,
+        }
+    }
+
     /// Fetch a thumbnail of the media with the given client and thumbnail
     /// settings.
     ///
@@ -357,4 +375,15 @@ impl From<VisualMediaMessage> for MediaMessage {
             VisualMediaMessage::Sticker(c) => Self::Sticker(c),
         }
     }
+}
+
+/// The type of a visual media message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum VisualMediaType {
+    /// An image.
+    Image,
+    /// A video.
+    Video,
+    /// A sticker.
+    Sticker,
 }

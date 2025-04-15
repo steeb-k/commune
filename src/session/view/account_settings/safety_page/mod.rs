@@ -1,13 +1,17 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
+use tracing::error;
 
 mod ignored_users_subpage;
 
 pub(super) use self::ignored_users_subpage::IgnoredUsersSubpage;
-use crate::{components::ButtonCountRow, session::model::Session};
+use crate::{
+    components::ButtonCountRow,
+    session::model::{MediaPreviewsGlobalSetting, Session},
+};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -26,7 +30,11 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
+        /// The media previews setting, as a string.
+        #[property(get = Self::media_previews_enabled, set = Self::set_media_previews_enabled)]
+        media_previews_enabled: PhantomData<String>,
         ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
+        session_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
         bindings: RefCell<Vec<glib::Binding>>,
     }
 
@@ -38,6 +46,11 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_property_action(
+                "safety.set-media-previews-enabled",
+                "media-previews-enabled",
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -48,15 +61,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for SafetyPage {
         fn dispose(&self) {
-            if let Some(session) = self.session.upgrade() {
-                if let Some(handler) = self.ignored_users_count_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
-            }
-
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
+            self.clear();
         }
     }
 
@@ -66,20 +71,12 @@ mod imp {
     impl SafetyPage {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
-            let prev_session = self.session.upgrade();
-
-            if prev_session.as_ref() == session {
+            if self.session.upgrade().as_ref() == session {
                 return;
             }
 
-            if let Some(session) = prev_session {
-                if let Some(handler) = self.ignored_users_count_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
-            }
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
+            self.clear();
+            let obj = self.obj();
 
             if let Some(session) = session {
                 let ignored_users = session.ignored_users();
@@ -98,6 +95,18 @@ mod imp {
                     .replace(Some(ignored_users_count_handler));
 
                 let session_settings = session.settings();
+
+                let media_previews_handler = session_settings
+                    .connect_media_previews_enabled_changed(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            // Update the active media previews radio button.
+                            obj.notify_media_previews_enabled();
+                        }
+                    ));
+                self.session_settings_handler
+                    .replace(Some(media_previews_handler));
 
                 let public_read_receipts_binding = session_settings
                     .bind_property(
@@ -119,7 +128,56 @@ mod imp {
             }
 
             self.session.set(session);
-            self.obj().notify_session();
+
+            // Update the active media previews radio button.
+            obj.notify_media_previews_enabled();
+            obj.notify_session();
+        }
+
+        /// The media previews setting, as a string.
+        fn media_previews_enabled(&self) -> String {
+            let Some(session) = self.session.upgrade() else {
+                return String::new();
+            };
+
+            session
+                .settings()
+                .media_previews_global_enabled()
+                .as_ref()
+                .to_owned()
+        }
+
+        /// Set the media previews setting, as a string.
+        fn set_media_previews_enabled(&self, setting: &str) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let Ok(setting) = setting.parse::<MediaPreviewsGlobalSetting>() else {
+                error!("Invalid value to set global media previews setting: {setting}");
+                return;
+            };
+
+            session
+                .settings()
+                .set_media_previews_global_enabled(setting);
+        }
+
+        /// Reset the signal handlers and bindings.
+        fn clear(&self) {
+            if let Some(session) = self.session.upgrade() {
+                if let Some(handler) = self.ignored_users_count_handler.take() {
+                    session.ignored_users().disconnect(handler);
+                }
+
+                if let Some(handler) = self.session_settings_handler.take() {
+                    session.settings().disconnect(handler);
+                }
+            }
+
+            for binding in self.bindings.take() {
+                binding.unbind();
+            }
         }
     }
 }

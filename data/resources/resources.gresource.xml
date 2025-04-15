@@ -18,6 +18,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/actions/go-bottom-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/go-next-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/go-previous-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/hide-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/idp-apple-dark.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/idp-apple.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/idp-facebook.svg</file>

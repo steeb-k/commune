@@ -5,7 +5,7 @@ use ruma::OwnedEventId;
 use tracing::warn;
 
 use crate::{
-    components::{ContentType, MediaContentViewer, ScaleRevealer},
+    components::{MediaContentViewer, ScaleRevealer},
     session::model::Room,
     spawn, toast,
     utils::matrix::VisualMediaMessage,
@@ -369,10 +369,7 @@ mod imp {
                 return;
             };
 
-            let content_type = match &message {
-                VisualMediaMessage::Image(_) | VisualMediaMessage::Sticker(_) => ContentType::Image,
-                VisualMediaMessage::Video(_) => ContentType::Video,
-            };
+            let content_type = message.content_type();
 
             let client = session.client();
             match message.into_tmp_file(&client).await {

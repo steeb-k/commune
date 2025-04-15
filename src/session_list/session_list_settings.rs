@@ -66,7 +66,7 @@ impl SessionListSettings {
                     needs_update = true;
                 }
 
-                let session = SessionSettings::restore(&session_id, &stored_session);
+                let session = SessionSettings::restore(&session_id, stored_session);
                 (session_id, session)
             })
             .collect();

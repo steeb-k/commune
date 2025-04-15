@@ -159,6 +159,7 @@ src/session/view/content/room_history/message_row/reaction_list.ui
 src/session/view/content/room_history/message_row/reply.ui
 src/session/view/content/room_history/message_row/text/widgets.rs
 src/session/view/content/room_history/message_row/visual_media.rs
+src/session/view/content/room_history/message_row/visual_media.ui
 src/session/view/content/room_history/message_toolbar/attachment_dialog.ui
 src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs
 src/session/view/content/room_history/message_toolbar/mod.rs

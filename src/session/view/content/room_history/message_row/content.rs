@@ -12,7 +12,7 @@ use super::{
 use crate::{
     prelude::*,
     session::{
-        model::{Event, Member, Room, Session},
+        model::{Event, Member, Room},
         view::content::room_history::message_toolbar::MessageEventSource,
     },
     spawn,
@@ -380,10 +380,6 @@ trait MessageContentContainer: IsA<gtk::Widget> {
         detect_at_room: bool,
         cache_key: MessageCacheKey,
     ) {
-        let Some(session) = room.session() else {
-            return;
-        };
-
         if let Some((caption, formatted_caption)) = media_message.caption() {
             let caption_widget = self.reuse_child_or_default::<MessageCaption>();
 
@@ -395,9 +391,9 @@ trait MessageContentContainer: IsA<gtk::Widget> {
                 detect_at_room,
             );
 
-            caption_widget.build_media_content(media_message, format, &session, cache_key);
+            caption_widget.build_media_content(media_message, format, room, cache_key);
         } else {
-            self.build_media_content(media_message, format, &session, cache_key);
+            self.build_media_content(media_message, format, room, cache_key);
         }
     }
 
@@ -409,13 +405,16 @@ trait MessageContentContainer: IsA<gtk::Widget> {
         &self,
         media_message: MediaMessage,
         format: ContentFormat,
-        session: &Session,
+        room: &Room,
         cache_key: MessageCacheKey,
     ) {
         match media_message {
             MediaMessage::Audio(audio) => {
+                let Some(session) = room.session() else {
+                    return;
+                };
                 let widget = self.reuse_child_or_default::<MessageAudio>();
-                widget.audio(audio.into(), session, format, cache_key);
+                widget.audio(audio.into(), &session, format, cache_key);
             }
             MediaMessage::File(file) => {
                 let widget = self.reuse_child_or_default::<MessageFile>();
@@ -426,15 +425,15 @@ trait MessageContentContainer: IsA<gtk::Widget> {
             }
             MediaMessage::Image(image) => {
                 let widget = self.reuse_child_or_default::<MessageVisualMedia>();
-                widget.set_media_message(image.into(), session, format, cache_key);
+                widget.set_media_message(image.into(), room, format, cache_key);
             }
             MediaMessage::Video(video) => {
                 let widget = self.reuse_child_or_default::<MessageVisualMedia>();
-                widget.set_media_message(video.into(), session, format, cache_key);
+                widget.set_media_message(video.into(), room, format, cache_key);
             }
             MediaMessage::Sticker(sticker) => {
                 let widget = self.reuse_child_or_default::<MessageVisualMedia>();
-                widget.set_media_message(sticker.into(), session, format, cache_key);
+                widget.set_media_message(sticker.into(), room, format, cache_key);
             }
         }
     }

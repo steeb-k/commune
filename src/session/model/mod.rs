@@ -23,7 +23,7 @@ pub(crate) use self::{
     room_list::RoomList,
     security::*,
     session::*,
-    session_settings::{SessionSettings, StoredSessionSettings},
+    session_settings::*,
     sidebar_data::{
         Selection, SidebarIconItem, SidebarIconItemType, SidebarItemList, SidebarListModel,
         SidebarSection, SidebarSectionName,

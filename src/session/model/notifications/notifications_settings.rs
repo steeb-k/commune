@@ -38,9 +38,7 @@ pub enum NotificationsGlobalSetting {
 }
 
 /// The possible values for a room notifications setting.
-#[derive(
-    Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display, strum::EnumString,
-)]
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::EnumString)]
 #[enum_type(name = "NotificationsRoomSetting")]
 #[strum(serialize_all = "kebab-case")]
 pub enum NotificationsRoomSetting {

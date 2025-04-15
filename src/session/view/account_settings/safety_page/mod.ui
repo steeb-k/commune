@@ -35,5 +35,32 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Media Previews</property>
+        <property name="description" translatable="yes">Which rooms automatically show previews for images and videos. Hidden previews can always be shown by clicking on the media.</property>
+        <child>
+          <object class="CheckLoadingRow" id="media_previews_all_row">
+            <property name="title" translatable="yes">Show in all rooms</property>
+            <property name="action-name">safety.set-media-previews-enabled</property>
+            <property name="action-target">'all'</property>
+          </object>
+        </child>
+        <child>
+          <object class="CheckLoadingRow" id="media_previews_private_row">
+            <property name="title" translatable="yes">Show only in private rooms</property>
+            <property name="action-name">safety.set-media-previews-enabled</property>
+            <property name="action-target">'private'</property>
+          </object>
+        </child>
+        <child>
+          <object class="CheckLoadingRow" id="media_previews_public_row">
+            <property name="title" translatable="yes">Hide in all rooms</property>
+            <property name="action-name">safety.set-media-previews-enabled</property>
+            <property name="action-target">'none'</property>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>

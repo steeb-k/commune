@@ -36,7 +36,7 @@ use tracing::error;
 pub(crate) mod ext_traits;
 mod media_message;
 
-pub(crate) use self::media_message::{MediaMessage, VisualMediaMessage};
+pub(crate) use self::media_message::*;
 use crate::{
     components::Pill,
     gettext_f,
