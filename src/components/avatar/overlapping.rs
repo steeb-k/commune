@@ -58,7 +58,7 @@ mod imp {
     impl WidgetImpl for OverlappingAvatars {
         fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
             if self.children.borrow().is_empty() {
-                return (0, 0, -1, 1);
+                return (0, 0, -1, -1);
             }
 
             let avatar_size = self.avatar_size.get();

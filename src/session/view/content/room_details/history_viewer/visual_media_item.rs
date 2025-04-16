@@ -53,7 +53,7 @@ mod imp {
             klass.set_css_name("visual-media-history-viewer-item");
 
             klass.install_action("visual-media-item.activate", None, |obj, _, _| {
-                obj.activate();
+                obj.imp().activate();
             });
 
             key_bindings::add_activate_bindings(klass, "visual-media-item.activate");
