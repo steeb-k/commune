@@ -54,6 +54,7 @@
                 <property name="label" translatable="yes">Click to show preview</property>
                 <property name="wrap">True</property>
                 <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
               </object>
             </child>
           </object>
