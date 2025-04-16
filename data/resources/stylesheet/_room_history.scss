@@ -3,6 +3,40 @@
 @use 'config';
 @use 'vendor';
 
+%nested-effect {
+  border-left: 2px solid var(--accent-bg-color);
+  padding-left: 6px;
+  opacity: if(config.$contrast == 'high', 90%, 70%);
+}
+
+room-title {
+  margin-top: -6px;
+  margin-bottom: -6px;
+  min-height: 12px;
+  padding: 3px 0;
+
+  .title {
+    padding: 0;
+    font-weight: bold;
+  }
+
+  .subtitle {
+    padding: 0;
+    font-weight: normal;
+  }
+
+  &.with-subtitle {
+    button {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .title, .subtitle {
+      margin-top: -0.2rem;
+    }
+  }
+}
+
 .room-history .room-history-list {
   padding-bottom: 0;
 
@@ -27,7 +61,7 @@
   }
 
   &:not(.has-header) {
-    .event-content, message-reactions {
+    .event-content {
       &:dir(ltr) {
         margin-left: 54px;
       }
@@ -65,14 +99,167 @@
       }
     }
   }
+}
 
-  .event-content {
-    .emoji {
-      font-size: 3em;
+sender-avatar {
+  padding: 3px;
+  border-radius: 100%;
+
+  @include vendor.focus-ring();
+
+  &:hover {
+    background-color: vendor.$hover_color;
+
+    image {
+      filter: brightness(1.07) ;
+    }
+  }
+
+  &:active {
+    background-color: vendor.$active_color;
+
+    image {
+      filter: brightness(1.16) ;
+    }
+  }
+
+  &:checked {
+    background-color: vendor.$selected_color;
+
+    image {
+      filter: brightness(1.1) ;
+    }
+  }
+
+  popover button.text-button {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-weight: 400;
+  }
+}
+
+.event-content {
+  .h1 {
+    font-weight: 800;
+    font-size: 15pt;
+  }
+
+  .h2 {
+    font-weight: 800;
+    font-size: 14pt;
+  }
+
+  .h3  {
+    font-weight: 700;
+    font-size: 14pt;
+  }
+
+  .h4  {
+    font-weight: 700;
+    font-size: 13pt;
+  }
+
+  .h5  {
+    font-weight: 700;
+    font-size: 12pt;
+  }
+
+  .h6  {
+    font-weight: 700;
+    font-size: 11pt;
+  }
+
+  .emoji-message {
+    font-size: 3em;
+  }
+
+  .emote {
+    color: var(--accent-color);
+  }
+
+  .quote {
+    @extend %nested-effect;
+  }
+
+  expander-widget > box > {
+    title {
+      border-spacing: 6px;
     }
 
-    .emote {
-      color: var(--accent-color);
+    :not(title) {
+      padding: 12px;
+    }
+  }
+
+  .codeview {
+    border-radius: vendor.$menu_radius;
+    padding: 6px;
+    font-family: monospace;
+    background-color: var(--text-view-bg);
+    color: var(--view-fg-color);
+  }
+
+  .timestamp {
+    min-width: 36px;
+    font-weight: normal;
+  }
+}
+
+state-group-row.room-history-row {
+  &:not(.has-header) {
+    .event-content {
+      &:dir(ltr) {
+        margin-left: 42px;
+      }
+
+      &:dir(rtl) {
+        margin-right: 42px;
+      }
+    }
+  }
+
+  .expander-title {
+    padding: 6px 12px;
+    border-radius: vendor.$menu_radius;
+
+    &:hover {
+      background-color: vendor.$button_hover_color;
+    }
+
+    &:active {
+      background-color: vendor.$button_active_color;
+    }
+  }
+
+  image.arrow {
+    transition: 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  &:not(:checked) image.arrow {
+    &:dir(ltr) {
+      transform: rotate(-0.5turn);
+    }
+
+    &:dir(rtl) {
+      transform: rotate(0.5turn);
+    }
+  }
+
+  .expander-content {
+    padding: 3px 6px;
+    background-color: color-mix(in srgb, var(--view-fg-color) 4%, transparent);
+    border-radius: vendor.$menu_radius;
+  }
+
+  state-group-item-row {
+    padding: 6px 12px;
+    margin: 2px 0;
+    border-radius: vendor.$menu_radius;
+
+    @include vendor.focus-ring();
+
+    &.has-open-popup  {
+      background-color: vendor.$hover_color;
     }
   }
 }
@@ -114,21 +301,14 @@
   }
 }
 
-.room-history-row .event-content .quote,
-.related-event-content {
-  border-left: 2px solid var(--accent-bg-color);
-  padding-left: 6px;
-  opacity: if(config.$contrast == 'high', 90%, 70%);;
-}
-
-message-reactions flowboxchild {
-  &:hover, &:active {
-    // Cancel effect under .navigation-sidebar from libadwaita
-    background-color: transparent;
-  }
-}
-
 message-reactions {
+  flowboxchild {
+    &:hover, &:active {
+      // Cancel effect under .navigation-sidebar from libadwaita
+      background-color: transparent;
+    }
+  }
+
   &:dir(ltr) .toggle {
     padding: 1px 0 1px 6px;
   }
@@ -137,11 +317,11 @@ message-reactions {
     padding: 1px 6px 1px 0;
   }
 
-  .reaction-key {
+  .reaction-key-text {
     font-size: 0.8em;
   }
 
-  .reaction-key.emoji {
+  .reaction-key-emoji {
     font-size: 1.1em;
     padding-right: 2px;
     padding-left: 2px;
@@ -205,17 +385,9 @@ divider-row {
   }
 }
 
-.timestamp {
-  min-width: 36px;
-  font-weight: normal;
-}
-
-.codeview {
-  border-radius: vendor.$menu_radius;
-  padding: 6px;
-  font-family: monospace;
-  background-color: var(--text-view-bg);
-  color: var(--view-fg-color);
+typing-row {
+  padding: 0 6px;
+  min-height: 30px;
 }
 
 .related-event-toolbar {
@@ -226,122 +398,11 @@ divider-row {
     min-height: 24px;
     min-width: 24px;
   }
-}
 
-.related-event-content {
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-typing-row {
-  padding: 0 6px;
-  min-height: 30px;
-}
-
-.room-history-row, .related-event-content {
-  .h1 {
-    font-weight: 800;
-    font-size: 15pt;
-  }
-
-  .h2 {
-    font-weight: 800;
-    font-size: 14pt;
-  }
-
-  .h3  {
-    font-weight: 700;
-    font-size: 14pt;
-  }
-
-  .h4  {
-    font-weight: 700;
-    font-size: 13pt;
-  }
-
-  .h5  {
-    font-weight: 700;
-    font-size: 12pt;
-  }
-
-  .h6  {
-    font-weight: 700;
-    font-size: 11pt;
-  }
-}
-
-.room-history-row expander-widget > box > {
-  title {
-    border-spacing: 6px;
-  }
-
-  :not(title) {
-    padding: 12px;
-  }
-}
-
-room-title {
-  margin-top: -6px;
-  margin-bottom: -6px;
-  min-height: 12px;
-  padding: 3px 0;
-
-  .title {
-    padding: 0;
-    font-weight: bold;
-  }
-
-  .subtitle {
-    padding: 0;
-    font-weight: normal;
-  }
-
-  &.with-subtitle {
-    button {
-      padding-top: 0;
-      padding-bottom: 0;
-    }
-
-    .title, .subtitle {
-      margin-top: -0.2rem;
-    }
-  }
-}
-
-sender-avatar {
-  padding: 3px;
-  border-radius: 100%;
-
-  @include vendor.focus-ring();
-
-  &:hover {
-    background-color: vendor.$hover_color;
-
-    image {
-      filter: brightness(1.07) ;
-    }
-  }
-
-  &:active {
-    background-color: vendor.$active_color;
-
-    image {
-      filter: brightness(1.16) ;
-    }
-  }
-
-  &:checked {
-    background-color: vendor.$selected_color;
-
-    image {
-      filter: brightness(1.1) ;
-    }
-  }
-
-  popover button.text-button {
-    padding-left: 10px;
-    padding-right: 10px;
-    font-weight: 400;
+  .event-content {
+    @extend %nested-effect;
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
 }
 

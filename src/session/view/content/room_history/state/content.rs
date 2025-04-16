@@ -1,9 +1,6 @@
-mod creation;
-mod tombstone;
-
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::glib;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, MemberProfileChange, MembershipChange, OtherState,
     RoomMembershipChange, TimelineItemContent,
@@ -14,58 +11,41 @@ use ruma::{
 };
 use tracing::warn;
 
-use self::{creation::StateCreation, tombstone::StateTombstone};
-use super::ReadReceiptsList;
+use super::{StateCreation, StateTombstone};
 use crate::{gettext_f, prelude::*, session::model::Event};
 
 mod imp {
-    use std::cell::RefCell;
-
-    use glib::subclass::InitializingObject;
-
     use super::*;
-    use crate::utils::TemplateCallbacks;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state_row/mod.ui"
-    )]
-    #[properties(wrapper_type = super::StateRow)]
-    pub struct StateRow {
-        #[template_child]
-        content: TemplateChild<adw::Bin>,
-        #[template_child]
-        read_receipts: TemplateChild<ReadReceiptsList>,
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::StateContent)]
+    pub struct StateContent {
         /// The state event displayed by this widget.
-        #[property(get, set = Self::set_event)]
-        event: RefCell<Option<Event>>,
+        #[property(get, set = Self::set_event, nullable)]
+        event: glib::WeakRef<Event>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for StateRow {
-        const NAME: &'static str = "ContentStateRow";
-        type Type = super::StateRow;
+    impl ObjectSubclass for StateContent {
+        const NAME: &'static str = "ContentStateContent";
+        type Type = super::StateContent;
         type ParentType = adw::Bin;
-
-        fn class_init(klass: &mut Self::Class) {
-            Self::bind_template(klass);
-            TemplateCallbacks::bind_template_callbacks(klass);
-        }
-
-        fn instance_init(obj: &InitializingObject<Self>) {
-            obj.init_template();
-        }
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for StateRow {}
+    impl ObjectImpl for StateContent {}
 
-    impl WidgetImpl for StateRow {}
-    impl BinImpl for StateRow {}
+    impl WidgetImpl for StateContent {}
+    impl BinImpl for StateContent {}
 
-    impl StateRow {
+    impl StateContent {
         /// Set the event presented by this row.
-        fn set_event(&self, event: Event) {
+        fn set_event(&self, event: Option<&Event>) {
+            let Some(event) = event else {
+                // Only handle when an event is set.
+                return;
+            };
+
             match event.content() {
                 TimelineItemContent::MembershipChange(membership_change) => {
                     self.update_with_membership_change(&membership_change, &event.sender_id());
@@ -76,13 +56,12 @@ mod imp {
                         &event.sender().disambiguated_name(),
                     ),
                 TimelineItemContent::OtherState(other_state) => {
-                    self.update_with_other_state(&event, &other_state);
+                    self.update_with_other_state(event, &other_state);
                 }
                 _ => unreachable!(),
             }
 
-            self.read_receipts.set_source(event.read_receipts());
-            self.event.replace(Some(event));
+            self.event.set(Some(event));
         }
 
         /// Update this row with the given [`OtherState`].
@@ -123,16 +102,17 @@ mod imp {
                 }
             };
 
+            let obj = self.obj();
             match widget {
                 WidgetType::Text(message) => {
-                    if let Some(child) = self.content.child().and_downcast::<gtk::Label>() {
+                    if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
                         child.set_text(&message);
                     } else {
-                        self.content.set_child(Some(&text(&message)));
+                        obj.set_child(Some(&text(&message)));
                     }
                 }
-                WidgetType::Creation(widget) => self.content.set_child(Some(&widget)),
-                WidgetType::Tombstone(widget) => self.content.set_child(Some(&widget)),
+                WidgetType::Creation(widget) => obj.set_child(Some(&widget)),
+                WidgetType::Tombstone(widget) => obj.set_child(Some(&widget)),
             }
         }
 
@@ -243,10 +223,11 @@ mod imp {
                 }
             };
 
-            if let Some(child) = self.content.child().and_downcast::<gtk::Label>() {
+            let obj = self.obj();
+            if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
                 child.set_text(&message);
             } else {
-                self.content.set_child(Some(&text(&message)));
+                obj.set_child(Some(&text(&message)));
             }
         }
 
@@ -368,10 +349,11 @@ mod imp {
                 gettext_f("{user} joined this room.", &[("user", display_name)])
             };
 
-            if let Some(child) = self.content.child().and_downcast::<gtk::Label>() {
+            let obj = self.obj();
+            if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
                 child.set_text(&message);
             } else {
-                self.content.set_child(Some(&text(&message)));
+                obj.set_child(Some(&text(&message)));
             }
         }
     }
@@ -379,13 +361,19 @@ mod imp {
 
 glib::wrapper! {
     /// A row presenting a state event.
-    pub struct StateRow(ObjectSubclass<imp::StateRow>)
+    pub struct StateContent(ObjectSubclass<imp::StateContent>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl StateRow {
+impl StateContent {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+}
+
+impl Default for StateContent {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -398,7 +386,7 @@ enum WidgetType {
 /// Construct a `GtkLabel` for the given text.
 fn text(label: &str) -> gtk::Label {
     let child = gtk::Label::new(Some(label));
-    child.set_css_classes(&["event-content", "dimmed"]);
+    child.set_css_classes(&["dimmed"]);
     child.set_wrap(true);
     child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
     child.set_xalign(0.0);

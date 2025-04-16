@@ -36,6 +36,7 @@ pub(crate) mod toast;
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,
+    grouping_list_model::*,
     location::{Location, LocationError, LocationExt},
     placeholder_object::PlaceholderObject,
     single_item_list_model::SingleItemListModel,

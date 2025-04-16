@@ -594,6 +594,35 @@ impl Event {
         }
     }
 
+    /// Whether this is a state event.
+    pub(crate) fn is_state_event(&self) -> bool {
+        matches!(
+            self.item().content(),
+            TimelineItemContent::MembershipChange(_)
+                | TimelineItemContent::ProfileChange(_)
+                | TimelineItemContent::OtherState(_)
+        )
+    }
+
+    /// Whether this is a state event that can be grouped with others.
+    pub(crate) fn is_state_group_event(&self) -> bool {
+        match self.item().content() {
+            TimelineItemContent::MembershipChange(_) | TimelineItemContent::ProfileChange(_) => {
+                true
+            }
+            TimelineItemContent::OtherState(other_state) => {
+                // `m.room.create` and `m.room.tombstone` should only occur once per room and
+                // they have special rendering so we do not group them.
+                !matches!(
+                    other_state.content(),
+                    AnyOtherFullStateEventContent::RoomCreate(_)
+                        | AnyOtherFullStateEventContent::RoomTombstone(_)
+                )
+            }
+            _ => false,
+        }
+    }
+
     /// Whether this is the `m.room.create` event of the room.
     pub(crate) fn is_room_create(&self) -> bool {
         match self.item().content() {

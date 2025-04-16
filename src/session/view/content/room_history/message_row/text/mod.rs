@@ -223,9 +223,9 @@ mod imp {
             };
 
             if EMOJI_REGEX.is_match(&text) {
-                child.add_css_class("emoji");
+                child.add_css_class("emoji-message");
             } else {
-                child.remove_css_class("emoji");
+                child.remove_css_class("emoji-message");
             }
 
             let ellipsize = self.format.get() == ContentFormat::Ellipsized;

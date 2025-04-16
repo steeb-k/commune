@@ -49,7 +49,7 @@ mod imp {
         list: gio::ListStore,
         /// The read receipts used as a source.
         #[property(get, set = Self::set_source, explicit_notify)]
-        source: BoundObjectWeakRef<gio::ListStore>,
+        source: BoundObjectWeakRef<gio::ListModel>,
         /// The displayed member if there is only one receipt.
         receipt_member: BoundObjectWeakRef<Member>,
     }
@@ -164,7 +164,7 @@ mod imp {
         }
 
         /// Set the read receipts that are used as a source of data.
-        fn set_source(&self, source: &gio::ListStore) {
+        fn set_source(&self, source: &gio::ListModel) {
             if self.source.obj().as_ref() == Some(source) {
                 return;
             }
@@ -201,7 +201,7 @@ mod imp {
         }
 
         /// Handle when items changed in the source.
-        fn items_changed(&self, source: &gio::ListStore, pos: u32, removed: u32, added: u32) {
+        fn items_changed(&self, source: &gio::ListModel, pos: u32, removed: u32, added: u32) {
             let Some(members) = &*self.members.borrow() else {
                 return;
             };

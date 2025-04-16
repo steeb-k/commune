@@ -11,6 +11,7 @@ use crate::{
     session::model::Room,
     spawn,
     utils::{
+        key_bindings,
         matrix::{VisualMediaMessage, VisualMediaType},
         media::{
             image::{ImageRequestPriority, ThumbnailSettings, THUMBNAIL_MAX_DIMENSIONS},
@@ -104,6 +105,11 @@ mod imp {
 
             klass.set_css_name("message-visual-media");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
+
+            klass.install_action("message-visual-media.activate", None, |obj, _, _| {
+                obj.imp().activate();
+            });
+            key_bindings::add_activate_bindings(klass, "message-visual-media.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -344,15 +350,7 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     move |_, _, _, _| {
-                        if imp.state.get() == LoadingState::Initial {
-                            imp.show_media();
-                        } else if imp
-                            .obj()
-                            .activate_action("message-row.show-media", None)
-                            .is_err()
-                        {
-                            error!("Could not activate `message-row.show-media` action");
-                        }
+                        imp.activate();
                     }
                 ));
 
@@ -716,6 +714,19 @@ mod imp {
                         session.settings().disconnect(handler);
                     }
                 }
+            }
+        }
+
+        /// Handle when the widget is activated.
+        fn activate(&self) {
+            if self.state.get() == LoadingState::Initial {
+                self.show_media();
+            } else if self
+                .obj()
+                .activate_action("message-row.show-media", None)
+                .is_err()
+            {
+                error!("Could not activate `message-row.show-media` action");
             }
         }
     }

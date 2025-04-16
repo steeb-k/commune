@@ -3,6 +3,9 @@
   <template class="ContentMessageRow" parent="AdwBin">
     <child>
       <object class="GtkGrid">
+        <style>
+          <class name="event-content"/>
+        </style>
         <property name="column-spacing">12</property>
         <child>
           <object class="ContentSenderAvatar" id="avatar">
@@ -53,9 +56,6 @@
               <property name="column">1</property>
               <property name="row">1</property>
             </layout>
-            <style>
-              <class name="event-content"/>
-            </style>
           </object>
         </child>
         <child>

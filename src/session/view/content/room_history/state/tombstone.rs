@@ -11,7 +11,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state_row/tombstone.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state/tombstone.ui"
     )]
     #[properties(wrapper_type = super::StateTombstone)]
     pub struct StateTombstone {

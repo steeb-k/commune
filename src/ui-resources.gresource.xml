@@ -107,7 +107,8 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/permissions_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/select_member_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_row_context_menu.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/context_menu.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/quick_reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/member_timestamp/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/audio.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/file.ui</file>
@@ -123,13 +124,13 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/quick_reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/read_receipts_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/sender_avatar/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/creation.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/tombstone.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/creation.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/group_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/tombstone.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>

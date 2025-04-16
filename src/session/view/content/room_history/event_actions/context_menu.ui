@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <menu id="event-menu">
+  <menu id="event-actions-menu">
     <section>
       <item>
         <!-- Translators: In this string, 'Reply' is a verb. -->

@@ -53,8 +53,7 @@
                         <child>
                           <object class="ContentMessageContent" id="related_event_content">
                             <style>
-                              <class name="related-event-content"/>
-                              <class name="dimmed"/>
+                              <class name="event-content"/>
                             </style>
                             <property name="format">ellipsized</property>
                           </object>
@@ -167,7 +166,7 @@
               </object>
             </property>
           </object>
-        </child> 
+        </child>
         <child>
           <object class="GtkStackPage">
             <property name="name">disabled</property>

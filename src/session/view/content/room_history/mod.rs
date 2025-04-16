@@ -9,23 +9,30 @@ use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
 use tracing::{error, warn};
 
 mod divider_row;
+mod event_actions;
 mod event_row;
-mod event_row_context_menu;
 mod member_timestamp;
 mod message_row;
 mod message_toolbar;
 mod read_receipts_list;
 mod sender_avatar;
-mod state_row;
+mod state;
 mod title;
 mod typing_row;
 mod verification_info_bar;
 
 use self::{
-    divider_row::DividerRow, event_row::EventRow, event_row_context_menu::EventRowContextMenu,
-    message_row::MessageRow, message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
-    sender_avatar::SenderAvatar, state_row::StateRow, title::RoomHistoryTitle,
-    typing_row::TypingRow, verification_info_bar::VerificationInfoBar,
+    divider_row::DividerRow,
+    event_actions::*,
+    event_row::EventRow,
+    message_row::MessageRow,
+    message_toolbar::MessageToolbar,
+    read_receipts_list::ReadReceiptsList,
+    sender_avatar::SenderAvatar,
+    state::{StateGroupRow, StateRow},
+    title::RoomHistoryTitle,
+    typing_row::TypingRow,
+    verification_info_bar::VerificationInfoBar,
 };
 use super::{room_details, RoomDetails};
 use crate::{
@@ -36,7 +43,7 @@ use crate::{
         VirtualItem, VirtualItemKind,
     },
     spawn, toast,
-    utils::{BoundObject, LoadingState, TemplateCallbacks},
+    utils::{BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks},
     Window,
 };
 
@@ -89,7 +96,8 @@ mod imp {
         tombstoned_banner: TemplateChild<adw::Banner>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
-        event_context_menu: OnceCell<EventRowContextMenu>,
+        /// The context menu for rows presenting an [`Event`].
+        event_context_menu: OnceCell<EventActionsContextMenu>,
         sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The timeline currently displayed.
         #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
@@ -108,8 +116,8 @@ mod imp {
         /// timeline.
         #[property(get)]
         is_sticky: Cell<bool>,
-        /// The `GtkSelectionModel` used in the list view.
-        selection_model: OnceCell<gtk::NoSelection>,
+        /// The `GroupingListModel` used in the list view.
+        grouping_model: OnceCell<GroupingListModel>,
         scroll_timeout: RefCell<Option<glib::SourceId>>,
         read_timeout: RefCell<Option<glib::SourceId>>,
         room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
@@ -254,8 +262,6 @@ mod imp {
     impl RoomHistory {
         /// Initialize the list view.
         fn init_listview(&self) {
-            let obj = self.obj();
-
             let factory = gtk::SignalListItemFactory::new();
             factory.connect_setup(move |_, list_item| {
                 let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
@@ -267,35 +273,15 @@ mod imp {
                 list_item.set_selectable(false);
             });
             factory.connect_bind(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, list_item| {
                     let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
                         error!("List item factory did not receive a list item: {list_item:?}");
                         return;
                     };
-                    let Some(item) = list_item.item() else {
-                        list_item.set_child(None::<&gtk::Widget>);
-                        return;
-                    };
 
-                    if let Some(event) = item.downcast_ref::<Event>() {
-                        let child =
-                            if let Some(child) = list_item.child().and_downcast::<EventRow>() {
-                                child
-                            } else {
-                                let child = EventRow::new(&obj);
-                                list_item.set_child(Some(&child));
-                                child
-                            };
-                        child.set_event(Some(event.clone()));
-                    } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
-                        set_virtual_item_child(list_item, virtual_item);
-                    } else {
-                        error!(
-                            "Could not build widget for unsupported room history item: {item:?}"
-                        );
-                    }
+                    imp.bind_list_item_to_item(list_item);
                 }
             ));
             self.listview.set_factory(Some(&factory));
@@ -304,7 +290,8 @@ mod imp {
             self.listview
                 .set_vscroll_policy(gtk::ScrollablePolicy::Natural);
 
-            self.listview.set_model(Some(self.selection_model()));
+            let selection_model = gtk::NoSelection::new(Some(self.grouping_model().clone()));
+            self.listview.set_model(Some(&selection_model));
 
             self.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
@@ -499,12 +486,12 @@ mod imp {
                     .set(timeline.clone(), vec![empty_handler, state_handler]);
 
                 timeline.remove_empty_typing_row();
-                self.selection_model().set_model(Some(&timeline.items()));
+                self.grouping_model().set_model(Some(timeline.items()));
 
                 self.trigger_read_receipts_update();
                 self.scroll_down();
             } else {
-                self.selection_model().set_model(None::<&gio::ListModel>);
+                self.grouping_model().set_model(None::<gio::ListModel>);
             }
 
             self.update_view();
@@ -521,10 +508,50 @@ mod imp {
             self.timeline.obj().map(|timeline| timeline.room())
         }
 
-        /// The `GtkSelectionModel` used in the list view.
-        fn selection_model(&self) -> &gtk::NoSelection {
-            self.selection_model
-                .get_or_init(|| gtk::NoSelection::new(gio::ListModel::NONE.cloned()))
+        /// The `GroupingListModel` used in the list view.
+        fn grouping_model(&self) -> &GroupingListModel {
+            self.grouping_model.get_or_init(|| {
+                GroupingListModel::new(|lhs, rhs| {
+                    lhs.downcast_ref::<Event>()
+                        .is_some_and(Event::is_state_group_event)
+                        && rhs
+                            .downcast_ref::<Event>()
+                            .is_some_and(Event::is_state_group_event)
+                })
+            })
+        }
+
+        /// Bind the given `GtkListItem` to its item.
+        fn bind_list_item_to_item(&self, list_item: &gtk::ListItem) {
+            let Some(item) = list_item.item() else {
+                error!("List item does not have an item",);
+                list_item.set_child(None::<&gtk::Widget>);
+                return;
+            };
+
+            if let Some(event) = item.downcast_ref::<Event>() {
+                let child = if let Some(child) = list_item.child().and_downcast::<EventRow>() {
+                    child
+                } else {
+                    let child = EventRow::new(&self.obj());
+                    list_item.set_child(Some(&child));
+                    child
+                };
+                child.set_event(Some(event.clone()));
+            } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
+                set_virtual_item_child(list_item, virtual_item);
+            } else if let Some(group) = item.downcast_ref::<GroupingListGroup>() {
+                let child = if let Some(child) = list_item.child().and_downcast::<StateGroupRow>() {
+                    child
+                } else {
+                    let child = StateGroupRow::new();
+                    list_item.set_child(Some(&child));
+                    child
+                };
+                child.set_group(Some(group.clone()));
+            } else {
+                error!("Could not build widget for unsupported room history item: {item:?}");
+            }
         }
 
         /// Handle when the scroll value changed.
@@ -598,7 +625,7 @@ mod imp {
 
             self.set_is_auto_scrolling(true);
 
-            let n_items = self.selection_model().n_items();
+            let n_items = self.grouping_model().n_items();
 
             if n_items > 0 {
                 // Wait until the next tick, to make sure that the GtkListView has created the
@@ -677,7 +704,7 @@ mod imp {
 
         /// Whether we need to load more events at the start of the timeline.
         fn needs_more_events_at_the_start(&self) -> bool {
-            if self.selection_model().n_items() == 0 {
+            if self.grouping_model().n_items() == 0 {
                 // We definitely want events if the history is empty.
                 return true;
             }
@@ -1029,8 +1056,8 @@ mod imp {
             }
         }
 
-        /// The context menu for the [`EventRow`]s.
-        pub(super) fn event_context_menu(&self) -> &EventRowContextMenu {
+        /// The context menu for rows presenting an [`Event`].
+        pub(super) fn event_context_menu(&self) -> &EventActionsContextMenu {
             self.event_context_menu.get_or_init(Default::default)
         }
 
@@ -1104,8 +1131,8 @@ impl RoomHistory {
         self.imp().message_toolbar.handle_paste_action();
     }
 
-    /// The context menu for the [`EventRow`]s.
-    fn event_context_menu(&self) -> &EventRowContextMenu {
+    /// The context menu for rows presenting an [`Event`].
+    fn event_context_menu(&self) -> &EventActionsContextMenu {
         self.imp().event_context_menu()
     }
 

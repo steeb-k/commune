@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentStateRow" parent="AdwBin">
-    <accessibility>
-      <relation name="labelled-by">content</relation>
-    </accessibility>
     <property name="child">
       <object class="GtkBox">
+        <style>
+          <class name="event-content"/>
+        </style>
         <property name="spacing">2</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="AdwBin" id="content" />
+          <object class="ContentStateContent">
+            <property name="event" bind-source="ContentStateRow" bind-property="event" bind-flags="sync-create"/>
+          </object>
         </child>
         <child>
           <object class="ContentReadReceiptsList" id="read_receipts">
@@ -25,6 +27,11 @@
                     <lookup name="event">ContentStateRow</lookup>
                   </lookup>
                 </lookup>
+              </lookup>
+            </binding>
+            <binding name="source">
+              <lookup name="read-receipts">
+                <lookup name="event">ContentStateRow</lookup>
               </lookup>
             </binding>
           </object>

@@ -95,9 +95,11 @@ mod imp {
             self.reaction_key.set_label(&key);
 
             if EMOJI_REGEX.is_match(&key) {
-                self.reaction_key.add_css_class("emoji");
+                self.reaction_key.add_css_class("reaction-key-emoji");
+                self.reaction_key.remove_css_class("reaction-key-text");
             } else {
-                self.reaction_key.remove_css_class("emoji");
+                self.reaction_key.remove_css_class("reaction-key-emoji");
+                self.reaction_key.add_css_class("reaction-key-text");
             }
 
             self.button.set_action_target_value(Some(&key.to_variant()));

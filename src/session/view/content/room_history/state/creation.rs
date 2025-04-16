@@ -11,7 +11,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state_row/creation.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state/creation.ui"
     )]
     pub struct StateCreation {
         #[template_child]
