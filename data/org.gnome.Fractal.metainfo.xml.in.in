@@ -71,10 +71,47 @@
   </content_rating>
 
   <releases>@development-release@
+  <release version="11~rc" type="development" date="2025-04-17">
+      <description>
+        <p>
+          Here comes the RC. New since 11.beta:
+        </p>
+        <ul>
+          <li>
+            Rearranged account settings, with a new Safety tab
+          </li>
+          <li>
+            New setting to toggle media preview visibility
+          </li>
+          <li>
+            Sessions can be renamed
+          </li>
+          <li>
+            Support for login using the OAuth 2.0 API (as used by matrix.org, which recently made
+            the switch to Matrix Authentication Service)
+          </li>
+          <li>
+            Contiguous state events are grouped behind a single item
+          </li>
+        </ul>
+        <p>
+          But what does RC stand for? Really Cool? Reasonably Complete? Rose Colored¹? Release
+          Candidate, of course! That means it should be mostly stable and we expect to only include
+          minor improvements until the release of Fractal 11.
+        </p>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          1. That was actually once true, with Fractal 9.rc.
+        </p>
+      </description>
+    </release>
     <release version="11~beta" type="development" date="2025-03-27">
       <description>
         <p>
-          It’s the beginning of bee season! 🌸🌺🌼 🐝 B like beta! 
+          It’s the beginning of bee season! 🌸🌺🌼 🐝 B like beta!
         </p>
         <ul>
           <li>

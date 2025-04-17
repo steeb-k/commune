@@ -1208,7 +1208,7 @@ dependencies = [
 
 [[package]]
 name = "fractal"
-version = "11.0.0-beta"
+version = "11.0.0-rc"
 dependencies = [
  "aperture",
  "ashpd",
