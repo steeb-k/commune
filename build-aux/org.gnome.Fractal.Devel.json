@@ -48,6 +48,7 @@
     "cleanup-commands": [
         "mkdir -p ${FLATPAK_DEST}/lib/ffmpeg"
     ],
+    "cleanup": ["bin/grass"],
     "modules": [
         {
             "name": "grass",
@@ -62,7 +63,6 @@
                 "mkdir -p /app/bin",
                 "install -D ./target/release/grass /app/bin/"
             ],
-            "cleanup": ["*"],
             "sources": [
                 {
                     "type": "git",
