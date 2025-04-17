@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-14 16:50+0000\n"
-"PO-Revision-Date: 2025-04-15 13:18+0200\n"
+"POT-Creation-Date: 2025-04-16 20:44+0000\n"
+"PO-Revision-Date: 2025-04-17 15:04+0200\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -671,9 +671,9 @@ msgstr "Opustit"
 #: src/session/view/content/room_details/general_page.rs:1070
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:551
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/item_row.rs:917
-#: src/session/view/content/room_history/item_row.rs:975
-#: src/session/view/content/room_history/message_toolbar/mod.ui:77
+#: src/session/view/content/room_history/event_actions/group.rs:541
+#: src/session/view/content/room_history/event_actions/group.rs:605
+#: src/session/view/content/room_history/message_toolbar/mod.ui:76
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
 msgstr "Zrušit"
@@ -817,7 +817,7 @@ msgstr[2] ""
 #: src/components/dialogs/message_dialogs.rs:227
 #: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_history/item_row.rs:918
+#: src/session/view/content/room_history/event_actions/group.rs:542
 msgid "Remove"
 msgstr "Odebrat"
 
@@ -839,7 +839,7 @@ msgstr ""
 "místnosti."
 
 #: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/item_row.rs:957
+#: src/session/view/content/room_history/event_actions/group.rs:587
 msgid "Reason (optional)"
 msgstr "Důvod (volitelný)"
 
@@ -896,8 +896,8 @@ msgstr "Povýšit"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/room_preview.rs:208
 #: src/session/view/content/explore/public_room_row.rs:174
-#: src/session/view/content/room_history/mod.rs:876
-#: src/session/view/content/room_history/state_row/tombstone.rs:77
+#: src/session/view/content/room_history/mod.rs:928
+#: src/session/view/content/room_history/state/tombstone.rs:77
 msgid "View"
 msgstr "Zobrazit"
 
@@ -947,8 +947,8 @@ msgstr ""
 
 #: src/components/dialogs/room_preview.ui:190
 #: src/session/view/content/explore/public_room_row.rs:176
-#: src/session/view/content/room_history/mod.rs:879
-#: src/session/view/content/room_history/state_row/tombstone.rs:79
+#: src/session/view/content/room_history/mod.rs:931
+#: src/session/view/content/room_history/state/tombstone.rs:79
 msgid "Join"
 msgstr "Vstoupit"
 
@@ -2155,7 +2155,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Importovat šifrovací klíče z…"
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:180
+#: src/utils/matrix/media_message.rs:181
 msgid "Could not access file"
 msgstr "Nezdařilo se získat přístup k souboru"
 
@@ -2720,6 +2720,30 @@ msgstr ""
 "Umožnit ostatním členům místností, kterých jste členem, aby viděli, když "
 "píšete zprávu"
 
+#: src/session/view/account_settings/safety_page/mod.ui:40
+msgid "Media Previews"
+msgstr "Náhledy médií"
+
+#: src/session/view/account_settings/safety_page/mod.ui:41
+msgid ""
+"Which rooms automatically show previews for images and videos. Hidden "
+"previews can always be shown by clicking on the media."
+msgstr ""
+"Ve kterých místnostech se automaticky zobrazují náhledy obrázků a videí. "
+"Skryté náhledy lze vždy zobrazit kliknutím na médium."
+
+#: src/session/view/account_settings/safety_page/mod.ui:44
+msgid "Show in all rooms"
+msgstr "Zobrazit ve všech místnostech"
+
+#: src/session/view/account_settings/safety_page/mod.ui:51
+msgid "Show only in private rooms"
+msgstr "Zobrazit pouze v soukromých místnostech"
+
+#: src/session/view/account_settings/safety_page/mod.ui:58
+msgid "Hide in all rooms"
+msgstr "Skrýt ve všech místnostech"
+
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:14
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:18
 msgid "Current Session"
@@ -3083,7 +3107,7 @@ msgstr "Popis"
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:553
-#: src/utils/matrix/media_message.rs:155
+#: src/utils/matrix/media_message.rs:156
 msgid "Save"
 msgstr "Uložit"
 
@@ -3259,7 +3283,7 @@ msgstr "Upravit veřejné adresy"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:193
-#: src/session/view/content/room_history/event_context_menu.ui:13
+#: src/session/view/content/room_history/event_actions/context_menu.ui:13
 msgid "_Edit"
 msgstr "_Upravit"
 
@@ -3395,12 +3419,12 @@ msgstr "Otevřít soubor"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:153
+#: src/utils/matrix/media_message.rs:154
 msgid "Save File"
 msgstr "Uložit soubor"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:172
+#: src/utils/matrix/media_message.rs:173
 msgid "Could not save file"
 msgstr "Nezdařilo se uložit soubor"
 
@@ -3744,7 +3768,7 @@ msgstr ""
 msgid "Upgrade"
 msgstr "Vylepšit"
 
-#: src/session/view/content/room_history/divider_row.rs:49
+#: src/session/view/content/room_history/divider_row.rs:90
 msgid "This is the start of the visible history"
 msgstr "Toto je začátek viditelné historie"
 
@@ -3752,7 +3776,7 @@ msgstr "Toto je začátek viditelné historie"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/divider_row.rs:61
+#: src/session/view/content/room_history/divider_row.rs:102
 msgid "%A, %B %-e"
 msgstr "%A, %-e. %B"
 
@@ -3760,107 +3784,112 @@ msgstr "%A, %-e. %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/divider_row.rs:67
+#: src/session/view/content/room_history/divider_row.rs:108
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %-e. %B %Y"
 
-#: src/session/view/content/room_history/divider_row.rs:74
+#: src/session/view/content/room_history/divider_row.rs:115
 msgid "New Messages"
 msgstr "Nové zprávy"
 
+#: src/session/view/content/room_history/event_actions/context_menu.rs:83
+#: src/session/view/sidebar/mod.rs:373
+msgid "Context Menu"
+msgstr "Kontextová nabídka"
+
 #. Translators: In this string, 'Reply' is a verb.
-#: src/session/view/content/room_history/event_context_menu.ui:7
+#: src/session/view/content/room_history/event_actions/context_menu.ui:7
 msgid "_Reply"
 msgstr "_Odpovědět"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
-#: src/session/view/content/room_history/event_context_menu.ui:20
+#: src/session/view/content/room_history/event_actions/context_menu.ui:20
 msgid "_Forward"
 msgstr "_Přeposlat"
 
-#: src/session/view/content/room_history/event_context_menu.ui:27
+#: src/session/view/content/room_history/event_actions/context_menu.ui:27
 msgid "_Select"
 msgstr "_Vybrat"
 
-#: src/session/view/content/room_history/event_context_menu.ui:34
+#: src/session/view/content/room_history/event_actions/context_menu.ui:34
 msgid "_Copy Text"
 msgstr "_Kopírovat text"
 
-#: src/session/view/content/room_history/event_context_menu.ui:39
+#: src/session/view/content/room_history/event_actions/context_menu.ui:39
 msgid "Copy T_humbnail"
 msgstr "Kopírovat _miniaturu"
 
-#: src/session/view/content/room_history/event_context_menu.ui:44
+#: src/session/view/content/room_history/event_actions/context_menu.ui:44
 #: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "U_ložit obrázek"
 
-#: src/session/view/content/room_history/event_context_menu.ui:49
+#: src/session/view/content/room_history/event_actions/context_menu.ui:49
 #: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "U_ložit video"
 
-#: src/session/view/content/room_history/event_context_menu.ui:54
+#: src/session/view/content/room_history/event_actions/context_menu.ui:54
 msgid "S_ave Audio"
 msgstr "U_ložit zvuk"
 
-#: src/session/view/content/room_history/event_context_menu.ui:59
+#: src/session/view/content/room_history/event_actions/context_menu.ui:59
 #: src/session/view/media_viewer.ui:21
 msgid "Copy Message _Link"
 msgstr "Kopírovat _odkaz na zprávu"
 
-#: src/session/view/content/room_history/event_context_menu.ui:64
+#: src/session/view/content/room_history/event_actions/context_menu.ui:64
 #: src/session/view/content/room_history/mod.ui:121
 msgid "_View Details"
 msgstr "Zobrazit po_drobnosti"
 
-#: src/session/view/content/room_history/event_context_menu.ui:71
+#: src/session/view/content/room_history/event_actions/context_menu.ui:71
 msgid "_Discard"
 msgstr "Zaho_dit"
 
-#: src/session/view/content/room_history/event_context_menu.ui:78
+#: src/session/view/content/room_history/event_actions/context_menu.ui:78
 msgid "Rep_ort…"
 msgstr "Nah_lásit…"
 
-#: src/session/view/content/room_history/event_context_menu.ui:83
+#: src/session/view/content/room_history/event_actions/context_menu.ui:83
 msgid "Re_move"
 msgstr "Od_stranit"
 
-#: src/session/view/content/room_history/item_row.rs:498
-#: src/session/view/media_viewer.rs:502
+#: src/session/view/content/room_history/event_actions/group.rs:63
+#: src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Odkaz na zprávu byl zkopírován do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:757
+#: src/session/view/content/room_history/event_actions/group.rs:336
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatura byla zkopírována do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:849
+#: src/session/view/content/room_history/event_actions/group.rs:470
 msgid "Text copied to clipboard"
 msgstr "Text byl zkopírován do schránky"
 
-#: src/session/view/content/room_history/item_row.rs:911
+#: src/session/view/content/room_history/event_actions/group.rs:535
 msgid "Remove Message?"
 msgstr "Smazat zprávu?"
 
-#: src/session/view/content/room_history/item_row.rs:913
+#: src/session/view/content/room_history/event_actions/group.rs:537
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Opravdu chcete odstranit tuto zprávu? Toto nelze vrátit zpět."
 
-#: src/session/view/content/room_history/item_row.rs:927
+#: src/session/view/content/room_history/event_actions/group.rs:551
 msgid "Could not remove message"
 msgstr "Zprávu se nezdařilo odstranit"
 
-#: src/session/view/content/room_history/item_row.rs:939
+#: src/session/view/content/room_history/event_actions/group.rs:566
 msgid "Could not toggle reaction"
 msgstr "Reakci se nezdařilo přepnout"
 
-#: src/session/view/content/room_history/item_row.rs:968
+#: src/session/view/content/room_history/event_actions/group.rs:598
 msgid "Report Event?"
 msgstr "Nahlásit událost?"
 
-#: src/session/view/content/room_history/item_row.rs:970
+#: src/session/view/content/room_history/event_actions/group.rs:600
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3871,22 +3900,25 @@ msgstr ""
 "redigovaná."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:977
+#: src/session/view/content/room_history/event_actions/group.rs:607
 msgid "Report"
 msgstr "Nahlásit"
 
-#: src/session/view/content/room_history/item_row.rs:995
+#: src/session/view/content/room_history/event_actions/group.rs:625
 msgid "Could not report event"
 msgstr "Nezdařilo se nahlásit událost"
 
-#: src/session/view/content/room_history/item_row.rs:1013
+#: src/session/view/content/room_history/event_actions/group.rs:645
 msgid "Could not discard message"
 msgstr "Zprávu se nezdařilo smazat"
 
-#: src/session/view/content/room_history/item_row_context_menu.rs:85
-#: src/session/view/sidebar/mod.rs:373
-msgid "Context Menu"
-msgstr "Kontextová nabídka"
+#: src/session/view/content/room_history/event_actions/quick_reaction_chooser.ui:7
+msgid "Send a Reaction"
+msgstr "Odeslat reakci"
+
+#: src/session/view/content/room_history/event_actions/quick_reaction_chooser.ui:17
+msgid "More Reactions"
+msgstr "Více reakcí"
 
 #: src/session/view/content/room_history/message_row/audio.rs:88
 msgid "Audio: {filename}"
@@ -3957,14 +3989,14 @@ msgstr "Odesláno v {time}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:202
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:204
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] "1 člen reagoval {reaction_key}"
 msgstr[1] "{n} členové reagovali {reaction_key}"
 msgstr[2] "{n} členů reagovalo {reaction_key}"
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:222
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:224
 msgid "{user} reacted with {reaction_key}"
 msgstr "Uživatel {user} reagoval s {reaction_key}"
 
@@ -3981,39 +4013,47 @@ msgstr "V odpovědi"
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:364
+#: src/session/view/content/room_history/message_row/visual_media.rs:441
 msgid "Image"
 msgstr "Obrázek"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:365
+#: src/session/view/content/room_history/message_row/visual_media.rs:442
 msgid "Sticker"
 msgstr "Nálepka"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:366
+#: src/session/view/content/room_history/message_row/visual_media.rs:443
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:371
+#: src/session/view/content/room_history/message_row/visual_media.rs:448
 msgid "Image: {filename}"
 msgstr "Obrázek: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:374
+#: src/session/view/content/room_history/message_row/visual_media.rs:451
 msgid "Sticker: {filename}"
 msgstr "Nálepka: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:377
+#: src/session/view/content/room_history/message_row/visual_media.rs:454
 msgid "Video: {filename}"
 msgstr "Video: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:487
+#: src/session/view/content/room_history/message_row/visual_media.rs:648
 #: src/utils/media/image/mod.rs:762
 msgid "Could not retrieve media"
 msgstr "Nezdařilo se získat média"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:531
+#: src/session/view/content/room_history/message_row/visual_media.rs:697
 #: src/utils/media/image/mod.rs:765
 msgid "An unexpected error occurred"
 msgstr "Došlo k neočekávané chybě"
+
+#: src/session/view/content/room_history/message_row/visual_media.ui:54
+msgid "Click to show preview"
+msgstr "Kliknutím zobrazíte náhled"
+
+#: src/session/view/content/room_history/message_row/visual_media.ui:83
+msgid "Hide media preview"
+msgstr "Skrýt náhled médií"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
@@ -4114,30 +4154,30 @@ msgstr "_Umístění"
 msgid "_Markdown"
 msgstr "_Markdown"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:92
+#: src/session/view/content/room_history/message_toolbar/mod.ui:91
 msgid "Send a File"
 msgstr "Poslat soubor"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:100
+#: src/session/view/content/room_history/message_toolbar/mod.ui:99
 msgid "Insert an Emoji"
 msgstr "Vložit Emodži"
 
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
-#: src/session/view/content/room_history/message_toolbar/mod.ui:126
+#: src/session/view/content/room_history/message_toolbar/mod.ui:125
 msgid "Message Composer"
 msgstr "Tvůrce zpráv"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:145
-#: src/session/view/content/room_history/message_toolbar/mod.ui:147
+#: src/session/view/content/room_history/message_toolbar/mod.ui:144
+#: src/session/view/content/room_history/message_toolbar/mod.ui:146
 msgid "More Options"
 msgstr "Další volby"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:156
+#: src/session/view/content/room_history/message_toolbar/mod.ui:155
 msgid "Send Message"
 msgstr "Odeslat zprávu"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:176
+#: src/session/view/content/room_history/message_toolbar/mod.ui:175
 msgid "You don’t have permission to send messages to this room"
 msgstr "Nemáte oprávnění odesílat zprávy do této místnosti"
 
@@ -4157,40 +4197,40 @@ msgstr "%-e. %B v %l:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e. %B v %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:331
+#: src/session/view/content/room_history/mod.rs:344
 msgid "Error getting file from drop"
 msgstr "Chyba při získávání přetaženého souboru"
 
-#: src/session/view/content/room_history/mod.rs:874
-#: src/session/view/content/room_history/mod.rs:878
-#: src/session/view/content/room_history/state_row/tombstone.ui:14
+#: src/session/view/content/room_history/mod.rs:926
+#: src/session/view/content/room_history/mod.rs:930
+#: src/session/view/content/room_history/state/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "K dispozici je novější verze této místnosti"
 
-#: src/session/view/content/room_history/mod.rs:881
+#: src/session/view/content/room_history/mod.rs:933
 msgid "This room was closed"
 msgstr "Tato místnost byla uzavřena"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:910
+#: src/session/view/content/room_history/mod.rs:962
 #: src/session/view/sidebar/row.rs:739
 msgid "Could not leave {room}"
 msgstr "Nezdařilo se opustit místnost {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:933
+#: src/session/view/content/room_history/mod.rs:985
 #: src/session/view/sidebar/row.rs:728
 msgid "Could not join {room}"
 msgstr "Nezdařilo se připojit k místnosti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:950
+#: src/session/view/content/room_history/mod.rs:1002
 #: src/session/view/sidebar/row.rs:772
 msgid "Could not forget {room}"
 msgstr "Nezdařilo se zapomenout místnost {room}"
 
-#: src/session/view/content/room_history/mod.rs:1021
+#: src/session/view/content/room_history/mod.rs:1073
 msgid "Sender Context Menu"
 msgstr "Kontextová nabídka odesílatele"
 
@@ -4296,14 +4336,6 @@ msgstr "Posunout dolů"
 msgid "Drop Here to Send"
 msgstr "Přetažením sem odešlete"
 
-#: src/session/view/content/room_history/quick_reaction_chooser.ui:7
-msgid "Send a Reaction"
-msgstr "Odeslat reakci"
-
-#: src/session/view/content/room_history/quick_reaction_chooser.ui:17
-msgid "More Reactions"
-msgstr "Více reakcí"
-
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:260
@@ -4400,19 +4432,7 @@ msgstr "Ignorovaní uživatelé…"
 msgid "Open Sender Context Menu"
 msgstr "Otevřít kontextovou nabídku odesílatele"
 
-#: src/session/view/content/room_history/state_row/creation.rs:57
-msgid "This is the continuation of an upgraded room."
-msgstr "Toto je pokračování vylepšené místnosti."
-
-#: src/session/view/content/room_history/state_row/creation.rs:62
-msgid "This is the beginning of this room."
-msgstr "Toto je začátek této místnosti."
-
-#: src/session/view/content/room_history/state_row/creation.ui:20
-msgid "Previous room"
-msgstr "Předchozí místnost"
-
-#: src/session/view/content/room_history/state_row/mod.rs:95
+#: src/session/view/content/room_history/state/content.rs:74
 msgid "This room is encrypted from this point on."
 msgstr "Tato místnost je od tohoto okamžiku šifrována."
 
@@ -4420,12 +4440,12 @@ msgstr "Tato místnost je od tohoto okamžiku šifrována."
 #. variable name.
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:110
-#: src/session/view/content/room_history/state_row/mod.rs:188
+#: src/session/view/content/room_history/state/content.rs:89
+#: src/session/view/content/room_history/state/content.rs:168
 msgid "{user} was invited to this room."
 msgstr "Uživatel {user} byl pozván do této místnosti."
 
-#: src/session/view/content/room_history/state_row/mod.rs:122
+#: src/session/view/content/room_history/state/content.rs:101
 msgid "An unsupported state event was received."
 msgstr "Byla přijata nepodporovaná událost stavu."
 
@@ -4434,84 +4454,84 @@ msgstr "Byla přijata nepodporovaná událost stavu."
 #. We don't know what changed so fall back to the membership.
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:160
-#: src/session/view/content/room_history/state_row/mod.rs:368
+#: src/session/view/content/room_history/state/content.rs:140
+#: src/session/view/content/room_history/state/content.rs:349
 msgid "{user} joined this room."
 msgstr "Uživatel {user} se připojil do této místnosti."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:165
+#: src/session/view/content/room_history/state/content.rs:145
 msgid "{user} left the room."
 msgstr "Uživatel {user} odešel z místnosti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:170
+#: src/session/view/content/room_history/state/content.rs:150
 msgid "{user} was banned."
 msgstr "Uživatel {user} byl zablokován."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:176
+#: src/session/view/content/room_history/state/content.rs:156
 msgid "{user} was unbanned."
 msgstr "Uživatel {user} byl odblokován."
 
 #. Translators: Do NOT translate the content between '{' and
 #. '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:182
+#: src/session/view/content/room_history/state/content.rs:162
 msgid "{user} was kicked out of the room."
 msgstr "Uživatel {user} byl vykopnut z místnosti."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:194
+#: src/session/view/content/room_history/state/content.rs:174
 msgid "{user} was kicked out of the room and banned."
 msgstr "Uživatel {user} byl vykopnut z místnosti a zablokován."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:200
+#: src/session/view/content/room_history/state/content.rs:180
 msgid "{user} accepted the invite."
 msgstr "Uživatel {user} přijal pozvání."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:206
+#: src/session/view/content/room_history/state/content.rs:186
 msgid "{user} rejected the invite."
 msgstr "Uživatel {user} odmítl pozvání."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:212
+#: src/session/view/content/room_history/state/content.rs:192
 msgid "The invitation for {user} has been revoked."
 msgstr "Pozvání pro uživatele {user} bylo odvoláno."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:221
+#: src/session/view/content/room_history/state/content.rs:201
 msgid "{user} requested to be invited to this room."
 msgstr "Uživatel {user} požádal o pozvání do této místnosti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:228
+#: src/session/view/content/room_history/state/content.rs:208
 msgid "{user} retracted their request to be invited to this room."
 msgstr "Uživatel {user} stáhl svůj požadavek na pozvání do této místnosti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:234
+#: src/session/view/content/room_history/state/content.rs:214
 msgid "{user}’s request to be invited to this room was denied."
 msgstr "Žádost uživatele {user} o pozvání do této místnosti byla zamítnuta."
 
-#: src/session/view/content/room_history/state_row/mod.rs:242
+#: src/session/view/content/room_history/state/content.rs:222
 msgid "An unsupported room member event was received."
 msgstr "Byla přijata nepodporovaná událost člena místnosti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:312
+#: src/session/view/content/room_history/state/content.rs:293
 msgid "{previous_user_name} changed their display name to {new_user_name}."
 msgstr ""
 "Uživatel {previous_user_name} změnil své zobrazované jméno na "
@@ -4519,33 +4539,55 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:322
+#: src/session/view/content/room_history/state/content.rs:303
 msgid "{previous_user_name} removed their display name."
 msgstr "Uživatel {previous_user_name} odstranil své zobrazované jméno."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:334
+#: src/session/view/content/room_history/state/content.rs:315
 msgid "{user_id} set their display name to {new_user_name}."
 msgstr "Uživatel {user_id} nastavil své zobrazované jméno na {new_user_name}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:346
+#: src/session/view/content/room_history/state/content.rs:327
 msgid "{user} set their avatar."
 msgstr "Uživatel {user} nastavil svůj avatar."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:353
+#: src/session/view/content/room_history/state/content.rs:334
 msgid "{user} removed their avatar."
 msgstr "Uživatel {user} odstranil svůj avatar."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:360
+#: src/session/view/content/room_history/state/content.rs:341
 msgid "{user} changed their avatar."
 msgstr "Uživatel {user} změnil svůj avatar."
+
+#: src/session/view/content/room_history/state/creation.rs:57
+msgid "This is the continuation of an upgraded room."
+msgstr "Toto je pokračování vylepšené místnosti."
+
+#: src/session/view/content/room_history/state/creation.rs:62
+msgid "This is the beginning of this room."
+msgstr "Toto je začátek této místnosti."
+
+#: src/session/view/content/room_history/state/creation.ui:20
+msgid "Previous room"
+msgstr "Předchozí místnost"
+
+#. Translators: This is a change in the room, not a change between
+#. rooms. Do NOT translate the content between '{' and '}', this
+#. is a variable name.
+#: src/session/view/content/room_history/state/group_row.rs:228
+msgid "1 room change"
+msgid_plural "{n} room changes"
+msgstr[0] "1 změna místnosti"
+msgstr[1] "{n} změny místnosti"
+msgstr[2] "{n} změn místnosti"
 
 #: src/session/view/content/room_history/title.ui:10
 msgid "Open Room Details"
@@ -4744,7 +4786,7 @@ msgstr "Poslední úprava"
 msgid "Copy Source"
 msgstr "Kopírovat zdrojový kód"
 
-#: src/session/view/media_viewer.rs:469
+#: src/session/view/media_viewer.rs:466
 msgid "Image copied to clipboard"
 msgstr "Obrázek byl zkopírován do schránky"
 
