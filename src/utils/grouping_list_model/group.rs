@@ -75,7 +75,6 @@ mod imp {
 
         /// Set the range of items in this group.
         pub(super) fn set_range(&self, range: RangeInclusive<u32>) {
-            // TODO: optimize when the range has changed but not the items.
             if self
                 .range
                 .borrow()
@@ -332,6 +331,11 @@ impl GroupingListGroup {
         *imp.range.borrow_mut() = Some(new_range);
     }
 
+    /// Whether this group has an accumulated batch of changes.
+    pub(super) fn has_batch(&self) -> bool {
+        !self.imp().batch.borrow().is_empty()
+    }
+
     /// Process the accumulated batch of changes.
     pub(super) fn process_batch(&self) {
         let batch = self.imp().batch.take();
@@ -366,6 +370,11 @@ impl GroupingListGroup {
         if let Some(remove) = previous_remove.take() {
             self.items_changed(remove.position, remove.removed, 0);
         }
+    }
+
+    /// Drop the accumulated batch of changes.
+    pub(super) fn drop_batch(&self) {
+        self.imp().batch.take();
     }
 }
 

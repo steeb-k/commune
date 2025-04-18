@@ -233,6 +233,17 @@ mod imp {
                 let index_at_changes = index_before_changes
                     .map(|index| index + 1)
                     .unwrap_or_default();
+
+                // Drop the batches of the new groups, we do not want to send signals about
+                // changed items later for them.
+                self.items
+                    .borrow()
+                    .range(index_at_changes..index_at_changes + list_items_added)
+                    .for_each(|list_item| match list_item {
+                        GroupingListItem::Singleton(_) => {}
+                        GroupingListItem::Group(group) => group.drop_batch(),
+                    });
+
                 obj.items_changed(
                     index_at_changes as u32,
                     list_items_removed as u32,
@@ -257,17 +268,28 @@ mod imp {
                 obj.items_changed(index as u32, 1, 1);
             }
 
-            // Generate a list of groups before syncing them, to avoid holding a ref while
-            // we send signals about changed items.
-            let groups = self
-                .items
-                .borrow()
-                .range(index_before_changes.unwrap_or_default()..)
-                .filter_map(|list_item| match list_item {
-                    GroupingListItem::Singleton(_) => None,
-                    GroupingListItem::Group(group) => Some(group.clone()),
-                })
-                .collect::<Vec<_>>();
+            // Generate a list of groups before processing the batches, to avoid holding a
+            // ref while we send signals about changed items.
+            let groups = {
+                let items = self.items.borrow();
+
+                let first_possible_group_with_changes_index =
+                    index_before_changes.unwrap_or_default();
+                let after_last_possible_group_with_changes_index =
+                    (first_possible_group_with_changes_index + list_items_added + 2)
+                        .min(items.len());
+
+                items
+                    .range(
+                        first_possible_group_with_changes_index
+                            ..after_last_possible_group_with_changes_index,
+                    )
+                    .filter_map(|list_item| match list_item {
+                        GroupingListItem::Singleton(_) => None,
+                        GroupingListItem::Group(group) => group.has_batch().then(|| group.clone()),
+                    })
+                    .collect::<Vec<_>>()
+            };
             groups.into_iter().for_each(|group| group.process_batch());
         }
 
