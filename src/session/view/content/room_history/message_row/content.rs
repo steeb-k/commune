@@ -489,7 +489,7 @@ pub(crate) struct MessageCacheKey {
 
 impl MessageCacheKey {
     /// Whether the given new `MessageCacheKey` should trigger a reload of the
-    /// mmessage compared to this one.
+    /// message compared to this one.
     pub(super) fn should_reload(&self, new: &MessageCacheKey) -> bool {
         if new.is_edited {
             return true;

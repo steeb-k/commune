@@ -17,8 +17,8 @@ use crate::{
     utils::{
         media::{
             image::{
-                Image, ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
-                ThumbnailSettings,
+                Blurhash, Image, ImageError, ImageRequestPriority, ImageSource,
+                ThumbnailDownloader, ThumbnailSettings,
             },
             FrameDimensions, MediaFileError,
         },
@@ -260,6 +260,16 @@ impl VisualMediaMessage {
             Self::Image(_) | Self::Sticker(_) => ContentType::Image,
             Self::Video(_) => ContentType::Video,
         }
+    }
+
+    /// Get the Blurhash of the media, if any.
+    pub(crate) fn blurhash(&self) -> Option<Blurhash> {
+        match self {
+            Self::Image(image_content) => image_content.info.as_deref()?.blurhash.clone(),
+            Self::Sticker(sticker_content) => sticker_content.info.blurhash.clone(),
+            Self::Video(video_content) => video_content.info.as_deref()?.blurhash.clone(),
+        }
+        .map(Blurhash)
     }
 
     /// Fetch a thumbnail of the media with the given client and thumbnail

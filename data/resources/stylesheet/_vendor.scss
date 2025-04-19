@@ -10,6 +10,7 @@ $active_color: color-mix(in srgb, currentColor 16%, transparent);
 $selected_color: color-mix(in srgb, currentColor 10%, transparent);
 $selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);
 $selected_active_color: color-mix(in srgb, currentColor 19%, transparent);
+$osd_fg_color: RGB(255 255 255 / 90%);
 
 // https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.6.1/src/stylesheet/widgets/_buttons.scss
 $button_color: color-mix(in srgb, currentColor 10%, transparent);

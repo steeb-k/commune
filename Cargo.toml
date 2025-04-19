@@ -24,6 +24,7 @@ codegen-units = 16
 
 # Please keep dependencies sorted.
 [dependencies]
+blurhash = "0.2"
 cfg-if = "1"
 diff = "0.1"
 djb_hash = "0.1"

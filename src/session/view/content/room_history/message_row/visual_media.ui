@@ -18,7 +18,7 @@
             <property name="interpolate-size">True</property>
             <child>
               <object class="GtkStackPage">
-                <property name="name">placeholder</property>
+                <property name="name">empty</property>
                 <property name="child">
                   <object class="AdwBin"/>
                 </property>
@@ -32,14 +32,14 @@
             <property name="spacing">6</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
+            <style>
+              <class name="instructions"/>
+            </style>
             <layout>
               <property name="measure">true</property>
             </layout>
             <child>
               <object class="GtkImage" id="preview_instructions_icon">
-                <style>
-                  <class name="dimmed"/>
-                </style>
                 <property name="icon-size">large</property>
                 <property name="accessible-role">presentation</property>
               </object>

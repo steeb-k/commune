@@ -9,7 +9,10 @@ use gtk::{gdk, gio, glib, glib::clone, prelude::*};
 use matrix_sdk::attachment::{BaseVideoInfo, Thumbnail};
 use tracing::{error, warn};
 
-use super::{image::TextureThumbnailer, load_gstreamer_media_info};
+use super::{
+    image::{Blurhash, TextureThumbnailer},
+    load_gstreamer_media_info,
+};
 
 /// A channel sender to send the result of a video thumbnail.
 type ThumbnailResultSender = oneshot::Sender<Result<gdk::Texture, ()>>;
@@ -37,13 +40,19 @@ pub(crate) async fn load_video_info(
         info.height = Some(stream_info.height().into());
     }
 
-    let thumbnail = generate_video_thumbnail(file, widget.upcast_ref()).await;
+    let (thumbnail, blurhash) = generate_video_thumbnail_and_blurhash(file, widget.upcast_ref())
+        .await
+        .unzip();
+    info.blurhash = blurhash.map(|blurhash| blurhash.0);
 
     (info, thumbnail)
 }
 
-/// Generate a thumbnail for the video in the given file.
-async fn generate_video_thumbnail(file: &gio::File, widget: &gtk::Widget) -> Option<Thumbnail> {
+/// Generate a thumbnail and a Blurhash for the video in the given file.
+async fn generate_video_thumbnail_and_blurhash(
+    file: &gio::File,
+    widget: &gtk::Widget,
+) -> Option<(Thumbnail, Blurhash)> {
     let Some(renderer) = widget
         .root()
         .and_downcast::<gtk::Window>()
@@ -119,14 +128,14 @@ async fn generate_video_thumbnail(file: &gio::File, widget: &gtk::Widget) -> Opt
     bus.set_flushing(true);
 
     let texture = texture.ok()?.ok()?;
-    let thumbnail =
-        TextureThumbnailer(texture).generate_thumbnail(widget.scale_factor(), &renderer);
+    let thumbnail_blurhash = TextureThumbnailer(texture)
+        .generate_thumbnail_and_blurhash(widget.scale_factor(), &renderer);
 
-    if thumbnail.is_none() {
-        warn!("Could not generate thumbnail from GdkTexture");
+    if thumbnail_blurhash.is_none() {
+        warn!("Could not generate thumbnail and Blurhash from GdkTexture");
     }
 
-    thumbnail
+    thumbnail_blurhash
 }
 
 /// Create a pipeline to get a thumbnail of the first frame.

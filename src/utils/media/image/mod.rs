@@ -1,9 +1,9 @@
 //! Collection of methods for images.
 
-use std::{error::Error, fmt, str::FromStr, sync::Arc};
+use std::{cmp::Ordering, error::Error, fmt, str::FromStr, sync::Arc};
 
 use gettextrs::gettext;
-use gtk::{gdk, gio, graphene, gsk, prelude::*};
+use gtk::{gdk, gio, glib, graphene, gsk, prelude::*};
 use matrix_sdk::{
     attachment::{BaseImageInfo, Thumbnail},
     media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
@@ -27,7 +27,9 @@ mod queue;
 pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
 
 use super::{FrameDimensions, MediaFileError};
-use crate::{components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX};
+use crate::{
+    components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX, RUNTIME,
+};
 
 /// The maximum dimensions of a thumbnail in the timeline.
 pub(crate) const THUMBNAIL_MAX_DIMENSIONS: FrameDimensions = FrameDimensions {
@@ -182,7 +184,7 @@ impl ImageInfoLoader {
             return (BaseImageInfo::default(), None);
         };
 
-        let info = frame.info();
+        let mut info = frame.info();
 
         // Generate the same thumbnail dimensions as we will need in the timeline.
         let scale_factor = widget.scale_factor();
@@ -195,6 +197,8 @@ impl ImageInfoLoader {
                 .is_some_and(|d| d.needs_thumbnail(max_thumbnail_dimensions))
         {
             // It is not worth it to generate a thumbnail.
+            info.blurhash = frame.generate_blurhash().map(|blurhash| blurhash.0);
+
             return (info, None);
         }
 
@@ -208,7 +212,10 @@ impl ImageInfoLoader {
             return (info, None);
         };
 
-        let thumbnail = frame.generate_thumbnail(scale_factor, &renderer);
+        let (thumbnail, blurhash) = frame
+            .generate_thumbnail_and_blurhash(scale_factor, &renderer)
+            .unzip();
+        info.blurhash = blurhash.map(|blurhash| blurhash.0);
 
         (info, thumbnail)
     }
@@ -266,20 +273,44 @@ impl Frame {
         }
     }
 
-    /// Generate a thumbnail of this frame.
-    fn generate_thumbnail(self, scale_factor: i32, renderer: &gsk::Renderer) -> Option<Thumbnail> {
+    /// Generate a Blurhash of this frame.
+    fn generate_blurhash(self) -> Option<Blurhash> {
         let texture = match self {
             Self::Glycin(frame) => frame.texture(),
             Self::Texture(texture) => texture,
         };
 
-        let thumbnail = TextureThumbnailer(texture).generate_thumbnail(scale_factor, renderer);
+        let blurhash = Blurhash::with_texture(&texture);
 
-        if thumbnail.is_none() {
-            warn!("Could not generate thumbnail from GdkTexture");
+        if blurhash.is_none() {
+            warn!("Could not generate Blurhash from GdkTexture");
         }
 
-        thumbnail
+        blurhash
+    }
+
+    /// Generate a thumbnail and a Blurhash of this frame.
+    ///
+    /// We use the thumbnail to compute the blurhash, which should be less
+    /// expensive than using the original frame.
+    fn generate_thumbnail_and_blurhash(
+        self,
+        scale_factor: i32,
+        renderer: &gsk::Renderer,
+    ) -> Option<(Thumbnail, Blurhash)> {
+        let texture = match self {
+            Self::Glycin(frame) => frame.texture(),
+            Self::Texture(texture) => texture,
+        };
+
+        let thumbnail_blurhash =
+            TextureThumbnailer(texture).generate_thumbnail_and_blurhash(scale_factor, renderer);
+
+        if thumbnail_blurhash.is_none() {
+            warn!("Could not generate thumbnail and Blurhash from GdkTexture");
+        }
+
+        thumbnail_blurhash
     }
 }
 
@@ -413,15 +444,20 @@ impl TextureThumbnailer {
     }
 
     /// Generate the thumbnail for the given scale factor, with the given
-    /// `GskRenderer`.
-    pub(super) fn generate_thumbnail(
+    /// `GskRenderer`, and a Blurhash.
+    ///
+    /// We use the thumbnail to compute the blurhash, which should be less
+    /// expensive than using the original texture.
+    pub(super) fn generate_thumbnail_and_blurhash(
         self,
         scale_factor: i32,
         renderer: &gsk::Renderer,
-    ) -> Option<Thumbnail> {
+    ) -> Option<(Thumbnail, Blurhash)> {
         let max_thumbnail_dimensions = FrameDimensions::thumbnail_max_dimensions(scale_factor);
         let thumbnail = self.downscale_texture_if_needed(max_thumbnail_dimensions, renderer)?;
         let dimensions = FrameDimensions::with_texture(&thumbnail)?;
+
+        let blurhash = Blurhash::with_texture(&thumbnail)?;
 
         let (downloader_format, webp_layout) =
             Self::texture_format_to_thumbnail_format(thumbnail.format())?;
@@ -437,13 +473,79 @@ impl TextureThumbnailer {
         let content_type =
             mime::Mime::from_str(WEBP_CONTENT_TYPE).expect("content type should be valid");
 
-        Some(Thumbnail {
+        let thumbnail = Thumbnail {
             data,
             content_type,
             width: dimensions.width.into(),
             height: dimensions.height.into(),
             size,
+        };
+
+        Some((thumbnail, blurhash))
+    }
+}
+
+/// A [Blurhash].
+///
+/// [Blurhash]: https://blurha.sh/
+#[derive(Debug, Clone)]
+pub(crate) struct Blurhash(pub(crate) String);
+
+impl Blurhash {
+    /// Try to compute the Blurhash for the given `GdkTexture`.
+    pub(super) fn with_texture(texture: &gdk::Texture) -> Option<Self> {
+        let dimensions = FrameDimensions::with_texture(texture)?;
+
+        let mut downloader = gdk::TextureDownloader::new(texture);
+        downloader.set_format(gdk::MemoryFormat::R8g8b8a8);
+        let (data, _) = downloader.download_bytes();
+
+        let (components_x, components_y) = match dimensions.width.cmp(&dimensions.height) {
+            Ordering::Less => (3, 4),
+            Ordering::Equal => (3, 3),
+            Ordering::Greater => (4, 3),
+        };
+
+        let hash = blurhash::encode(
+            components_x,
+            components_y,
+            dimensions.width,
+            dimensions.height,
+            &data,
+        )
+        .inspect_err(|error| {
+            warn!("Could not encode Blurhash: {error}");
         })
+        .ok()?;
+
+        Some(Self(hash))
+    }
+
+    /// Try to convert this Blurhash to a `GdkTexture` with the given
+    /// dimensions.
+    pub(crate) async fn into_texture(self, dimensions: FrameDimensions) -> Option<gdk::Texture> {
+        // Because it can take some time, spawn on a separate thread.
+        RUNTIME
+            .spawn_blocking(move || {
+                let data = blurhash::decode(&self.0, dimensions.width, dimensions.height, 1.0)
+                    .inspect_err(|error| {
+                        warn!("Could not decode Blurhash: {error}");
+                    })
+                    .ok()?;
+
+                Some(
+                    gdk::MemoryTexture::new(
+                        dimensions.width.try_into().ok()?,
+                        dimensions.height.try_into().ok()?,
+                        gdk::MemoryFormat::R8g8b8a8,
+                        &glib::Bytes::from_owned(data),
+                        4 * dimensions.width as usize,
+                    )
+                    .upcast(),
+                )
+            })
+            .await
+            .expect("task was not aborted")
     }
 }
 

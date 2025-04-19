@@ -31,6 +31,8 @@ const MAX_COMPACT_DIMENSIONS: FrameDimensions = FrameDimensions {
     width: 75,
     height: 50,
 };
+/// The name of the empty stack page.
+const EMPTY_PAGE: &str = "empty";
 /// The name of the placeholder stack page.
 const PLACEHOLDER_PAGE: &str = "placeholder";
 /// The name of the media stack page.
@@ -87,6 +89,11 @@ mod imp {
         #[property(get)]
         activatable: Cell<bool>,
         gesture_click: glib::WeakRef<gtk::GestureClick>,
+        /// The current placeholder, if any.
+        ///
+        /// This is the low-quality image shown while the content is loading or
+        /// when the preview is hidden.
+        placeholder: RefCell<Option<gtk::Picture>>,
         /// The current video file, if any.
         file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
@@ -274,7 +281,13 @@ mod imp {
             self.error.set_visible(state == LoadingState::Error);
 
             let visible_page = match state {
-                LoadingState::Initial | LoadingState::Loading => Some(PLACEHOLDER_PAGE),
+                LoadingState::Initial | LoadingState::Loading => {
+                    if self.placeholder.borrow().is_some() {
+                        Some(PLACEHOLDER_PAGE)
+                    } else {
+                        Some(EMPTY_PAGE)
+                    }
+                }
                 LoadingState::Ready => Some(MEDIA_PAGE),
                 LoadingState::Error => None,
             };
@@ -373,6 +386,29 @@ mod imp {
             should_reload
         }
 
+        /// Set the texture to use as a placeholder.
+        fn set_placeholder(&self, texture: Option<gdk::Texture>) {
+            if let Some(texture) = texture {
+                let placeholder = self.placeholder.borrow().clone();
+                let placeholder = if let Some(placeholder) = placeholder {
+                    placeholder
+                } else {
+                    let placeholder = gtk::Picture::new();
+                    self.placeholder.replace(Some(placeholder.clone()));
+                    self.stack.add_named(&placeholder, Some(PLACEHOLDER_PAGE));
+                    self.overlay.add_css_class("has-placeholder");
+                    placeholder
+                };
+
+                placeholder.set_paintable(Some(&texture));
+            } else if let Some(placeholder) = self.placeholder.take() {
+                self.stack.remove(&placeholder);
+                self.overlay.remove_css_class("has-placeholder");
+            }
+
+            self.update_visible_page();
+        }
+
         /// Set the visual media message to display.
         pub(super) fn set_media_message(
             &self,
@@ -381,6 +417,8 @@ mod imp {
             format: ContentFormat,
             cache_key: MessageCacheKey,
         ) {
+            self.media_message.replace(Some(media_message));
+
             if !self.set_cache_key(cache_key) {
                 // We do not need to reload the media.
                 return;
@@ -419,11 +457,45 @@ mod imp {
                 .replace(Some(session_settings_handler));
 
             self.room.set(Some(room));
-            self.media_message.replace(Some(media_message));
 
+            self.load_placeholder();
             self.update_accessible_label();
             self.update_preview_instructions_icon();
             self.update_media();
+        }
+
+        /// Load the placeholder.
+        fn load_placeholder(&self) {
+            let Some((original_dimensions, blurhash)) = self
+                .media_message
+                .borrow()
+                .as_ref()
+                .and_then(|media_message| media_message.dimensions().zip(media_message.blurhash()))
+            else {
+                // Nothing to load.
+                self.set_placeholder(None);
+                return;
+            };
+
+            let max_dimensions = FrameDimensions::thumbnail_max_dimensions(1);
+            let dimensions =
+                original_dimensions.scale_to_fit(max_dimensions, gtk::ContentFit::ScaleDown);
+
+            let cache_key = self.cache_key.borrow().clone();
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let placeholder_texture = blurhash.into_texture(dimensions).await;
+
+                    if imp.cache_key.borrow().should_reload(&cache_key) {
+                        // The media has changed while this was loading, drop the placeholder.
+                        return;
+                    }
+
+                    imp.set_placeholder(placeholder_texture);
+                }
+            ));
         }
 
         /// Update the accessible label for the current state.
@@ -457,6 +529,8 @@ mod imp {
             };
             self.obj()
                 .update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
+
+            self.overlay.set_tooltip_text(Some(&filename));
         }
 
         /// Update the preview instructions icon for the current state.
@@ -594,7 +668,6 @@ mod imp {
             };
             child.set_paintable(Some(&gdk::Paintable::from(image)));
 
-            child.set_tooltip_text(Some(&media_message.filename()));
             if matches!(&media_message, VisualMediaMessage::Sticker(_)) {
                 self.overlay.remove_css_class("opaque-bg");
             } else {
