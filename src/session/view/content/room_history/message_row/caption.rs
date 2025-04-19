@@ -2,7 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::events::room::message::FormattedBody;
 
 use super::{text::MessageText, ContentFormat};
-use crate::session::model::Room;
+use crate::{prelude::*, session::model::Room};
 
 mod imp {
     use std::marker::PhantomData;
@@ -119,5 +119,15 @@ impl MessageCaption {
 impl Default for MessageCaption {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl ChildPropertyExt for MessageCaption {
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child.map(Cast::upcast_ref));
     }
 }

@@ -530,24 +530,12 @@ mod imp {
             };
 
             if let Some(event) = item.downcast_ref::<Event>() {
-                let child = if let Some(child) = list_item.child().and_downcast::<EventRow>() {
-                    child
-                } else {
-                    let child = EventRow::new(&self.obj());
-                    list_item.set_child(Some(&child));
-                    child
-                };
+                let child = list_item.child_or_else::<EventRow>(|| EventRow::new(&self.obj()));
                 child.set_event(Some(event.clone()));
             } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
                 set_virtual_item_child(list_item, virtual_item);
             } else if let Some(group) = item.downcast_ref::<GroupingListGroup>() {
-                let child = if let Some(child) = list_item.child().and_downcast::<StateGroupRow>() {
-                    child
-                } else {
-                    let child = StateGroupRow::new();
-                    list_item.set_child(Some(&child));
-                    child
-                };
+                let child = list_item.child_or_default::<StateGroupRow>();
                 child.set_group(Some(group.clone()));
             } else {
                 error!("Could not build widget for unsupported room history item: {item:?}");
@@ -1167,27 +1155,14 @@ fn set_virtual_item_child(list_item: &gtk::ListItem, virtual_item: &VirtualItem)
             }
         }
         VirtualItemKind::Typing => {
-            let child = if let Some(child) = list_item.child().and_downcast::<TypingRow>() {
-                child
-            } else {
-                let child = TypingRow::new();
-                list_item.set_child(Some(&child));
-                child
-            };
-
+            let child = list_item.child_or_default::<TypingRow>();
             let typing_list = virtual_item.room().typing_list();
             child.set_list(Some(typing_list));
         }
         VirtualItemKind::TimelineStart
         | VirtualItemKind::DayDivider(_)
         | VirtualItemKind::NewMessages => {
-            let divider = if let Some(divider) = list_item.child().and_downcast::<DividerRow>() {
-                divider
-            } else {
-                let divider = DividerRow::new();
-                list_item.set_child(Some(&divider));
-                divider
-            };
+            let divider = list_item.child_or_default::<DividerRow>();
             divider.set_virtual_item(Some(virtual_item));
         }
     }

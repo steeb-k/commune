@@ -172,24 +172,14 @@ mod imp {
 
             if let Some(item) = item {
                 if let Some(section) = item.downcast_ref::<SidebarSection>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<SidebarSectionRow>()
-                    {
-                        child
-                    } else {
+                    let child = obj.child_or_else::<SidebarSectionRow>(|| {
                         let child = SidebarSectionRow::new();
-                        obj.set_child(Some(&child));
                         obj.update_relation(&[Relation::LabelledBy(&[child.labelled_by()])]);
                         child
-                    };
+                    });
                     child.set_section(Some(section.clone()));
                 } else if let Some(room) = item.downcast_ref::<Room>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<SidebarRoomRow>() {
-                        child
-                    } else {
-                        let child = SidebarRoomRow::new();
-                        obj.set_child(Some(&child));
-                        child
-                    };
+                    let child = obj.child_or_default::<SidebarRoomRow>();
 
                     let room_is_direct_handler = room.connect_is_direct_notify(clone!(
                         #[weak(rename_to = imp)]
@@ -222,26 +212,10 @@ mod imp {
 
                     child.set_room(Some(room.clone()));
                 } else if let Some(icon_item) = item.downcast_ref::<SidebarIconItem>() {
-                    let child =
-                        if let Some(child) = obj.child().and_downcast::<SidebarIconItemRow>() {
-                            child
-                        } else {
-                            let child = SidebarIconItemRow::new();
-                            obj.set_child(Some(&child));
-                            child
-                        };
-
+                    let child = obj.child_or_default::<SidebarIconItemRow>();
                     child.set_icon_item(Some(icon_item.clone()));
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let child =
-                        if let Some(child) = obj.child().and_downcast::<SidebarVerificationRow>() {
-                            child
-                        } else {
-                            let child = SidebarVerificationRow::new();
-                            obj.set_child(Some(&child));
-                            child
-                        };
-
+                    let child = obj.child_or_default::<SidebarVerificationRow>();
                     child.set_identity_verification(Some(verification.clone()));
                 } else {
                     panic!("Wrong row item: {item:?}");
@@ -808,5 +782,15 @@ glib::wrapper! {
 impl SidebarRow {
     pub fn new(sidebar: &Sidebar) -> Self {
         glib::Object::builder().property("sidebar", sidebar).build()
+    }
+}
+
+impl ChildPropertyExt for SidebarRow {
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child);
     }
 }

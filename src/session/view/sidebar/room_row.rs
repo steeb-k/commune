@@ -298,3 +298,9 @@ impl SidebarRoomRow {
         glib::Object::new()
     }
 }
+
+impl Default for SidebarRoomRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

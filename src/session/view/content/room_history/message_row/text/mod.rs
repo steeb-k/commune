@@ -214,13 +214,7 @@ mod imp {
         fn build_plain_text(&self, mut text: String) {
             let obj = self.obj();
 
-            let child = if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
-                child
-            } else {
-                let child = new_message_label();
-                obj.set_child(Some(&child));
-                child
-            };
+            let child = obj.child_or_else::<gtk::Label>(new_message_label);
 
             if EMOJI_REGEX.is_match(&text) {
                 child.add_css_class("emoji-message");
@@ -279,13 +273,7 @@ mod imp {
             }
 
             let obj = self.obj();
-            let child = if let Some(child) = obj.child().and_downcast::<LabelWithWidgets>() {
-                child
-            } else {
-                let child = LabelWithWidgets::new();
-                obj.set_child(Some(&child));
-                child
-            };
+            let child = obj.child_or_default::<LabelWithWidgets>();
 
             child.set_ellipsize(ellipsize);
             child.set_use_markup(true);
@@ -448,6 +436,8 @@ impl Default for MessageText {
         Self::new()
     }
 }
+
+impl IsABin for MessageText {}
 
 /// Whether the given [`FormattedBody`] contains HTML.
 fn formatted_body_is_html(formatted: &FormattedBody) -> bool {

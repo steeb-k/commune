@@ -287,3 +287,9 @@ impl MessageRow {
         self.imp().texture()
     }
 }
+
+impl Default for MessageRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

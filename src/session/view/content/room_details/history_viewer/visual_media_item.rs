@@ -241,3 +241,9 @@ impl VisualMediaItem {
         glib::Object::new()
     }
 }
+
+impl Default for VisualMediaItem {
+    fn default() -> Self {
+        Self::new()
+    }
+}

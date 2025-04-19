@@ -5,6 +5,7 @@ use tracing::error;
 use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, VisualMediaItem};
 use crate::{
     components::LoadingRow,
+    prelude::*,
     session::view::MediaViewer,
     spawn,
     utils::{BoundConstructOnlyObject, LoadingState},
@@ -91,20 +92,7 @@ mod imp {
 
                     list_item.set_child(Some(loading_row));
                 } else if let Some(event) = item.and_downcast::<HistoryViewerEvent>() {
-                    let media_item = if let Some(media_item) =
-                        list_item.child().and_downcast::<VisualMediaItem>()
-                    {
-                        media_item
-                    } else {
-                        let media_item = VisualMediaItem::new();
-                        media_item.set_width_request(SIZE_REQUEST);
-                        media_item.set_height_request(SIZE_REQUEST);
-
-                        list_item.set_child(Some(&media_item));
-
-                        media_item
-                    };
-
+                    let media_item = list_item.child_or_default::<VisualMediaItem>();
                     media_item.set_event(Some(event));
                 }
             });

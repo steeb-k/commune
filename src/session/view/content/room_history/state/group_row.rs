@@ -246,3 +246,9 @@ impl StateGroupRow {
         glib::Object::new()
     }
 }
+
+impl Default for StateGroupRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

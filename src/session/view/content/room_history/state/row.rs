@@ -56,3 +56,9 @@ impl StateRow {
         glib::Object::new()
     }
 }
+
+impl Default for StateRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

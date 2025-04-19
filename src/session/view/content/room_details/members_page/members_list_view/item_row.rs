@@ -2,9 +2,12 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
 use super::MembershipSubpageRow;
-use crate::session::{
-    model::Member,
-    view::content::room_details::{MemberRow, MembershipSubpageItem},
+use crate::{
+    prelude::*,
+    session::{
+        model::Member,
+        view::content::room_details::{MemberRow, MembershipSubpageItem},
+    },
 };
 
 mod imp {
@@ -50,26 +53,15 @@ mod imp {
 
             if let Some(item) = &item {
                 if let Some(member) = item.downcast_ref::<Member>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<MemberRow>() {
-                        child
-                    } else {
-                        let child = MemberRow::new(true);
-                        obj.set_child(Some(&child));
-                        child
-                    };
+                    let child = obj.child_or_else::<MemberRow>(|| MemberRow::new(true));
                     child.set_member(Some(member.clone()));
                     self.set_activatable(true);
                 } else if let Some(item) = item.downcast_ref::<MembershipSubpageItem>() {
-                    let child =
-                        if let Some(child) = obj.child().and_downcast::<MembershipSubpageRow>() {
-                            child
-                        } else {
-                            let child = MembershipSubpageRow::new();
-                            child.set_activatable(false);
-
-                            obj.set_child(Some(&child));
-                            child
-                        };
+                    let child = obj.child_or_else::<MembershipSubpageRow>(|| {
+                        let child = MembershipSubpageRow::new();
+                        child.set_activatable(false);
+                        child
+                    });
 
                     child.set_item(Some(item.clone()));
                     self.set_activatable(true);
@@ -108,3 +100,5 @@ impl ItemRow {
         glib::Object::new()
     }
 }
+
+impl IsABin for ItemRow {}

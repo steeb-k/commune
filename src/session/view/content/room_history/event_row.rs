@@ -292,22 +292,10 @@ mod imp {
             let obj = self.obj();
 
             if event.is_state_event() {
-                let child = if let Some(child) = obj.child().and_downcast::<StateRow>() {
-                    child
-                } else {
-                    let child = StateRow::new();
-                    obj.set_child(Some(&child));
-                    child
-                };
+                let child = obj.child_or_default::<StateRow>();
                 child.set_event(event);
             } else {
-                let child = if let Some(child) = obj.child().and_downcast::<MessageRow>() {
-                    child
-                } else {
-                    let child = MessageRow::new();
-                    obj.set_child(Some(&child));
-                    child
-                };
+                let child = obj.child_or_default::<MessageRow>();
                 child.set_event(event);
             }
         }
@@ -363,5 +351,15 @@ impl EventRow {
         glib::Object::builder()
             .property("room-history", room_history)
             .build()
+    }
+}
+
+impl ChildPropertyExt for EventRow {
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child);
     }
 }

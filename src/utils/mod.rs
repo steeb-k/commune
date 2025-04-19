@@ -10,11 +10,12 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
+use adw::prelude::*;
 use futures_util::{
     future::{self, Either, Future},
     pin_mut,
 };
-use gtk::{gio, glib, prelude::*};
+use gtk::{gio, glib};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
@@ -634,3 +635,74 @@ impl Drop for CountedRef {
         }
     }
 }
+
+/// Extensions trait for types with a `child` property.
+pub(crate) trait ChildPropertyExt {
+    /// The child of this widget, is any.
+    fn child_property(&self) -> Option<gtk::Widget>;
+
+    /// Set the child of this widget.
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>);
+
+    /// Get the child if it is of the proper type, or construct it with the
+    /// given function and set is as the child of this widget before returning
+    /// it.
+    fn child_or_else<W>(&self, f: impl FnOnce() -> W) -> W
+    where
+        W: IsA<gtk::Widget>,
+    {
+        if let Some(child) = self.child_property().and_downcast() {
+            child
+        } else {
+            let child = f();
+            self.set_child_property(Some(&child));
+            child
+        }
+    }
+
+    /// Get the child if it is of the proper type, or construct it with its
+    /// `Default` implementation and set is as the child of this widget before
+    /// returning it.
+    fn child_or_default<W>(&self) -> W
+    where
+        W: IsA<gtk::Widget> + Default,
+    {
+        self.child_or_else(Default::default)
+    }
+}
+
+impl<W> ChildPropertyExt for W
+where
+    W: IsABin,
+{
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child);
+    }
+}
+
+impl ChildPropertyExt for gtk::ListItem {
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child);
+    }
+}
+
+/// Helper trait to implement for widgets that subclass `AdwBin`, to be able to
+/// use the `ChildPropertyExt` trait.
+///
+/// This trait is to circumvent conflicts in Rust's type system, where if we try
+/// to implement `ChildPropertyExt for W where W: IsA<adw::Bin>` it complains
+/// that the other external types that implement `ChildPropertyExt` might
+/// implement `IsA<adw::Bin>` in the future… So instead of reimplementing
+/// `ChildPropertyExt` for every type where we need it, which requires to
+/// implement two methods, we only implement this which requires nothing.
+pub(crate) trait IsABin: IsA<adw::Bin> {}
+
+impl IsABin for adw::Bin {}

@@ -191,3 +191,9 @@ impl AudioRow {
         glib::Object::new()
     }
 }
+
+impl Default for AudioRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

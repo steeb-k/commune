@@ -10,6 +10,6 @@ pub(crate) use crate::{
     utils::{
         matrix::ext_traits::*,
         string::{StrExt, StrMutExt},
-        LocationExt,
+        ChildPropertyExt, IsABin, LocationExt,
     },
 };

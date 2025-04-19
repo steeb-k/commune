@@ -1,7 +1,8 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, pango, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, pango};
 
 use super::LoadingBin;
+use crate::prelude::*;
 
 mod imp {
     use std::marker::PhantomData;
@@ -65,26 +66,22 @@ mod imp {
             }
             let obj = self.obj();
 
-            let child_label =
-                if let Some(child_label) = self.loading_bin.child().and_downcast::<gtk::Label>() {
-                    child_label
-                } else {
-                    let child_label = gtk::Label::builder()
-                        .ellipsize(pango::EllipsizeMode::End)
-                        .use_underline(true)
-                        .mnemonic_widget(&*obj)
-                        .css_classes(["text-button"])
-                        .build();
+            let child_label = self.loading_bin.child_or_else::<gtk::Label>(|| {
+                let child_label = gtk::Label::builder()
+                    .ellipsize(pango::EllipsizeMode::End)
+                    .use_underline(true)
+                    .mnemonic_widget(&*obj)
+                    .css_classes(["text-button"])
+                    .build();
 
-                    self.loading_bin.set_child(Some(child_label.clone()));
-                    // In case it was an image before.
-                    obj.remove_css_class("image-button");
-                    obj.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
-                        child_label.upcast_ref()
-                    ])]);
+                // In case it was an image before.
+                obj.remove_css_class("image-button");
+                obj.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+                    child_label.upcast_ref()
+                ])]);
 
-                    child_label
-                };
+                child_label
+            });
 
             child_label.set_label(label);
 
@@ -106,19 +103,13 @@ mod imp {
             }
             let obj = self.obj();
 
-            let child_image =
-                if let Some(child_image) = self.loading_bin.child().and_downcast::<gtk::Image>() {
-                    child_image
-                } else {
-                    let child_image = gtk::Image::builder()
-                        .accessible_role(gtk::AccessibleRole::Presentation)
-                        .build();
+            let child_image = self.loading_bin.child_or_else::<gtk::Image>(|| {
+                obj.add_css_class("image-button");
 
-                    self.loading_bin.set_child(Some(child_image.clone()));
-                    obj.add_css_class("image-button");
-
-                    child_image
-                };
+                gtk::Image::builder()
+                    .accessible_role(gtk::AccessibleRole::Presentation)
+                    .build()
+            });
 
             child_image.set_icon_name(Some(icon_name));
 

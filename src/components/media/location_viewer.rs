@@ -148,3 +148,9 @@ impl LocationViewer {
         self.imp().set_location(geo_uri);
     }
 }
+
+impl Default for LocationViewer {
+    fn default() -> Self {
+        Self::new()
+    }
+}

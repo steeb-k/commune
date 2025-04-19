@@ -338,3 +338,9 @@ impl LabelWithWidgets {
         self.imp().set_label_and_widgets(label, widgets);
     }
 }
+
+impl Default for LabelWithWidgets {
+    fn default() -> Self {
+        Self::new()
+    }
+}

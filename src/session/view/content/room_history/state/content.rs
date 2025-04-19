@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::glib;
+use gtk::{glib, pango};
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, MemberProfileChange, MembershipChange, OtherState,
     RoomMembershipChange, TimelineItemContent,
@@ -105,11 +105,8 @@ mod imp {
             let obj = self.obj();
             match widget {
                 WidgetType::Text(message) => {
-                    if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
-                        child.set_text(&message);
-                    } else {
-                        obj.set_child(Some(&text(&message)));
-                    }
+                    let child = obj.child_or_else::<gtk::Label>(text);
+                    child.set_label(&message);
                 }
                 WidgetType::Creation(widget) => obj.set_child(Some(&widget)),
                 WidgetType::Tombstone(widget) => obj.set_child(Some(&widget)),
@@ -223,12 +220,8 @@ mod imp {
                 }
             };
 
-            let obj = self.obj();
-            if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
-                child.set_text(&message);
-            } else {
-                obj.set_child(Some(&text(&message)));
-            }
+            let child = self.obj().child_or_else::<gtk::Label>(text);
+            child.set_label(&message);
         }
 
         /// Convert a received membership change to a supported membership
@@ -349,12 +342,8 @@ mod imp {
                 gettext_f("{user} joined this room.", &[("user", display_name)])
             };
 
-            let obj = self.obj();
-            if let Some(child) = obj.child().and_downcast::<gtk::Label>() {
-                child.set_text(&message);
-            } else {
-                obj.set_child(Some(&text(&message)));
-            }
+            let child = self.obj().child_or_else::<gtk::Label>(text);
+            child.set_label(&message);
         }
     }
 }
@@ -377,18 +366,20 @@ impl Default for StateContent {
     }
 }
 
+impl IsABin for StateContent {}
+
 enum WidgetType {
     Text(String),
     Creation(StateCreation),
     Tombstone(StateTombstone),
 }
 
-/// Construct a `GtkLabel` for the given text.
-fn text(label: &str) -> gtk::Label {
-    let child = gtk::Label::new(Some(label));
-    child.set_css_classes(&["dimmed"]);
-    child.set_wrap(true);
-    child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
-    child.set_xalign(0.0);
-    child
+/// Construct a `GtkLabel` for presenting a state content.
+fn text() -> gtk::Label {
+    gtk::Label::builder()
+        .css_classes(["dimmed"])
+        .wrap(true)
+        .wrap_mode(pango::WrapMode::WordChar)
+        .xalign(0.0)
+        .build()
 }

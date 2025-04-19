@@ -216,28 +216,10 @@ impl MessageContent {
     }
 }
 
+impl IsABin for MessageContent {}
+
 /// Helper trait for types used to build a message's content.
-trait MessageContentContainer: IsA<gtk::Widget> {
-    /// Get the child of this widget
-    fn child(&self) -> Option<gtk::Widget>;
-
-    /// Set the child of this widget
-    fn set_child(&self, child: Option<gtk::Widget>);
-
-    /// Reuse the child of this widget if it is of the correct type `W`, or
-    /// replace it with a new `W` constructed with its `Default` implementation.
-    ///
-    /// Returns the reused or new widget.
-    fn reuse_child_or_default<W: IsA<gtk::Widget> + Clone + Default>(&self) -> W {
-        if let Some(child) = self.child().and_downcast::<W>() {
-            child
-        } else {
-            let child = W::default();
-            self.set_child(Some(child.clone().upcast()));
-            child
-        }
-    }
-
+trait MessageContentContainer: ChildPropertyExt {
     /// Build the content widget of `event` as a child of this widget.
     fn build_content(
         &self,
@@ -279,7 +261,7 @@ trait MessageContentContainer: IsA<gtk::Widget> {
                     );
                 }
                 MsgLikeKind::UnableToDecrypt(_) => {
-                    let child = self.reuse_child_or_default::<MessageText>();
+                    let child = self.child_or_default::<MessageText>();
                     child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
                 }
                 msg_like_kind => {
@@ -296,7 +278,7 @@ trait MessageContentContainer: IsA<gtk::Widget> {
 
     /// Build the widget of an unsupported content as a child of this widget.
     fn build_unsupported_content(&self, format: ContentFormat) {
-        let child = self.reuse_child_or_default::<MessageText>();
+        let child = self.child_or_default::<MessageText>();
         child.with_plain_text(gettext("Unsupported event"), format);
     }
 
@@ -324,7 +306,7 @@ trait MessageContentContainer: IsA<gtk::Widget> {
 
         match msgtype {
             MessageType::Emote(message) => {
-                let child = self.reuse_child_or_default::<MessageText>();
+                let child = self.child_or_default::<MessageText>();
                 child.with_emote(
                     message.formatted.clone(),
                     message.body.clone(),
@@ -335,11 +317,11 @@ trait MessageContentContainer: IsA<gtk::Widget> {
                 );
             }
             MessageType::Location(message) => {
-                let child = self.reuse_child_or_default::<MessageLocation>();
+                let child = self.child_or_default::<MessageLocation>();
                 child.set_geo_uri(&message.geo_uri, format);
             }
             MessageType::Notice(message) => {
-                let child = self.reuse_child_or_default::<MessageText>();
+                let child = self.child_or_default::<MessageText>();
                 child.with_markup(
                     message.formatted.clone(),
                     message.body.clone(),
@@ -349,11 +331,11 @@ trait MessageContentContainer: IsA<gtk::Widget> {
                 );
             }
             MessageType::ServerNotice(message) => {
-                let child = self.reuse_child_or_default::<MessageText>();
+                let child = self.child_or_default::<MessageText>();
                 child.with_plain_text(message.body.clone(), format);
             }
             MessageType::Text(message) => {
-                let child = self.reuse_child_or_default::<MessageText>();
+                let child = self.child_or_default::<MessageText>();
                 child.with_markup(
                     message.formatted.clone(),
                     message.body.clone(),
@@ -364,7 +346,7 @@ trait MessageContentContainer: IsA<gtk::Widget> {
             }
             msgtype => {
                 warn!("Event not supported: {msgtype:?}");
-                let child = self.reuse_child_or_default::<MessageText>();
+                let child = self.child_or_default::<MessageText>();
                 child.with_plain_text(gettext("Unsupported event"), format);
             }
         }
@@ -381,7 +363,7 @@ trait MessageContentContainer: IsA<gtk::Widget> {
         cache_key: MessageCacheKey,
     ) {
         if let Some((caption, formatted_caption)) = media_message.caption() {
-            let caption_widget = self.reuse_child_or_default::<MessageCaption>();
+            let caption_widget = self.child_or_default::<MessageCaption>();
 
             caption_widget.set_caption(
                 caption.to_owned(),
@@ -413,54 +395,35 @@ trait MessageContentContainer: IsA<gtk::Widget> {
                 let Some(session) = room.session() else {
                     return;
                 };
-                let widget = self.reuse_child_or_default::<MessageAudio>();
+                let widget = self.child_or_default::<MessageAudio>();
                 widget.audio(audio.into(), &session, format, cache_key);
             }
             MediaMessage::File(file) => {
-                let widget = self.reuse_child_or_default::<MessageFile>();
+                let widget = self.child_or_default::<MessageFile>();
 
                 let media_message = MediaMessage::from(file);
                 widget.set_filename(Some(media_message.filename()));
                 widget.set_format(format);
             }
             MediaMessage::Image(image) => {
-                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                let widget = self.child_or_default::<MessageVisualMedia>();
                 widget.set_media_message(image.into(), room, format, cache_key);
             }
             MediaMessage::Video(video) => {
-                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                let widget = self.child_or_default::<MessageVisualMedia>();
                 widget.set_media_message(video.into(), room, format, cache_key);
             }
             MediaMessage::Sticker(sticker) => {
-                let widget = self.reuse_child_or_default::<MessageVisualMedia>();
+                let widget = self.child_or_default::<MessageVisualMedia>();
                 widget.set_media_message(sticker.into(), room, format, cache_key);
             }
         }
     }
 }
 
-impl<W> MessageContentContainer for W
-where
-    W: IsA<adw::Bin> + IsA<gtk::Widget>,
-{
-    fn child(&self) -> Option<gtk::Widget> {
-        BinExt::child(self)
-    }
+impl<W> MessageContentContainer for W where W: IsABin {}
 
-    fn set_child(&self, child: Option<gtk::Widget>) {
-        BinExt::set_child(self, child.as_ref());
-    }
-}
-
-impl MessageContentContainer for MessageCaption {
-    fn child(&self) -> Option<gtk::Widget> {
-        self.child()
-    }
-
-    fn set_child(&self, child: Option<gtk::Widget>) {
-        self.set_child(child);
-    }
-}
+impl MessageContentContainer for MessageCaption {}
 
 /// The data used as a cache key for messages.
 ///

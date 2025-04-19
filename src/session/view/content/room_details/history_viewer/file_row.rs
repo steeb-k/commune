@@ -177,3 +177,9 @@ impl FileRow {
         glib::Object::new()
     }
 }
+
+impl Default for FileRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -5,6 +5,7 @@ use tracing::error;
 use super::{AudioRow, HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline};
 use crate::{
     components::LoadingRow,
+    prelude::*,
     spawn,
     utils::{BoundConstructOnlyObject, LoadingState},
 };
@@ -86,16 +87,7 @@ mod imp {
 
                     list_item.set_child(Some(loading_row));
                 } else if let Some(event) = item.and_downcast::<HistoryViewerEvent>() {
-                    let audio_row =
-                        if let Some(audio_row) = list_item.child().and_downcast::<AudioRow>() {
-                            audio_row
-                        } else {
-                            let audio_row = AudioRow::new();
-                            list_item.set_child(Some(&audio_row));
-
-                            audio_row
-                        };
-
+                    let audio_row = list_item.child_or_default::<AudioRow>();
                     audio_row.set_event(Some(event));
                 }
             });

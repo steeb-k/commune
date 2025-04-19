@@ -139,3 +139,9 @@ impl DividerRow {
         glib::Object::new()
     }
 }
+
+impl Default for DividerRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

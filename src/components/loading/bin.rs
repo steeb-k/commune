@@ -1,6 +1,8 @@
 use adw::prelude::*;
 use gtk::{glib, subclass::prelude::*, CompositeTemplate};
 
+use crate::utils::ChildPropertyExt;
+
 mod imp {
     use std::marker::PhantomData;
 
@@ -116,5 +118,15 @@ impl LoadingBin {
 impl Default for LoadingBin {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl ChildPropertyExt for LoadingBin {
+    fn child_property(&self) -> Option<gtk::Widget> {
+        self.child()
+    }
+
+    fn set_child_property(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.set_child(child.map(Cast::upcast_ref));
     }
 }

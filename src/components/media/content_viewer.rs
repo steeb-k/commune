@@ -230,14 +230,7 @@ mod imp {
 
         /// View the given location as a geo URI.
         pub(super) fn view_location(&self, geo_uri: &GeoUri) {
-            let location =
-                if let Some(location) = self.viewer.child().and_downcast::<LocationViewer>() {
-                    location
-                } else {
-                    let location = LocationViewer::new();
-                    self.viewer.set_child(Some(&location));
-                    location
-                };
+            let location = self.viewer.child_or_default::<LocationViewer>();
 
             location.set_location(geo_uri);
             self.update_animated_paintable_state();

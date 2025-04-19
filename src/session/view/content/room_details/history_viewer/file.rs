@@ -5,6 +5,7 @@ use tracing::error;
 use super::{FileRow, HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline};
 use crate::{
     components::LoadingRow,
+    prelude::*,
     spawn,
     utils::{BoundConstructOnlyObject, LoadingState},
 };
@@ -86,16 +87,7 @@ mod imp {
 
                     list_item.set_child(Some(loading_row));
                 } else if let Some(event) = item.and_downcast::<HistoryViewerEvent>() {
-                    let file_row =
-                        if let Some(file_row) = list_item.child().and_downcast::<FileRow>() {
-                            file_row
-                        } else {
-                            let file_row = FileRow::new();
-                            list_item.set_child(Some(&file_row));
-
-                            file_row
-                        };
-
+                    let file_row = list_item.child_or_default::<FileRow>();
                     file_row.set_event(Some(event));
                 }
             });

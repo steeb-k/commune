@@ -64,3 +64,9 @@ impl SidebarVerificationRow {
         glib::Object::new()
     }
 }
+
+impl Default for SidebarVerificationRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

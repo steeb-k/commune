@@ -76,3 +76,9 @@ impl SidebarIconItemRow {
         glib::Object::new()
     }
 }
+
+impl Default for SidebarIconItemRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

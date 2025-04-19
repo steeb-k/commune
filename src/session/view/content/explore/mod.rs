@@ -17,6 +17,7 @@ pub use self::{
 use self::{server::ExploreServer, server_list::ExploreServerList, server_row::ExploreServerRow};
 use crate::{
     components::LoadingRow,
+    prelude::*,
     session::model::Session,
     utils::{BoundObject, LoadingState, SingleItemListModel},
 };
@@ -122,16 +123,7 @@ mod imp {
                 };
 
                 if let Some(public_room) = item.downcast_ref::<PublicRoom>() {
-                    let public_room_row = if let Some(public_room_row) =
-                        list_item.child().and_downcast::<PublicRoomRow>()
-                    {
-                        public_room_row
-                    } else {
-                        let public_room_row = PublicRoomRow::new();
-                        list_item.set_child(Some(&public_room_row));
-                        public_room_row
-                    };
-
+                    let public_room_row = list_item.child_or_default::<PublicRoomRow>();
                     public_room_row.set_public_room(public_room);
                 } else if let Some(loading_row) = item.downcast_ref::<LoadingRow>() {
                     list_item.set_child(Some(loading_row));

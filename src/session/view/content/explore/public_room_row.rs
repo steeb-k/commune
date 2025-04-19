@@ -240,3 +240,9 @@ impl PublicRoomRow {
         glib::Object::new()
     }
 }
+
+impl Default for PublicRoomRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}
