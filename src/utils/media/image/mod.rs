@@ -577,7 +577,10 @@ impl ThumbnailDownloader<'_> {
 
         // First, select which source we are going to download from.
         let source = if let Some(alt) = self.alt {
-            if !self.main.can_be_thumbnailed()
+            let is_animated = settings.animated && self.main.is_animated();
+
+            if !is_animated
+                && !self.main.can_be_thumbnailed()
                 && (filesize_is_too_big(self.main.filesize())
                     || alt.dimensions().is_some_and(|s| s.ge(settings.dimensions)))
             {
@@ -590,7 +593,11 @@ impl ThumbnailDownloader<'_> {
             self.main
         };
 
-        if source.should_thumbnail(settings.prefer_thumbnail, settings.dimensions) {
+        if source.should_thumbnail(
+            settings.prefer_thumbnail,
+            settings.animated,
+            settings.dimensions,
+        ) {
             // Try to get a thumbnail.
             let request = MediaRequestParameters {
                 source: source.source.to_common_media_source(),
@@ -633,6 +640,7 @@ impl ImageSource<'_> {
     fn should_thumbnail(
         &self,
         prefer_thumbnail: bool,
+        prefer_animated: bool,
         thumbnail_dimensions: FrameDimensions,
     ) -> bool {
         if !self.can_be_thumbnailed() {
@@ -642,7 +650,7 @@ impl ImageSource<'_> {
         // Even if we request animated thumbnails, not a lot of media repositories
         // support scaling animated images. So we just download the original to be able
         // to play it.
-        if self.is_animated() {
+        if prefer_animated && self.is_animated() {
             return false;
         }
 
