@@ -19,7 +19,7 @@ visual-media-history-viewer {
 }
 
 visual-media-history-viewer-item {
-  background: none;
+  background-color: var(--border-color);
   transition: vendor.$ease-out-quad;
 
   &:hover, &:focus {
@@ -98,7 +98,7 @@ dragoverlay statuspage {
 permissions-member-row {
   padding: 8px;
   border-radius: vendor.$card_radius;
-  
+
   @include vendor.focus-ring();
 
   &:hover, &.has-open-popup {

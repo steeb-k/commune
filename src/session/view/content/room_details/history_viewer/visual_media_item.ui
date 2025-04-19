@@ -15,6 +15,22 @@
             <property name="content-fit">cover</property>
           </object>
         </child>
+        <child type="overlay">
+          <object class="GtkImage" id="play_icon">
+            <style>
+              <class name="osd"/>
+              <class name="circular"/>
+            </style>
+            <property name="visible">False</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="icon-name">media-playback-start-symbolic</property>
+            <property name="accessible-role">presentation</property>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
+          </object>
+        </child>
       </object>
     </child>
   </template>

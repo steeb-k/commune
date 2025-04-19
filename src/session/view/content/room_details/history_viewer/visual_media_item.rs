@@ -3,22 +3,40 @@ use ruma::api::client::media::get_content_thumbnail::v3::Method;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
+    session::model::Session,
     spawn,
     utils::{
         key_bindings,
         matrix::VisualMediaMessage,
         media::{
-            image::{ImageRequestPriority, ThumbnailSettings},
+            image::{Blurhash, ImageRequestPriority, ThumbnailSettings},
             FrameDimensions,
         },
     },
 };
 
-/// The default size requested by a thumbnail.
-const THUMBNAIL_SIZE: u32 = 300;
+/// The default size for the preview.
+const PREVIEW_SIZE: u32 = 300;
+/// The default dimensions of the preview.
+const PREVIEW_DIMENSIONS: FrameDimensions = FrameDimensions {
+    width: PREVIEW_SIZE,
+    height: PREVIEW_SIZE,
+};
+
+/// The possible sources of the preview of a visual media.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+enum MediaPreview {
+    /// There is no media preview.
+    #[default]
+    None,
+    /// The media preview is the low-quality placeholder.
+    Placeholder,
+    /// The media preview is the thumbnail.
+    Thumbnail,
+}
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -34,10 +52,13 @@ mod imp {
         overlay: TemplateChild<gtk::Overlay>,
         #[template_child]
         picture: TemplateChild<gtk::Picture>,
-        /// The file event.
+        #[template_child]
+        play_icon: TemplateChild<gtk::Image>,
+        /// The event that is previewed.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
         event: RefCell<Option<HistoryViewerEvent>>,
-        overlay_icon: RefCell<Option<gtk::Image>>,
+        /// Which preview is presented by the picture.
+        preview: Cell<MediaPreview>,
     }
 
     #[glib::object_subclass]
@@ -95,80 +116,84 @@ mod imp {
                 return;
             }
 
-            self.event.replace(event);
-            self.update();
+            // Reset the preview.
+            self.preview.take();
+            self.picture.set_paintable(None::<&gdk::Paintable>);
 
+            self.event.replace(event);
+
+            self.update();
             self.obj().notify_event();
         }
 
         /// Update this item for the current state.
         fn update(&self) {
-            let Some(media_message) = self
-                .event
-                .borrow()
-                .as_ref()
-                .and_then(HistoryViewerEvent::visual_media_message)
-            else {
+            let Some(event) = self.event.borrow().clone() else {
+                return;
+            };
+            let Some(media_message) = event.visual_media_message() else {
                 return;
             };
 
-            let show_overlay = matches!(media_message, VisualMediaMessage::Video(_));
-            self.show_video_overlay(show_overlay);
+            let is_video = matches!(media_message, VisualMediaMessage::Video(_));
+            self.play_icon.set_visible(is_video);
 
             self.obj().set_tooltip_text(Some(&media_message.filename()));
 
-            spawn!(
-                glib::Priority::LOW,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load_thumbnail(media_message).await;
-                    }
-                )
-            );
+            if let Some(blurhash) = media_message.blurhash() {
+                spawn!(
+                    glib::Priority::LOW,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        async move {
+                            imp.load_placeholder(blurhash).await;
+                        }
+                    )
+                );
+            }
+
+            let Some(room) = event.room() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            if session.settings().should_room_show_media_previews(&room) {
+                spawn!(
+                    glib::Priority::LOW,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        async move {
+                            imp.load_thumbnail(media_message, &session).await;
+                        }
+                    )
+                );
+            }
         }
 
-        /// Set whether to show the video overlay.
-        fn show_video_overlay(&self, show: bool) {
-            if show && self.overlay_icon.borrow().is_none() {
-                let icon = gtk::Image::builder()
-                    .icon_name("media-playback-start-symbolic")
-                    .css_classes(vec!["osd".to_string()])
-                    .halign(gtk::Align::Center)
-                    .valign(gtk::Align::Center)
-                    .accessible_role(gtk::AccessibleRole::Presentation)
-                    .build();
+        /// Load the thumbnail for the given Blurhash.
+        async fn load_placeholder(&self, blurhash: Blurhash) {
+            let Some(placeholder_texture) = blurhash.into_texture(PREVIEW_DIMENSIONS).await else {
+                return;
+            };
 
-                self.overlay.add_overlay(&icon);
-                self.overlay_icon.replace(Some(icon));
-            } else if !show {
-                if let Some(icon) = self.overlay_icon.take() {
-                    self.overlay.remove_overlay(&icon);
-                }
+            // Do not replace the thumbnail by the placeholder, in case the thumbnail is
+            // loaded before.
+            if self.preview.get() != MediaPreview::Thumbnail {
+                self.picture.set_paintable(Some(&placeholder_texture));
+                self.preview.set(MediaPreview::Placeholder);
             }
         }
 
         /// Load the thumbnail for the given media message.
-        async fn load_thumbnail(&self, media_message: VisualMediaMessage) {
-            let Some(session) = self
-                .event
-                .borrow()
-                .as_ref()
-                .and_then(HistoryViewerEvent::room)
-                .and_then(|r| r.session())
-            else {
-                return;
-            };
-
+        async fn load_thumbnail(&self, media_message: VisualMediaMessage, session: &Session) {
             let client = session.client();
 
             let scale_factor = u32::try_from(self.obj().scale_factor()).unwrap_or(1);
-            let size = THUMBNAIL_SIZE * scale_factor;
-            let dimensions = FrameDimensions {
-                width: size,
-                height: size,
-            };
+            let dimensions = PREVIEW_DIMENSIONS.scale(scale_factor);
 
             let settings = ThumbnailSettings {
                 dimensions,
@@ -183,6 +208,7 @@ mod imp {
             {
                 self.picture
                     .set_paintable(Some(&gdk::Paintable::from(image)));
+                self.preview.set(MediaPreview::Thumbnail);
             }
         }
 
@@ -204,7 +230,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A row presenting a visual media (image or video) event.
+    /// An item presenting a visual media (image or video) event.
     pub struct VisualMediaItem(ObjectSubclass<imp::VisualMediaItem>)
         @extends gtk::Widget, @implements gtk::Accessible;
 }
