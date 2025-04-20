@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{sync::Notification, Room as MatrixRoom};
@@ -21,6 +23,16 @@ use crate::{
     },
     Application, Window,
 };
+
+/// The maximum number of lines we want to display for the body of a
+/// notification.
+// This is taken from GNOME Shell's behavior:
+// <https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/c7778e536b094fae4d0694af6103cf4ad75050d3/js/ui/messageList.js#L24>
+const MAX_BODY_LINES: usize = 6;
+/// The maximum number of characters that we want to display for the body of a
+/// notification. We assume that the system shows at most 100 characters per
+/// line, so this is `MAX_BODY_LINES * 100`.
+const MAX_BODY_CHARS: usize = MAX_BODY_LINES * 100;
 
 mod imp {
     use std::{
@@ -101,7 +113,19 @@ impl Notifications {
         let notification = gio::Notification::new(title);
         notification.set_category(Some("im.received"));
         notification.set_priority(gio::NotificationPriority::High);
-        notification.set_body(Some(body));
+
+        // Truncate the body if necessary.
+        let body = if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
+            let mut body = body[..end].trim_end().to_owned();
+            if !body.ends_with('…') {
+                body.push('…');
+            }
+            Cow::Owned(body)
+        } else {
+            Cow::Borrowed(body)
+        };
+
+        notification.set_body(Some(&body));
 
         let action = intent.app_action_name();
         let target_value = intent.to_variant_with_session_id(session_id);
