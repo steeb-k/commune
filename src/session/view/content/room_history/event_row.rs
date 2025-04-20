@@ -1,7 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, gio, glib, glib::clone};
 use matrix_sdk_ui::timeline::TimelineEventItemId;
-use tracing::error;
 
 use super::{EventActionsGroup, MessageRow, RoomHistory, StateRow};
 use crate::{
@@ -41,31 +40,6 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("event-row");
             klass.set_accessible_role(gtk::AccessibleRole::ListItem);
-
-            klass.install_action(
-                "event-row.enable-copy-image",
-                Some(&bool::static_variant_type()),
-                |obj, _, param| {
-                    let enable = param
-                        .and_then(glib::Variant::get::<bool>)
-                        .expect("The parameter should be a boolean");
-                    let imp = obj.imp();
-
-                    let Some(action_group) = imp.action_group.borrow().clone() else {
-                        error!("Could not change state of copy-image action: no action group");
-                        return;
-                    };
-                    let Some(action) = action_group.lookup_action("copy-image") else {
-                        error!("Could not change state of copy-image action: action not found");
-                        return;
-                    };
-                    let Some(action) = action.downcast_ref::<gio::SimpleAction>() else {
-                        error!("Could not change state of copy-image action: not a GSimpleAction");
-                        return;
-                    };
-                    action.set_enabled(enable);
-                },
-            );
         }
     }
 
@@ -295,7 +269,30 @@ mod imp {
                 let child = obj.child_or_default::<StateRow>();
                 child.set_event(event);
             } else {
-                let child = obj.child_or_default::<MessageRow>();
+                let child = obj.child_or_else::<MessageRow>(|| {
+                    let child = MessageRow::default();
+
+                    child.connect_texture_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |child| {
+                            let Some(copy_image_action) = imp
+                                .action_group
+                                .borrow()
+                                .as_ref()
+                                .and_then(|action_group| action_group.lookup_action("copy-image"))
+                                .and_downcast::<gio::SimpleAction>()
+                            else {
+                                return;
+                            };
+
+                            copy_image_action.set_enabled(child.texture().is_some());
+                        }
+                    ));
+
+                    child
+                });
+
                 child.set_event(event);
             }
         }
@@ -332,6 +329,14 @@ mod imp {
             let obj = self.obj();
             let action_group = self.event_actions_group();
             let has_context_menu = action_group.is_some();
+
+            if let Some(copy_image_action) = action_group
+                .as_ref()
+                .and_then(|action_group| action_group.lookup_action("copy-image"))
+                .and_downcast::<gio::SimpleAction>()
+            {
+                copy_image_action.set_enabled(self.texture().is_some());
+            }
 
             obj.insert_action_group("event", action_group.as_ref());
             self.action_group.replace(action_group);

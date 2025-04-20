@@ -61,6 +61,10 @@ mod imp {
         /// This is ignored if this event doesn’t have a header.
         #[property(get = Self::show_header, set = Self::set_show_header, explicit_notify)]
         show_header: PhantomData<bool>,
+        /// The texture of the image preview displayed by the descendant of this
+        /// widget, if any.
+        #[property(get = Self::texture)]
+        texture: PhantomData<Option<gdk::Texture>>,
     }
 
     #[glib::object_subclass]
@@ -86,6 +90,7 @@ mod imp {
     impl ObjectImpl for MessageRow {
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
 
             self.content.connect_format_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -95,6 +100,13 @@ mod imp {
                         content.format(),
                         ContentFormat::Compact | ContentFormat::Ellipsized
                     ));
+                }
+            ));
+            self.content.connect_texture_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.notify_texture();
                 }
             ));
 
@@ -280,11 +292,6 @@ glib::wrapper! {
 impl MessageRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Get the texture displayed by this widget, if any.
-    pub(crate) fn texture(&self) -> Option<gdk::Texture> {
-        self.imp().texture()
     }
 }
 

@@ -41,7 +41,7 @@ pub enum ContentFormat {
 }
 
 mod imp {
-    use std::cell::Cell;
+    use std::{cell::Cell, marker::PhantomData};
 
     use super::*;
 
@@ -51,6 +51,12 @@ mod imp {
         /// The displayed format of the message.
         #[property(get, set = Self::set_format, explicit_notify, builder(ContentFormat::default()))]
         format: Cell<ContentFormat>,
+        /// The texture of the image preview displayed by the descendant of this
+        /// widget, if any.
+        #[property(get = Self::texture)]
+        texture: PhantomData<Option<gdk::Texture>>,
+        /// The widget with the visual media content of the event, if any.
+        pub(super) visual_media_widget: glib::WeakRef<MessageVisualMedia>,
     }
 
     #[glib::object_subclass]
@@ -76,6 +82,62 @@ mod imp {
             self.format.set(format);
             self.obj().notify_format();
         }
+
+        /// The texture of the image preview displayed by the descendant of this
+        /// widget, if any.
+        fn texture(&self) -> Option<gdk::Texture> {
+            self.visual_media_widget.upgrade()?.texture()
+        }
+
+        /// Update the current visual media widget if necessary.
+        pub(super) fn update_visual_media_widget(&self) {
+            let prev_widget = self.visual_media_widget.upgrade();
+            let current_widget = self.visual_media_widget();
+
+            if prev_widget == current_widget {
+                return;
+            }
+
+            let obj = self.obj();
+
+            if let Some(visual_media) = &current_widget {
+                visual_media.connect_texture_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.notify_texture();
+                    }
+                ));
+            }
+            self.visual_media_widget.set(current_widget.as_ref());
+
+            let prev_texture = prev_widget.and_then(|visual_media| visual_media.texture());
+            let current_texture = current_widget.and_then(|visual_media| visual_media.texture());
+            if prev_texture != current_texture {
+                obj.notify_texture();
+            }
+        }
+
+        /// The widget with the visual media content of the event, if any.
+        ///
+        /// This allows to access the descendant content while discarding the
+        /// content of a related message, like a replied-to event, or the
+        /// caption of the event.
+        fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
+            let mut child = self.obj().child()?;
+
+            // If it is a reply, the media is in the main content.
+            if let Some(reply) = child.downcast_ref::<MessageReply>() {
+                child = reply.content().child()?;
+            }
+
+            // If it is a caption, the media is the child of the caption.
+            if let Some(caption) = child.downcast_ref::<MessageCaption>() {
+                child = caption.child()?;
+            }
+
+            child.downcast::<MessageVisualMedia>().ok()
+        }
     }
 }
 
@@ -90,25 +152,9 @@ impl MessageContent {
         glib::Object::new()
     }
 
-    /// Access the widget with the visual media content of the event, if any.
-    ///
-    /// This allows to access the descendant content while discarding the
-    /// content of a related message, like a replied-to event, or the caption of
-    /// the event.
+    /// The widget with the visual media content of the event, if any.
     pub(crate) fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
-        let mut child = BinExt::child(self)?;
-
-        // If it is a reply, the media is in the main content.
-        if let Some(reply) = child.downcast_ref::<MessageReply>() {
-            child = BinExt::child(reply.content())?;
-        }
-
-        // If it is a caption, the media is the child of the caption.
-        if let Some(caption) = child.downcast_ref::<MessageCaption>() {
-            child = caption.child()?;
-        }
-
-        child.downcast::<MessageVisualMedia>().ok()
+        self.imp().visual_media_widget.upgrade()
     }
 
     /// Update this widget to present the given `Event`.
@@ -136,7 +182,9 @@ impl MessageContent {
                     TimelineDetails::Error(error) => {
                         error!(
                             "Could not fetch replied to event '{}': {error}",
-                            event.reply_to_id().unwrap()
+                            event
+                                .reply_to_id()
+                                .expect("reply event should have replied-to event ID")
                         );
                     }
                     TimelineDetails::Ready(replied_to_event) => {
@@ -169,7 +217,9 @@ impl MessageContent {
                             event.transaction_id(),
                             event.event_id(),
                         );
-                        BinExt::set_child(self, Some(&reply));
+                        self.set_child(Some(&reply));
+
+                        self.imp().update_visual_media_widget();
 
                         return;
                     }
@@ -186,6 +236,8 @@ impl MessageContent {
             event.transaction_id(),
             event.event_id(),
         );
+
+        self.imp().update_visual_media_widget();
     }
 
     /// Update this widget to present the given related event.
@@ -208,11 +260,6 @@ impl MessageContent {
                 is_edited: message_event.is_edited(),
             },
         );
-    }
-
-    /// Get the texture displayed by this widget, if any.
-    pub(crate) fn texture(&self) -> Option<gdk::Texture> {
-        self.visual_media_widget()?.texture()
     }
 }
 

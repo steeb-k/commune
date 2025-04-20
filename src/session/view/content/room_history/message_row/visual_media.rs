@@ -39,7 +39,10 @@ const PLACEHOLDER_PAGE: &str = "placeholder";
 const MEDIA_PAGE: &str = "media";
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -97,6 +100,9 @@ mod imp {
         /// The current video file, if any.
         file: RefCell<Option<File>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
+        /// The texture of the current image preview, if any.
+        #[property(get = Self::texture)]
+        texture: PhantomData<Option<gdk::Texture>>,
     }
 
     #[glib::object_subclass]
@@ -239,12 +245,18 @@ mod imp {
         ///
         /// Removes the previous media child if one was set.
         fn set_media_child(&self, child: Option<&impl IsA<gtk::Widget>>) {
+            let prev_texture = self.texture();
+
             if let Some(prev_child) = self.stack.child_by_name(MEDIA_PAGE) {
                 self.stack.remove(&prev_child);
             }
 
             if let Some(child) = child {
                 self.stack.add_named(child, Some(MEDIA_PAGE));
+            }
+
+            if self.texture() != prev_texture {
+                self.obj().notify_texture();
             }
         }
 
@@ -407,6 +419,19 @@ mod imp {
             }
 
             self.update_visible_page();
+        }
+
+        /// The texture of the current image preview, if any.
+        fn texture(&self) -> Option<gdk::Texture> {
+            let paintable = self
+                .media_child::<gtk::Picture>()
+                .and_then(|p| p.paintable())?;
+
+            if let Some(paintable) = paintable.downcast_ref::<AnimatedImagePaintable>() {
+                paintable.current_texture()
+            } else {
+                paintable.downcast().ok()
+            }
         }
 
         /// Set the visual media message to display.
@@ -627,11 +652,6 @@ mod imp {
                 return;
             }
 
-            // Disable the copy-image action while the image is loading.
-            if matches!(media_message, VisualMediaMessage::Image(_)) {
-                self.enable_copy_image_action(false);
-            }
-
             let scale_factor = self.obj().scale_factor();
             let settings = ThumbnailSettings {
                 dimensions: FrameDimensions::thumbnail_max_dimensions(scale_factor),
@@ -657,16 +677,18 @@ mod imp {
                 return;
             }
 
-            let child = if let Some(child) = self.media_child::<gtk::Picture>() {
-                child
+            let paintable = gdk::Paintable::from(image);
+
+            if let Some(child) = self.media_child::<gtk::Picture>() {
+                child.set_paintable(Some(&paintable));
+                self.obj().notify_texture();
             } else {
                 let child = gtk::Picture::builder()
                     .content_fit(gtk::ContentFit::ScaleDown)
                     .build();
+                child.set_paintable(Some(&paintable));
                 self.set_media_child(Some(&child));
-                child
-            };
-            child.set_paintable(Some(&gdk::Paintable::from(image)));
+            }
 
             if matches!(&media_message, VisualMediaMessage::Sticker(_)) {
                 self.overlay.remove_css_class("opaque-bg");
@@ -675,27 +697,6 @@ mod imp {
             }
 
             self.set_state(LoadingState::Ready);
-
-            // Enable the copy-image action now that the image is loaded.
-            if matches!(media_message, VisualMediaMessage::Image(_)) {
-                self.enable_copy_image_action(true);
-            }
-        }
-
-        /// Enable or disable the context menu action to copy the image.
-        fn enable_copy_image_action(&self, enable: bool) {
-            if self.compact.get() {
-                // In its compact form the message does not have actions.
-                return;
-            }
-
-            if self
-                .obj()
-                .activate_action("event-row.enable-copy-image", Some(&enable.to_variant()))
-                .is_err()
-            {
-                error!("Could not change state of copy-image action: `event-row.enable-copy-image` action not found");
-            }
         }
 
         /// Build the content for the video in the given media message.
@@ -827,20 +828,6 @@ impl MessageVisualMedia {
     ) {
         self.imp()
             .set_media_message(media_message, room, format, cache_key);
-    }
-
-    /// Get the texture displayed by this widget, if any.
-    pub(crate) fn texture(&self) -> Option<gdk::Texture> {
-        let paintable = self
-            .imp()
-            .media_child::<gtk::Picture>()
-            .and_then(|p| p.paintable())?;
-
-        if let Some(paintable) = paintable.downcast_ref::<AnimatedImagePaintable>() {
-            paintable.current_texture()
-        } else {
-            paintable.downcast().ok()
-        }
     }
 }
 
