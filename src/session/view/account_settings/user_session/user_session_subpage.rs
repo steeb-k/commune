@@ -156,17 +156,14 @@ mod imp {
                 return;
             };
 
-            if session.uses_oauth_api() {
-                let has_account_management_url = self.account_management_url_builder().is_some();
-                self.log_out_button.set_visible(false);
-                self.loading_disconnect_button.set_visible(false);
-                self.open_url_disconnect_button
-                    .set_visible(has_account_management_url);
-            } else {
-                self.log_out_button.set_visible(false);
-                self.loading_disconnect_button.set_visible(true);
-                self.open_url_disconnect_button.set_visible(false);
-            }
+            let uses_oauth_api = session.uses_oauth_api();
+            let has_account_management_url = self.account_management_url_builder().is_some();
+
+            self.log_out_button.set_visible(false);
+            self.loading_disconnect_button
+                .set_visible(!uses_oauth_api && !has_account_management_url);
+            self.open_url_disconnect_button
+                .set_visible(has_account_management_url);
         }
 
         /// Update the display name button when the display name is changed by
