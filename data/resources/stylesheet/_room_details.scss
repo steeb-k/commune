@@ -2,7 +2,6 @@
 
 @use 'vendor';
 
-// Visual media history viewer
 visual-media-history-viewer {
   background: black;
   color: white;
@@ -48,7 +47,6 @@ file-history-viewer, audio-history-viewer {
   }
 }
 
-// Room details
 .room-details listview {
 	background: transparent;
 }
@@ -107,5 +105,13 @@ permissions-member-row {
 
   &:active {
     background-color: vendor.$active_color;
+  }
+}
+
+.user-search-results {
+	padding: 12px 0px;
+
+  > row {
+    border-radius: vendor.$menu_radius;
   }
 }

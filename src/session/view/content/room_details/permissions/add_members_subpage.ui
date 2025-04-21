@@ -80,7 +80,7 @@
                             <property name="single-click-activate">True</property>
                             <property name="tab-behavior">item</property>
                             <style>
-                              <class name="invite-search-results"/>
+                              <class name="user-search-results"/>
                             </style>
                           </object>
                         </property>
