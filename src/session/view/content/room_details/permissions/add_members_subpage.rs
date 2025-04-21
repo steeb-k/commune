@@ -195,7 +195,12 @@ mod imp {
     }
 
     impl WidgetImpl for PermissionsAddMembersSubpage {}
-    impl NavigationPageImpl for PermissionsAddMembersSubpage {}
+
+    impl NavigationPageImpl for PermissionsAddMembersSubpage {
+        fn shown(&self) {
+            self.search_entry.grab_focus();
+        }
+    }
 
     #[gtk::template_callbacks]
     impl PermissionsAddMembersSubpage {

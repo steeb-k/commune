@@ -85,7 +85,12 @@ mod imp {
     impl ObjectImpl for InviteSubpage {}
 
     impl WidgetImpl for InviteSubpage {}
-    impl NavigationPageImpl for InviteSubpage {}
+
+    impl NavigationPageImpl for InviteSubpage {
+        fn shown(&self) {
+            self.search_entry.grab_focus();
+        }
+    }
 
     #[gtk::template_callbacks]
     impl InviteSubpage {

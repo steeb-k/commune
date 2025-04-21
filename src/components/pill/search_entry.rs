@@ -136,7 +136,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for PillSearchEntry {}
+    impl WidgetImpl for PillSearchEntry {
+        fn grab_focus(&self) -> bool {
+            self.text_view.grab_focus()
+        }
+    }
+
     impl BinImpl for PillSearchEntry {}
 
     impl PillSearchEntry {
