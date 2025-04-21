@@ -34,6 +34,7 @@
             <property name="valign">center</property>
             <style>
               <class name="instructions"/>
+              <class name="overlaid"/>
             </style>
             <layout>
               <property name="measure">true</property>
@@ -64,6 +65,9 @@
             <property name="visible">False</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
+            <style>
+              <class name="overlaid"/>
+            </style>
             <layout>
               <property name="measure">true</property>
             </layout>
@@ -73,15 +77,17 @@
           <object class="GtkButton" id="hide_preview_button">
             <style>
               <class name="osd"/>
+              <class name="overlaid"/>
             </style>
             <property name="visible">False</property>
             <property name="halign">end</property>
             <property name="valign">start</property>
-            <property name="margin-end">3</property>
-            <property name="margin-top">3</property>
             <property name="icon-name">hide-symbolic</property>
             <property name="tooltip-text" translatable="yes">Hide media preview</property>
             <signal name="clicked" handler="hide_media" swapped="yes"/>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
           </object>
         </child>
         <child type="overlay">
@@ -89,6 +95,7 @@
             <style>
               <class name="osd"/>
               <class name="circular"/>
+              <class name="overlaid"/>
             </style>
             <property name="visible">False</property>
             <property name="halign">center</property>

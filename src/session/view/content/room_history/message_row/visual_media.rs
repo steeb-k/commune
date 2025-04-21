@@ -140,6 +140,9 @@ mod imp {
 
     impl WidgetImpl for MessageVisualMedia {
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
+            // Get the minimum size wanted by the overlay.
+            let (overlay_min, ..) = self.overlay.measure(orientation, for_size);
+
             // Get the maximum size for the current state.
             let max_size = if self.compact.get() {
                 MAX_COMPACT_DIMENSIONS
@@ -173,14 +176,17 @@ mod imp {
                     };
                     let (_, intrinsic_for_size, ..) = child.measure(other_orientation, -1);
 
-                    let (min, nat, ..) =
+                    let (child_min, child_nat, ..) =
                         child.measure(orientation, for_size.min(intrinsic_for_size));
 
-                    if nat != 0 {
+                    if child_nat != 0 {
                         // Limit the returned size to the max.
                         let max = max.try_into().unwrap_or(i32::MAX);
 
-                        return (min.min(max), nat.min(max), -1, -1);
+                        let min = child_min.max(overlay_min).min(max);
+                        let nat = child_nat.max(overlay_min).min(max);
+
+                        return (min, nat, -1, -1);
                     }
                 }
             }
@@ -206,13 +212,17 @@ mod imp {
                 .as_ref()
                 .and_then(VisualMediaMessage::dimensions)
                 .unwrap_or(FALLBACK_DIMENSIONS);
-            let nat = media_size
+            let child_nat = media_size
                 .scale_to_fit(wanted_size, gtk::ContentFit::ScaleDown)
                 .dimension_for_orientation(orientation)
                 .try_into()
                 .unwrap_or(i32::MAX);
 
-            (0, nat, -1, -1)
+            let max = max.try_into().unwrap_or(i32::MAX);
+            let min = overlay_min.min(max);
+            let nat = child_nat.max(overlay_min).min(max);
+
+            (min, nat, -1, -1)
         }
 
         fn request_mode(&self) -> gtk::SizeRequestMode {
