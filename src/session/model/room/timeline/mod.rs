@@ -44,6 +44,11 @@ use crate::{
 
 /// The number of events to request when loading more history.
 const MAX_BATCH_SIZE: u16 = 20;
+/// The maximum time between contiguous events before we show their header, in
+/// milliseconds.
+///
+/// This matches 20 minutes.
+const MAX_TIME_BETWEEN_HEADERS: u64 = 20 * 60 * 1000;
 
 mod imp {
     use std::{
@@ -565,15 +570,16 @@ mod imp {
         fn update_items_headers(&self, pos: u32, nb: u32) {
             let sdk_items = self.sdk_items();
 
-            let mut previous_sender = if pos > 0 {
+            let (mut previous_sender, mut previous_timestamp) = if pos > 0 {
                 sdk_items
                     .item(pos - 1)
                     .and_downcast::<Event>()
                     .filter(Event::can_show_header)
-                    .map(|event| event.sender_id())
+                    .map(|event| (event.sender_id(), event.origin_server_ts()))
             } else {
                 None
-            };
+            }
+            .unzip();
 
             // Update the headers of changed events plus the first event after them.
             for i in pos..=pos + nb {
@@ -590,15 +596,30 @@ mod imp {
                 if !current.can_show_header() {
                     current.set_show_header(false);
                     previous_sender = None;
-                } else if previous_sender
+                    previous_timestamp = None;
+                    continue;
+                }
+
+                let show_header = if previous_sender
                     .as_ref()
                     .is_none_or(|previous_sender| current_sender != *previous_sender)
                 {
-                    current.set_show_header(true);
-                    previous_sender = Some(current_sender);
+                    // The sender is different, show header.
+                    true
+                } else if previous_timestamp
+                    .and_then(|ts| current.origin_server_ts().0.checked_sub(ts.0))
+                    .is_some_and(|elapsed| u64::from(elapsed) >= MAX_TIME_BETWEEN_HEADERS)
+                {
+                    // Too much time has passed, show header.
+                    true
                 } else {
-                    current.set_show_header(false);
-                }
+                    // Do not show header.
+                    false
+                };
+
+                current.set_show_header(show_header);
+                previous_sender = Some(current_sender);
+                previous_timestamp = Some(current.origin_server_ts());
             }
         }
 
