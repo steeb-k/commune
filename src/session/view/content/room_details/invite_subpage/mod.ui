@@ -29,21 +29,16 @@
           </object>
         </child>
         <child type="top">
-          <object class="GtkSearchBar">
-            <property name="search-mode-enabled">True</property>
+          <object class="AdwClamp">
+            <property name="margin-bottom">6</property>
+            <property name="margin-end">30</property>
+            <property name="margin-start">30</property>
+            <property name="margin-top">6</property>
+            <property name="hexpand">True</property>
             <child>
-              <object class="AdwClamp">
-                <property name="margin-bottom">6</property>
-                <property name="margin-end">30</property>
-                <property name="margin-start">30</property>
-                <property name="margin-top">6</property>
-                <property name="hexpand">True</property>
-                <child>
-                  <object class="PillSearchEntry" id="search_entry">
-                    <property name="editable" bind-source="invite_button" bind-property="is-loading" bind-flags="sync-create | invert-boolean"/>
-                    <signal name="pill-removed" handler="remove_pill_invitee" swapped="yes" />
-                  </object>
-                </child>
+              <object class="PillSearchEntry" id="search_entry">
+                <property name="editable" bind-source="invite_button" bind-property="is-loading" bind-flags="sync-create | invert-boolean"/>
+                <signal name="pill-removed" handler="remove_pill_invitee" swapped="yes" />
               </object>
             </child>
           </object>

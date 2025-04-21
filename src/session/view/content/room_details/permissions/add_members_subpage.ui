@@ -20,18 +20,13 @@
           </object>
         </child>
         <child type="top">
-          <object class="GtkSearchBar">
-            <property name="search-mode-enabled">True</property>
+          <object class="AdwClamp">
+            <property name="margin-bottom">6</property>
+            <property name="margin-end">30</property>
+            <property name="margin-start">30</property>
+            <property name="margin-top">6</property>
             <child>
-              <object class="AdwClamp">
-                <property name="margin-bottom">6</property>
-                <property name="margin-end">30</property>
-                <property name="margin-start">30</property>
-                <property name="margin-top">6</property>
-                <child>
-                  <object class="PillSearchEntry" id="search_entry" />
-                </child>
-              </object>
+              <object class="PillSearchEntry" id="search_entry" />
             </child>
           </object>
         </child>
