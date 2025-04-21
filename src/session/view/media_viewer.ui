@@ -110,9 +110,6 @@
         </child>
         <property name="content">
           <object class="ScaleRevealer" id="revealer">
-            <property name="halign">center</property>
-            <property name="valign">center</property>
-            <property name="vexpand">true</property>
             <property name="child">
               <object class="MediaContentViewer" id="media">
                 <property name="autoplay">true</property>
