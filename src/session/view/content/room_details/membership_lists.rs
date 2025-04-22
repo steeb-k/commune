@@ -28,8 +28,10 @@ mod imp {
         #[property(get)]
         joined: OnceCell<gio::ListModel>,
         /// The list of extra items in the joined list.
-        #[property(get = Self::extra_joined_items_owned)]
-        extra_joined_items: OnceCell<gio::ListStore>,
+        #[property(get)]
+        extra_joined_items: gtk::FilterListModel,
+        /// The filter of the list of extra items in the joined list.
+        extra_joined_items_filter: gtk::CustomFilter,
         /// The full list to present for joined members.
         #[property(get)]
         joined_full: OnceCell<gio::ListModel>,
@@ -45,6 +47,11 @@ mod imp {
         /// Whether the list of banned members is empty.
         #[property(get)]
         banned_is_empty: Cell<bool>,
+        /// The row presented when the list is loading or an error occurred.
+        loading_row: LoadingRow,
+        /// Whether the loading row is visible.
+        #[property(get)]
+        is_loading_row_visible: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -54,20 +61,47 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MembershipLists {}
+    impl ObjectImpl for MembershipLists {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.extra_joined_items_filter.set_filter_func(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                false,
+                move |item| {
+                    if *item == imp.loading_row {
+                        return imp.is_loading_row_visible.get();
+                    }
+
+                    if let Some(subpage_item) = item.downcast_ref::<MembershipSubpageItem>() {
+                        let visible = match subpage_item.membership() {
+                            Membership::Invite => !imp.invited_is_empty.get(),
+                            Membership::Ban => !imp.banned_is_empty.get(),
+                            _ => false,
+                        };
+
+                        return visible;
+                    }
+
+                    false
+                }
+            ));
+            self.extra_joined_items
+                .set_filter(Some(&self.extra_joined_items_filter));
+
+            self.loading_row.connect_retry(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.members.obj().reload();
+                }
+            ));
+        }
+    }
 
     impl MembershipLists {
-        /// The list of extra items in the joined list.
-        fn extra_joined_items(&self) -> &gio::ListStore {
-            self.extra_joined_items
-                .get_or_init(gio::ListStore::new::<glib::Object>)
-        }
-
-        /// The owned list of extra items in the joined list.
-        fn extra_joined_items_owned(&self) -> gio::ListStore {
-            self.extra_joined_items().clone()
-        }
-
         /// Set the list of all members.
         fn set_members(&self, members: MemberList) {
             // Watch the loading state.
@@ -110,13 +144,6 @@ mod imp {
                 .joined
                 .get_or_init(|| build_filtered_list(sorted_members.clone(), Membership::Join));
 
-            let model_list = gio::ListStore::new::<gio::ListModel>();
-            model_list.append(self.extra_joined_items());
-            model_list.append(joined);
-            self.joined_full
-                .set(gtk::FlattenListModel::new(Some(model_list)).upcast())
-                .expect("full list for joined members is uninitialized");
-
             let invited = self
                 .invited
                 .get_or_init(|| build_filtered_list(sorted_members.clone(), Membership::Invite));
@@ -127,6 +154,7 @@ mod imp {
                     imp.update_invited();
                 }
             ));
+            self.update_invited();
 
             let banned = self
                 .banned
@@ -138,126 +166,69 @@ mod imp {
                     imp.update_banned();
                 }
             ));
-
-            self.update_invited();
             self.update_banned();
-        }
 
-        /// Whether the extra joined items list contain a loading row.
-        fn has_loading_row(&self) -> bool {
-            self.extra_joined_items()
-                .item(0)
-                .is_some_and(|item| item.is::<LoadingRow>())
+            let extra_joined_items_base = gio::ListStore::new::<glib::Object>();
+            extra_joined_items_base.append(&self.loading_row);
+            extra_joined_items_base
+                .append(&MembershipSubpageItem::new(Membership::Invite, invited));
+            extra_joined_items_base.append(&MembershipSubpageItem::new(Membership::Ban, banned));
+            self.extra_joined_items
+                .set_model(Some(&extra_joined_items_base));
+
+            let model_list = gio::ListStore::new::<gio::ListModel>();
+            model_list.append(&self.extra_joined_items);
+            model_list.append(joined);
+            self.joined_full
+                .set(gtk::FlattenListModel::new(Some(model_list)).upcast())
+                .expect("full list for joined members should be uninitialized");
         }
 
         /// Update the extra joined items list for the given loading state.
         fn update_loading_state(&self, state: LoadingState) {
-            if state == LoadingState::Ready {
-                if self.has_loading_row() {
-                    self.extra_joined_items().remove(0);
-                }
-
-                return;
-            }
-
-            let loading_row = if let Some(loading_row) = self
-                .extra_joined_items()
-                .item(0)
-                .and_downcast::<LoadingRow>()
-            {
-                loading_row
-            } else {
-                let loading_row = LoadingRow::new();
-                loading_row.connect_retry(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.members.obj().reload();
-                    }
-                ));
-
-                self.extra_joined_items().insert(0, &loading_row);
-                loading_row
-            };
-
             let error = (state == LoadingState::Error)
                 .then(|| gettext("Could not load the full list of room members"));
-            loading_row.set_error(error.as_deref());
-        }
+            self.loading_row.set_error(error.as_deref());
 
-        /// Whether the extra joined items list contain a membership subpage
-        /// item for the given membership at the given position.
-        fn has_membership_item_at(&self, membership: Membership, position: u32) -> bool {
-            self.extra_joined_items()
-                .item(position)
-                .and_downcast::<MembershipSubpageItem>()
-                .is_some_and(|item| item.membership() == membership)
+            let is_row_visible = state != LoadingState::Ready;
+            if self.is_loading_row_visible.get() != is_row_visible {
+                self.is_loading_row_visible.set(is_row_visible);
+                self.extra_joined_items_filter
+                    .changed(gtk::FilterChange::Different);
+                self.obj().notify_is_loading_row_visible();
+            }
         }
 
         /// Update the extra joined items list for the invited members.
         fn update_invited(&self) {
-            let was_empty = self.invited_is_empty.get();
-            let is_empty = self
+            let invited = self
                 .invited
                 .get()
-                .expect("invited members are initialized")
-                .n_items()
-                == 0;
+                .expect("invited members should be initialized");
+            let is_empty = invited.n_items() == 0;
 
-            if was_empty == is_empty {
-                // Nothing changed.
-                return;
+            if self.invited_is_empty.get() != is_empty {
+                self.invited_is_empty.set(is_empty);
+                self.extra_joined_items_filter
+                    .changed(gtk::FilterChange::Different);
+                self.obj().notify_invited_is_empty();
             }
-
-            self.invited_is_empty.set(is_empty);
-            let position = self.has_loading_row().into();
-
-            let has_invite_row = self.has_membership_item_at(Membership::Invite, position);
-            if is_empty && has_invite_row {
-                self.extra_joined_items().remove(position);
-            } else if !is_empty && !has_invite_row {
-                let invite_item = MembershipSubpageItem::new(
-                    Membership::Invite,
-                    self.invited.get().expect("invited members are initialized"),
-                );
-                self.extra_joined_items().insert(position, &invite_item);
-            }
-
-            self.obj().notify_invited_is_empty();
         }
 
         /// Update the extra joined items list for the banned members.
         fn update_banned(&self) {
-            let was_empty = self.banned_is_empty.get();
-            let is_empty = self
+            let banned = self
                 .banned
                 .get()
-                .expect("banned members are initialized")
-                .n_items()
-                == 0;
+                .expect("banned members should be initialized");
+            let is_empty = banned.n_items() == 0;
 
-            if was_empty == is_empty {
-                // Nothing changed so don't do anything
-                return;
+            if self.banned_is_empty.get() != is_empty {
+                self.banned_is_empty.set(is_empty);
+                self.extra_joined_items_filter
+                    .changed(gtk::FilterChange::Different);
+                self.obj().notify_banned_is_empty();
             }
-
-            self.banned_is_empty.set(is_empty);
-
-            let mut position = u32::from(self.has_loading_row());
-            position += u32::from(self.has_membership_item_at(Membership::Invite, position));
-
-            let has_ban_row = self.has_membership_item_at(Membership::Ban, position);
-            if is_empty && has_ban_row {
-                self.extra_joined_items().remove(position);
-            } else if !is_empty && !has_ban_row {
-                let invite_item = MembershipSubpageItem::new(
-                    Membership::Ban,
-                    self.banned.get().expect("banned members are initialized"),
-                );
-                self.extra_joined_items().insert(position, &invite_item);
-            }
-
-            self.obj().notify_banned_is_empty();
         }
     }
 }
@@ -280,7 +251,7 @@ impl Default for MembershipLists {
     }
 }
 
-fn build_filtered_list(model: impl IsA<gio::ListModel>, state: Membership) -> gio::ListModel {
+fn build_filtered_list(model: gtk::SortListModel, state: Membership) -> gio::ListModel {
     let membership_expression = Member::this_expression("membership").chain_closure::<bool>(
         closure!(|_: Option<glib::Object>, this_state: Membership| this_state == state),
     );
