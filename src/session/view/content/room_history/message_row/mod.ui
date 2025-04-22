@@ -39,6 +39,8 @@
             </child>
             <child>
               <object class="GtkLabel" id="timestamp">
+                <property name="hexpand">true</property>
+                <property name="halign">end</property>
                 <style>
                   <class name="caption"/>
                   <class name="timestamp"/>

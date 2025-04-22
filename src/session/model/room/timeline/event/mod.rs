@@ -18,7 +18,7 @@ use tracing::{debug, error};
 mod reaction_group;
 mod reaction_list;
 
-pub use self::{
+pub(crate) use self::{
     reaction_group::{ReactionData, ReactionGroup},
     reaction_list::ReactionList,
 };
@@ -53,11 +53,25 @@ pub enum MessageState {
 
 /// The read receipt of a user.
 #[derive(Clone, Debug)]
-pub struct UserReadReceipt {
+pub(crate) struct UserReadReceipt {
     /// The ID of the user.
-    pub user_id: OwnedUserId,
+    pub(crate) user_id: OwnedUserId,
     /// The data of the receipt.
-    pub receipt: Receipt,
+    pub(crate) receipt: Receipt,
+}
+
+/// The state of the header of an event in the room history.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "EventHeaderState")]
+pub enum EventHeaderState {
+    /// The full header is displayed, with an avatar, a sender name and the
+    /// timestamp.
+    #[default]
+    Full,
+    /// Only the timestamp is displayed.
+    TimestampOnly,
+    /// The header is hidden.
+    Hidden,
 }
 
 mod imp {
@@ -134,9 +148,9 @@ mod imp {
         /// Whether this event has any read receipt.
         #[property(get = Self::has_read_receipts)]
         has_read_receipts: PhantomData<bool>,
-        /// Whether this event should show its header in the room history.
-        #[property(get, set = Self::set_show_header, explicit_notify)]
-        show_header: Cell<bool>,
+        /// The state of the header of the event in the room history.
+        #[property(get, set = Self::set_header_state, explicit_notify, builder(EventHeaderState::default()))]
+        header_state: Cell<EventHeaderState>,
     }
 
     #[glib::object_subclass]
@@ -462,14 +476,14 @@ mod imp {
             self.read_receipts().n_items() > 0
         }
 
-        /// Set whether this event should show its header in the room history.
-        fn set_show_header(&self, show: bool) {
-            if self.show_header.get() == show {
+        /// Set the state of the header of the event in the room history.
+        fn set_header_state(&self, state: EventHeaderState) {
+            if self.header_state.get() == state {
                 return;
             }
 
-            self.show_header.set(show);
-            self.obj().notify_show_header();
+            self.header_state.set(state);
+            self.obj().notify_header_state();
         }
     }
 }

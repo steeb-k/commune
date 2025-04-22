@@ -56,11 +56,11 @@ room-title {
 
   @include vendor.focus-ring();
 
-  &.has-header {
+  &.has-avatar {
     margin-top: 6px;
   }
 
-  &:not(.has-header) {
+  &:not(.has-avatar) {
     .event-content {
       &:dir(ltr) {
         margin-left: 54px;
@@ -206,7 +206,7 @@ sender-avatar {
 }
 
 state-group-row.room-history-row {
-  &:not(.has-header) {
+  &:not(.has-avatar) {
     .event-content {
       &:dir(ltr) {
         margin-left: 42px;

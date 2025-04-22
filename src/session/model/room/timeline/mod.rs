@@ -594,30 +594,30 @@ mod imp {
                 let current_sender = current.sender_id();
 
                 if !current.can_show_header() {
-                    current.set_show_header(false);
+                    current.set_header_state(EventHeaderState::Hidden);
                     previous_sender = None;
                     previous_timestamp = None;
                     continue;
                 }
 
-                let show_header = if previous_sender
+                let header_state = if previous_sender
                     .as_ref()
                     .is_none_or(|previous_sender| current_sender != *previous_sender)
                 {
-                    // The sender is different, show header.
-                    true
+                    // The sender is different, show the full header.
+                    EventHeaderState::Full
                 } else if previous_timestamp
                     .and_then(|ts| current.origin_server_ts().0.checked_sub(ts.0))
                     .is_some_and(|elapsed| u64::from(elapsed) >= MAX_TIME_BETWEEN_HEADERS)
                 {
-                    // Too much time has passed, show header.
-                    true
+                    // Too much time has passed, show the timestamp.
+                    EventHeaderState::TimestampOnly
                 } else {
                     // Do not show header.
-                    false
+                    EventHeaderState::Hidden
                 };
 
-                current.set_show_header(show_header);
+                current.set_header_state(header_state);
                 previous_sender = Some(current_sender);
                 previous_timestamp = Some(current.origin_server_ts());
             }

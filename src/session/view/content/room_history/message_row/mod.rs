@@ -18,7 +18,11 @@ pub use self::content::{ContentFormat, MessageContent};
 use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
 use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
-    gettext_f, prelude::*, session::model::Event, system_settings::ClockFormat, utils::BoundObject,
+    gettext_f,
+    prelude::*,
+    session::model::{Event, EventHeaderState},
+    system_settings::ClockFormat,
+    utils::BoundObject,
     Application, Window,
 };
 
@@ -56,11 +60,6 @@ mod imp {
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
         event: BoundObject<Event>,
-        /// Whether this item should show its header.
-        ///
-        /// This is ignored if this event doesn’t have a header.
-        #[property(get = Self::show_header, set = Self::set_show_header, explicit_notify)]
-        show_header: PhantomData<bool>,
         /// The texture of the image preview displayed by the descendant of this
         /// widget, if any.
         #[property(get = Self::texture)]
@@ -137,31 +136,6 @@ mod imp {
     impl BinImpl for MessageRow {}
 
     impl MessageRow {
-        /// Whether this item should show its header.
-        ///
-        /// This is ignored if this event doesn’t have a header.
-        fn show_header(&self) -> bool {
-            self.avatar.is_visible() && self.header.is_visible()
-        }
-
-        /// Set whether this item should show its header.
-        fn set_show_header(&self, visible: bool) {
-            let obj = self.obj();
-
-            self.avatar.set_visible(visible);
-            self.header.set_visible(visible);
-
-            if let Some(row) = obj.parent() {
-                if visible {
-                    row.add_css_class("has-header");
-                } else {
-                    row.remove_css_class("has-header");
-                }
-            }
-
-            obj.notify_show_header();
-        }
-
         /// Set the event that is presented.
         fn set_event(&self, event: Event) {
             let obj = self.obj();
@@ -180,21 +154,22 @@ mod imp {
                 .sync_create()
                 .build();
 
-            let show_header_binding = event
-                .bind_property("show-header", &*obj, "show-header")
-                .sync_create()
-                .build();
-
             let state_binding = event
                 .bind_property("state", &*self.message_state, "state")
                 .sync_create()
                 .build();
 
-            self.bindings.borrow_mut().append(&mut vec![
-                display_name_binding,
-                show_header_binding,
-                state_binding,
-            ]);
+            self.bindings
+                .borrow_mut()
+                .append(&mut vec![display_name_binding, state_binding]);
+
+            let header_state_handler = event.connect_header_state_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_header();
+                }
+            ));
 
             let timestamp_handler = event.connect_timestamp_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -217,12 +192,42 @@ mod imp {
             self.reactions
                 .set_reaction_list(&event.room().get_or_create_members(), &event.reactions());
             self.read_receipts.set_source(event.read_receipts());
-            self.event
-                .set(event, vec![timestamp_handler, item_changed_handler]);
+            self.event.set(
+                event,
+                vec![
+                    header_state_handler,
+                    timestamp_handler,
+                    item_changed_handler,
+                ],
+            );
             obj.notify_event();
 
             self.update_content();
+            self.update_header();
             self.update_timestamp();
+        }
+
+        /// Update the header for the current event.
+        fn update_header(&self) {
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+
+            let header_state = event.header_state();
+            let avatar_name_visible = header_state == EventHeaderState::Full;
+            let header_visible = header_state != EventHeaderState::Hidden;
+
+            self.avatar.set_visible(avatar_name_visible);
+            self.display_name.set_visible(avatar_name_visible);
+            self.header.set_visible(header_visible);
+
+            if let Some(row) = self.obj().parent() {
+                if avatar_name_visible {
+                    row.add_css_class("has-avatar");
+                } else {
+                    row.remove_css_class("has-avatar");
+                }
+            }
         }
 
         /// Update the displayed timestamp for the current event with the

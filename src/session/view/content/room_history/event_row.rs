@@ -199,7 +199,7 @@ mod imp {
         /// Set the event presented by this row.
         fn set_event(&self, event: Option<Event>) {
             // Reinitialize the header.
-            self.obj().remove_css_class("has-header");
+            self.obj().remove_css_class("has-avatar");
 
             self.disconnect_event_signals();
 
