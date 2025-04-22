@@ -29,6 +29,7 @@ mod imp {
         /// The event action group of this row.
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        target_user_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -193,6 +194,12 @@ mod imp {
                 if let Some(handler) = self.permissions_handler.take() {
                     event.room().permissions().disconnect(handler);
                 }
+
+                if let Some(handler) = self.target_user_handler.take() {
+                    if let Some(target_user) = event.target_user() {
+                        target_user.disconnect(handler);
+                    }
+                }
             }
         }
 
@@ -212,6 +219,17 @@ mod imp {
                     }
                 ));
                 self.permissions_handler.replace(Some(permissions_handler));
+
+                if let Some(target_user) = event.target_user() {
+                    let target_user_handler = target_user.connect_membership_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_actions();
+                        }
+                    ));
+                    self.target_user_handler.replace(Some(target_user_handler));
+                }
 
                 let state_notify_handler = event.connect_state_notify(clone!(
                     #[weak(rename_to = imp)]

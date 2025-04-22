@@ -31,6 +31,13 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">Revoke _Invite</attribute>
+        <attribute name="action">event.revoke-invite</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">_Copy Text</attribute>
         <attribute name="action">event.copy-text</attribute>
         <attribute name="hidden-when">action-missing</attribute>

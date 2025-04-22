@@ -4,7 +4,7 @@ use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
-    Message, MsgLikeKind, RepliedToEvent, TimelineDetails, TimelineEventItemId,
+    MembershipChange, Message, MsgLikeKind, RepliedToEvent, TimelineDetails, TimelineEventItemId,
     TimelineItemContent,
 };
 use ruma::{
@@ -563,6 +563,39 @@ impl Event {
             .get_or_create(self.sender_id())
     }
 
+    /// The ID of the user targeted by this event, if any.
+    ///
+    /// A targeted user is only encountered with `m.room.member` events. This
+    /// only returns `Some(_)` if the targeted user is different from the
+    /// sender.
+    pub(crate) fn target_user_id(&self) -> Option<OwnedUserId> {
+        let item = self.item();
+        match item.content() {
+            TimelineItemContent::MembershipChange(membership_change) => {
+                let target_user_id = membership_change.user_id();
+                (target_user_id != item.sender()).then(|| target_user_id.to_owned())
+            }
+            _ => None,
+        }
+    }
+
+    /// The user targeted by this event, if any.
+    ///
+    /// A targeted user is only encountered with `m.room.member` events. This
+    /// only returns `Some(_)` if the targettd user is different from the
+    /// sender.
+    ///
+    /// This should only be called when the event's room members list is
+    /// available, otherwise it will be created on every call.
+    pub(crate) fn target_user(&self) -> Option<Member> {
+        let target_user_id = self.target_user_id()?;
+        Some(
+            self.room()
+                .get_or_create_members()
+                .get_or_create(target_user_id),
+        )
+    }
+
     /// The timestamp of this event, as the number of milliseconds
     /// since Unix Epoch.
     pub(crate) fn origin_server_ts(&self) -> MilliSecondsSinceUnixEpoch {
@@ -647,6 +680,15 @@ impl Event {
                 )
             }
             _ => false,
+        }
+    }
+
+    /// The membership change, if this is an `m.room.member` event that contains
+    /// one.
+    pub(crate) fn membership_change(&self) -> Option<MembershipChange> {
+        match self.item().content() {
+            TimelineItemContent::MembershipChange(membership_change) => membership_change.change(),
+            _ => None,
         }
     }
 

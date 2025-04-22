@@ -3,13 +3,15 @@ use std::ops::Deref;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone};
-use ruma::events::room::message::MessageType;
+use matrix_sdk_ui::timeline::MembershipChange;
+use ruma::events::room::{message::MessageType, power_levels::PowerLevelUserAction};
 use tracing::error;
 
 use crate::{
+    components::{confirm_room_member_destructive_action_dialog, RoomMemberDestructiveAction},
     prelude::*,
     session::{
-        model::{Event, MessageState, Room},
+        model::{Event, Membership, MessageState, Room},
         view::EventDetailsDialog,
     },
     spawn, spawn_tokio, toast,
@@ -123,6 +125,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         }
 
         self.add_message_like_actions(&action_group, &room, &event);
+        self.add_state_actions(&action_group, &room, &event);
 
         Some(action_group)
     }
@@ -398,6 +401,45 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         }
     }
 
+    /// Add actions to the given action group for the given event, if it is a
+    /// state event.
+    fn add_state_actions(&self, action_group: &gio::SimpleActionGroup, room: &Room, event: &Event)
+    where
+        Self: glib::clone::Downgrade,
+        Self::Weak: 'static,
+        <Self::Weak as glib::clone::Upgrade>::Strong: Deref,
+        <<Self::Weak as glib::clone::Upgrade>::Strong as Deref>::Target: EventActionsGroup,
+        <<<Self::Weak as glib::clone::Upgrade>::Strong as Deref>::Target as ObjectSubclass>::Type:
+            IsA<gtk::Widget>,
+    {
+        let Some(membership_change) = event.membership_change() else {
+            return;
+        };
+        let Some(target_user) = event.target_user() else {
+            return;
+        };
+
+        let permissions = room.permissions();
+
+        // Revoke invite.
+        if membership_change == MembershipChange::Invited
+            && target_user.membership() == Membership::Invite
+            && permissions.can_do_to_user(target_user.user_id(), PowerLevelUserAction::Kick)
+        {
+            action_group.add_action_entries([gio::ActionEntry::builder("revoke-invite")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        spawn!(async move {
+                            imp.revoke_invite().await;
+                        });
+                    }
+                ))
+                .build()]);
+        }
+    }
+
     /// Replace the context menu with an emoji chooser for reactions.
     fn show_reactions_chooser(&self)
     where
@@ -643,6 +685,40 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         if let Err(error) = handle.await.unwrap() {
             error!("Could not discard local event: {error}");
             toast!(self.obj(), gettext("Could not discard message"));
+        }
+    }
+
+    /// Revoke the invite of the target user of the current event.
+    async fn revoke_invite(&self)
+    where
+        Self::Type: IsA<gtk::Widget>,
+    {
+        let Some(event) = self.event() else {
+            error!("Could not revoke invite for timeline item that is not an event");
+            return;
+        };
+        let Some(target_user) = event.target_user() else {
+            error!("Could not revoke invite for event without a target user");
+            return;
+        };
+        let obj = self.obj();
+
+        let Some(response) = confirm_room_member_destructive_action_dialog(
+            &target_user,
+            RoomMemberDestructiveAction::Kick,
+            &*obj,
+        )
+        .await
+        else {
+            return;
+        };
+
+        toast!(obj, gettext("Revoking invite…"));
+
+        let room = target_user.room();
+        let user_id = target_user.user_id().clone();
+        if room.kick(&[(user_id, response.reason)]).await.is_err() {
+            toast!(obj, gettext("Could not revoke invite of user"));
         }
     }
 }
