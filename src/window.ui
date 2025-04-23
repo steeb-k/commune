@@ -26,15 +26,15 @@
                             </child>
                             <child type="end">
                               <object class="GtkButton">
-                              <property name="action-name">app.about</property>
-                              <property name="tooltip-text" translatable="yes">About Fractal</property>
-                              <property name="icon-name">about-symbolic</property>
-                              <accessibility>
-                                <property name="label" translatable="yes">About Fractal</property>
-                              </accessibility>
-                            </object>
-                          </child>
-                        </object>
+                                <property name="action-name">app.about</property>
+                                <property name="tooltip-text" translatable="yes">About Fractal</property>
+                                <property name="icon-name">about-symbolic</property>
+                                <accessibility>
+                                  <property name="label" translatable="yes">About Fractal</property>
+                                </accessibility>
+                              </object>
+                            </child>
+                          </object>
                         </child>
                         <property name="content">
                           <object class="GtkBox">
