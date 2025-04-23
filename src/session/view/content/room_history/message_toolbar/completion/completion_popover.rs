@@ -198,12 +198,16 @@ mod imp {
             key: gdk::Key,
             modifier: gdk::ModifierType,
         ) -> glib::Propagation {
-            if !modifier.is_empty() {
+            // Do not capture key press if there is a mask other than CapsLock.
+            if modifier != gdk::ModifierType::NO_MODIFIER_MASK
+                && modifier != gdk::ModifierType::LOCK_MASK
+            {
                 return glib::Propagation::Proceed;
             }
 
+            // If the popover is not visible, we only handle tab to open the popover.
             if !self.obj().is_visible() {
-                if matches!(key, gdk::Key::Tab) {
+                if matches!(key, gdk::Key::Tab | gdk::Key::KP_Tab) {
                     self.update_completion(true);
                     return glib::Propagation::Stop;
                 }
@@ -211,19 +215,30 @@ mod imp {
                 return glib::Propagation::Proceed;
             }
 
-            if matches!(key, gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab) {
-                // Activate completion.
+            // Activate the selected row on enter or tab.
+            if matches!(
+                key,
+                gdk::Key::Return
+                    | gdk::Key::KP_Enter
+                    | gdk::Key::ISO_Enter
+                    | gdk::Key::Tab
+                    | gdk::Key::KP_Tab
+            ) {
                 self.activate_selected_row();
                 return glib::Propagation::Stop;
-            } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
-                // Move up, if possible.
+            }
+
+            // Move up in the list on key up, if possible.
+            if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
                 let idx = self.selected_row_index().unwrap_or_default();
                 if idx > 0 {
                     self.select_row_at_index(Some(idx - 1));
                 }
                 return glib::Propagation::Stop;
-            } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
-                // Move down, if possible.
+            }
+
+            // Move down in the list on key down, if possible.
+            if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
                 let new_idx = if let Some(idx) = self.selected_row_index() {
                     idx + 1
                 } else {
@@ -236,8 +251,10 @@ mod imp {
                     self.select_row_at_index(Some(new_idx));
                 }
                 return glib::Propagation::Stop;
-            } else if matches!(key, gdk::Key::Escape) {
-                // Close.
+            }
+
+            // Close the popover on escape.
+            if matches!(key, gdk::Key::Escape) {
                 self.inhibit();
                 return glib::Propagation::Stop;
             }

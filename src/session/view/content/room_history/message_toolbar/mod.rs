@@ -460,7 +460,18 @@ mod imp {
             _keycode: u32,
             modifier: gdk::ModifierType,
         ) -> glib::Propagation {
-            if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
+            // Do not capture key press if there is a mask other than CapsLock.
+            if modifier != gdk::ModifierType::NO_MODIFIER_MASK
+                && modifier != gdk::ModifierType::LOCK_MASK
+            {
+                return glib::Propagation::Proceed;
+            }
+
+            // Send message on enter.
+            if matches!(
+                key,
+                gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::ISO_Enter,
+            ) {
                 spawn!(clone!(
                     #[weak(rename_to = imp)]
                     self,
@@ -468,16 +479,16 @@ mod imp {
                         imp.send_text_message().await;
                     }
                 ));
-                glib::Propagation::Stop
-            } else if modifier.is_empty()
-                && key == gdk::Key::Escape
-                && self.current_composer_state().has_relation()
-            {
-                self.clear_related_event();
-                glib::Propagation::Stop
-            } else {
-                glib::Propagation::Proceed
+                return glib::Propagation::Stop;
             }
+
+            // Clear related event on escape.
+            if key == gdk::Key::Escape && self.current_composer_state().has_relation() {
+                self.clear_related_event();
+                return glib::Propagation::Stop;
+            }
+
+            glib::Propagation::Proceed
         }
 
         /// Send the text message that is currently in the message entry.
@@ -909,12 +920,16 @@ mod imp {
         #[template_callback]
         fn handle_related_event_click(&self) {
             if let Some(related_to) = self.current_composer_state().related_to() {
-                self.obj()
+                if self
+                    .obj()
                     .activate_action(
                         "room-history.scroll-to-event",
                         Some(&TimelineEventItemId::EventId(related_to.event_id()).to_variant()),
                     )
-                    .expect("action exists");
+                    .is_err()
+                {
+                    error!("Could not activate `room-history.scroll-to-event` action");
+                }
             }
         }
 
