@@ -240,15 +240,39 @@ mod imp {
             self.main_stack.set_visible_child_name(page);
         }
 
-        /// Get the current composer state.
+        /// Whether the buffer of the composer is empty.
+        ///
+        /// Returns `true` if the buffer is empty or contains only whitespace.
+        fn is_buffer_empty(&self) -> bool {
+            let mut iter = self.message_entry.buffer().start_iter();
+
+            if iter.is_end() {
+                return true;
+            }
+
+            loop {
+                if !iter.char().is_whitespace() {
+                    // The buffer is not empty.
+                    return false;
+                }
+
+                if !iter.forward_cursor_position() {
+                    // We are at the end and we did not encounter a non-whitespace character, the
+                    // buffer is empty.
+                    return true;
+                }
+            }
+        }
+
+        /// The current composer state.
         fn current_composer_state(&self) -> ComposerState {
             let timeline = self.timeline.upgrade();
             self.composer_state(timeline)
         }
 
-        /// Get the composer state for the given room.
+        /// The composer state for the given room.
         ///
-        /// If the composer state doesn't exist, it is created.
+        /// If the composer state does not exist, it is created.
         fn composer_state(&self, timeline: Option<Timeline>) -> ComposerState {
             let room = timeline.as_ref().map(Timeline::room);
 
@@ -290,16 +314,14 @@ mod imp {
             let text_notify_handler = buffer.connect_text_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |buffer| {
-                    let (start_iter, end_iter) = buffer.bounds();
-                    let is_empty = start_iter == end_iter;
+                move |_| {
+                    let is_empty = imp.is_buffer_empty();
                     imp.send_button.set_sensitive(!is_empty);
                     imp.send_typing_notification(!is_empty);
                 }
             ));
 
-            let (start_iter, end_iter) = buffer.bounds();
-            let is_empty = start_iter == end_iter;
+            let is_empty = self.is_buffer_empty();
             self.send_button.set_sensitive(!is_empty);
 
             // Markdown highlighting.
