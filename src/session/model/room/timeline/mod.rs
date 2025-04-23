@@ -989,24 +989,15 @@ impl Timeline {
     /// Get the position of the event with the given identifier in this
     /// `Timeline`.
     pub(crate) fn find_event_position(&self, identifier: &TimelineEventItemId) -> Option<usize> {
-        for (pos, item) in self
-            .items()
+        self.items()
             .iter::<glib::Object>()
-            .map(|o| o.ok().and_downcast::<TimelineItem>())
             .enumerate()
-        {
-            let Some(item) = item else {
-                break;
-            };
-
-            if let Some(event) = item.downcast_ref::<Event>() {
-                if event.matches_identifier(identifier) {
-                    return Some(pos);
-                }
-            }
-        }
-
-        None
+            .find_map(|(index, item)| {
+                item.ok()
+                    .and_downcast::<Event>()
+                    .is_some_and(|event| event.matches_identifier(identifier))
+                    .then_some(index)
+            })
     }
 
     /// Remove the typing row from the timeline.

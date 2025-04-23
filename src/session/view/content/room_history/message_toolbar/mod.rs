@@ -510,6 +510,22 @@ mod imp {
                 return glib::Propagation::Stop;
             }
 
+            // Edit the last message on key up, if the composer is empty and the completion
+            // popover is not open.
+            if matches!(key, gdk::Key::Up | gdk::Key::KP_Up)
+                && !self.completion.is_visible()
+                && self.is_buffer_empty()
+            {
+                if self
+                    .obj()
+                    .activate_action("room-history.edit-latest-message", None)
+                    .is_err()
+                {
+                    error!("Could not activate `room-history.edit-latest-message` action");
+                }
+                return glib::Propagation::Stop;
+            }
+
             glib::Propagation::Proceed
         }
 

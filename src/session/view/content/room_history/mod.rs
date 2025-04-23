@@ -5,7 +5,10 @@ use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, graphene::Point, CompositeTemplate};
 use matrix_sdk::ruma::EventId;
 use matrix_sdk_ui::timeline::TimelineEventItemId;
-use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
+use ruma::{
+    api::client::receipt::create_receipt::v3::ReceiptType, events::room::message::MessageType,
+    OwnedEventId,
+};
 use tracing::{error, warn};
 
 mod divider_row;
@@ -216,6 +219,39 @@ mod imp {
                     obj.imp().message_toolbar.set_edit(&event);
                 },
             );
+
+            klass.install_action("room-history.edit-latest-message", None, |obj, _, _| {
+                let Some(timeline) = obj.timeline() else {
+                    return;
+                };
+
+                let own_member = timeline.room().own_member();
+                let own_user_id = own_member.user_id();
+
+                // Find the latest editable message that was sent by our user.
+                let Some(event) = timeline
+                    .items()
+                    .iter::<glib::Object>()
+                    .rev()
+                    .find_map(|item| {
+                        item.ok().and_downcast::<Event>().filter(|event| {
+                            event.sender_id() == *own_user_id
+                                && event.event_id().is_some()
+                                && event.message().is_some_and(|message| {
+                                    matches!(
+                                        message.msgtype(),
+                                        MessageType::Text(_) | MessageType::Emote(_)
+                                    )
+                                })
+                        })
+                    })
+                else {
+                    warn!("Could not find latest event to edit");
+                    return;
+                };
+
+                obj.imp().message_toolbar.set_edit(&event);
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
