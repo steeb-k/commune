@@ -13,7 +13,7 @@ use tracing::error;
 use super::InviteItem;
 use crate::{
     prelude::*,
-    session::model::{Member, Membership, RemoteUser, Room, User},
+    session::model::{Member, Membership, Room, User},
     spawn, spawn_tokio,
 };
 
@@ -293,18 +293,15 @@ mod imp {
                     continue;
                 }
 
-                // If it's the dummy result for the search term user ID, use a RemoteUser to
+                // If it's the dummy result for the search term user ID, use the remote cache to
                 // fetch its profile.
                 if search_term_user_id
                     .as_ref()
                     .is_some_and(|user_id| *user_id == result.user_id)
                 {
-                    let user = RemoteUser::new(&session, result.user_id);
-
+                    let user = session.remote_cache().user(result.user_id);
                     let item = self.create_item(&user, invite_exception);
                     list.push(item);
-
-                    spawn!(async move { user.load_profile().await });
 
                     continue;
                 }

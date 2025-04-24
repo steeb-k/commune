@@ -1,7 +1,6 @@
 mod ignored_users;
 mod notifications;
-mod remote_room;
-mod remote_user;
+mod remote;
 mod room;
 mod room_list;
 mod security;
@@ -17,8 +16,7 @@ pub(crate) use self::{
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
     },
-    remote_room::RemoteRoom,
-    remote_user::RemoteUser,
+    remote::*,
     room::*,
     room_list::RoomList,
     security::*,

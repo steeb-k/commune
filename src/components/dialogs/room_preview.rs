@@ -246,7 +246,7 @@ mod imp {
             self.go_back_btn.set_sensitive(true);
             self.join_btn.set_is_loading(false);
 
-            let room = RemoteRoom::new(&session, uri);
+            let room = session.remote_cache().room(uri);
             self.set_room(Some(room));
         }
 
@@ -258,7 +258,7 @@ mod imp {
 
             self.room_name.set_label(&room.display_name());
 
-            let alias = room.alias();
+            let alias = room.canonical_alias();
             if let Some(alias) = &alias {
                 self.room_alias.set_label(alias.as_str());
             }

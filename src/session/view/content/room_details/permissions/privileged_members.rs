@@ -7,8 +7,7 @@ use ruma::{Int, OwnedUserId};
 
 use super::MemberPowerLevel;
 use crate::{
-    session::model::{Permissions, PowerLevel, RemoteUser, User},
-    spawn,
+    session::model::{Permissions, PowerLevel, User},
     utils::BoundObjectWeakRef,
 };
 
@@ -111,17 +110,8 @@ mod imp {
                     .get(&user_id)
                     .and_upcast::<User>()
                     .unwrap_or_else(|| {
-                        let user = RemoteUser::new(&session, user_id.clone());
-
-                        spawn!(clone!(
-                            #[strong]
-                            user,
-                            async move {
-                                user.load_profile().await;
-                            }
-                        ));
-
-                        user.upcast()
+                        // Fallback to the remote cache if the user is not in the room anymore.
+                        session.remote_cache().user(user_id.clone()).upcast()
                     });
                 let member = MemberPowerLevel::new(&user, &permissions);
 

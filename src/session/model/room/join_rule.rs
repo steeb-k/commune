@@ -14,9 +14,7 @@ use ruma::{
 use tracing::error;
 
 use super::{Membership, Room};
-use crate::{
-    components::PillSource, gettext_f, session::model::RemoteRoom, spawn_tokio, utils::BoundObject,
-};
+use crate::{components::PillSource, gettext_f, spawn_tokio, utils::BoundObject};
 
 /// Supported values for the join rule.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -221,7 +219,7 @@ mod imp {
                 let room: PillSource = if let Some(room) = session.room_list().get(&room_id) {
                     room.upcast()
                 } else {
-                    RemoteRoom::new(&session, room_id.into()).upcast()
+                    session.remote_cache().room(room_id.into()).upcast()
                 };
 
                 let display_name_handler = room.connect_display_name_notify(clone!(

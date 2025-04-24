@@ -37,13 +37,7 @@ pub(crate) mod ext_traits;
 mod media_message;
 
 pub(crate) use self::media_message::*;
-use crate::{
-    components::Pill,
-    gettext_f,
-    prelude::*,
-    secret::StoredSession,
-    session::model::{RemoteRoom, Room},
-};
+use crate::{components::Pill, gettext_f, prelude::*, secret::StoredSession, session::model::Room};
 
 /// The result of a password validation.
 #[derive(Debug, Default, Clone, Copy)]
@@ -502,7 +496,7 @@ impl MatrixIdUri {
                     .get_by_identifier(&room_uri.id)
                     .as_ref()
                     .map(Pill::new)
-                    .or_else(|| Some(Pill::new(&RemoteRoom::new(&session, room_uri))))
+                    .or_else(|| Some(Pill::new(&session.remote_cache().room(room_uri))))
             }
             Self::User(user_id) => {
                 // We should have a strong reference to the list wherever we show a user pill,

@@ -6,11 +6,13 @@ use super::ToastableDialog;
 use crate::{
     components::UserPage,
     prelude::*,
-    session::model::{Member, RemoteUser, Session, User},
-    spawn,
+    session::model::{Member, Session, User},
+    utils::LoadingState,
 };
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -22,6 +24,7 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         user_page: TemplateChild<UserPage>,
+        user_loading_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -39,31 +42,70 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for UserProfileDialog {}
+    impl ObjectImpl for UserProfileDialog {
+        fn dispose(&self) {
+            self.reset();
+        }
+    }
+
     impl WidgetImpl for UserProfileDialog {}
     impl AdwDialogImpl for UserProfileDialog {}
     impl ToastableDialogImpl for UserProfileDialog {}
 
     impl UserProfileDialog {
+        /// Show the details page.
+        fn show_details(&self) {
+            self.stack.set_visible_child_name("details");
+        }
+
         /// Load the user with the given session and user ID.
         pub(super) fn load_user(&self, session: &Session, user_id: OwnedUserId) {
-            let user = RemoteUser::new(session, user_id);
+            self.reset();
+
+            let user = session.remote_cache().user(user_id);
             self.user_page.set_user(Some(user.clone()));
 
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    user.load_profile().await;
-                    imp.stack.set_visible_child_name("details");
-                }
-            ));
+            if matches!(
+                user.loading_state(),
+                LoadingState::Initial | LoadingState::Loading
+            ) {
+                let user_loading_handler = user.connect_loading_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |user| {
+                        if !matches!(
+                            user.loading_state(),
+                            LoadingState::Initial | LoadingState::Loading
+                        ) {
+                            if let Some(handler) = imp.user_loading_handler.take() {
+                                user.disconnect(handler);
+                                imp.show_details();
+                            }
+                        }
+                    }
+                ));
+                self.user_loading_handler
+                    .replace(Some(user_loading_handler));
+            } else {
+                self.show_details();
+            }
         }
 
         /// Set the member to present.
         pub(super) fn set_room_member(&self, member: Member) {
+            self.reset();
+
             self.user_page.set_user(Some(member.upcast::<User>()));
-            self.stack.set_visible_child_name("details");
+            self.show_details();
+        }
+
+        /// Reset this dialog.
+        fn reset(&self) {
+            if let Some(handler) = self.user_loading_handler.take() {
+                if let Some(user) = self.user_page.user() {
+                    user.disconnect(handler);
+                }
+            }
         }
     }
 }

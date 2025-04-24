@@ -55,6 +55,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 webp = { version = "0.3", default-features = false }
+wtinylfu = "0.2"
 zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.

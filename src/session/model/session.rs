@@ -18,8 +18,8 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 
 use super::{
-    IgnoredUsers, Notifications, RoomList, SessionSecurity, SessionSettings, SidebarItemList,
-    SidebarListModel, User, UserSessionsList, VerificationList,
+    IgnoredUsers, Notifications, RemoteCache, RoomList, SessionSecurity, SessionSettings,
+    SidebarItemList, SidebarListModel, User, UserSessionsList, VerificationList,
 };
 use crate::{
     components::AvatarData,
@@ -103,6 +103,8 @@ mod imp {
         /// Information about security for this session.
         #[property(get)]
         security: SessionSecurity,
+        /// The cache for remote data.
+        remote_cache: OnceCell<RemoteCache>,
         session_changes_handle: RefCell<Option<AbortHandle>>,
         sync_handle: RefCell<Option<AbortHandle>>,
         network_monitor_handler_id: RefCell<Option<glib::SignalHandlerId>>,
@@ -331,6 +333,12 @@ mod imp {
 
             self.is_offline.set(is_offline);
             self.obj().notify_is_offline();
+        }
+
+        /// The cache for remote data.
+        pub(crate) fn remote_cache(&self) -> &RemoteCache {
+            self.remote_cache
+                .get_or_init(|| RemoteCache::new(self.obj().clone()))
         }
 
         /// Finish initialization of this session.
@@ -756,6 +764,11 @@ impl Session {
     /// The Matrix client.
     pub(crate) fn client(&self) -> Client {
         self.imp().client().clone()
+    }
+
+    /// The cache for remote data.
+    pub(crate) fn remote_cache(&self) -> &RemoteCache {
+        self.imp().remote_cache()
     }
 
     /// Log out of this session.
