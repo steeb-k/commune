@@ -16,16 +16,16 @@ mod imp {
     pub struct SidebarItem {
         /// The item wrapped by this `SidebarItem`.
         #[property(get, set = Self::set_inner_item, construct_only)]
-        pub inner_item: BoundConstructOnlyObject<glib::Object>,
+        inner_item: BoundConstructOnlyObject<glib::Object>,
         /// Whether this item is visible.
         #[property(get)]
-        pub is_visible: Cell<bool>,
+        is_visible: Cell<bool>,
         /// Whether to inhibit the expanded state.
         ///
         /// It means that all the sections will be expanded regardless of
         /// their "is-expanded" property.
         #[property(get, set = Self::set_inhibit_expanded, explicit_notify)]
-        pub inhibit_expanded: Cell<bool>,
+        inhibit_expanded: Cell<bool>,
         is_visible_filter: gtk::CustomFilter,
         is_expanded_filter: gtk::CustomFilter,
         /// The inner model.
@@ -183,7 +183,10 @@ impl SidebarItem {
 
     /// Update the visibility of this item for the drag-n-drop of a room with
     /// the given category.
-    pub fn update_visibility_for_room_category(&self, source_category: Option<RoomCategory>) {
+    pub(crate) fn update_visibility_for_room_category(
+        &self,
+        source_category: Option<RoomCategory>,
+    ) {
         let inner_item = self.inner_item();
         let visible = if let Some(section) = inner_item.downcast_ref::<SidebarSection>() {
             section.visible_for_room_category(source_category)

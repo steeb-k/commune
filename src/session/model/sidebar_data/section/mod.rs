@@ -23,23 +23,23 @@ mod imp {
     pub struct SidebarSection {
         /// The source model of this section.
         #[property(get, set = Self::set_model, construct_only)]
-        pub model: OnceCell<gio::ListModel>,
+        model: OnceCell<gio::ListModel>,
         /// The inner model of this section.
         inner_model: OnceCell<gio::ListModel>,
         /// The filter of this section.
-        pub filter: RoomCategoryFilter,
+        filter: RoomCategoryFilter,
         /// The name of this section.
         #[property(get, set = Self::set_name, construct_only, builder(SidebarSectionName::default()))]
-        pub name: Cell<SidebarSectionName>,
+        name: Cell<SidebarSectionName>,
         /// The display name of this section.
         #[property(get = Self::display_name)]
-        pub display_name: PhantomData<String>,
+        display_name: PhantomData<String>,
         /// Whether this section is empty.
         #[property(get)]
-        pub is_empty: Cell<bool>,
+        is_empty: Cell<bool>,
         /// Whether this section is expanded.
         #[property(get, set = Self::set_is_expanded, explicit_notify)]
-        pub is_expanded: Cell<bool>,
+        is_expanded: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -80,7 +80,7 @@ mod imp {
     impl SidebarSection {
         /// The source model of this section.
         fn model(&self) -> &gio::ListModel {
-            self.model.get().unwrap()
+            self.model.get().expect("model should be initialized")
         }
 
         /// Set the source model of this section.
@@ -130,7 +130,9 @@ mod imp {
             ));
 
             self.set_is_empty(inner_model.n_items() == 0);
-            self.inner_model.set(inner_model).unwrap();
+            self.inner_model
+                .set(inner_model)
+                .expect("inner model should be uninitialized");
         }
 
         /// The inner model of this section.
@@ -210,7 +212,7 @@ impl SidebarSection {
 
     /// Whether this section should be shown for the drag-n-drop of a room with
     /// the given category.
-    pub fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
+    pub(crate) fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
         if !self.is_empty() {
             return true;
         }

@@ -6,19 +6,18 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use crate::session::model::RoomCategory;
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
 #[enum_type(name = "SidebarIconItemType")]
 pub enum SidebarIconItemType {
     /// The explore view.
     #[default]
-    Explore = 0,
+    Explore,
     /// An action to forget a room.
-    Forget = 1,
+    Forget,
 }
 
 impl SidebarIconItemType {
     /// The name of the icon for this item type.
-    pub fn icon_name(self) -> &'static str {
+    pub(crate) fn icon_name(self) -> &'static str {
         match self {
             Self::Explore => "explore-symbolic",
             Self::Forget => "user-trash-symbolic",
@@ -47,13 +46,13 @@ mod imp {
     pub struct SidebarIconItem {
         /// The type of this item.
         #[property(get, construct_only, builder(SidebarIconItemType::default()))]
-        pub item_type: Cell<SidebarIconItemType>,
+        item_type: Cell<SidebarIconItemType>,
         /// The display name of this item.
         #[property(get = Self::display_name)]
-        pub display_name: PhantomData<String>,
+        display_name: PhantomData<String>,
         /// The icon name used for this item.
         #[property(get = Self::icon_name)]
-        pub icon_name: PhantomData<String>,
+        icon_name: PhantomData<String>,
     }
 
     #[glib::object_subclass]
@@ -92,7 +91,7 @@ impl SidebarIconItem {
 
     /// Whether this item should be shown for the drag-n-drop of a room with the
     /// given category.
-    pub fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
+    pub(crate) fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
         match self.item_type() {
             SidebarIconItemType::Explore => true,
             SidebarIconItemType::Forget => source_category == Some(RoomCategory::Left),

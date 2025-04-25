@@ -160,7 +160,7 @@ impl SidebarItemList {
 
     /// Set the room category to show all compatible sections and icon items
     /// for.
-    pub fn set_show_all_for_room_category(&self, category: Option<RoomCategory>) {
+    pub(crate) fn set_show_all_for_room_category(&self, category: Option<RoomCategory>) {
         self.imp().set_show_all_for_room_category(category);
     }
 
@@ -168,12 +168,15 @@ impl SidebarItemList {
     ///
     /// It means that all the sections will be expanded regardless of their
     /// "is-expanded" property.
-    pub fn inhibit_expanded(&self, inhibit: bool) {
+    pub(crate) fn inhibit_expanded(&self, inhibit: bool) {
         self.imp().inhibit_expanded(inhibit);
     }
 
     /// Returns the [`SidebarSection`] for the given room category.
-    pub fn section_from_room_category(&self, category: RoomCategory) -> Option<SidebarSection> {
+    pub(crate) fn section_from_room_category(
+        &self,
+        category: RoomCategory,
+    ) -> Option<SidebarSection> {
         let index = match category {
             RoomCategory::Invited => 2,
             RoomCategory::Favorite => 3,
