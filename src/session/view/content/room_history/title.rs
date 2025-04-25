@@ -1,5 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
+use itertools::Itertools;
 
 use crate::{prelude::*, session::model::Room, utils::BoundObjectWeakRef};
 
@@ -119,8 +120,8 @@ mod imp {
             let subtitle = room
                 .topic()
                 .map(|s| {
-                    // Remove newlines.
-                    let mut s = s.replace('\n', "");
+                    // Remove newlines and empty lines.
+                    let mut s = s.lines().filter(|line| !line.trim().is_empty()).join(" ");
                     // Remove trailing spaces.
                     s.truncate_end_whitespaces();
                     s
