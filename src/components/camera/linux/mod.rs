@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
 use std::time::Duration;
 
 use ashpd::desktop::camera;
 use gtk::prelude::*;
+use tokio::time::timeout;
 use tracing::error;
 
 mod viewfinder;
 
 use self::viewfinder::LinuxCameraViewfinder;
 use super::{CameraExt, CameraViewfinder};
-use crate::{spawn_tokio, utils::timeout_future};
+use crate::spawn_tokio;
 
 /// Camera API under Linux.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub(crate) struct LinuxCamera;
 
 impl CameraExt for LinuxCamera {
     async fn has_cameras() -> bool {
-        let handle = spawn_tokio!(async move {
+        let fut = async move {
             let camera = match camera::Camera::new().await {
                 Ok(camera) => camera,
                 Err(error) => {
@@ -33,14 +33,13 @@ impl CameraExt for LinuxCamera {
                     false
                 }
             }
-        });
-        let abort_handle = handle.abort_handle();
+        };
+        let handle = spawn_tokio!(timeout(Duration::from_secs(1), fut));
 
-        if let Ok(is_present) = timeout_future(Duration::from_secs(1), handle).await {
-            is_present.expect("The task should not have been aborted")
+        if let Ok(is_present) = handle.await.expect("task was not aborted") {
+            is_present
         } else {
-            abort_handle.abort();
-            error!("Could not check whether system has cameras: the request timed out");
+            error!("Could not check whether system has cameras: request timed out");
             false
         }
     }

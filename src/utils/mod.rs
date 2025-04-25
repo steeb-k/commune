@@ -3,18 +3,14 @@
 use std::{
     borrow::Cow,
     cell::{Cell, OnceCell, RefCell},
-    fmt, fs,
-    io::{self, Write},
+    fmt, fs, io,
+    io::Write,
     path::{Path, PathBuf},
     rc::{Rc, Weak},
     sync::{Arc, LazyLock},
 };
 
 use adw::prelude::*;
-use futures_util::{
-    future::{self, Either, Future},
-    pin_mut,
-};
 use gtk::{gio, glib};
 use regex::Regex;
 use tempfile::NamedTempFile;
@@ -65,27 +61,6 @@ pub(crate) enum DataType {
     Persistent,
     /// Cache that can be deleted freely.
     Cache,
-}
-
-pub(crate) enum TimeoutFuture {
-    Timeout,
-}
-
-/// Executes the given future with the given timeout.
-///
-/// If the future didn't resolve before the timeout was reached, this returns
-/// an `Err(TimeoutFuture)`.
-pub(crate) async fn timeout_future<T>(
-    timeout: std::time::Duration,
-    fut: impl Future<Output = T>,
-) -> Result<T, TimeoutFuture> {
-    let timeout = glib::timeout_future(timeout);
-    pin_mut!(fut);
-
-    match future::select(fut, timeout).await {
-        Either::Left((x, _)) => Ok(x),
-        Either::Right(_) => Err(TimeoutFuture::Timeout),
-    }
 }
 
 /// Replace variables in the given string with the given dictionary.
