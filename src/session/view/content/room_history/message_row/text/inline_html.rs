@@ -194,7 +194,7 @@ impl<'a> InlineHtmlBuilder<'a> {
                 }
             }
             NodeData::Text(text) => {
-                let text = text.borrow().remove_newlines();
+                let text = text.borrow().collapse_whitespaces();
 
                 if should_linkify {
                     if let MentionsMode::WithMentions {

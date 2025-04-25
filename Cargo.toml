@@ -33,7 +33,6 @@ futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 indexmap = "2"
-itertools = "0.14"
 linkify = "0.10.0"
 mime = "0.3"
 mime_guess = "2"

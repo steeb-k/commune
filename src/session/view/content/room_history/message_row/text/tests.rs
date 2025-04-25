@@ -48,11 +48,17 @@ fn trim_end_spaces() {
 }
 
 #[test]
-fn ignore_newlines() {
+fn collapse_whitespace() {
     let html = Html::parse("Hello \nyou! \nYou are <b>my \nfriend</b>.");
     let (s, pills) = InlineHtmlBuilder::new(false, false).build_with_nodes(html.children());
 
     assert_eq!(s, "Hello you! You are <b>my friend</b>.");
+    assert!(pills.is_none());
+
+    let html = Html::parse("Hello    \nyou! \n\nYou are \n<b>   my \nfriend   </b>.");
+    let (s, pills) = InlineHtmlBuilder::new(false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "Hello you! You are <b> my friend </b>.");
     assert!(pills.is_none());
 }
 

@@ -1262,7 +1262,6 @@ dependencies = [
  "gstreamer-video",
  "gtk4",
  "indexmap",
- "itertools 0.14.0",
  "libadwaita",
  "libshumate",
  "linkify",

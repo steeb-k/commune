@@ -29,8 +29,8 @@ pub(crate) trait StrExt {
     /// Escape markup for compatibility with Pango.
     fn escape_markup(&self) -> String;
 
-    /// Remove newlines from the string.
-    fn remove_newlines(&self) -> String;
+    /// Collapse contiguous whitespaces in this string into a single space.
+    fn collapse_whitespaces(&self) -> String;
 }
 
 impl<T> StrExt for T
@@ -41,8 +41,27 @@ where
         markup_escape_text(self.as_ref()).into()
     }
 
-    fn remove_newlines(&self) -> String {
-        self.as_ref().replace('\n', "")
+    fn collapse_whitespaces(&self) -> String {
+        let str = self.as_ref();
+        let mut new_string = String::with_capacity(str.len());
+        let mut prev_is_space = false;
+
+        for char in str.chars() {
+            if char.is_whitespace() {
+                if prev_is_space {
+                    // We have already added a space as the last character, ignore this whitespace.
+                    continue;
+                }
+
+                prev_is_space = true;
+                new_string.push(' ');
+            } else {
+                prev_is_space = false;
+                new_string.push(char);
+            }
+        }
+
+        new_string
     }
 }
 
