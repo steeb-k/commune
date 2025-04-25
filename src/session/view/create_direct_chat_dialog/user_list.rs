@@ -170,7 +170,7 @@ mod imp {
                         #[weak]
                         user,
                         async move {
-                            user.load_profile().await;
+                            let _ = user.load_profile().await;
                         }
                     ));
 

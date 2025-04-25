@@ -2,14 +2,13 @@ use std::time::{Duration, Instant};
 
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::OwnedUserId;
-use tracing::error;
 
 use crate::{
     components::PillSource,
     prelude::*,
     session::model::{Session, User},
-    spawn, spawn_tokio,
-    utils::{AbortableHandle, LoadingState},
+    spawn,
+    utils::LoadingState,
 };
 
 /// The time after which the profile of a user is assumed to be stale.
@@ -30,7 +29,6 @@ mod imp {
         loading_state: Cell<LoadingState>,
         // The time of the last request.
         last_request_time: Cell<Option<Instant>>,
-        request_abort_handle: AbortableHandle,
     }
 
     #[glib::object_subclass]
@@ -77,39 +75,6 @@ mod imp {
         pub(super) fn update_last_request_time(&self) {
             self.last_request_time.set(Some(Instant::now()));
         }
-
-        /// Request the profile of this user.
-        pub(super) async fn load_profile(&self) {
-            let obj = self.obj();
-
-            self.set_loading_state(LoadingState::Loading);
-
-            let user_id = obj.user_id();
-
-            let client = obj.session().client();
-            let user_id_clone = user_id.clone();
-            let handle = spawn_tokio!(async move {
-                client.account().fetch_user_profile_of(&user_id_clone).await
-            });
-
-            let Some(result) = self.request_abort_handle.await_task(handle).await else {
-                // The task was aborted, which means that the object was dropped.
-                return;
-            };
-
-            let profile = match result {
-                Ok(profile) => profile,
-                Err(error) => {
-                    error!("Could not load profile for user `{user_id}`: {error}");
-                    self.set_loading_state(LoadingState::Error);
-                    return;
-                }
-            };
-
-            obj.set_name(profile.displayname);
-            obj.set_avatar_url(profile.avatar_url);
-            self.set_loading_state(LoadingState::Ready);
-        }
     }
 }
 
@@ -145,10 +110,17 @@ impl RemoteUser {
         imp.update_last_request_time();
 
         spawn!(clone!(
-            #[weak]
-            imp,
+            #[weak(rename_to = obj)]
+            self,
             async move {
-                imp.load_profile().await;
+                let imp = obj.imp();
+                imp.set_loading_state(LoadingState::Loading);
+
+                let loading_state = match obj.load_profile().await {
+                    Ok(()) => LoadingState::Ready,
+                    Err(()) => LoadingState::Error,
+                };
+                imp.set_loading_state(loading_state);
             }
         ));
     }

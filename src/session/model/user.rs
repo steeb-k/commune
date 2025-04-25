@@ -1,11 +1,6 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::UserIdentity;
-use ruma::{
-    api::client::room::create_room,
-    assign,
-    events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent},
-    MatrixToUri, OwnedMxcUri, OwnedUserId,
-};
+use ruma::{MatrixToUri, OwnedMxcUri, OwnedUserId};
 use tracing::{debug, error};
 
 use super::{IdentityVerification, Room, Session};
@@ -38,22 +33,22 @@ mod imp {
     #[properties(wrapper_type = super::User)]
     pub struct User {
         /// The ID of this user.
-        pub user_id: OnceCell<OwnedUserId>,
+        user_id: OnceCell<OwnedUserId>,
         /// The ID of this user, as a string.
         #[property(get = Self::user_id_string)]
-        pub user_id_string: PhantomData<String>,
+        user_id_string: PhantomData<String>,
         /// The current session.
         #[property(get, construct_only)]
-        pub session: OnceCell<Session>,
+        session: OnceCell<Session>,
         /// Whether this user is the same as the session's user.
         #[property(get)]
-        pub is_own_user: Cell<bool>,
+        is_own_user: Cell<bool>,
         /// Whether this user has been verified.
         #[property(get)]
-        pub verified: Cell<bool>,
+        is_verified: Cell<bool>,
         /// Whether this user is currently ignored.
         #[property(get)]
-        pub is_ignored: Cell<bool>,
+        is_ignored: Cell<bool>,
         ignored_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -90,13 +85,23 @@ mod imp {
     }
 
     impl User {
+        /// The ID of this user.
+        pub(super) fn user_id(&self) -> &OwnedUserId {
+            self.user_id.get().expect("user ID should be initialized")
+        }
+
         /// The ID of this user, as a string.
         fn user_id_string(&self) -> String {
-            self.user_id.get().unwrap().to_string()
+            self.user_id().to_string()
+        }
+
+        /// The current session.
+        fn session(&self) -> &Session {
+            self.session.get().expect("session should be initialized")
         }
 
         /// Set the ID of this user.
-        pub fn set_user_id(&self, user_id: OwnedUserId) {
+        pub(crate) fn set_user_id(&self, user_id: OwnedUserId) {
             let user_id = self.user_id.get_or_init(|| user_id);
 
             let obj = self.obj();
@@ -105,7 +110,7 @@ mod imp {
                 .sync_create()
                 .build();
 
-            let session = self.session.get().expect("session is initialized");
+            let session = self.session();
             self.is_own_user.set(session.user_id() == user_id);
 
             let ignored_users = session.ignored_users();
@@ -125,7 +130,71 @@ mod imp {
             self.is_ignored.set(ignored_users.contains(user_id));
             self.ignored_handler.replace(Some(ignored_handler));
 
-            obj.init_is_verified();
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.init_is_verified().await;
+                }
+            ));
+        }
+
+        /// Get the local cryptographic identity (aka cross-signing identity) of
+        /// this user.
+        ///
+        /// Locally, we should always have the crypto identity of our own user
+        /// and of users with whom we share an encrypted room.
+        pub(super) async fn local_crypto_identity(&self) -> Option<UserIdentity> {
+            let encryption = self.session().client().encryption();
+            let user_id = self.user_id().clone();
+            let handle = spawn_tokio!(async move { encryption.get_user_identity(&user_id).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(identity) => identity,
+                Err(error) => {
+                    error!("Could not get local crypto identity: {error}");
+                    None
+                }
+            }
+        }
+
+        /// Load whether this user is verified.
+        async fn init_is_verified(&self) {
+            // If a user is verified, we should have their crypto identity locally.
+            let is_verified = self
+                .local_crypto_identity()
+                .await
+                .is_some_and(|i| i.is_verified());
+
+            if self.is_verified.get() == is_verified {
+                return;
+            }
+
+            self.is_verified.set(is_verified);
+            self.obj().notify_is_verified();
+        }
+
+        /// Create an encrypted direct chat with this user.
+        pub(super) async fn create_direct_chat(&self) -> Result<Room, matrix_sdk::Error> {
+            let user_id = self.user_id().clone();
+            let client = self.session().client();
+            let handle = spawn_tokio!(async move { client.create_dm(&user_id).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(matrix_room) => {
+                    let room = self
+                        .session()
+                        .room_list()
+                        .get_wait(matrix_room.room_id())
+                        .await
+                        .expect("The newly created room was not found");
+                    Ok(room)
+                }
+                Err(error) => {
+                    error!("Could not create direct chat: {error}");
+                    Err(error)
+                }
+            }
         }
     }
 }
@@ -146,35 +215,13 @@ impl User {
         obj
     }
 
-    /// Get the local cryptographic identity (aka cross-signing identity) of
-    /// this user.
-    ///
-    /// Locally, we should always have the crypto identity of our own user and
-    /// of users with whom we share an encrypted room.
-    ///
-    /// To get the crypto identity of a user with whom we do not share an
-    /// encrypted room, use [`Self::ensure_crypto_identity()`].
-    pub async fn local_crypto_identity(&self) -> Option<UserIdentity> {
-        let encryption = self.session().client().encryption();
-        let user_id = self.user_id().clone();
-        let handle = spawn_tokio!(async move { encryption.get_user_identity(&user_id).await });
-
-        match handle.await.unwrap() {
-            Ok(identity) => identity,
-            Err(error) => {
-                error!("Could not get local crypto identity: {error}");
-                None
-            }
-        }
-    }
-
     /// Get the cryptographic identity (aka cross-signing identity) of this
     /// user.
     ///
     /// First, we try to get the local crypto identity if we are sure that it is
     /// up-to-date. If we do not have the crypto identity locally, we request it
     /// from the homeserver.
-    pub async fn ensure_crypto_identity(&self) -> Option<UserIdentity> {
+    pub(crate) async fn ensure_crypto_identity(&self) -> Option<UserIdentity> {
         let session = self.session();
         let encryption = session.client().encryption();
         let user_id = self.user_id();
@@ -190,7 +237,7 @@ impl User {
             let encryption_clone = encryption.clone();
             let handle = spawn_tokio!(async move { encryption_clone.tracked_users().await });
 
-            match handle.await.unwrap() {
+            match handle.await.expect("task was not aborted") {
                 Ok(tracked_users) => tracked_users.contains(user_id),
                 Err(error) => {
                     error!("Could not get tracked users: {error}");
@@ -202,7 +249,7 @@ impl User {
 
         // Try to get the local crypto identity.
         if should_have_local {
-            if let Some(identity) = self.local_crypto_identity().await {
+            if let Some(identity) = self.imp().local_crypto_identity().await {
                 return Some(identity);
             }
         }
@@ -212,7 +259,7 @@ impl User {
         let handle =
             spawn_tokio!(async move { encryption.request_user_identity(&user_id_clone).await });
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(identity) => identity,
             Err(error) => {
                 error!("Could not request remote crypto identity: {error}");
@@ -222,79 +269,25 @@ impl User {
     }
 
     /// Start a verification of the identity of this user.
-    pub async fn verify_identity(&self) -> Result<IdentityVerification, ()> {
+    pub(crate) async fn verify_identity(&self) -> Result<IdentityVerification, ()> {
         self.session()
             .verification_list()
             .create(Some(self.clone()))
             .await
     }
 
-    /// Load whether this user is verified.
-    fn init_is_verified(&self) {
-        spawn!(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            async move {
-                // If a user is verified, we should have their crypto identity locally.
-                let verified = obj
-                    .local_crypto_identity()
-                    .await
-                    .is_some_and(|i| i.is_verified());
-
-                if verified == obj.verified() {
-                    return;
-                }
-
-                obj.imp().verified.set(verified);
-                obj.notify_verified();
-            }
-        ));
-    }
-
     /// The existing direct chat with this user, if any.
     ///
     /// A direct chat is a joined room marked as direct, with only our own user
     /// and the other user in it.
-    pub fn direct_chat(&self) -> Option<Room> {
+    pub(crate) fn direct_chat(&self) -> Option<Room> {
         self.session().room_list().direct_chat(self.user_id())
-    }
-
-    /// Create an encrypted direct chat with this user.
-    async fn create_direct_chat(&self) -> Result<Room, matrix_sdk::Error> {
-        let request = assign!(create_room::v3::Request::new(),
-        {
-            is_direct: true,
-            invite: vec![self.user_id().clone()],
-            preset: Some(create_room::v3::RoomPreset::TrustedPrivateChat),
-            initial_state: vec![
-               InitialStateEvent::new(RoomEncryptionEventContent::with_recommended_defaults()).to_raw_any(),
-            ],
-        });
-
-        let client = self.session().client();
-        let handle = spawn_tokio!(async move { client.create_room(request).await });
-
-        match handle.await.unwrap() {
-            Ok(matrix_room) => {
-                let room = self
-                    .session()
-                    .room_list()
-                    .get_wait(matrix_room.room_id())
-                    .await
-                    .expect("The newly created room was not found");
-                Ok(room)
-            }
-            Err(error) => {
-                error!("Could not create direct chat: {error}");
-                Err(error)
-            }
-        }
     }
 
     /// Get or create a direct chat with this user.
     ///
     /// If there is no existing direct chat, a new one is created.
-    pub async fn get_or_create_direct_chat(&self) -> Result<Room, ()> {
+    pub(crate) async fn get_or_create_direct_chat(&self) -> Result<Room, ()> {
         let user_id = self.user_id();
 
         if let Some(room) = self.direct_chat() {
@@ -303,16 +296,16 @@ impl User {
         }
 
         debug!("Creating direct chat with {user_id}…");
-        self.create_direct_chat().await.map_err(|_| ())
+        self.imp().create_direct_chat().await.map_err(|_| ())
     }
 
     /// Ignore this user.
-    pub async fn ignore(&self) -> Result<(), ()> {
+    pub(crate) async fn ignore(&self) -> Result<(), ()> {
         self.session().ignored_users().add(self.user_id()).await
     }
 
     /// Stop ignoring this user.
-    pub async fn stop_ignoring(&self) -> Result<(), ()> {
+    pub(crate) async fn stop_ignoring(&self) -> Result<(), ()> {
         self.session().ignored_users().remove(self.user_id()).await
     }
 }
@@ -325,7 +318,7 @@ pub trait UserExt: IsA<User> {
 
     /// The ID of this user.
     fn user_id(&self) -> &OwnedUserId {
-        self.upcast_ref().imp().user_id.get().unwrap()
+        self.upcast_ref().imp().user_id()
     }
 
     /// Whether this user is the same as the session's user.
@@ -351,7 +344,7 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref()
             .avatar_data()
             .image()
-            .unwrap()
+            .expect("avatar data should have an image")
             // User avatars never have information.
             .set_uri_and_info(uri, None);
     }
@@ -364,7 +357,7 @@ pub trait UserExt: IsA<User> {
     /// Load the user profile from the homeserver.
     ///
     /// This overwrites the already loaded display name and avatar.
-    async fn load_profile(&self) {
+    async fn load_profile(&self) -> Result<(), ()> {
         let user_id = self.user_id();
 
         let client = self.session().client();
@@ -374,15 +367,17 @@ pub trait UserExt: IsA<User> {
                 async move { client.account().fetch_user_profile_of(&user_id_clone).await }
             );
 
-        match handle.await.unwrap() {
+        match handle.await.expect("task was not aborted") {
             Ok(response) => {
                 let user = self.upcast_ref::<User>();
 
                 user.set_name(response.displayname);
                 user.set_avatar_url(response.avatar_url);
+                Ok(())
             }
             Err(error) => {
-                error!("Could not load user profile for {user_id}: {error}");
+                error!("Could not load user profile for `{user_id}`: {error}");
+                Err(())
             }
         }
     }
@@ -394,8 +389,11 @@ pub trait UserExt: IsA<User> {
 
     /// Connect to the signal emitted when the `is-ignored` property changes.
     fn connect_is_ignored_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.upcast_ref()
-            .connect_is_ignored_notify(move |user| f(user.downcast_ref().unwrap()))
+        self.upcast_ref().connect_is_ignored_notify(move |user| {
+            f(user
+                .downcast_ref()
+                .expect("downcasting to own type should succeed"));
+        })
     }
 }
 

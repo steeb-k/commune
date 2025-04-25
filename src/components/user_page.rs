@@ -133,7 +133,7 @@ mod imp {
                     .build();
                 let bindings = vec![title_binding, avatar_binding];
 
-                let verified_handler = user.connect_verified_notify(clone!(
+                let verified_handler = user.connect_is_verified_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -671,7 +671,7 @@ mod imp {
                 return;
             };
 
-            if user.verified() {
+            if user.is_verified() {
                 self.verified_row.set_title(&gettext("Identity verified"));
                 self.verified_stack.set_visible_child_name("icon");
                 self.verify_button.set_sensitive(false);
