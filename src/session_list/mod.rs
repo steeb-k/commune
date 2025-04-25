@@ -10,13 +10,15 @@ mod new_session;
 mod session_info;
 mod session_list_settings;
 
-pub use self::{failed_session::*, new_session::*, session_info::*, session_list_settings::*};
+pub(crate) use self::{
+    failed_session::*, new_session::*, session_info::*, session_list_settings::*,
+};
 use crate::{
     prelude::*,
     secret::{Secret, StoredSession},
     session::model::{Session, SessionState},
     spawn, spawn_tokio,
-    utils::{data_dir_path, DataType, LoadingState},
+    utils::{DataType, LoadingState},
 };
 
 mod imp {
@@ -238,7 +240,7 @@ mod imp {
 
         /// The list of directories in the data directory.
         async fn data_directories(&self, capacity: usize) -> std::io::Result<Vec<OsString>> {
-            let data_path = data_dir_path(DataType::Persistent);
+            let data_path = DataType::Persistent.dir_path();
 
             if !data_path.try_exists()? {
                 return Ok(Vec::new());

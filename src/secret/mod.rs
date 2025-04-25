@@ -23,7 +23,7 @@ use self::file::SecretFile;
 use crate::{
     prelude::*,
     spawn_tokio,
-    utils::{data_dir_path, matrix::ClientSetupError, DataType},
+    utils::{matrix::ClientSetupError, DataType},
 };
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.
@@ -132,7 +132,7 @@ impl StoredSession {
     pub(crate) async fn new(client: &Client) -> Result<Self, ClientSetupError> {
         // Generate a unique random session ID.
         let mut id = None;
-        let data_path = data_dir_path(DataType::Persistent);
+        let data_path = DataType::Persistent.dir_path();
 
         // Try 10 times, so we do not have an infinite loop.
         for _ in 0..10 {
@@ -180,7 +180,7 @@ impl StoredSession {
 
     /// The path where the persistent data of this session lives.
     pub(crate) fn data_path(&self) -> PathBuf {
-        let mut path = data_dir_path(DataType::Persistent);
+        let mut path = DataType::Persistent.dir_path();
         path.push(&self.id);
         path
     }
@@ -201,7 +201,7 @@ impl StoredSession {
 
     /// The path where the cached data of this session lives.
     pub(crate) fn cache_path(&self) -> PathBuf {
-        let mut path = data_dir_path(DataType::Cache);
+        let mut path = DataType::Cache.dir_path();
         path.push(&self.id);
         path
     }

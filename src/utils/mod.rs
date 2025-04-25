@@ -42,18 +42,6 @@ pub(crate) use self::{
 };
 use crate::{PROFILE, RUNTIME};
 
-/// The path of the directory where data should be stored, depending on its
-/// type.
-pub(crate) fn data_dir_path(data_type: DataType) -> PathBuf {
-    let mut path = match data_type {
-        DataType::Persistent => glib::user_data_dir(),
-        DataType::Cache => glib::user_cache_dir(),
-    };
-    path.push(PROFILE.dir_name().as_ref());
-
-    path
-}
-
 /// The type of data.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum DataType {
@@ -61,6 +49,20 @@ pub(crate) enum DataType {
     Persistent,
     /// Cache that can be deleted freely.
     Cache,
+}
+
+impl DataType {
+    /// The path of the directory where data should be stored, depending on this
+    /// type.
+    pub(crate) fn dir_path(self) -> PathBuf {
+        let mut path = match self {
+            DataType::Persistent => glib::user_data_dir(),
+            DataType::Cache => glib::user_cache_dir(),
+        };
+        path.push(PROFILE.dir_name().as_ref());
+
+        path
+    }
 }
 
 /// Replace variables in the given string with the given dictionary.
