@@ -357,7 +357,7 @@ mod imp {
             };
             self.preview_instructions_icon.set_icon_size(icon_size);
 
-            self.update_gesture_click();
+            self.update_activation();
             self.obj().notify_compact();
         }
 
@@ -369,16 +369,16 @@ mod imp {
 
             self.activatable.set(activatable);
 
-            self.update_gesture_click();
+            self.update_activation();
             self.obj().notify_activatable();
         }
 
-        /// Add or remove the click controller given the current state.
-        fn update_gesture_click(&self) {
-            let needs_controller = self.activatable.get() && !self.compact.get();
+        /// Enable or disable the activation of this row for the current state.
+        fn update_activation(&self) {
+            let is_activatable = self.activatable.get() && !self.compact.get();
             let gesture_click = self.gesture_click.upgrade();
 
-            if needs_controller && gesture_click.is_none() {
+            if is_activatable && gesture_click.is_none() {
                 let gesture_click = gtk::GestureClick::new();
 
                 gesture_click.connect_released(clone!(
@@ -395,6 +395,9 @@ mod imp {
                 self.gesture_click.set(None);
                 self.overlay.remove_controller(&gesture_click);
             }
+
+            self.obj()
+                .action_set_enabled("message-visual-media.activate", is_activatable);
         }
 
         /// Set the cache key with the given value.
