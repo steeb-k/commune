@@ -119,11 +119,8 @@ mod imp {
             let subtitle = room
                 .topic()
                 .map(|s| {
-                    // Remove newlines and empty lines.
-                    let mut s = s.collapse_whitespaces();
-                    // Remove trailing spaces.
-                    s.truncate_end_whitespaces();
-                    s
+                    // Remove newlines and empty lines and trailing whitespaces.
+                    s.collapse_whitespaces(false, true)
                 })
                 .filter(|s| !s.is_empty());
 

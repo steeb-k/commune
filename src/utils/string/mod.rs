@@ -30,7 +30,7 @@ pub(crate) trait StrExt {
     fn escape_markup(&self) -> String;
 
     /// Collapse contiguous whitespaces in this string into a single space.
-    fn collapse_whitespaces(&self) -> String;
+    fn collapse_whitespaces(&self, trim_start: bool, trim_end: bool) -> String;
 }
 
 impl<T> StrExt for T
@@ -41,8 +41,16 @@ where
         markup_escape_text(self.as_ref()).into()
     }
 
-    fn collapse_whitespaces(&self) -> String {
-        let str = self.as_ref();
+    fn collapse_whitespaces(&self, trim_start: bool, trim_end: bool) -> String {
+        let mut str = self.as_ref();
+
+        if trim_start {
+            str = str.trim_start();
+        }
+        if trim_end {
+            str = str.trim_end();
+        }
+
         let mut new_string = String::with_capacity(str.len());
         let mut prev_is_space = false;
 

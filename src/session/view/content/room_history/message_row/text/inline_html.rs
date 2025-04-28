@@ -17,6 +17,7 @@ use crate::{
 
 /// Helper type to construct a Pango-compatible string from inline HTML nodes.
 #[derive(Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub(super) struct InlineHtmlBuilder<'a> {
     /// Whether this string should be on a single line.
     single_line: bool,
@@ -28,6 +29,8 @@ pub(super) struct InlineHtmlBuilder<'a> {
     inner: String,
     /// Whether this string was truncated because at the first newline.
     truncated: bool,
+    /// Whether to account for `truncated` when appending children.
+    ignore_truncated: bool,
 }
 
 impl<'a> InlineHtmlBuilder<'a> {
@@ -45,6 +48,7 @@ impl<'a> InlineHtmlBuilder<'a> {
             mentions: MentionsMode::default(),
             inner: String::new(),
             truncated: false,
+            ignore_truncated: false,
         }
     }
 
@@ -117,101 +121,14 @@ impl<'a> InlineHtmlBuilder<'a> {
     }
 
     /// Append the given inline node by converting it to Pango markup.
-    fn append_node(&mut self, node: &NodeRef, should_linkify: bool) {
+    fn append_node(&mut self, node: &NodeRef, context: NodeContext) {
         match node.data() {
             NodeData::Element(data) => {
                 let data = data.to_matrix();
-                match data.element {
-                    MatrixElement::Del | MatrixElement::S => {
-                        self.append_tags_and_children("s", node.children(), should_linkify);
-                    }
-                    MatrixElement::A(anchor) => {
-                        // First, check if it's a mention, if we detect mentions.
-                        if let Some(uri) = &anchor.href {
-                            if let MentionsMode::WithMentions { pills, room, .. } =
-                                &mut self.mentions
-                            {
-                                if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
-                                    pills.push(pill);
-
-                                    return;
-                                }
-                            }
-                        }
-
-                        // It's not a mention, render the link, if it has a URI.
-                        let mut has_opening_tag = false;
-
-                        if let Some(uri) = &anchor.href {
-                            has_opening_tag = self.append_link_opening_tag_from_anchor_uri(uri);
-                        }
-
-                        // Always render the children.
-                        for node in node.children() {
-                            // Don't try to linkify text if we render the element, it does not make
-                            // sense to nest links.
-                            self.append_node(&node, !has_opening_tag && should_linkify);
-                        }
-
-                        if has_opening_tag {
-                            self.inner.push_str("</a>");
-                        }
-                    }
-                    MatrixElement::Sup => {
-                        self.append_tags_and_children("sup", node.children(), should_linkify);
-                    }
-                    MatrixElement::Sub => {
-                        self.append_tags_and_children("sub", node.children(), should_linkify);
-                    }
-                    MatrixElement::B | MatrixElement::Strong => {
-                        self.append_tags_and_children("b", node.children(), should_linkify);
-                    }
-                    MatrixElement::I | MatrixElement::Em => {
-                        self.append_tags_and_children("i", node.children(), should_linkify);
-                    }
-                    MatrixElement::U => {
-                        self.append_tags_and_children("u", node.children(), should_linkify);
-                    }
-                    MatrixElement::Code(_) => {
-                        // Don't try to linkify text, it does not make sense to detect links inside
-                        // code.
-                        self.append_tags_and_children("tt", node.children(), false);
-                    }
-                    MatrixElement::Br => {
-                        if self.single_line {
-                            self.truncated = true;
-                        } else {
-                            self.inner.push('\n');
-                        }
-                    }
-                    MatrixElement::Span(span) => {
-                        self.append_span(&span, node.children(), should_linkify);
-                    }
-                    element => {
-                        debug!("Unexpected HTML inline element: {element:?}");
-                        self.append_nodes(node.children(), should_linkify);
-                    }
-                }
+                self.append_element_node(node, data.element, context.should_linkify);
             }
             NodeData::Text(text) => {
-                let text = text.borrow().collapse_whitespaces();
-
-                if should_linkify {
-                    if let MentionsMode::WithMentions {
-                        pills,
-                        room,
-                        detect_at_room,
-                    } = &mut self.mentions
-                    {
-                        Linkifier::new(&mut self.inner)
-                            .detect_mentions(room, pills, *detect_at_room)
-                            .linkify(&text);
-                    } else {
-                        Linkifier::new(&mut self.inner).linkify(&text);
-                    }
-                } else {
-                    self.inner.push_str(&text.escape_markup());
-                }
+                self.append_text_node(text.borrow().as_ref(), context);
             }
             data => {
                 debug!("Unexpected HTML node: {data:?}");
@@ -219,15 +136,131 @@ impl<'a> InlineHtmlBuilder<'a> {
         }
     }
 
+    /// Append the given inline element node by converting it to Pango markup.
+    fn append_element_node(
+        &mut self,
+        node: &NodeRef,
+        element: MatrixElement,
+        should_linkify: bool,
+    ) {
+        match element {
+            MatrixElement::Del | MatrixElement::S => {
+                self.append_tags_and_children("s", node.children(), should_linkify);
+            }
+            MatrixElement::A(anchor) => {
+                // First, check if it's a mention, if we detect mentions.
+                if let Some(uri) = &anchor.href {
+                    if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
+                        if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
+                            pills.push(pill);
+
+                            return;
+                        }
+                    }
+                }
+
+                // It's not a mention, render the link, if it has a URI.
+                let mut has_opening_tag = false;
+
+                if let Some(uri) = &anchor.href {
+                    has_opening_tag = self.append_link_opening_tag_from_anchor_uri(uri);
+                }
+
+                // Always render the children.
+                self.ignore_truncated = true;
+
+                // Don't try to linkify text if we render the element, it does not make
+                // sense to nest links.
+                let should_linkify = !has_opening_tag && should_linkify;
+
+                self.append_nodes(node.children(), should_linkify);
+
+                self.ignore_truncated = false;
+
+                if has_opening_tag {
+                    self.inner.push_str("</a>");
+                }
+            }
+            MatrixElement::Sup => {
+                self.append_tags_and_children("sup", node.children(), should_linkify);
+            }
+            MatrixElement::Sub => {
+                self.append_tags_and_children("sub", node.children(), should_linkify);
+            }
+            MatrixElement::B | MatrixElement::Strong => {
+                self.append_tags_and_children("b", node.children(), should_linkify);
+            }
+            MatrixElement::I | MatrixElement::Em => {
+                self.append_tags_and_children("i", node.children(), should_linkify);
+            }
+            MatrixElement::U => {
+                self.append_tags_and_children("u", node.children(), should_linkify);
+            }
+            MatrixElement::Code(_) => {
+                // Don't try to linkify text, it does not make sense to detect links inside
+                // code.
+                self.append_tags_and_children("tt", node.children(), false);
+            }
+            MatrixElement::Br => {
+                if self.single_line {
+                    self.truncated = true;
+                } else {
+                    self.inner.push('\n');
+                }
+            }
+            MatrixElement::Span(span) => {
+                self.append_span(&span, node.children(), should_linkify);
+            }
+            element => {
+                debug!("Unexpected HTML inline element: {element:?}");
+                self.append_nodes(node.children(), should_linkify);
+            }
+        }
+    }
+
+    /// Append the given text node content.
+    fn append_text_node(&mut self, text: &str, context: NodeContext) {
+        // Remove spaces at the beginning and end of an HTML element.
+        let text = text.collapse_whitespaces(context.is_first_child, context.is_last_child);
+
+        if context.should_linkify {
+            if let MentionsMode::WithMentions {
+                pills,
+                room,
+                detect_at_room,
+            } = &mut self.mentions
+            {
+                Linkifier::new(&mut self.inner)
+                    .detect_mentions(room, pills, *detect_at_room)
+                    .linkify(&text);
+            } else {
+                Linkifier::new(&mut self.inner).linkify(&text);
+            }
+        } else {
+            self.inner.push_str(&text.escape_markup());
+        }
+    }
+
     /// Append the given inline nodes, converted to Pango markup.
     fn append_nodes(&mut self, nodes: impl IntoIterator<Item = NodeRef>, should_linkify: bool) {
-        for node in nodes {
-            self.append_node(&node, should_linkify);
+        let mut is_first_child = true;
+        let mut nodes_iter = nodes.into_iter().peekable();
 
-            if self.truncated {
+        while let Some(node) = nodes_iter.next() {
+            let child_context = NodeContext {
+                should_linkify,
+                is_first_child,
+                is_last_child: nodes_iter.peek().is_none(),
+            };
+
+            self.append_node(&node, child_context);
+
+            if self.truncated && !self.ignore_truncated {
                 // Stop as soon as the string is truncated.
                 break;
             }
+
+            is_first_child = false;
         }
     }
 
@@ -354,4 +387,15 @@ enum MentionsMode<'a> {
         /// Whether to detect `@room` mentions.
         detect_at_room: bool,
     },
+}
+
+/// Context for an HTML node.
+#[derive(Debug, Clone, Copy)]
+struct NodeContext {
+    /// Whether we should try to search for links in the text of the node.
+    should_linkify: bool,
+    /// Whether this is the first child node of an element.
+    is_first_child: bool,
+    /// Whether this is the last child node of an element.
+    is_last_child: bool,
 }

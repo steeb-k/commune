@@ -55,10 +55,10 @@ fn collapse_whitespace() {
     assert_eq!(s, "Hello you! You are <b>my friend</b>.");
     assert!(pills.is_none());
 
-    let html = Html::parse("Hello    \nyou! \n\nYou are \n<b>   my \nfriend   </b>.");
+    let html = Html::parse(" Hello    \nyou! \n\nYou are \n<b>   my \nfriend   </b>.  ");
     let (s, pills) = InlineHtmlBuilder::new(false, false).build_with_nodes(html.children());
 
-    assert_eq!(s, "Hello you! You are <b> my friend </b>.");
+    assert_eq!(s, "Hello you! You are <b>my friend</b>.");
     assert!(pills.is_none());
 }
 
