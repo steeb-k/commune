@@ -3,13 +3,13 @@
   <template class="ContentMessageVisualMedia" parent="GtkWidget">
     <property name="focusable">True</property>
     <property name="halign">start</property>
+    <property name="overflow">hidden</property>
     <child>
       <object class="GtkOverlay" id="overlay">
         <style>
           <class name="visual-content"/>
           <class name="opaque-bg"/>
         </style>
-        <property name="overflow">hidden</property>
         <child>
           <object class="GtkStack" id="stack">
             <property name="transition-type">crossfade</property>
