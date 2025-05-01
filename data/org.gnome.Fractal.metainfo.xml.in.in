@@ -35,15 +35,15 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-10/screenshots/main.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/main.png</image>
       <caption>Fractal’s main window</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-10/screenshots/media-history.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/media-history.png</image>
       <caption>View the media history of a Matrix room</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-10/screenshots/adaptive.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/adaptive.png</image>
       <caption>Fractal’s interface adapts to small screens</caption>
     </screenshot>
   </screenshots>
@@ -71,67 +71,41 @@
   </content_rating>
 
   <releases>@development-release@
-  <release version="11~rc" type="development" date="2025-04-17">
+    <release version="11" type="stable" date="2025-05-01">
       <description>
         <p>
-          Here comes the RC. New since 11.beta:
+            A new version of Fractal numbered Eleven? Stranger things have happened… Features come
+            running up that hill:
         </p>
         <ul>
           <li>
-            Rearranged account settings, with a new Safety tab
-          </li>
-          <li>
-            New setting to toggle media preview visibility
-          </li>
-          <li>
-            Sessions can be renamed
-          </li>
-          <li>
             Support for login using the OAuth 2.0 API (as used by matrix.org, which recently made
             the switch to Matrix Authentication Service)
+          </li>
+          <li>
+            Overhaul of the page that lists user sessions, with details moved to subpages, for a
+            less cluttered feel, and allowing to rename sessions!
+          </li>
+          <li>
+            Rearranged account settings, with a new Safety tab that includes a setting to toggle
+            media preview visibility
+          </li>
+          <li>
+            BlurHashes for images and videos, that are used as placeholders while the media is
+            loading or if the preview is disabled
           </li>
           <li>
             Contiguous state events are grouped behind a single item
           </li>
         </ul>
         <p>
-          But what does RC stand for? Really Cool? Reasonably Complete? Rose Colored¹? Release
-          Candidate, of course! That means it should be mostly stable and we expect to only include
-          minor improvements until the release of Fractal 11.
+          As usual, this release includes other improvements and fixes thanks to all our
+          contributors, and our upstream projects.
         </p>
         <p>
-          As usual, this release includes other improvements, fixes and new translations thanks to
-          all our contributors, and our upstream projects.
-        </p>
-        <p>
-          1. That was actually once true, with Fractal 9.rc.
-        </p>
-      </description>
-    </release>
-    <release version="11~beta" type="development" date="2025-03-27">
-      <description>
-        <p>
-          It’s the beginning of bee season! 🌸🌺🌼 🐝 B like beta!
-        </p>
-        <ul>
-          <li>
-            New shortcuts Ctrl + Page Up and Ctrl + Page Down go to the previous/next room in the
-            list.
-          </li>
-          <li>
-            The media cache will now be periodically cleaned up.
-          </li>
-          <li>
-            The page that lists user sessions has been overhauled, with details moved to subpages,
-            for a less cluttered feel, and paving the way to a new feature!
-          </li>
-          <li>
-            A couple of small cosmetic changes have landed as well.
-          </li>
-        </ul>
-        <p>
-          As usual, this release includes other improvements, fixes and new translations thanks to
-          all our contributors, and our upstream projects.
+          We want to address special thanks to the translators who worked on this version. We know
+          this is a huge undertaking and have a deep appreciation for what you’ve done. If you want
+          to help with this effort, head over to l10n.gnome.org.
         </p>
       </description>
     </release>
