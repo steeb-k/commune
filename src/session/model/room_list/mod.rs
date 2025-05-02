@@ -205,7 +205,7 @@ mod imp {
 
             let mut new_rooms = HashMap::new();
 
-            for (room_id, left_room) in rooms.leave {
+            for (room_id, left_room) in rooms.left {
                 let room = if let Some(room) = self.get(&room_id) {
                     room
                 } else if let Some(matrix_room) = client.get_room(&room_id) {
@@ -222,7 +222,7 @@ mod imp {
                 room.handle_ambiguity_changes(left_room.ambiguity_changes.values());
             }
 
-            for (room_id, joined_room) in rooms.join {
+            for (room_id, joined_room) in rooms.joined {
                 let room = if let Some(room) = self.get(&room_id) {
                     room
                 } else if let Some(matrix_room) = client.get_room(&room_id) {
@@ -240,7 +240,7 @@ mod imp {
                 room.handle_ambiguity_changes(joined_room.ambiguity_changes.values());
             }
 
-            for (room_id, _invited_room) in rooms.invite {
+            for (room_id, _invited_room) in rooms.invited {
                 let room = if let Some(room) = self.get(&room_id) {
                     room
                 } else if let Some(matrix_room) = client.get_room(&room_id) {
