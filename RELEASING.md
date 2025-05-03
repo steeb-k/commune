@@ -75,42 +75,33 @@ You will be prompted for a tag message. This message doesn't really matter so so
 
 Publishing a version of Fractal on Flathub is done via its [Flathub repository on GitHub](https://github.com/flathub/org.gnome.Fractal/).
 A permission from the Flathub team granted to your GitHub account is necessary to merge PRs on this
-repository and interact with the buildbot, but anyone can open a PR.
+repository, but anyone can open a PR.
 
 1. Open a PR against the correct branch. For a stable build, work against the `master` branch, for a
-beta build, work against the `beta` branch. It must contain a commit that updates the manifest to:
+  beta build, work against the `beta` branch.
+
+  It must contain a commit that updates the manifest to:
+
   - Use the latest GNOME runtime.
   - Make sure that the Flatpak dependencies are the same as in the nightly manifest, and using the
     same version.
   - Build the latest version of Fractal, identified by its tag _and_ commit hash.
-2. When the PR is opened, a CI job will update the `cargo-sources.json` file with the latest Rust
-  dependencies for Fractal and add a commit to the PR.
-3. The Flathub buildbot will likely launch 2 builds, one for when the PR was opened, and another one
-  after the `cargo-sources.json` commit. You can stop any of those 2 builds, as long as the
-  remaining one uses the latest commit as the `flathub_revision` in the `Build Properties` tab.
-4. Once the build succeeds, test the generated Flatpak as instructed and watch for obvious errors.
-  If there are no issues, merge the PR.
-5. To watch the next steps, go to https://buildbot.flathub.org/. You should see a job for Fractal
-  start soon, unless there is a queue in `Builds > Pending Buildrequests`. Open that job and wait
-  for it to complete. When it is complete, there will be instructions again to test that build.
-6. If everything is fine with the build, click the `Publish` button to publish the build right away.
-  If this is not done, the build will be published anyway after 3 to 4 hours. There can be some time
-  before the publish job is complete and `flatpak update` offers to update the app.
 
-## Launching a build manually for Flathub
+  If the list of Rust modules to build changes, the `MODULES` variable in the
+  `update-cargo-sources.sh` script must also be updated.
+2. When the PR is opened, a CI job will update the `*-cargo-sources.json` files with the latest
+  dependencies for the Rust modules and add a commit to the PR if necessary.
+3. The CI will trigger a test build automatically.
 
-In most cases, this should not be necessary. Flathub launches builds automatically for PRs and after
-a PR is merged. If those builds fail, there is a `Rebuild` button to trigger a new build. However in
-some cases, if the previous builds are not available anymore, if is necessary to trigger a build
-manually:
+  If the build fails in CI and you want to trigger it again, post a comment saying `bot, build`.
 
-1. Go to https://buildbot.flathub.org/ and log in.
-2. Click on `Start build`.
-3. Enter only the App ID. It is `org.gnome.Fractal` for the stable branch, and
-  `org.gnome.Fractal/beta` for the beta branch.
-4. If you only want to trigger a test build, i.e. one that will not be published in the end, check
-  the corresponding setting.
-5. Click on `Start build`.
+  If the build succeeds, test the generated Flatpak as instructed and watch for obvious errors. If
+  there are no issues, merge the PR.
+4. Merging the PR will trigger an "official" build that will then be published on Flathub or Flathub
+  beta within 1 to 2 hours. If this build fails, contact the Flathub admins to launch it again.
+
+More details about these steps can be found in the Flathub docs about [maintenance](https://docs.flathub.org/docs/for-app-authors/maintenance)
+and [updates](https://docs.flathub.org/docs/for-app-authors/updates).
 
 ## Getting a branch added to Damned Lies
 
