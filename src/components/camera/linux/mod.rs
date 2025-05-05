@@ -34,7 +34,7 @@ impl CameraExt for LinuxCamera {
                 }
             }
         };
-        let handle = spawn_tokio!(timeout(Duration::from_secs(1), fut));
+        let handle = spawn_tokio!(async move { timeout(Duration::from_secs(1), fut).await });
 
         if let Ok(is_present) = handle.await.expect("task was not aborted") {
             is_present
