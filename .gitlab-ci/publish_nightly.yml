@@ -9,3 +9,4 @@ publish_nightly@x86_64:
 publish_nightly@aarch64:
   extends: .publish_nightly
   needs: ['build@aarch64']
+  allow_failure: true
