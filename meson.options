@@ -6,6 +6,7 @@ option(
     'beta',
     'development',
     'hack',
+    'build-env',
   ],
   value: 'default',
   description: 'The build profile for Fractal. One of "default", "beta", "development" or "hack".'

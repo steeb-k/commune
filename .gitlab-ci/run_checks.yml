@@ -1,5 +1,7 @@
 # Configure and run code checks
 
+include: '.gitlab-ci/utils.yml'
+
 # Custom checks and lints
 checks:
   stage: check
@@ -9,6 +11,8 @@ checks:
 
 # Lint the code
 cargo-clippy:
+  extends:
+    - .remove_build_only_modules
   stage: check
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:

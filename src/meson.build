@@ -42,6 +42,12 @@ endif
 
 cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
 
+if build_env_only
+  depends = []
+else
+  depends = [resources, ui_resources]
+endif
+
 custom_target(
   'cargo-build',
   build_by_default: true,
@@ -50,7 +56,7 @@ custom_target(
   console: true,
   install: true,
   install_dir: bindir,
-  depends: [resources, ui_resources],
+  depends: depends,
   command: [
     'env',
     cargo_env,

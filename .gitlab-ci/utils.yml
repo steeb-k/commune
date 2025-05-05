@@ -1,0 +1,16 @@
+# Utilities to include in other jobs.
+
+# Remove the Flatpak modules that are only necessary when building the app with meson.
+.remove_build_only_modules:
+  variables:
+    # JSON array of the names of the Flatpak modules to remove.
+    MODULES_TO_REMOVE: '["grass", "glycin-loaders"]'
+  before_script:
+    # Create a temporary file.
+    - TMP_FILE=$(mktemp)
+    # Remove the modules in the manifest and write the output to the temporary file.
+    - jq --argjson modules_to_remove "${MODULES_TO_REMOVE}"  'del(.modules[] | select(IN(.name; $modules_to_remove | .[])))' ${MANIFEST_PATH} > $TMP_FILE
+    # Replace the manifest with the temporary file.
+    - mv $TMP_FILE ${MANIFEST_PATH}
+    # Use meson's build-env profile.
+    - sed -i "s|-Dprofile=development|-Dprofile=build-env|g" ${MANIFEST_PATH}

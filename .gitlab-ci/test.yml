@@ -1,5 +1,7 @@
 # Tests after the app is built.
 
+include: '.gitlab-ci/utils.yml'
+
 # Validate the metainfo with Flathub's tool.
 lint-metainfo:
   stage: test
@@ -17,17 +19,23 @@ lint-metainfo:
 
 # Run the Rust tests.
 rust-tests:
+  extends:
+    - .remove_build_only_modules
   stage: test
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak
-  variables:
-    TMP_MANIFEST_PATH: "build-aux/org.gnome.Fractal.CiRust.json"
   script:
-    # Add a module for nextest to the Flatpak manifest
-    - jq --slurpfile nextest .gitlab-ci/nextest.module.json '.modules = [$nextest[], .modules[]]' ${MANIFEST_PATH} > ${TMP_MANIFEST_PATH}
-    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${TMP_MANIFEST_PATH}
-    - echo "cargo-nextest nextest run --config-file ../.gitlab-ci/nextest.toml" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${TMP_MANIFEST_PATH}
+    # Create a temporary file.
+    - TMP_FILE=$(mktemp)
+    # Add a module for nextest to the Flatpak manifest and write it to the temporary file.
+    - jq --slurpfile nextest .gitlab-ci/nextest.module.json '.modules = [$nextest[], .modules[]]' ${MANIFEST_PATH} > ${TMP_FILE}
+    # Replace the manifest with the temporary file.
+    - mv $TMP_FILE ${MANIFEST_PATH}
+    # Initialize the Flatpak sandbox.
+    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
+    # Run the tests.
+    - echo "cargo-nextest nextest run --config-file ../.gitlab-ci/nextest.toml" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
   dependencies: []
   artifacts:
     reports:
@@ -35,6 +43,8 @@ rust-tests:
 
 # Test that there are no errors in the docs.
 build-docs:
+  extends:
+    - .remove_build_only_modules
   stage: test
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:

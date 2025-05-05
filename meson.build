@@ -66,7 +66,12 @@ iconsdir = datadir / 'icons'
 podir = meson.project_source_root() / 'po'
 gettext_package = meson.project_name()
 
-if get_option('profile') == 'development'
+# When the `build-env` profile is used, we only want to set up the build
+# environment for the sandbox, we will not try to compile the app, so we can
+# remove some build steps.
+build_env_only = get_option('profile') == 'build-env'
+
+if get_option('profile') == 'development' or build_env_only
   profile = 'Devel'
   application_id += '.Devel'
 elif get_option('profile') == 'hack'
@@ -94,8 +99,11 @@ if profile == 'Devel'
   run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
 endif
 
-subdir('data')
-subdir('po')
+if not build_env_only
+  subdir('data')
+  subdir('po')
+endif
+
 subdir('src')
 
 gnome.post_install(
