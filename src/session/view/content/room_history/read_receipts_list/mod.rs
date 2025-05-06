@@ -101,13 +101,12 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.avatar_list
-                .bind_model(Some(self.list.clone()), |item| {
-                    item.downcast_ref::<MemberTimestamp>()
-                        .and_then(MemberTimestamp::member)
-                        .map(|m| m.avatar_data().clone())
-                        .unwrap()
-                });
+            self.avatar_list.bind_model(Some(&self.list), |item| {
+                item.downcast_ref::<MemberTimestamp>()
+                    .and_then(MemberTimestamp::member)
+                    .expect("item should be a member timestamp with a member")
+                    .avatar_data()
+            });
 
             self.list.connect_items_changed(clone!(
                 #[weak(rename_to = imp)]

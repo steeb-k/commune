@@ -84,9 +84,9 @@ mod imp {
                     move |_| obj.notify_is_empty()
                 ));
 
-                self.avatar_list.bind_model(Some(list.clone()), |item| {
+                self.avatar_list.bind_model(Some(list), |item| {
                     item.downcast_ref::<Member>()
-                        .expect("typing list item is a member")
+                        .expect("typing list item should be a member")
                         .avatar_data()
                 });
 
