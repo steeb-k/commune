@@ -260,6 +260,11 @@ impl AccountSettings {
         self.imp().account_management_url_builder()
     }
 
+    /// Show the "Encryption" tab.
+    pub(crate) fn show_encryption_tab(&self) {
+        self.set_visible_page_name("encryption");
+    }
+
     /// Show the given subpage.
     pub(crate) fn show_subpage(&self, subpage: AccountSettingsSubpage) {
         let Some(session) = self.session() else {

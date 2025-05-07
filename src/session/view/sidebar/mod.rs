@@ -399,8 +399,8 @@ mod imp {
 
             let dialog = AccountSettings::new(&session);
 
-            // Show the security tab if the user uses the back button.
-            dialog.set_visible_page_name("security");
+            // Show the encryption tab if the user uses the back button.
+            dialog.show_encryption_tab();
 
             let security = session.security();
             let crypto_identity_state = security.crypto_identity_state();

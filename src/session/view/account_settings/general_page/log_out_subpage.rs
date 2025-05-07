@@ -113,7 +113,7 @@ mod imp {
             };
 
             dialog.pop_subpage();
-            dialog.set_visible_page_name("security");
+            dialog.show_encryption_tab();
         }
 
         /// Log out the current session.
