@@ -205,6 +205,8 @@ impl<'a> InlineHtmlBuilder<'a> {
                 if self.single_line {
                     self.truncated = true;
                 } else {
+                    // Remove whitespaces before the newline.
+                    self.inner.truncate_end_whitespaces();
                     self.inner.push('\n');
                 }
             }
@@ -220,8 +222,12 @@ impl<'a> InlineHtmlBuilder<'a> {
 
     /// Append the given text node content.
     fn append_text_node(&mut self, text: &str, context: NodeContext) {
-        // Remove spaces at the beginning and end of an HTML element.
-        let text = text.collapse_whitespaces(context.is_first_child, context.is_last_child);
+        // Remove spaces at the beginning and end of an HTML element, and after a
+        // newline.
+        let text = text.collapse_whitespaces(
+            context.is_first_child || self.inner.ends_with('\n'),
+            context.is_last_child,
+        );
 
         if context.should_linkify {
             if let MentionsMode::WithMentions {
