@@ -192,7 +192,6 @@ mod imp {
         fn handle_items_changed(&self, position: u32, removed: u32, added: u32) {
             let mut children = self.children.borrow_mut();
             let prev_count = children.len();
-            tracing::debug!(position, removed, added, prev_count, "items changed");
 
             let extract_avatar_data_fn_borrow = self.extract_avatar_data_fn.borrow();
             let extract_avatar_data_fn = extract_avatar_data_fn_borrow
