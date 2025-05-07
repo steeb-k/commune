@@ -13,8 +13,6 @@
         <child>
           <object class="GtkStack" id="stack">
             <property name="transition-type">crossfade</property>
-            <property name="hhomogeneous">False</property>
-            <property name="vhomogeneous">True</property>
             <property name="interpolate-size">True</property>
             <child>
               <object class="GtkStackPage">
