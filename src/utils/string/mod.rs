@@ -106,25 +106,18 @@ impl StrMutExt for String {
             return;
         }
 
-        let rspaces_idx = self
-            .rfind(|c: char| !c.is_whitespace())
-            .map(|idx| {
-                // We have the position of the last non-whitespace character, so the first
-                // whitespace character is the next one.
-                let mut idx = idx + 1;
-
-                while !self.is_char_boundary(idx) {
-                    idx += 1;
-                }
-
-                idx
+        let new_len = self
+            .char_indices()
+            .rfind(|(_, c)| !c.is_whitespace())
+            .map(|(idx, c)| {
+                // We have the position of the last non-whitespace character, so the last
+                // whitespace character is the character after it.
+                idx + c.len_utf8()
             })
             // 0 means that there are only whitespaces in the string.
             .unwrap_or_default();
 
-        if rspaces_idx < self.len() {
-            self.truncate(rspaces_idx);
-        }
+        self.truncate(new_len);
     }
 
     fn append_ellipsis(&mut self) {
