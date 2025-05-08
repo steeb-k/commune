@@ -846,7 +846,8 @@ impl Event {
     ///
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
     pub(crate) fn counts_as_unread(&self) -> bool {
-        self.item().content().counts_as_unread()
+        let item = self.item();
+        item.is_remote_event() && item.content().counts_as_unread()
     }
 
     /// Whether this `Event` can count as activity in a room.
@@ -855,7 +856,8 @@ impl Event {
     /// our own user towards joining a room, so that freshly joined rooms are at
     /// the top of the list.
     pub(crate) fn counts_as_activity(&self, own_user_id: &UserId) -> bool {
-        self.item().content().counts_as_activity(own_user_id)
+        let item = self.item();
+        item.is_remote_event() && item.content().counts_as_activity(own_user_id)
     }
 
     /// The `matrix.to` URI representation for this event.
