@@ -6,7 +6,7 @@
         <style>
           <class name="event-content"/>
         </style>
-        <property name="column-spacing">12</property>
+        <property name="column-spacing">8</property>
         <child>
           <object class="ContentSenderAvatar" id="avatar">
             <layout>
