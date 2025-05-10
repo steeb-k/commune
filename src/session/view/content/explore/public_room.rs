@@ -55,7 +55,7 @@ mod imp {
     impl PublicRoom {
         /// Set the list of rooms in the current session.
         fn set_room_list(&self, room_list: RoomList) {
-            let pending_rooms_changed_handler = room_list.connect_pending_rooms_changed(clone!(
+            let pending_rooms_changed_handler = room_list.connect_joining_rooms_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
@@ -147,7 +147,7 @@ mod imp {
         /// Update whether this room is pending.
         fn update_is_pending(&self) {
             let identifier = (*self.data().room_id).into();
-            let is_pending = self.room_list.obj().is_pending_room(identifier);
+            let is_pending = self.room_list.obj().is_joining_room(identifier);
 
             self.set_is_pending(is_pending);
         }

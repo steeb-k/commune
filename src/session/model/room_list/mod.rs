@@ -38,9 +38,9 @@ mod imp {
         /// The list of rooms.
         pub(super) list: RefCell<IndexMap<OwnedRoomId, Room>>,
         /// The list of rooms we are currently joining.
-        pub(super) pending_rooms: RefCell<HashSet<OwnedRoomOrAliasId>>,
-        /// The list of rooms that were upgraded and for which we haven't joined
-        /// the successor yet.
+        pub(super) joining_rooms: RefCell<HashSet<OwnedRoomOrAliasId>>,
+        /// The list of rooms that were upgraded and for which we have not
+        /// joined the successor yet.
         tombstoned_rooms: RefCell<HashSet<OwnedRoomId>>,
         /// The current session.
         #[property(get, construct_only)]
@@ -61,7 +61,7 @@ mod imp {
     impl ObjectImpl for RoomList {
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("pending-rooms-changed").build()]);
+                LazyLock::new(|| vec![Signal::builder("joining-rooms-changed").build()]);
             SIGNALS.as_ref()
         }
 
@@ -100,35 +100,44 @@ mod imp {
             self.list.borrow().contains_key(room_id)
         }
 
-        /// Remove the given room identifier from the pending rooms.
-        fn remove_pending_room(&self, identifier: &RoomOrAliasId) {
-            self.pending_rooms.borrow_mut().remove(identifier);
-            self.obj().emit_by_name::<()>("pending-rooms-changed", &[]);
+        /// Remove the given room identifier from the rooms we are currently
+        /// joining.
+        fn remove_joining_room(&self, identifier: &RoomOrAliasId) {
+            let removed = self.joining_rooms.borrow_mut().remove(identifier);
+
+            if removed {
+                self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
+            }
         }
 
-        /// Add the given room identified to the pending rooms.
-        fn add_pending_room(&self, identifier: OwnedRoomOrAliasId) {
-            self.pending_rooms.borrow_mut().insert(identifier);
-            self.obj().emit_by_name::<()>("pending-rooms-changed", &[]);
+        /// Add the given room identified to the rooms we are currently joining.
+        fn add_joining_room(&self, identifier: OwnedRoomOrAliasId) {
+            let inserted = self.joining_rooms.borrow_mut().insert(identifier);
+
+            if inserted {
+                self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
+            }
         }
 
-        /// Add a room that was tombstoned but for which we haven't joined the
+        /// Remove the given room identifier from the rooms we are currently
+        /// joining and replace it with the given room ID if the room is
+        /// not in the list yet.
+        fn remove_or_replace_joining_room(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
+            {
+                let mut joining_rooms = self.joining_rooms.borrow_mut();
+                joining_rooms.remove(identifier);
+
+                if !self.contains(room_id) {
+                    joining_rooms.insert(room_id.to_owned().into());
+                }
+            }
+            self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
+        }
+
+        /// Add a room that was tombstoned but for which we have not joined the
         /// successor yet.
         pub(super) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
             self.tombstoned_rooms.borrow_mut().insert(room_id);
-        }
-
-        /// Remove the given room identifier from the pending rooms and replace
-        /// it with the given room ID if the room is not in the list yet.
-        fn remove_or_replace_pending_room(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
-            {
-                let mut pending_rooms = self.pending_rooms.borrow_mut();
-                pending_rooms.remove(identifier);
-                if !self.contains(room_id) {
-                    pending_rooms.insert(room_id.to_owned().into());
-                }
-            }
-            self.obj().emit_by_name::<()>("pending-rooms-changed", &[]);
         }
 
         /// Handle when items were added to the list.
@@ -174,12 +183,7 @@ mod imp {
 
         /// Remove the room with the given ID.
         fn remove(&self, room_id: &RoomId) {
-            let removed = {
-                let mut list = self.list.borrow_mut();
-
-                list.shift_remove_full(room_id)
-            };
-
+            let removed = self.list.borrow_mut().shift_remove_full(room_id);
             self.tombstoned_rooms.borrow_mut().remove(room_id);
 
             if let Some((position, ..)) = removed {
@@ -218,7 +222,7 @@ mod imp {
                     continue;
                 };
 
-                self.remove_pending_room((*room_id).into());
+                self.remove_joining_room((*room_id).into());
                 room.handle_ambiguity_changes(left_room.ambiguity_changes.values());
             }
 
@@ -235,7 +239,7 @@ mod imp {
                     continue;
                 };
 
-                self.remove_pending_room((*room_id).into());
+                self.remove_joining_room((*room_id).into());
                 self.metainfo.watch_room(&room);
                 room.handle_ambiguity_changes(joined_room.ambiguity_changes.values());
             }
@@ -253,7 +257,7 @@ mod imp {
                     continue;
                 };
 
-                self.remove_pending_room((*room_id).into());
+                self.remove_joining_room((*room_id).into());
                 self.metainfo.watch_room(&room);
             }
 
@@ -276,7 +280,7 @@ mod imp {
             let client = session.client();
             let identifier_clone = identifier.clone();
 
-            self.add_pending_room(identifier.clone());
+            self.add_joining_room(identifier.clone());
 
             let handle = spawn_tokio!(async move {
                 client
@@ -286,11 +290,11 @@ mod imp {
 
             match handle.await.expect("task was not aborted") {
                 Ok(matrix_room) => {
-                    self.remove_or_replace_pending_room(&identifier, matrix_room.room_id());
+                    self.remove_or_replace_joining_room(&identifier, matrix_room.room_id());
                     Ok(matrix_room.room_id().to_owned())
                 }
                 Err(error) => {
-                    self.remove_pending_room(&identifier);
+                    self.remove_joining_room(&identifier);
                     error!("Joining room {identifier} failed: {error}");
 
                     let error = gettext_f(
@@ -335,9 +339,9 @@ impl RoomList {
         self.imp().list.borrow().values().cloned().collect()
     }
 
-    /// Whether the room with the given identifier is pending.
-    pub(crate) fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
-        self.imp().pending_rooms.borrow().contains(identifier)
+    /// Whether we are currently joining the room with the given identifier.
+    pub(crate) fn is_joining_room(&self, identifier: &RoomOrAliasId) -> bool {
+        self.imp().joining_rooms.borrow().contains(identifier)
     }
 
     /// Get the room with the given room ID, if any.
@@ -463,13 +467,14 @@ impl RoomList {
         self.imp().join_by_id_or_alias(identifier, via).await
     }
 
-    /// Connect to the signal emitted when the pending rooms changed.
-    pub fn connect_pending_rooms_changed<F: Fn(&Self) + 'static>(
+    /// Connect to the signal emitted when the list of rooms we are currently
+    /// joining changed.
+    pub fn connect_joining_rooms_changed<F: Fn(&Self) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
         self.connect_closure(
-            "pending-rooms-changed",
+            "joining-rooms-changed",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);
