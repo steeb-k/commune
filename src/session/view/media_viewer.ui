@@ -116,6 +116,7 @@
                 <property name="popover">
                   <object class="GtkPopoverMenu">
                     <property name="has-arrow">False</property>
+                    <property name="halign">start</property>
                     <property name="menu-model">media-context-menu-model</property>
                   </object>
                 </property>
