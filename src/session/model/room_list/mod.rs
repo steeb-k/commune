@@ -14,10 +14,10 @@ use matrix_sdk::sync::RoomUpdates;
 use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
 use tracing::{error, warn};
 
-mod room_list_metainfo;
+mod metainfo;
 
-use self::room_list_metainfo::RoomListMetainfo;
-pub use self::room_list_metainfo::RoomMetainfo;
+use self::metainfo::RoomListMetainfo;
+pub use self::metainfo::RoomMetainfo;
 use crate::{
     gettext_f,
     prelude::*,
