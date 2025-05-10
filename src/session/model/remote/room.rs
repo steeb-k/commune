@@ -14,7 +14,7 @@ use tracing::{debug, warn};
 use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
-    session::model::Session,
+    session::model::{RoomListRoomInfo, Session},
     spawn, spawn_tokio,
     utils::{matrix::MatrixRoomIdUri, string::linkify, AbortableHandle, LoadingState},
 };
@@ -62,10 +62,13 @@ mod imp {
         /// The number of joined members in the room.
         #[property(get)]
         joined_members_count: Cell<u32>,
+        /// The information about this room in the room list.
+        #[property(get)]
+        room_list_info: RoomListRoomInfo,
         /// The loading state.
         #[property(get, builder(LoadingState::default()))]
         loading_state: Cell<LoadingState>,
-        // The time of the last request.
+        /// The time of the last request.
         last_request_time: Cell<Option<Instant>>,
         request_abort_handle: AbortableHandle,
     }
@@ -82,7 +85,7 @@ mod imp {
 
     impl PillSourceImpl for RemoteRoom {
         fn identifier(&self) -> String {
-            self.uri.get().unwrap().id.to_string()
+            self.uri().id.to_string()
         }
     }
 
@@ -97,6 +100,8 @@ mod imp {
                 None,
                 None,
             )));
+
+            self.room_list_info.set_room_list(session.room_list());
         }
 
         /// Set the Matrix URI of this room.
@@ -109,6 +114,7 @@ mod imp {
                 .set(uri)
                 .expect("Matrix URI should be uninitialized");
 
+            self.update_identifiers();
             self.update_display_name();
         }
 
@@ -143,6 +149,27 @@ mod imp {
                 .borrow()
                 .clone()
                 .or_else(|| self.uri().id.clone().try_into().ok())
+        }
+
+        /// Update the identifiers to watch in the room list.
+        fn update_identifiers(&self) {
+            let id = self.uri().id.clone();
+            let room_id = self
+                .room_id()
+                .filter(|room_id| room_id.as_str() != id.as_str())
+                .map(Into::into);
+            let canonical_alias = self
+                .canonical_alias()
+                .filter(|alias| alias.as_str() != id.as_str())
+                .map(Into::into);
+
+            let identifiers = room_id
+                .into_iter()
+                .chain(canonical_alias)
+                .chain(Some(id))
+                .collect();
+
+            self.room_list_info.set_identifiers(identifiers);
         }
 
         /// Set the name of this room.
@@ -237,6 +264,7 @@ mod imp {
                 image.set_uri_and_info(data.avatar_url, None);
             }
 
+            self.update_identifiers();
             self.set_loading_state(LoadingState::Ready);
         }
 

@@ -186,11 +186,10 @@
                               </object>
                             </child>
                             <child>
-                              <object class="LoadingButton" id="join_btn">
-                                <property name="content-label" translatable="yes">Join</property>
+                              <object class="LoadingButton" id="view_or_join_btn">
                                 <property name="margin-top">12</property>
                                 <property name="halign">center</property>
-                                <signal name="clicked" handler="join_room" swapped="yes"/>
+                                <signal name="clicked" handler="view_or_join_room" swapped="yes"/>
                                 <style>
                                   <class name="suggested-action"/>
                                   <class name="standalone-button"/>

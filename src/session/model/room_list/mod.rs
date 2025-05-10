@@ -15,9 +15,10 @@ use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAlias
 use tracing::{error, warn};
 
 mod metainfo;
+mod room_info;
 
 use self::metainfo::RoomListMetainfo;
-pub use self::metainfo::RoomMetainfo;
+pub use self::{metainfo::RoomMetainfo, room_info::RoomListRoomInfo};
 use crate::{
     gettext_f,
     prelude::*,

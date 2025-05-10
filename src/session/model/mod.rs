@@ -18,7 +18,7 @@ pub(crate) use self::{
     },
     remote::*,
     room::*,
-    room_list::RoomList,
+    room_list::*,
     security::*,
     session::*,
     session_settings::*,

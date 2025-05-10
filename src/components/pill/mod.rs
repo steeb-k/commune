@@ -202,7 +202,7 @@ mod imp {
                 };
 
                 session_view.select_room(room.clone());
-            } else if let Ok(room) = source.downcast::<RemoteRoom>() {
+            } else if let Some(room) = source.downcast_ref::<RemoteRoom>() {
                 let Some(session) = room.session() else {
                     return;
                 };

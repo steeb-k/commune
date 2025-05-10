@@ -50,7 +50,7 @@ mod imp {
         #[template_child]
         room_members_count: TemplateChild<gtk::Label>,
         #[template_child]
-        join_btn: TemplateChild<LoadingButton>,
+        view_or_join_btn: TemplateChild<LoadingButton>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         session: glib::WeakRef<Session>,
@@ -61,6 +61,8 @@ mod imp {
         room: RefCell<Option<RemoteRoom>>,
         /// Whether the "Go back" button is disabled.
         disable_go_back: Cell<bool>,
+        room_loading_handler: RefCell<Option<glib::SignalHandlerId>>,
+        room_list_info_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -105,6 +107,10 @@ mod imp {
                 }
             ));
         }
+
+        fn dispose(&self) {
+            self.disconnect_signals();
+        }
     }
 
     impl WidgetImpl for RoomPreviewDialog {}
@@ -131,39 +137,64 @@ mod imp {
         }
 
         /// Set the room that is previewed.
-        pub(super) fn set_room(&self, room: Option<RemoteRoom>) {
-            if *self.room.borrow() == room {
+        pub(super) fn set_room(&self, room: &RemoteRoom) {
+            if self.room.borrow().as_ref().is_some_and(|r| r == room) {
                 return;
             }
 
-            self.room.replace(room.clone());
+            self.disconnect_signals();
 
-            if let Some(room) = room {
-                if matches!(
-                    room.loading_state(),
-                    LoadingState::Ready | LoadingState::Error
-                ) {
-                    self.fill_details();
-                } else {
-                    room.connect_loading_state_notify(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |room| {
-                            if matches!(
-                                room.loading_state(),
-                                LoadingState::Ready | LoadingState::Error
-                            ) {
-                                imp.fill_details();
-                            }
-                        }
-                    ));
+            let room_list_info = room.room_list_info();
+            let is_joining_handler = room_list_info.connect_is_joining_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_view_or_join_button();
                 }
+            ));
+            let local_room_handler = room_list_info.connect_local_room_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_view_or_join_button();
+                }
+            ));
+            self.room_list_info_handlers
+                .replace(vec![is_joining_handler, local_room_handler]);
+
+            self.room.replace(Some(room.clone()));
+
+            if matches!(
+                room.loading_state(),
+                LoadingState::Ready | LoadingState::Error
+            ) {
+                self.fill_details();
+            } else {
+                let room_loading_handler = room.connect_loading_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |room| {
+                        if matches!(
+                            room.loading_state(),
+                            LoadingState::Ready | LoadingState::Error
+                        ) {
+                            if let Some(handler) = imp.room_loading_handler.take() {
+                                room.disconnect(handler);
+                            }
+
+                            imp.fill_details();
+                        }
+                    }
+                ));
+                self.room_loading_handler
+                    .replace(Some(room_loading_handler));
             }
 
+            self.update_view_or_join_button();
             self.obj().notify_room();
         }
 
-        /// Se whether to disable the "Go back" button.
+        /// Set whether to disable the "Go back" button.
         pub(super) fn disable_go_back(&self, disable: bool) {
             self.disable_go_back.set(disable);
         }
@@ -244,10 +275,9 @@ mod imp {
 
             // Reset state before switching to possible pages.
             self.go_back_btn.set_sensitive(true);
-            self.join_btn.set_is_loading(false);
 
             let room = session.remote_cache().room(uri);
-            self.set_room(Some(room));
+            self.set_room(&room);
         }
 
         /// Fill the details with the given result.
@@ -304,18 +334,50 @@ mod imp {
             self.set_visible_page("details");
         }
 
-        /// Join the room that was entered, if it is valid.
-        #[template_callback]
-        async fn join_room(&self) {
-            let Some(session) = self.session.upgrade() else {
+        /// Update the button for viewing or joining the previewed room given
+        /// the current state.
+        fn update_view_or_join_button(&self) {
+            let Some(room) = self.room.borrow().clone() else {
                 return;
             };
+            let room_list_info = room.room_list_info();
+
+            let label = if room_list_info.local_room().is_some() {
+                gettext("View")
+            } else {
+                gettext("Join")
+            };
+            self.view_or_join_btn.set_content_label(label);
+            self.view_or_join_btn
+                .set_is_loading(room_list_info.is_joining());
+        }
+
+        /// View or join the room that was previewed.
+        #[template_callback]
+        async fn view_or_join_room(&self) {
             let Some(room) = self.room.borrow().clone() else {
                 return;
             };
 
+            if let Some(local_room) = room.room_list_info().local_room() {
+                let obj = self.obj();
+
+                if let Some(window) = obj.root().and_downcast_ref::<Window>() {
+                    window.session_view().select_room(local_room);
+                    obj.close();
+                }
+            } else {
+                self.join_room(&room).await;
+            }
+        }
+
+        /// Join the room that was previewed, if it is valid.
+        async fn join_room(&self, room: &RemoteRoom) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
             self.go_back_btn.set_sensitive(false);
-            self.join_btn.set_is_loading(true);
 
             // Join the room with the given identifier.
             let room_list = session.room_list();
@@ -325,9 +387,9 @@ mod imp {
                 Ok(room_id) => {
                     let obj = self.obj();
 
-                    if let Some(room) = room_list.get_wait(&room_id).await {
+                    if let Some(local_room) = room_list.get_wait(&room_id).await {
                         if let Some(window) = obj.root().and_downcast_ref::<Window>() {
-                            window.session_view().select_room(room);
+                            window.session_view().select_room(local_room);
                         }
                     }
 
@@ -336,7 +398,6 @@ mod imp {
                 Err(error) => {
                     toast!(self.obj(), error);
 
-                    self.join_btn.set_is_loading(false);
                     self.go_back_btn.set_sensitive(true);
                 }
             }
@@ -354,6 +415,20 @@ mod imp {
                 self.set_visible_page("entry");
             } else {
                 self.obj().close();
+            }
+        }
+
+        /// Disconnect the signal handlers of this dialog.
+        fn disconnect_signals(&self) {
+            if let Some(room) = self.room.borrow().as_ref() {
+                if let Some(handler) = self.room_loading_handler.take() {
+                    room.disconnect(handler);
+                }
+
+                let room_list_info = room.room_list_info();
+                for handler in self.room_list_info_handlers.take() {
+                    room_list_info.disconnect(handler);
+                }
             }
         }
     }
@@ -378,9 +453,9 @@ impl RoomPreviewDialog {
     }
 
     /// Set the room to preview.
-    pub(crate) fn set_room(&self, room: RemoteRoom) {
+    pub(crate) fn set_room(&self, room: &RemoteRoom) {
         let imp = self.imp();
         imp.disable_go_back(true);
-        imp.set_room(Some(room));
+        imp.set_room(room);
     }
 }
