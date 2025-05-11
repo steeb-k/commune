@@ -4,8 +4,8 @@ use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, EventTimelineItem, MembershipChange, Message, MsgLikeKind,
-    TimelineEventItemId, TimelineItemContent,
+    EventTimelineItem, MembershipChange, Message, MsgLikeKind, TimelineEventItemId,
+    TimelineItemContent,
 };
 use ruma::{
     events::{room::message::MessageType, AnySyncTimelineEvent},
@@ -114,10 +114,6 @@ impl TimelineItemContentExt for TimelineItemContent {
                 MsgLikeKind::Sticker(_) => true,
                 _ => false,
             },
-            TimelineItemContent::OtherState(state) => matches!(
-                state.content(),
-                AnyOtherFullStateEventContent::RoomTombstone(_)
-            ),
             _ => false,
         }
     }

@@ -130,7 +130,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/group_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/tombstone.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>

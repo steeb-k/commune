@@ -1143,7 +1143,6 @@ fn show_in_timeline(any: &AnySyncTimelineEvent, room_version: &RoomVersionId) ->
                 | AnySyncStateEvent::RoomCreate(_)
                 | AnySyncStateEvent::RoomEncryption(_)
                 | AnySyncStateEvent::RoomThirdPartyInvite(_)
-                | AnySyncStateEvent::RoomTombstone(_)
         ),
     }
 }

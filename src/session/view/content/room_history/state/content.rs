@@ -11,7 +11,7 @@ use ruma::{
 };
 use tracing::warn;
 
-use super::{StateCreation, StateTombstone};
+use super::StateCreation;
 use crate::{gettext_f, prelude::*, session::model::Event};
 
 mod imp {
@@ -56,7 +56,7 @@ mod imp {
                         &event.sender().disambiguated_name(),
                     ),
                 TimelineItemContent::OtherState(other_state) => {
-                    self.update_with_other_state(event, &other_state);
+                    self.update_with_other_state(&other_state);
                 }
                 _ => unreachable!(),
             }
@@ -65,7 +65,7 @@ mod imp {
         }
 
         /// Update this row with the given [`OtherState`].
-        fn update_with_other_state(&self, event: &Event, other_state: &OtherState) {
+        fn update_with_other_state(&self, other_state: &OtherState) {
             let widget = match other_state.content() {
                 AnyOtherFullStateEventContent::RoomCreate(content) => {
                     WidgetType::Creation(StateCreation::new(content))
@@ -90,9 +90,6 @@ mod imp {
                         &[("user", display_name)],
                     ))
                 }
-                AnyOtherFullStateEventContent::RoomTombstone(_) => {
-                    WidgetType::Tombstone(StateTombstone::new(&event.room()))
-                }
                 _ => {
                     warn!(
                         "Unsupported state event: {}",
@@ -109,7 +106,6 @@ mod imp {
                     child.set_label(&message);
                 }
                 WidgetType::Creation(widget) => obj.set_child(Some(&widget)),
-                WidgetType::Tombstone(widget) => obj.set_child(Some(&widget)),
             }
         }
 
@@ -371,7 +367,6 @@ impl IsABin for StateContent {}
 enum WidgetType {
     Text(String),
     Creation(StateCreation),
-    Tombstone(StateTombstone),
 }
 
 /// Construct a `GtkLabel` for presenting a state content.

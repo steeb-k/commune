@@ -658,12 +658,11 @@ impl Event {
                 true
             }
             TimelineItemContent::OtherState(other_state) => {
-                // `m.room.create` and `m.room.tombstone` should only occur once per room and
-                // they have special rendering so we do not group them.
+                // `m.room.create` should only occur once per room and it has special rendering
+                // so we do not group it.
                 !matches!(
                     other_state.content(),
                     AnyOtherFullStateEventContent::RoomCreate(_)
-                        | AnyOtherFullStateEventContent::RoomTombstone(_)
                 )
             }
             _ => false,
