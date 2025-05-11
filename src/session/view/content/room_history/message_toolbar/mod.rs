@@ -37,10 +37,10 @@ use self::{
 };
 use super::message_row::MessageContent;
 use crate::{
-    components::{CustomEntry, LabelWithWidgets},
+    components::{CustomEntry, LabelWithWidgets, LoadingButton},
     gettext_f,
     prelude::*,
-    session::model::{Event, Member, Room, Timeline},
+    session::model::{Event, Member, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
         media::{
@@ -49,10 +49,23 @@ use crate::{
         },
         Location, LocationError, TemplateCallbacks, TokioDrop,
     },
+    Application, Window,
 };
 
 /// A map of composer state per-session and per-room.
 type ComposerStatesMap = HashMap<Option<String>, HashMap<Option<OwnedRoomId>, ComposerState>>;
+
+/// The available stack pages of the [`MessageToolbar`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::AsRefStr, strum::EnumString)]
+#[strum(serialize_all = "kebab-case")]
+enum MessageToolbarPage {
+    /// The composer and other buttons to send messages.
+    Composer,
+    /// The user is not allowed to send messages in the room.
+    NoPermission,
+    /// The room was tombstoned.
+    Tombstoned,
+}
 
 mod imp {
     use std::{
@@ -63,7 +76,6 @@ mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
-    use crate::Application;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
@@ -81,9 +93,15 @@ mod imp {
         related_event_header: TemplateChild<LabelWithWidgets>,
         #[template_child]
         related_event_content: TemplateChild<MessageContent>,
+        #[template_child]
+        tombstoned_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        tombstoned_button: TemplateChild<LoadingButton>,
         /// The timeline used to send messages.
         #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
         timeline: glib::WeakRef<Timeline>,
+        successor_room_list_info: RoomListRoomInfo,
+        room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         send_message_permission_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// Whether outgoing messages should be interpreted as markdown.
         #[property(get, set)]
@@ -150,30 +168,53 @@ mod imp {
             // Location.
             let location = Location::new();
             obj.action_set_enabled("message-toolbar.send-location", location.is_available());
+
+            // Listen to changes in the room list for the successor.
+            self.successor_room_list_info
+                .connect_is_joining_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_tombstoned_page();
+                    }
+                ));
+            self.successor_room_list_info
+                .connect_local_room_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_tombstoned_page();
+                    }
+                ));
         }
 
         fn dispose(&self) {
             self.completion.unparent();
-
-            if let Some(timeline) = self.timeline.upgrade() {
-                if let Some(handler) = self.send_message_permission_handler.take() {
-                    timeline.room().permissions().disconnect(handler);
-                }
-            }
+            self.disconnect_signals();
         }
     }
 
     impl WidgetImpl for MessageToolbar {
         fn grab_focus(&self) -> bool {
-            if self
+            let Some(visible_page) = self
                 .main_stack
                 .visible_child_name()
-                .is_none_or(|name| name == "disabled")
-            {
+                .and_then(|name| MessageToolbarPage::try_from(name.as_str()).ok())
+            else {
                 return false;
-            }
+            };
 
-            self.message_entry.grab_focus()
+            match visible_page {
+                MessageToolbarPage::Composer => self.message_entry.grab_focus(),
+                MessageToolbarPage::NoPermission => false,
+                MessageToolbarPage::Tombstoned => {
+                    if self.tombstoned_button.is_visible() {
+                        self.tombstoned_button.grab_focus()
+                    } else {
+                        false
+                    }
+                }
+            }
         }
     }
 
@@ -189,13 +230,39 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(timeline) = &old_timeline {
-                if let Some(handler) = self.send_message_permission_handler.take() {
-                    timeline.room().permissions().disconnect(handler);
-                }
-            }
+            self.disconnect_signals();
 
             if let Some(timeline) = timeline {
+                let room = timeline.room();
+
+                let is_tombstoned_handler = room.connect_is_tombstoned_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_visible_page();
+                    }
+                ));
+                let successor_id_handler = room.connect_successor_id_string_notify(clone!(
+                    #[weak(rename_to= imp)]
+                    self,
+                    move |_| {
+                        imp.update_successor_identifier();
+                        imp.update_tombstoned_page();
+                    }
+                ));
+                let successor_handler = room.connect_successor_notify(clone!(
+                    #[weak(rename_to= imp)]
+                    self,
+                    move |_| {
+                        imp.update_tombstoned_page();
+                    }
+                ));
+                self.room_handlers.replace(vec![
+                    is_tombstoned_handler,
+                    successor_id_handler,
+                    successor_handler,
+                ]);
+
                 let send_message_permission_handler = timeline
                     .room()
                     .permissions()
@@ -203,20 +270,42 @@ mod imp {
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
-                            imp.send_message_permission_updated();
+                            imp.update_visible_page();
                         }
                     ));
                 self.send_message_permission_handler
                     .replace(Some(send_message_permission_handler));
+
+                if let Some(session) = room.session() {
+                    self.successor_room_list_info
+                        .set_room_list(session.room_list());
+                }
             }
 
             self.completion.set_room(timeline.map(Timeline::room));
             self.timeline.set(timeline);
 
-            self.send_message_permission_updated();
+            self.update_successor_identifier();
+            self.update_tombstoned_page();
+            self.update_visible_page();
 
             obj.notify_timeline();
             self.update_current_composer_state(old_timeline);
+        }
+
+        /// The stack page that should be presented given the current state.
+        fn visible_page(&self) -> MessageToolbarPage {
+            let Some(room) = self.timeline.upgrade().map(|timeline| timeline.room()) else {
+                return MessageToolbarPage::NoPermission;
+            };
+
+            if room.is_tombstoned() {
+                MessageToolbarPage::Tombstoned
+            } else if room.permissions().can_send_message() {
+                MessageToolbarPage::Composer
+            } else {
+                MessageToolbarPage::NoPermission
+            }
         }
 
         /// Whether the user can compose a message.
@@ -224,20 +313,62 @@ mod imp {
         /// It depends on whether our own user has the permission to send a
         /// message in the current room.
         pub(super) fn can_compose_message(&self) -> bool {
-            self.timeline
-                .upgrade()
-                .is_some_and(|timeline| timeline.room().permissions().can_send_message())
+            self.visible_page() == MessageToolbarPage::Composer
         }
 
-        /// Handle an update of the permission to send a message in the current
+        /// Update the visible stack page.
+        fn update_visible_page(&self) {
+            self.main_stack
+                .set_visible_child_name(self.visible_page().as_ref());
+        }
+
+        /// Update the identifier to watch for the successor of the current
         /// room.
-        fn send_message_permission_updated(&self) {
-            let page = if self.can_compose_message() {
-                "enabled"
-            } else {
-                "disabled"
+        fn update_successor_identifier(&self) {
+            let successor_id = self
+                .timeline
+                .upgrade()
+                .and_then(|timeline| timeline.room().successor_id().cloned());
+            self.successor_room_list_info
+                .set_identifiers(successor_id.into_iter().map(Into::into).collect());
+        }
+
+        /// Update the tombstoned stack page.
+        fn update_tombstoned_page(&self) {
+            let Some(room) = self.timeline.upgrade().map(|timeline| timeline.room()) else {
+                return;
             };
-            self.main_stack.set_visible_child_name(page);
+
+            // A "real" successor must have the current room as a predecessor. We still want
+            // to show the "View" button if it is only the room that matches the successor
+            // ID.
+            let has_successor_room =
+                room.successor().is_some() || self.successor_room_list_info.local_room().is_some();
+            let has_successor_id = room.successor_id().is_some();
+            let has_successor = has_successor_room || has_successor_id;
+
+            // Update description.
+            let description = if has_successor {
+                gettext("The conversation continues in a new room")
+            } else {
+                gettext("The conversation has ended")
+            };
+            self.tombstoned_label.set_label(&description);
+
+            // Update button.
+            if has_successor {
+                let label = if has_successor_room {
+                    // Translators: This is a verb, as in 'View Room'.
+                    gettext("View")
+                } else {
+                    gettext("Join")
+                };
+                self.tombstoned_button.set_content_label(label);
+
+                let is_joining_successor = self.successor_room_list_info.is_joining();
+                self.tombstoned_button.set_is_loading(is_joining_successor);
+            }
+            self.tombstoned_button.set_visible(has_successor);
         }
 
         /// Whether the buffer of the composer is empty.
@@ -1043,6 +1174,62 @@ mod imp {
             }
 
             room.send_typing_notification(typing);
+        }
+
+        /// Join or view the successor of the room, if possible.
+        #[template_callback]
+        async fn join_or_view_successor(&self) {
+            let Some(room) = self.timeline.upgrade().map(|timeline| timeline.room()) else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            if !room.is_tombstoned() {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(successor) = room
+                .successor()
+                .or_else(|| self.successor_room_list_info.local_room())
+            {
+                let Some(window) = obj.root().and_downcast::<Window>() else {
+                    return;
+                };
+
+                window.session_view().select_room(successor);
+            } else if let Some(successor_id) = room.successor_id().cloned() {
+                let via = successor_id
+                    .server_name()
+                    .map(ToOwned::to_owned)
+                    .into_iter()
+                    .collect();
+
+                if let Err(error) = session
+                    .room_list()
+                    .join_by_id_or_alias(successor_id.into(), via)
+                    .await
+                {
+                    toast!(obj, error);
+                }
+            }
+        }
+
+        /// Disconnect the signal handlers of this toolbar.
+        fn disconnect_signals(&self) {
+            if let Some(timeline) = self.timeline.upgrade() {
+                let room = timeline.room();
+
+                for handler in self.room_handlers.take() {
+                    room.disconnect(handler);
+                }
+
+                if let Some(handler) = self.send_message_permission_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
         }
     }
 }

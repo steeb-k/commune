@@ -158,11 +158,6 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="AdwBanner" id="tombstoned_banner">
-                <signal name="button-clicked" handler="join_or_view_successor" swapped="yes"/>
-              </object>
-            </child>
-            <child>
               <object class="ContentVerificationInfoBar" id="verification_info_bar">
                 <binding name="verification">
                   <lookup name="verification">

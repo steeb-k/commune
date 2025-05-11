@@ -20,7 +20,7 @@
         <property name="transition-type">crossfade</property>
         <child>
           <object class="GtkStackPage">
-            <property name="name">enabled</property>
+            <property name="name">composer</property>
             <property name="child">
               <object class="GtkBox">
                 <property name="orientation">vertical</property>
@@ -169,7 +169,7 @@
         </child>
         <child>
           <object class="GtkStackPage">
-            <property name="name">disabled</property>
+            <property name="name">no-permission</property>
             <property name="child">
               <object class="AdwClamp">
                 <property name="hexpand">True</property>
@@ -187,6 +187,50 @@
                     <style>
                       <class name="heading"/>
                     </style>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">tombstoned</property>
+            <property name="child">
+              <object class="AdwClamp">
+                <property name="hexpand">True</property>
+                <style>
+                  <class name="composer-replacement"/>
+                </style>
+                <property name="child">
+                  <object class="AdwWrapBox">
+                    <property name="child-spacing">12</property>
+                    <property name="line-spacing">12</property>
+                    <property name="justify">fill</property>
+                    <property name="justify-last-line">True</property>
+                    <property name="halign">center</property>
+                    <child>
+                      <object class="GtkLabel" id="tombstoned_label">
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
+                        <property name="justify">center</property>
+                        <style>
+                          <class name="heading"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="LoadingButton" id="tombstoned_button">
+                        <property name="halign">center</property>
+                        <signal name="clicked" handler="join_or_view_successor" swapped="yes"/>
+                        <style>
+                          <class name="text-button"/>
+                          <class name="suggested-action"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </property>
               </object>

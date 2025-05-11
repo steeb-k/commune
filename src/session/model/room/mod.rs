@@ -1469,8 +1469,8 @@ impl Room {
     }
 
     /// The ID of the successor of this Room, if this room was upgraded.
-    pub(crate) fn successor_id(&self) -> Option<&RoomId> {
-        self.imp().successor_id.get().map(std::ops::Deref::deref)
+    pub(crate) fn successor_id(&self) -> Option<&OwnedRoomId> {
+        self.imp().successor_id.get()
     }
 
     /// The `matrix.to` URI representation for this room.

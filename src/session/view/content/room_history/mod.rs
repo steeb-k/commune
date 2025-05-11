@@ -47,7 +47,6 @@ use crate::{
     },
     spawn, toast,
     utils::{BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks},
-    Window,
 };
 
 /// The time to wait before considering that scrolling has ended.
@@ -96,8 +95,6 @@ mod imp {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        tombstoned_banner: TemplateChild<adw::Banner>,
-        #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
@@ -123,7 +120,7 @@ mod imp {
         grouping_model: OnceCell<GroupingListModel>,
         scroll_timeout: RefCell<Option<glib::SourceId>>,
         read_timeout: RefCell<Option<glib::SourceId>>,
-        room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        room_handler: RefCell<Option<glib::SignalHandlerId>>,
         can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -391,7 +388,7 @@ mod imp {
         /// Disconnect all the signals.
         fn disconnect_all(&self) {
             if let Some(room) = self.room() {
-                for handler in self.room_handlers.take() {
+                if let Some(handler) = self.room_handler.take() {
                     room.disconnect(handler);
                 }
 
@@ -466,34 +463,8 @@ mod imp {
                         imp.update_invite_action();
                     }
                 ));
-                let tombstoned_handler = room.connect_is_tombstoned_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_tombstoned_banner();
-                    }
-                ));
-                let successor_id_handler = room.connect_successor_id_string_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_tombstoned_banner();
-                    }
-                ));
-                let successor_handler = room.connect_successor_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_tombstoned_banner();
-                    }
-                ));
 
-                self.room_handlers.replace(vec![
-                    is_direct_handler,
-                    tombstoned_handler,
-                    successor_id_handler,
-                    successor_handler,
-                ]);
+                self.room_handler.replace(Some(is_direct_handler));
 
                 let empty_handler = timeline.connect_is_empty_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -533,7 +504,6 @@ mod imp {
             self.update_view();
             self.load_more_events_if_needed();
             self.update_room_menu();
-            self.update_tombstoned_banner();
             self.update_invite_action();
 
             self.obj().notify_timeline();
@@ -931,36 +901,6 @@ mod imp {
             None
         }
 
-        /// Update the tombstoned banner according to the state of the current
-        /// room.
-        fn update_tombstoned_banner(&self) {
-            let banner = &self.tombstoned_banner;
-
-            let Some(room) = self.room() else {
-                banner.set_revealed(false);
-                return;
-            };
-
-            if !room.is_tombstoned() {
-                banner.set_revealed(false);
-                return;
-            }
-
-            if room.successor().is_some() {
-                banner.set_title(&gettext("There is a newer version of this room"));
-                // Translators: This is a verb, as in 'View Room'.
-                banner.set_button_label(Some(&gettext("View")));
-            } else if room.successor_id().is_some() {
-                banner.set_title(&gettext("There is a newer version of this room"));
-                banner.set_button_label(Some(&gettext("Join")));
-            } else {
-                banner.set_title(&gettext("This room was closed"));
-                banner.set_button_label(None);
-            }
-
-            banner.set_revealed(true);
-        }
-
         /// Leave the room.
         async fn leave(&self) {
             let Some(room) = self.room() else {
@@ -1040,44 +980,6 @@ mod imp {
 
             self.obj()
                 .action_set_enabled("room-history.invite-members", can_invite);
-        }
-
-        /// Join or view the successor of the room, if possible.
-        #[template_callback]
-        async fn join_or_view_successor(&self) {
-            let Some(room) = self.room() else {
-                return;
-            };
-            let Some(session) = room.session() else {
-                return;
-            };
-
-            if !room.is_joined() || !room.is_tombstoned() {
-                return;
-            }
-            let obj = self.obj();
-
-            if let Some(successor) = room.successor() {
-                let Some(window) = obj.root().and_downcast::<Window>() else {
-                    return;
-                };
-
-                window.session_view().select_room(successor);
-            } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
-                let via = successor_id
-                    .server_name()
-                    .map(ToOwned::to_owned)
-                    .into_iter()
-                    .collect();
-
-                if let Err(error) = session
-                    .room_list()
-                    .join_by_id_or_alias(successor_id.into(), via)
-                    .await
-                {
-                    toast!(obj, error);
-                }
-            }
         }
 
         /// The context menu for rows presenting an [`Event`].
