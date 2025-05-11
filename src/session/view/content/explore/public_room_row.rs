@@ -2,17 +2,19 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::PublicRoom;
 use crate::{
     components::{Avatar, LoadingButton},
     gettext_f, ngettext_f,
     prelude::*,
-    spawn, toast,
-    utils::{matrix::MatrixIdUri, string::linkify, BoundObject},
+    session::model::RemoteRoom,
+    toast,
+    utils::{matrix::MatrixIdUri, string::linkify},
     Window,
 };
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -35,9 +37,10 @@ mod imp {
         members_count_box: TemplateChild<gtk::Box>,
         #[template_child]
         button: TemplateChild<LoadingButton>,
-        /// The public room displayed by this row.
-        #[property(get, set= Self::set_public_room, explicit_notify)]
-        public_room: BoundObject<PublicRoom>,
+        /// The room displayed by this row.
+        #[property(get, set= Self::set_room, explicit_notify)]
+        room: RefCell<Option<RemoteRoom>>,
+        room_list_info_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -78,6 +81,10 @@ mod imp {
                 }
             ));
         }
+
+        fn dispose(&self) {
+            self.disconnect_signals();
+        }
     }
 
     impl WidgetImpl for PublicRoomRow {}
@@ -85,54 +92,52 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl PublicRoomRow {
-        /// Set the public room displayed by this row.
-        fn set_public_room(&self, public_room: Option<PublicRoom>) {
-            if self.public_room.obj() == public_room {
+        /// Set the room displayed by this row.
+        fn set_room(&self, room: RemoteRoom) {
+            if self.room.borrow().as_ref().is_some_and(|r| *r == room) {
                 return;
             }
 
-            self.public_room.disconnect_signals();
+            self.disconnect_signals();
 
-            if let Some(public_room) = public_room {
-                let pending_handler = public_room.connect_is_pending_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_button();
-                    }
-                ));
-                let room_handler = public_room.connect_room_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_button();
-                    }
-                ));
+            let room_list_info = room.room_list_info();
+            let is_joining_handler = room_list_info.connect_is_joining_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_button();
+                }
+            ));
+            let local_room_handler = room_list_info.connect_local_room_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_button();
+                }
+            ));
 
-                self.public_room
-                    .set(public_room, vec![pending_handler, room_handler]);
+            self.room_list_info_handlers
+                .replace(vec![is_joining_handler, local_room_handler]);
 
-                self.update_button();
-                self.update_row();
-            }
+            self.room.replace(Some(room));
 
-            self.obj().notify_public_room();
+            self.update_button();
+            self.update_row();
+            self.obj().notify_room();
         }
 
         /// Update this row for the current state.
         fn update_row(&self) {
-            let Some(public_room) = self.public_room.obj() else {
+            let Some(room) = self.room.borrow().clone() else {
                 return;
             };
 
-            self.avatar.set_data(Some(public_room.avatar_data()));
-            self.display_name.set_text(&public_room.display_name());
+            self.avatar.set_data(Some(room.avatar_data()));
+            self.display_name.set_text(&room.display_name());
 
-            let data = public_room.data();
-
-            if let Some(topic) = &data.topic {
+            if let Some(topic) = room.topic() {
                 // Detect links.
-                let mut t = linkify(topic);
+                let mut t = linkify(&topic);
                 // Remove trailing spaces.
                 t.truncate_end_whitespaces();
 
@@ -142,12 +147,13 @@ mod imp {
                 self.description.set_visible(false);
             }
 
-            if let Some(alias) = &data.canonical_alias {
+            let canonical_alias = room.canonical_alias();
+            if let Some(alias) = &canonical_alias {
                 self.alias.set_text(alias.as_str());
             }
-            self.alias.set_visible(data.canonical_alias.is_some());
+            self.alias.set_visible(canonical_alias.is_some());
 
-            let members_count = u32::try_from(data.num_joined_members).unwrap_or(u32::MAX);
+            let members_count = room.joined_members_count();
             self.members_count.set_text(&members_count.to_string());
             let members_count_tooltip = ngettext_f(
                 // Translators: Do NOT translate the content between '{' and '}',
@@ -163,74 +169,77 @@ mod imp {
 
         /// Update the join/view button of this row.
         fn update_button(&self) {
-            let Some(public_room) = self.public_room.obj() else {
+            let Some(room) = self.room.borrow().clone() else {
                 return;
             };
 
-            let room_joined = public_room.room().is_some();
+            let room_list_info = room.room_list_info();
+            let room_name = room.display_name();
 
-            let label = if room_joined {
-                // Translators: This is a verb, as in 'View Room'.
-                gettext("View")
+            let (label, accessible_desc) = if room_list_info.local_room().is_some() {
+                (
+                    // Translators: This is a verb, as in 'View Room'.
+                    gettext("View"),
+                    gettext_f("View {room_name}", &[("room_name", &room_name)]),
+                )
             } else {
-                gettext("Join")
+                (
+                    gettext("Join"),
+                    gettext_f("Join {room_name}", &[("room_name", &room_name)]),
+                )
             };
+
             self.button.set_content_label(label);
-
-            let room_name = public_room.display_name();
-            let accessible_desc = if room_joined {
-                gettext_f("View {room_name}", &[("room_name", &room_name)])
-            } else {
-                gettext_f("Join {room_name}", &[("room_name", &room_name)])
-            };
             self.button
                 .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);
 
-            self.button.set_is_loading(public_room.is_pending());
+            self.button.set_is_loading(room_list_info.is_joining());
         }
 
         /// Join or view the public room.
         #[template_callback]
-        fn join_or_view(&self) {
-            let Some(public_room) = self.public_room.obj() else {
+        async fn join_or_view(&self) {
+            let Some(room) = self.room.borrow().clone() else {
                 return;
             };
 
-            if let Some(room) = public_room.room() {
-                if let Some(window) = self.obj().root().and_downcast::<Window>() {
-                    window.session_view().select_room(room);
+            let obj = self.obj();
+
+            if let Some(local_room) = room.room_list_info().local_room() {
+                if let Some(window) = obj.root().and_downcast::<Window>() {
+                    window.session_view().select_room(local_room);
                 }
             } else {
-                let data = public_room.data();
+                let Some(session) = room.session() else {
+                    return;
+                };
 
-                // Prefer the alias as we are sure the server can find the room that way.
-                let (room_id, via) = data.canonical_alias.clone().map_or_else(
-                    || {
-                        let id = data.room_id.clone().into();
-                        let via = public_room.server().cloned().into_iter().collect();
-                        (id, via)
-                    },
-                    |id| (id.into(), vec![]),
-                );
+                let uri = room.uri();
 
-                let obj = self.obj();
-                let room_list = public_room.room_list();
-                spawn!(clone!(
-                    #[weak]
-                    obj,
-                    async move {
-                        if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
-                            toast!(obj, error);
-                        }
-                    }
-                ));
+                if let Err(error) = session
+                    .room_list()
+                    .join_by_id_or_alias(uri.id.clone(), uri.via.clone())
+                    .await
+                {
+                    toast!(obj, error);
+                }
+            }
+        }
+
+        /// Disconnect the signal handlers of this row.
+        fn disconnect_signals(&self) {
+            if let Some(room) = self.room.borrow().as_ref() {
+                let room_list_info = room.room_list_info();
+                for handler in self.room_list_info_handlers.take() {
+                    room_list_info.disconnect(handler);
+                }
             }
         }
     }
 }
 
 glib::wrapper! {
-    /// A row representing a room for a homeserver's public directory.
+    /// A row representing a room in a homeserver's public directory.
     pub struct PublicRoomRow(ObjectSubclass<imp::PublicRoomRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }

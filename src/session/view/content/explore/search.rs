@@ -8,27 +8,29 @@ use ruma::{
 use tokio::task::AbortHandle;
 use tracing::error;
 
-use super::{ExploreServer, PublicRoom};
-use crate::{session::model::Session, spawn, spawn_tokio, utils::LoadingState};
+use super::ExploreServer;
+use crate::{
+    session::model::{RemoteRoom, Session},
+    spawn, spawn_tokio,
+    utils::{matrix::MatrixRoomIdUri, LoadingState},
+};
 
 /// The maximum size of a batch of public rooms.
 const PUBLIC_ROOMS_BATCH_SIZE: u32 = 20;
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::PublicRoomList)]
-    pub struct PublicRoomList {
-        /// The current session.
-        #[property(get, construct_only)]
-        session: glib::WeakRef<Session>,
-        /// The list of rooms.
-        list: RefCell<Vec<PublicRoom>>,
+    #[properties(wrapper_type = super::ExploreSearch)]
+    pub struct ExploreSearch {
+        /// The list of public rooms for the current search.
+        #[property(get = Self::list_owned)]
+        list: OnceCell<gio::ListStore>,
         /// The current search.
-        search: RefCell<PublicRoomsSearch>,
+        search: RefCell<ExploreSearchData>,
         /// The next batch to continue the search, if any.
         next_batch: RefCell<Option<String>>,
         /// The loading state of the list.
@@ -39,36 +41,27 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for PublicRoomList {
-        const NAME: &'static str = "PublicRoomList";
-        type Type = super::PublicRoomList;
-        type Interfaces = (gio::ListModel,);
+    impl ObjectSubclass for ExploreSearch {
+        const NAME: &'static str = "ExploreSearch";
+        type Type = super::ExploreSearch;
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for PublicRoomList {}
+    impl ObjectImpl for ExploreSearch {}
 
-    impl ListModelImpl for PublicRoomList {
-        fn item_type(&self) -> glib::Type {
-            PublicRoom::static_type()
+    impl ExploreSearch {
+        /// The list of public rooms for the current search.
+        fn list(&self) -> &gio::ListStore {
+            self.list.get_or_init(gio::ListStore::new::<RemoteRoom>)
         }
 
-        fn n_items(&self) -> u32 {
-            self.list.borrow().len() as u32
+        /// The owned list of public rooms for the current search.
+        fn list_owned(&self) -> gio::ListStore {
+            self.list().clone()
         }
 
-        fn item(&self, position: u32) -> Option<glib::Object> {
-            self.list
-                .borrow()
-                .get(position as usize)
-                .cloned()
-                .and_upcast()
-        }
-    }
-
-    impl PublicRoomList {
         /// Set the current search.
-        pub(super) fn set_search(&self, search: PublicRoomsSearch) {
+        pub(super) fn set_search(&self, search: ExploreSearchData) {
             if *self.search.borrow() == search {
                 return;
             }
@@ -97,7 +90,7 @@ mod imp {
 
         /// Whether the list is empty.
         pub(super) fn is_empty(&self) -> bool {
-            self.list.borrow().is_empty()
+            self.list().n_items() == 0
         }
 
         /// Whether we can load more rooms with the current search.
@@ -110,10 +103,6 @@ mod imp {
         /// If `clear` is `true`, we start a new search and replace the list of
         /// rooms, otherwise we use the `next_batch` and add more rooms.
         pub(super) async fn load(&self, clear: bool) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
             // Only make a request if we can load more items or we want to replace the
             // current list.
             if !clear && !self.can_load_more() {
@@ -122,22 +111,24 @@ mod imp {
 
             if clear {
                 // Clear the list.
-                let removed = self.list.borrow().len();
-                self.list.borrow_mut().clear();
+                self.list().remove_all();
                 self.next_batch.take();
 
                 // Abort any ongoing request.
                 if let Some(handle) = self.abort_handle.take() {
                     handle.abort();
                 }
-
-                self.obj().items_changed(0, removed as u32, 0);
             }
+
+            let search = self.search.borrow().clone();
+
+            let Some(session) = search.session.upgrade() else {
+                return;
+            };
 
             self.set_loading_state(LoadingState::Loading);
 
             let next_batch = self.next_batch.borrow().clone();
-            let search = self.search.borrow().clone();
             let request = search.as_request(next_batch);
 
             let client = session.client();
@@ -159,7 +150,7 @@ mod imp {
             }
 
             match result {
-                Ok(response) => self.add_rooms(&search, response),
+                Ok(response) => self.add_rooms(&session, &search, response),
                 Err(error) => {
                     self.set_loading_state(LoadingState::Error);
                     error!("Could not search public rooms: {error}");
@@ -170,49 +161,45 @@ mod imp {
         /// Add the rooms from the given response to this list.
         fn add_rooms(
             &self,
-            search: &PublicRoomsSearch,
+            session: &Session,
+            search: &ExploreSearchData,
             response: get_public_rooms_filtered::v3::Response,
         ) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let room_list = session.room_list();
-
             self.next_batch.replace(response.next_batch);
 
-            let (position, added) = {
-                let mut list = self.list.borrow_mut();
-                let position = list.len();
-                let added = response.chunk.len();
+            let new_rooms = response
+                .chunk
+                .into_iter()
+                .map(|data| {
+                    let id = data
+                        .canonical_alias
+                        .clone()
+                        .map_or_else(|| data.room_id.clone().into(), Into::into);
+                    let uri = MatrixRoomIdUri {
+                        id,
+                        via: search.server.clone().into_iter().collect(),
+                    };
 
-                list.extend(
-                    response
-                        .chunk
-                        .into_iter()
-                        .map(|data| PublicRoom::new(&room_list, search.server.clone(), data)),
-                );
+                    RemoteRoom::with_data(session, uri, data)
+                })
+                .collect::<Vec<_>>();
 
-                (position, added)
-            };
+            self.list().extend_from_slice(&new_rooms);
 
-            if added > 0 {
-                self.obj().items_changed(position as u32, 0, added as u32);
-            }
             self.set_loading_state(LoadingState::Ready);
         }
     }
 }
 
 glib::wrapper! {
-    /// A list of rooms in a homeserver's public directory.
-    pub struct PublicRoomList(ObjectSubclass<imp::PublicRoomList>)
-        @implements gio::ListModel;
+    /// The search API of the view to explore rooms in the public directory of homeservers.
+    pub struct ExploreSearch(ObjectSubclass<imp::ExploreSearch>);
 }
 
-impl PublicRoomList {
-    pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
+impl ExploreSearch {
+    /// Construct a new empty `ExploreSearch`.
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
     /// Whether the list is empty.
@@ -221,8 +208,17 @@ impl PublicRoomList {
     }
 
     /// Search the given term on the given server.
-    pub(crate) fn search(&self, search_term: Option<String>, server: &ExploreServer) {
-        let search = PublicRoomsSearch {
+    pub(crate) fn search(
+        &self,
+        session: &Session,
+        search_term: Option<String>,
+        server: &ExploreServer,
+    ) {
+        let session_weak = glib::WeakRef::new();
+        session_weak.set(Some(session));
+
+        let search = ExploreSearchData {
+            session: session_weak,
             search_term,
             server: server.server().cloned(),
             third_party_network: server.third_party_network(),
@@ -244,9 +240,17 @@ impl PublicRoomList {
     }
 }
 
+impl Default for ExploreSearch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Data about a search in the public rooms directory.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct PublicRoomsSearch {
+#[derive(Debug, Clone, Default, PartialEq)]
+struct ExploreSearchData {
+    /// The session to use for performing the search.
+    session: glib::WeakRef<Session>,
     /// The term to search.
     search_term: Option<String>,
     /// The server to search.
@@ -255,8 +259,8 @@ struct PublicRoomsSearch {
     third_party_network: Option<String>,
 }
 
-impl PublicRoomsSearch {
-    /// Convert this `PublicRoomsSearch` to a request.
+impl ExploreSearchData {
+    /// Convert this `ExploreSearchData` to a request.
     fn as_request(&self, next_batch: Option<String>) -> get_public_rooms_filtered::v3::Request {
         let room_network = if let Some(third_party_network) = &self.third_party_network {
             RoomNetwork::ThirdParty(third_party_network.clone())

@@ -233,7 +233,6 @@ mod imp {
                 .downcast_ref::<SidebarIconItem>()
                 .is_some_and(|i| i.item_type() == SidebarIconItemType::Explore)
             {
-                self.explore.init();
                 self.set_visible_page(ContentPage::Explore);
             } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
                 self.identity_verification_widget

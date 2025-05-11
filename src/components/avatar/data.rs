@@ -66,11 +66,6 @@ impl AvatarData {
         glib::Object::new()
     }
 
-    /// Constructs an `AvatarData` with the given image data.
-    pub(crate) fn with_image(image: AvatarImage) -> Self {
-        glib::Object::builder().property("image", image).build()
-    }
-
     /// Get this avatar as a notification icon.
     ///
     /// Returns `None` if an error occurred while generating the icon.

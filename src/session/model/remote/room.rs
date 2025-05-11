@@ -7,7 +7,9 @@ use ruma::{
         room::get_summary,
         space::{get_hierarchy, SpaceHierarchyRoomsChunk},
     },
-    assign, uint, OwnedMxcUri, OwnedRoomAliasId, OwnedRoomId,
+    assign,
+    directory::PublicRoomsChunk,
+    uint, OwnedMxcUri, OwnedRoomAliasId, OwnedRoomId,
 };
 use tracing::{debug, warn};
 
@@ -413,13 +415,32 @@ glib::wrapper! {
 }
 
 impl RemoteRoom {
-    pub(super) fn new(session: &Session, uri: MatrixRoomIdUri) -> Self {
+    /// Construct a new `RemoteRoom` for the given URI, without any data.
+    fn without_data(session: &Session, uri: MatrixRoomIdUri) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("session", session)
             .build();
-
         obj.imp().set_uri(uri);
+        obj
+    }
+
+    /// Construct a new `RemoteRoom` for the given URI.
+    ///
+    /// This method automatically makes a request to load the room's data.
+    pub(super) fn new(session: &Session, uri: MatrixRoomIdUri) -> Self {
+        let obj = Self::without_data(session, uri);
         obj.load_data_if_stale();
+        obj
+    }
+
+    /// Construct a new `RemoteRoom` for the given URI and data.
+    pub(crate) fn with_data(
+        session: &Session,
+        uri: MatrixRoomIdUri,
+        data: impl Into<RemoteRoomData>,
+    ) -> Self {
+        let obj = Self::without_data(session, uri);
+        obj.imp().set_data(data.into());
 
         obj
     }
@@ -464,7 +485,7 @@ impl RemoteRoom {
 
 /// The remote room data.
 #[derive(Debug)]
-struct RemoteRoomData {
+pub(crate) struct RemoteRoomData {
     room_id: OwnedRoomId,
     canonical_alias: Option<OwnedRoomAliasId>,
     name: Option<String>,
@@ -488,6 +509,19 @@ impl From<get_summary::msc3266::Response> for RemoteRoomData {
 
 impl From<SpaceHierarchyRoomsChunk> for RemoteRoomData {
     fn from(value: SpaceHierarchyRoomsChunk) -> Self {
+        Self {
+            room_id: value.room_id,
+            canonical_alias: value.canonical_alias,
+            name: value.name,
+            topic: value.topic,
+            avatar_url: value.avatar_url,
+            joined_members_count: value.num_joined_members.try_into().unwrap_or(u32::MAX),
+        }
+    }
+}
+
+impl From<PublicRoomsChunk> for RemoteRoomData {
+    fn from(value: PublicRoomsChunk) -> Self {
         Self {
             room_id: value.room_id,
             canonical_alias: value.canonical_alias,

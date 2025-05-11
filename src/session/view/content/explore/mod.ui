@@ -35,9 +35,7 @@
                   <property name="description" translatable="yes">Switch servers</property>
                 </accessibility>
                 <property name="popover">
-                  <object class="ExploreServersPopover" id="servers_popover">
-                    <property name="session" bind-source="ContentExplore" bind-property="session" bind-flags="sync-create"/>
-                  </object>
+                  <object class="ExploreServersPopover" id="servers_popover"/>
                 </property>
               </object>
             </child>
@@ -102,26 +100,6 @@
                             <property name="margin-end">24</property>
                             <property name="margin-start">24</property>
                             <property name="tab-behavior">item</property>
-                            <property name="factory">
-                              <object class="GtkBuilderListItemFactory">
-                                <property name="bytes"><![CDATA[
-<?xml version="1.0" encoding="UTF-8"?>
-<interface>
-  <template class="GtkListItem">
-    <property name="activatable">False</property>
-    <property name="selectable">False</property>
-    <property name="child">
-      <object class="PublicRoomRow">
-        <binding name="public-room">
-          <lookup name="item">GtkListItem</lookup>
-        </binding>
-      </object>
-    </property>
-  </template>
-</interface>
-                                ]]></property>
-                              </object>
-                            </property>
                             <style>
                               <class name="public-rooms"/>
                             </style>

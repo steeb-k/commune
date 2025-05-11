@@ -93,12 +93,12 @@ mod imp {
         fn load_servers(&self) {
             let removed = self.n_items();
 
-            let Some(session) = self.session.upgrade() else {
-                self.own_server.take();
-                self.third_party_networks.borrow_mut().clear();
-                self.custom_servers.borrow_mut().clear();
-                self.obj().items_changed(0, removed, 0);
+            self.own_server.take();
+            self.third_party_networks.borrow_mut().clear();
+            self.custom_servers.borrow_mut().clear();
 
+            let Some(session) = self.session.upgrade() else {
+                self.obj().items_changed(0, removed, 0);
                 return;
             };
 

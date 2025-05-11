@@ -2,24 +2,23 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
-mod public_room;
-mod public_room_list;
 mod public_room_row;
+mod search;
 mod server;
 mod server_list;
 mod server_row;
 mod servers_popover;
 
-pub use self::{
-    public_room::PublicRoom, public_room_list::PublicRoomList, public_room_row::PublicRoomRow,
+use self::{
+    public_room_row::PublicRoomRow, search::ExploreSearch, server::ExploreServer,
+    server_list::ExploreServerList, server_row::ExploreServerRow,
     servers_popover::ExploreServersPopover,
 };
-use self::{server::ExploreServer, server_list::ExploreServerList, server_row::ExploreServerRow};
 use crate::{
     components::LoadingRow,
     prelude::*,
-    session::model::Session,
-    utils::{BoundObject, LoadingState, SingleItemListModel},
+    session::model::{RemoteRoom, Session},
+    utils::{LoadingState, SingleItemListModel},
 };
 
 mod imp {
@@ -54,8 +53,8 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify)]
         session: glib::WeakRef<Session>,
-        /// The list of public rooms.
-        public_room_list: BoundObject<PublicRoomList>,
+        /// The search of the view.
+        search: ExploreSearch,
         /// The items added at the end of the list.
         end_items: OnceCell<SingleItemListModel>,
         /// The full list model.
@@ -69,9 +68,6 @@ mod imp {
         type ParentType = adw::BreakpointBin;
 
         fn class_init(klass: &mut Self::Class) {
-            PublicRoom::ensure_type();
-            PublicRoomRow::ensure_type();
-
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
 
@@ -88,6 +84,7 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            // Listen to a change of selected server.
             self.servers_popover.connect_selected_server_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -96,19 +93,19 @@ mod imp {
                 }
             ));
 
+            // Load more items when scrolling, if needed.
             let adj = self.scrolled_window.vadjustment();
             adj.connect_value_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |adj| {
                     if adj.upper() - adj.value() < adj.page_size() * 2.0 {
-                        if let Some(public_room_list) = imp.public_room_list.obj() {
-                            public_room_list.load_more();
-                        }
+                        imp.search.load_more();
                     }
                 }
             ));
 
+            // Set up the item factory for the GtkListView.
             let factory = gtk::SignalListItemFactory::new();
             factory.connect_bind(move |_, list_item| {
                 let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
@@ -122,9 +119,9 @@ mod imp {
                     return;
                 };
 
-                if let Some(public_room) = item.downcast_ref::<PublicRoom>() {
+                if let Some(room) = item.downcast_ref::<RemoteRoom>() {
                     let public_room_row = list_item.child_or_default::<PublicRoomRow>();
-                    public_room_row.set_public_room(public_room);
+                    public_room_row.set_room(room);
                 } else if let Some(loading_row) = item.downcast_ref::<LoadingRow>() {
                     list_item.set_child(Some(loading_row));
                 }
@@ -134,12 +131,35 @@ mod imp {
             let flattened_model = gtk::FlattenListModel::new(Some(self.full_model().clone()));
             self.listview
                 .set_model(Some(&gtk::NoSelection::new(Some(flattened_model))));
+
+            // Listen to changes in the search loading state.
+            self.search.connect_loading_state_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_visible_child();
+                }
+            ));
+
+            // Listen to changes in the results.
+            self.search.list().connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_visible_child();
+                }
+            ));
         }
     }
 
     impl WidgetImpl for Explore {
         fn grab_focus(&self) -> bool {
             self.search_entry.grab_focus()
+        }
+
+        fn map(&self) {
+            self.parent_map();
+            self.trigger_search();
         }
     }
 
@@ -153,42 +173,9 @@ mod imp {
                 return;
             }
 
-            self.public_room_list.disconnect_signals();
-
-            if let Some(session) = session {
-                let public_room_list = PublicRoomList::new(session);
-
-                let full_model = self.full_model();
-                if full_model.n_items() == 2 {
-                    full_model.splice(0, 1, &[public_room_list.clone()]);
-                } else {
-                    full_model.insert(0, &public_room_list);
-                }
-
-                let loading_state_handler = public_room_list.connect_loading_state_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_visible_child();
-                    }
-                ));
-
-                let items_changed_handler = public_room_list.connect_items_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_, _, _, _| {
-                        imp.update_visible_child();
-                    }
-                ));
-
-                self.public_room_list.set(
-                    public_room_list,
-                    vec![loading_state_handler, items_changed_handler],
-                );
-                self.update_visible_child();
-            }
-
             self.session.set(session);
+
+            self.trigger_search();
             self.obj().notify_session();
         }
 
@@ -205,6 +192,7 @@ mod imp {
         fn full_model(&self) -> &gio::ListStore {
             self.full_model.get_or_init(|| {
                 let model = gio::ListStore::new::<gio::ListModel>();
+                model.append(&self.search.list());
                 model.append(self.end_items());
                 model
             })
@@ -256,21 +244,10 @@ mod imp {
             self.header_bar.pack_end(&*self.servers_button);
         }
 
-        /// Make sure that the view is initialized.
-        ///
-        /// If it is already initialized, this is a noop.
-        pub(super) fn init(&self) {
-            self.servers_popover.load();
-        }
-
         /// Update the visible child according to the current state.
         fn update_visible_child(&self) {
-            let Some(public_room_list) = self.public_room_list.obj() else {
-                return;
-            };
-
-            let loading_state = public_room_list.loading_state();
-            let is_empty = public_room_list.is_empty();
+            let loading_state = self.search.loading_state();
+            let is_empty = self.search.is_empty();
 
             // Create or remove the loading row, as needed.
             let show_loading_row = matches!(loading_state, LoadingState::Loading) && !is_empty;
@@ -299,17 +276,24 @@ mod imp {
 
         /// Trigger a search with the current term.
         #[template_callback]
-        fn trigger_search(&self) {
-            let Some(public_room_list) = self.public_room_list.obj() else {
+        pub(super) fn trigger_search(&self) {
+            if !self.obj().is_mapped() {
+                // Do not make a search if the view is not mapped.
+                return;
+            }
+
+            let Some(session) = self.session.upgrade() else {
                 return;
             };
+
+            self.servers_popover.set_session(&session);
 
             let text = self.search_entry.text().into();
             let server = self
                 .servers_popover
                 .selected_server()
                 .expect("a server should be selected");
-            public_room_list.search(Some(text), &server);
+            self.search.search(&session, Some(text), &server);
         }
 
         /// Handle when the selected server changed.
@@ -331,13 +315,6 @@ glib::wrapper! {
 impl Explore {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Make sure that the view is initialized.
-    ///
-    /// If it is already initialized, this is a noop.
-    pub(crate) fn init(&self) {
-        self.imp().init();
     }
 
     /// The header bar of the explorer.

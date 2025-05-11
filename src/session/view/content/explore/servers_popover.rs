@@ -93,31 +93,19 @@ mod imp {
     #[gtk::template_callbacks]
     impl ExploreServersPopover {
         /// Set the current session.
-        fn set_session(&self, session: Option<&Session>) {
-            if session == self.session.upgrade().as_ref() {
+        fn set_session(&self, session: &Session) {
+            if self.session.upgrade().as_ref() == Some(session) {
                 return;
             }
 
-            self.session.set(session);
-            self.obj().notify_session();
-        }
-
-        /// Load the list of servers, if needed.
-        pub(super) fn load(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            if self.server_list.session().is_some_and(|s| s == session) {
-                // Nothing to do.
-                return;
-            }
-
-            self.server_list.set_session(&session);
+            self.session.set(Some(session));
+            self.server_list.set_session(session);
 
             // Select the first server by default.
             self.listbox
                 .select_row(self.listbox.row_at_index(0).as_ref());
+
+            self.obj().notify_session();
         }
 
         /// Handle when the selected server has changed.
@@ -205,10 +193,5 @@ glib::wrapper! {
 impl ExploreServersPopover {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Load the list of servers, if needed.
-    pub(crate) fn load(&self) {
-        self.imp().load();
     }
 }
