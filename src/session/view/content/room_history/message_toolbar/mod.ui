@@ -171,15 +171,24 @@
           <object class="GtkStackPage">
             <property name="name">disabled</property>
             <property name="child">
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">You don’t have permission to send messages to this room</property>
-                <property name="wrap">True</property>
-                <property name="wrap-mode">word-char</property>
-                <property name="halign">center</property>
-                <property name="valign">center</property>
+              <object class="AdwClamp">
+                <property name="hexpand">True</property>
                 <style>
-                  <class name="heading"/>
+                  <class name="composer-replacement"/>
                 </style>
+                <property name="child">
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">You don’t have permission to send messages to this room</property>
+                    <property name="wrap">True</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="halign">center</property>
+                    <property name="valign">center</property>
+                    <property name="justify">center</property>
+                    <style>
+                      <class name="heading"/>
+                    </style>
+                  </object>
+                </property>
               </object>
             </property>
           </object>
