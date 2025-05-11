@@ -54,12 +54,12 @@ mod imp {
                 ));
                 self.previous_room_btn.set_visible(true);
                 self.description
-                    .set_label(&gettext("This is the continuation of an upgraded room."));
+                    .set_label(&gettext("This conversation started in another room."));
             } else {
                 self.previous_room_btn.set_visible(false);
                 self.previous_room_btn.set_action_name(None);
                 self.description
-                    .set_label(&gettext("This is the beginning of this room."));
+                    .set_label(&gettext("The conversation starts here."));
             }
         }
     }

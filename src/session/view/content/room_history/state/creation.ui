@@ -17,7 +17,7 @@
           <object class="GtkButton" id="previous_room_btn">
             <property name="can-shrink">true</property>
             <property name="action-name">session.show-room</property>
-            <property name="label" translatable="yes">Previous room</property>
+            <property name="label" translatable="yes">View</property>
           </object>
         </child>
       </object>
