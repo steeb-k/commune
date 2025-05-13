@@ -10,6 +10,7 @@ lint-metainfo:
     entrypoint: [""]
   variables:
     METAINFO: "${APP_ID}.metainfo.xml"
+  interruptible: true
   script:
     # This tool has extra tests on top of appstreamcli and is required to pass for Flathub.
     - flatpak-builder-lint appstream ${METAINFO}
@@ -25,6 +26,7 @@ rust-tests:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak
+  interruptible: true
   script:
     # Create a temporary file.
     - TMP_FILE=$(mktemp)
@@ -49,6 +51,7 @@ build-docs:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak
+  interruptible: true
   script:
     - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//24.08
     # We want to use the nightly toolchain inside the build terminal.

@@ -6,6 +6,7 @@ include: '.gitlab-ci/utils.yml'
 checks:
   stage: check
   image: "rustlang/rust:nightly-slim"
+  interruptible: true
   script:
     - hooks/checks.sh --verbose --force-install
 
@@ -17,6 +18,7 @@ cargo-clippy:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak
+  interruptible: true
   script:
     - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
     - echo "cargo clippy -- -D warnings" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
