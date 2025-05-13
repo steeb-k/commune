@@ -43,7 +43,11 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for AccountSwitcherButton {}
+    impl ObjectImpl for AccountSwitcherButton {
+        fn dispose(&self) {
+            self.reset();
+        }
+    }
 
     impl WidgetImpl for AccountSwitcherButton {}
     impl ButtonImpl for AccountSwitcherButton {}
@@ -53,19 +57,13 @@ mod imp {
     impl AccountSwitcherButton {
         /// Set the popover of this button.
         fn set_popover(&self, popover: Option<&AccountSwitcherPopover>) {
-            let old_popover = self.popover.obj();
-
-            if old_popover.as_ref() == popover {
+            if self.popover.obj().as_ref() == popover {
                 return;
             }
-            let obj = self.obj();
 
             // Reset the state.
-            if let Some(popover) = old_popover {
-                popover.unparent();
-            }
-            self.popover.disconnect_signals();
-            obj.set_active(false);
+            self.reset();
+            let obj = self.obj();
 
             if let Some(popover) = popover {
                 // We need to remove the popover from the previous button, if any.
@@ -108,6 +106,15 @@ mod imp {
             } else if let Some(popover) = self.popover.obj() {
                 popover.popdown();
             }
+        }
+
+        /// Reset the state of this button.
+        fn reset(&self) {
+            if let Some(popover) = self.popover.obj() {
+                popover.unparent();
+            }
+            self.popover.disconnect_signals();
+            self.obj().set_active(false);
         }
     }
 }
