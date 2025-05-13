@@ -64,13 +64,15 @@ pub(super) fn widget_for_html_nodes(
         let is_last = i == (len - 1);
         let add_ellipsis = add_ellipsis || (config.ellipsize && !is_last);
 
-        match group {
+        let widget = match group {
             NodeGroup::Inline(inline_nodes) => {
-                if let Some(widget) =
+                let Some(widget) =
                     label_for_inline_html(inline_nodes, config, add_ellipsis, sender_name)
-                {
-                    children.push(widget);
-                }
+                else {
+                    continue;
+                };
+
+                widget
             }
             NodeGroup::Block(block_node) => {
                 let Some(widget) =
@@ -90,9 +92,11 @@ pub(super) fn widget_for_html_nodes(
                     children.push(label.upcast());
                 }
 
-                children.push(widget);
+                widget
             }
-        }
+        };
+
+        children.push(widget);
 
         if config.ellipsize {
             // Stop at the first constructed child.
@@ -121,6 +125,7 @@ pub(super) fn widget_for_html_nodes(
 }
 
 /// A group of nodes, representing the nodes contained in a single widget.
+#[derive(Debug)]
 enum NodeGroup {
     /// A group of inline nodes.
     Inline(Vec<NodeRef>),

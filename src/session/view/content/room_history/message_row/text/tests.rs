@@ -18,6 +18,12 @@ fn single_line() {
 
     assert_eq!(s, "A simple text…");
     assert!(pills.is_none());
+
+    let html = Html::parse("\nThis is a paragraph<br />\n\nThis is another paragraph\n");
+    let (s, pills) = InlineHtmlBuilder::new(true, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "This is a paragraph…");
+    assert!(pills.is_none());
 }
 
 #[test]

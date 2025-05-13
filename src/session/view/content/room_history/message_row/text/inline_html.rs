@@ -75,7 +75,10 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// constructed, if any.
     pub(super) fn build(self) -> (String, Option<Vec<Pill>>) {
         let mut inner = self.inner;
-        let ellipsis = self.ellipsis | self.truncated;
+
+        // Do not add an ellipsis on an empty inline element, we just want to get rid of
+        // it.
+        let ellipsis = (self.ellipsis && !inner.is_empty()) | self.truncated;
 
         if ellipsis {
             inner.append_ellipsis();
@@ -222,8 +225,8 @@ impl<'a> InlineHtmlBuilder<'a> {
 
     /// Append the given text node content.
     fn append_text_node(&mut self, text: &str, context: NodeContext) {
-        // Remove spaces at the beginning and end of an HTML element, and after a
-        // newline.
+        // Collapse whitespaces and remove them at the beginning and end of an HTML
+        // element, and after a newline.
         let text = text.collapse_whitespaces(
             context.is_first_child || self.inner.ends_with('\n'),
             context.is_last_child,
