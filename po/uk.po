@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-13 09:54+0000\n"
-"PO-Revision-Date: 2025-05-13 15:45+0300\n"
+"POT-Creation-Date: 2025-05-14 10:51+0000\n"
+"PO-Revision-Date: 2025-05-14 16:02+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -532,7 +532,8 @@ msgstr ""
 #: src/components/crypto/recovery_setup_view.ui:276
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
-msgstr "Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
+msgstr ""
+"Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
 
 #: src/components/crypto/recovery_setup_view.ui:327
 #: src/components/crypto/recovery_setup_view.ui:354
@@ -559,7 +560,8 @@ msgstr "Відновлення облікового запису є неповн
 
 #: src/components/crypto/recovery_setup_view.ui:469
 msgid "The recovery was successful but the recovery data was incomplete."
-msgstr "Відновлення успішно виконано, але дані для відновлення були неповними."
+msgstr ""
+"Відновлення успішно виконано, але дані для відновлення були неповними."
 
 #: src/components/crypto/recovery_setup_view.ui:477
 msgid ""
@@ -619,7 +621,6 @@ msgid "The password is invalid."
 msgstr "Пароль є некоректним."
 
 #: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
-#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unexpected error occurred."
 msgstr "Сталася неочікувана помилка."
 
@@ -1581,7 +1582,8 @@ msgstr ""
 "клієнті."
 
 #: src/identity_verification_view/sas_page.rs:154
-msgid "Check if the same numbers appear in the same order on the other client."
+msgid ""
+"Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Перевірте, чи ті самі числа було показано у тому самому порядку на іншому "
 "клієнті."
@@ -1858,7 +1860,8 @@ msgstr ""
 
 #: src/secret/linux.rs:538
 msgid "The secret storage file has been changed by another process."
-msgstr "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
+msgstr ""
+"До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
 #: src/secret/linux.rs:541
 msgid ""
@@ -1885,7 +1888,8 @@ msgstr ""
 "сталася неочікувана помилка"
 
 #: src/secret/linux.rs:550
-msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
+msgid ""
+"The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
@@ -5123,66 +5127,63 @@ msgid "Close Room"
 msgstr "Закрити кімнату"
 
 #: src/user_facing_error.rs:26
-msgid "The connection timed out. Try again later."
-msgstr ""
-"Перевищено час очікування на встановлення з'єднання. Спробуйте повторити "
-"спробу пізніше."
+#| msgid "The connection timed out. Try again later."
+msgid "Connection timed out."
+msgstr "Перевищено час очікування на встановлення з'єднання."
 
 #: src/user_facing_error.rs:28
 msgid "Could not connect to the homeserver."
 msgstr "Не вдалося встановити з'єднання із домашнім сервером."
 
 #: src/user_facing_error.rs:38
-msgid "The provided username or password is invalid."
-msgstr "Надана пара користувач-пароль є некоректною."
+#| msgid "Invalid room name."
+msgid "Invalid credentials."
+msgstr "Некоректні реєстраційні дані."
 
 #: src/user_facing_error.rs:39
-msgid "The account is deactivated."
+#| msgid "The account is deactivated."
+msgid "Account deactivated."
 msgstr "Обліковий запис вимкнено."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/user_facing_error.rs:55
-msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
-msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
-msgstr[0] ""
-"Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
-"Повторна спроба за {n} секунду."
-msgstr[1] ""
-"Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
-"Повторна спроба за {n} секунди."
-msgstr[2] ""
-"Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
-"Повторна спроба за {n} секунд."
-msgstr[3] ""
-"Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
-"Повторна спроба за 1 секунду."
+msgid "Rate limit exceeded, retry in 1 second."
+msgid_plural "Rate limit exceeded, retry in {n} seconds."
+msgstr[0] "Перевищено обмеження на частоту, повторіть за {n} секунду."
+msgstr[1] "Перевищено обмеження на частоту, повторіть за {n} секунди."
+msgstr[2] "Перевищено обмеження на частоту, повторіть за {n} секунд."
+msgstr[3] "Перевищено обмеження на частоту, повторіть за секунду."
 
 #: src/user_facing_error.rs:61
-msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr ""
-"Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
-"Повторіть спробу пізніше."
+msgid "Rate limit exceeded, try again later."
+msgstr "Перевищено обмеження на частоту, спробуйте пізніше."
 
 #: src/user_facing_error.rs:71
-msgid "An unexpected connection error occurred."
-msgstr "Сталася неочікувана помилка з'єднання."
+#| msgid "An unexpected connection error occurred."
+msgid "Unexpected connection error."
+msgstr "Неочікувана помилка з'єднання."
 
 #: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "Не вдалося розшифрувати подію."
 
+#: src/user_facing_error.rs:81 src/user_facing_error.rs:93
+#| msgid "An unexpected error occurred."
+msgid "Unexpected error."
+msgstr "Неочікувана помилка."
+
 #: src/user_facing_error.rs:89
-msgid "This is not a valid URL."
-msgstr "Адреса не є коректною."
+#| msgid "This is not a valid URL."
+msgid "Invalid URL."
+msgstr "Некоректна адреса."
 
-#: src/user_facing_error.rs:91
-msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
-msgstr ""
-"Не вдалося автоматично виявити домашній сервер. Спробуйте ввести повну "
-"адресу вручну."
+#: src/user_facing_error.rs:90
+#| msgid "Could not connect to the homeserver."
+msgid "Could not discover homeserver."
+msgstr "Не вдалося виявити домашній сервер."
 
-#: src/user_facing_error.rs:94
+#: src/user_facing_error.rs:92
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
@@ -5255,6 +5256,36 @@ msgstr "файл"
 #: src/window.ui:91
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "The provided username or password is invalid."
+#~ msgstr "Надана пара користувач-пароль є некоректною."
+
+#~ msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
+#~ msgid_plural ""
+#~ "You exceeded the homeserver’s rate limit, retry in {n} seconds."
+#~ msgstr[0] ""
+#~ "Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
+#~ "Повторна спроба за {n} секунду."
+#~ msgstr[1] ""
+#~ "Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
+#~ "Повторна спроба за {n} секунди."
+#~ msgstr[2] ""
+#~ "Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
+#~ "Повторна спроба за {n} секунд."
+#~ msgstr[3] ""
+#~ "Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
+#~ "Повторна спроба за 1 секунду."
+
+#~ msgid "You exceeded the homeserver’s rate limit, try again later."
+#~ msgstr ""
+#~ "Вами перевищено обмеження на частоту повідомлень на домашньому сервері. "
+#~ "Повторіть спробу пізніше."
+
+#~ msgid ""
+#~ "Homeserver auto-discovery failed. Try entering the full URL manually."
+#~ msgstr ""
+#~ "Не вдалося автоматично виявити домашній сервер. Спробуйте ввести повну "
+#~ "адресу вручну."
 
 #~ msgid "There is a newer version of this room"
 #~ msgstr "Існує новіша версія цієї кімнати"
@@ -5869,9 +5900,6 @@ msgstr "Сеанс"
 
 #~ msgid "Too long. Use a shorter name."
 #~ msgstr "Надто довга. Скористайтеся коротшою назвою."
-
-#~ msgid "Invalid room name."
-#~ msgstr "Некоректна назва кімнати."
 
 #~ msgid "_Preferences"
 #~ msgstr "Н_алаштування"
