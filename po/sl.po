@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-12 16:37+0000\n"
-"PO-Revision-Date: 2025-05-12 22:48+0200\n"
+"POT-Creation-Date: 2025-05-14 10:51+0000\n"
+"PO-Revision-Date: 2025-05-14 19:30+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -610,7 +610,6 @@ msgid "The password is invalid."
 msgstr "Geslo je neveljavno."
 
 #: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
-#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unexpected error occurred."
 msgstr "Prišlo je do nepričakovane napake."
 
@@ -4052,7 +4051,7 @@ msgid "In Reply To"
 msgstr "Odgovor na"
 
 #. Translators: this is the fallback title for an expander.
-#: src/session/view/content/room_history/message_row/text/widgets.rs:434
+#: src/session/view/content/room_history/message_row/text/widgets.rs:439
 msgid "Details"
 msgstr "Podrobnosti"
 
@@ -5089,59 +5088,56 @@ msgid "Close Room"
 msgstr "Zapre klepetalnico"
 
 #: src/user_facing_error.rs:26
-msgid "The connection timed out. Try again later."
-msgstr "Časovna omejitev povezave je pretekla. Poskusite znova pozneje."
+msgid "Connection timed out."
+msgstr "Časovna omejitev povezave je pretekla."
 
 #: src/user_facing_error.rs:28
 msgid "Could not connect to the homeserver."
 msgstr "Povezave z domačim strežnikom ni bilo mogoče vzpostaviti."
 
 #: src/user_facing_error.rs:38
-msgid "The provided username or password is invalid."
-msgstr "Navedeno uporabniško ime ali geslo ni veljavno."
+msgid "Invalid credentials."
+msgstr "Neveljavne poverilnice."
 
 #: src/user_facing_error.rs:39
-msgid "The account is deactivated."
+msgid "Account deactivated."
 msgstr "Račun je deaktiviran."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/user_facing_error.rs:55
-msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
-msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
-msgstr[0] ""
-"Presegli ste omejitev hitrosti domačega strežnika, poskusite znova čez {n} s."
-msgstr[1] ""
-"Presegli ste omejitev hitrosti domačega strežnika, poskusite znova čez {n} s."
-msgstr[2] ""
-"Presegli ste omejitev hitrosti domačega strežnika, poskusite znova čez {n} s."
-msgstr[3] ""
-"Presegli ste omejitev hitrosti domačega strežnika, poskusite znova čez {n} s."
+msgid "Rate limit exceeded, retry in 1 second."
+msgid_plural "Rate limit exceeded, retry in {n} seconds."
+msgstr[0] "Omejitev hitrosti je presežena, poskusite znova čez {n} s."
+msgstr[1] "Omejitev hitrosti je presežena, poskusite znova čez {n} s."
+msgstr[2] "Omejitev hitrosti je presežena, poskusite znova čez {n} s."
+msgstr[3] "Omejitev hitrosti je presežena, poskusite znova čez {n} s."
 
 #: src/user_facing_error.rs:61
-msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr ""
-"Presegli ste omejitev hitrosti domačega strežnika, poskusite znova pozneje."
+msgid "Rate limit exceeded, try again later."
+msgstr "Omejitev hitrosti je presežena, poskusite znova pozneje."
 
 #: src/user_facing_error.rs:71
-msgid "An unexpected connection error occurred."
-msgstr "Prišlo je do nepričakovane napake povezave."
+msgid "Unexpected connection error."
+msgstr "Nepričakovana napaka povezave."
 
 #: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "Dogodka ni bilo mogoče dešifrirati."
 
+#: src/user_facing_error.rs:81 src/user_facing_error.rs:93
+msgid "Unexpected error."
+msgstr "Nepričakovana napaka."
+
 #: src/user_facing_error.rs:89
-msgid "This is not a valid URL."
-msgstr "To ni veljaven URL."
+msgid "Invalid URL."
+msgstr "Neveljaven URL."
 
-#: src/user_facing_error.rs:91
-msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
-msgstr ""
-"Samodejno odkrivanje domačega strežnika ni uspelo. Poskusite ročno vnesti "
-"celoten URL."
+#: src/user_facing_error.rs:90
+msgid "Could not discover homeserver."
+msgstr "Domačega strežnika ni bilo mogoče odkriti."
 
-#: src/user_facing_error.rs:94
+#: src/user_facing_error.rs:92
 msgid "Could not open the store."
 msgstr "Trgovine ni bilo mogoče odpreti."
 
