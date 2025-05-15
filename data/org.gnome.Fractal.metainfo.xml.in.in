@@ -71,6 +71,15 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="11.1" type="stable" date="2025-05-15">
+      <description>
+        <p>
+          Due to a pesky bug that makes Fractal crash when our users attempt to start a
+          verification, we are releasing Fractal 11.1 only 2 weeks after Fractal 11. And while we’re
+          at it we also backported a few fixes for smaller paper cuts!
+        </p>
+      </description>
+    </release>
     <release version="11" type="stable" date="2025-05-01">
       <description>
         <p>
