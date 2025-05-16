@@ -573,7 +573,7 @@ mod imp {
             };
 
             self.current_composer_state()
-                .set_related_to(Some(RelationInfo::Reply(message_event)));
+                .set_related_to(Some(RelationInfo::Reply(message_event.into())));
 
             self.message_entry.grab_focus();
         }

@@ -56,7 +56,7 @@ pub(crate) enum MediaMessage {
     /// A video.
     Video(VideoMessageEventContent),
     /// A sticker.
-    Sticker(StickerEventContent),
+    Sticker(Box<StickerEventContent>),
 }
 
 impl MediaMessage {
@@ -104,7 +104,7 @@ impl MediaMessage {
         let media = client.media();
 
         macro_rules! content {
-            ($event_content:ident) => {{
+            ($event_content:expr) => {{
                 Ok(
                     $crate::spawn_tokio!(
                         async move { media.get_file(&$event_content, true).await }
@@ -121,7 +121,7 @@ impl MediaMessage {
             Self::File(c) => content!(c),
             Self::Image(c) => content!(c),
             Self::Video(c) => content!(c),
-            Self::Sticker(c) => content!(c),
+            Self::Sticker(c) => content!(*c),
         }
     }
 
@@ -199,7 +199,7 @@ impl From<FileMessageEventContent> for MediaMessage {
 
 impl From<StickerEventContent> for MediaMessage {
     fn from(value: StickerEventContent) -> Self {
-        Self::Sticker(value)
+        Self::Sticker(value.into())
     }
 }
 
@@ -211,7 +211,7 @@ pub(crate) enum VisualMediaMessage {
     /// A video.
     Video(VideoMessageEventContent),
     /// A sticker.
-    Sticker(StickerEventContent),
+    Sticker(Box<StickerEventContent>),
 }
 
 impl VisualMediaMessage {
@@ -373,6 +373,12 @@ impl From<VideoMessageEventContent> for VisualMediaMessage {
 
 impl From<StickerEventContent> for VisualMediaMessage {
     fn from(value: StickerEventContent) -> Self {
+        Self::Sticker(value.into())
+    }
+}
+
+impl From<Box<StickerEventContent>> for VisualMediaMessage {
+    fn from(value: Box<StickerEventContent>) -> Self {
         Self::Sticker(value)
     }
 }

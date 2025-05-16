@@ -113,9 +113,9 @@ pub(crate) fn validate_password(password: &str) -> PasswordValidity {
 #[derive(Debug, Clone)]
 pub(crate) enum AnySyncOrStrippedTimelineEvent {
     /// An event from a joined or left room.
-    Sync(AnySyncTimelineEvent),
+    Sync(Box<AnySyncTimelineEvent>),
     /// An event from an invited room.
-    Stripped(AnyStrippedStateEvent),
+    Stripped(Box<AnyStrippedStateEvent>),
 }
 
 impl AnySyncOrStrippedTimelineEvent {
@@ -124,8 +124,10 @@ impl AnySyncOrStrippedTimelineEvent {
         raw: &RawAnySyncOrStrippedTimelineEvent,
     ) -> Result<Self, serde_json::Error> {
         let ev = match raw {
-            RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?),
-            RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => Self::Stripped(ev.deserialize()?),
+            RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?.into()),
+            RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => {
+                Self::Stripped(ev.deserialize()?.into())
+            }
         };
 
         Ok(ev)
@@ -161,10 +163,12 @@ pub(crate) fn get_event_body(
     show_sender: bool,
 ) -> Option<String> {
     match event {
-        AnySyncOrStrippedTimelineEvent::Sync(AnySyncTimelineEvent::MessageLike(message)) => {
-            get_message_event_body(message, sender_name, show_sender)
-        }
-        AnySyncOrStrippedTimelineEvent::Sync(_) => None,
+        AnySyncOrStrippedTimelineEvent::Sync(sync_event) => match &**sync_event {
+            AnySyncTimelineEvent::MessageLike(message) => {
+                get_message_event_body(message, sender_name, show_sender)
+            }
+            AnySyncTimelineEvent::State(_) => None,
+        },
         AnySyncOrStrippedTimelineEvent::Stripped(state) => {
             get_stripped_state_event_body(state, sender_name, own_user)
         }

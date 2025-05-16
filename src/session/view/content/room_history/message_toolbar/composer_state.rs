@@ -517,7 +517,7 @@ impl ComposerState {
 #[derive(Debug, Clone)]
 pub(crate) enum RelationInfo {
     /// Send a reply to the given event.
-    Reply(MessageEventSource),
+    Reply(Box<MessageEventSource>),
 
     /// Send an edit to the event with the given ID.
     Edit(OwnedEventId),
@@ -551,7 +551,7 @@ impl RelationInfo {
                     return None;
                 };
 
-                Some(RelationInfo::Reply(message_event))
+                Some(RelationInfo::Reply(message_event.into()))
             }
             ComposerDraftType::Edit { event_id } => Some(RelationInfo::Edit(event_id)),
         }
@@ -648,7 +648,7 @@ struct DetectedMention {
 #[derive(Debug, Clone)]
 pub(crate) enum MessageEventSource {
     /// An original event.
-    OriginalEvent(OriginalSyncRoomMessageEvent),
+    OriginalEvent(Box<OriginalSyncRoomMessageEvent>),
     /// An [`Event`].
     Event(Event),
 }
@@ -663,7 +663,7 @@ impl MessageEventSource {
         match event {
             AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
                 SyncMessageLikeEvent::Original(message_event),
-            )) => Some(Self::OriginalEvent(message_event)),
+            )) => Some(Self::OriginalEvent(message_event.into())),
             _ => None,
         }
     }
