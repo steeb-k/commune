@@ -39,7 +39,7 @@
                       <property name="label" translatable="yes">Invite</property>
                     </accessibility>
                     <child>
-                      <object class="Avatar">
+                      <object class="Avatar" id="avatar">
                         <property name="size">150</property>
                         <binding name="data">
                           <lookup name="avatar-data">

@@ -23,7 +23,10 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -45,6 +48,11 @@ mod imp {
         /// Whether the pill can be activated.
         #[property(get, set = Self::set_activatable, explicit_notify)]
         activatable: Cell<bool>,
+        /// Whether to inhibit the image of the avatar.
+        ///
+        /// If the image is inhibited, it will not be loaded.
+        #[property(get = Self::inhibit_image, set = Self::set_inhibit_image)]
+        inhibit_image: PhantomData<bool>,
         gesture_click: RefCell<Option<gtk::GestureClick>>,
     }
 
@@ -163,6 +171,16 @@ mod imp {
             } else {
                 obj.remove_css_class("activatable");
             }
+        }
+
+        /// Whether to inhibit the image of the avatar.
+        fn inhibit_image(&self) -> bool {
+            self.avatar.inhibit_image()
+        }
+
+        /// Set whether to inhibit the image of the avatar.
+        fn set_inhibit_image(&self, inhibit: bool) {
+            self.avatar.set_inhibit_image(inhibit);
         }
 
         /// Set the display name of this pill.

@@ -43,6 +43,13 @@ pub(crate) struct StoredSessionSettings {
     /// Which rooms display media previews for this session.
     #[serde(default, skip_serializing_if = "ruma::serde::is_default")]
     media_previews_enabled: MediaPreviewsSetting,
+
+    /// Whether to display avatars in invites.
+    #[serde(
+        default = "ruma::serde::default_true",
+        skip_serializing_if = "ruma::serde::is_true"
+    )]
+    invite_avatars_enabled: bool,
 }
 
 impl Default for StoredSessionSettings {
@@ -54,6 +61,7 @@ impl Default for StoredSessionSettings {
             typing_enabled: true,
             sections_expanded: Default::default(),
             media_previews_enabled: Default::default(),
+            invite_avatars_enabled: true,
         }
     }
 }
@@ -86,6 +94,9 @@ mod imp {
         /// Whether typing notifications are enabled for this session.
         #[property(get = Self::typing_enabled, set = Self::set_typing_enabled, explicit_notify, default = true)]
         typing_enabled: PhantomData<bool>,
+        /// Whether to display avatars in invites.
+        #[property(get = Self::invite_avatars_enabled, set = Self::set_invite_avatars_enabled, explicit_notify, default = true)]
+        invite_avatars_enabled: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -152,6 +163,22 @@ mod imp {
             self.stored_settings.borrow_mut().typing_enabled = enabled;
             session_list_settings().save();
             self.obj().notify_typing_enabled();
+        }
+
+        /// Whether to display avatars in invites.
+        fn invite_avatars_enabled(&self) -> bool {
+            self.stored_settings.borrow().invite_avatars_enabled
+        }
+
+        /// Set whether to display avatars in invites.
+        fn set_invite_avatars_enabled(&self, enabled: bool) {
+            if self.invite_avatars_enabled() == enabled {
+                return;
+            }
+
+            self.stored_settings.borrow_mut().invite_avatars_enabled = enabled;
+            session_list_settings().save();
+            self.obj().notify_invite_avatars_enabled();
         }
     }
 }

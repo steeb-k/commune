@@ -62,5 +62,16 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <child>
+          <object class="AdwSwitchRow" id="invite_avatars_row">
+            <property name="selectable">False</property>
+            <property name="title" translatable="yes">Show Avatars for Invites</property>
+            <property name="subtitle" translatable="yes">Display the avatars of the room and the inviter</property>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>

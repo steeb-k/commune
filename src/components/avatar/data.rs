@@ -68,8 +68,10 @@ impl AvatarData {
 
     /// Get this avatar as a notification icon.
     ///
+    /// If `inhibit_image` is set, the image of the avatar will not be used.
+    ///
     /// Returns `None` if an error occurred while generating the icon.
-    pub(crate) async fn as_notification_icon(&self) -> Option<gdk::Texture> {
+    pub(crate) async fn as_notification_icon(&self, inhibit_image: bool) -> Option<gdk::Texture> {
         let Some(window) = Application::default().active_window() else {
             warn!("Could not generate icon for notification: no active window");
             return None;
@@ -80,21 +82,23 @@ impl AvatarData {
         };
         let scale_factor = window.scale_factor();
 
-        if let Some(image) = self.image() {
-            match image.load_small_paintable().await {
-                Ok(Some(paintable)) => {
-                    let texture = paintable_as_notification_icon(
-                        paintable.upcast_ref(),
-                        scale_factor,
-                        &renderer,
-                    );
-                    return Some(texture);
-                }
-                // No paintable, we will try to generate the fallback.
-                Ok(None) => {}
-                // Could not get the paintable, we will try to generate the fallback.
-                Err(error) => {
-                    warn!("Could not generate icon for notification: {error}");
+        if !inhibit_image {
+            if let Some(image) = self.image() {
+                match image.load_small_paintable().await {
+                    Ok(Some(paintable)) => {
+                        let texture = paintable_as_notification_icon(
+                            paintable.upcast_ref(),
+                            scale_factor,
+                            &renderer,
+                        );
+                        return Some(texture);
+                    }
+                    // No paintable, we will try to generate the fallback.
+                    Ok(None) => {}
+                    // Could not get the paintable, we will try to generate the fallback.
+                    Err(error) => {
+                        warn!("Could not generate icon for notification: {error}");
+                    }
                 }
             }
         }

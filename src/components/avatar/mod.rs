@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod crop_circle;
 mod data;
@@ -20,7 +20,10 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -41,6 +44,11 @@ mod imp {
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
         size: PhantomData<i32>,
+        /// Whether to inhibit the image of the avatar.
+        ///
+        /// If the image is inhibited, it will not be loaded.
+        #[property(get, set = Self::set_inhibit_image, explicit_notify)]
+        inhibit_image: Cell<bool>,
         paintable_ref: RefCell<Option<CountedRef>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
     }
@@ -106,6 +114,18 @@ mod imp {
 
             self.update_paintable();
             self.obj().notify_size();
+        }
+
+        /// Set whether to inhibit the image of the avatar.
+        fn set_inhibit_image(&self, inhibit: bool) {
+            if self.inhibit_image.get() == inhibit {
+                return;
+            }
+
+            self.inhibit_image.set(inhibit);
+
+            self.update_paintable();
+            self.obj().notify_inhibit_image();
         }
 
         /// Set the [`AvatarData`] displayed by this widget.
@@ -188,6 +208,13 @@ mod imp {
         fn update_paintable(&self) {
             let _old_paintable_ref = self.paintable_ref.take();
 
+            if self.inhibit_image.get() {
+                // We need to unset the paintable.
+                self.avatar.set_custom_image(None::<&gdk::Paintable>);
+                self.update_animated_paintable_state();
+                return;
+            }
+
             if !self.obj().is_mapped() {
                 // We do not need a paintable.
                 self.update_animated_paintable_state();
@@ -218,7 +245,7 @@ mod imp {
         fn update_animated_paintable_state(&self) {
             let _old_paintable_animation_ref = self.paintable_animation_ref.take();
 
-            if !self.obj().is_mapped() {
+            if self.inhibit_image.get() || !self.obj().is_mapped() {
                 // We do not need to animate the paintable.
                 return;
             }

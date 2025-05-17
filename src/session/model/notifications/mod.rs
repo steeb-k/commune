@@ -3,7 +3,16 @@ use std::borrow::Cow;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{sync::Notification, Room as MatrixRoom};
-use ruma::{api::client::device::get_device, OwnedRoomId, RoomId};
+use ruma::{
+    api::client::device::get_device,
+    events::{
+        room::{member::MembershipState, message::MessageType},
+        AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncStateEvent, AnySyncTimelineEvent,
+        SyncStateEvent,
+    },
+    html::{HtmlSanitizerMode, RemoveReplyFallback},
+    OwnedRoomId, RoomId, UserId,
+};
 use tracing::{debug, warn};
 
 mod notifications_settings;
@@ -18,8 +27,7 @@ use crate::{
     prelude::*,
     spawn_tokio,
     utils::matrix::{
-        get_event_body, AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri,
-        MatrixRoomIdUri,
+        AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri,
     },
     Application, Window,
 };
@@ -142,6 +150,7 @@ impl Notifications {
     ///
     /// The notification will not be shown if the application is active and the
     /// room of the event is displayed.
+    #[allow(clippy::too_many_lines)]
     pub(crate) async fn show_push(
         &self,
         matrix_notification: Notification,
@@ -215,10 +224,17 @@ impl Notifications {
             },
         );
 
-        let Some(body) = get_event_body(&event, &sender_name, session.user_id(), !is_direct) else {
-            debug!("Received notification for event of unexpected type {event:?}",);
-            return;
-        };
+        let (body, is_invite) =
+            if let Some(body) = message_notification_body(&event, &sender_name, !is_direct) {
+                (body, false)
+            } else if let Some(body) =
+                own_invite_notification_body(&event, &sender_name, session.user_id())
+            {
+                (body, true)
+            } else {
+                debug!("Received notification for event of unexpected type {event:?}",);
+                return;
+            };
 
         let room_id = room.room_id().to_owned();
         let event_id = event.event_id();
@@ -242,7 +258,9 @@ impl Notifications {
             let random_id = glib::uuid_string_random();
             format!("{session_id}//{matrix_uri}//{random_id}")
         };
-        let icon = room.avatar_data().as_notification_icon().await;
+
+        let inhibit_image = is_invite && !session.settings().invite_avatars_enabled();
+        let icon = room.avatar_data().as_notification_icon(inhibit_image).await;
 
         Self::send_notification(
             &id,
@@ -294,7 +312,7 @@ impl Notifications {
             &[("user", &user.display_name())],
         );
 
-        let icon = user.avatar_data().as_notification_icon().await;
+        let icon = user.avatar_data().as_notification_icon(false).await;
 
         let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
         Self::send_notification(
@@ -416,5 +434,123 @@ impl Notifications {
 impl Default for Notifications {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Generate the notification body for the given event, if it is a message-like
+/// event.
+///
+/// If it's a media message, this will return a localized body.
+///
+/// Returns `None` if it is not a message-like event or if the message type is
+/// not supported.
+pub(crate) fn message_notification_body(
+    event: &AnySyncOrStrippedTimelineEvent,
+    sender_name: &str,
+    show_sender: bool,
+) -> Option<String> {
+    let AnySyncOrStrippedTimelineEvent::Sync(sync_event) = event else {
+        return None;
+    };
+    let AnySyncTimelineEvent::MessageLike(message_event) = &**sync_event else {
+        return None;
+    };
+
+    match message_event.original_content()? {
+        AnyMessageLikeEventContent::RoomMessage(mut message) => {
+            message.sanitize(HtmlSanitizerMode::Compat, RemoveReplyFallback::Yes);
+
+            let body = match message.msgtype {
+                MessageType::Audio(_) => {
+                    gettext_f("{user} sent an audio file.", &[("user", sender_name)])
+                }
+                MessageType::Emote(content) => format!("{sender_name} {}", content.body),
+                MessageType::File(_) => gettext_f("{user} sent a file.", &[("user", sender_name)]),
+                MessageType::Image(_) => {
+                    gettext_f("{user} sent an image.", &[("user", sender_name)])
+                }
+                MessageType::Location(_) => {
+                    gettext_f("{user} sent their location.", &[("user", sender_name)])
+                }
+                MessageType::Notice(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
+                MessageType::ServerNotice(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
+                MessageType::Text(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
+                MessageType::Video(_) => {
+                    gettext_f("{user} sent a video.", &[("user", sender_name)])
+                }
+                _ => return None,
+            };
+            Some(body)
+        }
+        AnyMessageLikeEventContent::Sticker(_) => Some(gettext_f(
+            "{user} sent a sticker.",
+            &[("user", sender_name)],
+        )),
+        _ => None,
+    }
+}
+
+fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> String {
+    if show_sender {
+        gettext_f(
+            "{user}: {message}",
+            &[("user", sender_name), ("message", &message)],
+        )
+    } else {
+        message
+    }
+}
+
+/// Generate the notification body for the given event, if it is an invite for
+/// our own user.
+///
+/// This will return a localized body.
+///
+/// Returns `None` if it is not an invite for our own user.
+pub(crate) fn own_invite_notification_body(
+    event: &AnySyncOrStrippedTimelineEvent,
+    sender_name: &str,
+    own_user_id: &UserId,
+) -> Option<String> {
+    let (membership, state_key) = match event {
+        AnySyncOrStrippedTimelineEvent::Sync(sync_event) => {
+            if let AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(member_event)) =
+                &**sync_event
+            {
+                match member_event {
+                    SyncStateEvent::Original(original_event) => (
+                        &original_event.content.membership,
+                        &original_event.state_key,
+                    ),
+                    SyncStateEvent::Redacted(redacted_event) => (
+                        &redacted_event.content.membership,
+                        &redacted_event.state_key,
+                    ),
+                }
+            } else {
+                return None;
+            }
+        }
+        AnySyncOrStrippedTimelineEvent::Stripped(stripped_event) => {
+            if let AnyStrippedStateEvent::RoomMember(member_event) = &**stripped_event {
+                (&member_event.content.membership, &member_event.state_key)
+            } else {
+                return None;
+            }
+        }
+    };
+
+    if *membership == MembershipState::Invite && state_key == own_user_id {
+        // Translators: Do NOT translate the content between '{' and '}', this is a
+        // variable name.
+        Some(gettext_f("{user} invited you", &[("user", sender_name)]))
+    } else {
+        None
     }
 }

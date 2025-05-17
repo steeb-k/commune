@@ -9,7 +9,7 @@
             <property name="spacing">12</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="Avatar">
+              <object class="Avatar" id="avatar">
                 <property name="size">128</property>
                 <property name="accessible-role">presentation</property>
                 <binding name="data">

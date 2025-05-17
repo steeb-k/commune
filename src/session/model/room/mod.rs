@@ -9,9 +9,11 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    deserialized_responses::AmbiguityChange, event_handler::EventHandlerDropGuard,
-    room::Room as MatrixRoom, send_queue::RoomSendQueueUpdate, Result as MatrixResult,
-    RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
+    deserialized_responses::{AmbiguityChange, RawSyncOrStrippedState},
+    event_handler::EventHandlerDropGuard,
+    room::Room as MatrixRoom,
+    send_queue::RoomSendQueueUpdate,
+    Result as MatrixResult, RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     api::client::{
@@ -21,12 +23,14 @@ use ruma::{
     events::{
         receipt::ReceiptThread,
         room::{
-            guest_access::GuestAccess, history_visibility::HistoryVisibility,
-            member::SyncRoomMemberEvent,
+            guest_access::GuestAccess,
+            history_visibility::HistoryVisibility,
+            member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
         },
     },
     EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
+use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
@@ -150,6 +154,10 @@ mod imp {
         /// The member corresponding to our own user.
         #[property(get)]
         own_member: OnceCell<Member>,
+        /// Whether this room is a current invite or an invite that was declined
+        /// or retracted.
+        #[property(get)]
+        is_invite: Cell<bool>,
         /// The user who sent the invite to this room.
         ///
         /// This is only set when this room is an invitation.
@@ -549,8 +557,13 @@ mod imp {
                 return;
             }
 
+            self.update_is_invite().await;
+            self.update_inviter().await;
+
             let matrix_room = self.matrix_room();
-            let category = match matrix_room.state() {
+            let state = matrix_room.state();
+
+            let category = match state {
                 RoomState::Joined => {
                     if matrix_room.is_space() {
                         RoomCategory::Space
@@ -563,8 +576,6 @@ mod imp {
                     }
                 }
                 RoomState::Invited => {
-                    self.load_inviter().await;
-
                     if self
                         .inviter
                         .borrow()
@@ -805,17 +816,145 @@ mod imp {
             }
         }
 
-        /// Load the member that invited us to this room, when applicable.
-        async fn load_inviter(&self) {
+        /// Update whether this room is a current invite or an invite that was
+        /// declined or retracted.
+        async fn update_is_invite(&self) {
             let matrix_room = self.matrix_room();
 
-            if matrix_room.state() != RoomState::Invited {
-                // We are only interested in the inviter for current invites.
+            let is_invite = match matrix_room.state() {
+                RoomState::Invited => true,
+                RoomState::Left => self.was_invite().await,
+                _ => false,
+            };
+
+            if self.is_invite.get() == is_invite {
                 return;
             }
 
+            self.is_invite.set(is_invite);
+            self.obj().notify_is_invite();
+        }
+
+        /// Check if this room was an invite that was declined or retracted.
+        async fn was_invite(&self) -> bool {
+            let matrix_room = self.matrix_room();
+
+            if matrix_room.state() != RoomState::Left {
+                return false;
+            }
+
+            // To know if this was an invite we need to check in the member event of our own
+            // user if the current membership is `invite`, or if the current membership is
+            // `leave` or `ban`, and the previous membership was `invite`.
             let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move { matrix_room_clone.invite_details().await });
+            let handle = spawn_tokio!(async move {
+                matrix_room_clone
+                    .get_state_event_static_for_key::<RoomMemberEventContent, _>(
+                        matrix_room_clone.own_user_id(),
+                    )
+                    .await
+            });
+
+            let raw_member_event = match handle.await.expect("task was not aborted") {
+                Ok(Some(raw_member_event)) => raw_member_event,
+                Ok(None) => {
+                    return false;
+                }
+                Err(error) => {
+                    error!("Could not get own member event: {error}");
+                    return false;
+                }
+            };
+
+            let member_event = match raw_member_event {
+                RawSyncOrStrippedState::Sync(raw) => {
+                    raw.deserialize_as::<RoomMemberMembershipEvent>()
+                }
+                RawSyncOrStrippedState::Stripped(raw) => raw.deserialize_as(),
+            };
+
+            let member_event = match member_event {
+                Ok(member_event) => member_event,
+                Err(error) => {
+                    warn!("Could not deserialize room member event: {error}");
+                    return false;
+                }
+            };
+
+            // Check if the last membership was `invite`. This can happen if we do not get a
+            // timeline update when leaving the room.
+            let membership = member_event.content.membership;
+            if membership == MembershipState::Invite {
+                return true;
+            }
+
+            // Check if the last membership mas `leave` or `ban`, and the previous
+            // membership was `invite`. This can happen if we do get a timeline update when
+            // leaving the room.
+            if !matches!(membership, MembershipState::Leave | MembershipState::Ban) {
+                return false;
+            }
+
+            if let Some(prev_content) = member_event
+                .unsigned
+                .as_ref()
+                .and_then(|unsigned| unsigned.prev_content.as_ref())
+            {
+                return prev_content.membership == MembershipState::Invite;
+            }
+
+            // If we do not have the `prev_content`, we need to fetch the previous state
+            // event.
+            let Some(replaces_state) = member_event
+                .unsigned
+                .and_then(|unsigned| unsigned.replaces_state)
+            else {
+                return false;
+            };
+
+            let matrix_room = matrix_room.clone();
+            let handle = spawn_tokio!(async move {
+                matrix_room.load_or_fetch_event(&replaces_state, None).await
+            });
+
+            let raw_prev_member_event = match handle.await.expect("task was not aborted") {
+                Ok(event) => event,
+                Err(error) => {
+                    warn!("Could not fetch previous member event: {error}");
+                    return false;
+                }
+            };
+
+            match raw_prev_member_event
+                .kind
+                .raw()
+                .deserialize_as::<RoomMemberMembershipEvent>()
+            {
+                Ok(prev_member_event) => {
+                    prev_member_event.content.membership == MembershipState::Invite
+                }
+                Err(error) => {
+                    warn!("Could not deserialize previous member event: {error}");
+                    false
+                }
+            }
+        }
+
+        /// Update the member that invited us to this room.
+        async fn update_inviter(&self) {
+            let matrix_room = self.matrix_room();
+
+            // We are only interested in the inviter for current invites.
+            if matrix_room.state() != RoomState::Invited {
+                if self.inviter.take().is_some() {
+                    self.obj().notify_inviter();
+                }
+
+                return;
+            }
+
+            let matrix_room = matrix_room.clone();
+            let handle = spawn_tokio!(async move { matrix_room.invite_details().await });
 
             let invite = match handle.await.expect("task was not aborted") {
                 Ok(invite) => invite,
@@ -826,6 +965,9 @@ mod imp {
             };
 
             let Some(inviter_member) = invite.inviter else {
+                if self.inviter.take().is_some() {
+                    self.obj().notify_inviter();
+                }
                 return;
             };
 
@@ -2090,4 +2232,27 @@ pub(crate) enum ReceiptPosition {
     End,
     /// We are at the event with the given ID.
     Event(OwnedEventId),
+}
+
+/// Helper type to extract the current and previous memberships from a raw
+/// `m.room.member` event.
+#[derive(Deserialize)]
+struct RoomMemberMembershipEvent {
+    content: RoomMemberMembershipContent,
+    unsigned: Option<RoomMemberMembershipUnsigned>,
+}
+
+/// Helper type to extract the membership of the `unsigned` object of an
+/// `m.room.member` event.
+#[derive(Deserialize)]
+struct RoomMemberMembershipUnsigned {
+    replaces_state: Option<OwnedEventId>,
+    prev_content: Option<RoomMemberMembershipContent>,
+}
+
+/// Helper type to extract the membership of the `content` object of an
+/// `m.room.member` event.
+#[derive(Deserialize)]
+struct RoomMemberMembershipContent {
+    membership: MembershipState,
 }

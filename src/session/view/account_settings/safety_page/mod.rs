@@ -27,6 +27,8 @@ mod imp {
         typing_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         ignored_users_row: TemplateChild<ButtonCountRow>,
+        #[template_child]
+        invite_avatars_row: TemplateChild<adw::SwitchRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -122,9 +124,21 @@ mod imp {
                     .bidirectional()
                     .sync_create()
                     .build();
+                let invite_avatars_binding = session_settings
+                    .bind_property(
+                        "invite-avatars-enabled",
+                        &*self.invite_avatars_row,
+                        "active",
+                    )
+                    .bidirectional()
+                    .sync_create()
+                    .build();
 
-                self.bindings
-                    .replace(vec![public_read_receipts_binding, typing_binding]);
+                self.bindings.replace(vec![
+                    public_read_receipts_binding,
+                    typing_binding,
+                    invite_avatars_binding,
+                ]);
             }
 
             self.session.set(session);

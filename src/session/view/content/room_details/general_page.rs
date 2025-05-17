@@ -25,7 +25,7 @@ use tracing::error;
 use super::{room_upgrade_dialog::confirm_room_upgrade, MemberRow, MembershipLists, RoomDetails};
 use crate::{
     components::{
-        ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
+        Avatar, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
         SwitchLoadingRow,
     },
     gettext_f,
@@ -54,6 +54,8 @@ mod imp {
     )]
     #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
+        #[template_child]
+        avatar: TemplateChild<Avatar>,
         #[template_child]
         room_topic: TemplateChild<gtk::Label>,
         #[template_child]
@@ -116,6 +118,7 @@ mod imp {
         #[property(get)]
         is_published: Cell<bool>,
         expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
+        invite_avatars_handler: RefCell<Option<glib::SignalHandlerId>>,
         notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -310,22 +313,41 @@ mod imp {
                         imp.update_encryption();
                     }
                 )),
+                room.connect_is_invite_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_image();
+                    }
+                )),
             ];
 
             self.room.set(room, room_handler_ids);
             obj.notify_room();
 
             if let Some(session) = room.session() {
-                let settings = session.notifications().settings();
+                let invite_avatars_handler = session
+                    .settings()
+                    .connect_invite_avatars_enabled_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_image();
+                        }
+                    ));
+                self.invite_avatars_handler
+                    .replace(Some(invite_avatars_handler));
+
+                let notifications_settings = session.notifications().settings();
                 let notifications_settings_handlers = vec![
-                    settings.connect_account_enabled_notify(clone!(
+                    notifications_settings.connect_account_enabled_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
                             imp.update_notifications();
                         }
                     )),
-                    settings.connect_session_enabled_notify(clone!(
+                    notifications_settings.connect_session_enabled_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
@@ -338,6 +360,7 @@ mod imp {
                     .replace(notifications_settings_handlers);
             }
 
+            self.update_image();
             self.init_edit_details();
             self.update_members();
             self.update_notifications();
@@ -411,6 +434,20 @@ mod imp {
                     }
                 )
             );
+        }
+
+        /// Update the image of the avatar of the room according to the current
+        /// state.
+        fn update_image(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            let inhibit_image = room.is_invite() && !session.settings().invite_avatars_enabled();
+            self.avatar.set_inhibit_image(inhibit_image);
         }
 
         /// Initialize the button to edit details.
@@ -523,9 +560,12 @@ mod imp {
         fn disconnect_all(&self) {
             if let Some(room) = self.room.obj() {
                 if let Some(session) = room.session() {
-                    let settings = session.notifications().settings();
+                    if let Some(handler) = self.invite_avatars_handler.take() {
+                        session.settings().disconnect(handler);
+                    }
+
                     for handler in self.notifications_settings_handlers.take() {
-                        settings.disconnect(handler);
+                        session.notifications().settings().disconnect(handler);
                     }
                 }
 

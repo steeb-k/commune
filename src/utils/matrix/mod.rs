@@ -15,14 +15,10 @@ use matrix_sdk::{
     AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
 };
 use ruma::{
-    events::{
-        room::{member::MembershipState, message::MessageType},
-        AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncMessageLikeEvent,
-        AnySyncTimelineEvent,
-    },
+    events::{AnyStrippedStateEvent, AnySyncTimelineEvent},
     html::{
         matrix::{AnchorUri, MatrixElement},
-        Children, Html, HtmlSanitizerMode, NodeRef, RemoveReplyFallback, StrTendril,
+        Children, Html, NodeRef, StrTendril,
     },
     matrix_uri::MatrixId,
     serde::Raw,
@@ -37,7 +33,7 @@ pub(crate) mod ext_traits;
 mod media_message;
 
 pub(crate) use self::media_message::*;
-use crate::{components::Pill, gettext_f, prelude::*, secret::StoredSession, session::model::Room};
+use crate::{components::Pill, prelude::*, secret::StoredSession, session::model::Room};
 
 /// The result of a password validation.
 #[derive(Debug, Default, Clone, Copy)]
@@ -148,115 +144,6 @@ impl AnySyncOrStrippedTimelineEvent {
             AnySyncOrStrippedTimelineEvent::Stripped(_) => None,
         }
     }
-}
-
-/// Extract the body from the given event.
-///
-/// If the event does not have a body but is supported, this will return a
-/// localized string.
-///
-/// Returns `None` if the event type is not supported.
-pub(crate) fn get_event_body(
-    event: &AnySyncOrStrippedTimelineEvent,
-    sender_name: &str,
-    own_user: &UserId,
-    show_sender: bool,
-) -> Option<String> {
-    match event {
-        AnySyncOrStrippedTimelineEvent::Sync(sync_event) => match &**sync_event {
-            AnySyncTimelineEvent::MessageLike(message) => {
-                get_message_event_body(message, sender_name, show_sender)
-            }
-            AnySyncTimelineEvent::State(_) => None,
-        },
-        AnySyncOrStrippedTimelineEvent::Stripped(state) => {
-            get_stripped_state_event_body(state, sender_name, own_user)
-        }
-    }
-}
-
-/// Extract the body from the given message event.
-///
-/// If it's a media message, this will return a localized body.
-///
-/// Returns `None` if the message type is not supported.
-pub(crate) fn get_message_event_body(
-    event: &AnySyncMessageLikeEvent,
-    sender_name: &str,
-    show_sender: bool,
-) -> Option<String> {
-    match event.original_content()? {
-        AnyMessageLikeEventContent::RoomMessage(mut message) => {
-            message.sanitize(HtmlSanitizerMode::Compat, RemoveReplyFallback::Yes);
-
-            let body = match message.msgtype {
-                MessageType::Audio(_) => {
-                    gettext_f("{user} sent an audio file.", &[("user", sender_name)])
-                }
-                MessageType::Emote(content) => format!("{sender_name} {}", content.body),
-                MessageType::File(_) => gettext_f("{user} sent a file.", &[("user", sender_name)]),
-                MessageType::Image(_) => {
-                    gettext_f("{user} sent an image.", &[("user", sender_name)])
-                }
-                MessageType::Location(_) => {
-                    gettext_f("{user} sent their location.", &[("user", sender_name)])
-                }
-                MessageType::Notice(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::ServerNotice(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::Text(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::Video(_) => {
-                    gettext_f("{user} sent a video.", &[("user", sender_name)])
-                }
-                _ => return None,
-            };
-            Some(body)
-        }
-        AnyMessageLikeEventContent::Sticker(_) => Some(gettext_f(
-            "{user} sent a sticker.",
-            &[("user", sender_name)],
-        )),
-        _ => None,
-    }
-}
-
-fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> String {
-    if show_sender {
-        gettext_f(
-            "{user}: {message}",
-            &[("user", sender_name), ("message", &message)],
-        )
-    } else {
-        message
-    }
-}
-
-/// Extract the body from the given state event.
-///
-/// This will return a localized body.
-///
-/// Returns `None` if the state event type is not supported.
-pub(crate) fn get_stripped_state_event_body(
-    event: &AnyStrippedStateEvent,
-    sender_name: &str,
-    own_user: &UserId,
-) -> Option<String> {
-    if let AnyStrippedStateEvent::RoomMember(member_event) = event {
-        if member_event.content.membership == MembershipState::Invite
-            && member_event.state_key == own_user
-        {
-            // Translators: Do NOT translate the content between '{' and '}', this is a
-            // variable name.
-            return Some(gettext_f("{user} invited you", &[("user", sender_name)]));
-        }
-    }
-
-    None
 }
 
 /// All errors that can occur when setting up the Matrix client.
