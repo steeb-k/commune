@@ -1,6 +1,8 @@
 use std::{
     cell::Cell,
     collections::{HashMap, HashSet},
+    rc::Rc,
+    time::Duration,
 };
 
 use gtk::{
@@ -49,6 +51,7 @@ mod imp {
         /// The rooms metainfo that allow to restore this `RoomList` from its
         /// previous state.
         metainfo: RoomListMetainfo,
+        pub(super) get_wait_source: RefCell<Option<glib::SourceId>>,
     }
 
     #[glib::object_subclass]
@@ -69,6 +72,12 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             self.metainfo.set_room_list(&self.obj());
+        }
+
+        fn dispose(&self) {
+            if let Some(source) = self.get_wait_source.take() {
+                source.remove();
+            }
         }
     }
 
@@ -405,27 +414,50 @@ impl RoomList {
     }
 
     /// Wait till the room with the given ID becomes available.
-    pub(crate) async fn get_wait(&self, room_id: &RoomId) -> Option<Room> {
+    pub(crate) async fn get_wait(
+        &self,
+        room_id: &RoomId,
+        timeout: Option<Duration>,
+    ) -> Option<Room> {
         if let Some(room) = self.get(room_id) {
             return Some(room);
         }
 
+        let imp = self.imp();
         let (sender, receiver) = futures_channel::oneshot::channel();
 
         let room_id = room_id.to_owned();
-        let sender = Cell::new(Some(sender));
-        // FIXME: add a timeout
-        let handler_id = self.connect_items_changed(move |obj, _, _, _| {
-            if let Some(room) = obj.get(&room_id) {
-                if let Some(sender) = sender.take() {
-                    let _ = sender.send(Some(room));
+        let sender_cell = Rc::new(Cell::new(Some(sender)));
+
+        let handler_id = self.connect_items_changed(clone!(
+            #[strong]
+            sender_cell,
+            move |obj, _, _, _| {
+                if let Some(room) = obj.get(&room_id) {
+                    if let Some(sender) = sender_cell.take() {
+                        let _ = sender.send(Some(room));
+                    }
                 }
             }
-        });
+        ));
+
+        if let Some(timeout) = timeout {
+            let get_wait_source = glib::timeout_add_local_once(timeout, move || {
+                if let Some(sender) = sender_cell.take() {
+                    let _ = sender.send(None);
+                }
+            });
+            imp.get_wait_source.replace(Some(get_wait_source));
+        }
 
         let room = receiver.await.ok().flatten();
 
         self.disconnect(handler_id);
+
+        // Remove the source if we got a room.
+        if let Some(source) = imp.get_wait_source.take().filter(|_| room.is_some()) {
+            source.remove();
+        }
 
         room
     }

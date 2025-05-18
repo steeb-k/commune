@@ -208,7 +208,11 @@ mod imp {
                     let Some(window) = obj.root().and_downcast::<Window>() else {
                         return;
                     };
-                    if let Some(room) = session.room_list().get_wait(matrix_room.room_id()).await {
+                    if let Some(room) = session
+                        .room_list()
+                        .get_wait(matrix_room.room_id(), None)
+                        .await
+                    {
                         window.session_view().select_room(room);
                     }
 

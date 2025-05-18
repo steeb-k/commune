@@ -185,7 +185,7 @@ mod imp {
                     let room = self
                         .session()
                         .room_list()
-                        .get_wait(matrix_room.room_id())
+                        .get_wait(matrix_room.room_id(), None)
                         .await
                         .expect("The newly created room was not found");
                     Ok(room)

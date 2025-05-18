@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, cell::Cell, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
@@ -182,10 +182,30 @@ impl Notifications {
             return;
         }
 
-        let Some(room) = session.room_list().get(room_id) else {
+        let Some(room) = session
+            .room_list()
+            .get_wait(room_id, Some(Duration::from_secs(10)))
+            .await
+        else {
             warn!("Could not display notification for missing room {room_id}",);
             return;
         };
+
+        if !room.is_room_info_initialized() {
+            // Wait for the room to finish initializing, otherwise we will not have the
+            // display name or the avatar.
+            let (sender, receiver) = futures_channel::oneshot::channel();
+
+            let sender_cell = Cell::new(Some(sender));
+            let handler_id = room.connect_is_room_info_initialized_notify(move |_| {
+                if let Some(sender) = sender_cell.take() {
+                    let _ = sender.send(());
+                }
+            });
+
+            let _ = receiver.await;
+            room.disconnect(handler_id);
+        }
 
         let event = match AnySyncOrStrippedTimelineEvent::from_raw(&matrix_notification.event) {
             Ok(event) => event,

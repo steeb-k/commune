@@ -224,6 +224,7 @@ mod imp {
         /// Whether the room info is initialized.
         ///
         /// Used to silence logs during initialization.
+        #[property(get)]
         is_room_info_initialized: Cell<bool>,
     }
 
@@ -277,7 +278,9 @@ mod imp {
                         imp.update_with_room_info(imp.matrix_room().clone_info())
                             .await;
                         imp.watch_room_info();
+
                         imp.is_room_info_initialized.set(true);
+                        imp.obj().notify_is_room_info_initialized();
 
                         // Only initialize the following after we have loaded the category of the
                         // room since we only load them for some categories.
