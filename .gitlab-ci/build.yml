@@ -25,7 +25,6 @@ build@aarch64:
   extends:
     - .flatpak@aarch64
   stage: build
-  allow_failure: true
 
 # Test builds with the stable runtime to make sure that the Flatpak will build on Flathub.
 # Should be run manually before tagging a new release.
@@ -45,7 +44,7 @@ build@aarch64:
     - sed -i "s|master|${GNOME_STABLE_VERSION}|g" ${MANIFEST_PATH}
     # We want to use the latest LLVM extension for the stable runtime.
     - sed -i "s|llvm${LLVM_NIGHTLY_VERSION}|llvm${LLVM_STABLE_VERSION}|g" ${MANIFEST_PATH}
-
+    
 
 build-stable@x86_64:
   extends:
