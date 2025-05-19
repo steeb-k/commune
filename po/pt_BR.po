@@ -13,8 +13,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-15 08:48+0000\n"
-"PO-Revision-Date: 2025-05-15 07:38-0300\n"
+"POT-Creation-Date: 2025-05-18 10:52+0000\n"
+"PO-Revision-Date: 2025-05-18 22:45-0300\n"
 "Last-Translator: Álvaro Burns <>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao/>\n"
 "Language: pt_BR\n"
@@ -689,7 +689,7 @@ msgstr "Sair"
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:266
 #: src/session/view/content/room_details/edit_details_subpage.rs:541
-#: src/session/view/content/room_details/general_page.rs:1070
+#: src/session/view/content/room_details/general_page.rs:1110
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:551
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
 #: src/session/view/content/room_history/event_actions/group.rs:583
@@ -1150,7 +1150,7 @@ msgstr "Ignorar"
 msgid "Could not stop ignoring user"
 msgstr "Falha ao parar de ignorar o usuário"
 
-#: src/components/user_page.rs:748 src/session/view/content/invite.rs:309
+#: src/components/user_page.rs:748 src/session/view/content/invite.rs:347
 #: src/session/view/content/room_history/sender_avatar/mod.rs:804
 #: src/session/view/sidebar/row.rs:735
 msgid "Could not ignore user"
@@ -1264,7 +1264,7 @@ msgid "Could Not Initialize Session"
 msgstr "Falha ao Iniciar Sessão"
 
 #: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:351
+#: src/session/model/notifications/mod.rs:389
 msgid "Login Request From Another Session"
 msgstr "Solicitação de Autenticação de outra Sessão"
 
@@ -1276,7 +1276,7 @@ msgstr "Verifique a nova sessão a partir da sessão atual."
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
 #: src/identity_verification_view/scan_qr_code_page.rs:158
-#: src/session/model/notifications/mod.rs:289
+#: src/session/model/notifications/mod.rs:327
 msgid "Verification Request"
 msgstr "Solicitação de verificação"
 
@@ -1915,15 +1915,49 @@ msgstr "Falha ao encerrar a sessão"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:293
+#: src/session/model/notifications/mod.rs:331
 msgid "{user} sent a verification request"
 msgstr "{user} enviou uma mensagem de verificação"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:355
+#: src/session/model/notifications/mod.rs:393
 msgid "Verify your new session “{name}”"
 msgstr "Verifique a nova sessão “{name}”"
+
+#: src/session/model/notifications/mod.rs:485
+msgid "{user} sent an audio file."
+msgstr "{user} enviou um áudio."
+
+#: src/session/model/notifications/mod.rs:488
+msgid "{user} sent a file."
+msgstr "{user} enviou um arquivo."
+
+#: src/session/model/notifications/mod.rs:490
+msgid "{user} sent an image."
+msgstr "{user} enviou uma imagen."
+
+#: src/session/model/notifications/mod.rs:493
+msgid "{user} sent their location."
+msgstr "{user} enviou sua localização."
+
+#: src/session/model/notifications/mod.rs:505
+msgid "{user} sent a video."
+msgstr "{user} enviou um vídeo."
+
+#: src/session/model/notifications/mod.rs:512
+msgid "{user} sent a sticker."
+msgstr "{user} enviou um adesivo."
+
+#: src/session/model/notifications/mod.rs:522
+msgid "{user}: {message}"
+msgstr "{user}: {message}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:572
+msgid "{user} invited you"
+msgstr "{user} convidou você"
 
 # Tenho a impressão que bater não é a tradução correta aqui
 #: src/session/model/room/join_rule.rs:247
@@ -1951,24 +1985,24 @@ msgid "Any registered user"
 msgstr "Qualquer usuário registrado"
 
 #: src/session/model/room/join_rule.rs:276
-#: src/session/view/content/room_details/general_page.rs:976
+#: src/session/view/content/room_details/general_page.rs:1016
 msgid "Unsupported rule"
 msgstr "Regra sem suporte"
 
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:381
+#: src/session/model/room/mod.rs:392
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:384
+#: src/session/model/room/mod.rs:395
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:394
+#: src/session/model/room/mod.rs:405
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -1992,7 +2026,7 @@ msgstr "Silenciado"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:304
+#: src/session/model/room_list/mod.rs:313
 msgid "Could not join room {room_name}"
 msgstr "Não pôde entrar na sala {room_name}"
 
@@ -2774,6 +2808,14 @@ msgstr "Mostrar apenas em salas privadas"
 msgid "Hide in all rooms"
 msgstr "Ocultar em todas as salas"
 
+#: src/session/view/account_settings/safety_page/mod.ui:70
+msgid "Show Avatars for Invites"
+msgstr "Mostrar avatares para convites"
+
+#: src/session/view/account_settings/safety_page/mod.ui:71
+msgid "Display the avatars of the room and the inviter"
+msgstr "Apresentar os avatares da sala e do convidante"
+
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:14
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:18
 msgid "Current Session"
@@ -2896,21 +2938,21 @@ msgstr "Adicionar servidor"
 msgid "Remove Server"
 msgstr "Remover servidor"
 
-#. Translators: Do NOT translate the content between '{' and '}', these are
-#. variable names.
-#: src/session/view/content/invite.rs:193
+#. Translators: Do NOT translate the content between '{' and '}', these
+#. are variable names.
+#: src/session/view/content/invite.rs:212
 msgid "{user_name} ({user_id}) invited you"
 msgstr "{user_name} ({user_id}) convidou você"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:259 src/session/view/sidebar/row.rs:690
+#: src/session/view/content/invite.rs:297 src/session/view/sidebar/row.rs:690
 msgid "Could not accept invitation for {room}"
 msgstr "Não pôde aceitar convite para {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:297 src/session/view/sidebar/row.rs:680
+#: src/session/view/content/invite.rs:335 src/session/view/sidebar/row.rs:680
 msgid "Could not decline invitation for {room}"
 msgstr "Não pôde recusar convite para {room}"
 
@@ -2975,7 +3017,7 @@ msgid "Remove “{address}”"
 msgstr "Remover “{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:674
+#: src/session/view/content/room_details/general_page.rs:714
 #: src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "Endereço principal"
@@ -3148,83 +3190,83 @@ msgstr "Salvar"
 msgid "Save Description"
 msgstr "Salvar descrição"
 
-#: src/session/view/content/room_details/general_page.rs:458
-#: src/session/view/content/room_details/general_page.rs:504
+#: src/session/view/content/room_details/general_page.rs:495
+#: src/session/view/content/room_details/general_page.rs:541
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Membro"
 msgstr[1] "Membros"
 
-#: src/session/view/content/room_details/general_page.rs:629
+#: src/session/view/content/room_details/general_page.rs:669
 msgid "Could not change notifications setting"
 msgstr "Falha ao mudar a configuração de notificações"
 
-#: src/session/view/content/room_details/general_page.rs:669
-#: src/session/view/content/room_details/general_page.rs:708
+#: src/session/view/content/room_details/general_page.rs:709
+#: src/session/view/content/room_details/general_page.rs:748
 msgid "Copy address"
 msgstr "Copiar endereço"
 
-#: src/session/view/content/room_details/general_page.rs:670
-#: src/session/view/content/room_details/general_page.rs:709
+#: src/session/view/content/room_details/general_page.rs:710
+#: src/session/view/content/room_details/general_page.rs:749
 msgid "Address copied to clipboard"
 msgstr "Endereço copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:751
+#: src/session/view/content/room_details/general_page.rs:791
 msgid "Room link copied to clipboard"
 msgstr "Link da sala copiado para a área de transferência"
 
-#: src/session/view/content/room_details/general_page.rs:804
+#: src/session/view/content/room_details/general_page.rs:844
 msgid "Could not change who can join"
 msgstr "Falha ao alterar quem consegue entrar"
 
-#: src/session/view/content/room_details/general_page.rs:852
+#: src/session/view/content/room_details/general_page.rs:892
 msgid "Could not change guest access"
 msgstr "Falha ao alterar o acesso de convidados"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:869
+#: src/session/view/content/room_details/general_page.rs:909
 msgid "Publish in the {homeserver} directory"
 msgstr "Publicar no diretório {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:944
+#: src/session/view/content/room_details/general_page.rs:984
 msgid "Could not publish room in directory"
 msgstr "Falha ao publicar sala no diretório"
 
-#: src/session/view/content/room_details/general_page.rs:946
+#: src/session/view/content/room_details/general_page.rs:986
 msgid "Could not unpublish room from directory"
 msgstr "Falha ao despublicar a sala do diretório"
 
-#: src/session/view/content/room_details/general_page.rs:967
+#: src/session/view/content/room_details/general_page.rs:1007
 #: src/session/view/content/room_details/general_page.ui:277
 msgid "Anyone, even if they are not in the room"
 msgstr "Qualquer um, mesmo que eles não estejam na sala"
 
-#: src/session/view/content/room_details/general_page.rs:970
+#: src/session/view/content/room_details/general_page.rs:1010
 #: src/session/view/content/room_details/general_page.ui:278
 msgid "Members only, since this option was selected"
 msgstr "Apenas membros, já que esta opção foi selecionada"
 
-#: src/session/view/content/room_details/general_page.rs:972
+#: src/session/view/content/room_details/general_page.rs:1012
 #: src/session/view/content/room_details/general_page.ui:280
 msgid "Members only, since they were invited"
 msgstr "Membros apenas, uma vez que foram convidados"
 
-#: src/session/view/content/room_details/general_page.rs:974
+#: src/session/view/content/room_details/general_page.rs:1014
 #: src/session/view/content/room_details/general_page.ui:279
 msgid "Members only, since they joined the room"
 msgstr "Apenas membros, uma vez que entraram na sala"
 
-#: src/session/view/content/room_details/general_page.rs:1023
+#: src/session/view/content/room_details/general_page.rs:1063
 msgid "Could not change who can read history"
 msgstr "Falha ao mudar quem pode ler o histórico"
 
-#: src/session/view/content/room_details/general_page.rs:1065
+#: src/session/view/content/room_details/general_page.rs:1105
 msgid "Enable Encryption?"
 msgstr "Habilitar Encriptação?"
 
-#: src/session/view/content/room_details/general_page.rs:1066
+#: src/session/view/content/room_details/general_page.rs:1106
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3232,30 +3274,30 @@ msgstr ""
 "Habilitar criptografia impedirá que novos membros leiam o histórico antes de "
 "sua chegada. Isso não pode ser desativado depois."
 
-#: src/session/view/content/room_details/general_page.rs:1071
+#: src/session/view/content/room_details/general_page.rs:1111
 #: src/session/view/sidebar/mod.rs:321 src/session/view/sidebar/mod.rs:327
 msgid "Enable"
 msgstr "Habilitar"
 
-#: src/session/view/content/room_details/general_page.rs:1082
+#: src/session/view/content/room_details/general_page.rs:1122
 msgid "Could not enable encryption"
 msgstr "Falha ao habilitar encriptação"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1108
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Federated"
 msgstr "Federada"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1111
+#: src/session/view/content/room_details/general_page.rs:1151
 msgid "Not federated"
 msgstr "Não federada"
 
-#: src/session/view/content/room_details/general_page.rs:1142
+#: src/session/view/content/room_details/general_page.rs:1182
 msgid "Room upgraded successfully"
 msgstr "Sala atualizada com sucesso"
 
-#: src/session/view/content/room_details/general_page.rs:1146
+#: src/session/view/content/room_details/general_page.rs:1186
 msgid "Could not upgrade room"
 msgstr "Falha ao atualizar a sala"
 
@@ -4680,7 +4722,7 @@ msgstr "Não pode conter “#”"
 msgid "Too long. Use a shorter address."
 msgstr "Grande demais. Use um endereço mais curto."
 
-#: src/session/view/create_room_dialog.rs:234
+#: src/session/view/create_room_dialog.rs:238
 msgid "The address is already taken."
 msgstr "O endereço já está sendo usado."
 
@@ -4924,14 +4966,14 @@ msgstr "Permite navegar entre salas"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:265
+#: src/session/view/sidebar/room_row.rs:327
 msgid "Direct chat with {name}"
 msgstr "Conversa direta com {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:277
+#: src/session/view/sidebar/room_row.rs:339
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "1 notificação"
@@ -5129,45 +5171,11 @@ msgstr "Falha ao conectar ao homeserver."
 msgid "Could not open the store."
 msgstr "Falha ao abrir o armazenamento."
 
-#: src/utils/matrix/mod.rs:190
-msgid "{user} sent an audio file."
-msgstr "{user} enviou um áudio."
-
-#: src/utils/matrix/mod.rs:193
-msgid "{user} sent a file."
-msgstr "{user} enviou um arquivo."
-
-#: src/utils/matrix/mod.rs:195
-msgid "{user} sent an image."
-msgstr "{user} enviou uma imagen."
-
-#: src/utils/matrix/mod.rs:198
-msgid "{user} sent their location."
-msgstr "{user} enviou sua localização."
-
-#: src/utils/matrix/mod.rs:210
-msgid "{user} sent a video."
-msgstr "{user} enviou um vídeo."
-
-#: src/utils/matrix/mod.rs:217
-msgid "{user} sent a sticker."
-msgstr "{user} enviou um adesivo."
-
-#: src/utils/matrix/mod.rs:227
-msgid "{user}: {message}"
-msgstr "{user}: {message}"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/utils/matrix/mod.rs:251
-msgid "{user} invited you"
-msgstr "{user} convidou você"
-
-#: src/utils/matrix/mod.rs:280
+#: src/utils/matrix/mod.rs:171
 msgid "Could not generate unique session ID"
 msgstr "Não foi possível gerar um ID de sessão única"
 
-#: src/utils/matrix/mod.rs:281
+#: src/utils/matrix/mod.rs:172
 msgid "Could not access the session tokens"
 msgstr "Não pôde acessar aos tokens da sessão"
 
