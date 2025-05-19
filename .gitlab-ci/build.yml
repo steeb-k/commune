@@ -1,6 +1,8 @@
 # Build the Flatpak
 
-include: 'https://gitlab.gnome.org/GNOME/citemplates/-/raw/master/flatpak/flatpak_ci_initiative.yml'
+include:
+  - project: "GNOME/citemplates"
+    file: "flatpak/flatpak_ci_initiative.yml"
 
 variables:
   RUNTIME_REPO: "https://nightly.gnome.org/gnome-nightly.flatpakrepo"
@@ -44,7 +46,7 @@ build@aarch64:
     - sed -i "s|master|${GNOME_STABLE_VERSION}|g" ${MANIFEST_PATH}
     # We want to use the latest LLVM extension for the stable runtime.
     - sed -i "s|llvm${LLVM_NIGHTLY_VERSION}|llvm${LLVM_STABLE_VERSION}|g" ${MANIFEST_PATH}
-    
+
 
 build-stable@x86_64:
   extends:
