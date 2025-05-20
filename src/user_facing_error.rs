@@ -1,15 +1,8 @@
 use std::time::{Duration, SystemTime};
 
 use gettextrs::gettext;
-use matrix_sdk::{ClientBuildError, Error, HttpError, RumaApiError};
-use ruma::api::{
-    client::error::{
-        Error as ClientApiError, ErrorBody,
-        ErrorKind::{Forbidden, LimitExceeded, UserDeactivated},
-        RetryAfter,
-    },
-    error::FromHttpResponseError,
-};
+use matrix_sdk::{ClientBuildError, Error, HttpError};
+use ruma::api::client::error::{ErrorBody, ErrorKind, RetryAfter};
 
 use crate::ngettext_f;
 
@@ -19,56 +12,51 @@ pub trait UserFacingError {
 
 impl UserFacingError for HttpError {
     fn to_user_facing(&self) -> String {
-        match self {
-            HttpError::Reqwest(error) => {
-                // TODO: Add more information based on the error
-                if error.is_timeout() {
-                    gettext("Connection timed out.")
-                } else {
-                    gettext("Could not connect to the homeserver.")
-                }
+        if let HttpError::Reqwest(error) = self {
+            // TODO: Add more information based on the error
+            if error.is_timeout() {
+                gettext("Connection timed out.")
+            } else {
+                gettext("Could not connect to the homeserver.")
             }
-            HttpError::Api(FromHttpResponseError::Server(RumaApiError::ClientApi(
-                ClientApiError {
-                    body: ErrorBody::Standard { kind, message },
-                    ..
-                },
-            ))) => {
-                match kind {
-                    Forbidden { .. } => gettext("Invalid credentials."),
-                    UserDeactivated => gettext("Account deactivated."),
-                    LimitExceeded { retry_after } => {
-                        if let Some(retry_after) = retry_after {
-                            let duration = match retry_after {
-                                RetryAfter::Delay(duration) => *duration,
-                                RetryAfter::DateTime(until) => until
-                                    .duration_since(SystemTime::now())
-                                    // An error means that the date provided is in the past, which
-                                    // doesn't make sense. Let's not panic anyway and default to 1
-                                    // second.
-                                    .unwrap_or_else(|_| Duration::from_secs(1)),
-                            };
-                            let secs = duration.as_secs() as u32;
-                            ngettext_f(
-                                // Translators: Do NOT translate the content between '{' and '}',
-                                // this is a variable name.
-                                "Rate limit exceeded, retry in 1 second.",
-                                "Rate limit exceeded, retry in {n} seconds.",
-                                secs,
-                                &[("n", &secs.to_string())],
-                            )
-                        } else {
-                            gettext("Rate limit exceeded, try again later.")
-                        }
-                    }
-                    _ => {
-                        // TODO: The server may not give us pretty enough error message. We should
-                        // add our own error message.
-                        message.clone()
+        } else if let Some(ErrorBody::Standard { kind, message }) =
+            self.as_client_api_error().map(|error| &error.body)
+        {
+            match kind {
+                ErrorKind::Forbidden { .. } => gettext("Invalid credentials."),
+                ErrorKind::UserDeactivated => gettext("Account deactivated."),
+                ErrorKind::LimitExceeded { retry_after } => {
+                    if let Some(retry_after) = retry_after {
+                        let duration = match retry_after {
+                            RetryAfter::Delay(duration) => *duration,
+                            RetryAfter::DateTime(until) => until
+                                .duration_since(SystemTime::now())
+                                // An error means that the date provided is in the past, which
+                                // doesn't make sense. Let's not panic anyway and default to 1
+                                // second.
+                                .unwrap_or_else(|_| Duration::from_secs(1)),
+                        };
+                        let secs = duration.as_secs() as u32;
+                        ngettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "Rate limit exceeded, retry in 1 second.",
+                            "Rate limit exceeded, retry in {n} seconds.",
+                            secs,
+                            &[("n", &secs.to_string())],
+                        )
+                    } else {
+                        gettext("Rate limit exceeded, try again later.")
                     }
                 }
+                _ => {
+                    // TODO: The server may not give us pretty enough error message. We should
+                    // add our own error message.
+                    message.clone()
+                }
             }
-            _ => gettext("Unexpected connection error."),
+        } else {
+            gettext("Unexpected connection error.")
         }
     }
 }
