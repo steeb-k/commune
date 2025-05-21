@@ -18,8 +18,7 @@ use tracing::{error, warn};
 
 use super::ComposerParser;
 use crate::{
-    components::{Pill, PillSource},
-    prelude::*,
+    components::{AvatarImageSafetySetting, Pill, PillSource},
     session::model::{Event, Member, Room, Timeline},
     spawn, spawn_tokio,
     utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
@@ -312,7 +311,10 @@ mod imp {
 
                 match DraftMention::new(&room, &text[content_start..content_end]) {
                     DraftMention::Source(source) => {
-                        self.add_widget(source.to_pill().upcast(), &mut end_iter);
+                        // We do not need to watch safety settings for mentions, rooms will be
+                        // watched automatically.
+                        let pill = Pill::new(&source, AvatarImageSafetySetting::None, None);
+                        self.add_widget(pill.upcast(), &mut end_iter);
                     }
                     DraftMention::Text(s) => {
                         self.buffer.insert(&mut end_iter, s);
@@ -387,7 +389,9 @@ mod imp {
             let can_contain_at_room = message.mentions().is_none_or(|m| m.room);
             if room.permissions().can_notify_room() && can_contain_at_room {
                 if let Some(start) = find_at_room(&text) {
-                    let pill = room.at_room().to_pill();
+                    // We do not need to watch safety settings for at-room mentions, our own member
+                    // is in the room.
+                    let pill = Pill::new(&room.at_room(), AvatarImageSafetySetting::None, None);
                     let end = start + AT_ROOM.len();
                     mentions.push(DetectedMention { pill, start, end });
 

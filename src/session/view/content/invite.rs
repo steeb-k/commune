@@ -3,7 +3,10 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
+    components::{
+        confirm_leave_room_dialog, Avatar, AvatarImageSafetySetting, LabelWithWidgets,
+        LoadingButton, Pill,
+    },
     gettext_f,
     prelude::*,
     session::model::{MemberList, Room, RoomCategory, TargetRoomCategory, User},
@@ -29,8 +32,6 @@ mod imp {
         pub accept_requests: RefCell<HashSet<Room>>,
         pub decline_requests: RefCell<HashSet<Room>>,
         category_handler: RefCell<Option<glib::SignalHandlerId>>,
-        invite_avatars_handler: RefCell<Option<glib::SignalHandlerId>>,
-        inviter_pill: RefCell<Option<Pill>>,
         #[template_child]
         pub header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -126,7 +127,6 @@ mod imp {
             }
 
             self.disconnect_signals();
-            self.inviter_pill.take();
 
             let obj = self.obj();
 
@@ -180,46 +180,25 @@ mod imp {
                 ));
                 self.category_handler.replace(Some(category_handler));
 
-                if let Some(session) = room.session() {
-                    let settings = session.settings();
+                if let Some(inviter) = room.inviter() {
+                    let pill = Pill::new(
+                        &inviter,
+                        AvatarImageSafetySetting::InviteAvatars,
+                        Some(room.clone()),
+                    );
 
-                    let invite_avatars_handler =
-                        settings.connect_invite_avatars_enabled_notify(clone!(
-                            #[weak(rename_to = imp)]
-                            self,
-                            move |settings| {
-                                let inhibit_images = !settings.invite_avatars_enabled();
-                                imp.avatar.set_inhibit_image(inhibit_images);
+                    let label = gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}', these
+                        // are variable names.
+                        "{user_name} ({user_id}) invited you",
+                        &[
+                            ("user_name", LabelWithWidgets::PLACEHOLDER),
+                            ("user_id", inviter.user_id().as_str()),
+                        ],
+                    );
 
-                                if let Some(pill) = &*imp.inviter_pill.borrow() {
-                                    pill.set_inhibit_image(inhibit_images);
-                                };
-                            }
-                        ));
-                    self.invite_avatars_handler
-                        .replace(Some(invite_avatars_handler));
-
-                    let inhibit_images = !settings.invite_avatars_enabled();
-                    self.avatar.set_inhibit_image(inhibit_images);
-
-                    if let Some(inviter) = room.inviter() {
-                        let pill = inviter.to_pill();
-                        pill.set_inhibit_image(inhibit_images);
-
-                        let label = gettext_f(
-                            // Translators: Do NOT translate the content between '{' and '}', these
-                            // are variable names.
-                            "{user_name} ({user_id}) invited you",
-                            &[
-                                ("user_name", LabelWithWidgets::PLACEHOLDER),
-                                ("user_id", inviter.user_id().as_str()),
-                            ],
-                        );
-
-                        self.inviter
-                            .set_label_and_widgets(label, vec![pill.clone()]);
-                        self.inviter_pill.replace(Some(pill));
-                    }
+                    self.inviter
+                        .set_label_and_widgets(label, vec![pill.clone()]);
                 }
             }
 
@@ -236,12 +215,6 @@ mod imp {
             if let Some(room) = self.room.take() {
                 if let Some(handler) = self.category_handler.take() {
                     room.disconnect(handler);
-                }
-
-                if let Some(session) = room.session() {
-                    if let Some(handler) = self.invite_avatars_handler.take() {
-                        session.settings().disconnect(handler);
-                    }
                 }
             }
         }

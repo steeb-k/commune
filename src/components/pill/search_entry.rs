@@ -5,7 +5,7 @@ use gtk::{
     CompositeTemplate,
 };
 
-use crate::components::{Pill, PillSource};
+use crate::components::{AvatarImageSafetySetting, Pill, PillSource};
 
 mod imp {
     use std::{cell::RefCell, collections::HashMap, marker::PhantomData, sync::LazyLock};
@@ -175,7 +175,9 @@ mod imp {
                 return;
             }
 
-            let pill = Pill::new(source);
+            // We do not need to watch the safety setting as this entry should only be used
+            // with search results.
+            let pill = Pill::new(source, AvatarImageSafetySetting::None, None);
             pill.set_margin_start(3);
             pill.set_margin_end(3);
 

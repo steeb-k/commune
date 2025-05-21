@@ -16,8 +16,32 @@ pub use self::{
 };
 use crate::{
     components::AnimatedImagePaintable,
+    session::model::Room,
     utils::{BoundObject, BoundObjectWeakRef, CountedRef},
 };
+
+/// The safety setting to watch to decide whether the image of the avatar should
+/// be displayed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, glib::Enum, Default)]
+#[enum_type(name = "AvatarImageSafetySetting")]
+pub enum AvatarImageSafetySetting {
+    /// No setting needs to be watched, the image is always shown when
+    /// available.
+    #[default]
+    None,
+
+    /// The media previews safety setting should be watched, with the image only
+    /// shown when allowed.
+    ///
+    /// This setting also requires the [`Room`] where the avatar is presented.
+    MediaPreviews,
+
+    /// The invite avatars safety setting should be watched, with the image only
+    /// shown when allowed.
+    ///
+    /// This setting also requires the [`Room`] where the avatar is presented.
+    InviteAvatars,
+}
 
 mod imp {
     use std::{
@@ -44,13 +68,19 @@ mod imp {
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
         size: PhantomData<i32>,
-        /// Whether to inhibit the image of the avatar.
+        /// The safety setting to watch to decide whether the image of the
+        /// avatar should be displayed.
+        #[property(get, set = Self::set_watched_safety_setting, explicit_notify, builder(AvatarImageSafetySetting::default()))]
+        watched_safety_setting: Cell<AvatarImageSafetySetting>,
+        /// The room to watch to apply the current safety settings.
         ///
-        /// If the image is inhibited, it will not be loaded.
-        #[property(get, set = Self::set_inhibit_image, explicit_notify)]
-        inhibit_image: Cell<bool>,
+        /// This is required if `watched_safety_setting` is not `None`.
+        #[property(get, set = Self::set_watched_room, explicit_notify, nullable)]
+        watched_room: RefCell<Option<Room>>,
         paintable_ref: RefCell<Option<CountedRef>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
+        watched_room_handler: RefCell<Option<glib::SignalHandlerId>>,
+        watched_session_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -74,7 +104,11 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Avatar {}
+    impl ObjectImpl for Avatar {
+        fn dispose(&self) {
+            self.disconnect_safety_setting_signals();
+        }
+    }
 
     impl WidgetImpl for Avatar {
         fn map(&self) {
@@ -116,16 +150,134 @@ mod imp {
             self.obj().notify_size();
         }
 
-        /// Set whether to inhibit the image of the avatar.
-        fn set_inhibit_image(&self, inhibit: bool) {
-            if self.inhibit_image.get() == inhibit {
+        /// Set the safety setting to watch to decide whether the image of the
+        /// avatar should be displayed.
+        fn set_watched_safety_setting(&self, setting: AvatarImageSafetySetting) {
+            if self.watched_safety_setting.get() == setting {
                 return;
             }
 
-            self.inhibit_image.set(inhibit);
+            self.disconnect_safety_setting_signals();
+
+            self.watched_safety_setting.set(setting);
+
+            self.connect_safety_setting_signals();
+            self.obj().notify_watched_safety_setting();
+        }
+
+        /// Set the room to watch to apply the current safety settings.
+        fn set_watched_room(&self, room: Option<Room>) {
+            if *self.watched_room.borrow() == room {
+                return;
+            }
+
+            self.disconnect_safety_setting_signals();
+
+            self.watched_room.replace(room);
+
+            self.connect_safety_setting_signals();
+            self.obj().notify_watched_room();
+        }
+
+        /// Connect to the proper signals for the current safety setting.
+        fn connect_safety_setting_signals(&self) {
+            let Some(room) = self.watched_room.borrow().clone() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            match self.watched_safety_setting.get() {
+                AvatarImageSafetySetting::None => {}
+                AvatarImageSafetySetting::MediaPreviews => {
+                    let room_handler = room.connect_join_rule_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_paintable();
+                        }
+                    ));
+                    self.watched_room_handler.replace(Some(room_handler));
+
+                    let session_settings_handler = session
+                        .settings()
+                        .connect_media_previews_enabled_changed(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move |_| {
+                                imp.update_paintable();
+                            }
+                        ));
+                    self.watched_session_settings_handler
+                        .replace(Some(session_settings_handler));
+                }
+                AvatarImageSafetySetting::InviteAvatars => {
+                    let room_handler = room.connect_is_invite_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_paintable();
+                        }
+                    ));
+                    self.watched_room_handler.replace(Some(room_handler));
+
+                    let session_settings_handler = session
+                        .settings()
+                        .connect_invite_avatars_enabled_notify(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move |_| {
+                                imp.update_paintable();
+                            }
+                        ));
+                    self.watched_session_settings_handler
+                        .replace(Some(session_settings_handler));
+                }
+            }
 
             self.update_paintable();
-            self.obj().notify_inhibit_image();
+        }
+
+        /// Disconnect the handlers for the signals of the safety setting.
+        fn disconnect_safety_setting_signals(&self) {
+            if let Some(room) = self.watched_room.borrow().as_ref() {
+                if let Some(handler) = self.watched_room_handler.take() {
+                    room.disconnect(handler);
+                }
+
+                if let Some(handler) = self.watched_session_settings_handler.take() {
+                    room.session()
+                        .inspect(|session| session.settings().disconnect(handler));
+                }
+            }
+        }
+
+        /// Whether we can display the image of the avatar with the current
+        /// state.
+        fn can_show_image(&self) -> bool {
+            let watched_safety_setting = self.watched_safety_setting.get();
+
+            if watched_safety_setting == AvatarImageSafetySetting::None {
+                return true;
+            }
+
+            let Some(room) = self.watched_room.borrow().clone() else {
+                return false;
+            };
+            let Some(session) = room.session() else {
+                return false;
+            };
+
+            match watched_safety_setting {
+                AvatarImageSafetySetting::None => unreachable!(),
+                AvatarImageSafetySetting::MediaPreviews => {
+                    session.settings().should_room_show_media_previews(&room)
+                }
+                AvatarImageSafetySetting::InviteAvatars => {
+                    !room.is_invite() || session.settings().invite_avatars_enabled()
+                }
+            }
         }
 
         /// Set the [`AvatarData`] displayed by this widget.
@@ -208,7 +360,7 @@ mod imp {
         fn update_paintable(&self) {
             let _old_paintable_ref = self.paintable_ref.take();
 
-            if self.inhibit_image.get() {
+            if !self.can_show_image() {
                 // We need to unset the paintable.
                 self.avatar.set_custom_image(None::<&gdk::Paintable>);
                 self.update_animated_paintable_state();
@@ -245,7 +397,7 @@ mod imp {
         fn update_animated_paintable_state(&self) {
             let _old_paintable_animation_ref = self.paintable_animation_ref.take();
 
-            if self.inhibit_image.get() || !self.obj().is_mapped() {
+            if !self.can_show_image() || !self.obj().is_mapped() {
                 // We do not need to animate the paintable.
                 return;
             }

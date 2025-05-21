@@ -12,7 +12,7 @@ pub use self::{
     source::{PillSource, PillSourceExt, PillSourceImpl},
     source_row::PillSourceRow,
 };
-use super::{Avatar, RoomPreviewDialog, UserProfileDialog};
+use super::{Avatar, AvatarImageSafetySetting, RoomPreviewDialog, UserProfileDialog};
 use crate::{
     prelude::*,
     session::{
@@ -48,11 +48,15 @@ mod imp {
         /// Whether the pill can be activated.
         #[property(get, set = Self::set_activatable, explicit_notify)]
         activatable: Cell<bool>,
-        /// Whether to inhibit the image of the avatar.
+        /// The safety setting to watch to decide whether the image of the
+        /// avatar should be displayed.
+        #[property(get = Self::watched_safety_setting, set = Self::set_watched_safety_setting, builder(AvatarImageSafetySetting::default()))]
+        watched_safety_setting: PhantomData<AvatarImageSafetySetting>,
+        /// The room to watch to apply the current safety settings.
         ///
-        /// If the image is inhibited, it will not be loaded.
-        #[property(get = Self::inhibit_image, set = Self::set_inhibit_image)]
-        inhibit_image: PhantomData<bool>,
+        /// This is required if `watched_safety_setting` is not `None`.
+        #[property(get = Self::watched_room, set = Self::set_watched_room, nullable)]
+        watched_room: PhantomData<Option<Room>>,
         gesture_click: RefCell<Option<gtk::GestureClick>>,
     }
 
@@ -173,14 +177,26 @@ mod imp {
             }
         }
 
-        /// Whether to inhibit the image of the avatar.
-        fn inhibit_image(&self) -> bool {
-            self.avatar.inhibit_image()
+        /// The safety setting to watch to decide whether the image of the
+        /// avatar should be displayed.
+        fn watched_safety_setting(&self) -> AvatarImageSafetySetting {
+            self.avatar.watched_safety_setting()
         }
 
-        /// Set whether to inhibit the image of the avatar.
-        fn set_inhibit_image(&self, inhibit: bool) {
-            self.avatar.set_inhibit_image(inhibit);
+        /// Set the safety setting to watch to decide whether the image of the
+        /// avatar should be displayed.
+        fn set_watched_safety_setting(&self, setting: AvatarImageSafetySetting) {
+            self.avatar.set_watched_safety_setting(setting);
+        }
+
+        /// The room to watch to apply the current safety settings.
+        fn watched_room(&self) -> Option<Room> {
+            self.avatar.watched_room()
+        }
+
+        /// Set the room to watch to apply the current safety settings.
+        fn set_watched_room(&self, room: Option<Room>) {
+            self.avatar.set_watched_room(room);
         }
 
         /// Set the display name of this pill.
@@ -240,8 +256,30 @@ glib::wrapper! {
 }
 
 impl Pill {
-    /// Create a pill with the given source.
-    pub fn new(source: &impl IsA<PillSource>) -> Self {
-        glib::Object::builder().property("source", source).build()
+    /// Create a pill with the given source and watching the given safety
+    /// setting.
+    pub fn new(
+        source: &impl IsA<PillSource>,
+        watched_safety_setting: AvatarImageSafetySetting,
+        watched_room: Option<Room>,
+    ) -> Self {
+        let source = source.upcast_ref();
+
+        let (watched_safety_setting, watched_room) = if let Some(room) = source
+            .downcast_ref::<Room>()
+            .cloned()
+            .or_else(|| source.downcast_ref::<AtRoom>().map(AtRoom::room))
+        {
+            // We must always watch the invite avatars setting for local rooms.
+            (AvatarImageSafetySetting::InviteAvatars, Some(room))
+        } else {
+            (watched_safety_setting, watched_room)
+        };
+
+        glib::Object::builder()
+            .property("source", source)
+            .property("watched-safety-setting", watched_safety_setting)
+            .property("watched-room", watched_room)
+            .build()
     }
 }

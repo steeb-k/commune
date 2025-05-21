@@ -1,18 +1,20 @@
 use gettextrs::gettext;
-use gtk::{glib, subclass::prelude::*};
-use ruma::OwnedRoomId;
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use ruma::RoomId;
 
-use crate::{components::PillSource, prelude::*};
+use crate::{components::PillSource, prelude::*, session::model::Room};
 
 mod imp {
     use std::cell::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::AtRoom)]
     pub struct AtRoom {
-        /// The ID of the room currently represented.
-        room_id: OnceCell<OwnedRoomId>,
+        /// The room represented by this mention.
+        #[property(get, set = Self::set_room, construct_only)]
+        room: OnceCell<Room>,
     }
 
     #[glib::object_subclass]
@@ -22,6 +24,7 @@ mod imp {
         type ParentType = PillSource;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for AtRoom {}
 
     impl PillSourceImpl for AtRoom {
@@ -31,14 +34,23 @@ mod imp {
     }
 
     impl AtRoom {
-        /// Set the ID of the room currently represented.
-        pub(super) fn set_room_id(&self, room_id: OwnedRoomId) {
-            self.room_id.set(room_id).expect("room ID is uninitialized");
+        /// Set the room represented by this mention.
+        fn set_room(&self, room: Room) {
+            let room = self.room.get_or_init(|| room);
+
+            // Bind the avatar image so it always looks the same.
+            room.avatar_data()
+                .bind_property("image", &self.obj().avatar_data(), "image")
+                .sync_create()
+                .build();
         }
 
-        /// The ID of the room currently represented.
-        pub(super) fn room_id(&self) -> &OwnedRoomId {
-            self.room_id.get().expect("room ID is initialized")
+        /// The ID of the room represented by this mention.
+        pub(super) fn room_id(&self) -> &RoomId {
+            self.room
+                .get()
+                .expect("room should be initialized")
+                .room_id()
         }
     }
 }
@@ -49,19 +61,16 @@ glib::wrapper! {
 }
 
 impl AtRoom {
-    /// Constructs an empty `@room` mention.
-    pub fn new(room_id: OwnedRoomId) -> Self {
-        let obj = glib::Object::builder::<Self>()
+    /// Constructs an `@room` mention for the given room.
+    pub fn new(room: &Room) -> Self {
+        glib::Object::builder()
             .property("display-name", "@room")
-            .build();
-
-        obj.imp().set_room_id(room_id);
-
-        obj
+            .property("room", room)
+            .build()
     }
 
-    /// The ID of the room currently represented.
-    pub fn room_id(&self) -> &OwnedRoomId {
+    /// The ID of the room represented by this mention.
+    pub fn room_id(&self) -> &RoomId {
         self.imp().room_id()
     }
 }

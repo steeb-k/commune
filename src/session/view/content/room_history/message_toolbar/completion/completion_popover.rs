@@ -5,7 +5,7 @@ use secular::normalized_lower_lay_string;
 
 use super::{CompletionMemberList, CompletionRoomList};
 use crate::{
-    components::{Pill, PillSource, PillSourceRow},
+    components::{AvatarImageSafetySetting, Pill, PillSource, PillSourceRow},
     session::{model::Room, view::content::room_history::message_toolbar::MessageToolbar},
     utils::BoundObject,
 };
@@ -651,7 +651,9 @@ mod imp {
 
             buffer.delete(&mut start, &mut end);
 
-            let pill = Pill::new(&source);
+            // We do not need to watch safety settings for mentions, rooms will be watched
+            // automatically.
+            let pill = Pill::new(&source, AvatarImageSafetySetting::None, None);
             self.message_toolbar()
                 .current_composer_state()
                 .add_widget(pill, &mut start);

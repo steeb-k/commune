@@ -12,7 +12,7 @@ mod tests;
 
 use super::matrix::{find_at_room, MatrixIdUri, AT_ROOM};
 use crate::{
-    components::{LabelWithWidgets, Pill},
+    components::{AvatarImageSafetySetting, LabelWithWidgets, Pill},
     prelude::*,
     session::model::Room,
 };
@@ -182,7 +182,9 @@ impl PangoStrMutExt for String {
             self.push_str(LabelWithWidgets::PLACEHOLDER);
             self.push_str(&(&s[pos + AT_ROOM.len()..]).escape_markup());
 
-            Some(room.at_room().to_pill())
+            // We do not need to watch safety settings for mentions, rooms will be watched
+            // automatically.
+            Some(room.at_room().to_pill(AvatarImageSafetySetting::None, None))
         } else {
             self.push_str(&s.escape_markup());
             None

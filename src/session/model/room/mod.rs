@@ -1660,15 +1660,7 @@ impl Room {
 
     /// Constructs an `AtRoom` for this room.
     pub(crate) fn at_room(&self) -> AtRoom {
-        let at_room = AtRoom::new(self.room_id().to_owned());
-
-        // Bind the avatar image so it always looks the same.
-        self.avatar_data()
-            .bind_property("image", &at_room.avatar_data(), "image")
-            .sync_create()
-            .build();
-
-        at_room
+        AtRoom::new(self)
     }
 
     /// Get or create the list of members of this room.

@@ -118,7 +118,6 @@ mod imp {
         #[property(get)]
         is_published: Cell<bool>,
         expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
-        invite_avatars_handler: RefCell<Option<glib::SignalHandlerId>>,
         notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -313,31 +312,12 @@ mod imp {
                         imp.update_encryption();
                     }
                 )),
-                room.connect_is_invite_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_image();
-                    }
-                )),
             ];
 
             self.room.set(room, room_handler_ids);
             obj.notify_room();
 
             if let Some(session) = room.session() {
-                let invite_avatars_handler = session
-                    .settings()
-                    .connect_invite_avatars_enabled_notify(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |_| {
-                            imp.update_image();
-                        }
-                    ));
-                self.invite_avatars_handler
-                    .replace(Some(invite_avatars_handler));
-
                 let notifications_settings = session.notifications().settings();
                 let notifications_settings_handlers = vec![
                     notifications_settings.connect_account_enabled_notify(clone!(
@@ -360,7 +340,6 @@ mod imp {
                     .replace(notifications_settings_handlers);
             }
 
-            self.update_image();
             self.init_edit_details();
             self.update_members();
             self.update_notifications();
@@ -434,20 +413,6 @@ mod imp {
                     }
                 )
             );
-        }
-
-        /// Update the image of the avatar of the room according to the current
-        /// state.
-        fn update_image(&self) {
-            let Some(room) = self.room.obj() else {
-                return;
-            };
-            let Some(session) = room.session() else {
-                return;
-            };
-
-            let inhibit_image = room.is_invite() && !session.settings().invite_avatars_enabled();
-            self.avatar.set_inhibit_image(inhibit_image);
         }
 
         /// Initialize the button to edit details.
@@ -560,10 +525,6 @@ mod imp {
         fn disconnect_all(&self) {
             if let Some(room) = self.room.obj() {
                 if let Some(session) = room.session() {
-                    if let Some(handler) = self.invite_avatars_handler.take() {
-                        session.settings().disconnect(handler);
-                    }
-
                     for handler in self.notifications_settings_handlers.take() {
                         session.notifications().settings().disconnect(handler);
                     }

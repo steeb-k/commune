@@ -33,7 +33,12 @@ pub(crate) mod ext_traits;
 mod media_message;
 
 pub(crate) use self::media_message::*;
-use crate::{components::Pill, prelude::*, secret::StoredSession, session::model::Room};
+use crate::{
+    components::{AvatarImageSafetySetting, Pill},
+    prelude::*,
+    secret::StoredSession,
+    session::model::Room,
+};
 
 /// The result of a password validation.
 #[derive(Debug, Default, Clone, Copy)]
@@ -382,18 +387,29 @@ impl MatrixIdUri {
         match self {
             Self::Room(room_uri) => {
                 let session = room.session()?;
-                session
-                    .room_list()
-                    .get_by_identifier(&room_uri.id)
-                    .as_ref()
-                    .map(Pill::new)
-                    .or_else(|| Some(Pill::new(&session.remote_cache().room(room_uri))))
+
+                let pill =
+                    if let Some(uri_room) = session.room_list().get_by_identifier(&room_uri.id) {
+                        // We do not need to watch safety settings for local rooms, they will be
+                        // watched automatically.
+                        Pill::new(&uri_room, AvatarImageSafetySetting::None, None)
+                    } else {
+                        Pill::new(
+                            &session.remote_cache().room(room_uri),
+                            AvatarImageSafetySetting::MediaPreviews,
+                            Some(room.clone()),
+                        )
+                    };
+
+                Some(pill)
             }
             Self::User(user_id) => {
                 // We should have a strong reference to the list wherever we show a user pill,
                 // so we can use `get_or_create_members()`.
                 let user = room.get_or_create_members().get_or_create(user_id);
-                Some(Pill::new(&user))
+
+                // We do not need to watch safety settings for users.
+                Some(Pill::new(&user, AvatarImageSafetySetting::None, None))
             }
             Self::Event(_) => None,
         }

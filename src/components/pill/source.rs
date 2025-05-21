@@ -1,7 +1,10 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::Pill;
-use crate::components::AvatarData;
+use crate::{
+    components::{AvatarData, AvatarImageSafetySetting},
+    session::model::Room,
+};
 
 mod imp {
     use std::{cell::Cell, marker::PhantomData};
@@ -153,8 +156,13 @@ pub trait PillSourceExt: 'static {
         f: F,
     ) -> glib::SignalHandlerId;
 
-    /// Get a `Pill` representing this source.
-    fn to_pill(&self) -> Pill;
+    /// Get a `Pill` representing this source, watching the given safety
+    /// setting.
+    fn to_pill(
+        &self,
+        watched_safety_setting: AvatarImageSafetySetting,
+        watched_room: Option<Room>,
+    ) -> Pill;
 }
 
 impl<O: IsA<PillSource>> PillSourceExt for O {
@@ -209,8 +217,12 @@ impl<O: IsA<PillSource>> PillSourceExt for O {
     }
 
     /// Get a `Pill` representing this source.
-    fn to_pill(&self) -> Pill {
-        Pill::new(self)
+    fn to_pill(
+        &self,
+        watched_safety_setting: AvatarImageSafetySetting,
+        watched_room: Option<Room>,
+    ) -> Pill {
+        Pill::new(self, watched_safety_setting, watched_room)
     }
 }
 

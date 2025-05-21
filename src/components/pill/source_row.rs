@@ -1,6 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::{Avatar, PillSource};
+use super::{AtRoom, Avatar, AvatarImageSafetySetting, PillSource};
+use crate::session::model::Room;
 
 mod imp {
     use std::cell::RefCell;
@@ -51,6 +52,20 @@ mod imp {
             if *self.source.borrow() == source {
                 return;
             }
+
+            let (watched_safety_setting, watched_room) = if let Some(room) = source
+                .and_downcast_ref::<Room>()
+                .cloned()
+                .or_else(|| source.and_downcast_ref::<AtRoom>().map(AtRoom::room))
+            {
+                // We must always watch the invite avatars setting for local rooms.
+                (AvatarImageSafetySetting::InviteAvatars, Some(room))
+            } else {
+                (AvatarImageSafetySetting::None, None)
+            };
+            self.avatar
+                .set_watched_safety_setting(watched_safety_setting);
+            self.avatar.set_watched_room(watched_room);
 
             self.source.replace(source);
             self.obj().notify_source();

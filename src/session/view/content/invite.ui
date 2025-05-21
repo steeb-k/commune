@@ -46,6 +46,10 @@
                             <lookup name="room">ContentInvite</lookup>
                           </lookup>
                         </binding>
+                        <binding name="watched-room">
+                          <lookup name="room">ContentInvite</lookup>
+                        </binding>
+                        <property name="watched-safety-setting">invite-avatars</property>
                         <property name="accessible-role">presentation</property>
                       </object>
                     </child>

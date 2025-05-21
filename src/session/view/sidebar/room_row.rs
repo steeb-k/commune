@@ -33,7 +33,6 @@ mod imp {
         #[template_child]
         notification_count: TemplateChild<gtk::Label>,
         direct_icon: RefCell<Option<gtk::Image>>,
-        invite_avatars_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -86,10 +85,6 @@ mod imp {
             ));
             self.obj().add_controller(drag);
         }
-
-        fn dispose(&self) {
-            self.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for SidebarRoomRow {}
@@ -102,23 +97,9 @@ mod imp {
                 return;
             }
 
-            self.disconnect_signals();
+            self.room.disconnect_signals();
 
             if let Some(room) = room {
-                if let Some(session) = room.session() {
-                    let invite_avatars_handler = session
-                        .settings()
-                        .connect_invite_avatars_enabled_notify(clone!(
-                            #[weak(rename_to = imp)]
-                            self,
-                            move |_| {
-                                imp.update_image();
-                            }
-                        ));
-                    self.invite_avatars_handler
-                        .replace(Some(invite_avatars_handler));
-                }
-
                 let highlight_handler = room.connect_highlight_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
@@ -154,13 +135,6 @@ mod imp {
                         imp.update_display_name();
                     }
                 ));
-                let is_invite_handler = room.connect_is_invite_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_image();
-                    }
-                ));
 
                 self.room.set(
                     room,
@@ -170,32 +144,16 @@ mod imp {
                         name_handler,
                         notifications_count_handler,
                         category_handler,
-                        is_invite_handler,
                     ],
                 );
 
                 self.update_accessibility_label();
             }
 
-            self.update_image();
             self.update_display_name();
             self.update_highlight();
             self.update_direct_icon();
             self.obj().notify_room();
-        }
-
-        /// Update the image of the avatar of the room according to the current
-        /// state.
-        fn update_image(&self) {
-            let Some(room) = self.room.obj() else {
-                return;
-            };
-            let Some(session) = room.session() else {
-                return;
-            };
-
-            let inhibit_image = room.is_invite() && !session.settings().invite_avatars_enabled();
-            self.avatar.set_inhibit_image(inhibit_image);
         }
 
         /// Update the display name of the room according to the current state.
@@ -345,17 +303,6 @@ mod imp {
             } else {
                 name
             }
-        }
-
-        /// Disconnect the signal handlers of this row.
-        fn disconnect_signals(&self) {
-            if let Some(session) = self.room.obj().and_then(|room| room.session()) {
-                if let Some(handler) = self.invite_avatars_handler.take() {
-                    session.settings().disconnect(handler);
-                }
-            }
-
-            self.room.disconnect_signals();
         }
     }
 }

@@ -37,7 +37,7 @@ use self::{
 };
 use super::message_row::MessageContent;
 use crate::{
-    components::{CustomEntry, LabelWithWidgets, LoadingButton},
+    components::{AvatarImageSafetySetting, CustomEntry, LabelWithWidgets, LoadingButton},
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room, RoomListRoomInfo, Timeline},
@@ -516,7 +516,9 @@ mod imp {
                 "Reply to {user}",
                 &[("user", LabelWithWidgets::PLACEHOLDER)],
             );
-            let pill = sender.to_pill();
+            // We do not need to watch safety settings for mentions, rooms will be watched
+            // automatically.
+            let pill = sender.to_pill(AvatarImageSafetySetting::None, None);
 
             self.related_event_header
                 .set_label_and_widgets(label, vec![pill]);
@@ -551,7 +553,8 @@ mod imp {
             let buffer = self.message_entry.buffer();
             let mut insert = buffer.iter_at_mark(&buffer.get_insert());
 
-            let pill = member.to_pill();
+            // We do not need to watch safety settings for users.
+            let pill = member.to_pill(AvatarImageSafetySetting::None, None);
             self.current_composer_state().add_widget(pill, &mut insert);
 
             self.message_entry.grab_focus();

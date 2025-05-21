@@ -17,6 +17,10 @@
                     <lookup name="room">RoomDetailsGeneralPage</lookup>
                   </lookup>
                 </binding>
+                <binding name="watched-room">
+                  <lookup name="room">RoomDetailsGeneralPage</lookup>
+                </binding>
+                <property name="watched-safety-setting">invite-avatars</property>
               </object>
             </child>
             <child>
