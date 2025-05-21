@@ -118,7 +118,7 @@
                         <child>
                           <object class="LoadingButton" id="decline_button">
                             <property name="content-label" translatable="yes">_Decline</property>
-                            <property name="action-name">invite.decline</property>
+                            <signal name="clicked" handler="decline" swapped="yes"/>
                             <style>
                               <class name="pill"/>
                               <class name="large"/>
@@ -128,7 +128,7 @@
                         <child>
                           <object class="LoadingButton" id="accept_button">
                             <property name="content-label" translatable="yes">_Accept</property>
-                            <property name="action-name">invite.accept</property>
+                            <signal name="clicked" handler="accept" swapped="yes"/>
                             <style>
                               <class name="suggested-action"/>
                               <class name="pill"/>

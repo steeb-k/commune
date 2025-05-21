@@ -25,27 +25,30 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/invite.ui")]
     #[properties(wrapper_type = super::Invite)]
     pub struct Invite {
-        /// The room currently displayed.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: RefCell<Option<Room>>,
-        pub room_members: RefCell<Option<MemberList>>,
-        pub accept_requests: RefCell<HashSet<Room>>,
-        pub decline_requests: RefCell<HashSet<Room>>,
-        category_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
-        pub header_bar: TemplateChild<adw::HeaderBar>,
+        pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         avatar: TemplateChild<Avatar>,
         #[template_child]
-        pub room_alias: TemplateChild<gtk::Label>,
+        room_alias: TemplateChild<gtk::Label>,
         #[template_child]
-        pub room_topic: TemplateChild<gtk::Label>,
+        room_topic: TemplateChild<gtk::Label>,
         #[template_child]
-        pub inviter: TemplateChild<LabelWithWidgets>,
+        inviter: TemplateChild<LabelWithWidgets>,
         #[template_child]
-        pub accept_button: TemplateChild<LoadingButton>,
+        accept_button: TemplateChild<LoadingButton>,
         #[template_child]
-        pub decline_button: TemplateChild<LoadingButton>,
+        decline_button: TemplateChild<LoadingButton>,
+        /// The room currently displayed.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        room: RefCell<Option<Room>>,
+        /// The list of members in the room.
+        room_members: RefCell<Option<MemberList>>,
+        /// The rooms that are currently being accepted.
+        accept_requests: RefCell<HashSet<Room>>,
+        /// The rooms that are currently being declined.
+        decline_requests: RefCell<HashSet<Room>>,
+        category_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -56,15 +59,9 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
-
-            klass.install_action_async("invite.decline", None, move |widget, _, _| async move {
-                widget.decline().await;
-            });
-            klass.install_action_async("invite.accept", None, move |widget, _, _| async move {
-                widget.accept().await;
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -119,6 +116,7 @@ mod imp {
 
     impl BinImpl for Invite {}
 
+    #[gtk::template_callbacks]
     impl Invite {
         /// Set the room currently displayed.
         fn set_room(&self, room: Option<Room>) {
@@ -128,26 +126,24 @@ mod imp {
 
             self.disconnect_signals();
 
-            let obj = self.obj();
-
             match &room {
                 Some(room) if self.accept_requests.borrow().contains(room) => {
-                    obj.action_set_enabled("invite.accept", false);
-                    obj.action_set_enabled("invite.decline", false);
+                    self.decline_button.set_is_loading(false);
+                    self.decline_button.set_sensitive(false);
                     self.accept_button.set_is_loading(true);
                 }
                 Some(room) if self.decline_requests.borrow().contains(room) => {
-                    obj.action_set_enabled("invite.accept", false);
-                    obj.action_set_enabled("invite.decline", false);
+                    self.accept_button.set_is_loading(false);
+                    self.accept_button.set_sensitive(false);
                     self.decline_button.set_is_loading(true);
                 }
-                _ => obj.reset(),
+                _ => self.reset(),
             }
 
             if let Some(room) = &room {
                 let category_handler = room.connect_category_notify(clone!(
-                    #[weak]
-                    obj,
+                    #[weak(rename_to = imp)]
+                    self,
                     move |room| {
                         let category = room.category();
 
@@ -168,10 +164,10 @@ mod imp {
                         }
 
                         if category != RoomCategory::Invited {
-                            let imp = obj.imp();
                             imp.decline_requests.borrow_mut().remove(room);
                             imp.accept_requests.borrow_mut().remove(room);
-                            obj.reset();
+                            imp.reset();
+
                             if let Some(category_handler) = imp.category_handler.take() {
                                 room.disconnect(category_handler);
                             }
@@ -207,7 +203,96 @@ mod imp {
                 .replace(room.as_ref().map(Room::get_or_create_members));
             self.room.replace(room);
 
-            obj.notify_room();
+            self.obj().notify_room();
+        }
+
+        /// Reset the state of the view.
+        fn reset(&self) {
+            self.accept_button.set_is_loading(false);
+            self.accept_button.set_sensitive(true);
+
+            self.decline_button.set_is_loading(false);
+            self.decline_button.set_sensitive(true);
+        }
+
+        /// Accept the invite.
+        #[template_callback]
+        async fn accept(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+
+            self.decline_button.set_sensitive(false);
+            self.accept_button.set_is_loading(true);
+            self.accept_requests.borrow_mut().insert(room.clone());
+
+            if room
+                .change_category(TargetRoomCategory::Normal)
+                .await
+                .is_err()
+            {
+                toast!(
+                    self.obj(),
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this
+                        // is a variable name.
+                        "Could not accept invitation for {room}",
+                    ),
+                    @room,
+                );
+
+                self.accept_requests.borrow_mut().remove(&room);
+                self.reset();
+            }
+        }
+
+        /// Decline the invite.
+        #[template_callback]
+        async fn decline(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+
+            let obj = self.obj();
+
+            let Some(response) = confirm_leave_room_dialog(&room, &*obj).await else {
+                return;
+            };
+
+            self.accept_button.set_sensitive(false);
+            self.decline_button.set_is_loading(true);
+            self.decline_requests.borrow_mut().insert(room.clone());
+
+            let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
+
+            let closed = if room.change_category(TargetRoomCategory::Left).await.is_ok() {
+                // A room where we were invited is usually empty so just close it.
+                let _ = obj.activate_action("session.close-room", None);
+                true
+            } else {
+                toast!(
+                    obj,
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this
+                        // is a variable name.
+                        "Could not decline invitation for {room}",
+                    ),
+                    @room,
+                );
+
+                self.decline_requests.borrow_mut().remove(&room);
+                self.reset();
+                false
+            };
+
+            if let Some(inviter) = ignored_inviter {
+                if inviter.upcast::<User>().ignore().await.is_err() {
+                    toast!(obj, gettext("Could not ignore user"));
+                } else if !closed {
+                    // Ignoring the user should remove the room from the sidebar so close it.
+                    let _ = obj.activate_action("session.close-room", None);
+                }
+            }
         }
 
         /// Disconnect the signal handlers of this view.
@@ -235,93 +320,5 @@ impl Invite {
     /// The header bar of the invite.
     pub fn header_bar(&self) -> &adw::HeaderBar {
         &self.imp().header_bar
-    }
-
-    fn reset(&self) {
-        let imp = self.imp();
-        imp.accept_button.set_is_loading(false);
-        imp.decline_button.set_is_loading(false);
-        self.action_set_enabled("invite.accept", true);
-        self.action_set_enabled("invite.decline", true);
-    }
-
-    /// Accept the invite.
-    async fn accept(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let imp = self.imp();
-
-        self.action_set_enabled("invite.accept", false);
-        self.action_set_enabled("invite.decline", false);
-        imp.accept_button.set_is_loading(true);
-        imp.accept_requests.borrow_mut().insert(room.clone());
-
-        if room
-            .change_category(TargetRoomCategory::Normal)
-            .await
-            .is_err()
-        {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this
-                    // is a variable name.
-                    "Could not accept invitation for {room}",
-                ),
-                @room,
-            );
-
-            imp.accept_requests.borrow_mut().remove(&room);
-            self.reset();
-        }
-    }
-
-    /// Decline the invite.
-    async fn decline(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let Some(response) = confirm_leave_room_dialog(&room, self).await else {
-            return;
-        };
-
-        self.action_set_enabled("invite.accept", false);
-        self.action_set_enabled("invite.decline", false);
-        imp.decline_button.set_is_loading(true);
-        imp.decline_requests.borrow_mut().insert(room.clone());
-
-        let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
-
-        let closed = if room.change_category(TargetRoomCategory::Left).await.is_ok() {
-            // A room where we were invited is usually empty so just close it.
-            let _ = self.activate_action("session.close-room", None);
-            true
-        } else {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this
-                    // is a variable name.
-                    "Could not decline invitation for {room}",
-                ),
-                @room,
-            );
-
-            imp.decline_requests.borrow_mut().remove(&room);
-            self.reset();
-            false
-        };
-
-        if let Some(inviter) = ignored_inviter {
-            if inviter.upcast::<User>().ignore().await.is_err() {
-                toast!(self, gettext("Could not ignore user"));
-            } else if !closed {
-                // Ignoring the user should remove the room from the sidebar so close it.
-                let _ = self.activate_action("session.close-room", None);
-            }
-        }
     }
 }
