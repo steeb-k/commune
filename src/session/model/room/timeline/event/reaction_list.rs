@@ -51,42 +51,59 @@ mod imp {
 
     impl ReactionList {
         /// Update the reaction list with the given reactions.
-        pub(super) fn update(&self, new_reactions: &ReactionsByKeyBySender) {
-            let changed = {
-                let old_reactions = self.reactions.borrow();
+        pub(super) fn update(&self, new_reactions: Option<&ReactionsByKeyBySender>) {
+            let mut pos = 0usize;
 
-                old_reactions.len() != new_reactions.len()
-                    || new_reactions
-                        .keys()
-                        .zip(old_reactions.keys())
-                        .any(|(new_key, old_key)| new_key != old_key)
+            let (removed, added) = {
+                let mut reactions = self.reactions.borrow_mut();
+
+                // Update the first groups with identical keys.
+                for ((new_key, group_reactions), (old_key, group)) in new_reactions
+                    .iter()
+                    .flat_map(|new_reactions| new_reactions.iter())
+                    .zip(reactions.iter())
+                {
+                    if new_key == old_key {
+                        group.update(group_reactions);
+                        pos += 1;
+                    } else {
+                        // Stop as soon as the keys do not match.
+                        break;
+                    }
+                }
+
+                // Remove all the groups after the mismatch, if any.
+                let removed = reactions.len() - pos;
+                if removed > 0 {
+                    reactions.truncate(pos);
+                }
+
+                // Add new groups for the new keys, if any.
+                let new_len = new_reactions
+                    .map(|new_reactions| new_reactions.len())
+                    .unwrap_or_default();
+                let added = new_len - pos;
+                if added > 0 {
+                    let user = self.user.get().expect("user should be initialized");
+                    reactions.extend(
+                        new_reactions
+                            .iter()
+                            .flat_map(|new_reactions| new_reactions.iter())
+                            .skip(pos)
+                            .map(|(key, group_reactions)| {
+                                let group = ReactionGroup::new(key, user);
+                                group.update(group_reactions);
+                                (key.clone(), group)
+                            }),
+                    );
+                }
+
+                (removed, added)
             };
 
-            if changed {
-                let mut reactions = self.reactions.borrow_mut();
-                let user = self.user.get().expect("user is initialized");
-                let prev_len = reactions.len();
-                let new_len = new_reactions.len();
-
-                *reactions = new_reactions
-                    .iter()
-                    .map(|(key, reactions)| {
-                        let group = ReactionGroup::new(key, user);
-                        group.update(reactions);
-                        (key.clone(), group)
-                    })
-                    .collect();
-
-                // We cannot have the borrow active when items_changed is emitted because that
-                // will probably cause reads of the reactions field.
-                std::mem::drop(reactions);
-
-                self.obj().items_changed(0, prev_len as u32, new_len as u32);
-            } else {
-                let reactions = self.reactions.borrow();
-                for (reactions, group) in new_reactions.values().zip(reactions.values()) {
-                    group.update(reactions);
-                }
+            if removed != 0 || added != 0 {
+                self.obj()
+                    .items_changed(pos as u32, removed as u32, added as u32);
             }
         }
 
@@ -113,7 +130,7 @@ impl ReactionList {
     }
 
     /// Update the reaction list with the given reactions.
-    pub(crate) fn update(&self, new_reactions: &ReactionsByKeyBySender) {
+    pub(crate) fn update(&self, new_reactions: Option<&ReactionsByKeyBySender>) {
         self.imp().update(new_reactions);
     }
 
