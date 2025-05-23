@@ -160,7 +160,10 @@ mod imp {
                 return;
             };
 
-            if session.settings().should_room_show_media_previews(&room) {
+            if session
+                .global_account_data()
+                .should_room_show_media_previews(&room)
+            {
                 spawn!(
                     glib::Priority::LOW,
                     clone!(

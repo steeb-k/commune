@@ -279,7 +279,7 @@ impl Notifications {
             format!("{session_id}//{matrix_uri}//{random_id}")
         };
 
-        let inhibit_image = is_invite && !session.settings().invite_avatars_enabled();
+        let inhibit_image = is_invite && !session.global_account_data().invite_avatars_enabled();
         let icon = room.avatar_data().as_notification_icon(inhibit_image).await;
 
         Self::send_notification(

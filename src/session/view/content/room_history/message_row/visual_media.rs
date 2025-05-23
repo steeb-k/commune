@@ -71,7 +71,7 @@ mod imp {
         /// The room where the message was sent.
         room: glib::WeakRef<Room>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
-        session_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
+        global_account_data_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The visual media message to display.
         media_message: RefCell<Option<VisualMediaMessage>>,
         /// The cache key for the current media message.
@@ -298,7 +298,9 @@ mod imp {
             self.spinner.set_visible(state == LoadingState::Loading);
             self.hide_preview_button.set_visible(
                 state == LoadingState::Ready
-                    && !session.settings().should_room_show_media_previews(&room),
+                    && !session
+                        .global_account_data()
+                        .should_room_show_media_previews(&room),
             );
             self.error.set_visible(state == LoadingState::Error);
 
@@ -482,8 +484,8 @@ mod imp {
             ));
             self.join_rule_handler.replace(Some(join_rule_handler));
 
-            let session_settings_handler = session
-                .settings()
+            let global_account_data_handler = session
+                .global_account_data()
                 .connect_media_previews_enabled_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
@@ -491,8 +493,8 @@ mod imp {
                         imp.update_media();
                     }
                 ));
-            self.session_settings_handler
-                .replace(Some(session_settings_handler));
+            self.global_account_data_handler
+                .replace(Some(global_account_data_handler));
 
             self.room.set(Some(room));
 
@@ -595,7 +597,10 @@ mod imp {
                 return;
             };
 
-            if session.settings().should_room_show_media_previews(&room) {
+            if session
+                .global_account_data()
+                .should_room_show_media_previews(&room)
+            {
                 // Only load the media if it was not loaded before.
                 if self.state.get() == LoadingState::Initial {
                     self.show_media();
@@ -796,9 +801,9 @@ mod imp {
                     room.join_rule().disconnect(handler);
                 }
 
-                if let Some(handler) = self.session_settings_handler.take() {
+                if let Some(handler) = self.global_account_data_handler.take() {
                     if let Some(session) = room.session() {
-                        session.settings().disconnect(handler);
+                        session.global_account_data().disconnect(handler);
                     }
                 }
             }

@@ -101,6 +101,7 @@ src/session/view/account_settings/notifications_page.ui
 src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs
 src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui
 src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui
+src/session/view/account_settings/safety_page/mod.rs
 src/session/view/account_settings/safety_page/mod.ui
 src/session/view/account_settings/user_session/user_session_list_subpage.ui
 src/session/view/account_settings/user_session/user_session_row.ui

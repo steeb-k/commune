@@ -80,7 +80,7 @@ mod imp {
         paintable_ref: RefCell<Option<CountedRef>>,
         paintable_animation_ref: RefCell<Option<CountedRef>>,
         watched_room_handler: RefCell<Option<glib::SignalHandlerId>>,
-        watched_session_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
+        watched_global_account_data_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -200,8 +200,8 @@ mod imp {
                     ));
                     self.watched_room_handler.replace(Some(room_handler));
 
-                    let session_settings_handler = session
-                        .settings()
+                    let global_account_data_handler = session
+                        .global_account_data()
                         .connect_media_previews_enabled_changed(clone!(
                             #[weak(rename_to = imp)]
                             self,
@@ -209,8 +209,8 @@ mod imp {
                                 imp.update_paintable();
                             }
                         ));
-                    self.watched_session_settings_handler
-                        .replace(Some(session_settings_handler));
+                    self.watched_global_account_data_handler
+                        .replace(Some(global_account_data_handler));
                 }
                 AvatarImageSafetySetting::InviteAvatars => {
                     let room_handler = room.connect_is_invite_notify(clone!(
@@ -222,8 +222,8 @@ mod imp {
                     ));
                     self.watched_room_handler.replace(Some(room_handler));
 
-                    let session_settings_handler = session
-                        .settings()
+                    let global_account_data_handler = session
+                        .global_account_data()
                         .connect_invite_avatars_enabled_notify(clone!(
                             #[weak(rename_to = imp)]
                             self,
@@ -231,8 +231,8 @@ mod imp {
                                 imp.update_paintable();
                             }
                         ));
-                    self.watched_session_settings_handler
-                        .replace(Some(session_settings_handler));
+                    self.watched_global_account_data_handler
+                        .replace(Some(global_account_data_handler));
                 }
             }
 
@@ -246,9 +246,9 @@ mod imp {
                     room.disconnect(handler);
                 }
 
-                if let Some(handler) = self.watched_session_settings_handler.take() {
+                if let Some(handler) = self.watched_global_account_data_handler.take() {
                     room.session()
-                        .inspect(|session| session.settings().disconnect(handler));
+                        .inspect(|session| session.global_account_data().disconnect(handler));
                 }
             }
         }
@@ -271,11 +271,11 @@ mod imp {
 
             match watched_safety_setting {
                 AvatarImageSafetySetting::None => unreachable!(),
-                AvatarImageSafetySetting::MediaPreviews => {
-                    session.settings().should_room_show_media_previews(&room)
-                }
+                AvatarImageSafetySetting::MediaPreviews => session
+                    .global_account_data()
+                    .should_room_show_media_previews(&room),
                 AvatarImageSafetySetting::InviteAvatars => {
-                    !room.is_invite() || session.settings().invite_avatars_enabled()
+                    !room.is_invite() || session.global_account_data().invite_avatars_enabled()
                 }
             }
         }

@@ -36,14 +36,14 @@
       </object>
     </child>
     <child>
-      <object class="AdwPreferencesGroup">
+      <object class="AdwPreferencesGroup" id="media_previews">
         <property name="title" translatable="yes">Media Previews</property>
         <property name="description" translatable="yes">Which rooms automatically show previews for images and videos. Hidden previews can always be shown by clicking on the media.</property>
         <child>
-          <object class="CheckLoadingRow" id="media_previews_all_row">
+          <object class="CheckLoadingRow" id="media_previews_on_row">
             <property name="title" translatable="yes">Show in all rooms</property>
             <property name="action-name">safety.set-media-previews-enabled</property>
-            <property name="action-target">'all'</property>
+            <property name="action-target">'on'</property>
           </object>
         </child>
         <child>
@@ -54,10 +54,10 @@
           </object>
         </child>
         <child>
-          <object class="CheckLoadingRow" id="media_previews_public_row">
+          <object class="CheckLoadingRow" id="media_previews_off_row">
             <property name="title" translatable="yes">Hide in all rooms</property>
             <property name="action-name">safety.set-media-previews-enabled</property>
-            <property name="action-target">'none'</property>
+            <property name="action-target">'off'</property>
           </object>
         </child>
       </object>
@@ -65,10 +65,11 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="AdwSwitchRow" id="invite_avatars_row">
-            <property name="selectable">False</property>
+          <object class="SwitchLoadingRow" id="invite_avatars_row">
             <property name="title" translatable="yes">Show Avatars for Invites</property>
             <property name="subtitle" translatable="yes">Display the avatars of the room and the inviter</property>
+            <property name="is-loading" bind-source="SafetyPage" bind-property="invite-avatars-loading" bind-flags="sync-create"/>
+            <signal name="notify::is-active" handler="set_invite_avatars_enabled" swapped="true"/>
           </object>
         </child>
       </object>

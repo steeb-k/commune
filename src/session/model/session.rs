@@ -18,8 +18,8 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 
 use super::{
-    IgnoredUsers, Notifications, RemoteCache, RoomList, SessionSecurity, SessionSettings,
-    SidebarItemList, SidebarListModel, User, UserSessionsList, VerificationList,
+    GlobalAccountData, IgnoredUsers, Notifications, RemoteCache, RoomList, SessionSecurity,
+    SessionSettings, SidebarItemList, SidebarListModel, User, UserSessionsList, VerificationList,
 };
 use crate::{
     components::AvatarData,
@@ -91,6 +91,9 @@ mod imp {
         /// The current settings for this session.
         #[property(get, construct_only)]
         settings: OnceCell<SessionSettings>,
+        /// The settings in the global account data for this session.
+        #[property(get = Self::global_account_data_owned)]
+        global_account_data: OnceCell<GlobalAccountData>,
         /// The notifications API for this session.
         #[property(get)]
         notifications: Notifications,
@@ -335,8 +338,20 @@ mod imp {
             self.obj().notify_is_offline();
         }
 
+        /// The settings stored in the global account data for this session.
+        fn global_account_data(&self) -> &GlobalAccountData {
+            self.global_account_data
+                .get_or_init(|| GlobalAccountData::new(&self.obj()))
+        }
+
+        /// The owned settings stored in the global account data for this
+        /// session.
+        fn global_account_data_owned(&self) -> GlobalAccountData {
+            self.global_account_data().clone()
+        }
+
         /// The cache for remote data.
-        pub(crate) fn remote_cache(&self) -> &RemoteCache {
+        pub(super) fn remote_cache(&self) -> &RemoteCache {
             self.remote_cache
                 .get_or_init(|| RemoteCache::new(self.obj().clone()))
         }
@@ -356,6 +371,8 @@ mod imp {
                     }
                 )
             );
+
+            self.global_account_data();
             self.watch_session_changes();
             self.update_homeserver_reachable().await;
 
@@ -540,7 +557,7 @@ mod imp {
                     Err(error) => {
                         error!(
                             session = self.obj().session_id(),
-                            "Failed to deserialize session profile: {error}"
+                            "Could not deserialize session profile: {error}"
                         );
                         return;
                     }
@@ -611,7 +628,7 @@ mod imp {
                 Err(error) => {
                     error!(
                         session = self.obj().session_id(),
-                        "Failed to serialize session profile: {error}"
+                        "Could not serialize session profile: {error}"
                     );
                     return;
                 }

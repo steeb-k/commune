@@ -1,3 +1,4 @@
+mod global_account_data;
 mod ignored_users;
 mod notifications;
 mod remote;
@@ -12,6 +13,7 @@ mod user_sessions_list;
 mod verification;
 
 pub(crate) use self::{
+    global_account_data::*,
     ignored_users::IgnoredUsers,
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
