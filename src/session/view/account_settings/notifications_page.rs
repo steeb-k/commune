@@ -157,32 +157,7 @@ mod imp {
             self.obj().notify_notifications_settings();
         }
 
-        /// The global notifications setting, as a string.
-        fn global_setting(&self) -> String {
-            let Some(settings) = self.notifications_settings.obj() else {
-                return String::new();
-            };
-
-            settings.global_setting().to_string()
-        }
-
-        /// Set the global notifications setting, as a string.
-        fn set_global_setting(&self, default: &str) {
-            let Ok(default) = default.parse::<NotificationsGlobalSetting>() else {
-                error!("Invalid value to set global default notifications setting: {default}");
-                return;
-            };
-
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.global_setting_changed(default).await;
-                }
-            ));
-        }
-
-        /// Update the section about the account.
+        /// Update the account row.
         fn update_account(&self) {
             let Some(settings) = self.notifications_settings.obj() else {
                 return;
@@ -196,61 +171,15 @@ mod imp {
             self.update_session();
         }
 
-        /// Update the section about the session.
-        fn update_session(&self) {
-            let Some(settings) = self.notifications_settings.obj() else {
-                return;
-            };
-
-            self.session_row.set_active(settings.session_enabled());
-            self.session_row.set_sensitive(settings.account_enabled());
-
-            // Other sections will be disabled or not.
-            self.update_global();
-            self.update_keywords();
-        }
-
-        /// Update the section about global.
-        fn update_global(&self) {
-            let Some(settings) = self.notifications_settings.obj() else {
-                return;
-            };
-
-            // Updates the active radio button.
-            self.obj().notify_global_setting();
-
-            let sensitive = settings.account_enabled()
-                && settings.session_enabled()
-                && !self.global_loading.get();
-            self.global.set_sensitive(sensitive);
-        }
-
-        /// Update the section about keywords.
-        #[template_callback]
-        fn update_keywords(&self) {
-            let Some(settings) = self.notifications_settings.obj() else {
-                return;
-            };
-
-            let sensitive = settings.account_enabled() && settings.session_enabled();
-            self.keywords.set_sensitive(sensitive);
-
-            if !sensitive {
-                // Nothing else to update.
-                return;
-            }
-
-            self.keywords_add_row
-                .set_inhibit_add(!self.can_add_keyword());
-        }
-
+        /// Set the loading state of the account row.
         fn set_account_loading(&self, loading: bool) {
             self.account_loading.set(loading);
             self.obj().notify_account_loading();
         }
 
+        /// Set the account setting.
         #[template_callback]
-        async fn account_switched(&self) {
+        async fn set_account_enabled(&self) {
             let Some(settings) = self.notifications_settings.obj() else {
                 return;
             };
@@ -277,8 +206,23 @@ mod imp {
             self.update_account();
         }
 
+        /// Update the session row.
+        fn update_session(&self) {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return;
+            };
+
+            self.session_row.set_active(settings.session_enabled());
+            self.session_row.set_sensitive(settings.account_enabled());
+
+            // Other sections will be disabled or not.
+            self.update_global();
+            self.update_keywords();
+        }
+
+        /// Set the session setting.
         #[template_callback]
-        fn session_switched(&self) {
+        fn set_session_enabled(&self) {
             let Some(settings) = self.notifications_settings.obj() else {
                 return;
             };
@@ -286,22 +230,48 @@ mod imp {
             settings.set_session_enabled(self.session_row.is_active());
         }
 
-        fn set_global_loading(&self, loading: bool, setting: NotificationsGlobalSetting) {
-            // Only show the spinner on the selected one.
-            self.global_all_row
-                .set_is_loading(loading && setting == NotificationsGlobalSetting::All);
-            self.global_direct_row.set_is_loading(
-                loading && setting == NotificationsGlobalSetting::DirectAndMentions,
-            );
-            self.global_mentions_row
-                .set_is_loading(loading && setting == NotificationsGlobalSetting::MentionsOnly);
+        /// The global notifications setting, as a string.
+        fn global_setting(&self) -> String {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return String::new();
+            };
 
-            self.global_loading.set(loading);
-            self.obj().notify_global_loading();
+            settings.global_setting().to_string()
         }
 
-        #[template_callback]
-        async fn global_setting_changed(&self, setting: NotificationsGlobalSetting) {
+        /// Update the global section.
+        fn update_global(&self) {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return;
+            };
+
+            // Updates the active radio button.
+            self.obj().notify_global_setting();
+
+            let sensitive = settings.account_enabled()
+                && settings.session_enabled()
+                && !self.global_loading.get();
+            self.global.set_sensitive(sensitive);
+        }
+
+        /// Set the global setting, as a string.
+        fn set_global_setting(&self, default: &str) {
+            let Ok(default) = default.parse::<NotificationsGlobalSetting>() else {
+                error!("Invalid value to set global default notifications setting: {default}");
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.set_global_setting_inner(default).await;
+                }
+            ));
+        }
+
+        /// Propagate the global setting.
+        async fn set_global_setting_inner(&self, setting: NotificationsGlobalSetting) {
             let Some(settings) = self.notifications_settings.obj() else {
                 return;
             };
@@ -323,6 +293,40 @@ mod imp {
 
             self.set_global_loading(false, setting);
             self.update_global();
+        }
+
+        /// Set the loading state of the global section.
+        fn set_global_loading(&self, loading: bool, setting: NotificationsGlobalSetting) {
+            // Only show the spinner on the selected one.
+            self.global_all_row
+                .set_is_loading(loading && setting == NotificationsGlobalSetting::All);
+            self.global_direct_row.set_is_loading(
+                loading && setting == NotificationsGlobalSetting::DirectAndMentions,
+            );
+            self.global_mentions_row
+                .set_is_loading(loading && setting == NotificationsGlobalSetting::MentionsOnly);
+
+            self.global_loading.set(loading);
+            self.obj().notify_global_loading();
+        }
+
+        /// Update the section about keywords.
+        #[template_callback]
+        fn update_keywords(&self) {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return;
+            };
+
+            let sensitive = settings.account_enabled() && settings.session_enabled();
+            self.keywords.set_sensitive(sensitive);
+
+            if !sensitive {
+                // Nothing else to update.
+                return;
+            }
+
+            self.keywords_add_row
+                .set_inhibit_add(!self.can_add_keyword());
         }
 
         /// Create a row in the keywords list for the given item.

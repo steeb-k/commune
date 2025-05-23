@@ -10,14 +10,14 @@
           <object class="SwitchLoadingRow" id="account_row">
             <property name="title" translatable="yes">Enable for This Account</property>
             <property name="is-loading" bind-source="NotificationsPage" bind-property="account-loading" bind-flags="sync-create"/>
-            <signal name="notify::is-active" handler="account_switched" swapped="true"/>
+            <signal name="notify::is-active" handler="set_account_enabled" swapped="true"/>
           </object>
         </child>
         <child>
           <object class="AdwSwitchRow" id="session_row">
             <property name="selectable">False</property>
             <property name="title" translatable="yes">Enable for This Session</property>
-            <signal name="notify::active" handler="session_switched" swapped="true"/>
+            <signal name="notify::active" handler="set_session_enabled" swapped="true"/>
           </object>
         </child>
       </object>
