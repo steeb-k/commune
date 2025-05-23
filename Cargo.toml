@@ -74,12 +74,7 @@ sourceview = { package = "sourceview5", version = "0.9" }
 # version = "0.11"
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 rev = "1348525447e99cb27ddca2e23885d9bab3837297"
-features = [
-    "socks",
-    "sso-login",
-    "markdown",
-    "qrcode",
-]
+features = ["socks", "sso-login", "markdown", "qrcode"]
 
 [dependencies.matrix-sdk-store-encryption]
 # version = "0.11"
