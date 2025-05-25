@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-21 11:33+0000\n"
-"PO-Revision-Date: 2025-05-23 19:12+0800\n"
+"POT-Creation-Date: 2025-05-23 12:54+0000\n"
+"PO-Revision-Date: 2025-05-25 08:46+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -1787,7 +1787,7 @@ msgid ""
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:800
+#: src/session/model/session.rs:817
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -2496,27 +2496,27 @@ msgstr "复制本地会话标识"
 msgid "Local session ID copied to clipboard"
 msgstr "本地会话标识已复制到剪贴板"
 
-#: src/session/view/account_settings/notifications_page.rs:269
+#: src/session/view/account_settings/notifications_page.rs:198
 msgid "Could not enable account notifications"
 msgstr "无法启用账号通知"
 
-#: src/session/view/account_settings/notifications_page.rs:271
+#: src/session/view/account_settings/notifications_page.rs:200
 msgid "Could not disable account notifications"
 msgstr "无法禁用账号通知"
 
-#: src/session/view/account_settings/notifications_page.rs:320
+#: src/session/view/account_settings/notifications_page.rs:290
 msgid "Could not change global notifications setting"
 msgstr "无法更改全局通知设置"
 
-#: src/session/view/account_settings/notifications_page.rs:339
+#: src/session/view/account_settings/notifications_page.rs:343
 msgid "Remove “{keyword}”"
 msgstr "移除“{keyword}”"
 
-#: src/session/view/account_settings/notifications_page.rs:370
+#: src/session/view/account_settings/notifications_page.rs:374
 msgid "Could not remove notification keyword"
 msgstr "无法移除通知关键词"
 
-#: src/session/view/account_settings/notifications_page.rs:438
+#: src/session/view/account_settings/notifications_page.rs:442
 msgid "Could not add notification keyword"
 msgstr "无法添加通知关键词"
 
@@ -2592,6 +2592,18 @@ msgstr "无已忽略用户"
 msgid "You can add users to this list from their room member profile"
 msgstr "您可以将用户从其房间成员配置文件中添加到此列表"
 
+#: src/session/view/account_settings/safety_page/mod.rs:232
+msgid "Could not change media previews setting"
+msgstr "无法更改媒体预览设置"
+
+#: src/session/view/account_settings/safety_page/mod.rs:289
+msgid "Could not enable avatars for invites"
+msgstr "无法为邀请启用头像"
+
+#: src/session/view/account_settings/safety_page/mod.rs:291
+msgid "Could not disable avatars for invites"
+msgstr "无法为邀请禁用头像"
+
 #: src/session/view/account_settings/safety_page/mod.ui:5
 msgid "Safety"
 msgstr "安全性"
@@ -2651,11 +2663,11 @@ msgstr "仅私人聊天室显示"
 msgid "Hide in all rooms"
 msgstr "所有聊天室都隐藏"
 
-#: src/session/view/account_settings/safety_page/mod.ui:70
+#: src/session/view/account_settings/safety_page/mod.ui:69
 msgid "Show Avatars for Invites"
 msgstr "邀请显示头像"
 
-#: src/session/view/account_settings/safety_page/mod.ui:71
+#: src/session/view/account_settings/safety_page/mod.ui:70
 msgid "Display the avatars of the room and the inviter"
 msgstr "显示聊天室和邀请人的头像"
 
@@ -3911,36 +3923,36 @@ msgstr "在回复中"
 msgid "Details"
 msgstr "详情"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:551
+#: src/session/view/content/room_history/message_row/visual_media.rs:553
 msgid "Image"
 msgstr "图像"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:552
+#: src/session/view/content/room_history/message_row/visual_media.rs:554
 msgid "Sticker"
 msgstr "贴纸"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:553
+#: src/session/view/content/room_history/message_row/visual_media.rs:555
 msgid "Video"
 msgstr "视频"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:558
+#: src/session/view/content/room_history/message_row/visual_media.rs:560
 msgid "Image: {filename}"
 msgstr "图像：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:561
+#: src/session/view/content/room_history/message_row/visual_media.rs:563
 msgid "Sticker: {filename}"
 msgstr "贴纸：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:564
+#: src/session/view/content/room_history/message_row/visual_media.rs:566
 msgid "Video: {filename}"
 msgstr "视频：{filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:735
+#: src/session/view/content/room_history/message_row/visual_media.rs:740
 #: src/utils/media/image/mod.rs:872
 msgid "Could not retrieve media"
 msgstr "无法找回媒体文件"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:784
+#: src/session/view/content/room_history/message_row/visual_media.rs:789
 #: src/utils/media/image/mod.rs:875
 msgid "An unexpected error occurred"
 msgstr "发生了意外错误"
