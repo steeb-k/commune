@@ -45,6 +45,11 @@
         <attribute name="action">room-row.mark-as-read</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">_Mark as Unread</attribute>
+        <attribute name="action">room-row.mark-as-unread</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
     </section>
     <section>
       <item>

@@ -414,7 +414,21 @@ mod imp {
                         ))
                         .build()]);
 
-                    if !room.is_read() {
+                    if room.is_read() {
+                        action_group.add_action_entries([gio::ActionEntry::builder(
+                            "mark-as-unread",
+                        )
+                        .activate(clone!(
+                            #[weak]
+                            room,
+                            move |_, _, _| {
+                                spawn!(async move {
+                                    room.mark_as_unread().await;
+                                });
+                            }
+                        ))
+                        .build()]);
+                    } else {
                         action_group.add_action_entries([gio::ActionEntry::builder(
                             "mark-as-read",
                         )

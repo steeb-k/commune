@@ -178,6 +178,9 @@ mod imp {
         /// If it is not known, it will return `0`.
         #[property(get)]
         latest_activity: Cell<u64>,
+        /// Whether this room is marked as unread.
+        #[property(get)]
+        is_marked_unread: Cell<bool>,
         /// Whether all messages of this room are read.
         #[property(get)]
         is_read: Cell<bool>,
@@ -1160,6 +1163,19 @@ mod imp {
             self.obj().notify_latest_activity();
         }
 
+        /// Update whether this room is marked as unread.
+        async fn update_is_marked_unread(&self) {
+            let is_marked_unread = self.matrix_room().is_marked_unread();
+
+            if self.is_marked_unread.get() == is_marked_unread {
+                return;
+            }
+
+            self.is_marked_unread.set(is_marked_unread);
+            self.handle_read_change_trigger().await;
+            self.obj().notify_is_marked_unread();
+        }
+
         /// Set whether all messages of this room are read.
         fn set_is_read(&self, is_read: bool) {
             if self.is_read.get() == is_read {
@@ -1174,7 +1190,9 @@ mod imp {
         async fn handle_read_change_trigger(&self) {
             let timeline = self.live_timeline();
 
-            if let Some(has_unread) = timeline.has_unread_messages().await {
+            if self.is_marked_unread.get() {
+                self.set_is_read(false);
+            } else if let Some(has_unread) = timeline.has_unread_messages().await {
                 self.set_is_read(!has_unread);
             }
 
@@ -1458,6 +1476,7 @@ mod imp {
             self.update_topic();
             self.update_category().await;
             self.update_is_direct().await;
+            self.update_is_marked_unread().await;
             self.update_tombstone();
             self.set_joined_members_count(room_info.joined_members_count());
             self.update_is_encrypted().await;
@@ -1781,6 +1800,8 @@ impl Room {
     }
 
     /// Send the given receipt.
+    ///
+    /// This will also unmark the room as unread.
     pub(crate) async fn send_receipt(
         &self,
         receipt_type: ApiReceiptType,
@@ -1810,6 +1831,16 @@ impl Room {
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             error!("Could not send read receipt: {error}");
+        }
+    }
+
+    /// Mark the room as unread.
+    pub(crate) async fn mark_as_unread(&self) {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.set_unread_flag(true).await });
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            error!("Could not mark room as unread: {error}");
         }
     }
 
