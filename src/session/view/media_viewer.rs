@@ -225,11 +225,11 @@ mod imp {
         pub(super) fn set_message(
             &self,
             room: &Room,
-            event_id: OwnedEventId,
             message: VisualMediaMessage,
+            event_id: Option<OwnedEventId>,
         ) {
             self.room.set(Some(room));
-            self.event_id.replace(Some(event_id));
+            self.event_id.replace(event_id);
             self.set_filename(message.filename());
             self.message.replace(Some(message));
 
@@ -523,9 +523,9 @@ impl MediaViewer {
     pub(crate) fn set_message(
         &self,
         room: &Room,
-        event_id: OwnedEventId,
         message: VisualMediaMessage,
+        event_id: Option<OwnedEventId>,
     ) {
-        self.imp().set_message(room, event_id, message);
+        self.imp().set_message(room, message, event_id);
     }
 }

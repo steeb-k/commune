@@ -231,8 +231,8 @@ mod imp {
             self.stack.set_visible_child_name(visible_child_name);
         }
 
-        /// Show the given media item.
-        pub(super) fn show_media(&self, item: &VisualMediaItem) {
+        /// Show the given media item in the media viewer.
+        pub(super) fn show_media_viewer(&self, item: &VisualMediaItem) {
             let Some(event) = item.event() else {
                 return;
             };
@@ -244,7 +244,7 @@ mod imp {
                 .visual_media_message()
                 .expect("visual media items should contain only visual message content");
             self.media_viewer
-                .set_message(&room, event.event_id(), media_message);
+                .set_message(&room, media_message, Some(event.event_id()));
             self.media_viewer.reveal(item);
         }
     }
@@ -263,8 +263,8 @@ impl VisualMediaHistoryViewer {
             .build()
     }
 
-    /// Show the given media item.
-    pub(crate) fn show_media(&self, item: &VisualMediaItem) {
-        self.imp().show_media(item);
+    /// Show the given media item in the media viewer.
+    pub(crate) fn show_media_viewer(&self, item: &VisualMediaItem) {
+        self.imp().show_media_viewer(item);
     }
 }

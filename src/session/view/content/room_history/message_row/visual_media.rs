@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
-use tracing::{error, warn};
+use tracing::warn;
 
 use super::{content::MessageCacheKey, ContentFormat};
 use crate::{
@@ -19,6 +19,7 @@ use crate::{
         },
         CountedRef, File, LoadingState, TemplateCallbacks,
     },
+    Window,
 };
 
 /// The dimensions to use for the media until we know its size.
@@ -813,13 +814,31 @@ mod imp {
         fn activate(&self) {
             if self.state.get() == LoadingState::Initial {
                 self.show_media();
-            } else if self
-                .obj()
-                .activate_action("message-row.show-media", None)
-                .is_err()
-            {
-                error!("Could not activate `message-row.show-media` action");
+            } else {
+                self.show_media_viewer();
             }
+        }
+
+        /// Open the media viewer with the media content of this row.
+        fn show_media_viewer(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+            let Some(media_message) = self.media_message.borrow().clone() else {
+                return;
+            };
+
+            let obj = self.obj();
+
+            let Some(window) = obj.root().and_downcast::<Window>() else {
+                return;
+            };
+
+            let event_id = self.cache_key.borrow().event_id.clone();
+
+            window
+                .session_view()
+                .show_media_viewer(&*self.obj(), &room, media_message, event_id);
         }
     }
 }

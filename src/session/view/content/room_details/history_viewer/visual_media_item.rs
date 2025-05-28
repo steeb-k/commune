@@ -227,7 +227,7 @@ mod imp {
                 return;
             };
 
-            media_history_viewer.show_media(&obj);
+            media_history_viewer.show_media_viewer(&obj);
         }
     }
 }

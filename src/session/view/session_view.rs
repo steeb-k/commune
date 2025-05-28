@@ -1,18 +1,17 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use ruma::{OwnedUserId, RoomId, RoomOrAliasId};
+use ruma::{OwnedEventId, OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
 use super::{Content, CreateDirectChatDialog, CreateRoomDialog, MediaViewer, Sidebar};
 use crate::{
     components::{RoomPreviewDialog, UserProfileDialog},
     intent::SessionIntent,
-    prelude::*,
     session::model::{
-        Event, IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
+        IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
     },
-    utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri},
+    utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
     Window,
 };
 
@@ -504,17 +503,15 @@ mod imp {
             self.content.handle_paste_action();
         }
 
-        /// Show the given media event.
-        pub(super) fn show_media(&self, event: &Event, source_widget: &gtk::Widget) {
-            let Some(media_message) = event.visual_media_message() else {
-                error!(
-                "Trying to open the media viewer with an event that is not a visual media message"
-            );
-                return;
-            };
-
-            self.media_viewer
-                .set_message(&event.room(), event.event_id().unwrap(), media_message);
+        /// Show the given media event in the media viewer.
+        pub(super) fn show_media_viewer(
+            &self,
+            source_widget: &gtk::Widget,
+            room: &Room,
+            media_message: VisualMediaMessage,
+            event_id: Option<OwnedEventId>,
+        ) {
+            self.media_viewer.set_message(room, media_message, event_id);
             self.media_viewer.reveal(source_widget);
         }
 
@@ -595,9 +592,16 @@ impl SessionView {
         self.imp().handle_paste_action();
     }
 
-    /// Show a media event.
-    pub(crate) fn show_media(&self, event: &Event, source_widget: &impl IsA<gtk::Widget>) {
-        self.imp().show_media(event, source_widget.upcast_ref());
+    /// Show the given media event in the media viewer.
+    pub(crate) fn show_media_viewer(
+        &self,
+        source_widget: &impl IsA<gtk::Widget>,
+        room: &Room,
+        media_message: VisualMediaMessage,
+        event_id: Option<OwnedEventId>,
+    ) {
+        self.imp()
+            .show_media_viewer(source_widget.upcast_ref(), room, media_message, event_id);
     }
 
     /// Show the given `MatrixIdUri`.

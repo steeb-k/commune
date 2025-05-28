@@ -27,7 +27,7 @@ use crate::{
     prelude::*,
     session::model::Member,
     spawn_tokio,
-    utils::matrix::{raw_eq, timestamp_to_date, MediaMessage, VisualMediaMessage},
+    utils::matrix::{raw_eq, timestamp_to_date, MediaMessage},
 };
 
 /// The possible states of a message.
@@ -696,19 +696,6 @@ impl Event {
         match self.item().content() {
             TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
                 MsgLikeKind::Message(message) => MediaMessage::from_message(message.msgtype()),
-                _ => None,
-            },
-            _ => None,
-        }
-    }
-
-    /// The visual media message of this event, if any.
-    pub(crate) fn visual_media_message(&self) -> Option<VisualMediaMessage> {
-        match self.item().content() {
-            TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
-                MsgLikeKind::Message(message) => {
-                    VisualMediaMessage::from_message(message.msgtype())
-                }
                 _ => None,
             },
             _ => None,

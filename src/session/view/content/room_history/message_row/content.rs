@@ -56,7 +56,7 @@ mod imp {
         #[property(get = Self::texture)]
         texture: PhantomData<Option<gdk::Texture>>,
         /// The widget with the visual media content of the event, if any.
-        pub(super) visual_media_widget: glib::WeakRef<MessageVisualMedia>,
+        visual_media_widget: glib::WeakRef<MessageVisualMedia>,
     }
 
     #[glib::object_subclass]
@@ -150,11 +150,6 @@ glib::wrapper! {
 impl MessageContent {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The widget with the visual media content of the event, if any.
-    pub(crate) fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
-        self.imp().visual_media_widget.upgrade()
     }
 
     /// Update this widget to present the given `Event`.
@@ -490,7 +485,7 @@ pub(crate) struct MessageCacheKey {
     ///
     /// Local echo that was sent and remote echo should have the same event ID,
     /// so we do not need to reload the message if it did not change.
-    event_id: Option<OwnedEventId>,
+    pub(crate) event_id: Option<OwnedEventId>,
     /// Whether the message is edited.
     ///
     /// The message must be reloaded when it was edited.

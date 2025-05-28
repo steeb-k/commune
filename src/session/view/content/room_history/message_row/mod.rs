@@ -1,6 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use tracing::warn;
 
 mod audio;
 mod caption;
@@ -23,7 +22,7 @@ use crate::{
     session::model::{Event, EventHeaderState},
     system_settings::ClockFormat,
     utils::BoundObject,
-    Application, Window,
+    Application,
 };
 
 mod imp {
@@ -74,10 +73,6 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-
-            klass.install_action("message-row.show-media", None, |obj, _, _| {
-                obj.imp().show_media();
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -265,25 +260,6 @@ mod imp {
         /// Get the texture displayed by this widget, if any.
         pub(super) fn texture(&self) -> Option<gdk::Texture> {
             self.content.texture()
-        }
-
-        /// Open the media viewer with the media content of this row.
-        fn show_media(&self) {
-            let Some(window) = self.obj().root().and_downcast::<Window>() else {
-                return;
-            };
-            let Some(event) = self.event.obj() else {
-                return;
-            };
-
-            let Some(visual_media_widget) = self.content.visual_media_widget() else {
-                warn!("Trying to show media of a non-media message");
-                return;
-            };
-
-            window
-                .session_view()
-                .show_media(&event, &visual_media_widget);
         }
     }
 }
