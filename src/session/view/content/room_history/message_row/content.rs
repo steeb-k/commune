@@ -274,6 +274,7 @@ trait MessageContentContainer: ChildPropertyExt {
     ) {
         let room = sender.room();
 
+        #[allow(clippy::match_wildcard_for_single_variants)]
         match content {
             TimelineItemContent::MsgLike(msg_like) => match msg_like.kind {
                 MsgLikeKind::Message(message) => {
@@ -305,6 +306,10 @@ trait MessageContentContainer: ChildPropertyExt {
                 MsgLikeKind::UnableToDecrypt(_) => {
                     let child = self.child_or_default::<MessageText>();
                     child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
+                }
+                MsgLikeKind::Redacted => {
+                    let child = self.child_or_default::<MessageText>();
+                    child.with_plain_text(gettext("This message was removed."), format);
                 }
                 msg_like_kind => {
                     warn!("Unsupported message-like event content: {msg_like_kind:?}");
