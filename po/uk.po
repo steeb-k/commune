@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-23 12:54+0000\n"
-"PO-Revision-Date: 2025-05-24 18:41+0300\n"
+"POT-Creation-Date: 2025-05-27 17:35+0000\n"
+"PO-Revision-Date: 2025-05-28 09:13+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -1167,7 +1167,7 @@ msgstr "Не вдалося припинити ігнорувати корист
 
 #: src/components/user_page.rs:748 src/session/view/content/invite.rs:290
 #: src/session/view/content/room_history/sender_avatar/mod.rs:804
-#: src/session/view/sidebar/row.rs:735
+#: src/session/view/sidebar/row.rs:749
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
@@ -2016,17 +2016,17 @@ msgstr "Непідтримуване правило"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:392
+#: src/session/model/room/mod.rs:395
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:395
+#: src/session/model/room/mod.rs:398
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:405
+#: src/session/model/room/mod.rs:408
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -2771,17 +2771,14 @@ msgstr ""
 "кімнати"
 
 #: src/session/view/account_settings/safety_page/mod.rs:232
-#| msgid "Could not change notifications setting"
 msgid "Could not change media previews setting"
 msgstr "Не вдалося змінити параметр попереднього перегляду мультимедіа"
 
 #: src/session/view/account_settings/safety_page/mod.rs:289
-#| msgid "Could not open avatar file"
 msgid "Could not enable avatars for invites"
 msgstr "Не вдалося увімкнути аватари для запрошень"
 
 #: src/session/view/account_settings/safety_page/mod.rs:291
-#| msgid "Could not open avatar file"
 msgid "Could not disable avatars for invites"
 msgstr "Не вдалося вимкнути аватари для запрошень"
 
@@ -2987,13 +2984,13 @@ msgstr "Вас запрошено {user_name} ({user_id})"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:690
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:704
 msgid "Could not accept invitation for {room}"
 msgstr "Не вдалося прийняти запрошення до {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:680
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:694
 msgid "Could not decline invitation for {room}"
 msgstr "Не вдалося відхилити запрошення до {room}"
 
@@ -4350,20 +4347,20 @@ msgstr "Помилка під час отримання файла зі скид
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:926
-#: src/session/view/sidebar/row.rs:713
+#: src/session/view/sidebar/row.rs:727
 msgid "Could not leave {room}"
 msgstr "Не вдалося полишити {room}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/mod.rs:949
-#: src/session/view/sidebar/row.rs:702
+#: src/session/view/sidebar/row.rs:716
 msgid "Could not join {room}"
 msgstr "Не вдалося долучитися до {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:966
-#: src/session/view/sidebar/row.rs:746
+#: src/session/view/sidebar/row.rs:760
 msgid "Could not forget {room}"
 msgstr "Не вдалося забути про {room}"
 
@@ -4380,17 +4377,17 @@ msgid "_Invite New Members…"
 msgstr "З_апросити нових учасників…"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:78
+#: src/session/view/sidebar/mod.ui:83
 msgid "_Leave Room"
 msgstr "По_лишити кімнату"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:83
+#: src/session/view/sidebar/mod.ui:88
 msgid "Re_join Room"
 msgstr "Увійти до кімнати"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:93
 msgid "_Forget Room"
 msgstr "За_бути про кімнату"
 
@@ -4977,51 +4974,56 @@ msgstr "Від_хилити"
 msgid "_Mark as Read"
 msgstr "Позначити як про_читане"
 
-#: src/session/view/sidebar/mod.ui:51
+#: src/session/view/sidebar/mod.ui:49
+#| msgid "_Mark as Read"
+msgid "_Mark as Unread"
+msgstr "Позначити як непро_читане"
+
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Favorites"
 msgstr "Пересунути до «_Улюблених»"
 
-#: src/session/view/sidebar/mod.ui:56
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to _Rooms"
 msgstr "Пересунути до «_Кімнат»"
 
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/sidebar/mod.ui:66
 msgid "Move to Low _Priority"
 msgstr "Пересунути до «_Низький пріоритет»"
 
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/sidebar/mod.ui:71
 msgid "Mark as _Direct Chat"
 msgstr "Позначити як _безпосередній чат"
 
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:76
 msgid "Unmark as _Direct Chat"
 msgstr "Зняти позначення _безпосереднього чату"
 
-#: src/session/view/sidebar/mod.ui:95
+#: src/session/view/sidebar/mod.ui:100
 msgid "Sidebar"
 msgstr "Бічна панель"
 
-#: src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:117
 msgid "Main Menu"
 msgstr "Головне меню"
 
-#: src/session/view/sidebar/mod.ui:121
+#: src/session/view/sidebar/mod.ui:126
 msgid "Toggle Room Search"
 msgstr "Увімкнути або вимкнути пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:134
+#: src/session/view/sidebar/mod.ui:139
 msgid "Room Search"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:135
+#: src/session/view/sidebar/mod.ui:140
 msgid "Search for a room"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:170
+#: src/session/view/sidebar/mod.ui:175
 msgid "Room List"
 msgstr "Список кімнат"
 
-#: src/session/view/sidebar/mod.ui:171
+#: src/session/view/sidebar/mod.ui:176
 msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
@@ -5044,19 +5046,19 @@ msgstr[2] "{count} сповіщень"
 msgstr[3] "{count} сповіщення"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:722
+#: src/session/view/sidebar/row.rs:736
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:764
+#: src/session/view/sidebar/row.rs:778
 msgid "Could not mark {room} as direct chat"
 msgstr "Не вдалося позначити {room} як безпосереднє спілкування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:769
+#: src/session/view/sidebar/row.rs:783
 msgid "Could not unmark {room} as direct chat"
 msgstr "Не вдалося зняти з {room} позначення безпосереднього спілкування"
 
