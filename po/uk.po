@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-27 17:35+0000\n"
-"PO-Revision-Date: 2025-05-28 09:13+0300\n"
+"POT-Creation-Date: 2025-05-28 12:10+0000\n"
+"PO-Revision-Date: 2025-05-28 22:34+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -4067,13 +4067,17 @@ msgstr "Не вдалося отримати звуковий файл"
 msgid "Error reading audio file"
 msgstr "Помилка під час читання звукового файла"
 
-#: src/session/view/content/room_history/message_row/content.rs:312
+#: src/session/view/content/room_history/message_row/content.rs:308
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr ""
 "Не вдалося розшифрувати це повідомлення, але програма повторить спробу, "
 "щойно стануть доступними ключі."
+
+#: src/session/view/content/room_history/message_row/content.rs:312
+msgid "This message was removed."
+msgstr "Це повідомлення було вилучено."
 
 #: src/session/view/content/room_history/message_row/content.rs:329
 #: src/session/view/content/room_history/message_row/content.rs:397
@@ -4118,7 +4122,7 @@ msgstr "Надіслано"
 msgid "Edited"
 msgstr "Змінено"
 
-#: src/session/view/content/room_history/message_row/mod.rs:251
+#: src/session/view/content/room_history/message_row/mod.rs:246
 msgid "Sent at {time}"
 msgstr "Надіслано {time}"
 
@@ -4149,36 +4153,36 @@ msgstr "У відповідь на"
 msgid "Details"
 msgstr "Подробиці"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:553
+#: src/session/view/content/room_history/message_row/visual_media.rs:554
 msgid "Image"
 msgstr "Зображення"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:554
+#: src/session/view/content/room_history/message_row/visual_media.rs:555
 msgid "Sticker"
 msgstr "Наліпка"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:555
+#: src/session/view/content/room_history/message_row/visual_media.rs:556
 msgid "Video"
 msgstr "Відео"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:560
+#: src/session/view/content/room_history/message_row/visual_media.rs:561
 msgid "Image: {filename}"
 msgstr "Зображення: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:563
+#: src/session/view/content/room_history/message_row/visual_media.rs:564
 msgid "Sticker: {filename}"
 msgstr "Наліпка: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:566
+#: src/session/view/content/room_history/message_row/visual_media.rs:567
 msgid "Video: {filename}"
 msgstr "Відео: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:740
+#: src/session/view/content/room_history/message_row/visual_media.rs:741
 #: src/utils/media/image/mod.rs:872
 msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:789
+#: src/session/view/content/room_history/message_row/visual_media.rs:790
 #: src/utils/media/image/mod.rs:875
 msgid "An unexpected error occurred"
 msgstr "Сталася неочікувана помилка."
@@ -4330,16 +4334,18 @@ msgstr "У вас немає права надсилати повідомлен�
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:109
-msgid "%B %-e at %I∶%M %p"
-msgstr "%-e %B о %I∶%M %p"
+#| msgid "%B %-e at %I∶%M %p"
+msgid "%B %-e at %I:%M %p"
+msgstr "%B %-e о %I:%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:115
-msgid "%B %-e at %H∶%M"
-msgstr "%-e %B о %H∶%M"
+#| msgid "%B %-e at %H∶%M"
+msgid "%B %-e at %H:%M"
+msgstr "%B %-e о %H:%M"
 
 #: src/session/view/content/room_history/mod.rs:377
 msgid "Error getting file from drop"
@@ -4975,7 +4981,6 @@ msgid "_Mark as Read"
 msgstr "Позначити як про_читане"
 
 #: src/session/view/sidebar/mod.ui:49
-#| msgid "_Mark as Read"
 msgid "_Mark as Unread"
 msgstr "Позначити як непро_читане"
 
@@ -5319,9 +5324,6 @@ msgstr "Сеанс"
 
 #~ msgid "Previous room"
 #~ msgstr "Попередня кімната"
-
-#~ msgid "This message was removed."
-#~ msgstr "Це повідомлення було вилучено."
 
 #~ msgid "Copy Sender ID"
 #~ msgstr "Скопіювати ідентифікатор відправника"
