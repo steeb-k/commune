@@ -236,7 +236,7 @@ mod imp {
 
             let clock_format = Application::default().system_settings().clock_format();
             let time = if clock_format == ClockFormat::TwelveHours {
-                datetime.format("%I∶%M %p").unwrap()
+                datetime.format("%I:%M %p").unwrap()
             } else {
                 datetime.format("%R").unwrap()
             };
