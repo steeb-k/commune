@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-23 12:54+0000\n"
-"PO-Revision-Date: 2025-05-24 00:36+0200\n"
+"POT-Creation-Date: 2025-05-28 12:10+0000\n"
+"PO-Revision-Date: 2025-05-28 20:11+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -1152,7 +1152,7 @@ msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
 #: src/components/user_page.rs:748 src/session/view/content/invite.rs:290
 #: src/session/view/content/room_history/sender_avatar/mod.rs:804
-#: src/session/view/sidebar/row.rs:735
+#: src/session/view/sidebar/row.rs:749
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
@@ -1990,17 +1990,17 @@ msgstr "Nepodprto pravilo"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:392
+#: src/session/model/room/mod.rs:395
 msgid "Empty Room (was {user})"
 msgstr "Prazna klepetalnica (prej {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:395
+#: src/session/model/room/mod.rs:398
 msgid "Empty Room"
 msgstr "Prazna klepetalnica"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:405
+#: src/session/model/room/mod.rs:408
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -2951,13 +2951,13 @@ msgstr "{user_name} ({user_id}) vas je povabil/a"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:690
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:704
 msgid "Could not accept invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče sprejeti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:680
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:694
 msgid "Could not decline invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče zavrniti"
 
@@ -4027,13 +4027,17 @@ msgstr "Ni mogoče pridobiti zvočne datoteke"
 msgid "Error reading audio file"
 msgstr "Napaka pri branju zvočne datoteke"
 
-#: src/session/view/content/room_history/message_row/content.rs:312
+#: src/session/view/content/room_history/message_row/content.rs:308
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr ""
 "Tega sporočila ni bilo mogoče dešifrirati, zato bo poskus dešifriranja znova "
 "izveden, ko bodo ključi na voljo."
+
+#: src/session/view/content/room_history/message_row/content.rs:312
+msgid "This message was removed."
+msgstr "Sporočilo je bilo odstranjeno."
 
 #: src/session/view/content/room_history/message_row/content.rs:329
 #: src/session/view/content/room_history/message_row/content.rs:397
@@ -4078,7 +4082,7 @@ msgstr "Poslano"
 msgid "Edited"
 msgstr "Urejeno"
 
-#: src/session/view/content/room_history/message_row/mod.rs:251
+#: src/session/view/content/room_history/message_row/mod.rs:246
 msgid "Sent at {time}"
 msgstr "Poslano {time}"
 
@@ -4109,36 +4113,36 @@ msgstr "Odgovor na"
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:553
+#: src/session/view/content/room_history/message_row/visual_media.rs:554
 msgid "Image"
 msgstr "Slika"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:554
+#: src/session/view/content/room_history/message_row/visual_media.rs:555
 msgid "Sticker"
 msgstr "Nalepka"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:555
+#: src/session/view/content/room_history/message_row/visual_media.rs:556
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:560
+#: src/session/view/content/room_history/message_row/visual_media.rs:561
 msgid "Image: {filename}"
 msgstr "Slika: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:563
+#: src/session/view/content/room_history/message_row/visual_media.rs:564
 msgid "Sticker: {filename}"
 msgstr "Nalepka: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:566
+#: src/session/view/content/room_history/message_row/visual_media.rs:567
 msgid "Video: {filename}"
 msgstr "Videoposnetek: {imedatoteke }"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:740
+#: src/session/view/content/room_history/message_row/visual_media.rs:741
 #: src/utils/media/image/mod.rs:872
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:789
+#: src/session/view/content/room_history/message_row/visual_media.rs:790
 #: src/utils/media/image/mod.rs:875
 msgid "An unexpected error occurred"
 msgstr "Prišlo je do nepričakovane napake"
@@ -4290,16 +4294,16 @@ msgstr "Nimate ustreznih dovoljenj za objavljanje sporočil v to klepetalnico"
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:109
-msgid "%B %-e at %I∶%M %p"
-msgstr "%-e. %b %Y ob %I∶%M %p"
+msgid "%B %-e at %I:%M %p"
+msgstr "%-e. %b ob %I∶%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:115
-msgid "%B %-e at %H∶%M"
-msgstr "%-e. %b %Y ob %H:%M"
+msgid "%B %-e at %H:%M"
+msgstr "%-e. %b ob %H:%M"
 
 #: src/session/view/content/room_history/mod.rs:377
 msgid "Error getting file from drop"
@@ -4307,20 +4311,20 @@ msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:926
-#: src/session/view/sidebar/row.rs:713
+#: src/session/view/sidebar/row.rs:727
 msgid "Could not leave {room}"
 msgstr "Ni možno zapustiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/mod.rs:949
-#: src/session/view/sidebar/row.rs:702
+#: src/session/view/sidebar/row.rs:716
 msgid "Could not join {room}"
 msgstr "Ni se možno pridružiti {room_name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:966
-#: src/session/view/sidebar/row.rs:746
+#: src/session/view/sidebar/row.rs:760
 msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
@@ -4337,17 +4341,17 @@ msgid "_Invite New Members…"
 msgstr "Pova_bi nove člane …"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:78
+#: src/session/view/sidebar/mod.ui:83
 msgid "_Leave Room"
 msgstr "_Zapusti sobo"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:83
+#: src/session/view/sidebar/mod.ui:88
 msgid "Re_join Room"
 msgstr "Z_nova se pridruži klepetalnici"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:93
 msgid "_Forget Room"
 msgstr "Poza_bi klepetalnico"
 
@@ -4936,51 +4940,55 @@ msgstr "Zavr_ni"
 msgid "_Mark as Read"
 msgstr "Označi kot pre_brano"
 
-#: src/session/view/sidebar/mod.ui:51
+#: src/session/view/sidebar/mod.ui:49
+msgid "_Mark as Unread"
+msgstr "Označi kot nepre_brano"
+
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Favorites"
 msgstr "Premakni _med priljubljene"
 
-#: src/session/view/sidebar/mod.ui:56
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to _Rooms"
 msgstr "Premakni med _klepetalnice"
 
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/sidebar/mod.ui:66
 msgid "Move to Low _Priority"
 msgstr "Premakni na nizko _prioriteto"
 
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/sidebar/mod.ui:71
 msgid "Mark as _Direct Chat"
 msgstr "Označi kot _neposredni klepet"
 
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:76
 msgid "Unmark as _Direct Chat"
 msgstr "Počisti oznako kot _neposredni klepet"
 
-#: src/session/view/sidebar/mod.ui:95
+#: src/session/view/sidebar/mod.ui:100
 msgid "Sidebar"
 msgstr "Stranska vrstica"
 
-#: src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:117
 msgid "Main Menu"
 msgstr "Glavni meni"
 
-#: src/session/view/sidebar/mod.ui:121
+#: src/session/view/sidebar/mod.ui:126
 msgid "Toggle Room Search"
 msgstr "Preklopi iskanje klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:134
+#: src/session/view/sidebar/mod.ui:139
 msgid "Room Search"
 msgstr "Iskanje klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:135
+#: src/session/view/sidebar/mod.ui:140
 msgid "Search for a room"
 msgstr "Išči v tej klepetalnici"
 
-#: src/session/view/sidebar/mod.ui:170
+#: src/session/view/sidebar/mod.ui:175
 msgid "Room List"
 msgstr "Seznam klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:171
+#: src/session/view/sidebar/mod.ui:176
 msgid "Allows to navigate between rooms"
 msgstr "Omogoča krmarjenje med klepetalnicami"
 
@@ -5003,20 +5011,20 @@ msgstr[2] "{count} obvestili"
 msgstr[3] "{count} obvestila"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:722
+#: src/session/view/sidebar/row.rs:736
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:764
+#: src/session/view/sidebar/row.rs:778
 msgid "Could not mark {room} as direct chat"
 msgstr "Ni mogoče označiti {room} kot neposrednega klepeta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:769
+#: src/session/view/sidebar/row.rs:783
 msgid "Could not unmark {room} as direct chat"
 msgstr "Ni mogoče umakniti oznake {room} kot neposrednega klepeta"
 
