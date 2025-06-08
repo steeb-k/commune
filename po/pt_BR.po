@@ -5,17 +5,17 @@
 # Enrico Nicoletto <liverig@gmail.com>, 2020, 2021.
 # Samuel Schlemper <samuelschlemper2006@gmail.com>, 2024.
 # Filipe Motta <luizfilipemotta@gmail.com>, 2024.
-# Rafael Fontenelle <rafaelff@gnome.org>, 2018-2025.
 # Álvaro Burns <>, 2025.
 # Juliano de Souza Camargo <julianosc@pm.me>, 2024-2025.
+# Rafael Fontenelle <rafaelff@gnome.org>, 2018-2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-05-28 12:10+0000\n"
-"PO-Revision-Date: 2025-05-29 09:18-0300\n"
-"Last-Translator: Juliano de Souza Camargo <julianosc@pm.me>\n"
+"POT-Creation-Date: 2025-05-29 12:19+0000\n"
+"PO-Revision-Date: 2025-06-07 22:13-0300\n"
+"Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -381,7 +381,7 @@ msgstr ""
 #: src/components/crypto/identity_setup_view.ui:253
 msgid "To proceed, you will also need to reset your account recovery key."
 msgstr ""
-"Para proceder, você deve também resetar sua chave de recuperação de conta."
+"Para proceder, você deve também redefinir sua chave de recuperação de conta."
 
 #: src/components/crypto/recovery_setup_view.rs:182
 msgid "Invalidates the verifications of all users and sessions"
@@ -435,17 +435,17 @@ msgstr "Falha ao acessar os dados de recuperação"
 
 #: src/components/crypto/recovery_setup_view.rs:336
 msgid "Could not reset the crypto identity"
-msgstr "Falha ao resetar a identidade criptográfica"
+msgstr "Falha ao redefinir a identidade criptográfica"
 
 #: src/components/crypto/recovery_setup_view.rs:389
 #: src/components/crypto/recovery_setup_view.rs:398
 #: src/components/crypto/recovery_setup_view.rs:423
 msgid "Could not reset account recovery"
-msgstr "Falha ao resetar a recuperação de conta"
+msgstr "Falha ao redefinir a recuperação de conta"
 
 #: src/components/crypto/recovery_setup_view.rs:458
 msgid "Could not reset account recovery key"
-msgstr "Falha ao resetar a chave de recuperação"
+msgstr "Falha ao redefinir a chave de recuperação"
 
 #: src/components/crypto/recovery_setup_view.rs:496
 msgid "Could not enable account recovery"
@@ -985,7 +985,7 @@ msgstr "Sem conexão de internet"
 
 #: src/components/media/content_viewer.rs:118
 msgid "Image not Viewable"
-msgstr "Imagem não visualisável"
+msgstr "Imagem não visualizável"
 
 #: src/components/media/content_viewer.rs:119
 msgid "Audio Clip not Playable"
@@ -1012,11 +1012,11 @@ msgstr "Notificar a sala inteira"
 #: src/components/power_level_selection/popover.ui:149
 #: src/session/model/room/permissions.rs:72
 msgid "Custom"
-msgstr "Customizar"
+msgstr "Personalizar"
 
 #: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
-msgstr "Confirmar regra customisada"
+msgstr "Confirmar regra personalizada"
 
 #: src/components/user_page.rs:251
 #: src/session/view/account_settings/general_page/mod.ui:60
@@ -1300,7 +1300,7 @@ msgstr "Falha ao aceitar a requisição de verificação"
 
 #: src/identity_verification_view/cancelled_page.rs:139
 msgid "The verification was cancelled from the other session."
-msgstr "A verificaçã foi cancelada pela outra sessão"
+msgstr "A verificação foi cancelada pela outra sessão"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1440,7 +1440,7 @@ msgstr "{user} vê uma confirmação em sua sessão?"
 
 #: src/identity_verification_view/confirm_qr_code_page.rs:160
 msgid "Could not confirm the scan of the QR Code"
-msgstr "Falha ao confirmar o scaneamento do QR Code"
+msgstr "Falha ao confirmar o escaneamento do QR Code"
 
 #: src/identity_verification_view/confirm_qr_code_page.ui:19
 msgid "Confirm Scan"
@@ -1935,7 +1935,7 @@ msgstr "{user} enviou um arquivo."
 
 #: src/session/model/notifications/mod.rs:490
 msgid "{user} sent an image."
-msgstr "{user} enviou uma imagen."
+msgstr "{user} enviou uma imagem."
 
 #: src/session/model/notifications/mod.rs:493
 msgid "{user} sent their location."
@@ -2295,7 +2295,7 @@ msgstr "Redefinir…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:199
 msgid "Crypto Identity Incomplete"
-msgstr "Identidade cripto inconpleta"
+msgstr "Identidade cripto incompleta"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:201
 msgid "The crypto identity exists but this device is not verified"
@@ -2333,7 +2333,7 @@ msgstr "Suas chaves de assinatura e criptografia estão sincronizadas"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:255
 msgid "Reset Account Recovery Key"
-msgstr "Resetar chave de recuperação de conta"
+msgstr "Redefinir chave de recuperação de conta"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:269
 msgid "Recover to synchronize your signing keys and encryption keys"
@@ -3683,7 +3683,7 @@ msgstr "O usuário não está mais na lista de membros da sala"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:4
 msgid "Add Custom Permissions"
-msgstr "Adicionar permissões customizadas"
+msgstr "Adicionar permissões personalizadas"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:11
 msgid "_Add"
@@ -3933,7 +3933,7 @@ msgstr "_Ver detalhes"
 
 #: src/session/view/content/room_history/event_actions/context_menu.ui:78
 msgid "_Discard"
-msgstr "_Discartar"
+msgstr "_Descartar"
 
 #: src/session/view/content/room_history/event_actions/context_menu.ui:85
 msgid "Rep_ort…"
