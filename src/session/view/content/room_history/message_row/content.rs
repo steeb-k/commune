@@ -188,16 +188,18 @@ impl MessageContent {
                         let replied_to_sender = event
                             .room()
                             .get_or_create_members()
-                            .get_or_create(replied_to_event.sender().to_owned());
-                        let replied_to_content = replied_to_event.content();
-                        let replied_to_detect_at_room = replied_to_content.can_contain_at_room()
-                            && replied_to_sender.can_notify_room();
+                            .get_or_create(replied_to_event.sender);
+                        let replied_to_detect_at_room =
+                            replied_to_event.content.can_contain_at_room()
+                                && replied_to_sender.can_notify_room();
 
                         let reply = MessageReply::new();
-                        reply.set_show_related_content_header(replied_to_content.can_show_header());
+                        reply.set_show_related_content_header(
+                            replied_to_event.content.can_show_header(),
+                        );
                         reply.set_related_content_sender(replied_to_sender.upcast_ref());
                         reply.related_content().build_content(
-                            replied_to_content.clone(),
+                            replied_to_event.content,
                             ContentFormat::Compact,
                             &replied_to_sender,
                             replied_to_detect_at_room,

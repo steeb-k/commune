@@ -93,7 +93,7 @@ mod imp {
                 }
             };
 
-            self.update_media_previews_settings(account_data);
+            self.update_media_previews_settings(account_data.unwrap_or_default());
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
             let fut = stream.for_each(move |account_data| {

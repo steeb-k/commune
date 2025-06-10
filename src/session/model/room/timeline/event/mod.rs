@@ -3,9 +3,9 @@ use std::sync::Arc;
 use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
-    MembershipChange, Message, MsgLikeKind, RepliedToEvent, TimelineDetails, TimelineEventItemId,
-    TimelineItemContent,
+    AnyOtherFullStateEventContent, EmbeddedEvent, Error as TimelineError, EventSendState,
+    EventTimelineItem, MembershipChange, Message, MsgLikeKind, TimelineDetails,
+    TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
     events::{receipt::Receipt, AnySyncTimelineEvent, TimelineEventType},
@@ -728,7 +728,7 @@ impl Event {
     /// Get the details of the event this event replies to, if any.
     ///
     /// Returns `None(_)` if this event is not a reply.
-    pub(crate) fn reply_to_event_content(&self) -> Option<TimelineDetails<Box<RepliedToEvent>>> {
+    pub(crate) fn reply_to_event_content(&self) -> Option<TimelineDetails<Box<EmbeddedEvent>>> {
         match self.item().content() {
             TimelineItemContent::MsgLike(msg_like) => {
                 msg_like.in_reply_to.as_ref().map(|d| d.event.clone())

@@ -633,10 +633,10 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(room_tombstone) = matrix_room.tombstone() {
+            if let Some(room_tombstone) = matrix_room.tombstone_content() {
                 self.successor_id
                     .set(room_tombstone.replacement_room)
-                    .expect("successor ID is uninitialized");
+                    .expect("successor ID should be uninitialized");
                 obj.notify_successor_id_string();
             }
 
