@@ -71,6 +71,14 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="11.2" type="stable" date="2025-06-10">
+      <description>
+        <p>
+          This version updates the matrix-sdk-crypto dependency to include a fix for a high severity
+          security issue.
+        </p>
+      </description>
+    </release>
     <release version="11.1" type="stable" date="2025-05-15">
       <description>
         <p>
