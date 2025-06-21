@@ -18,7 +18,10 @@ use matrix_sdk::{
 use matrix_sdk_ui::timeline::{AttachmentSource, TimelineEventItemId, TimelineItemContent};
 use ruma::{
     events::{
-        room::message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
+        room::{
+            message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
+            tombstone::RoomTombstoneEventContent,
+        },
         Mentions,
     },
     OwnedRoomId,
@@ -1204,9 +1207,22 @@ mod imp {
 
                 window.session_view().select_room(successor);
             } else if let Some(successor_id) = room.successor_id().cloned() {
-                let via = successor_id
-                    .server_name()
-                    .map(ToOwned::to_owned)
+                // Route the successor room ID via the server of the sender of the tombstone
+                // event, which is likely to know the room.
+                let matrix_room = room.matrix_room().clone();
+                let tombstone_event = spawn_tokio!(async move {
+                    matrix_room
+                        .get_state_event_static::<RoomTombstoneEventContent>()
+                        .await
+                })
+                .await
+                .expect("task was not aborted")
+                .ok()
+                .flatten();
+
+                let via = tombstone_event
+                    .and_then(|raw_event| raw_event.deserialize().ok())
+                    .map(|event| event.sender().server_name().to_owned())
                     .into_iter()
                     .collect();
 
