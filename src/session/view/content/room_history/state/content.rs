@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, pango};
+use gtk::{glib, glib::clone, pango};
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, MemberProfileChange, MembershipChange, OtherState,
     RoomMembershipChange, TimelineItemContent,
@@ -12,7 +12,12 @@ use ruma::{
 use tracing::warn;
 
 use super::StateCreation;
-use crate::{gettext_f, prelude::*, session::model::Event};
+use crate::{
+    gettext_f,
+    prelude::*,
+    session::model::{Event, Member},
+    utils::BoundObjectWeakRef,
+};
 
 mod imp {
     use super::*;
@@ -23,6 +28,8 @@ mod imp {
         /// The state event displayed by this widget.
         #[property(get, set = Self::set_event, nullable)]
         event: glib::WeakRef<Event>,
+        /// The sender of the event.
+        sender: BoundObjectWeakRef<Member>,
     }
 
     #[glib::object_subclass]
@@ -46,26 +53,45 @@ mod imp {
                 return;
             };
 
+            let sender = event.sender();
+            let disambiguated_name_handler = sender.connect_disambiguated_name_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_content();
+                }
+            ));
+            self.sender.set(&sender, vec![disambiguated_name_handler]);
+
+            self.event.set(Some(event));
+            self.update_content();
+        }
+
+        /// Update the content for the current state.
+        fn update_content(&self) {
+            let Some(event) = self.event.upgrade() else {
+                return;
+            };
+            let Some(sender) = self.sender.obj() else {
+                return;
+            };
+
             match event.content() {
                 TimelineItemContent::MembershipChange(membership_change) => {
-                    self.update_with_membership_change(&membership_change, &event.sender_id());
+                    self.update_with_membership_change(&membership_change, &sender);
                 }
-                TimelineItemContent::ProfileChange(profile_change) => self
-                    .update_with_profile_change(
-                        &profile_change,
-                        &event.sender().disambiguated_name(),
-                    ),
+                TimelineItemContent::ProfileChange(profile_change) => {
+                    self.update_with_profile_change(&profile_change, &sender);
+                }
                 TimelineItemContent::OtherState(other_state) => {
-                    self.update_with_other_state(&other_state);
+                    self.update_with_other_state(&other_state, &sender);
                 }
                 _ => unreachable!(),
             }
-
-            self.event.set(Some(event));
         }
 
         /// Update this row with the given [`OtherState`].
-        fn update_with_other_state(&self, other_state: &OtherState) {
+        fn update_with_other_state(&self, other_state: &OtherState, sender: &Member) {
             let widget = match other_state.content() {
                 AnyOtherFullStateEventContent::RoomCreate(content) => {
                     WidgetType::Creation(StateCreation::new(content))
@@ -86,8 +112,11 @@ mod imp {
                     WidgetType::Text(gettext_f(
                         // Translators: Do NOT translate the content between '{' and '}', this is a
                         // variable name.
-                        "{user} was invited to this room.",
-                        &[("user", display_name)],
+                        "{sender} invited {user}.",
+                        &[
+                            ("sender", &sender.disambiguated_name()),
+                            ("user", display_name),
+                        ],
                     ))
                 }
                 _ => {
@@ -113,9 +142,10 @@ mod imp {
         fn update_with_membership_change(
             &self,
             membership_change: &RoomMembershipChange,
-            sender: &UserId,
+            sender: &Member,
         ) {
-            let display_name = match membership_change.content() {
+            let sender_display_name = sender.disambiguated_name();
+            let target_display_name = match membership_change.content() {
                 FullStateEventContent::Original { content, .. } => content
                     .displayname
                     .clone()
@@ -124,66 +154,81 @@ mod imp {
             };
 
             let supported_membership_change =
-                Self::to_supported_membership_change(membership_change, sender);
+                Self::to_supported_membership_change(membership_change, sender.user_id());
 
             let message = match supported_membership_change {
                 MembershipChange::Joined => {
                     // Translators: Do NOT translate the content between '{' and '}', this
                     // is a variable name.
-                    gettext_f("{user} joined this room.", &[("user", &display_name)])
+                    gettext_f(
+                        "{user} joined this room.",
+                        &[("user", &target_display_name)],
+                    )
                 }
                 MembershipChange::Left => {
                     // Translators: Do NOT translate the content between '{' and '}',
                     // this is a variable name.
-                    gettext_f("{user} left the room.", &[("user", &display_name)])
+                    gettext_f("{user} left the room.", &[("user", &target_display_name)])
                 }
-                MembershipChange::Banned => gettext_f(
+                MembershipChange::Banned | MembershipChange::KickedAndBanned => gettext_f(
                     // Translators: Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    "{user} was banned.",
-                    &[("user", &display_name)],
+                    // '{' and '}', these are variable names.
+                    "{sender} banned {user}.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::Unbanned => gettext_f(
                     // Translators: Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    "{user} was unbanned.",
-                    &[("user", &display_name)],
+                    // '{' and '}', these are variable names.
+                    "{sender} unbanned {user}.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::Kicked => gettext_f(
                     // Translators: Do NOT translate the content between '{' and
-                    // '}', this is a variable name.
-                    "{user} was kicked out of the room.",
-                    &[("user", &display_name)],
+                    // '}', these are variable names.
+                    "{sender} kicked {user} out.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::Invited | MembershipChange::KnockAccepted => gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', this is
-                    // a variable name.
-                    "{user} was invited to this room.",
-                    &[("user", &display_name)],
-                ),
-                MembershipChange::KickedAndBanned => gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', this is
-                    // a variable name.
-                    "{user} was kicked out of the room and banned.",
-                    &[("user", &display_name)],
+                    // Translators: Do NOT translate the content between '{' and '}', these are
+                    // variable names.
+                    "{sender} invited {user}.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::InvitationAccepted => gettext_f(
                     // Translators: Do NOT translate the content between
                     // '{' and '}', this is a variable name.
                     "{user} accepted the invite.",
-                    &[("user", &display_name)],
+                    &[("user", &target_display_name)],
                 ),
                 MembershipChange::InvitationRejected => gettext_f(
                     // Translators: Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    "{user} rejected the invite.",
-                    &[("user", &display_name)],
+                    // '{' and '}', these are variable names.
+                    "{user} declined the invite.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::InvitationRevoked => gettext_f(
                     // Translators: Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    "The invitation for {user} has been revoked.",
-                    &[("user", &display_name)],
+                    // '{' and '}', these are variable names.
+                    "{sender} revoked the invitation for {user}.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 MembershipChange::Knocked =>
                 // TODO: Add button to invite the user.
@@ -192,20 +237,23 @@ mod imp {
                         // Translators: Do NOT translate the content between '{' and '}', this
                         // is a variable name.
                         "{user} requested to be invited to this room.",
-                        &[("user", &display_name)],
+                        &[("user", &target_display_name)],
                     )
                 }
                 MembershipChange::KnockRetracted => gettext_f(
                     // Translators: Do NOT translate the content between
                     // '{' and '}', this is a variable name.
                     "{user} retracted their request to be invited to this room.",
-                    &[("user", &display_name)],
+                    &[("user", &target_display_name)],
                 ),
                 MembershipChange::KnockDenied => gettext_f(
                     // Translators: Do NOT translate the content between
-                    // '{' and '}', this is a variable name.
-                    "{user}’s request to be invited to this room was denied.",
-                    &[("user", &display_name)],
+                    // '{' and '}', these are variable names.
+                    "{sender} denied {user}’s request to be invited to this room.",
+                    &[
+                        ("sender", &sender_display_name),
+                        ("user", &target_display_name),
+                    ],
                 ),
                 _ => {
                     warn!(
@@ -271,7 +319,7 @@ mod imp {
         fn update_with_profile_change(
             &self,
             profile_change: &MemberProfileChange,
-            display_name: &str,
+            sender: &Member,
         ) {
             let message = if let Some(displayname) = profile_change.displayname_change() {
                 if let Some(prev_name) = &displayname.old {
@@ -309,33 +357,38 @@ mod imp {
                     )
                 }
             } else if let Some(avatar_url) = profile_change.avatar_url_change() {
+                let display_name = sender.disambiguated_name();
+
                 if avatar_url.old.is_none() {
                     gettext_f(
                         // Translators: Do NOT translate the content between
                         // '{' and '}', this is a variable name.
                         "{user} set their avatar.",
-                        &[("user", display_name)],
+                        &[("user", &display_name)],
                     )
                 } else if avatar_url.new.is_none() {
                     gettext_f(
                         // Translators: Do NOT translate the content between
                         // '{' and '}', this is a variable name.
                         "{user} removed their avatar.",
-                        &[("user", display_name)],
+                        &[("user", &display_name)],
                     )
                 } else {
                     gettext_f(
                         // Translators: Do NOT translate the content between
                         // '{' and '}', this is a variable name.
                         "{user} changed their avatar.",
-                        &[("user", display_name)],
+                        &[("user", &display_name)],
                     )
                 }
             } else {
                 // We don't know what changed so fall back to the membership.
                 // Translators: Do NOT translate the content between '{' and '}', this
                 // is a variable name.
-                gettext_f("{user} joined this room.", &[("user", display_name)])
+                gettext_f(
+                    "{user} joined this room.",
+                    &[("user", &sender.disambiguated_name())],
+                )
             };
 
             let child = self.obj().child_or_else::<gtk::Label>(text);
