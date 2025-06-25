@@ -135,6 +135,8 @@
                             </child>
                             <child>
                               <object class="LoadingButtonRow" id="invite_button">
+                                <!-- Translators: In this string, 'Invite' is a verb. -->
+                                <property name="title" translatable="yes">Invite</property>
                                 <signal name="activated" handler="invite_user" swapped="yes"/>
                               </object>
                             </child>

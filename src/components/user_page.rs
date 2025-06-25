@@ -348,8 +348,8 @@ mod imp {
                     Some(pgettext("member", "Banned"))
                 }
                 Membership::Knock => {
-                    // Translators: As in, 'The room member knocked to request access to the room'.
-                    Some(pgettext("member", "Knocked"))
+                    // Translators: As in, 'The room member requested an invite'.
+                    Some(pgettext("member", "Requested an Invite"))
                 }
                 Membership::Unsupported => {
                     // Translators: As in, 'The room member has an unknown role'.
@@ -376,12 +376,7 @@ mod imp {
             self.power_level_row.set_read_only(!can_change_power_level);
 
             let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
-            if can_invite {
-                self.invite_button.set_title(&gettext("Allow Access"));
-                self.invite_button.set_visible(true);
-            } else {
-                self.invite_button.set_visible(false);
-            }
+            self.invite_button.set_visible(can_invite);
 
             let can_kick = matches!(
                 membership,
@@ -390,7 +385,7 @@ mod imp {
             if can_kick {
                 let label = match membership {
                     Membership::Invite => gettext("Revoke Invite"),
-                    Membership::Knock => gettext("Deny Access"),
+                    Membership::Knock => gettext("Deny Request"),
                     // Translators: As in, 'Kick room member'.
                     _ => gettext("Kick"),
                 };
