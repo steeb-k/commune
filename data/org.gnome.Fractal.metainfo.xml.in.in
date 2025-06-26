@@ -71,6 +71,42 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="12~beta" type="development" date="2025-06-26">
+      <description>
+        <p>
+          Hot! Hot! Hot! No, we are not talking about the summer weather in the northern hemisphere,
+          but about the brand new release of Fractal 12.beta! Coming soon to your device:
+        </p>
+        <ul>
+          <li>
+            The safety setting to hide media previews in rooms is now synced between Matrix
+            clients.
+          </li>
+          <li>
+            We added another safety setting (which is also synced) to hide avatars in invites.
+          </li>
+          <li>
+            A room can be marked as unread via the context menu in the sidebar.
+          </li>
+          <li>
+            We changed the UX a little for tombstoned rooms. Instead of showing a banner at the top
+            of the history, it now replaces the composer at the bottom of the history.
+          </li>
+          <li>
+            You can now see if a section in the sidebar has any notifications or activity when it is
+            collapsed.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, there might be a slight risk of regressions, but it should be
+          mostly stable. If all goes well the next step is the release candidate!
+        </p>
+      </description>
+    </release>
     <release version="11.2" type="stable" date="2025-06-10">
       <description>
         <p>
