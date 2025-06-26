@@ -91,14 +91,13 @@ repository, but anyone can open a PR.
   `update-cargo-sources.sh` script must also be updated.
 2. When the PR is opened, a CI job will update the `*-cargo-sources.json` files with the latest
   dependencies for the Rust modules and add a commit to the PR if necessary.
-3. The CI will trigger a test build automatically.
-
-  If the build fails in CI and you want to trigger it again, post a comment saying `bot, build`.
+3. Trigger a test build by posting a comment saying `bot, build`.
 
   If the build succeeds, test the generated Flatpak as instructed and watch for obvious errors. If
   there are no issues, merge the PR.
 4. Merging the PR will trigger an "official" build that will then be published on Flathub or Flathub
-  beta within 1 to 2 hours. If this build fails, contact the Flathub admins to launch it again.
+  beta within 1 to 2 hours. If this build fails, an issue will be opened on the GitHub repository.
+  The Flathub admins need to be contacted to launch it again.
 
 More details about these steps can be found in the Flathub docs about [maintenance](https://docs.flathub.org/docs/for-app-authors/maintenance)
 and [updates](https://docs.flathub.org/docs/for-app-authors/updates).
