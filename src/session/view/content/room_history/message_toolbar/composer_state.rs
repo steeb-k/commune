@@ -217,9 +217,9 @@ mod imp {
             let draft_clone = draft.clone();
             let handle = spawn_tokio!(async move {
                 if let Some(draft) = draft_clone {
-                    matrix_room.save_composer_draft(draft).await
+                    matrix_room.save_composer_draft(draft, None).await
                 } else {
-                    matrix_room.clear_composer_draft().await
+                    matrix_room.clear_composer_draft(None).await
                 }
             });
 
@@ -266,7 +266,7 @@ mod imp {
         /// Restore the state from the persisted draft.
         pub(super) async fn restore_draft(&self, timeline: &Timeline) {
             let matrix_room = timeline.room().matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.load_composer_draft().await });
+            let handle = spawn_tokio!(async move { matrix_room.load_composer_draft(None).await });
 
             match handle.await.expect("task was not aborted") {
                 Ok(Some(draft)) => self.restore_from_draft(timeline, draft).await,

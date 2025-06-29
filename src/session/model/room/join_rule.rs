@@ -133,12 +133,12 @@ mod imp {
         }
 
         /// Update the join rule.
-        pub(super) fn update_join_rule(&self, join_rule: &MatrixJoinRule) {
-            if self.matrix_join_rule.borrow().as_ref() == Some(join_rule) {
+        pub(super) fn update_join_rule(&self, join_rule: Option<&MatrixJoinRule>) {
+            if self.matrix_join_rule.borrow().as_ref() == join_rule {
                 return;
             }
 
-            self.matrix_join_rule.replace(Some(join_rule.clone()));
+            self.matrix_join_rule.replace(join_rule.cloned());
 
             self.update_value();
             self.update_can_knock();
@@ -353,7 +353,7 @@ impl JoinRule {
     }
 
     /// Update the join rule with the given value from the SDK.
-    pub(super) fn update(&self, join_rule: &MatrixJoinRule) {
+    pub(super) fn update(&self, join_rule: Option<&MatrixJoinRule>) {
         self.imp().update_join_rule(join_rule);
     }
 
