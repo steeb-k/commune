@@ -13,15 +13,15 @@ mod inline_html;
 mod tests;
 mod widgets;
 
-use self::widgets::{new_message_label, widget_for_html_nodes, HtmlWidgetConfig};
+use self::widgets::{HtmlWidgetConfig, new_message_label, widget_for_html_nodes};
 use super::ContentFormat;
 use crate::{
     components::{AtRoom, LabelWithWidgets},
     prelude::*,
     session::model::{Member, Room},
     utils::{
-        string::{Linkifier, PangoStrMutExt},
         BoundObjectWeakRef, EMOJI_REGEX,
+        string::{Linkifier, PangoStrMutExt},
     },
 };
 

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, gio, glib, glib::clone, pango, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, pango};
 use tracing::error;
 
 use crate::utils::BoundObjectWeakRef;

@@ -1,15 +1,15 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 mod user;
 mod user_list;
 
 use self::{user::DirectChatUser, user_list::DirectChatUserList};
 use crate::{
+    Window,
     components::{PillSource, PillSourceRow},
     gettext,
     session::model::{Session, User},
-    Window,
 };
 
 /// A page of the [`CreateDirectChatDialog`].

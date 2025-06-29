@@ -1,5 +1,5 @@
 use gettextrs::npgettext;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::session::{
     model::Membership, view::content::room_details::membership_subpage_item::MembershipSubpageItem,

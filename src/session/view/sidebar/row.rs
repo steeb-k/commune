@@ -8,7 +8,7 @@ use super::{
     Sidebar, SidebarIconItemRow, SidebarRoomRow, SidebarSectionRow, SidebarVerificationRow,
 };
 use crate::{
-    components::{confirm_leave_room_dialog, ContextMenuBin},
+    components::{ContextMenuBin, confirm_leave_room_dialog},
     prelude::*,
     session::model::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,

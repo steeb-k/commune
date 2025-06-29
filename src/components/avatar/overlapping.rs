@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, gio, glib, glib::clone};
 use tracing::error;
 
-use super::{crop_circle::CropCircle, Avatar, AvatarData};
+use super::{Avatar, AvatarData, crop_circle::CropCircle};
 
 /// Function to extract the avatar data from a supported `GObject`.
 type ExtractAvatarDataFn = dyn Fn(&glib::Object) -> AvatarData + 'static;

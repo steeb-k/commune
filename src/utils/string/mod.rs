@@ -10,7 +10,7 @@ use url::Url;
 #[cfg(test)]
 mod tests;
 
-use super::matrix::{find_at_room, MatrixIdUri, AT_ROOM};
+use super::matrix::{AT_ROOM, MatrixIdUri, find_at_room};
 use crate::{
     components::{AvatarImageSafetySetting, LabelWithWidgets, Pill},
     prelude::*,
@@ -141,7 +141,7 @@ pub(crate) trait PangoStrMutExt {
     ///
     /// Returns the created [`Pill`], it the URI was added as a mention.
     fn maybe_append_mention(&mut self, uri: impl TryInto<MatrixIdUri>, room: &Room)
-        -> Option<Pill>;
+    -> Option<Pill>;
 
     /// Append the given string and replace `@room` with a mention.
     ///

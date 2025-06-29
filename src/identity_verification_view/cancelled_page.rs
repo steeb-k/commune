@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 use matrix_sdk::crypto::CancelInfo;
 use ruma::events::key::verification::cancel::CancelCode;
 

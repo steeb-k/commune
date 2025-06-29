@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone};
 use tracing::error;
 
 use crate::{components::MediaContentViewer, spawn};

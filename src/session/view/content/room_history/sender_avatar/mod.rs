@@ -1,12 +1,13 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use ruma::{OwnedEventId, events::room::power_levels::PowerLevelUserAction};
 
 use crate::{
+    Window,
     components::{
-        confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog, Avatar,
-        RoomMemberDestructiveAction, UserProfileDialog,
+        Avatar, RoomMemberDestructiveAction, UserProfileDialog, confirm_mute_room_member_dialog,
+        confirm_room_member_destructive_action_dialog,
     },
     gettext_f,
     prelude::*,
@@ -15,8 +16,7 @@ use crate::{
         view::content::RoomHistory,
     },
     toast,
-    utils::{key_bindings, BoundObject},
-    Window,
+    utils::{BoundObject, key_bindings},
 };
 
 mod imp {

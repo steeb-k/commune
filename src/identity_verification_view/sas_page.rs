@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone, prelude::*};
 
 use super::sas_emoji::SasEmoji;
 use crate::{

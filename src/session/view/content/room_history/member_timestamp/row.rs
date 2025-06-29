@@ -1,10 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use super::MemberTimestamp;
 use crate::{
-    system_settings::ClockFormat, utils::matrix::seconds_since_unix_epoch_to_date, Application,
+    Application, system_settings::ClockFormat, utils::matrix::seconds_since_unix_epoch_to_date,
 };
 
 mod imp {

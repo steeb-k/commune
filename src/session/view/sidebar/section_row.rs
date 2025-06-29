@@ -1,6 +1,6 @@
 use adw::subclass::prelude::BinImpl;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::{
     session::model::{HighlightFlags, RoomCategory, SidebarSection, SidebarSectionName},

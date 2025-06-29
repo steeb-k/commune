@@ -1,15 +1,14 @@
 use adw::prelude::*;
 use gtk::{
-    gio,
+    CompositeTemplate, gio,
     glib::{self, clone},
     subclass::prelude::*,
-    CompositeTemplate,
 };
 
 use crate::{
     components::UserProfileDialog,
     session::view::content::room_history::member_timestamp::{
-        row::MemberTimestampRow, MemberTimestamp,
+        MemberTimestamp, row::MemberTimestampRow,
     },
 };
 

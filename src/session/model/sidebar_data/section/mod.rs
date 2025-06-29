@@ -7,7 +7,7 @@ pub use self::name::SidebarSectionName;
 use self::room_category_filter::RoomCategoryFilter;
 use crate::{
     session::model::{
-        room::HighlightFlags, Room, RoomCategory, RoomList, SessionSettings, VerificationList,
+        Room, RoomCategory, RoomList, SessionSettings, VerificationList, room::HighlightFlags,
     },
     utils::ExpressionListModel,
 };

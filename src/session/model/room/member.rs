@@ -1,17 +1,17 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::room::RoomMember;
 use ruma::{
+    OwnedEventId, OwnedUserId,
     events::room::{
         member::MembershipState,
         power_levels::{NotificationPowerLevelType, PowerLevelAction},
     },
-    OwnedEventId, OwnedUserId,
 };
 use tracing::{debug, error};
 
 use super::{
-    permissions::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     MemberRole, Room,
+    permissions::{POWER_LEVEL_MAX, POWER_LEVEL_MIN, PowerLevel},
 };
 use crate::{components::PillSource, prelude::*, session::model::User, spawn, spawn_tokio};
 

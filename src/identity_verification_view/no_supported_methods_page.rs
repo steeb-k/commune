@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 use crate::{
     components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
@@ -152,11 +152,11 @@ impl NoSupportedMethodsPage {
                 )
             } else {
                 gettext_f(
-                        // Translators: Do NOT translate the content between '{' and '}', this is a
-                        // variable name.
-                        "{user} sent a verification request, but none of the methods offered by the other client are supported by Fractal.",
-                        &[("user", &format!("<b>{name}</b>"))],
-                    )
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{user} sent a verification request, but none of the methods offered by the other client are supported by Fractal.",
+                    &[("user", &format!("<b>{name}</b>"))],
+                )
             }
         };
         imp.message.set_markup(&message);

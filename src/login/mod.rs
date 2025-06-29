@@ -2,17 +2,17 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone};
 use matrix_sdk::{
+    Client,
     authentication::oauth::{
-        registration::{ApplicationType, ClientMetadata, Localized, OAuthGrantType},
         ClientRegistrationData,
+        registration::{ApplicationType, ClientMetadata, Localized, OAuthGrantType},
     },
     sanitize_server_name,
     utils::local_server::{LocalServerBuilder, LocalServerRedirectHandle, LocalServerResponse},
-    Client,
 };
-use ruma::{api::client::session::get_login_types::v3::LoginType, serde::Raw, OwnedServerName};
+use ruma::{OwnedServerName, api::client::session::get_login_types::v3::LoginType, serde::Raw};
 use tracing::{error, warn};
 use url::Url;
 
@@ -33,9 +33,9 @@ use self::{
     session_setup_view::SessionSetupView,
 };
 use crate::{
+    APP_HOMEPAGE_URL, APP_NAME, Application, RUNTIME, SETTINGS_KEY_CURRENT_SESSION, Window,
     components::OfflineBanner, prelude::*, secret::Secret, session::model::Session, spawn,
-    spawn_tokio, toast, Application, Window, APP_HOMEPAGE_URL, APP_NAME, RUNTIME,
-    SETTINGS_KEY_CURRENT_SESSION,
+    spawn_tokio, toast,
 };
 
 /// A page of the login stack.

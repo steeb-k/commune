@@ -1,4 +1,4 @@
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 use super::{AtRoom, Avatar, AvatarImageSafetySetting, PillSource};
 use crate::session::model::Room;

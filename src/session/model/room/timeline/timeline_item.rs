@@ -78,14 +78,18 @@ impl TimelineItem {
                 if let Some(event) = self.downcast_ref::<Event>() {
                     event.update_with(new_event.clone());
                 } else {
-                    error!("Could not update a TimelineItem that is not an Event with an event SDK item");
+                    error!(
+                        "Could not update a TimelineItem that is not an Event with an event SDK item"
+                    );
                 }
             }
             TimelineItemKind::Virtual(new_item) => {
                 if let Some(virtual_item) = self.downcast_ref::<VirtualItem>() {
                     virtual_item.update_with_item(new_item);
                 } else {
-                    error!("Could not update a TimelineItem that is not a VirtualItem with a virtual SDK item");
+                    error!(
+                        "Could not update a TimelineItem that is not a VirtualItem with a virtual SDK item"
+                    );
                 }
             }
         }

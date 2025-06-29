@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use crate::{
     session::model::{VirtualItem, VirtualItemKind},

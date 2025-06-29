@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{gdk, gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, prelude::*};
 
 mod read_receipts_popover;
 
@@ -10,7 +10,7 @@ use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, MemberList, UserReadReceipt},
-    utils::{key_bindings, BoundObjectWeakRef},
+    utils::{BoundObjectWeakRef, key_bindings},
 };
 
 // Keep in sync with the `max-avatars` property of the `avatar_list` in the

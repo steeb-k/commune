@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 
 mod imp {
     use std::marker::PhantomData;

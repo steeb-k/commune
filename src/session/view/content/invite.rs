@@ -1,11 +1,11 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 use crate::{
     components::{
-        confirm_leave_room_dialog, Avatar, AvatarImageSafetySetting, LabelWithWidgets,
-        LoadingButton, Pill,
+        Avatar, AvatarImageSafetySetting, LabelWithWidgets, LoadingButton, Pill,
+        confirm_leave_room_dialog,
     },
     gettext_f,
     prelude::*,

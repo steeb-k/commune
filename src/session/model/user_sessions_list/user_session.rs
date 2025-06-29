@@ -5,18 +5,18 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{encryption::identities::Device as CryptoDevice, HttpError};
-use ruma::{api::client::device::Device as DeviceData, DeviceId, OwnedDeviceId};
+use matrix_sdk::{HttpError, encryption::identities::Device as CryptoDevice};
+use ruma::{DeviceId, OwnedDeviceId, api::client::device::Device as DeviceData};
 use tracing::{debug, error};
 
 use crate::{
+    Application,
     components::{AuthDialog, AuthError},
     prelude::*,
     session::model::Session,
     spawn_tokio,
     system_settings::ClockFormat,
     utils::matrix::timestamp_to_date,
-    Application,
 };
 
 /// The possible sources of the user data.

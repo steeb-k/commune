@@ -4,7 +4,7 @@ mod room_details;
 mod room_history;
 
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 use self::{
     explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,

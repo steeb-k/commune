@@ -1,4 +1,4 @@
-use gtk::{self, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::api::client::session::get_login_types::v3::{
     IdentityProvider, IdentityProviderBrand,
 };

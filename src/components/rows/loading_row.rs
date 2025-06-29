@@ -1,10 +1,9 @@
 use glib::subclass::Signal;
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
     prelude::*,
     subclass::prelude::*,
-    CompositeTemplate,
 };
 
 use crate::components::LoadingBin;

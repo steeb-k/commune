@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, graphene, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone, graphene};
 use ruma::OwnedEventId;
 use tracing::warn;
 

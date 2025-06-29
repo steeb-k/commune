@@ -1,17 +1,17 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
-    encryption::verification::VerificationRequest, Client as MatrixClient, Room as MatrixRoom,
+    Client as MatrixClient, Room as MatrixRoom, encryption::verification::VerificationRequest,
 };
 use ruma::{
+    RoomId,
     events::{
         key::verification::request::ToDeviceKeyVerificationRequestEvent,
         room::message::{MessageType, OriginalSyncRoomMessageEvent},
     },
-    RoomId,
 };
 use tracing::{debug, error};
 
-use super::{load_supported_verification_methods, VerificationKey, VerificationState};
+use super::{VerificationKey, VerificationState, load_supported_verification_methods};
 use crate::{
     session::model::{IdentityVerification, Member, Membership, Session, User},
     spawn, spawn_tokio,

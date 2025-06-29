@@ -8,11 +8,11 @@ use matrix_sdk_ui::timeline::{
     TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
-    events::{receipt::Receipt, AnySyncTimelineEvent, TimelineEventType},
-    serde::Raw,
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
+    events::{AnySyncTimelineEvent, TimelineEventType, receipt::Receipt},
+    serde::Raw,
 };
-use serde::{de::IgnoredAny, Deserialize};
+use serde::{Deserialize, de::IgnoredAny};
 use tracing::{debug, error};
 
 mod reaction_group;
@@ -27,7 +27,7 @@ use crate::{
     prelude::*,
     session::model::Member,
     spawn_tokio,
-    utils::matrix::{raw_eq, timestamp_to_date, MediaMessage},
+    utils::matrix::{MediaMessage, raw_eq, timestamp_to_date},
 };
 
 /// The possible states of a message.

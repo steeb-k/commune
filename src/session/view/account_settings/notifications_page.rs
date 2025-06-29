@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone};
 use tracing::error;
 
 use crate::{

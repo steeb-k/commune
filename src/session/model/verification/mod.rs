@@ -1,6 +1,6 @@
 use gtk::{glib, prelude::*};
 use matrix_sdk::encryption::verification::VerificationRequest;
-use ruma::{events::key::verification::VerificationMethod, OwnedUserId, UserId};
+use ruma::{OwnedUserId, UserId, events::key::verification::VerificationMethod};
 
 mod identity_verification;
 mod verification_list;

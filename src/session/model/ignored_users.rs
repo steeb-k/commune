@@ -6,7 +6,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use indexmap::IndexSet;
-use ruma::{events::ignored_user_list::IgnoredUserListEventContent, OwnedUserId};
+use ruma::{OwnedUserId, events::ignored_user_list::IgnoredUserListEventContent};
 use tracing::{debug, error, warn};
 
 use super::Session;
@@ -213,7 +213,9 @@ impl IgnoredUsers {
         };
 
         if self.contains(user_id) {
-            warn!("Trying to add `{user_id}` to the ignored users but they are already in the list, ignoring");
+            warn!(
+                "Trying to add `{user_id}` to the ignored users but they are already in the list, ignoring"
+            );
             return Ok(());
         }
 
@@ -245,7 +247,9 @@ impl IgnoredUsers {
         };
 
         if !self.contains(user_id) {
-            warn!("Trying to remove `{user_id}` from the ignored users but they are not in the list, ignoring");
+            warn!(
+                "Trying to remove `{user_id}` from the ignored users but they are not in the list, ignoring"
+            );
             return Ok(());
         }
 

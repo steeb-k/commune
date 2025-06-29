@@ -2,16 +2,16 @@ use std::{borrow::Cow, cell::Cell, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::{sync::Notification, Room as MatrixRoom};
+use matrix_sdk::{Room as MatrixRoom, sync::Notification};
 use ruma::{
+    OwnedRoomId, RoomId, UserId,
     api::client::device::get_device,
     events::{
-        room::{member::MembershipState, message::MessageType},
         AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncStateEvent, AnySyncTimelineEvent,
         SyncStateEvent,
+        room::{member::MembershipState, message::MessageType},
     },
     html::{HtmlSanitizerMode, RemoveReplyFallback},
-    OwnedRoomId, RoomId, UserId,
 };
 use tracing::{debug, warn};
 
@@ -22,14 +22,13 @@ pub(crate) use self::notifications_settings::{
 };
 use super::{IdentityVerification, Session, VerificationKey};
 use crate::{
-    gettext_f,
+    Application, Window, gettext_f,
     intent::SessionIntent,
     prelude::*,
     spawn_tokio,
     utils::matrix::{
         AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri,
     },
-    Application, Window,
 };
 
 /// The maximum number of lines we want to display for the body of a

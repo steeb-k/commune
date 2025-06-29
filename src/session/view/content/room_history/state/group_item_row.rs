@@ -8,7 +8,7 @@ use crate::{
         model::Event,
         view::content::room_history::{EventActionsGroup, RoomHistory},
     },
-    utils::{key_bindings, BoundObject, BoundObjectWeakRef},
+    utils::{BoundObject, BoundObjectWeakRef, key_bindings},
 };
 
 mod imp {

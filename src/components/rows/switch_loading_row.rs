@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use crate::utils::bool_to_accessible_tristate;
 

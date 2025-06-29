@@ -1,4 +1,4 @@
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     components::{Avatar, AvatarData},

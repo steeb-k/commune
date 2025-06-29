@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 
 use super::StateContent;
 use crate::session::{model::Event, view::content::room_history::ReadReceiptsList};

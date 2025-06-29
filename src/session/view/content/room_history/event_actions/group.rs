@@ -8,7 +8,7 @@ use ruma::events::room::{message::MessageType, power_levels::PowerLevelUserActio
 use tracing::error;
 
 use crate::{
-    components::{confirm_room_member_destructive_action_dialog, RoomMemberDestructiveAction},
+    components::{RoomMemberDestructiveAction, confirm_room_member_destructive_action_dialog},
     prelude::*,
     session::{
         model::{Event, Membership, MessageState, Room},

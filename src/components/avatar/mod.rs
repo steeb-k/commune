@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*};
 
 mod crop_circle;
 mod data;

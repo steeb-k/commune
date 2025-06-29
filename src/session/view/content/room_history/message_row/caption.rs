@@ -1,7 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::events::room::message::FormattedBody;
 
-use super::{text::MessageText, ContentFormat};
+use super::{ContentFormat, text::MessageText};
 use crate::{prelude::*, session::model::Room};
 
 mod imp {

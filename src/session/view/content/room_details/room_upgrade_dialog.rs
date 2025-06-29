@@ -4,8 +4,8 @@ use adw::prelude::*;
 use gettextrs::gettext;
 use gtk::{gio, glib, pango, subclass::prelude::*};
 use ruma::{
-    api::client::discovery::get_capabilities::{RoomVersionStability, RoomVersionsCapability},
     RoomVersionId,
+    api::client::discovery::get_capabilities::{RoomVersionStability, RoomVersionsCapability},
 };
 use tracing::error;
 

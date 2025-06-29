@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use crate::{
-    session::model::{Permissions, PowerLevel, POWER_LEVEL_ADMIN, POWER_LEVEL_MOD},
+    session::model::{POWER_LEVEL_ADMIN, POWER_LEVEL_MOD, Permissions, PowerLevel},
     utils::BoundObject,
 };
 

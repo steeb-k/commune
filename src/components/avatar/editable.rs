@@ -3,10 +3,9 @@ use std::time::Duration;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{
-    gdk, gio, glib,
+    CompositeTemplate, gdk, gio, glib,
     glib::{clone, closure, closure_local},
     prelude::*,
-    CompositeTemplate,
 };
 use tracing::{debug, error};
 
@@ -15,12 +14,11 @@ use crate::{
     components::{ActionButton, ActionState, AnimatedImagePaintable},
     toast,
     utils::{
-        expression,
+        BoundObject, BoundObjectWeakRef, CountedRef, SingleItemListModel, expression,
         media::{
-            image::{ImageError, IMAGE_QUEUE},
             FrameDimensions,
+            image::{IMAGE_QUEUE, ImageError},
         },
-        BoundObject, BoundObjectWeakRef, CountedRef, SingleItemListModel,
     },
 };
 

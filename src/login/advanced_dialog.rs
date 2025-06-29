@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 
 mod imp {
     use std::cell::{Cell, RefCell};

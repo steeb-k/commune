@@ -3,10 +3,10 @@
 use std::{cell::OnceCell, sync::Arc};
 
 use ashpd::desktop::{
-    location::{Accuracy, Location as PortalLocation, LocationProxy},
     Session,
+    location::{Accuracy, Location as PortalLocation, LocationProxy},
 };
-use futures_util::{future, stream, FutureExt, Stream, StreamExt, TryFutureExt};
+use futures_util::{FutureExt, Stream, StreamExt, future, stream};
 use geo_uri::GeoUri;
 use tracing::error;
 

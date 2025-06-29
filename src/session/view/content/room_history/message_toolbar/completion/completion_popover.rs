@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 

@@ -1,11 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, glib, CompositeTemplate};
-use ruma::{api::client::session::get_login_types::v3::LoginType, OwnedServerName};
+use gtk::{self, CompositeTemplate, glib};
+use ruma::{OwnedServerName, api::client::session::get_login_types::v3::LoginType};
 use tracing::warn;
 use url::Url;
 
-use super::{sso_idp_button::SsoIdpButton, Login};
+use super::{Login, sso_idp_button::SsoIdpButton};
 use crate::{components::LoadingButton, gettext_f, prelude::*, spawn_tokio, toast};
 
 mod imp {

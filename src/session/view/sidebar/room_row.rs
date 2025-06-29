@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
 
 use super::SidebarRow;
 use crate::{

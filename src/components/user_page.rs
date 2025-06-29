@@ -1,24 +1,24 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext, pgettext};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
-    CompositeTemplate,
 };
-use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
+use ruma::{OwnedEventId, events::room::power_levels::PowerLevelUserAction};
 
 use super::{Avatar, LoadingButton, LoadingButtonRow, PowerLevelSelectionRow};
 use crate::{
+    Window,
     components::{
-        confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog,
-        confirm_set_room_member_power_level_same_as_own_dialog, RoomMemberDestructiveAction,
+        RoomMemberDestructiveAction, confirm_mute_room_member_dialog,
+        confirm_room_member_destructive_action_dialog,
+        confirm_set_room_member_power_level_same_as_own_dialog,
     },
     gettext_f,
     prelude::*,
     session::model::{Member, Membership, Permissions, Room, User},
     toast,
     utils::BoundObject,
-    Window,
 };
 
 mod imp {

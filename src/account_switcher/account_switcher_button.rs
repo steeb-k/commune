@@ -1,11 +1,11 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::AccountSwitcherPopover;
 use crate::{
+    Window,
     components::Avatar,
     session_list::SessionInfo,
     utils::{BoundObjectWeakRef, TemplateCallbacks},
-    Window,
 };
 
 mod imp {

@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone, prelude::*};
 
 mod reaction_popover;
 
@@ -11,7 +11,7 @@ use crate::{
         model::{Member, MemberList, ReactionData, ReactionGroup},
         view::content::room_history::member_timestamp::MemberTimestamp,
     },
-    utils::{key_bindings, BoundObjectWeakRef, EMOJI_REGEX},
+    utils::{BoundObjectWeakRef, EMOJI_REGEX, key_bindings},
 };
 
 mod imp {

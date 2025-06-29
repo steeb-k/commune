@@ -2,12 +2,12 @@ use std::collections::BTreeSet;
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexSet;
-use ruma::{events::media_preview_config::MediaPreviews, OwnedServerName};
+use ruma::{OwnedServerName, events::media_preview_config::MediaPreviews};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use super::SidebarSectionName;
-use crate::{session_list::SessionListSettings, Application};
+use crate::{Application, session_list::SessionListSettings};
 
 /// The current version of the stored session settings.
 const CURRENT_VERSION: u8 = 1;

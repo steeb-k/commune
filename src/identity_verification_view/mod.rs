@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 mod accept_request_page;
 mod cancelled_page;

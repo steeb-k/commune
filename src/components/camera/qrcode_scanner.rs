@@ -51,10 +51,12 @@ mod imp {
     impl ObjectImpl for QrCodeScanner {
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![Signal::builder("qrcode-detected")
-                    .param_types([QrVerificationDataBoxed::static_type()])
-                    .run_first()
-                    .build()]
+                vec![
+                    Signal::builder("qrcode-detected")
+                        .param_types([QrVerificationDataBoxed::static_type()])
+                        .run_first()
+                        .build(),
+                ]
             });
             SIGNALS.as_ref()
         }

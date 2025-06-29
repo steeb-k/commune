@@ -15,14 +15,15 @@ use crate::{
     prelude::*,
     toast,
     utils::{
+        File,
         media::{
+            FrameDimensions, MediaFileError,
             image::{
                 Blurhash, Image, ImageError, ImageRequestPriority, ImageSource,
                 ThumbnailDownloader, ThumbnailSettings,
             },
-            FrameDimensions, MediaFileError,
         },
-        save_data_to_tmp_file, File,
+        save_data_to_tmp_file,
     },
 };
 
@@ -181,7 +182,7 @@ impl MediaMessage {
                     toast!(parent, gettext("Could not access file"));
                 }
             }
-        };
+        }
     }
 }
 

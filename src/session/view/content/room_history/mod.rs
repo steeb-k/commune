@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, glib::clone, graphene::Point, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, graphene::Point};
 use matrix_sdk::ruma::EventId;
 use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{
-    api::client::receipt::create_receipt::v3::ReceiptType, events::room::message::MessageType,
-    OwnedEventId,
+    OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
+    events::room::message::MessageType,
 };
 use tracing::{error, warn};
 
@@ -37,9 +37,9 @@ use self::{
     typing_row::TypingRow,
     verification_info_bar::VerificationInfoBar,
 };
-use super::{room_details, RoomDetails};
+use super::{RoomDetails, room_details};
 use crate::{
-    components::{confirm_leave_room_dialog, DragOverlay},
+    components::{DragOverlay, confirm_leave_room_dialog},
     prelude::*,
     session::model::{
         Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,

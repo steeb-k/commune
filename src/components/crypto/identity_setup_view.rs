@@ -1,9 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
-    CompositeTemplate,
 };
 use tracing::{debug, error};
 

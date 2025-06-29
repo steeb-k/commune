@@ -3,9 +3,9 @@ use indexmap::{IndexMap, IndexSet};
 use tracing::error;
 
 use crate::{
+    Application,
     secret::SESSION_ID_LENGTH,
     session::model::{SessionSettings, StoredSessionSettings},
-    Application,
 };
 
 mod imp {

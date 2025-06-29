@@ -5,30 +5,30 @@ use std::{cmp::Ordering, error::Error, fmt, str::FromStr, sync::Arc};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, graphene, gsk, prelude::*};
 use matrix_sdk::{
+    Client,
     attachment::{BaseImageInfo, Thumbnail},
     media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
-    Client,
 };
 use ruma::{
+    OwnedMxcUri,
     api::client::media::get_content_thumbnail::v3::Method,
     events::{
         room::{
-            avatar::ImageInfo as AvatarImageInfo, ImageInfo, MediaSource as CommonMediaSource,
-            ThumbnailInfo,
+            ImageInfo, MediaSource as CommonMediaSource, ThumbnailInfo,
+            avatar::ImageInfo as AvatarImageInfo,
         },
         sticker::StickerMediaSource,
     },
-    OwnedMxcUri,
 };
 use tracing::{error, warn};
 
 mod queue;
 
-pub(crate) use queue::{ImageRequestPriority, IMAGE_QUEUE};
+pub(crate) use queue::{IMAGE_QUEUE, ImageRequestPriority};
 
 use super::{FrameDimensions, MediaFileError};
 use crate::{
-    components::AnimatedImagePaintable, spawn_tokio, utils::File, DISABLE_GLYCIN_SANDBOX, RUNTIME,
+    DISABLE_GLYCIN_SANDBOX, RUNTIME, components::AnimatedImagePaintable, spawn_tokio, utils::File,
 };
 
 /// The maximum dimensions of a thumbnail in the timeline.

@@ -6,8 +6,8 @@ use matrix_sdk_ui::timeline::{
     RoomMembershipChange, TimelineItemContent,
 };
 use ruma::{
-    events::{room::member::MembershipState, FullStateEventContent},
     UserId,
+    events::{FullStateEventContent, room::member::MembershipState},
 };
 use tracing::warn;
 

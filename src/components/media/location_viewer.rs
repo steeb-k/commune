@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
-use gtk::{gdk_pixbuf, gio, glib, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk_pixbuf, gio, glib};
 use shumate::prelude::*;
 
 use crate::i18n::gettext_f;

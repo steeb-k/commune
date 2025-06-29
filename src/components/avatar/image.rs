@@ -5,22 +5,22 @@ use gtk::{
     subclass::prelude::*,
 };
 use ruma::{
-    api::client::media::get_content_thumbnail::v3::Method, events::room::avatar::ImageInfo,
-    OwnedMxcUri,
+    OwnedMxcUri, api::client::media::get_content_thumbnail::v3::Method,
+    events::room::avatar::ImageInfo,
 };
 
 use crate::{
     session::model::Session,
     spawn,
     utils::{
+        CountedRef,
         media::{
+            FrameDimensions,
             image::{
                 ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader,
                 ThumbnailSettings,
             },
-            FrameDimensions,
         },
-        CountedRef,
     },
 };
 

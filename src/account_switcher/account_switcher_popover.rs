@@ -1,8 +1,8 @@
 use gtk::{
+    CompositeTemplate,
     glib::{self, clone},
     prelude::*,
     subclass::prelude::*,
-    CompositeTemplate,
 };
 
 use super::session_item::SessionItemRow;

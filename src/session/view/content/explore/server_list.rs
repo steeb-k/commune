@@ -1,5 +1,5 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use ruma::{api::client::thirdparty::get_protocols, OwnedServerName, ServerName};
+use ruma::{OwnedServerName, ServerName, api::client::thirdparty::get_protocols};
 use tracing::error;
 
 use super::ExploreServer;

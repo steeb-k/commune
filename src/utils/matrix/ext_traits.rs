@@ -8,9 +8,9 @@ use matrix_sdk_ui::timeline::{
     TimelineItemContent,
 };
 use ruma::{
-    events::{room::message::MessageType, AnySyncTimelineEvent},
-    serde::Raw,
     UserId,
+    events::{AnySyncTimelineEvent, room::message::MessageType},
+    serde::Raw,
 };
 use serde::Deserialize;
 

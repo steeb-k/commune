@@ -1,4 +1,4 @@
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 use super::avatar_with_selection::AvatarWithSelection;
 use crate::{

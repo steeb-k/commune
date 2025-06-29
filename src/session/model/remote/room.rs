@@ -3,13 +3,14 @@ use std::{cell::RefCell, time::Duration};
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::reqwest::StatusCode;
 use ruma::{
+    OwnedMxcUri, OwnedRoomAliasId, OwnedRoomId,
     api::client::{
         room::get_summary,
-        space::{get_hierarchy, SpaceHierarchyRoomsChunk},
+        space::{SpaceHierarchyRoomsChunk, get_hierarchy},
     },
     assign,
     directory::PublicRoomsChunk,
-    uint, OwnedMxcUri, OwnedRoomAliasId, OwnedRoomId,
+    uint,
 };
 use tracing::{debug, warn};
 
@@ -18,7 +19,7 @@ use crate::{
     prelude::*,
     session::model::{RoomListRoomInfo, Session},
     spawn, spawn_tokio,
-    utils::{matrix::MatrixRoomIdUri, string::linkify, AbortableHandle, LoadingState},
+    utils::{AbortableHandle, LoadingState, matrix::MatrixRoomIdUri, string::linkify},
 };
 
 /// The time after which the data of a room is assumed to be stale.

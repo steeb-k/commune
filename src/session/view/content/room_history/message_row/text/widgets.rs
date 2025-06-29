@@ -3,13 +3,13 @@
 use gettextrs::gettext;
 use gtk::{pango, prelude::*};
 use ruma::html::{
-    matrix::{MatrixElement, OrderedListData},
     Children, NodeRef,
+    matrix::{MatrixElement, OrderedListData},
 };
 use sourceview::prelude::*;
 use tracing::debug;
 
-use super::{inline_html::InlineHtmlBuilder, SUPPORTED_BLOCK_ELEMENTS};
+use super::{SUPPORTED_BLOCK_ELEMENTS, inline_html::InlineHtmlBuilder};
 use crate::{
     components::{AtRoom, LabelWithWidgets},
     prelude::*,

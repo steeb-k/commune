@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::ngettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
 use tracing::error;
 
 mod item;
@@ -216,7 +216,9 @@ mod imp {
                     let n = invite_list.n_invitees();
                     if n != n_failed {
                         // This should not be possible.
-                        error!("The number of failed users does not match the number of remaining invitees: expected {n_failed}, got {n}");
+                        error!(
+                            "The number of failed users does not match the number of remaining invitees: expected {n_failed}, got {n}"
+                        );
                     }
 
                     if n == 0 {

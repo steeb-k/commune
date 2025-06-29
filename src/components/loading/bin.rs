@@ -1,5 +1,5 @@
 use adw::prelude::*;
-use gtk::{glib, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, subclass::prelude::*};
 
 use crate::utils::ChildPropertyExt;
 

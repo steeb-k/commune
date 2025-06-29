@@ -1,8 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure},
-    CompositeTemplate,
 };
 use tracing::error;
 

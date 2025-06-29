@@ -1,10 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
 use ruma::{OwnedEventId, OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
 use super::{Content, CreateDirectChatDialog, CreateRoomDialog, MediaViewer, Sidebar};
 use crate::{
+    Window,
     components::{RoomPreviewDialog, UserProfileDialog},
     intent::SessionIntent,
     session::model::{
@@ -12,7 +13,6 @@ use crate::{
         SidebarListModel, VerificationKey,
     },
     utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
-    Window,
 };
 
 mod imp {
@@ -433,7 +433,7 @@ mod imp {
                 RoomCategory::LowPriority => 2,
                 RoomCategory::Left => 1,
                 RoomCategory::Ignored | RoomCategory::Outdated | RoomCategory::Space => {
-                    return None
+                    return None;
                 }
             };
 

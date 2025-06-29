@@ -1,6 +1,6 @@
 use std::hash::Hasher;
 
-use djb_hash::{x33a_u32::X33aU32, HasherU32};
+use djb_hash::{HasherU32, x33a_u32::X33aU32};
 use gtk::{gdk, glib, graphene, gsk, pango, prelude::*};
 
 /// The notification icon size, according to GNOME Shell's code.

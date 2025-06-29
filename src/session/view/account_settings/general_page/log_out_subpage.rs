@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 
 use crate::{
     components::LoadingButtonRow,

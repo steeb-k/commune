@@ -10,21 +10,22 @@ use std::{
 use futures_util::future::BoxFuture;
 use gtk::glib;
 use matrix_sdk::{
-    media::{MediaRequestParameters, UniqueKey},
     Client,
+    media::{MediaRequestParameters, UniqueKey},
 };
 use tokio::{
-    sync::{broadcast, Mutex as AsyncMutex},
+    sync::{Mutex as AsyncMutex, broadcast},
     task::AbortHandle,
 };
 use tracing::{debug, warn};
 
-use super::{load_image, Image, ImageError};
+use super::{Image, ImageError, load_image};
 use crate::{
     spawn_tokio,
     utils::{
+        File,
         media::{FrameDimensions, MediaFileError},
-        save_data_to_tmp_file, File,
+        save_data_to_tmp_file,
     },
 };
 
@@ -437,7 +438,7 @@ impl ImageRequest {
         if let Ok(Some(handle)) = self.task_handle.lock().map(|mut s| s.replace(abort_handle)) {
             // This should not happen, but cancel the old task if we have one.
             handle.abort();
-        };
+        }
     }
 }
 

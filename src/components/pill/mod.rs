@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 mod at_room;
 mod search_entry;
@@ -19,7 +19,7 @@ use crate::{
         model::{Member, RemoteRoom, Room},
         view::SessionView,
     },
-    utils::{key_bindings, BoundObject},
+    utils::{BoundObject, key_bindings},
 };
 
 mod imp {

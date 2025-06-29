@@ -5,6 +5,7 @@ use std::{borrow::Cow, fmt, str::FromStr};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
+    AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
     authentication::{
         matrix::MatrixSession,
         oauth::{OAuthSession, UserSession},
@@ -12,19 +13,18 @@ use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
-    AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
 };
 use ruma::{
-    events::{AnyStrippedStateEvent, AnySyncTimelineEvent},
-    html::{
-        matrix::{AnchorUri, MatrixElement},
-        Children, Html, NodeRef, StrTendril,
-    },
-    matrix_uri::MatrixId,
-    serde::Raw,
     EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch,
     OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId,
     RoomId, RoomOrAliasId, UserId,
+    events::{AnyStrippedStateEvent, AnySyncTimelineEvent},
+    html::{
+        Children, Html, NodeRef, StrTendril,
+        matrix::{AnchorUri, MatrixElement},
+    },
+    matrix_uri::MatrixId,
+    serde::Raw,
 };
 use thiserror::Error;
 use tracing::error;

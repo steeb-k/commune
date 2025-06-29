@@ -8,8 +8,8 @@ pub(crate) use crate::{
     session_list::SessionInfoExt,
     user_facing_error::UserFacingError,
     utils::{
+        ChildPropertyExt, IsABin, LocationExt,
         matrix::ext_traits::*,
         string::{StrExt, StrMutExt},
-        ChildPropertyExt, IsABin, LocationExt,
     },
 };

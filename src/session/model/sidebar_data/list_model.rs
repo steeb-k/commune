@@ -3,7 +3,7 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use super::{Selection, SidebarItemList};
 use crate::{
     session::model::{IdentityVerification, Room},
-    utils::{expression, BoundObjectWeakRef},
+    utils::{BoundObjectWeakRef, expression},
 };
 
 mod imp {

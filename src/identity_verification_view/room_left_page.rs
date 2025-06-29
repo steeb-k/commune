@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, prelude::*};
 
 use crate::session::model::IdentityVerification;
 

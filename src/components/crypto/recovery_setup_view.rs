@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::closure_local, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::closure_local};
 use matrix_sdk::encryption::{
     recovery::{RecoveryError, RecoveryState as SdkRecoveryState},
     secret_storage::SecretStorageError,
@@ -184,7 +184,9 @@ mod imp {
             } else {
                 (
                     true,
-                    gettext("Required because the crypto identity in the recovery data is incomplete. Invalidates the verifications of all users and sessions."),
+                    gettext(
+                        "Required because the crypto identity in the recovery data is incomplete. Invalidates the verifications of all users and sessions.",
+                    ),
                 )
             };
             self.reset_identity_row.set_read_only(required);
@@ -199,7 +201,9 @@ mod imp {
             } else {
                 (
                     true,
-                    gettext("Required because the backup is not set up properly. You might not be able to read your past encrypted messages anymore."),
+                    gettext(
+                        "Required because the backup is not set up properly. You might not be able to read your past encrypted messages anymore.",
+                    ),
                 )
             };
             self.reset_backup_row.set_read_only(required);
@@ -217,9 +221,13 @@ mod imp {
             let has_key = key.is_some();
 
             let description = if has_key {
-                gettext("Make sure to store this recovery key in a safe place. You will need it to recover your account if you lose access to all your sessions.")
+                gettext(
+                    "Make sure to store this recovery key in a safe place. You will need it to recover your account if you lose access to all your sessions.",
+                )
             } else {
-                gettext("Make sure to remember your passphrase or to store it in a safe place. You will need it to recover your account if you lose access to all your sessions.")
+                gettext(
+                    "Make sure to remember your passphrase or to store it in a safe place. You will need it to recover your account if you lose access to all your sessions.",
+                )
             };
             self.success_description.set_label(&description);
 

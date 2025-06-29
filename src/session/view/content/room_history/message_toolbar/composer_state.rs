@@ -4,14 +4,14 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{deserialized_responses::TimelineEvent, ComposerDraft, ComposerDraftType};
+use matrix_sdk::{ComposerDraft, ComposerDraftType, deserialized_responses::TimelineEvent};
 use matrix_sdk_ui::timeline::Message;
 use ruma::{
-    events::{
-        room::message::{MessageFormat, MessageType, OriginalSyncRoomMessageEvent},
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-    },
     OwnedEventId, OwnedUserId, RoomOrAliasId, UserId,
+    events::{
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        room::message::{MessageFormat, MessageType, OriginalSyncRoomMessageEvent},
+    },
 };
 use sourceview::prelude::*;
 use tracing::{error, warn};
@@ -21,7 +21,7 @@ use crate::{
     components::{AvatarImageSafetySetting, Pill, PillSource},
     session::model::{Event, Member, Room, Timeline},
     spawn, spawn_tokio,
-    utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
+    utils::matrix::{AT_ROOM, find_at_room, find_html_mentions},
 };
 
 // The duration in seconds we wait for before saving a change.

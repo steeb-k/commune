@@ -1,10 +1,9 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure, closure_local},
-    CompositeTemplate,
 };
-use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedUserId};
+use ruma::{OwnedUserId, events::room::power_levels::PowerLevelUserAction};
 use tracing::error;
 
 use super::{MemberPowerLevel, PermissionsSelectMemberRow, PrivilegedMembers};

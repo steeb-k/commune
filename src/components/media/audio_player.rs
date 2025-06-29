@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{gio, glib, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, prelude::*};
 
 use crate::utils::BoundObject;
 

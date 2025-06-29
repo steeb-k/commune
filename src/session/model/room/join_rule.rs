@@ -6,10 +6,10 @@ use gtk::{
     subclass::prelude::*,
 };
 use ruma::{
+    OwnedRoomId,
     events::room::join_rules::{
         AllowRule, JoinRule as MatrixJoinRule, Restricted, RoomJoinRulesEventContent,
     },
-    OwnedRoomId,
 };
 use tracing::error;
 

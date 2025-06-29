@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
-use gtk::{gio, glib, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 

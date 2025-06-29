@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
 
 mod audio;
 mod caption;
@@ -17,12 +17,11 @@ pub use self::content::{ContentFormat, MessageContent};
 use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
 use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
-    gettext_f,
+    Application, gettext_f,
     prelude::*,
     session::model::{Event, EventHeaderState},
     system_settings::ClockFormat,
     utils::BoundObject,
-    Application,
 };
 
 mod imp {

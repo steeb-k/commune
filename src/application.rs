@@ -6,7 +6,7 @@ use gtk::{gio, glib, glib::clone};
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    config,
+    GETTEXT_PACKAGE, Window, config,
     intent::{SessionIntent, SessionIntentType},
     prelude::*,
     session::model::{Session, SessionState},
@@ -14,8 +14,7 @@ use crate::{
     spawn,
     system_settings::SystemSettings,
     toast,
-    utils::{matrix::MatrixIdUri, BoundObjectWeakRef, LoadingState},
-    Window, GETTEXT_PACKAGE,
+    utils::{BoundObjectWeakRef, LoadingState, matrix::MatrixIdUri},
 };
 
 /// The key for the current session setting.

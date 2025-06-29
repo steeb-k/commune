@@ -27,8 +27,8 @@ mod window;
 use std::sync::LazyLock;
 
 use gettextrs::*;
-use gtk::{gdk::Display, gio, IconTheme};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use gtk::{IconTheme, gdk::Display, gio};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 use self::{application::*, config::*, i18n::*, window::Window};
 

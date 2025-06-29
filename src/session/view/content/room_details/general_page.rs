@@ -1,29 +1,30 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{
-    gio,
+    CompositeTemplate, gio,
     glib::{self, clone},
-    pango, CompositeTemplate,
+    pango,
 };
 use ruma::{
     api::client::{
         directory::{get_room_visibility, set_room_visibility},
         discovery::get_capabilities::Capabilities,
-        room::{upgrade_room, Visibility},
+        room::{Visibility, upgrade_room},
     },
     events::{
+        StateEventType,
         room::{
             guest_access::{GuestAccess, RoomGuestAccessEventContent},
             history_visibility::RoomHistoryVisibilityEventContent,
             power_levels::PowerLevelAction,
         },
-        StateEventType,
     },
 };
 use tracing::error;
 
-use super::{room_upgrade_dialog::confirm_room_upgrade, MemberRow, MembershipLists, RoomDetails};
+use super::{MemberRow, MembershipLists, RoomDetails, room_upgrade_dialog::confirm_room_upgrade};
 use crate::{
+    Window,
     components::{
         Avatar, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
         SwitchLoadingRow,
@@ -34,8 +35,7 @@ use crate::{
         HistoryVisibilityValue, JoinRuleValue, Member, NotificationsRoomSetting, Room, RoomCategory,
     },
     spawn, spawn_tokio, toast,
-    utils::{expression, matrix::MatrixIdUri, BoundObjectWeakRef, TemplateCallbacks},
-    Window,
+    utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
 };
 
 mod imp {

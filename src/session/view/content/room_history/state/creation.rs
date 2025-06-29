@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 use matrix_sdk::ruma::events::room::create::RoomCreateEventContent;
 use ruma::events::FullStateEventContent;
 

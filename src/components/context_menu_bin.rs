@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
-use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*};
 
-use crate::utils::{key_bindings, BoundObject};
+use crate::utils::{BoundObject, key_bindings};
 
 mod imp {
     use std::cell::{Cell, RefCell};

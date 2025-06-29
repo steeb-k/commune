@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 use tracing::warn;
 
 use super::ContentFormat;

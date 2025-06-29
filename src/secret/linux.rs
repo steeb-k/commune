@@ -13,8 +13,8 @@ use tokio::fs;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{SecretError, SecretExt, SessionTokens, StoredSession, SESSION_ID_LENGTH};
-use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
+use super::{SESSION_ID_LENGTH, SecretError, SecretExt, SessionTokens, StoredSession};
+use crate::{APP_ID, PROFILE, gettext_f, prelude::*, spawn_tokio, utils::matrix};
 
 /// The current version of the stored session.
 const CURRENT_VERSION: u8 = 7;
@@ -513,30 +513,27 @@ impl UserFacingError for oo7::file::Error {
         use oo7::file::Error;
 
         match self {
-            Error::FileHeaderMismatch(_) |
-            Error::VersionMismatch(_) |
-            Error::NoData |
-            Error::MacError |
-            Error::HashedAttributeMac(_) |
-            Error::GVariantDeserialization(_) |
-            Error::SaltSizeMismatch(_, _) |
-            Error::ChecksumMismatch |
-            Error::AlgorithmMismatch(_) |
-            Error::IncorrectSecret |
-            Error::Crypto(_) |
-            Error::Utf8(_) => gettext(
-                "The secret storage file is corrupted.",
-            ),
-            Error::NoParentDir(_) |
-            Error::NoDataDir => gettext(
-                "Could not access the secret storage file location.",
-            ),
-            Error::Io(_) => gettext(
-                "An unexpected error occurred when accessing the secret storage file.",
-            ),
-            Error::TargetFileChanged(_) => gettext(
-                "The secret storage file has been changed by another process.",
-            ),
+            Error::FileHeaderMismatch(_)
+            | Error::VersionMismatch(_)
+            | Error::NoData
+            | Error::MacError
+            | Error::HashedAttributeMac(_)
+            | Error::GVariantDeserialization(_)
+            | Error::SaltSizeMismatch(..)
+            | Error::ChecksumMismatch
+            | Error::AlgorithmMismatch(_)
+            | Error::IncorrectSecret
+            | Error::Crypto(_)
+            | Error::Utf8(_) => gettext("The secret storage file is corrupted."),
+            Error::NoParentDir(_) | Error::NoDataDir => {
+                gettext("Could not access the secret storage file location.")
+            }
+            Error::Io(_) => {
+                gettext("An unexpected error occurred when accessing the secret storage file.")
+            }
+            Error::TargetFileChanged(_) => {
+                gettext("The secret storage file has been changed by another process.")
+            }
             Error::Portal(ashpd::Error::Portal(ashpd::PortalError::Cancelled(_))) => gettext(
                 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
             ),
@@ -546,9 +543,9 @@ impl UserFacingError for oo7::file::Error {
             Error::Portal(_) => gettext(
                 "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
             ),
-            Error::WeakKey(_) => gettext(
-                "The Flatpak Secret Portal provided a key that is too weak to be secure.",
-            ),
+            Error::WeakKey(_) => {
+                gettext("The Flatpak Secret Portal provided a key that is too weak to be secure.")
+            }
             // Can only occur when using the `replace_item_index` or `delete_item_index` methods.
             Error::InvalidItemIndex(_) => unreachable!(),
         }
@@ -560,22 +557,16 @@ impl UserFacingError for oo7::dbus::Error {
         use oo7::dbus::{Error, ServiceError};
 
         match self {
-            Error::Deleted => gettext(
-                "The item was deleted.",
-            ),
+            Error::Deleted => gettext("The item was deleted."),
             Error::Service(s) => match s {
                 ServiceError::ZBus(_) => gettext(
                     "An unexpected error occurred when interacting with the D-Bus Secret Service.",
                 ),
-                ServiceError::IsLocked(_) => gettext(
-                    "The collection or item is locked.",
-                ),
-                ServiceError::NoSession(_) => gettext(
-                    "The D-Bus Secret Service session does not exist.",
-                ),
-                ServiceError::NoSuchObject(_) => gettext(
-                    "The collection or item does not exist.",
-                ),
+                ServiceError::IsLocked(_) => gettext("The collection or item is locked."),
+                ServiceError::NoSession(_) => {
+                    gettext("The D-Bus Secret Service session does not exist.")
+                }
+                ServiceError::NoSuchObject(_) => gettext("The collection or item does not exist."),
             },
             Error::Dismissed => gettext(
                 "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
@@ -583,9 +574,7 @@ impl UserFacingError for oo7::dbus::Error {
             Error::NotFound(_) => gettext(
                 "Could not access the default collection. Make sure a keyring was created and set as default.",
             ),
-            Error::ZBus(_) |
-            Error::Crypto(_) |
-            Error::IO(_) => gettext(
+            Error::ZBus(_) | Error::Crypto(_) | Error::IO(_) => gettext(
                 "An unexpected error occurred when interacting with the D-Bus Secret Service.",
             ),
         }

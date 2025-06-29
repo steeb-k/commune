@@ -7,16 +7,16 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{event_handler::EventHandlerDropGuard, RoomState};
+use matrix_sdk::{RoomState, event_handler::EventHandlerDropGuard};
 use ruma::{
+    Int, OwnedUserId, UserId,
     events::{
+        MessageLikeEventType, StateEventType, SyncStateEvent,
         room::power_levels::{
             NotificationPowerLevelType, PowerLevelAction, PowerLevelUserAction, RoomPowerLevels,
             RoomPowerLevelsEventContent,
         },
-        MessageLikeEventType, StateEventType, SyncStateEvent,
     },
-    Int, OwnedUserId, UserId,
 };
 use tracing::error;
 

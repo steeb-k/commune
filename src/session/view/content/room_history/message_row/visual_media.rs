@@ -1,25 +1,24 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
-use super::{content::MessageCacheKey, ContentFormat};
+use super::{ContentFormat, content::MessageCacheKey};
 use crate::{
+    Window,
     components::{AnimatedImagePaintable, VideoPlayer},
     gettext_f,
     session::model::Room,
     spawn,
     utils::{
-        key_bindings,
+        CountedRef, File, LoadingState, TemplateCallbacks, key_bindings,
         matrix::{VisualMediaMessage, VisualMediaType},
         media::{
-            image::{ImageRequestPriority, ThumbnailSettings, THUMBNAIL_MAX_DIMENSIONS},
             FrameDimensions,
+            image::{ImageRequestPriority, THUMBNAIL_MAX_DIMENSIONS, ThumbnailSettings},
         },
-        CountedRef, File, LoadingState, TemplateCallbacks,
     },
-    Window,
 };
 
 /// The dimensions to use for the media until we know its size.

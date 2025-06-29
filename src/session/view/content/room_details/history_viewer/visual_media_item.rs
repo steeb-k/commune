@@ -1,4 +1,4 @@
-use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
@@ -9,8 +9,8 @@ use crate::{
         key_bindings,
         matrix::VisualMediaMessage,
         media::{
-            image::{Blurhash, ImageRequestPriority, ThumbnailSettings},
             FrameDimensions,
+            image::{Blurhash, ImageRequestPriority, ThumbnailSettings},
         },
     },
 };

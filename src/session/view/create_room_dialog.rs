@@ -1,24 +1,25 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 use matrix_sdk::{
+    Error,
     ruma::{
         api::client::{
             error::ErrorKind,
-            room::{create_room, Visibility},
+            room::{Visibility, create_room},
         },
         assign,
     },
-    Error,
 };
-use ruma::events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent};
+use ruma::events::{InitialStateEvent, room::encryption::RoomEncryptionEventContent};
 use tracing::error;
 
 use crate::{
+    Window,
     components::{LoadingButton, SubstringEntryRow, ToastableDialog},
     prelude::*,
     session::model::Session,
-    spawn_tokio, toast, Window,
+    spawn_tokio, toast,
 };
 
 // MAX length of room addresses

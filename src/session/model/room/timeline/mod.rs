@@ -10,16 +10,16 @@ use gtk::{
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
-        default_event_filter, RoomExt, Timeline as SdkTimeline, TimelineEventItemId,
-        TimelineItem as SdkTimelineItem,
+        RoomExt, Timeline as SdkTimeline, TimelineEventItemId, TimelineItem as SdkTimelineItem,
+        default_event_filter,
     },
 };
 use ruma::{
-    events::{
-        room::message::MessageType, AnySyncMessageLikeEvent, AnySyncStateEvent,
-        AnySyncTimelineEvent, SyncMessageLikeEvent, SyncStateEvent,
-    },
     OwnedEventId, RoomVersionId, UserId,
+    events::{
+        AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        SyncStateEvent, room::message::MessageType,
+    },
 };
 use tokio::task::AbortHandle;
 use tracing::error;

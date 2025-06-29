@@ -9,13 +9,14 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
+    Result as MatrixResult, RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
     deserialized_responses::{AmbiguityChange, RawSyncOrStrippedState},
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     send_queue::RoomSendQueueUpdate,
-    Result as MatrixResult, RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
+    EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
     api::client::{
         error::{ErrorKind, RetryAfter},
         receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
@@ -28,7 +29,6 @@ use ruma::{
             member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
         },
     },
-    EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
 use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
@@ -56,15 +56,15 @@ pub(crate) use self::{
     typing_list::TypingList,
 };
 use super::{
-    notifications::NotificationsRoomSetting, room_list::RoomMetainfo, IdentityVerification,
-    Session, User,
+    IdentityVerification, Session, User, notifications::NotificationsRoomSetting,
+    room_list::RoomMetainfo,
 };
 use crate::{
     components::{AtRoom, AvatarImage, AvatarUriSource, PillSource},
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
-    utils::{string::linkify, BoundObjectWeakRef},
+    utils::{BoundObjectWeakRef, string::linkify},
 };
 
 /// The default duration in seconds that we wait for before retrying failed

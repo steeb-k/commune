@@ -6,9 +6,9 @@ use adw::prelude::*;
 
 use super::freplace;
 use crate::{
+    Window,
     components::{LabelWithWidgets, Pill, ToastableDialog},
     prelude::*,
-    Window,
 };
 
 /// Show a toast with the given message on an ancestor of `widget`.

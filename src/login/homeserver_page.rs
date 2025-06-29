@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 use matrix_sdk::{
-    config::RequestConfig, sanitize_server_name, Client, ClientBuildError, ClientBuilder,
+    Client, ClientBuildError, ClientBuilder, config::RequestConfig, sanitize_server_name,
 };
 use tracing::warn;
 use url::Url;

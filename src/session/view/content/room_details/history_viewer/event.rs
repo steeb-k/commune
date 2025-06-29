@@ -1,11 +1,11 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::deserialized_responses::TimelineEvent;
 use ruma::{
-    events::{
-        room::message::{MessageType, OriginalSyncRoomMessageEvent, Relation},
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-    },
     OwnedEventId,
+    events::{
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        room::message::{MessageType, OriginalSyncRoomMessageEvent, Relation},
+    },
 };
 
 use crate::{

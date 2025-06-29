@@ -8,7 +8,7 @@ use gtk::{
 use crate::{
     components::{AtRoom, PillSource},
     session::model::{Member, MemberList, Membership},
-    utils::{expression, ExpressionListModel},
+    utils::{ExpressionListModel, expression},
 };
 
 mod imp {

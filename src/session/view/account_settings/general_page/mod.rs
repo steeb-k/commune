@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
-use ruma::{api::client::discovery::get_capabilities::Capabilities, OwnedMxcUri};
+use ruma::{OwnedMxcUri, api::client::discovery::get_capabilities::Capabilities};
 use tracing::error;
 
 mod change_password_subpage;
@@ -19,7 +19,7 @@ use crate::{
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
-    utils::{media::FileInfo, OngoingAsyncAction, TemplateCallbacks},
+    utils::{OngoingAsyncAction, TemplateCallbacks, media::FileInfo},
 };
 
 mod imp {

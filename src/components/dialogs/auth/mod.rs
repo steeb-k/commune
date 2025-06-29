@@ -3,15 +3,15 @@ use std::{fmt::Debug, future::Future};
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
-use matrix_sdk::{encryption::CrossSigningResetAuthType, Error};
+use gtk::{CompositeTemplate, glib, glib::clone};
+use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
 use ruma::{
     api::{
-        client::uiaa::{
-            get_uiaa_fallback_page, AuthData, AuthType, Dummy, FallbackAcknowledgement, Password,
-            UiaaInfo, UserIdentifier,
-        },
         MatrixVersion, OutgoingRequest, SendAccessToken,
+        client::uiaa::{
+            AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
+            get_uiaa_fallback_page,
+        },
     },
     assign,
 };

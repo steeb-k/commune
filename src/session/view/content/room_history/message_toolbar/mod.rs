@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use adw::{prelude::*, subclass::prelude::*};
-use futures_util::{future, lock::Mutex, pin_mut, StreamExt};
+use futures_util::{StreamExt, future, lock::Mutex, pin_mut};
 use gettextrs::{gettext, pgettext};
 use gtk::{
-    gdk, gio,
+    CompositeTemplate, gdk, gio,
     glib::{self, clone},
-    CompositeTemplate,
 };
 use matrix_sdk::{
     attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
@@ -17,14 +16,14 @@ use matrix_sdk::{
 };
 use matrix_sdk_ui::timeline::{AttachmentSource, TimelineEventItemId, TimelineItemContent};
 use ruma::{
+    OwnedRoomId,
     events::{
+        Mentions,
         room::{
             message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
             tombstone::RoomTombstoneEventContent,
         },
-        Mentions,
     },
-    OwnedRoomId,
 };
 use tracing::{debug, error, warn};
 
@@ -40,19 +39,19 @@ use self::{
 };
 use super::message_row::MessageContent;
 use crate::{
+    Application, Window,
     components::{AvatarImageSafetySetting, CustomEntry, LabelWithWidgets, LoadingButton},
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
-        media::{
-            filename_for_mime, image::ImageInfoLoader, load_audio_info, video::load_video_info,
-            FileInfo,
-        },
         Location, LocationError, TemplateCallbacks, TokioDrop,
+        media::{
+            FileInfo, filename_for_mime, image::ImageInfoLoader, load_audio_info,
+            video::load_video_info,
+        },
     },
-    Application, Window,
 };
 
 /// A map of composer state per-session and per-room.
@@ -976,7 +975,7 @@ mod imp {
                         toast!(obj, gettext("Could not open file"));
                     }
                 }
-            };
+            }
         }
 
         /// Send the given file.

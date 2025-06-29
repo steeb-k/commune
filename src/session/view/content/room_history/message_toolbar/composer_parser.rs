@@ -3,19 +3,19 @@ use std::fmt::Write;
 use gtk::prelude::*;
 use matrix_sdk::{ComposerDraft, ComposerDraftType};
 use ruma::{
+    OwnedUserId,
     events::{
+        Mentions,
         room::message::{
             EmoteMessageEventContent, FormattedBody, MessageType,
             RoomMessageEventContentWithoutRelation,
         },
-        Mentions,
     },
-    OwnedUserId,
 };
 
 use super::{
-    composer_state::{MENTION_END_TAG, MENTION_START_TAG},
     ComposerState, RelationInfo,
+    composer_state::{MENTION_END_TAG, MENTION_START_TAG},
 };
 use crate::{
     components::{AtRoom, Pill, PillSource},

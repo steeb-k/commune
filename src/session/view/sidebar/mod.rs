@@ -1,9 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gio,
+    CompositeTemplate, ListScrollFlags, gio,
     glib::{self, clone, closure_local},
-    CompositeTemplate, ListScrollFlags,
 };
 use tracing::error;
 
@@ -17,7 +16,7 @@ use self::{
     icon_item_row::SidebarIconItemRow, room_row::SidebarRoomRow, row::SidebarRow,
     section_row::SidebarSectionRow, verification_row::SidebarVerificationRow,
 };
-use super::{account_settings::AccountSettingsSubpage, AccountSettings};
+use super::{AccountSettings, account_settings::AccountSettingsSubpage};
 use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,

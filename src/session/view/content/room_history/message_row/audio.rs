@@ -1,18 +1,18 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    glib::{self, clone},
     CompositeTemplate,
+    glib::{self, clone},
 };
 use tracing::warn;
 
-use super::{content::MessageCacheKey, ContentFormat};
+use super::{ContentFormat, content::MessageCacheKey};
 use crate::{
     components::AudioPlayer,
     gettext_f,
     session::model::Session,
     spawn,
-    utils::{matrix::MediaMessage, File, LoadingState},
+    utils::{File, LoadingState, matrix::MediaMessage},
 };
 
 mod imp {

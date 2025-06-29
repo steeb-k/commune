@@ -6,7 +6,7 @@ use gtk::{
 };
 use indexmap::IndexMap;
 use matrix_sdk::RoomMemberships;
-use ruma::{events::room::power_levels::RoomPowerLevels, OwnedUserId, UserId};
+use ruma::{OwnedUserId, UserId, events::room::power_levels::RoomPowerLevels};
 use tracing::error;
 
 use super::{Event, Member, Room};

@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use futures_util::{lock::Mutex, StreamExt};
+use futures_util::{StreamExt, lock::Mutex};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
-    config::SyncSettings, media::MediaRetentionPolicy, sync::SyncResponse, Client, SessionChange,
+    Client, SessionChange, config::SyncSettings, media::MediaRetentionPolicy, sync::SyncResponse,
 };
 use ruma::{
     api::client::{
@@ -22,16 +22,16 @@ use super::{
     SessionSettings, SidebarItemList, SidebarListModel, User, UserSessionsList, VerificationList,
 };
 use crate::{
+    Application,
     components::AvatarData,
     prelude::*,
     secret::StoredSession,
     session_list::{SessionInfo, SessionInfoImpl},
     spawn, spawn_tokio,
     utils::{
-        matrix::{self, ClientSetupError},
         TokioDrop,
+        matrix::{self, ClientSetupError},
     },
-    Application,
 };
 
 /// The database key for persisting the session's profile.

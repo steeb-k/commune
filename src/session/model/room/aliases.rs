@@ -1,12 +1,12 @@
 use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use matrix_sdk::{deserialized_responses::RawSyncOrStrippedState, reqwest::StatusCode};
 use ruma::{
+    OwnedRoomAliasId,
     api::client::{
         alias::{create_alias, delete_alias},
         room,
     },
-    events::{room::canonical_alias::RoomCanonicalAliasEventContent, SyncStateEvent},
-    OwnedRoomAliasId,
+    events::{SyncStateEvent, room::canonical_alias::RoomCanonicalAliasEventContent},
 };
 use tracing::error;
 

@@ -1,10 +1,10 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::MemberPowerLevel;
 use crate::{
     components::{Avatar, PowerLevelSelectionPopover, RoleBadge},
     session::model::Permissions,
-    utils::{key_bindings, BoundObject},
+    utils::{BoundObject, key_bindings},
 };
 
 mod imp {

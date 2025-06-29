@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 
 use crate::components::LoadingButton;
 

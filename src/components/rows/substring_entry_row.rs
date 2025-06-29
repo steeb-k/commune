@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
-    pango, CompositeTemplate,
+    pango,
 };
 
 use crate::components::LoadingButton;

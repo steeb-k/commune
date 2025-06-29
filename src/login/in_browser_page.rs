@@ -1,17 +1,17 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 use matrix_sdk::{
+    Error,
     authentication::oauth::{OAuthAuthorizationData, UrlOrQuery},
     utils::local_server::{LocalServerRedirectHandle, QueryString},
-    Error,
 };
 use tokio::task::AbortHandle;
 use tracing::{error, warn};
 use url::Url;
 
 use super::Login;
-use crate::{prelude::*, spawn_tokio, toast, APP_NAME};
+use crate::{APP_NAME, prelude::*, spawn_tokio, toast};
 
 mod imp {
     use std::cell::RefCell;

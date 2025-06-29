@@ -53,10 +53,6 @@ impl TemplateCallbacks {
     /// value of test.
     #[template_callback]
     pub fn ternary_string(test: bool, positive: String, negative: String) -> String {
-        if test {
-            positive
-        } else {
-            negative
-        }
+        if test { positive } else { negative }
     }
 }

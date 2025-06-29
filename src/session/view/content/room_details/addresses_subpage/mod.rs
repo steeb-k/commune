@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, pango, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone, pango};
 use ruma::RoomAliasId;
 use tracing::error;
 

@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
+    NotificationSettingsError,
     notification_settings::{
         IsEncrypted, NotificationSettings as MatrixNotificationSettings, RoomNotificationMode,
     },
-    NotificationSettingsError,
 };
 use ruma::{
-    push::{PredefinedOverrideRuleId, RuleKind},
     OwnedRoomId, RoomId,
+    push::{PredefinedOverrideRuleId, RuleKind},
 };
 use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;

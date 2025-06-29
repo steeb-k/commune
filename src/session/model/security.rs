@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::{
-    recovery::RecoveryState as SdkRecoveryState, VerificationState as SdkVerificationState,
+    VerificationState as SdkVerificationState, recovery::RecoveryState as SdkRecoveryState,
 };
 use tokio::task::AbortHandle;
 use tracing::{debug, error, warn};
@@ -443,7 +443,9 @@ mod imp {
                         let backup_exists_on_server = match backups.exists_on_server().await {
                             Ok(exists) => exists,
                             Err(error) => {
-                                warn!("Could not request whether recovery backup exists on homeserver: {error}");
+                                warn!(
+                                    "Could not request whether recovery backup exists on homeserver: {error}"
+                                );
                                 // If the request failed, we have to try to delete the backup to
                                 // avoid unsolvable errors.
                                 true

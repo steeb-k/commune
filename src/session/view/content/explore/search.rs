@@ -1,9 +1,9 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::{
+    OwnedServerName,
     api::client::directory::get_public_rooms_filtered,
     assign,
     directory::{Filter, RoomNetwork, RoomTypeFilter},
-    OwnedServerName,
 };
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -12,7 +12,7 @@ use super::ExploreServer;
 use crate::{
     session::model::{RemoteRoom, Session},
     spawn, spawn_tokio,
-    utils::{matrix::MatrixRoomIdUri, LoadingState},
+    utils::{LoadingState, matrix::MatrixRoomIdUri},
 };
 
 /// The maximum size of a batch of public rooms.

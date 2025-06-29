@@ -1,11 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
-    CompositeTemplate,
 };
 use matrix_sdk::authentication::oauth::{
-    error::OAuthDiscoveryError, AccountManagementUrlBuilder, OAuthError,
+    AccountManagementUrlBuilder, OAuthError, error::OAuthDiscoveryError,
 };
 use tracing::{error, warn};
 

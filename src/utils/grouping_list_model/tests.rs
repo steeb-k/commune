@@ -530,18 +530,18 @@ fn only_group_single_item_changes() {
     let group_items_changed = Rc::new(RefCell::new(None));
 
     group.connect_items_changed(clone!(
-            #[strong]
-            group_items_changed,
-            move |_, position, removed, added| {
-                println!(
-                    "group.connect_items_changed: position {position}, removed {removed}, added {added}"
-                );
-                assert_matches!(
-                    group_items_changed.replace(Some((position, removed, added))),
-                    None
-                );
-            }
-        ));
+        #[strong]
+        group_items_changed,
+        move |_, position, removed, added| {
+            println!(
+                "group.connect_items_changed: position {position}, removed {removed}, added {added}"
+            );
+            assert_matches!(
+                group_items_changed.replace(Some((position, removed, added))),
+                None
+            );
+        }
+    ));
 
     // Remove the first item.
     list_store.remove(0);
@@ -828,18 +828,18 @@ fn only_group_multiple_item_changes() {
     let group_items_changed = Rc::new(RefCell::new(None));
 
     group.connect_items_changed(clone!(
-            #[strong]
-            group_items_changed,
-            move |_, position, removed, added| {
-                println!(
-                    "group.connect_items_changed: position {position}, removed {removed}, added {added}"
-                );
-                assert_eq!(
-                    group_items_changed.replace(Some((position, removed, added))),
-                    None
-                );
-            }
-        ));
+        #[strong]
+        group_items_changed,
+        move |_, position, removed, added| {
+            println!(
+                "group.connect_items_changed: position {position}, removed {removed}, added {added}"
+            );
+            assert_eq!(
+                group_items_changed.replace(Some((position, removed, added))),
+                None
+            );
+        }
+    ));
 
     // Remove the 2 first items.
     list_store.splice(0, 2, &[] as &[glib::Object]);

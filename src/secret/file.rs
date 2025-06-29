@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use matrix_sdk_store_encryption::{EncryptedValue, StoreCipher};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::fs;
 
 /// An API to read from or write to a file that encodes its content.

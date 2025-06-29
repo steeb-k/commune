@@ -1,10 +1,10 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*};
-use ruma::{events::room::power_levels::PowerLevelUserAction, Int, OwnedUserId};
+use ruma::{Int, OwnedUserId, events::room::power_levels::PowerLevelUserAction};
 
 use crate::{
     prelude::*,
-    session::model::{MemberRole, Permissions, PowerLevel, User, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+    session::model::{MemberRole, POWER_LEVEL_MAX, POWER_LEVEL_MIN, Permissions, PowerLevel, User},
     utils::BoundObjectWeakRef,
 };
 

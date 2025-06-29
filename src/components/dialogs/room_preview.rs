@@ -1,19 +1,19 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use super::ToastableDialog;
 use crate::{
+    Window,
     components::{Avatar, LoadingButton},
     i18n::ngettext_f,
     prelude::*,
     session::model::{RemoteRoom, Session},
     toast,
     utils::{
-        matrix::{MatrixIdUri, MatrixRoomIdUri},
         LoadingState,
+        matrix::{MatrixIdUri, MatrixRoomIdUri},
     },
-    Window,
 };
 
 mod imp {

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 use tracing::error;
 
 use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, VisualMediaItem};

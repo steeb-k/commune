@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone};
 
 use super::StateGroupItemRow;
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
         model::{Event, Room},
         view::content::room_history::ReadReceiptsList,
     },
-    utils::{key_bindings, BoundObject, GroupingListGroup},
+    utils::{BoundObject, GroupingListGroup, key_bindings},
 };
 
 mod imp {

@@ -1,9 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{
-    gio, glib,
+    CompositeTemplate, gio, glib,
     glib::{clone, closure},
-    CompositeTemplate,
 };
 
 mod item_row;
@@ -17,7 +16,7 @@ use crate::{
         model::{Member, Membership, Room},
         view::content::room_details::{MembershipLists, MembershipSubpageItem},
     },
-    utils::{expression, LoadingState},
+    utils::{LoadingState, expression},
 };
 
 mod imp {

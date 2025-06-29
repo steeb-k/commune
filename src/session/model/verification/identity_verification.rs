@@ -11,12 +11,12 @@ use matrix_sdk::encryption::verification::{
 };
 use qrcode::QrCode;
 use ruma::{
-    events::key::verification::{cancel::CancelCode, VerificationMethod, REQUEST_RECEIVED_TIMEOUT},
     OwnedDeviceId,
+    events::key::verification::{REQUEST_RECEIVED_TIMEOUT, VerificationMethod, cancel::CancelCode},
 };
 use tracing::{debug, error};
 
-use super::{load_supported_verification_methods, VerificationKey};
+use super::{VerificationKey, load_supported_verification_methods};
 use crate::{
     components::QrCodeScanner,
     prelude::*,
@@ -479,7 +479,9 @@ mod imp {
 
                     if supported_methods.is_empty() {
                         // This should not happen.
-                        error!("Invalid verification: no methods are supported by both sessions, cancelling…");
+                        error!(
+                            "Invalid verification: no methods are supported by both sessions, cancelling…"
+                        );
                         if self.obj().cancel().await.is_err() {
                             self.set_state(VerificationState::NoSupportedMethods);
                         }

@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 use crate::{
     components::OverlappingAvatars,

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, glib};
 
 use super::PowerLevelSelectionPopover;
 use crate::{

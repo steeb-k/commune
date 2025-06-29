@@ -23,7 +23,9 @@ pub(crate) async fn confirm_leave_room_dialog(
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
         let body = if room.join_rule().we_can_join() {
-            gettext("Do you really want to decline this invite? You can join this room on your own later.")
+            gettext(
+                "Do you really want to decline this invite? You can join this room on your own later.",
+            )
         } else {
             gettext(
                 "Do you really want to decline this invite? You will not be able to join this room without it.",
@@ -132,7 +134,7 @@ impl RoomMemberDestructiveAction {
                     // Translators: Do NOT translate the content between '{' and '}',
                     // this is a variable name.
                     "Are you sure you want to ban {user_id}? They will not be able to join the room again until someone unbans them.",
-                    &[("user_id", member.user_id().as_str())]
+                    &[("user_id", member.user_id().as_str())],
                 );
                 let response = gettext("Ban");
                 (heading, body, Some(response))
@@ -152,16 +154,16 @@ impl RoomMemberDestructiveAction {
                             gettext_f(
                                 // Translators: Do NOT translate the content between '{' and '}',
                                 // this is a variable name.
-                            "Are you sure you want to revoke the invite for {user_id}? They will still be able to join the room on their own.",
-                            &[("user_id", member.user_id().as_str())]
-                        )
+                                "Are you sure you want to revoke the invite for {user_id}? They will still be able to join the room on their own.",
+                                &[("user_id", member.user_id().as_str())],
+                            )
                         } else {
                             gettext_f(
                                 // Translators: Do NOT translate the content between '{' and '}',
                                 // this is a variable name.
-                            "Are you sure you want to revoke the invite for {user_id}? They will not be able to join the room again until someone reinvites them.",
-                            &[("user_id", member.user_id().as_str())]
-                        )
+                                "Are you sure you want to revoke the invite for {user_id}? They will not be able to join the room again until someone reinvites them.",
+                                &[("user_id", member.user_id().as_str())],
+                            )
                         };
                         let response = gettext("Revoke Invite");
                         (heading, body, Some(response))
@@ -191,16 +193,16 @@ impl RoomMemberDestructiveAction {
                             gettext_f(
                                 // Translators: Do NOT translate the content between '{' and '}',
                                 // this is a variable name.
-                            "Are you sure you want to kick {user_id}? They will still be able to join the room again on their own.",
-                            &[("user_id", member.user_id().as_str())]
-                        )
+                                "Are you sure you want to kick {user_id}? They will still be able to join the room again on their own.",
+                                &[("user_id", member.user_id().as_str())],
+                            )
                         } else {
                             gettext_f(
                                 // Translators: Do NOT translate the content between '{' and '}',
                                 // this is a variable name.
-                            "Are you sure you want to kick {user_id}? They will not be able to join the room again until someone invites them.",
-                            &[("user_id", member.user_id().as_str())]
-                        )
+                                "Are you sure you want to kick {user_id}? They will not be able to join the room again until someone invites them.",
+                                &[("user_id", member.user_id().as_str())],
+                            )
                         };
                         let response = gettext("Kick");
                         (heading, body, Some(response))
@@ -217,13 +219,16 @@ impl RoomMemberDestructiveAction {
                         &[("user", &member.display_name())],
                     );
                     let body = ngettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}',
-                    // this is a variable name.
-                    "This removes all the messages received from the homeserver. Are you sure you want to remove 1 message sent by {user_id}? This cannot be undone.",
-                    "This removes all the messages received from the homeserver. Are you sure you want to remove {n} messages sent by {user_id}? This cannot be undone.",
-                    n,
-                    &[("n", &n.to_string()),("user_id", member.user_id().as_str())]
-                );
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "This removes all the messages received from the homeserver. Are you sure you want to remove 1 message sent by {user_id}? This cannot be undone.",
+                        "This removes all the messages received from the homeserver. Are you sure you want to remove {n} messages sent by {user_id}? This cannot be undone.",
+                        n,
+                        &[
+                            ("n", &n.to_string()),
+                            ("user_id", member.user_id().as_str()),
+                        ],
+                    );
                     let response = gettext("Remove");
                     (heading, body, Some(response))
                 } else {
@@ -234,11 +239,11 @@ impl RoomMemberDestructiveAction {
                         &[("user", &member.display_name())],
                     );
                     let body = gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}',
-                    // this is a variable name.
-                    "There are no messages received from the homeserver sent by {user_id}. You can try to load more by going further back in the room history.",
-                    &[("user_id", member.user_id().as_str())]
-                );
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "There are no messages received from the homeserver sent by {user_id}. You can try to load more by going further back in the room history.",
+                        &[("user_id", member.user_id().as_str())],
+                    );
                     (heading, body, None)
                 }
             }

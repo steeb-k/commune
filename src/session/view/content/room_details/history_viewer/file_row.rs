@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib};
 use tracing::error;
 
 use super::HistoryViewerEvent;

@@ -1,12 +1,12 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 use ruma::{
-    events::{
-        room::power_levels::{PowerLevelAction, RoomPowerLevels},
-        StateEventType, TimelineEventType,
-    },
     Int,
+    events::{
+        StateEventType, TimelineEventType,
+        room::power_levels::{PowerLevelAction, RoomPowerLevels},
+    },
 };
 
 use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedMembers};

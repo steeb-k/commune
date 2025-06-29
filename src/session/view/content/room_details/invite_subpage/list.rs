@@ -6,7 +6,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::ruma::{
-    api::client::user_directory::search_users::v3::User as SearchUser, OwnedUserId, UserId,
+    OwnedUserId, UserId, api::client::user_directory::search_users::v3::User as SearchUser,
 };
 use tracing::error;
 

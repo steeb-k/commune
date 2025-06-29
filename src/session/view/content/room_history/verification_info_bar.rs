@@ -1,15 +1,15 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
 use crate::{
+    Window,
     components::LoadingButton,
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationState},
     toast,
     utils::BoundObjectWeakRef,
-    Window,
 };
 
 mod imp {

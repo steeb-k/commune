@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
 use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
-use ruma::{events::room::message::MessageType, OwnedEventId, OwnedTransactionId};
+use ruma::{OwnedEventId, OwnedTransactionId, events::room::message::MessageType};
 use tracing::{error, warn};
 
 use super::{

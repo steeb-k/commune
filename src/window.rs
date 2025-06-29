@@ -1,10 +1,11 @@
 use std::cell::Cell;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone};
 use tracing::{error, warn};
 
 use crate::{
+    APP_ID, Application, PROFILE, SETTINGS_KEY_CURRENT_SESSION,
     account_chooser_dialog::AccountChooserDialog,
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
     components::OfflineBanner,
@@ -20,7 +21,6 @@ use crate::{
     session_list::{FailedSession, SessionInfo},
     toast,
     utils::LoadingState,
-    Application, APP_ID, PROFILE, SETTINGS_KEY_CURRENT_SESSION,
 };
 
 /// A page of the main window stack.

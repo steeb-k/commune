@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use ruma::UserId;
 
 use crate::{components::LoadingButton, session::model::IgnoredUsers, toast};

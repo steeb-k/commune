@@ -1,13 +1,13 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
-use gtk::{glib, CompositeTemplate};
+use gtk::{CompositeTemplate, glib};
 use tracing::warn;
 
 use super::HistoryViewerEvent;
 use crate::{
     gettext_f, spawn,
-    utils::{matrix::MediaMessage, File},
+    utils::{File, matrix::MediaMessage},
 };
 
 mod imp {

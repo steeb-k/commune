@@ -1,8 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
-    CompositeTemplate,
 };
 
 use crate::components::{AvatarImageSafetySetting, Pill, PillSource};
@@ -53,9 +52,11 @@ mod imp {
     impl ObjectImpl for PillSearchEntry {
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![Signal::builder("pill-removed")
-                    .param_types([PillSource::static_type()])
-                    .build()]
+                vec![
+                    Signal::builder("pill-removed")
+                        .param_types([PillSource::static_type()])
+                        .build(),
+                ]
             });
             SIGNALS.as_ref()
         }

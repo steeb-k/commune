@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::clone, pango, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone, pango};
 
 use crate::{components::LoadingBin, utils::BoundObject};
 

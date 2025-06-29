@@ -2,7 +2,7 @@ use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
 
 use crate::{
     session::model::{JoinRule, Member, Membership, Room, RoomAliases, RoomCategory, RoomList},
-    utils::{expression, ExpressionListModel},
+    utils::{ExpressionListModel, expression},
 };
 
 mod imp {

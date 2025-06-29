@@ -1,13 +1,13 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, CompositeTemplate};
+use gtk::{CompositeTemplate, gdk, gio, glib};
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
-    utils::{media::image::IMAGE_QUEUE, CountedRef, File},
+    utils::{CountedRef, File, media::image::IMAGE_QUEUE},
 };
 
 /// The types of content supported by the [`MediaContentViewer`].

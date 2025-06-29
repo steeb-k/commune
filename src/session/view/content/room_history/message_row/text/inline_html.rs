@@ -3,8 +3,8 @@
 use std::fmt::Write;
 
 use ruma::html::{
-    matrix::{AnchorUri, MatrixElement, SpanData},
     Children, NodeData, NodeRef,
+    matrix::{AnchorUri, MatrixElement, SpanData},
 };
 use tracing::debug;
 

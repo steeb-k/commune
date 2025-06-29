@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, prelude::*};
 
 use super::ContentFormat;
 use crate::gettext_f;

@@ -1,9 +1,8 @@
 use adw::subclass::prelude::*;
 use gtk::{
-    glib,
+    CompositeTemplate, glib,
     glib::{clone, closure_local},
     prelude::*,
-    CompositeTemplate,
 };
 
 use crate::components::LoadingBin;

@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, gio, glib, glib::clone};
 use matrix_sdk::RoomState;
-use ruma::{assign, events::room::avatar::ImageInfo, OwnedMxcUri};
+use ruma::{OwnedMxcUri, assign, events::room::avatar::ImageInfo};
 use tracing::error;
 
 use crate::{
@@ -13,8 +13,8 @@ use crate::{
     session::model::Room,
     spawn_tokio, toast,
     utils::{
-        media::{image::ImageInfoLoader, FileInfo},
         BoundObjectWeakRef, OngoingAsyncAction, TemplateCallbacks,
+        media::{FileInfo, image::ImageInfoLoader},
     },
 };
 

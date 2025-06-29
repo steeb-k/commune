@@ -3,7 +3,7 @@
 use std::{fmt, path::PathBuf};
 
 use gtk::glib;
-use matrix_sdk::{authentication::oauth::ClientId, Client, SessionMeta, SessionTokens};
+use matrix_sdk::{Client, SessionMeta, SessionTokens, authentication::oauth::ClientId};
 use rand::{
     distr::{Alphanumeric, SampleString},
     rng,
@@ -23,7 +23,7 @@ use self::file::SecretFile;
 use crate::{
     prelude::*,
     spawn_tokio,
-    utils::{matrix::ClientSetupError, DataType},
+    utils::{DataType, matrix::ClientSetupError},
 };
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.

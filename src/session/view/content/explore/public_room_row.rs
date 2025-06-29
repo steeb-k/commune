@@ -1,15 +1,15 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::clone};
 
 use crate::{
+    Window,
     components::{Avatar, LoadingButton},
     gettext_f, ngettext_f,
     prelude::*,
     session::model::RemoteRoom,
     toast,
     utils::{matrix::MatrixIdUri, string::linkify},
-    Window,
 };
 
 mod imp {

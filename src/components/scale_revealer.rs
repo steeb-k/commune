@@ -127,7 +127,9 @@ mod imp {
 
             let borrowed_source_widget_texture = self.source_widget_texture.borrow();
             let Some(source_widget_texture) = borrowed_source_widget_texture.as_ref() else {
-                warn!("Revealer animation failed: no source widget texture, using child snapshot as fallback");
+                warn!(
+                    "Revealer animation failed: no source widget texture, using child snapshot as fallback"
+                );
                 obj.snapshot_child(&child, snapshot);
                 return;
             };

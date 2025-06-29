@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, glib::closure_local, CompositeTemplate};
+use gtk::{CompositeTemplate, glib, glib::closure_local};
 
 use crate::components::LoadingButton;
 
