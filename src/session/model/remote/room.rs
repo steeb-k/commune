@@ -3,13 +3,9 @@ use std::{cell::RefCell, time::Duration};
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::reqwest::StatusCode;
 use ruma::{
-    OwnedMxcUri, OwnedRoomAliasId, OwnedRoomId,
-    api::client::{
-        room::get_summary,
-        space::{SpaceHierarchyRoomsChunk, get_hierarchy},
-    },
+    OwnedRoomAliasId, OwnedRoomId,
+    api::client::{room::get_summary, space::get_hierarchy},
     assign,
-    directory::PublicRoomsChunk,
     room::RoomSummary,
     uint,
 };
@@ -257,12 +253,12 @@ mod imp {
         }
 
         /// Set the room data.
-        pub(super) fn set_data(&self, data: RemoteRoomData) {
+        pub(super) fn set_data(&self, data: RoomSummary) {
             self.set_room_id(data.room_id);
             self.set_canonical_alias(data.canonical_alias);
             self.set_name(data.name);
             self.set_topic(data.topic);
-            self.set_joined_members_count(data.joined_members_count);
+            self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
 
             if let Some(image) = self.obj().avatar_data().image() {
                 image.set_uri_and_info(data.avatar_url, None);
@@ -320,7 +316,7 @@ mod imp {
 
             match result {
                 Ok(response) => {
-                    self.set_data(response.summary.into());
+                    self.set_data(response.summary);
                     true
                 }
                 Err(error) => {
@@ -390,9 +386,9 @@ mod imp {
                         .rooms
                         .into_iter()
                         .next()
-                        .filter(|c| c.room_id == room_id)
+                        .filter(|c| c.summary.room_id == room_id)
                     {
-                        self.set_data(chunk.into());
+                        self.set_data(chunk.summary);
                     } else {
                         debug!("Space hierarchy endpoint did not return requested room");
                         self.set_loading_state(LoadingState::Error);
@@ -439,7 +435,7 @@ impl RemoteRoom {
     pub(crate) fn with_data(
         session: &Session,
         uri: MatrixRoomIdUri,
-        data: impl Into<RemoteRoomData>,
+        data: impl Into<RoomSummary>,
     ) -> Self {
         let obj = Self::without_data(session, uri);
         obj.imp().set_data(data.into());
@@ -482,55 +478,5 @@ impl RemoteRoom {
                 imp.load_data().await;
             }
         ));
-    }
-}
-
-/// The remote room data.
-#[derive(Debug)]
-pub(crate) struct RemoteRoomData {
-    room_id: OwnedRoomId,
-    canonical_alias: Option<OwnedRoomAliasId>,
-    name: Option<String>,
-    topic: Option<String>,
-    avatar_url: Option<OwnedMxcUri>,
-    joined_members_count: u32,
-}
-
-impl From<RoomSummary> for RemoteRoomData {
-    fn from(value: RoomSummary) -> Self {
-        Self {
-            room_id: value.room_id,
-            canonical_alias: value.canonical_alias,
-            name: value.name,
-            topic: value.topic,
-            avatar_url: value.avatar_url,
-            joined_members_count: value.num_joined_members.try_into().unwrap_or(u32::MAX),
-        }
-    }
-}
-
-impl From<SpaceHierarchyRoomsChunk> for RemoteRoomData {
-    fn from(value: SpaceHierarchyRoomsChunk) -> Self {
-        Self {
-            room_id: value.room_id,
-            canonical_alias: value.canonical_alias,
-            name: value.name,
-            topic: value.topic,
-            avatar_url: value.avatar_url,
-            joined_members_count: value.num_joined_members.try_into().unwrap_or(u32::MAX),
-        }
-    }
-}
-
-impl From<PublicRoomsChunk> for RemoteRoomData {
-    fn from(value: PublicRoomsChunk) -> Self {
-        Self {
-            room_id: value.room_id,
-            canonical_alias: value.canonical_alias,
-            name: value.name,
-            topic: value.topic,
-            avatar_url: value.avatar_url,
-            joined_members_count: value.num_joined_members.try_into().unwrap_or(u32::MAX),
-        }
     }
 }

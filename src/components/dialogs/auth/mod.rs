@@ -7,7 +7,7 @@ use gtk::{CompositeTemplate, glib, glib::clone};
 use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
 use ruma::{
     api::{
-        MatrixVersion, OutgoingRequest, SendAccessToken,
+        MatrixVersion, OutgoingRequest, SendAccessToken, SupportedVersions,
         client::uiaa::{
             AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
             get_uiaa_fallback_page,
@@ -387,21 +387,24 @@ mod imp {
             let uiaa_session = state.session.clone().ok_or(AuthError::MissingSessionId)?;
 
             let request =
-                get_uiaa_fallback_page::v3::Request::new(state.stage.to_string(), uiaa_session);
+                get_uiaa_fallback_page::v3::Request::new(state.stage.clone(), uiaa_session);
 
             let client = session.client();
             let homeserver = client.homeserver();
 
             let handle =
-                spawn_tokio!(async move { client.server_versions().await.map_err(Into::into) });
+                spawn_tokio!(async move { client.supported_versions().await.map_err(Into::into) });
             let result = self.await_tokio_task(handle).await;
 
-            let server_versions = match result {
-                Ok(server_versions) => server_versions,
+            let supported_versions = match result {
+                Ok(supported_versions) => supported_versions,
                 Err(AuthError::ServerResponse(server_error)) => {
                     warn!("Could not get Matrix versions supported by homeserver: {server_error}");
                     // Default to the v3 endpoint.
-                    Box::new([MatrixVersion::V1_1])
+                    SupportedVersions {
+                        versions: [MatrixVersion::V1_1].into(),
+                        features: Default::default(),
+                    }
                 }
                 Err(error) => {
                     return Err(error);
@@ -411,7 +414,7 @@ mod imp {
             let http_request = match request.try_into_http_request::<Vec<u8>>(
                 homeserver.as_ref(),
                 SendAccessToken::None,
-                &server_versions,
+                &supported_versions,
             ) {
                 Ok(http_request) => http_request,
                 Err(error) => {

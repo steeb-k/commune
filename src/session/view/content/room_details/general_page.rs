@@ -8,7 +8,7 @@ use gtk::{
 use ruma::{
     api::client::{
         directory::{get_room_visibility, set_room_visibility},
-        discovery::get_capabilities::Capabilities,
+        discovery::get_capabilities::v3::Capabilities,
         room::{Visibility, upgrade_room},
     },
     events::{

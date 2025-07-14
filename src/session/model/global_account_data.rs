@@ -14,6 +14,11 @@ use tracing::error;
 use super::{Room, Session};
 use crate::{spawn, spawn_tokio};
 
+/// We default the media previews setting to private.
+const DEFAULT_MEDIA_PREVIEWS: MediaPreviews = MediaPreviews::Private;
+/// We enable the invite avatars by default.
+const DEFAULT_INVITE_AVATARS_ENABLED: bool = true;
+
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
@@ -24,7 +29,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, glib::Properties)]
+    #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::GlobalAccountData)]
     pub struct GlobalAccountData {
         /// The session this account data belongs to.
@@ -33,9 +38,20 @@ mod imp {
         /// Which rooms display media previews for this session.
         pub(super) media_previews_enabled: RefCell<MediaPreviews>,
         /// Whether to display avatars in invites.
-        #[property(get, default = true)]
+        #[property(get, default = DEFAULT_INVITE_AVATARS_ENABLED)]
         invite_avatars_enabled: Cell<bool>,
         abort_handle: RefCell<Option<AbortHandle>>,
+    }
+
+    impl Default for GlobalAccountData {
+        fn default() -> Self {
+            Self {
+                session: Default::default(),
+                media_previews_enabled: RefCell::new(DEFAULT_MEDIA_PREVIEWS),
+                invite_avatars_enabled: Cell::new(DEFAULT_INVITE_AVATARS_ENABLED),
+                abort_handle: Default::default(),
+            }
+        }
     }
 
     #[glib::object_subclass]
@@ -116,21 +132,26 @@ mod imp {
 
         /// Update the media previews settings with the given account data.
         fn update_media_previews_settings(&self, account_data: MediaPreviewConfigEventContent) {
+            let media_previews = account_data
+                .media_previews
+                .unwrap_or(DEFAULT_MEDIA_PREVIEWS);
             let media_previews_enabled_changed =
-                *self.media_previews_enabled.borrow() != account_data.media_previews;
+                *self.media_previews_enabled.borrow() != media_previews;
             if media_previews_enabled_changed {
-                *self.media_previews_enabled.borrow_mut() = account_data.media_previews;
+                *self.media_previews_enabled.borrow_mut() = media_previews;
                 self.obj()
                     .emit_by_name::<()>("media-previews-enabled-changed", &[]);
             }
 
-            let account_data_invite_avatars_enabled =
-                account_data.invite_avatars == InviteAvatars::On;
+            let invite_avatars_enabled = account_data
+                .invite_avatars
+                .map_or(DEFAULT_INVITE_AVATARS_ENABLED, |invite_avatars| {
+                    invite_avatars == InviteAvatars::On
+                });
             let invite_avatars_enabled_changed =
-                self.invite_avatars_enabled.get() != account_data_invite_avatars_enabled;
+                self.invite_avatars_enabled.get() != invite_avatars_enabled;
             if invite_avatars_enabled_changed {
-                self.invite_avatars_enabled
-                    .set(account_data_invite_avatars_enabled);
+                self.invite_avatars_enabled.set(invite_avatars_enabled);
                 self.obj().notify_invite_avatars_enabled();
             }
         }
@@ -149,18 +170,17 @@ mod imp {
             let stored_media_previews_enabled = stored_settings
                 .media_previews_enabled
                 .take()
-                .map(|setting| setting.global)
-                .unwrap_or_default();
+                .map_or(DEFAULT_MEDIA_PREVIEWS, |setting| setting.global.into());
             let _ = self
-                .set_media_previews_enabled(stored_media_previews_enabled.into())
+                .set_media_previews_enabled(stored_media_previews_enabled)
                 .await;
 
-            let stored_media_previews_enabled = stored_settings
+            let stored_invite_avatars_enabled = stored_settings
                 .invite_avatars_enabled
                 .take()
-                .unwrap_or(true);
+                .unwrap_or(DEFAULT_INVITE_AVATARS_ENABLED);
             let _ = self
-                .set_invite_avatars_enabled(stored_media_previews_enabled)
+                .set_invite_avatars_enabled(stored_invite_avatars_enabled)
                 .await;
 
             session_settings.apply_version_1_migration();

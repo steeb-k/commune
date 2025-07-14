@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{CompositeTemplate, gio, glib, glib::clone};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
-use ruma::{OwnedMxcUri, api::client::discovery::get_capabilities::Capabilities};
+use ruma::{OwnedMxcUri, api::client::discovery::get_capabilities::v3::Capabilities};
 use tracing::error;
 
 mod change_password_subpage;

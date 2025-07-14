@@ -15,11 +15,12 @@ use matrix_sdk_ui::{
     },
 };
 use ruma::{
-    OwnedEventId, RoomVersionId, UserId,
+    OwnedEventId, UserId,
     events::{
         AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
         SyncStateEvent, room::message::MessageType,
     },
+    room_version_rules::RoomVersionRules,
 };
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -1094,9 +1095,9 @@ impl Timeline {
 }
 
 /// Whether the given event should be shown in the timeline.
-fn show_in_timeline(any: &AnySyncTimelineEvent, room_version: &RoomVersionId) -> bool {
+fn show_in_timeline(any: &AnySyncTimelineEvent, rules: &RoomVersionRules) -> bool {
     // Make sure we do not show events that cannot be shown.
-    if !default_event_filter(any, room_version) {
+    if !default_event_filter(any, rules) {
         return false;
     }
 

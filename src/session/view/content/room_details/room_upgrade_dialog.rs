@@ -5,7 +5,7 @@ use gettextrs::gettext;
 use gtk::{gio, glib, pango, subclass::prelude::*};
 use ruma::{
     RoomVersionId,
-    api::client::discovery::get_capabilities::{RoomVersionStability, RoomVersionsCapability},
+    api::client::discovery::get_capabilities::v3::{RoomVersionStability, RoomVersionsCapability},
 };
 use tracing::error;
 
