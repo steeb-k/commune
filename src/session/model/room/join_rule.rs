@@ -244,7 +244,7 @@ mod imp {
             let name = match value {
                 JoinRuleValue::Invite => {
                     if can_knock {
-                        gettext("Only invited users, and users can knock")
+                        gettext("Only invited users, and users can request an invite")
                     } else {
                         gettext("Only invited users")
                     }
@@ -260,7 +260,7 @@ mod imp {
                         gettext_f(
                             // Translators: Do NOT translate the content between '{' and '}',
                             // this is a variable name.
-                            "Members of {room}, and users can knock",
+                            "Members of {room}, and users can request an invite",
                             &[("room", &format!("<b>{room_name}</b>"))],
                         )
                     } else {
