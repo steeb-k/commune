@@ -473,3 +473,42 @@ pub(crate) async fn confirm_own_demotion_dialog(parent: &impl IsA<gtk::Widget>) 
 
     confirm_dialog.choose_future(parent).await == "demote"
 }
+
+/// Show a dialog for the user to choose what to do about unsaved changes.
+pub(crate) async fn unsaved_changes_dialog(
+    parent: &impl IsA<gtk::Widget>,
+) -> UnsavedChangesResponse {
+    let title = gettext("Save Changes?");
+    let description =
+        gettext("This page contains unsaved changes. Changes which are not saved will be lost.");
+    let dialog = adw::AlertDialog::builder()
+        .title(title)
+        .body(description)
+        .default_response("cancel")
+        .build();
+
+    dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        ("discard", &gettext("Discard")),
+        ("save", &gettext("Save")),
+    ]);
+    dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
+    dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
+
+    match dialog.choose_future(parent).await.as_str() {
+        "discard" => UnsavedChangesResponse::Discard,
+        "save" => UnsavedChangesResponse::Save,
+        _ => UnsavedChangesResponse::Cancel,
+    }
+}
+
+/// A response to the dialog to choose what to do about unsaved changes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum UnsavedChangesResponse {
+    /// Save the changes.
+    Save,
+    /// Discard the changes.
+    Discard,
+    /// Cancel the current action.
+    Cancel,
+}

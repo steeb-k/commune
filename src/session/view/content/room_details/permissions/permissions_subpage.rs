@@ -11,7 +11,10 @@ use ruma::{
 
 use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedMembers};
 use crate::{
-    components::{ButtonCountRow, LoadingButton, PowerLevelSelectionRow},
+    components::{
+        ButtonCountRow, LoadingButton, PowerLevelSelectionRow, UnsavedChangesResponse,
+        unsaved_changes_dialog,
+    },
     session::model::{Permissions, PowerLevel},
     toast,
     utils::BoundObjectWeakRef,
@@ -537,34 +540,10 @@ mod imp {
             let mut reset_after = false;
 
             if self.changed.get() {
-                let title = gettext("Save Changes?");
-                let description = gettext(
-                    "This page contains unsaved changes. Changes which are not saved will be lost.",
-                );
-                let dialog = adw::AlertDialog::builder()
-                    .title(title)
-                    .body(description)
-                    .default_response("cancel")
-                    .build();
-
-                dialog.add_responses(&[
-                    ("cancel", &gettext("Cancel")),
-                    ("discard", &gettext("Discard")),
-                    ("save", &gettext("Save")),
-                ]);
-                dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
-                dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
-
-                match dialog.choose_future(&*obj).await.as_str() {
-                    "discard" => {
-                        reset_after = true;
-                    }
-                    "save" => {
-                        self.save().await;
-                    }
-                    _ => {
-                        return;
-                    }
+                match unsaved_changes_dialog(&*obj).await {
+                    UnsavedChangesResponse::Save => self.save().await,
+                    UnsavedChangesResponse::Discard => reset_after = true,
+                    UnsavedChangesResponse::Cancel => return,
                 }
             }
 

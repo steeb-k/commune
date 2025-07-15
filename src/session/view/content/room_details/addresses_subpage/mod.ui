@@ -9,7 +9,7 @@
         </child>
         <property name="content">
           <object class="AdwPreferencesPage">
-            D<child>
+            <child>
               <object class="AdwPreferencesGroup" id="public_addresses_group">
                 <property name="title" translatable="yes">Public Addresses</property>
                 <property name="description" translatable="yes">Public addresses are advertised for all users in the room and the main address is used to identify a room publicly. Before adding an address to this list, it must be registered as a local address.</property>

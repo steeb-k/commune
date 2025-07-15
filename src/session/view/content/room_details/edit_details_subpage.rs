@@ -8,6 +8,7 @@ use tracing::error;
 use crate::{
     components::{
         ActionButton, ActionState, AvatarData, AvatarImage, EditableAvatar, LoadingButton,
+        UnsavedChangesResponse, unsaved_changes_dialog,
     },
     prelude::*,
     session::model::Room,
@@ -522,34 +523,23 @@ mod imp {
             let obj = self.obj();
             let mut reset_after = false;
 
-            let has_unsaved_changes = (self.was_name_edited()
-                && self.changing_name.borrow().is_none())
-                || (self.was_topic_edited() && self.changing_topic.borrow().is_none());
+            let name_was_edited = self.was_name_edited() && self.changing_name.borrow().is_none();
+            let topic_was_edited =
+                self.was_topic_edited() && self.changing_topic.borrow().is_none();
 
-            if has_unsaved_changes {
-                let title = gettext("Discard Unsaved Changes?");
-                let description = gettext(
-                    "This page contains unsaved changes. Changes which are not saved will be lost.",
-                );
-                let dialog = adw::AlertDialog::builder()
-                    .title(title)
-                    .body(description)
-                    .default_response("cancel")
-                    .build();
+            if name_was_edited || topic_was_edited {
+                match unsaved_changes_dialog(&*obj).await {
+                    UnsavedChangesResponse::Save => {
+                        if name_was_edited {
+                            self.change_name().await;
+                        }
 
-                dialog.add_responses(&[
-                    ("cancel", &gettext("Cancel")),
-                    ("discard", &gettext("Discard")),
-                ]);
-                dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
-
-                match dialog.choose_future(&*obj).await.as_str() {
-                    "discard" => {
-                        reset_after = true;
+                        if topic_was_edited {
+                            self.change_topic().await;
+                        }
                     }
-                    _ => {
-                        return;
-                    }
+                    UnsavedChangesResponse::Discard => reset_after = true,
+                    UnsavedChangesResponse::Cancel => return,
                 }
             }
 
