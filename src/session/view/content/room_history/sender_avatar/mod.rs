@@ -125,10 +125,6 @@ mod imp {
                 obj.imp().kick().await;
             });
 
-            klass.install_action_async("sender-avatar.deny-access", None, |obj, _, _| async move {
-                obj.imp().kick().await;
-            });
-
             klass.install_action_async("sender-avatar.ban", None, |obj, _, _| async move {
                 obj.imp().ban().await;
             });
@@ -376,13 +372,6 @@ mod imp {
             );
 
             obj.action_set_enabled(
-                "sender-avatar.deny-access",
-                !is_own_user
-                    && membership == Membership::Knock
-                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
-            );
-
-            obj.action_set_enabled(
                 "sender-avatar.ban",
                 !is_own_user
                     && membership != Membership::Ban
@@ -601,7 +590,6 @@ mod imp {
 
             let label = match membership {
                 Membership::Invite => gettext("Revoking invite…"),
-                Membership::Knock => gettext("Denying access…"),
                 _ => gettext("Kicking user…"),
             };
             toast!(obj, label);
@@ -611,7 +599,6 @@ mod imp {
             if room.kick(&[(user_id, response.reason)]).await.is_err() {
                 let error = match membership {
                     Membership::Invite => gettext("Could not revoke invite of user"),
-                    Membership::Knock => gettext("Could not deny access to user"),
                     _ => gettext("Could not kick user"),
                 };
                 toast!(obj, error);

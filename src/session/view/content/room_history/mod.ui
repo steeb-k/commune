@@ -85,11 +85,6 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Deny Access</attribute>
-        <attribute name="action">sender-avatar.deny-access</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
-      </item>
-      <item>
         <!-- Translators: In this string, 'Ban' is a verb. -->
         <attribute name="label" translatable="yes">_Ban</attribute>
         <attribute name="action">sender-avatar.ban</attribute>
