@@ -116,6 +116,9 @@ mod imp {
                 MembershipListKind::Invite => npgettext("members", "Invited", "Invited", count),
                 // Translators: As in 'Banned Room Member(s)'.
                 MembershipListKind::Ban => npgettext("members", "Banned", "Banned", count),
+                MembershipListKind::Knock => {
+                    npgettext("members", "Invite Request", "Invite Requests", count)
+                }
             };
 
             Some(label)

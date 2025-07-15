@@ -337,8 +337,10 @@ pub enum MembershipListKind {
     Join,
     /// The user was invited to the room.
     Invite,
-    /// The user was baned from the room.
+    /// The user was banned from the room.
     Ban,
+    /// The user knocked on the room.
+    Knock,
 }
 
 impl MembershipListKind {
@@ -370,7 +372,7 @@ impl MembershipListKind {
     /// The name of the icon that represents this kind.
     pub(crate) fn icon_name(self) -> &'static str {
         match self {
-            Self::Join => "users-symbolic",
+            Self::Join | Self::Knock => "users-symbolic",
             Self::Invite => "user-add-symbolic",
             Self::Ban => "blocked-symbolic",
         }
@@ -383,6 +385,7 @@ impl From<MembershipListKind> for Membership {
             MembershipListKind::Join => Self::Join,
             MembershipListKind::Invite => Self::Invite,
             MembershipListKind::Ban => Self::Ban,
+            MembershipListKind::Knock => Self::Knock,
         }
     }
 }

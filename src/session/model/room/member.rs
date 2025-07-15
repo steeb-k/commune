@@ -26,7 +26,7 @@ pub enum Membership {
     Join,
     /// The user was invited to the room.
     Invite,
-    /// The user was baned from the room.
+    /// The user was banned from the room.
     Ban,
     /// The user knocked on the room.
     Knock,

@@ -297,7 +297,11 @@ mod imp {
             let base_model = gio::ListStore::new::<glib::Object>();
             base_model.append(&loading_row);
 
-            for &kind in &[MembershipListKind::Invite, MembershipListKind::Ban] {
+            for &kind in &[
+                MembershipListKind::Knock,
+                MembershipListKind::Invite,
+                MembershipListKind::Ban,
+            ] {
                 let list = members.membership_list(kind);
                 let items_changed_handler = list.connect_items_changed(clone!(
                     #[weak]
@@ -360,6 +364,7 @@ mod imp {
                 MembershipListKind::Ban => {
                     ngettext("Banned Room Member", "Banned Room Members", count)
                 }
+                MembershipListKind::Knock => ngettext("Invite Request", "Invite Requests", count),
             };
 
             self.obj().set_title(&title);
@@ -408,6 +413,11 @@ mod imp {
                 MembershipListKind::Ban => {
                     let title = gettext("No Banned Room Members");
                     let description = gettext("There are no banned members in this room");
+                    (title, description)
+                }
+                MembershipListKind::Knock => {
+                    let title = gettext("No Invite Requests");
+                    let description = gettext("There are no invite requests in this room");
                     (title, description)
                 }
             };
