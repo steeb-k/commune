@@ -46,6 +46,15 @@
         </child>
         <child>
           <object class="GtkStackPage">
+            <property name="name">invite-request</property>
+            <property name="title" translatable="yes">Invite Request</property>
+            <property name="child">
+              <object class="ContentInviteRequest" id="invite_request"/>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
             <property name="name">invite</property>
             <property name="title" translatable="yes">Room Invite</property>
             <property name="child">

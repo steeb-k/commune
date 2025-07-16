@@ -271,6 +271,23 @@ mod imp {
                 self.metainfo.watch_room(&room);
             }
 
+            for (room_id, _knocked_room) in rooms.knocked {
+                let room = if let Some(room) = self.get(&room_id) {
+                    room
+                } else if let Some(matrix_room) = client.get_room(&room_id) {
+                    new_rooms
+                        .entry(room_id.clone())
+                        .or_insert_with(|| Room::new(&session, matrix_room, None))
+                        .clone()
+                } else {
+                    warn!("Could not find knocked room {room_id}");
+                    continue;
+                };
+
+                self.remove_joining_room((*room_id).into());
+                self.metainfo.watch_room(&room);
+            }
+
             if !new_rooms.is_empty() {
                 let added = new_rooms.len();
                 self.list.borrow_mut().extend(new_rooms);

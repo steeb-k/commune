@@ -38,6 +38,11 @@
         <attribute name="action">room-row.decline-invite</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">_Retract</attribute>
+        <attribute name="action">room-row.retract-invite-request</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
     </section>
     <section>
       <item>

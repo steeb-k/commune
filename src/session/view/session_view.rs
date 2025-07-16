@@ -432,9 +432,10 @@ mod imp {
                 RoomCategory::Normal => 3,
                 RoomCategory::LowPriority => 2,
                 RoomCategory::Left => 1,
-                RoomCategory::Ignored | RoomCategory::Outdated | RoomCategory::Space => {
-                    return None;
-                }
+                RoomCategory::Knocked
+                | RoomCategory::Ignored
+                | RoomCategory::Outdated
+                | RoomCategory::Space => return None,
             };
 
             Some((

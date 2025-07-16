@@ -294,6 +294,7 @@ impl Default for SectionsExpanded {
     fn default() -> Self {
         Self(BTreeSet::from([
             SidebarSectionName::VerificationRequest,
+            SidebarSectionName::InviteRequest,
             SidebarSectionName::Invited,
             SidebarSectionName::Favorite,
             SidebarSectionName::Normal,

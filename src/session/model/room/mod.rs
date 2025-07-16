@@ -591,7 +591,8 @@ mod imp {
                         RoomCategory::Invited
                     }
                 }
-                RoomState::Left | RoomState::Knocked | RoomState::Banned => RoomCategory::Left,
+                RoomState::Knocked => RoomCategory::Knocked,
+                RoomState::Left | RoomState::Banned => RoomCategory::Left,
             };
 
             self.set_category(category);
@@ -1771,7 +1772,10 @@ impl Room {
                     }
                 }
                 TargetRoomCategory::Left => {
-                    if matches!(room_state, RoomState::Invited | RoomState::Joined) {
+                    if matches!(
+                        room_state,
+                        RoomState::Knocked | RoomState::Invited | RoomState::Joined
+                    ) {
                         matrix_room.leave().await?;
                     }
                 }

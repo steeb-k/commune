@@ -8,7 +8,7 @@ use super::{
 use crate::session::model::{RoomCategory, RoomList, VerificationList};
 
 /// The number of top-level items in the sidebar.
-const TOP_LEVEL_ITEMS_COUNT: usize = 8;
+const TOP_LEVEL_ITEMS_COUNT: usize = 9;
 
 mod imp {
     use std::cell::OnceCell;
@@ -56,6 +56,10 @@ mod imp {
                     SidebarItem::new(SidebarSection::new(
                         SidebarSectionName::VerificationRequest,
                         &verification_list,
+                    )),
+                    SidebarItem::new(SidebarSection::new(
+                        SidebarSectionName::InviteRequest,
+                        &room_list,
                     )),
                     SidebarItem::new(SidebarSection::new(SidebarSectionName::Invited, &room_list)),
                     SidebarItem::new(SidebarSection::new(
@@ -177,12 +181,15 @@ impl SidebarItemList {
         &self,
         category: RoomCategory,
     ) -> Option<SidebarSection> {
+        const FIRST_ROOM_SECTION_INDEX: usize = 2;
+
         let index = match category {
-            RoomCategory::Invited => 2,
-            RoomCategory::Favorite => 3,
-            RoomCategory::Normal => 4,
-            RoomCategory::LowPriority => 5,
-            RoomCategory::Left => 6,
+            RoomCategory::Knocked => FIRST_ROOM_SECTION_INDEX,
+            RoomCategory::Invited => FIRST_ROOM_SECTION_INDEX + 1,
+            RoomCategory::Favorite => FIRST_ROOM_SECTION_INDEX + 2,
+            RoomCategory::Normal => FIRST_ROOM_SECTION_INDEX + 3,
+            RoomCategory::LowPriority => FIRST_ROOM_SECTION_INDEX + 4,
+            RoomCategory::Left => FIRST_ROOM_SECTION_INDEX + 5,
             _ => return None,
         };
 

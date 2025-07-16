@@ -9,6 +9,8 @@ use crate::session::model::SidebarSectionName;
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "RoomCategory")]
 pub enum RoomCategory {
+    /// The user requested an invite to the room.
+    Knocked,
     /// The user was invited to the room.
     Invited,
     /// The room is joined and has the `m.favourite` tag.
@@ -77,13 +79,14 @@ impl RoomCategory {
                         | TargetRoomCategory::LowPriority
                 )
             }
-            Self::Ignored | Self::Outdated | Self::Space => false,
+            Self::Knocked | Self::Ignored | Self::Outdated | Self::Space => false,
         }
     }
 
     /// Whether this `RoomCategory` corresponds to the given state.
     pub(crate) fn is_state(self, state: RoomState) -> bool {
         match self {
+            RoomCategory::Knocked => state == RoomState::Knocked,
             RoomCategory::Invited | RoomCategory::Ignored => state == RoomState::Invited,
             RoomCategory::Favorite
             | RoomCategory::Normal
@@ -101,7 +104,8 @@ impl RoomCategory {
             RoomCategory::Normal => TargetRoomCategory::Normal,
             RoomCategory::LowPriority => TargetRoomCategory::LowPriority,
             RoomCategory::Left => TargetRoomCategory::Left,
-            RoomCategory::Invited
+            RoomCategory::Knocked
+            | RoomCategory::Invited
             | RoomCategory::Outdated
             | RoomCategory::Space
             | RoomCategory::Ignored => return None,

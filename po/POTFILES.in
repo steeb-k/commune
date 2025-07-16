@@ -113,6 +113,8 @@ src/session/view/content/explore/servers_popover.ui
 src/session/view/content/explore/server_row.ui
 src/session/view/content/invite.rs
 src/session/view/content/invite.ui
+src/session/view/content/invite_request.rs
+src/session/view/content/invite_request.ui
 src/session/view/content/mod.ui
 src/session/view/content/room_details/addresses_subpage/completion_popover.ui
 src/session/view/content/room_details/addresses_subpage/mod.rs

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentInviteRequest" parent="AdwBin">
+    <property name="vexpand">True</property>
+    <property name="hexpand">True</property>
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar" id="header_bar">
+            <child type="title">
+              <object class="AdwWindowTitle">
+                <property name="title" translatable="yes">Invite Request</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="GtkScrolledWindow">
+            <property name="vexpand">True</property>
+            <property name="hscrollbar-policy">never</property>
+            <property name="child">
+              <object class="AdwClamp">
+                <property name="maximum-size">444</property>
+                <property name="tightening-threshold">300</property>
+                <property name="vexpand">True</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <property name="spacing">24</property>
+                    <property name="orientation">vertical</property>
+                    <accessibility>
+                      <property name="label" translatable="yes">Invite Request</property>
+                    </accessibility>
+                    <child>
+                      <object class="Avatar" id="avatar">
+                        <property name="size">150</property>
+                        <binding name="data">
+                          <lookup name="avatar-data">
+                            <lookup name="room">ContentInviteRequest</lookup>
+                          </lookup>
+                        </binding>
+                        <property name="accessible-role">presentation</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <object class="GtkLabel" id="display_name">
+                            <property name="ellipsize">end</property>
+                            <binding name="label">
+                              <lookup name="display-name">
+                                <lookup name="room">ContentInviteRequest</lookup>
+                              </lookup>
+                            </binding>
+                            <style>
+                              <class name="invite-room-name"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="room_alias">
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                            <binding name="label">
+                              <lookup name="alias-string">
+                                <lookup name="aliases">
+                                  <lookup name="room">ContentInviteRequest</lookup>
+                                </lookup>
+                              </lookup>
+                            </binding>
+                            <style>
+                              <class name="dimmed"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="room_topic">
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="justify">center</property>
+                        <property name="use-markup">True</property>
+                        <binding name="label">
+                          <lookup name="topic-linkified">
+                            <lookup name="room">ContentInviteRequest</lookup>
+                          </lookup>
+                        </binding>
+                        <style>
+                          <class name="dimmed"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="halign">center</property>
+                        <property name="justify">center</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="label" translatable="yes">You requested an invite to this room</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="halign">center</property>
+                        <property name="spacing">24</property>
+                        <property name="margin-top">24</property>
+                        <child>
+                          <object class="LoadingButton" id="retract_button">
+                            <property name="content-label" translatable="yes">_Retract</property>
+                            <signal name="clicked" handler="retract" swapped="yes"/>
+                            <style>
+                              <class name="pill"/>
+                              <class name="large"/>
+                              <class name="destructive-action"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+  </template>
+</interface>

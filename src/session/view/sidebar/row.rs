@@ -302,6 +302,23 @@ mod imp {
             let category = room.category();
 
             match category {
+                RoomCategory::Knocked => {
+                    action_group.add_action_entries([gio::ActionEntry::builder(
+                        "retract-invite-request",
+                    )
+                    .activate(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _| {
+                            if let Some(room) = imp.room() {
+                                spawn!(async move {
+                                    imp.set_room_category(&room, TargetRoomCategory::Left).await;
+                                });
+                            }
+                        }
+                    ))
+                    .build()]);
+                }
                 RoomCategory::Invited => {
                     action_group.add_action_entries([
                         gio::ActionEntry::builder("accept-invite")

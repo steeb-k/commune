@@ -1,13 +1,15 @@
-mod explore;
-mod invite;
-mod room_details;
-mod room_history;
-
 use adw::subclass::prelude::*;
 use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
 
+mod explore;
+mod invite;
+mod invite_request;
+mod room_details;
+mod room_history;
+
 use self::{
-    explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,
+    explore::Explore, invite::Invite, invite_request::InviteRequest, room_details::RoomDetails,
+    room_history::RoomHistory,
 };
 use crate::{
     identity_verification_view::IdentityVerificationView,
@@ -25,6 +27,8 @@ enum ContentPage {
     Empty,
     /// The history of the selected room.
     RoomHistory,
+    /// The selected invite request.
+    InviteRequest,
     /// The selected room invite.
     Invite,
     /// The explore page.
@@ -48,6 +52,8 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         room_history: TemplateChild<RoomHistory>,
+        #[template_child]
+        invite_request: TemplateChild<InviteRequest>,
         #[template_child]
         invite: TemplateChild<Invite>,
         #[template_child]
@@ -222,12 +228,19 @@ mod imp {
             };
 
             if let Some(room) = item.downcast_ref::<Room>() {
-                if room.category() == RoomCategory::Invited {
-                    self.invite.set_room(Some(room.clone()));
-                    self.set_visible_page(ContentPage::Invite);
-                } else {
-                    self.room_history.set_timeline(Some(room.live_timeline()));
-                    self.set_visible_page(ContentPage::RoomHistory);
+                match room.category() {
+                    RoomCategory::Knocked => {
+                        self.invite_request.set_room(Some(room.clone()));
+                        self.set_visible_page(ContentPage::InviteRequest);
+                    }
+                    RoomCategory::Invited => {
+                        self.invite.set_room(Some(room.clone()));
+                        self.set_visible_page(ContentPage::Invite);
+                    }
+                    _ => {
+                        self.room_history.set_timeline(Some(room.live_timeline()));
+                        self.set_visible_page(ContentPage::RoomHistory);
+                    }
                 }
             } else if item
                 .downcast_ref::<SidebarIconItem>()
@@ -249,10 +262,11 @@ mod imp {
         }
 
         /// All the header bars of the children of the content.
-        pub(super) fn header_bars(&self) -> [&adw::HeaderBar; 5] {
+        pub(super) fn header_bars(&self) -> [&adw::HeaderBar; 6] {
             [
                 &self.empty_page_header_bar,
                 self.room_history.header_bar(),
+                self.invite_request.header_bar(),
                 self.invite.header_bar(),
                 self.explore.header_bar(),
                 &self.verification_page_header_bar,
@@ -278,7 +292,7 @@ impl Content {
     }
 
     /// All the header bars of the children of the content.
-    pub(crate) fn header_bars(&self) -> [&adw::HeaderBar; 5] {
+    pub(crate) fn header_bars(&self) -> [&adw::HeaderBar; 6] {
         self.imp().header_bars()
     }
 }
