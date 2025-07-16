@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use gtk::{
-    gio,
-    glib::{self, clone},
+    gio, glib,
+    glib::{clone, closure},
     prelude::*,
     subclass::prelude::*,
 };
@@ -9,8 +11,12 @@ use matrix_sdk::RoomMemberships;
 use ruma::{OwnedUserId, UserId, events::room::power_levels::RoomPowerLevels};
 use tracing::error;
 
-use super::{Event, Member, Room};
-use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
+use super::{Event, Member, Membership, Room};
+use crate::{
+    prelude::*,
+    spawn, spawn_tokio,
+    utils::{ExpressionListModel, LoadingState},
+};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -25,6 +31,8 @@ mod imp {
         /// The room these members belong to.
         #[property(get, set = Self::set_room, construct_only)]
         room: glib::WeakRef<Room>,
+        /// The lists of members filtered by membership.
+        membership_lists: RefCell<HashMap<MembershipListKind, gio::ListModel>>,
         /// The loading state of the list.
         #[property(get, builder(LoadingState::default()))]
         state: Cell<LoadingState>,
@@ -83,6 +91,20 @@ mod imp {
                     }
                 )
             );
+        }
+
+        /// Get the list filtered by membership for the given kind.
+        pub(super) fn membership_list(&self, kind: MembershipListKind) -> gio::ListModel {
+            if let Some(list) = self.membership_lists.borrow().get(&kind) {
+                return list.clone();
+            }
+
+            // Construct the list if it doesn't exist.
+            let list = kind.filtered_list_model(self.obj().upcast_ref::<gio::ListModel>().clone());
+            self.membership_lists
+                .borrow_mut()
+                .insert(kind, list.clone());
+            list
         }
 
         /// Set whether this list is being loaded.
@@ -278,6 +300,11 @@ impl MemberList {
         member
     }
 
+    /// Get the list filtered by membership for the given kind.
+    pub(crate) fn membership_list(&self, kind: MembershipListKind) -> gio::ListModel {
+        self.imp().membership_list(kind)
+    }
+
     /// Update a room member with the SDK's data.
     ///
     /// Creates a new member first if there is no member matching the given
@@ -292,6 +319,70 @@ impl MemberList {
         // added/removed.
         for (user_id, member) in &*self.imp().members.borrow() {
             member.set_power_level(power_levels.for_user(user_id).into());
+        }
+    }
+}
+
+/// The kind of membership used to filter a list of room members.
+///
+/// This is a subset of [`Membership`].
+#[derive(
+    Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, glib::Variant, strum::AsRefStr,
+)]
+#[enum_type(name = "MembershipListKind")]
+#[strum(serialize_all = "lowercase")]
+pub enum MembershipListKind {
+    /// The user is currently in the room.
+    #[default]
+    Join,
+    /// The user was invited to the room.
+    Invite,
+    /// The user was baned from the room.
+    Ban,
+}
+
+impl MembershipListKind {
+    /// Build a `GListModel` that filters the given list model containing
+    /// [`Member`]s with this kind, and add it to the given map.
+    fn filtered_list_model(self, members: gio::ListModel) -> gio::ListModel {
+        let membership_expr = Member::this_expression("membership");
+
+        // We need to notify when the membership changes so the filter can update the
+        // list.
+        let expr_members = ExpressionListModel::new();
+        expr_members.set_expressions(vec![membership_expr.clone().upcast()]);
+        expr_members.set_model(Some(members));
+
+        let membership = Membership::from(self);
+        let membership_eq_expr = membership_expr.chain_closure::<bool>(closure!(
+            |_: Option<glib::Object>, this_membership: Membership| {
+                this_membership == membership
+            }
+        ));
+
+        gtk::FilterListModel::new(
+            Some(expr_members),
+            Some(gtk::BoolFilter::new(Some(&membership_eq_expr))),
+        )
+        .upcast()
+    }
+
+    /// The name of the icon that represents this kind.
+    pub(crate) fn icon_name(self) -> &'static str {
+        match self {
+            Self::Join => "users-symbolic",
+            Self::Invite => "user-add-symbolic",
+            Self::Ban => "blocked-symbolic",
+        }
+    }
+}
+
+impl From<MembershipListKind> for Membership {
+    fn from(value: MembershipListKind) -> Self {
+        match value {
+            MembershipListKind::Join => Self::Join,
+            MembershipListKind::Invite => Self::Invite,
+            MembershipListKind::Ban => Self::Ban,
         }
     }
 }

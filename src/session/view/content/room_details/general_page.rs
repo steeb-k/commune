@@ -22,7 +22,7 @@ use ruma::{
 };
 use tracing::error;
 
-use super::{MemberRow, MembershipLists, RoomDetails, room_upgrade_dialog::confirm_room_upgrade};
+use super::{MemberRow, RoomDetails, room_upgrade_dialog::confirm_room_upgrade};
 use crate::{
     Window,
     components::{
@@ -32,7 +32,8 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{
-        HistoryVisibilityValue, JoinRuleValue, Member, NotificationsRoomSetting, Room, RoomCategory,
+        HistoryVisibilityValue, JoinRuleValue, Member, MemberList, MembershipListKind,
+        NotificationsRoomSetting, Room, RoomCategory,
     },
     spawn, spawn_tokio, toast,
     utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
@@ -105,9 +106,9 @@ mod imp {
         /// The presented room.
         #[property(get, set = Self::set_room, construct_only)]
         room: BoundObjectWeakRef<Room>,
-        /// The lists of members filtered by membership for the room.
-        #[property(get, set = Self::set_membership_lists, construct_only)]
-        membership_lists: glib::WeakRef<MembershipLists>,
+        /// The lists of members in the room.
+        #[property(get, set = Self::set_members, construct_only)]
+        members: glib::WeakRef<MemberList>,
         /// The notifications setting for the room.
         #[property(get = Self::notifications_setting, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         notifications_setting: PhantomData<NotificationsRoomSetting>,
@@ -364,9 +365,9 @@ mod imp {
             self.load_capabilities();
         }
 
-        /// Set the lists of members filtered by membership for the room.
-        fn set_membership_lists(&self, membership_lists: &MembershipLists) {
-            self.membership_lists.set(Some(membership_lists));
+        /// Set the lists of members in the room.
+        fn set_members(&self, members: &MemberList) {
+            self.members.set(Some(members));
             self.update_members();
         }
 
@@ -447,11 +448,12 @@ mod imp {
             let Some(room) = self.room.obj() else {
                 return;
             };
-            let Some(membership_lists) = self.membership_lists.upgrade() else {
+            let Some(members) = self.members.upgrade() else {
                 return;
             };
 
-            let joined_members_count = membership_lists.joined().n_items();
+            let joined_members = members.membership_list(MembershipListKind::Join);
+            let joined_members_count = joined_members.n_items();
 
             // When the room is direct there should only be 2 members in most cases, but use
             // the members count to make sure we do not show a list that is too long.
@@ -464,7 +466,7 @@ mod imp {
                 // widgets in the background.
                 if !self.direct_members_list_has_bound_model.get() {
                     self.direct_members_list
-                        .bind_model(Some(&membership_lists.joined()), |item| {
+                        .bind_model(Some(&joined_members), |item| {
                             let member = item
                                 .downcast_ref::<Member>()
                                 .expect("joined members list contains members");
@@ -1171,10 +1173,10 @@ glib::wrapper! {
 }
 
 impl GeneralPage {
-    pub fn new(room: &Room, membership_lists: &MembershipLists) -> Self {
+    pub fn new(room: &Room, members: &MemberList) -> Self {
         glib::Object::builder()
             .property("room", room)
-            .property("membership-lists", membership_lists)
+            .property("members", members)
             .build()
     }
 

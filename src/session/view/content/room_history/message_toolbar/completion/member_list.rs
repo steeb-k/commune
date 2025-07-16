@@ -6,47 +6,35 @@ use gtk::{
 };
 
 use crate::{
-    components::{AtRoom, PillSource},
-    session::model::{Member, MemberList, Membership},
-    utils::{ExpressionListModel, expression},
+    components::PillSource,
+    session::model::{Member, MembershipListKind, Room},
+    utils::{BoundObjectWeakRef, ExpressionListModel, SingleItemListModel, expression},
 };
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::cell::RefCell;
 
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::CompletionMemberList)]
     pub struct CompletionMemberList {
-        /// The room members used for completion.
-        #[property(get = Self::members, set = Self::set_members, explicit_notify, nullable)]
-        members: PhantomData<Option<MemberList>>,
+        /// The current room.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        room: BoundObjectWeakRef<Room>,
+        /// The list of room members used for completion.
+        #[property(get)]
+        joined_members: glib::WeakRef<gio::ListModel>,
         /// The members list with expression watches.
         members_expr: ExpressionListModel,
-        room_handler: RefCell<Option<glib::SignalHandlerId>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The list model for the `@room` item.
-        at_room_model: gio::ListStore,
+        at_room_model: SingleItemListModel,
         /// The search filter.
         search_filter: gtk::StringFilter,
         /// The list of sorted and filtered room members.
         #[property(get)]
         list: gtk::FilterListModel,
-    }
-
-    impl Default for CompletionMemberList {
-        fn default() -> Self {
-            Self {
-                members: Default::default(),
-                members_expr: Default::default(),
-                room_handler: Default::default(),
-                permissions_handler: Default::default(),
-                at_room_model: gio::ListStore::new::<AtRoom>(),
-                search_filter: Default::default(),
-                list: Default::default(),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -63,7 +51,6 @@ mod imp {
             // Filter the members, the criteria:
             // - not our user
             // - not ignored
-            // - joined
             let not_own_user = gtk::BoolFilter::builder()
                 .expression(expression::not(Member::this_expression("is-own-user")))
                 .build();
@@ -74,17 +61,9 @@ mod imp {
                 .invert(true)
                 .build();
 
-            let joined_expr = Member::this_expression("membership").chain_closure::<bool>(
-                closure!(|_obj: Option<glib::Object>, membership: Membership| {
-                    membership == Membership::Join
-                }),
-            );
-            let joined = gtk::BoolFilter::new(Some(&joined_expr));
-
             let filter = gtk::EveryFilter::new();
             filter.append(not_own_user);
             filter.append(not_ignored);
-            filter.append(joined);
 
             let first_model = gtk::FilterListModel::builder()
                 .filter(&filter)
@@ -141,17 +120,13 @@ mod imp {
 
             self.members_expr.set_expressions(vec![
                 ignored_expr.upcast(),
-                joined_expr.upcast(),
                 latest_activity_expr.upcast(),
                 display_name_expr.upcast(),
             ]);
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.members().and_then(|m| m.room()) {
-                if let Some(handler) = self.room_handler.take() {
-                    room.disconnect(handler);
-                }
+            if let Some(room) = self.room.obj() {
                 if let Some(handler) = self.permissions_handler.take() {
                     room.permissions().disconnect(handler);
                 }
@@ -160,38 +135,22 @@ mod imp {
     }
 
     impl CompletionMemberList {
-        /// The room members used for completion.
-        fn members(&self) -> Option<MemberList> {
-            self.members_expr.model().and_downcast()
-        }
+        /// Set the current room.
+        fn set_room(&self, room: Option<&Room>) {
+            let prev_room = self.room.obj();
 
-        /// Set the room members used for completion.
-        fn set_members(&self, members: Option<MemberList>) {
-            let prev_members = self.members();
-
-            if prev_members == members {
+            if prev_room.as_ref() == room {
                 return;
             }
 
-            if let Some(room) = prev_members.and_then(|m| m.room()) {
-                if let Some(handler) = self.room_handler.take() {
-                    room.disconnect(handler);
-                }
+            if let Some(room) = prev_room {
                 if let Some(handler) = self.permissions_handler.take() {
                     room.permissions().disconnect(handler);
                 }
             }
+            self.room.disconnect_signals();
 
-            if let Some(room) = members.as_ref().and_then(MemberList::room) {
-                let room_handler = room.connect_is_direct_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_at_room_model();
-                    }
-                ));
-                self.room_handler.replace(Some(room_handler));
-
+            if let Some(room) = room {
                 let permissions_handler =
                     room.permissions().connect_can_notify_room_notify(clone!(
                         #[weak(rename_to = imp)]
@@ -201,34 +160,36 @@ mod imp {
                         }
                     ));
                 self.permissions_handler.replace(Some(permissions_handler));
+
+                let is_direct_handler = room.connect_is_direct_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_at_room_model();
+                    }
+                ));
+
+                self.room.set(room, vec![is_direct_handler]);
             }
 
-            self.members_expr.set_model(members);
+            let joined_members = room
+                .map(Room::get_or_create_members)
+                .map(|members| members.membership_list(MembershipListKind::Join));
+            self.members_expr.set_model(joined_members);
+
             self.update_at_room_model();
-            self.obj().notify_members();
+            self.obj().notify_joined_members();
         }
 
         /// Update whether `@room` should be present in the suggestions.
         fn update_at_room_model(&self) {
             // Only present `@room` if it's not a DM and user can notify the room.
             let room = self
-                .members()
-                .and_then(|m| m.room())
+                .room
+                .obj()
                 .filter(|r| !r.is_direct() && r.permissions().can_notify_room());
 
-            if let Some(room) = room {
-                if let Some(at_room) = self.at_room_model.item(0).and_downcast::<AtRoom>() {
-                    if at_room.room_id() == room.room_id() {
-                        return;
-                    }
-
-                    self.at_room_model.remove(0);
-                }
-
-                self.at_room_model.append(&room.at_room());
-            } else if self.at_room_model.n_items() > 0 {
-                self.at_room_model.remove(0);
-            }
+            self.at_room_model.set_item(room.map(|room| room.at_room()));
         }
 
         /// Set the search term.

@@ -135,7 +135,6 @@ src/session/view/content/room_details/member_row.ui
 src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.ui
-src/session/view/content/room_details/membership_lists.rs
 src/session/view/content/room_details/mod.rs
 src/session/view/content/room_details/mod.ui
 src/session/view/content/room_details/permissions/add_members_subpage.ui

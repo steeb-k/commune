@@ -2,7 +2,8 @@ use gettextrs::npgettext;
 use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::session::{
-    model::Membership, view::content::room_details::membership_subpage_item::MembershipSubpageItem,
+    model::MembershipListKind,
+    view::content::room_details::membership_subpage_item::MembershipSubpageItem,
 };
 
 mod imp {
@@ -101,14 +102,7 @@ mod imp {
 
         /// The name of the icon of this row.
         fn icon_name(&self) -> Option<String> {
-            Some(
-                self.item
-                    .borrow()
-                    .as_ref()?
-                    .membership()
-                    .icon_name()
-                    .to_owned(),
-            )
+            Some(self.item.borrow().as_ref()?.kind().icon_name().to_owned())
         }
 
         /// The label of this row.
@@ -116,13 +110,15 @@ mod imp {
             let item = self.item.borrow().clone()?;
             let count = item.model().n_items();
 
-            match item.membership() {
+            let label = match item.kind() {
+                MembershipListKind::Join => return None,
                 // Translators: As in 'Invited Room Member(s)'.
-                Membership::Invite => Some(npgettext("members", "Invited", "Invited", count)),
+                MembershipListKind::Invite => npgettext("members", "Invited", "Invited", count),
                 // Translators: As in 'Banned Room Member(s)'.
-                Membership::Ban => Some(npgettext("members", "Banned", "Banned", count)),
-                _ => None,
-            }
+                MembershipListKind::Ban => npgettext("members", "Banned", "Banned", count),
+            };
+
+            Some(label)
         }
 
         fn member_count_changed(&self, n: u32) {

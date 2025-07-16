@@ -9,18 +9,21 @@ mod item_row;
 mod membership_subpage_row;
 
 use self::{item_row::ItemRow, membership_subpage_row::MembershipSubpageRow};
-use super::membership_as_tag;
 use crate::{
+    components::LoadingRow,
     prelude::*,
     session::{
-        model::{Member, Membership, Room},
-        view::content::room_details::{MembershipLists, MembershipSubpageItem},
+        model::{Member, MemberList, MembershipListKind, Room},
+        view::content::room_details::MembershipSubpageItem,
     },
-    utils::{LoadingState, expression},
+    utils::{BoundObjectWeakRef, ExpressionListModel, LoadingState, expression},
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        collections::HashMap,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -53,20 +56,22 @@ mod imp {
         /// The room containing the members to present.
         #[property(get, set = Self::set_room, construct_only)]
         room: glib::WeakRef<Room>,
-        /// The lists of members filtered by membership for the room.
-        #[property(get, set = Self::set_membership_lists, construct_only)]
-        membership_lists: glib::WeakRef<MembershipLists>,
+        /// The lists of members for the room.
+        #[property(get, set = Self::set_members, construct_only)]
+        members: BoundObjectWeakRef<MemberList>,
+        /// The items to add to the membership list, if any.
+        extra_items: OnceCell<gtk::FilterListModel>,
         /// The model with the search filter.
         filtered_model: gtk::FilterListModel,
-        /// The membership used to filter the model.
-        #[property(get, set = Self::set_membership, construct_only, builder(Membership::default()))]
-        membership: Cell<Membership>,
+        /// The kind of the membership list.
+        #[property(get, set = Self::set_kind, construct_only, builder(MembershipListKind::default()))]
+        kind: Cell<MembershipListKind>,
         /// Whether our own user can send an invite in the current room.
         #[property(get, set = Self::set_can_invite, explicit_notify)]
         can_invite: Cell<bool>,
-        members_state_handler: RefCell<Option<glib::SignalHandlerId>>,
-        items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
-        extra_items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
+        extra_members_state_handler: RefCell<Option<glib::SignalHandlerId>>,
+        membership_items_changed_handlers:
+            RefCell<HashMap<MembershipListKind, glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -127,18 +132,13 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(membership_lists) = self.membership_lists.upgrade() {
-                if let Some(handler) = self.members_state_handler.take() {
-                    membership_lists.members().disconnect(handler);
+            if let Some(members) = self.members.obj() {
+                if let Some(handler) = self.extra_members_state_handler.take() {
+                    members.disconnect(handler);
                 }
-                if let Some(handler) = self.items_changed_handler.take() {
-                    self.members_only_model(&membership_lists)
-                        .disconnect(handler);
-                }
-                if let Some(handler) = self.extra_items_changed_handler.take() {
-                    if let Some(model) = self.extra_items_model(&membership_lists) {
-                        model.disconnect(handler);
-                    }
+
+                for (kind, handler) in self.membership_items_changed_handlers.take() {
+                    members.membership_list(kind).disconnect(handler);
                 }
             }
         }
@@ -164,24 +164,22 @@ mod imp {
         }
 
         /// Set the room containing the members to present.
-        fn set_membership_lists(&self, membership_lists: &MembershipLists) {
-            self.membership_lists.set(Some(membership_lists));
-
-            let members_state_handler = membership_lists.members().connect_state_notify(clone!(
+        fn set_members(&self, members: &MemberList) {
+            let state_handler = members.connect_state_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
                     imp.update_view();
                 }
             ));
-            self.members_state_handler
-                .replace(Some(members_state_handler));
+
+            self.members.set(members, vec![state_handler]);
         }
 
-        /// Set the membership used to filter the model.
-        fn set_membership(&self, membership: Membership) {
-            self.membership.set(membership);
-            self.obj().set_tag(Some(membership_as_tag(membership)));
+        /// Set the kind of the membership list.
+        fn set_kind(&self, kind: MembershipListKind) {
+            self.kind.set(kind);
+            self.obj().set_tag(Some(kind.as_ref()));
             self.update_empty_page();
         }
 
@@ -195,114 +193,194 @@ mod imp {
             self.obj().notify_can_invite();
         }
 
-        /// The full list model from the given lists of members used by the list
-        /// view.
-        fn full_model(&self, membership_lists: &MembershipLists) -> gio::ListModel {
-            match self.membership.get() {
-                Membership::Invite => membership_lists.invited(),
-                Membership::Ban => membership_lists.banned(),
-                _ => membership_lists.joined_full(),
-            }
-        }
-
-        /// The list model from the given lists of members containing only
-        /// members.
-        fn members_only_model(&self, membership_lists: &MembershipLists) -> gio::ListModel {
-            match self.membership.get() {
-                Membership::Invite => membership_lists.invited(),
-                Membership::Ban => membership_lists.banned(),
-                _ => membership_lists.joined(),
-            }
-        }
-
-        /// The list model from the given lists of members containing extra
-        /// items.
-        fn extra_items_model(&self, membership_lists: &MembershipLists) -> Option<gio::ListModel> {
-            match self.membership.get() {
-                Membership::Invite | Membership::Ban => None,
-                _ => Some(membership_lists.extra_joined_items().upcast()),
-            }
-        }
-
         /// Initialize the members list used for this view.
         fn init_members_list(&self) {
-            let Some(membership_lists) = self.membership_lists.upgrade() else {
+            let Some(members) = self.members.obj() else {
                 return;
             };
 
-            let full_model = self.full_model(&membership_lists);
-            self.filtered_model.set_model(Some(&full_model));
+            self.init_extra_items();
 
-            let members_only_model = self.members_only_model(&membership_lists);
-            let items_changed_handler = members_only_model.connect_items_changed(clone!(
+            let kind = self.kind.get();
+            let membership_list = members.membership_list(kind);
+
+            let items_changed_handler = membership_list.connect_items_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_, _, _, _| {
                     imp.update_view();
                 }
             ));
-            self.items_changed_handler
-                .replace(Some(items_changed_handler));
+            self.membership_items_changed_handlers
+                .borrow_mut()
+                .insert(kind, items_changed_handler);
 
-            if let Some(extra_items_model) = self.extra_items_model(&membership_lists) {
-                let extra_items_changed_handler = extra_items_model.connect_items_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_, _, _, _| {
-                        imp.update_empty_listbox();
-                    }
-                ));
-                self.extra_items_changed_handler
-                    .replace(Some(extra_items_changed_handler));
-            }
+            // Sort the members list by power level, then display name.
+            let power_level_expr = Member::this_expression("power-level");
+            let sorter = gtk::MultiSorter::new();
+            sorter.append(
+                gtk::NumericSorter::builder()
+                    .expression(&power_level_expr)
+                    .sort_order(gtk::SortType::Descending)
+                    .build(),
+            );
+
+            let display_name_expr = Member::this_expression("display-name");
+            sorter.append(gtk::StringSorter::new(Some(&display_name_expr)));
+
+            // We need to notify when a watched property changes so the sorter can update
+            // the list.
+            let expr_members = ExpressionListModel::new();
+            expr_members
+                .set_expressions(vec![power_level_expr.upcast(), display_name_expr.upcast()]);
+            expr_members.set_model(Some(membership_list));
+
+            let sorted_members = gtk::SortListModel::new(Some(expr_members), Some(sorter));
+
+            let full_model = if let Some(extra_items) = self.extra_items.get() {
+                let model_list = gio::ListStore::new::<gio::ListModel>();
+                model_list.append(extra_items);
+                model_list.append(&sorted_members);
+
+                gtk::FlattenListModel::new(Some(model_list)).upcast::<gio::ListModel>()
+            } else {
+                sorted_members.upcast()
+            };
+            self.filtered_model.set_model(Some(&full_model));
 
             self.update_view();
             self.update_empty_listbox();
         }
 
+        /// Initialize the items to add to the membership list, if necessary.
+        fn init_extra_items(&self) {
+            let Some(members) = self.members.obj() else {
+                return;
+            };
+
+            // Only the list of joined members displays extra items.
+            if self.kind.get() != MembershipListKind::Join {
+                return;
+            }
+
+            let filter = gtk::CustomFilter::new(|item| {
+                if let Some(loading_row) = item.downcast_ref::<LoadingRow>() {
+                    loading_row.is_visible()
+                } else if let Some(subpage_item) = item.downcast_ref::<MembershipSubpageItem>() {
+                    subpage_item.model().n_items() != 0
+                } else {
+                    false
+                }
+            });
+
+            let loading_row = LoadingRow::new();
+            let extra_members_state_handler = members.connect_state_notify(clone!(
+                #[weak]
+                loading_row,
+                #[weak]
+                filter,
+                move |members| {
+                    let was_row_visible = loading_row.is_visible();
+
+                    Self::update_loading_row(&loading_row, members.state());
+
+                    // If the loading row visibility changed, so does the filtering.
+                    if loading_row.is_visible() != was_row_visible {
+                        filter.changed(gtk::FilterChange::Different);
+                    }
+                }
+            ));
+            self.extra_members_state_handler
+                .replace(Some(extra_members_state_handler));
+            Self::update_loading_row(&loading_row, members.state());
+
+            let base_model = gio::ListStore::new::<glib::Object>();
+            base_model.append(&loading_row);
+
+            for &kind in &[MembershipListKind::Invite, MembershipListKind::Ban] {
+                let list = members.membership_list(kind);
+                let items_changed_handler = list.connect_items_changed(clone!(
+                    #[weak]
+                    filter,
+                    move |list, _, _, added| {
+                        let n_items = list.n_items();
+
+                        // If the list is or was empty, the filtering changed.
+                        if n_items == 0 || n_items == added {
+                            filter.changed(gtk::FilterChange::Different);
+                        }
+                    }
+                ));
+                self.membership_items_changed_handlers
+                    .borrow_mut()
+                    .insert(kind, items_changed_handler);
+
+                base_model.append(&MembershipSubpageItem::new(kind, &list));
+            }
+
+            let extra_items = self
+                .extra_items
+                .get_or_init(|| gtk::FilterListModel::new(Some(base_model), Some(filter)));
+
+            extra_items.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_empty_listbox();
+                }
+            ));
+        }
+
+        /// Update the given loading row for the given loading state.
+        fn update_loading_row(loading_row: &LoadingRow, state: LoadingState) {
+            let error = (state == LoadingState::Error)
+                .then(|| gettext("Could not load the full list of room members"));
+            loading_row.set_error(error.as_deref());
+
+            loading_row.set_visible(state != LoadingState::Ready);
+        }
+
         /// Update the view for the current state.
         fn update_view(&self) {
-            let Some(membership_lists) = self.membership_lists.upgrade() else {
+            let Some(members) = self.members.obj() else {
                 self.stack.set_visible_child_name("no-members");
                 return;
             };
 
-            let model = self.members_only_model(&membership_lists);
-            let count = model.n_items();
+            let kind = self.kind.get();
+            let membership_list = members.membership_list(kind);
+            let count = membership_list.n_items();
             let is_empty = count == 0;
-            let membership = self.membership.get();
 
-            let title = match membership {
-                Membership::Invite => {
+            let title = match kind {
+                MembershipListKind::Join => ngettext("Room Member", "Room Members", count),
+                MembershipListKind::Invite => {
                     ngettext("Invited Room Member", "Invited Room Members", count)
                 }
-                Membership::Ban => ngettext("Banned Room Member", "Banned Room Members", count),
-                _ => ngettext("Room Member", "Room Members", count),
+                MembershipListKind::Ban => {
+                    ngettext("Banned Room Member", "Banned Room Members", count)
+                }
             };
 
             self.obj().set_title(&title);
             self.members_stack_page.set_title(&title);
 
-            let (visible_page, extra_items_model) = if is_empty {
-                match membership_lists.members().state() {
+            let (visible_page, extra_items) = if is_empty {
+                match members.state() {
                     LoadingState::Initial | LoadingState::Loading => ("loading", None),
                     LoadingState::Error => ("error", None),
-                    LoadingState::Ready => {
-                        let extra_items_model = self.extra_items_model(&membership_lists);
-                        ("empty", extra_items_model)
-                    }
+                    LoadingState::Ready => ("empty", self.extra_items.get()),
                 }
             } else {
                 ("members", None)
             };
 
-            self.empty_listbox
-                .bind_model(extra_items_model.as_ref(), |item| {
-                    let row = MembershipSubpageRow::new();
-                    row.set_item(item.downcast_ref::<MembershipSubpageItem>().cloned());
+            self.empty_listbox.bind_model(extra_items, |item| {
+                let row = MembershipSubpageRow::new();
+                row.set_item(item.downcast_ref::<MembershipSubpageItem>().cloned());
 
-                    row.upcast()
-                });
+                row.upcast()
+            });
 
             // Hide the search button and bar if the list is empty, since there is no search
             // possible.
@@ -314,22 +392,22 @@ mod imp {
 
         /// Update the "empty" page for the current state.
         fn update_empty_page(&self) {
-            let membership = self.membership.get();
+            let kind = self.kind.get();
 
-            let (title, description) = match membership {
-                Membership::Invite => {
+            let (title, description) = match kind {
+                MembershipListKind::Join => {
+                    let title = gettext("No Room Members");
+                    let description = gettext("There are no members in this room");
+                    (title, description)
+                }
+                MembershipListKind::Invite => {
                     let title = gettext("No Invited Room Members");
                     let description = gettext("There are no invited members in this room");
                     (title, description)
                 }
-                Membership::Ban => {
+                MembershipListKind::Ban => {
                     let title = gettext("No Banned Room Members");
                     let description = gettext("There are no banned members in this room");
-                    (title, description)
-                }
-                _ => {
-                    let title = gettext("No Room Members");
-                    let description = gettext("There are no members in this room");
                     (title, description)
                 }
             };
@@ -337,15 +415,14 @@ mod imp {
             self.empty_stack_page.set_title(&title);
             self.empty_page.set_title(&title);
             self.empty_page.set_description(Some(&description));
-            self.empty_page.set_icon_name(Some(membership.icon_name()));
+            self.empty_page.set_icon_name(Some(kind.icon_name()));
         }
 
         /// Update the `GtkListBox` of the "empty" page for the current state.
         fn update_empty_listbox(&self) {
             let has_extra_items = self
-                .membership_lists
-                .upgrade()
-                .and_then(|membership_lists| self.extra_items_model(&membership_lists))
+                .extra_items
+                .get()
                 .is_some_and(|model| model.n_items() > 0);
             self.empty_listbox.set_visible(has_extra_items);
         }
@@ -367,7 +444,7 @@ mod imp {
             } else if let Some(item) = item.downcast_ref::<MembershipSubpageItem>() {
                 obj.activate_action(
                     "members.show-membership-list",
-                    Some(&item.membership().to_variant()),
+                    Some(&item.kind().to_variant()),
                 )
                 .expect("action exists");
             }
@@ -387,7 +464,7 @@ mod imp {
             self.obj()
                 .activate_action(
                     "members.show-membership-list",
-                    Some(&item.membership().to_variant()),
+                    Some(&item.kind().to_variant()),
                 )
                 .expect("action exists");
         }
@@ -395,11 +472,11 @@ mod imp {
         /// Reload the list of members of the room.
         #[template_callback]
         fn reload_members(&self) {
-            let Some(membership_lists) = self.membership_lists.upgrade() else {
+            let Some(members) = self.members.obj() else {
                 return;
             };
 
-            membership_lists.members().reload();
+            members.reload();
         }
     }
 }
@@ -411,13 +488,13 @@ glib::wrapper! {
 }
 
 impl MembersListView {
-    /// Construct a new `MembersListView` with the given room, membership lists
-    /// and membership.
-    pub fn new(room: &Room, membership_lists: &MembershipLists, membership: Membership) -> Self {
+    /// Construct a new `MembersListView` with the given room, members list and
+    /// kind.
+    pub fn new(room: &Room, members: &MemberList, kind: MembershipListKind) -> Self {
         glib::Object::builder()
             .property("room", room)
-            .property("membership-lists", membership_lists)
-            .property("membership", membership)
+            .property("members", members)
+            .property("kind", kind)
             .build()
     }
 }

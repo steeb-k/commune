@@ -4,8 +4,7 @@ use gtk::{CompositeTemplate, glib};
 mod members_list_view;
 
 use self::members_list_view::MembersListView;
-use super::membership_lists::MembershipLists;
-use crate::session::model::{Membership, Room};
+use crate::session::model::{MemberList, MembershipListKind, Room};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -23,9 +22,9 @@ mod imp {
         /// The room containing the members.
         #[property(get, construct_only)]
         room: glib::WeakRef<Room>,
-        /// The lists of members filtered by membership for the room.
+        /// The lists of members in the room.
         #[property(get, construct_only)]
-        membership_lists: glib::WeakRef<MembershipLists>,
+        members: glib::WeakRef<MemberList>,
     }
 
     #[glib::object_subclass]
@@ -39,13 +38,14 @@ mod imp {
 
             klass.install_action(
                 "members.show-membership-list",
-                Some(&Membership::static_variant_type()),
+                Some(&MembershipListKind::static_variant_type()),
                 |obj, _, param| {
-                    let Some(membership) = param.and_then(glib::Variant::get::<Membership>) else {
+                    let Some(kind) = param.and_then(glib::Variant::get::<MembershipListKind>)
+                    else {
                         return;
                     };
 
-                    obj.imp().show_membership_list(membership);
+                    obj.imp().show_membership_list(kind);
                 },
             );
         }
@@ -61,7 +61,7 @@ mod imp {
             self.parent_constructed();
 
             // Initialize the first page.
-            self.show_membership_list(Membership::Join);
+            self.show_membership_list(MembershipListKind::Join);
         }
     }
 
@@ -70,8 +70,8 @@ mod imp {
 
     impl MembersPage {
         /// Show the subpage for the list with the given membership.
-        fn show_membership_list(&self, membership: Membership) {
-            let tag = membership_as_tag(membership);
+        fn show_membership_list(&self, kind: MembershipListKind) {
+            let tag = kind.as_ref();
 
             if self.navigation_view.find_page(tag).is_some() {
                 self.navigation_view.push_by_tag(tag);
@@ -81,11 +81,11 @@ mod imp {
             let Some(room) = self.room.upgrade() else {
                 return;
             };
-            let Some(membership_lists) = self.membership_lists.upgrade() else {
+            let Some(members) = self.members.upgrade() else {
                 return;
             };
 
-            let subpage = MembersListView::new(&room, &membership_lists, membership);
+            let subpage = MembersListView::new(&room, &members, kind);
             self.navigation_view.push(&subpage);
         }
     }
@@ -98,20 +98,11 @@ glib::wrapper! {
 }
 
 impl MembersPage {
-    /// Construct a `MembersPage` for the given room and membership lists.
-    pub fn new(room: &Room, membership_lists: &MembershipLists) -> Self {
+    /// Construct a `MembersPage` for the given room and members list.
+    pub fn new(room: &Room, members: &MemberList) -> Self {
         glib::Object::builder()
             .property("room", room)
-            .property("membership-lists", membership_lists)
+            .property("members", members)
             .build()
-    }
-}
-
-/// Get a page tag for the given membership.
-fn membership_as_tag(membership: Membership) -> &'static str {
-    match membership {
-        Membership::Invite => "invited",
-        Membership::Ban => "banned",
-        _ => "joined",
     }
 }

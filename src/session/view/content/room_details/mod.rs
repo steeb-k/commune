@@ -14,7 +14,6 @@ mod history_viewer;
 mod invite_subpage;
 mod member_row;
 mod members_page;
-mod membership_lists;
 mod membership_subpage_item;
 mod permissions;
 mod room_upgrade_dialog;
@@ -29,11 +28,14 @@ use self::{
     invite_subpage::InviteSubpage,
     member_row::MemberRow,
     members_page::MembersPage,
-    membership_lists::MembershipLists,
     membership_subpage_item::MembershipSubpageItem,
     permissions::PermissionsSubpage,
 };
-use crate::{components::UserPage, session::model::Room, toast};
+use crate::{
+    components::UserPage,
+    session::model::{MemberList, Room},
+    toast,
+};
 
 /// The possible subpages of the room details.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
@@ -73,9 +75,9 @@ mod imp {
         /// The room to show the details for.
         #[property(get, set = Self::set_room, construct_only)]
         room: OnceCell<Room>,
-        /// The lists of members filtered by membership.
+        /// The list of members in the room.
         #[property(get)]
-        membership_lists: MembershipLists,
+        members: OnceCell<MemberList>,
         /// The timeline for the history viewers.
         #[property(get)]
         timeline: OnceCell<HistoryViewerTimeline>,
@@ -120,7 +122,7 @@ mod imp {
                         return;
                     };
 
-                    let member = obj.membership_lists().members().get_or_create(user_id);
+                    let member = obj.members().get_or_create(user_id);
                     let user_page = UserPage::new(&member);
                     user_page.connect_close(clone!(
                         #[weak]
@@ -178,32 +180,38 @@ mod imp {
             // Initialize the media history viewers timeline.
             self.timeline
                 .set(HistoryViewerTimeline::new(room))
-                .expect("timeline is uninitialized");
+                .expect("timeline should be uninitialized");
 
             // Keep a strong reference to members list.
-            self.membership_lists
-                .set_members(room.get_or_create_members());
+            self.members
+                .set(room.get_or_create_members())
+                .expect("members should be uninitialized");
 
             // Initialize the general page.
             let general_page = self
                 .general_page
-                .get_or_init(|| GeneralPage::new(room, &self.membership_lists));
+                .get_or_init(|| GeneralPage::new(room, self.members()));
             self.obj().add(general_page);
+        }
+
+        /// The list of members in the room.
+        fn members(&self) -> &MemberList {
+            self.members.get().expect("members should be initialized")
         }
 
         /// The timeline for the history viewers.
         fn timeline(&self) -> &HistoryViewerTimeline {
-            self.timeline.get().expect("timeline is initialized")
+            self.timeline.get().expect("timeline should be initialized")
         }
 
         /// Show the subpage with the given name.
         pub(super) fn show_subpage(&self, name: SubpageName, is_initial: bool) {
-            let room = self.room.get().expect("room is initialized");
+            let room = self.room.get().expect("room should be initialized");
 
             let mut subpages = self.subpages.borrow_mut();
             let subpage = subpages.entry(name).or_insert_with(|| match name {
                 SubpageName::EditDetails => EditDetailsSubpage::new(room).upcast(),
-                SubpageName::Members => MembersPage::new(room, &self.membership_lists).upcast(),
+                SubpageName::Members => MembersPage::new(room, self.members()).upcast(),
                 SubpageName::Invite => InviteSubpage::new(room).upcast(),
                 SubpageName::VisualMediaHistory => {
                     VisualMediaHistoryViewer::new(self.timeline()).upcast()

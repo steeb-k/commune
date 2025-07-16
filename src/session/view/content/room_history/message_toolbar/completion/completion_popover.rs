@@ -140,10 +140,7 @@ mod imp {
     impl CompletionPopover {
         /// Set the current room.
         fn set_room(&self, room: Option<&Room>) {
-            // `RoomHistory` should have a strong reference to the list so we can use
-            // `get_or_create_members()`.
-            self.member_list
-                .set_members(room.map(Room::get_or_create_members));
+            self.member_list.set_room(room);
 
             self.room_list
                 .set_rooms(room.and_then(Room::session).map(|s| s.room_list()));

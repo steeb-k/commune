@@ -47,7 +47,7 @@ pub(crate) use self::{
     highlight_flags::HighlightFlags,
     join_rule::{JoinRule, JoinRuleValue},
     member::{Member, Membership},
-    member_list::MemberList,
+    member_list::*,
     permissions::*,
     timeline::*,
     typing_list::TypingList,

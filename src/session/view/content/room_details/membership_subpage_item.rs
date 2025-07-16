@@ -3,7 +3,7 @@ use gtk::{
     glib::{prelude::*, subclass::prelude::*},
 };
 
-use crate::session::model::Membership;
+use crate::session::model::MembershipListKind;
 
 mod imp {
     use std::cell::{Cell, OnceCell};
@@ -13,9 +13,9 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::MembershipSubpageItem)]
     pub struct MembershipSubpageItem {
-        /// The membership used to filter the list.
-        #[property(get, construct_only, builder(Membership::default()))]
-        membership: Cell<Membership>,
+        /// The kind of membership list.
+        #[property(get, construct_only, builder(MembershipListKind::default()))]
+        kind: Cell<MembershipListKind>,
         /// The model used for the subpage.
         #[property(get, construct_only)]
         model: OnceCell<gio::ListModel>,
@@ -37,10 +37,10 @@ glib::wrapper! {
 }
 
 impl MembershipSubpageItem {
-    /// Construct a `MembershipSubpageItem` for the given membership and list.
-    pub fn new(membership: Membership, model: &impl IsA<gio::ListModel>) -> Self {
+    /// Construct a `MembershipSubpageItem` for the given membership list kind.
+    pub fn new(kind: MembershipListKind, model: &gio::ListModel) -> Self {
         glib::Object::builder()
-            .property("membership", membership)
+            .property("kind", kind)
             .property("model", model)
             .build()
     }
