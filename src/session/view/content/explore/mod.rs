@@ -182,7 +182,7 @@ mod imp {
         /// The items added at the end of the list.
         fn end_items(&self) -> &SingleItemListModel {
             self.end_items.get_or_init(|| {
-                let model = SingleItemListModel::new(&LoadingRow::new());
+                let model = SingleItemListModel::new(Some(&LoadingRow::new()));
                 model.set_is_hidden(true);
                 model
             })

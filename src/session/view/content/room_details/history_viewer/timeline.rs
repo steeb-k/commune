@@ -122,7 +122,7 @@ mod imp {
         /// A model containing a [`LoadingRow`] when the timeline is loading.
         pub(super) fn loading_item_model(&self) -> &SingleItemListModel {
             self.loading_item_model.get_or_init(|| {
-                let model = SingleItemListModel::new(&LoadingRow::new());
+                let model = SingleItemListModel::new(Some(&LoadingRow::new()));
                 model.set_is_hidden(true);
                 model
             })

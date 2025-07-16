@@ -268,7 +268,7 @@ mod imp {
         /// Items added at the start of the timeline.
         fn start_items(&self) -> &SingleItemListModel {
             self.start_items.get_or_init(|| {
-                let model = SingleItemListModel::new(&VirtualItem::spinner(&self.obj()));
+                let model = SingleItemListModel::new(Some(&VirtualItem::spinner(&self.obj())));
                 model.set_is_hidden(true);
                 model
             })
@@ -286,7 +286,7 @@ mod imp {
         /// Items added at the end of the timeline.
         fn end_items(&self) -> &SingleItemListModel {
             self.end_items.get_or_init(|| {
-                let model = SingleItemListModel::new(&VirtualItem::typing(&self.obj()));
+                let model = SingleItemListModel::new(Some(&VirtualItem::typing(&self.obj())));
                 model.set_is_hidden(true);
                 model
             })

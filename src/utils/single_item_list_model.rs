@@ -1,7 +1,7 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
-    use std::cell::{Cell, OnceCell};
+    use std::cell::{Cell, RefCell};
 
     use super::*;
 
@@ -9,8 +9,8 @@ mod imp {
     #[properties(wrapper_type = super::SingleItemListModel)]
     pub struct SingleItemListModel {
         /// The item contained by this model.
-        #[property(get, construct_only)]
-        item: OnceCell<glib::Object>,
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
+        item: RefCell<Option<glib::Object>>,
         /// Whether the item is hidden.
         #[property(get, set = Self::set_is_hidden, explicit_notify)]
         is_hidden: Cell<bool>,
@@ -28,22 +28,38 @@ mod imp {
 
     impl ListModelImpl for SingleItemListModel {
         fn item_type(&self) -> glib::Type {
-            self.item().type_()
+            self.item
+                .borrow()
+                .as_ref()
+                .map_or_else(glib::Object::static_type, glib::Object::type_)
         }
 
         fn n_items(&self) -> u32 {
-            1 - u32::from(self.is_hidden.get())
+            (!self.is_empty()).into()
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            (!self.is_hidden.get() && position == 0).then(|| self.item().clone().upcast())
+            if self.is_hidden.get() || position != 0 {
+                return None;
+            }
+
+            self.item.borrow().clone().and_upcast()
         }
     }
 
     impl SingleItemListModel {
-        /// The item contained by this model.
-        fn item(&self) -> &glib::Object {
-            self.item.get().expect("item should be initialized")
+        /// Set the item contained by this model.
+        fn set_item(&self, item: Option<glib::Object>) {
+            if *self.item.borrow() == item {
+                return;
+            }
+
+            let was_empty = self.is_empty();
+
+            self.item.replace(item);
+            self.obj().notify_item();
+
+            self.notify_items_changed(was_empty);
         }
 
         /// Set whether the item is hidden.
@@ -52,27 +68,47 @@ mod imp {
                 return;
             }
 
+            let was_empty = self.is_empty();
+
             self.is_hidden.set(hidden);
+            self.obj().notify_is_hidden();
 
-            let obj = self.obj();
-            obj.notify_is_hidden();
+            if was_empty != self.is_empty() {
+                self.notify_items_changed(was_empty);
+            }
+        }
 
-            let removed = (hidden).into();
-            let added = (!hidden).into();
-            obj.items_changed(0, removed, added);
+        /// Whether this model is empty.
+        fn is_empty(&self) -> bool {
+            self.is_hidden.get() || self.item.borrow().is_none()
+        }
+
+        /// Notify that the number of items changed.
+        fn notify_items_changed(&self, was_empty: bool) {
+            let is_empty = self.is_empty();
+
+            let removed = (!was_empty).into();
+            let added = (!is_empty).into();
+            self.obj().items_changed(0, removed, added);
         }
     }
 }
 
 glib::wrapper! {
-    /// A list model always containing a single item.
+    /// A list model that can contain at most a single item.
     pub struct SingleItemListModel(ObjectSubclass<imp::SingleItemListModel>)
         @implements gio::ListModel;
 }
 
 impl SingleItemListModel {
     /// Construct a new `SingleItemListModel` for the given item.
-    pub fn new(item: &impl IsA<glib::Object>) -> Self {
+    pub fn new(item: Option<&impl IsA<glib::Object>>) -> Self {
         glib::Object::builder().property("item", item).build()
+    }
+}
+
+impl Default for SingleItemListModel {
+    fn default() -> Self {
+        Self::new(None::<&glib::Object>)
     }
 }

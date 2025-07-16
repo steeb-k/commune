@@ -83,7 +83,7 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let add_item = SingleItemListModel::new(&PlaceholderObject::new("add"));
+            let add_item = SingleItemListModel::new(Some(&PlaceholderObject::new("add")));
 
             // Public addresses.
             let public_items = gio::ListStore::new::<glib::Object>();

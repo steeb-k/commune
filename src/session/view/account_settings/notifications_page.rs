@@ -123,7 +123,7 @@ mod imp {
                     ],
                 );
 
-                let extra_items = SingleItemListModel::new(&PlaceholderObject::new("add"));
+                let extra_items = SingleItemListModel::new(Some(&PlaceholderObject::new("add")));
 
                 let all_items = gio::ListStore::new::<glib::Object>();
                 all_items.append(&settings.keywords_list());

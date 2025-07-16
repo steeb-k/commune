@@ -76,7 +76,7 @@ mod imp {
 
             let inner_model = if let Some(section) = item.downcast_ref::<SidebarSection>() {
                 // Create a list model to have an item for the section itself.
-                let section_model = SingleItemListModel::new(section);
+                let section_model = SingleItemListModel::new(Some(section));
 
                 // Filter the children depending on whether the section is expanded or not.
                 self.is_expanded_filter.set_filter_func(clone!(
@@ -110,7 +110,7 @@ mod imp {
                 gtk::FlattenListModel::new(Some(wrapper_model)).upcast::<gio::ListModel>()
             } else {
                 // Create a list model for the item.
-                SingleItemListModel::new(&item).upcast()
+                SingleItemListModel::new(Some(&item)).upcast()
             };
 
             self.inner_item.set(item, handlers);

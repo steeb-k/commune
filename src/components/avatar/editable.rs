@@ -507,7 +507,7 @@ impl EditableAvatar {
         image_filter.set_name(Some(&gettext("Images")));
         image_filter.add_mime_type("image/*");
 
-        let filters = SingleItemListModel::new(&image_filter);
+        let filters = SingleItemListModel::new(Some(&image_filter));
 
         let dialog = gtk::FileDialog::builder()
             .title(gettext("Choose Avatar"))
