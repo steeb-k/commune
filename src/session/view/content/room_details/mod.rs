@@ -12,6 +12,7 @@ mod edit_details_subpage;
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
+mod join_rule_subpage;
 mod member_row;
 mod members_page;
 mod membership_subpage_item;
@@ -26,6 +27,7 @@ use self::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, VisualMediaHistoryViewer,
     },
     invite_subpage::InviteSubpage,
+    join_rule_subpage::JoinRuleSubpage,
     member_row::MemberRow,
     members_page::MembersPage,
     membership_subpage_item::MembershipSubpageItem,
@@ -56,6 +58,8 @@ pub(crate) enum SubpageName {
     Addresses,
     /// The page to edit the permissions of the room.
     Permissions,
+    /// The page to edit the join rule of the room.
+    JoinRule,
 }
 
 mod imp {
@@ -163,7 +167,7 @@ mod imp {
 
             self.general_page
                 .get()
-                .expect("general page is initialized")
+                .expect("general page should be initialized")
                 .unselect_topic();
         }
     }
@@ -220,6 +224,7 @@ mod imp {
                 SubpageName::AudioHistory => AudioHistoryViewer::new(self.timeline()).upcast(),
                 SubpageName::Addresses => AddressesSubpage::new(room).upcast(),
                 SubpageName::Permissions => PermissionsSubpage::new(&room.permissions()).upcast(),
+                SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
             });
 
             if is_initial {

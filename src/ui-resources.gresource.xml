@@ -96,6 +96,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/visual_media_item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/join_rule_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/mod.ui</file>

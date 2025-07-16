@@ -13,6 +13,7 @@
     </child>
     <child type="suffix">
       <object class="GtkImage">
+        <property name="visible" bind-source="ButtonCountRow" bind-property="activatable" bind-flags="sync-create" />
         <property name="valign">center</property>
         <property name="halign">center</property>
         <property name="icon-name">go-next-symbolic</property>

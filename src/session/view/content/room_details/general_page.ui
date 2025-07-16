@@ -240,24 +240,17 @@
           </closure>
         </binding>
         <child>
-          <object class="ComboLoadingRow" id="join_rule">
+          <object class="ButtonCountRow" id="join_rule">
             <property name="title" translatable="yes">Who Can Join</property>
-            <property name="string-model">
-              <object class="GtkStringList">
-                <items>
-                  <item translatable="yes">Only Invited Users</item>
-                  <item translatable="yes">Any Registered User</item>
-                </items>
-              </object>
-            </property>
-            <binding name="selected-string">
+            <binding name="subtitle">
               <lookup name="display-name">
                 <lookup name="join-rule">
                   <lookup name="room">RoomDetailsGeneralPage</lookup>
                 </lookup>
               </lookup>
             </binding>
-            <signal name="notify::selected-string" handler="set_join_rule" swapped="yes"/>
+            <property name="action-name">details.show-subpage</property>
+            <property name="action-target">'join-rule'</property>
           </object>
         </child>
         <child>

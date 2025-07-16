@@ -16,7 +16,7 @@ use tracing::error;
 use super::{Membership, Room};
 use crate::{components::PillSource, gettext_f, spawn_tokio, utils::BoundObject};
 
-/// Supported values for the join rule.
+/// Simplified join rules.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "JoinRuleValue")]
 pub enum JoinRuleValue {
@@ -29,6 +29,13 @@ pub enum JoinRuleValue {
     RoomMembership,
     /// The rule is unsupported.
     Unsupported,
+}
+
+impl JoinRuleValue {
+    /// Whether we support editing this join rule.
+    pub(crate) fn can_be_edited(self) -> bool {
+        matches!(self, Self::Invite | Self::Public)
+    }
 }
 
 impl From<&MatrixJoinRule> for JoinRuleValue {
@@ -130,6 +137,11 @@ mod imp {
             ));
             self.own_membership_handler
                 .replace(Some(own_membership_handler));
+        }
+
+        /// The current join rule from the SDK.
+        pub(super) fn matrix_join_rule(&self) -> Option<MatrixJoinRule> {
+            self.matrix_join_rule.borrow().clone()
         }
 
         /// Update the join rule.
@@ -298,7 +310,7 @@ mod imp {
 
         /// Whether our own user can join this room on their own.
         fn we_can_join(&self) -> bool {
-            let Some(matrix_join_rule) = self.matrix_join_rule.borrow().clone() else {
+            let Some(matrix_join_rule) = self.matrix_join_rule() else {
                 return false;
             };
             let Some(room) = self.room.upgrade() else {
@@ -357,17 +369,17 @@ impl JoinRule {
         self.imp().update_join_rule(join_rule);
     }
 
-    /// Change the value of the join rule.
-    pub(crate) async fn set_value(&self, value: JoinRuleValue) -> Result<(), ()> {
+    /// Get the current join rule from the SDK.
+    pub(crate) fn matrix_join_rule(&self) -> Option<MatrixJoinRule> {
+        self.imp().matrix_join_rule()
+    }
+
+    /// Change the join rule.
+    pub(crate) async fn set_matrix_join_rule(&self, rule: MatrixJoinRule) -> Result<(), ()> {
         let Some(room) = self.room() else {
             return Err(());
         };
 
-        let rule = match value {
-            JoinRuleValue::Invite => MatrixJoinRule::Invite,
-            JoinRuleValue::Public => MatrixJoinRule::Public,
-            _ => unimplemented!(),
-        };
         let content = RoomJoinRulesEventContent::new(rule);
 
         let matrix_room = room.matrix_room().clone();

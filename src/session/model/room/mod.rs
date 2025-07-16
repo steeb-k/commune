@@ -26,6 +26,7 @@ use ruma::{
         history_visibility::HistoryVisibility,
         member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
     },
+    room_version_rules::RoomVersionRules,
 };
 use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
@@ -1318,6 +1319,13 @@ mod imp {
                 .unwrap_or_default()
         }
 
+        /// The rules for the version of this room.
+        pub(super) fn rules(&self) -> RoomVersionRules {
+            self.matrix_room()
+                .clone_info()
+                .room_version_rules_or_default()
+        }
+
         /// Whether this room is federated.
         fn federated(&self) -> bool {
             self.matrix_room()
@@ -1616,6 +1624,11 @@ impl Room {
     /// logs.
     pub fn human_readable_id(&self) -> String {
         format!("{} ({})", self.display_name(), self.room_id())
+    }
+
+    /// The rules for the version of this room.
+    pub(crate) fn rules(&self) -> RoomVersionRules {
+        self.imp().rules()
     }
 
     /// Whether this room is joined.

@@ -573,7 +573,6 @@ mod imp {
 
             if permissions.set_power_levels(power_levels).await.is_err() {
                 toast!(self.obj(), gettext("Could not save permissions"));
-                self.save_button.set_is_loading(false);
             }
         }
 

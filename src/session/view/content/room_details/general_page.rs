@@ -32,8 +32,8 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{
-        HistoryVisibilityValue, JoinRuleValue, Member, MemberList, MembershipListKind,
-        NotificationsRoomSetting, Room, RoomCategory,
+        HistoryVisibilityValue, Member, MemberList, MembershipListKind, NotificationsRoomSetting,
+        Room, RoomCategory,
     },
     spawn, spawn_tokio, toast,
     utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
@@ -90,7 +90,7 @@ mod imp {
         canonical_alias_row: RefCell<Option<CopyableRow>>,
         alt_aliases_rows: RefCell<Vec<CopyableRow>>,
         #[template_child]
-        join_rule: TemplateChild<ComboLoadingRow>,
+        join_rule: TemplateChild<ButtonCountRow>,
         #[template_child]
         guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
@@ -760,53 +760,13 @@ mod imp {
                 return;
             };
 
-            let row = &self.join_rule;
-            row.set_is_loading(false);
-
-            let permissions = room.permissions();
-            let join_rule = room.join_rule();
-
-            let is_supported_join_rule = matches!(
-                join_rule.value(),
-                JoinRuleValue::Public | JoinRuleValue::Invite
-            ) && !join_rule.can_knock();
-            let can_change = permissions
+            let join_rule_can_be_edited = room.join_rule().value().can_be_edited();
+            let can_change = room
+                .permissions()
                 .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomJoinRules));
 
-            row.set_read_only(!is_supported_join_rule || !can_change);
-            row.set_selected_string(Some(join_rule.display_name()));
-        }
-
-        /// Set the join rule of the room.
-        #[template_callback]
-        async fn set_join_rule(&self) {
-            let Some(room) = self.room.obj() else {
-                return;
-            };
-            let join_rule = room.join_rule();
-
-            let row = &self.join_rule;
-
-            let value = match row.selected() {
-                0 => JoinRuleValue::Invite,
-                1 => JoinRuleValue::Public,
-                _ => {
-                    return;
-                }
-            };
-
-            if join_rule.value() == value {
-                // Nothing to do.
-                return;
-            }
-
-            row.set_is_loading(true);
-            row.set_read_only(true);
-
-            if join_rule.set_value(value).await.is_err() {
-                toast!(self.obj(), gettext("Could not change who can join"));
-                self.update_join_rule();
-            }
+            self.join_rule
+                .set_activatable(join_rule_can_be_edited && can_change);
         }
 
         /// Update the guest access row.
