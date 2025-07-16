@@ -182,6 +182,14 @@ mod imp {
                     gettext("View"),
                     gettext_f("View {room_name}", &[("room_name", &room_name)]),
                 )
+            } else if room.can_knock() {
+                (
+                    gettext("Request an Invite"),
+                    gettext_f(
+                        "Request an invite to {room_name}",
+                        &[("room_name", &room_name)],
+                    ),
+                )
             } else {
                 (
                     gettext("Join"),
@@ -216,11 +224,19 @@ mod imp {
 
                 let uri = room.uri();
 
-                if let Err(error) = session
-                    .room_list()
-                    .join_by_id_or_alias(uri.id.clone(), uri.via.clone())
-                    .await
-                {
+                let result = if room.can_knock() {
+                    session
+                        .room_list()
+                        .knock(uri.id.clone(), uri.via.clone())
+                        .await
+                } else {
+                    session
+                        .room_list()
+                        .join_by_id_or_alias(uri.id.clone(), uri.via.clone())
+                        .await
+                };
+
+                if let Err(error) = result {
                     toast!(obj, error);
                 }
             }

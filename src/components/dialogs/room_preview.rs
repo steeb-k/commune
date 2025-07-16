@@ -331,6 +331,7 @@ mod imp {
                 .set_tooltip_text(Some(&members_tooltip));
             self.room_members_box.set_visible(true);
 
+            self.update_view_or_join_button();
             self.set_visible_page("details");
         }
 
@@ -344,6 +345,8 @@ mod imp {
 
             let label = if room_list_info.local_room().is_some() {
                 gettext("View")
+            } else if room.can_knock() {
+                gettext("Request an Invite")
             } else {
                 gettext("Join")
             };
@@ -367,12 +370,12 @@ mod imp {
                     obj.close();
                 }
             } else {
-                self.join_room(&room).await;
+                self.knock_or_join_room(&room).await;
             }
         }
 
-        /// Join the room that was previewed, if it is valid.
-        async fn join_room(&self, room: &RemoteRoom) {
+        /// Knock or join the room that was previewed, if it is valid.
+        async fn knock_or_join_room(&self, room: &RemoteRoom) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -383,7 +386,13 @@ mod imp {
             let room_list = session.room_list();
             let uri = room.uri().clone();
 
-            match room_list.join_by_id_or_alias(uri.id, uri.via).await {
+            let result = if room.can_knock() {
+                room_list.knock(uri.id, uri.via).await
+            } else {
+                room_list.join_by_id_or_alias(uri.id, uri.via).await
+            };
+
+            match result {
                 Ok(room_id) => {
                     let obj = self.obj();
 

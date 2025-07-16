@@ -6,7 +6,7 @@ use ruma::{
     OwnedRoomAliasId, OwnedRoomId,
     api::client::{room::get_summary, space::get_hierarchy},
     assign,
-    room::RoomSummary,
+    room::{JoinRuleSummary, RoomSummary},
     uint,
 };
 use tracing::{debug, warn};
@@ -62,6 +62,9 @@ mod imp {
         /// The number of joined members in the room.
         #[property(get)]
         joined_members_count: Cell<u32>,
+        /// Whether we can knock on the room.
+        #[property(get)]
+        can_knock: Cell<bool>,
         /// The information about this room in the room list.
         #[property(get)]
         room_list_info: RoomListRoomInfo,
@@ -226,7 +229,7 @@ mod imp {
             obj.notify_topic_linkified();
         }
 
-        /// Set the loading state.
+        /// Set the number of joined members in the room.
         fn set_joined_members_count(&self, count: u32) {
             if self.joined_members_count.get() == count {
                 return;
@@ -234,6 +237,21 @@ mod imp {
 
             self.joined_members_count.set(count);
             self.obj().notify_joined_members_count();
+        }
+
+        /// Set the join rule of the room.
+        fn set_join_rule(&self, join_rule: &JoinRuleSummary) {
+            let can_knock = matches!(
+                join_rule,
+                JoinRuleSummary::Knock | JoinRuleSummary::KnockRestricted(_)
+            );
+
+            if self.can_knock.get() == can_knock {
+                return;
+            }
+
+            self.can_knock.set(can_knock);
+            self.obj().notify_can_knock();
         }
 
         /// Set the loading state.
@@ -259,6 +277,7 @@ mod imp {
             self.set_name(data.name);
             self.set_topic(data.topic);
             self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
+            self.set_join_rule(&data.join_rule);
 
             if let Some(image) = self.obj().avatar_data().image() {
                 image.set_uri_and_info(data.avatar_url, None);

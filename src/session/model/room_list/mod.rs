@@ -335,6 +335,38 @@ mod imp {
                 }
             }
         }
+
+        /// Request an invite.
+        pub(super) async fn knock(
+            &self,
+            identifier: OwnedRoomOrAliasId,
+            via: Vec<OwnedServerName>,
+        ) -> Result<OwnedRoomId, String> {
+            let Some(session) = self.session.upgrade() else {
+                return Err("Could not upgrade Session".to_owned());
+            };
+            let client = session.client();
+
+            let identifier_clone = identifier.clone();
+            let handle =
+                spawn_tokio!(async move { client.knock(identifier_clone, None, via).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(matrix_room) => Ok(matrix_room.room_id().to_owned()),
+                Err(error) => {
+                    error!("Invite request for room {identifier} failed: {error}");
+
+                    let error = gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}', this is a
+                        // variable name.
+                        "Could not request an invite to room {room_name}",
+                        &[("room_name", identifier.as_str())],
+                    );
+
+                    Err(error)
+                }
+            }
+        }
     }
 }
 
@@ -515,6 +547,15 @@ impl RoomList {
         via: Vec<OwnedServerName>,
     ) -> Result<OwnedRoomId, String> {
         self.imp().join_by_id_or_alias(identifier, via).await
+    }
+
+    /// Request an invite to the room with the given identifier.
+    pub(crate) async fn knock(
+        &self,
+        identifier: OwnedRoomOrAliasId,
+        via: Vec<OwnedServerName>,
+    ) -> Result<OwnedRoomId, String> {
+        self.imp().knock(identifier, via).await
     }
 
     /// Connect to the signal emitted when the list of rooms we are currently
