@@ -35,13 +35,13 @@ use self::{
 };
 use crate::{
     components::UserPage,
-    session::model::{MemberList, Room},
+    session::model::{MemberList, MembershipListKind, Room},
     toast,
 };
 
 /// The possible subpages of the room details.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
-pub(crate) enum SubpageName {
+pub(super) enum SubpageName {
     /// The page to edit the name, topic and avatar of the room.
     EditDetails,
     /// The list of members of the room.
@@ -60,6 +60,17 @@ pub(crate) enum SubpageName {
     Permissions,
     /// The page to edit the join rule of the room.
     JoinRule,
+}
+
+/// The view to present when opening the room details.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum InitialView {
+    /// Present the default page.
+    None,
+    /// Present the given subpage.
+    Subpage(SubpageName),
+    /// Present the members subpage with the given kind.
+    Members(MembershipListKind),
 }
 
 mod imp {
@@ -105,11 +116,11 @@ mod imp {
 
             klass.install_action(
                 "details.show-subpage",
-                Some(&String::static_variant_type()),
+                Some(&SubpageName::static_variant_type()),
                 |obj, _, param| {
                     let subpage = param
                         .and_then(glib::Variant::get::<SubpageName>)
-                        .expect("The parameter should be a valid subpage name");
+                        .expect("parameter should be a valid subpage name");
 
                     obj.imp().show_subpage(subpage, false);
                 },
@@ -208,30 +219,65 @@ mod imp {
             self.timeline.get().expect("timeline should be initialized")
         }
 
-        /// Show the subpage with the given name.
-        pub(super) fn show_subpage(&self, name: SubpageName, is_initial: bool) {
+        /// Get the given subpage.
+        fn subpage(&self, name: SubpageName) -> adw::NavigationPage {
             let room = self.room.get().expect("room should be initialized");
 
-            let mut subpages = self.subpages.borrow_mut();
-            let subpage = subpages.entry(name).or_insert_with(|| match name {
-                SubpageName::EditDetails => EditDetailsSubpage::new(room).upcast(),
-                SubpageName::Members => MembersPage::new(room, self.members()).upcast(),
-                SubpageName::Invite => InviteSubpage::new(room).upcast(),
-                SubpageName::VisualMediaHistory => {
-                    VisualMediaHistoryViewer::new(self.timeline()).upcast()
-                }
-                SubpageName::FileHistory => FileHistoryViewer::new(self.timeline()).upcast(),
-                SubpageName::AudioHistory => AudioHistoryViewer::new(self.timeline()).upcast(),
-                SubpageName::Addresses => AddressesSubpage::new(room).upcast(),
-                SubpageName::Permissions => PermissionsSubpage::new(&room.permissions()).upcast(),
-                SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
-            });
+            self.subpages
+                .borrow_mut()
+                .entry(name)
+                .or_insert_with(|| match name {
+                    SubpageName::EditDetails => EditDetailsSubpage::new(room).upcast(),
+                    SubpageName::Members => MembersPage::new(room, self.members()).upcast(),
+                    SubpageName::Invite => InviteSubpage::new(room).upcast(),
+                    SubpageName::VisualMediaHistory => {
+                        VisualMediaHistoryViewer::new(self.timeline()).upcast()
+                    }
+                    SubpageName::FileHistory => FileHistoryViewer::new(self.timeline()).upcast(),
+                    SubpageName::AudioHistory => AudioHistoryViewer::new(self.timeline()).upcast(),
+                    SubpageName::Addresses => AddressesSubpage::new(room).upcast(),
+                    SubpageName::Permissions => {
+                        PermissionsSubpage::new(&room.permissions()).upcast()
+                    }
+                    SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
+                })
+                .clone()
+        }
+
+        /// Show the subpage with the given name.
+        pub(super) fn show_subpage(&self, name: SubpageName, is_initial: bool) {
+            let subpage = self.subpage(name);
 
             if is_initial {
                 subpage.set_can_pop(false);
             }
 
-            self.obj().push_subpage(subpage);
+            self.obj().push_subpage(&subpage);
+        }
+
+        /// Show the members subpage with the given kind.
+        fn show_members_subpage(&self, kind: MembershipListKind) {
+            let subpage = self
+                .subpage(SubpageName::Members)
+                .downcast::<MembersPage>()
+                .expect("we should have the members subpage");
+
+            subpage.show_membership_list(kind);
+
+            self.obj().push_subpage(&subpage);
+        }
+
+        /// Show the given initial view.
+        pub(super) fn show_initial_view(&self, initial_view: InitialView) {
+            match initial_view {
+                InitialView::None => {}
+                InitialView::Subpage(name) => {
+                    self.show_subpage(name, true);
+                }
+                InitialView::Members(kind) => {
+                    self.show_members_subpage(kind);
+                }
+            }
         }
     }
 }
@@ -245,16 +291,19 @@ glib::wrapper! {
 
 impl RoomDetails {
     /// Construct a `RoomDetails` for the given room with the given parent
-    /// window.
-    pub fn new(parent_window: Option<&gtk::Window>, room: &Room) -> Self {
-        glib::Object::builder()
+    /// window, showing the given initial view.
+    pub(super) fn new(
+        parent_window: Option<&gtk::Window>,
+        room: &Room,
+        initial_view: InitialView,
+    ) -> Self {
+        let obj = glib::Object::builder::<Self>()
             .property("transient-for", parent_window)
             .property("room", room)
-            .build()
-    }
+            .build();
 
-    /// Show the given subpage as the initial page.
-    pub(crate) fn show_initial_subpage(&self, name: SubpageName) {
-        self.imp().show_subpage(name, true);
+        obj.imp().show_initial_view(initial_view);
+
+        obj
     }
 }

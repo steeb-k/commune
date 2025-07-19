@@ -6,8 +6,9 @@ use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, graphene::Point};
 use matrix_sdk::ruma::EventId;
 use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{
-    OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
-    events::room::message::MessageType,
+    OwnedEventId,
+    api::client::receipt::create_receipt::v3::ReceiptType,
+    events::room::{message::MessageType, power_levels::PowerLevelAction},
 };
 use tracing::{error, warn};
 
@@ -40,10 +41,11 @@ use self::{
 use super::{RoomDetails, room_details};
 use crate::{
     components::{DragOverlay, confirm_leave_room_dialog},
+    ngettext_f,
     prelude::*,
     session::model::{
-        Event, MemberList, Membership, ReceiptPosition, Room, TargetRoomCategory, Timeline,
-        VirtualItem, VirtualItemKind,
+        Event, MemberList, Membership, MembershipListKind, ReceiptPosition, Room,
+        TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
     },
     spawn, toast,
     utils::{BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks},
@@ -76,6 +78,8 @@ mod imp {
         room_title: TemplateChild<RoomHistoryTitle>,
         #[template_child]
         room_menu: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        pending_knocks_banner: TemplateChild<adw::Banner>,
         #[template_child]
         listview: TemplateChild<gtk::ListView>,
         #[template_child]
@@ -121,9 +125,10 @@ mod imp {
         scroll_timeout: RefCell<Option<glib::SourceId>>,
         read_timeout: RefCell<Option<glib::SourceId>>,
         room_handler: RefCell<Option<glib::SignalHandlerId>>,
-        can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
+        permissions_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
+        knock_items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -132,6 +137,7 @@ mod imp {
         type Type = super::RoomHistory;
         type ParentType = adw::Bin;
 
+        #[allow(clippy::too_many_lines)]
         fn class_init(klass: &mut Self::Class) {
             VerificationInfoBar::ensure_type();
 
@@ -152,10 +158,13 @@ mod imp {
             });
 
             klass.install_action("room-history.details", None, |obj, _, _| {
-                obj.open_room_details(None);
+                obj.imp().open_room_details(room_details::InitialView::None);
             });
             klass.install_action("room-history.invite-members", None, |obj, _, _| {
-                obj.open_room_details(Some(room_details::SubpageName::Invite));
+                obj.imp()
+                    .open_room_details(room_details::InitialView::Subpage(
+                        room_details::SubpageName::Invite,
+                    ));
             });
 
             klass.install_action(
@@ -392,14 +401,24 @@ mod imp {
                     room.disconnect(handler);
                 }
 
-                if let Some(handler) = self.can_invite_handler.take() {
-                    room.permissions().disconnect(handler);
+                let permissions = room.permissions();
+                for handler in self.permissions_handlers.take() {
+                    permissions.disconnect(handler);
                 }
+
                 if let Some(handler) = self.membership_handler.take() {
                     room.own_member().disconnect(handler);
                 }
                 if let Some(handler) = self.join_rule_handler.take() {
                     room.join_rule().disconnect(handler);
+                }
+            }
+
+            if let Some(members) = self.room_members.take() {
+                if let Some(handler) = self.knock_items_changed_handler.take() {
+                    members
+                        .membership_list(MembershipListKind::Knock)
+                        .disconnect(handler);
                 }
             }
 
@@ -426,8 +445,21 @@ mod imp {
 
                 // Keep a strong reference to the members list before changing the model, so all
                 // events use the same list.
-                self.room_members
-                    .replace(Some(room.get_or_create_members()));
+                let room_members = room.get_or_create_members();
+
+                let knock_items_changed_handler = room_members
+                    .membership_list(MembershipListKind::Knock)
+                    .connect_items_changed(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _, _| {
+                            imp.update_pending_knocks();
+                        }
+                    ));
+                self.knock_items_changed_handler
+                    .replace(Some(knock_items_changed_handler));
+
+                self.room_members.replace(Some(room_members));
 
                 let membership_handler = room.own_member().connect_membership_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -454,7 +486,15 @@ mod imp {
                         imp.update_invite_action();
                     }
                 ));
-                self.can_invite_handler.replace(Some(can_invite_handler));
+                let changed_handler = room.permissions().connect_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_pending_knocks();
+                    }
+                ));
+                self.permissions_handlers
+                    .replace(vec![can_invite_handler, changed_handler]);
 
                 let is_direct_handler = room.connect_is_direct_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -505,6 +545,7 @@ mod imp {
             self.load_more_events_if_needed();
             self.update_room_menu();
             self.update_invite_action();
+            self.update_pending_knocks();
 
             self.obj().notify_timeline();
         }
@@ -982,6 +1023,41 @@ mod imp {
                 .action_set_enabled("room-history.invite-members", can_invite);
         }
 
+        // Update the pending knocks according to the current state.
+        fn update_pending_knocks(&self) {
+            if self.room().is_none_or(|room| {
+                let permissions = room.permissions();
+                !permissions.is_allowed_to(PowerLevelAction::Invite)
+                    && !permissions.is_allowed_to(PowerLevelAction::Kick)
+                    && !permissions.is_allowed_to(PowerLevelAction::Ban)
+            }) {
+                // Our user cannot act on the knock.
+                self.pending_knocks_banner.set_revealed(false);
+                return;
+            }
+
+            let Some(members) = self.room_members.borrow().clone() else {
+                self.pending_knocks_banner.set_revealed(false);
+                return;
+            };
+
+            let n = members.membership_list(MembershipListKind::Knock).n_items();
+            let reveal = n > 0;
+
+            if reveal {
+                self.pending_knocks_banner.set_title(&ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    "There is a pending invite request",
+                    "There are {n} pending invite requests",
+                    n,
+                    &[("n", &n.to_string())],
+                ));
+            }
+
+            self.pending_knocks_banner.set_revealed(reveal);
+        }
+
         /// The context menu for rows presenting an [`Event`].
         pub(super) fn event_context_menu(&self) -> &EventActionsContextMenu {
             self.event_context_menu.get_or_init(Default::default)
@@ -1000,6 +1076,26 @@ mod imp {
                 ))]);
                 popover
             })
+        }
+
+        /// Opens the room details with the given initial view.
+        fn open_room_details(&self, initial_view: room_details::InitialView) {
+            let Some(room) = self.room() else {
+                return;
+            };
+
+            let window =
+                RoomDetails::new(self.obj().root().and_downcast_ref(), &room, initial_view);
+
+            window.present();
+        }
+
+        /// View the list of pending knock requests.
+        #[template_callback]
+        fn view_pending_knocks(&self) {
+            self.open_room_details(room_details::InitialView::Members(
+                MembershipListKind::Knock,
+            ));
         }
     }
 }
@@ -1023,22 +1119,6 @@ impl RoomHistory {
     /// The message toolbar of the room history.
     pub(super) fn message_toolbar(&self) -> &MessageToolbar {
         &self.imp().message_toolbar
-    }
-
-    /// Opens the room details.
-    ///
-    /// If `subpage_name` is set, the room details will be opened on the given
-    /// subpage.
-    pub(crate) fn open_room_details(&self, subpage_name: Option<room_details::SubpageName>) {
-        let Some(room) = self.imp().room() else {
-            return;
-        };
-
-        let window = RoomDetails::new(self.root().and_downcast_ref(), &room);
-        if let Some(subpage_name) = subpage_name {
-            window.show_initial_subpage(subpage_name);
-        }
-        window.present();
     }
 
     /// Enable or disable the mode allowing the room history to stick to the

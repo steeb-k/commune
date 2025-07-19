@@ -164,6 +164,14 @@
               </object>
             </child>
             <child>
+              <object class="AdwBanner" id="pending_knocks_banner">
+                <!-- Translators: This is a verb, as in 'View Room' -->
+                <property name="button-label" translatable="yes">View</property>
+                <property name="button-style">suggested</property>
+                <signal name="button-clicked" handler="view_pending_knocks" swapped="true"/>
+              </object>
+            </child>
+            <child>
               <object class="GtkStack" id="stack">
                 <property name="transition-type">crossfade</property>
                 <child>

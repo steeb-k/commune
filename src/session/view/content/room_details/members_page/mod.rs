@@ -70,7 +70,7 @@ mod imp {
 
     impl MembersPage {
         /// Show the subpage for the list with the given membership.
-        fn show_membership_list(&self, kind: MembershipListKind) {
+        pub(super) fn show_membership_list(&self, kind: MembershipListKind) {
             let tag = kind.as_ref();
 
             if self.navigation_view.find_page(tag).is_some() {
@@ -104,5 +104,10 @@ impl MembersPage {
             .property("room", room)
             .property("members", members)
             .build()
+    }
+
+    /// Show the subpage for the list with the given membership.
+    pub(super) fn show_membership_list(&self, kind: MembershipListKind) {
+        self.imp().show_membership_list(kind);
     }
 }
