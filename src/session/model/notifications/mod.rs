@@ -135,7 +135,7 @@ impl Notifications {
         notification.set_body(Some(&body));
 
         let action = intent.app_action_name();
-        let target_value = intent.to_variant_with_session_id(session_id);
+        let target_value = intent.to_variant_with_session_id(session_id.to_owned());
         notification.set_default_action_and_target_value(action, Some(&target_value));
 
         if let Some(notification_icon) = icon {

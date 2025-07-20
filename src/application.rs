@@ -7,7 +7,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     GETTEXT_PACKAGE, Window, config,
-    intent::{SessionIntent, SessionIntentType},
+    intent::SessionIntent,
     prelude::*,
     session::model::{Session, SessionState},
     session_list::{FailedSession, SessionInfo, SessionList},
@@ -182,23 +182,20 @@ mod imp {
                     .build(),
                 // Show a room. This is the action triggered when clicking a notification about a
                 // message.
-                gio::ActionEntry::builder(SessionIntentType::ShowMatrixId.action_name())
-                    .parameter_type(Some(&SessionIntentType::static_variant_type()))
+                gio::ActionEntry::builder(SessionIntent::SHOW_MATRIX_ID_ACTION_NAME)
+                    .parameter_type(Some(&SessionIntent::static_variant_type()))
                     .activate(|obj: &super::Application, _, variant| {
                         debug!(
-                            "`app.{}` action activated",
-                            SessionIntentType::ShowMatrixId.action_name()
+                            "`{}` action activated",
+                            SessionIntent::SHOW_MATRIX_ID_APP_ACTION_NAME
                         );
 
-                        let Some((session_id, intent)) = variant.and_then(|variant| {
-                            SessionIntent::from_variant_with_session_id(
-                                SessionIntentType::ShowMatrixId,
-                                variant,
-                            )
-                        }) else {
+                        let Some((session_id, intent)) =
+                            variant.and_then(SessionIntent::show_matrix_id_from_variant)
+                        else {
                             error!(
-                                "Activated `app.{}` action without the proper payload",
-                                SessionIntentType::ShowMatrixId.action_name()
+                                "Activated `{}` action without the proper payload",
+                                SessionIntent::SHOW_MATRIX_ID_APP_ACTION_NAME
                             );
                             return;
                         };
@@ -208,32 +205,27 @@ mod imp {
                     .build(),
                 // Show an identity verification. This is the action triggered when clicking a
                 // notification about a new verification.
-                gio::ActionEntry::builder(
-                    SessionIntentType::ShowIdentityVerification.action_name(),
-                )
-                .parameter_type(Some(&SessionIntentType::static_variant_type()))
-                .activate(|obj: &super::Application, _, variant| {
-                    debug!(
-                        "`app.{}` action activated",
-                        SessionIntentType::ShowIdentityVerification.action_name()
-                    );
-
-                    let Some((session_id, intent)) = variant.and_then(|variant| {
-                        SessionIntent::from_variant_with_session_id(
-                            SessionIntentType::ShowIdentityVerification,
-                            variant,
-                        )
-                    }) else {
-                        error!(
-                            "Activated `app.{}` action without the proper payload",
-                            SessionIntentType::ShowIdentityVerification.action_name()
+                gio::ActionEntry::builder(SessionIntent::SHOW_IDENTITY_VERIFICATION_ACTION_NAME)
+                    .parameter_type(Some(&SessionIntent::static_variant_type()))
+                    .activate(|obj: &super::Application, _, variant| {
+                        debug!(
+                            "`{}` action activated",
+                            SessionIntent::SHOW_IDENTITY_VERIFICATION_APP_ACTION_NAME
                         );
-                        return;
-                    };
 
-                    obj.imp().process_session_intent(session_id, intent);
-                })
-                .build(),
+                        let Some((session_id, intent)) = variant
+                            .and_then(SessionIntent::show_identity_verification_from_variant)
+                        else {
+                            error!(
+                                "Activated `{}` action without the proper payload",
+                                SessionIntent::SHOW_IDENTITY_VERIFICATION_APP_ACTION_NAME
+                            );
+                            return;
+                        };
+
+                        obj.imp().process_session_intent(session_id, intent);
+                    })
+                    .build(),
             ]);
         }
 

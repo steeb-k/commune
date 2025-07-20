@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
-use ruma::OwnedUserId;
 
 use crate::{session::model::VerificationKey, utils::matrix::MatrixIdUri};
 
@@ -17,44 +16,86 @@ pub(crate) enum SessionIntent {
 }
 
 impl SessionIntent {
+    /// The application action name for the [`SessionIntent::ShowMatrixId`]
+    /// variant.
+    pub(crate) const SHOW_MATRIX_ID_APP_ACTION_NAME: &str = "app.show-matrix-id";
+
+    /// The action name without the `app.` prefix for the
+    /// [`SessionIntent::ShowMatrixId`] variant.
+    pub(crate) const SHOW_MATRIX_ID_ACTION_NAME: &str =
+        Self::SHOW_MATRIX_ID_APP_ACTION_NAME.split_at(4).1;
+
+    /// The application action name for the
+    /// [`SessionIntent::ShowIdentityVerification`] variant.
+    pub(crate) const SHOW_IDENTITY_VERIFICATION_APP_ACTION_NAME: &str =
+        "app.show-identity-verification";
+
+    /// The action name without the `app.` prefix for the
+    /// [`SessionIntent::ShowIdentityVerification`] variant.
+    pub(crate) const SHOW_IDENTITY_VERIFICATION_ACTION_NAME: &str =
+        Self::SHOW_IDENTITY_VERIFICATION_APP_ACTION_NAME
+            .split_at(4)
+            .1;
+
     /// Get the application action name for this session intent type.
     pub(crate) fn app_action_name(&self) -> &'static str {
         match self {
-            SessionIntent::ShowMatrixId(_) => "app.show-matrix-id",
-            SessionIntent::ShowIdentityVerification(_) => "app.show-identity-verification",
+            SessionIntent::ShowMatrixId(_) => Self::SHOW_MATRIX_ID_APP_ACTION_NAME,
+            SessionIntent::ShowIdentityVerification(_) => {
+                Self::SHOW_IDENTITY_VERIFICATION_APP_ACTION_NAME
+            }
         }
     }
 
+    /// Convert the given `GVariant` to a [`SessionIntent::ShowMatrixId`] and
+    /// session ID, given the intent type.
+    ///
+    /// Returns a  `(session_id, intent)` tuple on success. Returns `None` if
+    /// the `GVariant` could not be parsed successfully.
+    pub(crate) fn show_matrix_id_from_variant(variant: &glib::Variant) -> Option<(String, Self)> {
+        let SessionIntentActionParameter {
+            session_id,
+            payload,
+        } = variant.get()?;
+
+        Some((session_id, Self::ShowMatrixId(payload.get()?)))
+    }
+
+    /// Convert the given `GVariant` to a
+    /// [`SessionIntent::ShowIdentityVerification`] and session ID, given the
+    /// intent type.
+    ///
+    /// Returns a  `(session_id, intent)` tuple on success. Returns `None` if
+    /// the `GVariant` could not be parsed successfully.
+    pub(crate) fn show_identity_verification_from_variant(
+        variant: &glib::Variant,
+    ) -> Option<(String, Self)> {
+        let SessionIntentActionParameter {
+            session_id,
+            payload,
+        } = variant.get()?;
+
+        Some((session_id, Self::ShowIdentityVerification(payload.get()?)))
+    }
+
     /// Convert this intent to a `GVariant` with the given session ID.
-    pub(crate) fn to_variant_with_session_id(&self, session_id: &str) -> glib::Variant {
+    pub(crate) fn to_variant_with_session_id(&self, session_id: String) -> glib::Variant {
         let payload = match self {
             Self::ShowMatrixId(uri) => uri.to_variant(),
             Self::ShowIdentityVerification(key) => key.to_variant(),
         };
-        (session_id, payload).to_variant()
+
+        SessionIntentActionParameter {
+            session_id,
+            payload,
+        }
+        .to_variant()
     }
+}
 
-    /// Convert a `GVariant` to a `SessionIntent` and session ID, given the
-    /// intent type.
-    ///
-    /// Returns an  `(session_id, intent)` tuple on success. Returns `None` if
-    /// the payload could not be parsed successfully.
-    pub(crate) fn from_variant_with_session_id(
-        intent_type: SessionIntentType,
-        variant: &glib::Variant,
-    ) -> Option<(String, Self)> {
-        let (session_id, payload) = variant.get::<(String, glib::Variant)>()?;
-
-        let intent = match intent_type {
-            SessionIntentType::ShowMatrixId => Self::ShowMatrixId(payload.get::<MatrixIdUri>()?),
-            SessionIntentType::ShowIdentityVerification => {
-                let (user_id_str, flow_id) = payload.get::<(String, String)>()?;
-                let user_id = OwnedUserId::try_from(user_id_str).ok()?;
-                Self::ShowIdentityVerification(VerificationKey { user_id, flow_id })
-            }
-        };
-
-        Some((session_id, intent))
+impl StaticVariantType for SessionIntent {
+    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
+        SessionIntentActionParameter::static_variant_type()
     }
 }
 
@@ -70,27 +111,12 @@ impl From<VerificationKey> for SessionIntent {
     }
 }
 
-/// The type of an intent that can be handled by a session.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SessionIntentType {
-    /// Show the target of a Matrix ID URI.
-    ShowMatrixId,
-    /// Show an ongoing identity verification.
-    ShowIdentityVerification,
-}
-
-impl SessionIntentType {
-    /// Get the action name for this session intent type.
-    pub(crate) fn action_name(self) -> &'static str {
-        match self {
-            SessionIntentType::ShowMatrixId => "show-matrix-id",
-            SessionIntentType::ShowIdentityVerification => "show-identity-verification",
-        }
-    }
-}
-
-impl StaticVariantType for SessionIntentType {
-    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
-        <(String, glib::Variant)>::static_variant_type()
-    }
+/// The payload of a [`SessionIntent`], when converted to a `GVariant` for an
+/// app action.
+#[derive(Debug, Clone, glib::Variant)]
+struct SessionIntentActionParameter {
+    /// The ID of the session that should handle the intent.
+    session_id: String,
+    /// The payload of the intent.
+    payload: glib::Variant,
 }
