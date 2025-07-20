@@ -4,18 +4,16 @@
     <signal name="toggled" handler="toggle_popover" swapped="yes"/>
     <binding name="visible">
       <closure type="gboolean" function="invert_boolean">
-        <closure type="gboolean" function="guint_is_zero">
-          <lookup name="n-items" type="GtkSingleSelection">
-            <lookup name="session-selection" type="Window">
-              <lookup name="root">AccountSwitcherButton</lookup>
-            </lookup>
+        <lookup name="is-empty" type="FixedSelection">
+          <lookup name="session-selection" type="Window">
+            <lookup name="root">AccountSwitcherButton</lookup>
           </lookup>
-        </closure>
+        </lookup>
       </closure>
     </binding>
     <binding name="tooltip-text">
       <lookup name="user-id-string" type="SessionInfo">
-        <lookup name="selected-item" type="GtkSingleSelection">
+        <lookup name="selected-item" type="FixedSelection">
           <lookup name="session-selection" type="Window">
             <lookup name="root">AccountSwitcherButton</lookup>
           </lookup>
@@ -35,7 +33,7 @@
         <property name="size">24</property>
         <binding name="data">
           <lookup name="avatar-data" type="SessionInfo">
-            <lookup name="selected-item" type="GtkSingleSelection">
+            <lookup name="selected-item" type="FixedSelection">
               <lookup name="session-selection" type="Window">
                 <lookup name="root">AccountSwitcherButton</lookup>
               </lookup>

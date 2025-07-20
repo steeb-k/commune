@@ -6,7 +6,7 @@ use gtk::{
 };
 
 use super::session_item::SessionItemRow;
-use crate::utils::BoundObjectWeakRef;
+use crate::utils::{BoundObjectWeakRef, FixedSelection};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -21,7 +21,7 @@ mod imp {
         sessions: TemplateChild<gtk::ListBox>,
         /// The model containing the logged-in sessions selection.
         #[property(get, set = Self::set_session_selection, explicit_notify, nullable)]
-        session_selection: BoundObjectWeakRef<gtk::SingleSelection>,
+        session_selection: BoundObjectWeakRef<FixedSelection>,
         /// The selected row.
         selected_row: glib::WeakRef<SessionItemRow>,
     }
@@ -55,7 +55,7 @@ mod imp {
     #[gtk::template_callbacks]
     impl AccountSwitcherPopover {
         /// Set the model containing the logged-in sessions selection.
-        fn set_session_selection(&self, selection: Option<&gtk::SingleSelection>) {
+        fn set_session_selection(&self, selection: Option<&FixedSelection>) {
             if selection == self.session_selection.obj().as_ref() {
                 return;
             }
@@ -97,7 +97,7 @@ mod imp {
                 return;
             };
 
-            let index = row.index().try_into().expect("selected row has an index");
+            let index = u32::try_from(row.index()).expect("selected row has an index");
             selection.set_selected(index);
         }
 

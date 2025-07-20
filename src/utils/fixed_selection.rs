@@ -2,31 +2,63 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::utils::BoundObject;
 
+/// A function that returns `true` if two `GObject`s are considered equivalent.
+pub(crate) type EquivalentObjectFn = dyn Fn(&glib::Object, &glib::Object) -> bool;
+
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        fmt,
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
+    #[derive(glib::Properties)]
     #[properties(wrapper_type = super::FixedSelection)]
     pub struct FixedSelection {
         /// The underlying model.
         #[property(get, set = Self::set_model, explicit_notify, nullable)]
         model: BoundObject<gio::ListModel>,
+        /// The function to use to test for equivalence of two items.
+        ///
+        /// It is used when checking if an object still present when the
+        /// underlying model changes. Which means that if there are two
+        /// equivalent objects at the same time in the underlying model, the
+        /// selected item might change unexpectedly between those two objects.
+        ///
+        /// If this is not set, the `Eq` implementation is used, meaning that
+        /// they must be the same object.
+        pub(super) item_equivalence_fn: RefCell<Option<Box<EquivalentObjectFn>>>,
         /// The position of the selected item.
         #[property(get, set = Self::set_selected, explicit_notify, default = gtk::INVALID_LIST_POSITION)]
         selected: Cell<u32>,
         /// The selected item.
         #[property(get, set = Self::set_selected_item, explicit_notify, nullable)]
         selected_item: RefCell<Option<glib::Object>>,
+        /// Whether the model is empty.
+        #[property(get = Self::is_empty)]
+        is_empty: PhantomData<bool>,
+    }
+
+    impl fmt::Debug for FixedSelection {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("FixedSelection")
+                .field("model", &self.model)
+                .field("selected", &self.selected)
+                .field("selected_item", &self.selected_item)
+                .finish_non_exhaustive()
+        }
     }
 
     impl Default for FixedSelection {
         fn default() -> Self {
             Self {
                 model: Default::default(),
+                item_equivalence_fn: Default::default(),
                 selected: Cell::new(gtk::INVALID_LIST_POSITION),
                 selected_item: Default::default(),
+                is_empty: Default::default(),
             }
         }
     }
@@ -119,6 +151,9 @@ mod imp {
             if prev_n_items > 0 || n_items > 0 {
                 obj.items_changed(0, prev_n_items, n_items);
             }
+            if (prev_n_items > 0 && n_items == 0) || (prev_n_items == 0 && n_items > 0) {
+                obj.notify_is_empty();
+            }
 
             obj.notify_model();
         }
@@ -202,6 +237,11 @@ mod imp {
             obj.notify_selected_item();
         }
 
+        /// Whether the model is empty.
+        fn is_empty(&self) -> bool {
+            self.model.obj().is_none_or(|model| model.n_items() == 0)
+        }
+
         /// Handle when items changed in the underlying model.
         fn items_changed_cb(
             &self,
@@ -223,15 +263,30 @@ mod imp {
                 obj.notify_selected();
             } else {
                 let mut found = false;
+                let item_equivalence_fn = self.item_equivalence_fn.borrow();
 
                 for i in position..(position + added) {
                     let item = model.item(i);
 
-                    if item == selected_item {
+                    if item.as_ref().zip(selected_item.as_ref()).is_some_and(
+                        |(item, selected_item)| {
+                            if let Some(item_equivalence_fn) = &*item_equivalence_fn {
+                                item_equivalence_fn(item, selected_item)
+                            } else {
+                                item == selected_item
+                            }
+                        },
+                    ) {
                         if selected != i {
-                            // The position of the item changed.
+                            // The item moved.
                             self.selected.set(i);
                             obj.notify_selected();
+                        }
+
+                        if item != selected_item {
+                            // The item changed.
+                            self.selected_item.replace(item);
+                            obj.notify_selected_item();
                         }
 
                         found = true;
@@ -247,6 +302,11 @@ mod imp {
             }
 
             obj.items_changed(position, removed, added);
+
+            let n_items = model.n_items();
+            if n_items == 0 || (removed == 0 && n_items == added) {
+                obj.notify_is_empty();
+            }
         }
     }
 }
@@ -262,6 +322,24 @@ impl FixedSelection {
     /// Construct a new `FixedSelection` with the given model.
     pub fn new(model: Option<&impl IsA<gio::ListModel>>) -> Self {
         glib::Object::builder().property("model", model).build()
+    }
+
+    /// Set the function to use to test for equivalence of two items.
+    ///
+    /// It is used when checking if an object still present when the underlying
+    /// model changes. Which means that if there are two equivalent objects at
+    /// the same time in the underlying model, the selected item might change
+    /// unexpectedly between those two objects.
+    ///
+    /// If this is not set, the `Eq` implementation is used, meaning that they
+    /// must be the same object.
+    pub(crate) fn set_item_equivalence_fn(
+        &self,
+        equivalence_fn: impl Fn(&glib::Object, &glib::Object) -> bool + 'static,
+    ) {
+        self.imp()
+            .item_equivalence_fn
+            .replace(Some(Box::new(equivalence_fn)));
     }
 }
 

@@ -20,7 +20,7 @@ use crate::{
     },
     session_list::{FailedSession, SessionInfo},
     toast,
-    utils::LoadingState,
+    utils::{FixedSelection, LoadingState},
 };
 
 /// A page of the main window stack.
@@ -38,6 +38,8 @@ enum WindowPage {
 }
 
 mod imp {
+    use std::{cell::RefCell, rc::Rc};
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -68,7 +70,7 @@ mod imp {
         ///
         /// The one that is selected being the one that is visible.
         #[property(get)]
-        session_selection: gtk::SingleSelection,
+        session_selection: FixedSelection,
         /// The account switcher popover.
         pub(super) account_switcher: AccountSwitcherPopover,
     }
@@ -105,7 +107,7 @@ mod imp {
                 obj.imp().set_visible_page(WindowPage::Login);
             });
             klass.install_action("win.show-session", None, |obj, _, _| {
-                obj.imp().show_selected_session();
+                obj.imp().show_session();
             });
 
             klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
@@ -153,80 +155,46 @@ mod imp {
             self.account_switcher
                 .set_session_selection(Some(self.session_selection.clone()));
 
+            self.session_selection.set_item_equivalence_fn(|lhs, rhs| {
+                let lhs = lhs
+                    .downcast_ref::<SessionInfo>()
+                    .expect("session selection item should be a SessionInfo");
+                let rhs = rhs
+                    .downcast_ref::<SessionInfo>()
+                    .expect("session selection item should be a SessionInfo");
+
+                lhs.session_id() == rhs.session_id()
+            });
             self.session_selection.connect_selected_item_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    imp.show_selected_session();
+                    imp.update_selected_session();
                 }
             ));
-            self.session_selection.connect_items_changed(clone!(
+            self.session_selection.connect_is_empty_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |session_selection, pos, removed, added| {
-                    let obj = imp.obj();
-
-                    let n_items = session_selection.n_items();
-                    obj.action_set_enabled("win.show-session", n_items > 0);
-
-                    if removed > 0 && n_items == 0 {
-                        // There are no more sessions.
-                        imp.set_visible_page(WindowPage::Login);
-                        return;
-                    }
-
-                    if added == 0 {
-                        return;
-                    }
-
-                    let settings = Application::default().settings();
-                    let mut current_session_setting =
-                        settings.string(SETTINGS_KEY_CURRENT_SESSION).to_string();
-
-                    // Session IDs have been truncated in version 6 of StoredSession.
-                    if current_session_setting.len() > SESSION_ID_LENGTH {
-                        current_session_setting.truncate(SESSION_ID_LENGTH);
-
-                        if let Err(error) = settings
-                            .set_string(SETTINGS_KEY_CURRENT_SESSION, &current_session_setting)
-                        {
-                            warn!("Could not save current session: {error}");
-                        }
-                    }
-
-                    for i in pos..pos + added {
-                        let Some(session) = session_selection.item(i).and_downcast::<SessionInfo>()
-                        else {
-                            continue;
-                        };
-
-                        if let Some(failed) = session.downcast_ref::<FailedSession>() {
-                            toast!(obj, failed.error().to_user_facing());
-                        }
-
-                        if session.session_id() == current_session_setting {
-                            session_selection.set_selected(i);
-                        }
-                    }
+                move |session_selection| {
+                    imp.obj()
+                        .action_set_enabled("win.show-session", !session_selection.is_empty());
                 }
             ));
 
             let app = Application::default();
             let session_list = app.session_list();
 
-            self.session_selection.set_model(Some(session_list));
+            self.session_selection.set_model(Some(session_list.clone()));
 
             if session_list.state() == LoadingState::Ready {
-                if session_list.is_empty() {
-                    self.set_visible_page(WindowPage::Login);
-                }
+                self.finish_session_selection_init();
             } else {
                 session_list.connect_state_notify(clone!(
-                    #[weak(rename_to=imp)]
+                    #[weak(rename_to = imp)]
                     self,
                     move |session_list| {
-                        if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                            imp.set_visible_page(WindowPage::Login);
+                        if session_list.state() == LoadingState::Ready {
+                            imp.finish_session_selection_init();
                         }
                     }
                 ));
@@ -272,6 +240,47 @@ mod imp {
             self.obj().notify_compact();
         }
 
+        /// Finish the initialization of the session selection, when the session
+        /// list is ready.
+        fn finish_session_selection_init(&self) {
+            for item in self.session_selection.iter::<glib::Object>() {
+                if let Some(failed) = item.ok().and_downcast_ref::<FailedSession>() {
+                    toast!(self.obj(), failed.error().to_user_facing());
+                }
+            }
+
+            self.restore_current_visible_session();
+
+            self.session_selection.connect_selected_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |session_selection| {
+                    if session_selection.selected() == gtk::INVALID_LIST_POSITION {
+                        imp.select_first_session();
+                    }
+                }
+            ));
+
+            if self.session_selection.selected() == gtk::INVALID_LIST_POSITION {
+                self.select_first_session();
+            }
+        }
+
+        /// Select the first session in the session list.
+        ///
+        /// To be used when there is no current selection.
+        fn select_first_session(&self) {
+            // Select the first session in the list.
+            let selected_session = self.session_selection.item(0);
+
+            if selected_session.is_none() {
+                // There are no more sessions.
+                self.set_visible_page(WindowPage::Login);
+            }
+
+            self.session_selection.set_selected_item(selected_session);
+        }
+
         /// Load the window size from the settings.
         fn load_window_size(&self) {
             let obj = self.obj();
@@ -297,6 +306,31 @@ mod imp {
             settings.set_boolean("is-maximized", obj.is_maximized())?;
 
             Ok(())
+        }
+
+        /// Restore the currently visible session from the settings.
+        fn restore_current_visible_session(&self) {
+            let settings = Application::default().settings();
+            let mut current_session_setting =
+                settings.string(SETTINGS_KEY_CURRENT_SESSION).to_string();
+
+            // Session IDs have been truncated in version 6 of StoredSession.
+            if current_session_setting.len() > SESSION_ID_LENGTH {
+                current_session_setting.truncate(SESSION_ID_LENGTH);
+
+                if let Err(error) =
+                    settings.set_string(SETTINGS_KEY_CURRENT_SESSION, &current_session_setting)
+                {
+                    warn!("Could not save current session: {error}");
+                }
+            }
+
+            if let Some(session) = Application::default()
+                .session_list()
+                .get(&current_session_setting)
+            {
+                self.session_selection.set_selected_item(Some(session));
+            }
         }
 
         /// Save the currently visible session to the settings.
@@ -342,7 +376,7 @@ mod imp {
 
             if index == prev_selected {
                 // Make sure the session is displayed;
-                self.show_selected_session();
+                self.show_session();
             } else {
                 self.session_selection.set_selected(index);
             }
@@ -350,11 +384,9 @@ mod imp {
             true
         }
 
-        /// Show the selected session.
-        ///
-        /// The displayed view will change according to the current session.
-        fn show_selected_session(&self) {
-            let Some(session) = self
+        /// Update the selected session in the session view.
+        fn update_selected_session(&self) {
+            let Some(selected_session) = self
                 .session_selection
                 .selected_item()
                 .and_downcast::<SessionInfo>()
@@ -362,37 +394,64 @@ mod imp {
                 return;
             };
 
-            if let Some(session) = session.downcast_ref::<Session>() {
-                self.session_view.set_session(Some(session));
+            let session = selected_session.downcast_ref::<Session>();
+            self.session_view.set_session(session);
 
+            // Show the selected session automatically only if we are not showing a more
+            // important view.
+            if matches!(
+                self.visible_page(),
+                WindowPage::Session | WindowPage::Loading
+            ) {
+                self.show_session();
+            }
+        }
+
+        /// Show the selected session.
+        ///
+        /// The displayed view will change according to the current session.
+        pub(super) fn show_session(&self) {
+            let Some(selected_session) = self
+                .session_selection
+                .selected_item()
+                .and_downcast::<SessionInfo>()
+            else {
+                return;
+            };
+
+            if let Some(session) = selected_session.downcast_ref::<Session>() {
                 if session.state() == SessionState::Ready {
                     self.set_visible_page(WindowPage::Session);
                 } else {
-                    session.connect_ready(clone!(
+                    let ready_handler_cell: Rc<RefCell<Option<glib::SignalHandlerId>>> =
+                        Rc::default();
+                    let ready_handler = session.connect_ready(clone!(
                         #[weak(rename_to = imp)]
                         self,
-                        move |_| {
-                            imp.set_visible_page(WindowPage::Session);
+                        #[strong]
+                        ready_handler_cell,
+                        move |session| {
+                            if let Some(handler) = ready_handler_cell.take() {
+                                session.disconnect(handler);
+                            }
+
+                            imp.update_selected_session();
                         }
                     ));
+                    ready_handler_cell.replace(Some(ready_handler));
+
                     self.set_visible_page(WindowPage::Loading);
                 }
 
                 // We need to grab the focus so that keyboard shortcuts work.
                 self.session_view.grab_focus();
-
-                return;
-            }
-
-            if let Some(failed) = session.downcast_ref::<FailedSession>() {
+            } else if let Some(failed) = selected_session.downcast_ref::<FailedSession>() {
                 self.error_page
                     .display_session_error(&failed.error().to_user_facing());
                 self.set_visible_page(WindowPage::Error);
             } else {
                 self.set_visible_page(WindowPage::Loading);
             }
-
-            self.session_view.set_session(None::<Session>);
         }
 
         /// Set the visible page of the window.
@@ -447,6 +506,7 @@ impl Window {
     pub(crate) fn add_session(&self, session: Session) {
         let index = Application::default().session_list().insert(session);
         self.session_selection().set_selected(index as u32);
+        self.imp().show_session();
     }
 
     /// The ID of the currently visible session, if any.
