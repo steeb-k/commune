@@ -94,7 +94,9 @@ mod imp {
         /// Set the error message.
         fn set_error(&self, message: String) {
             self.error.replace(Some(message));
+
             self.obj().notify_error();
+            self.set_state(LoadingState::Error);
         }
 
         /// Insert the given session into the list.
@@ -164,7 +166,6 @@ mod imp {
                     );
 
                     self.set_error(message);
-                    self.set_state(LoadingState::Error);
                     return;
                 }
             };
@@ -200,7 +201,6 @@ mod imp {
                     );
 
                     self.set_error(message);
-                    self.set_state(LoadingState::Error);
                     return;
                 }
             };
