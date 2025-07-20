@@ -16,18 +16,18 @@ mod imp {
     pub struct SidebarListModel {
         /// The list of items in the sidebar.
         #[property(get, set = Self::set_item_list, construct_only)]
-        pub item_list: OnceCell<SidebarItemList>,
+        item_list: OnceCell<SidebarItemList>,
         /// The string filter.
         #[property(get)]
-        pub string_filter: gtk::StringFilter,
+        string_filter: gtk::StringFilter,
         /// Whether the string filter is active.
         #[property(get)]
-        pub is_filtered: Cell<bool>,
+        is_filtered: Cell<bool>,
         /// The selection model.
         #[property(get)]
-        pub selection_model: FixedSelection,
+        selection_model: FixedSelection,
         /// The selected item, if it has signal handlers.
-        pub selected_item: BoundObjectWeakRef<glib::Object>,
+        selected_item: BoundObjectWeakRef<glib::Object>,
         item_type_filter: gtk::CustomFilter,
     }
 
