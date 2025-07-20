@@ -18,6 +18,7 @@ use tokio::task::{AbortHandle, JoinHandle};
 
 pub(crate) mod expression;
 mod expression_list_model;
+mod fixed_selection;
 mod grouping_list_model;
 pub(crate) mod key_bindings;
 mod location;
@@ -34,6 +35,7 @@ pub(crate) mod toast;
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,
+    fixed_selection::FixedSelection,
     grouping_list_model::*,
     location::{Location, LocationError, LocationExt},
     placeholder_object::PlaceholderObject,

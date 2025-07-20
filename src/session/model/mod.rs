@@ -25,8 +25,8 @@ pub(crate) use self::{
     session::*,
     session_settings::*,
     sidebar_data::{
-        Selection, SidebarIconItem, SidebarIconItemType, SidebarItemList, SidebarListModel,
-        SidebarSection, SidebarSectionName,
+        SidebarIconItem, SidebarIconItemType, SidebarItemList, SidebarListModel, SidebarSection,
+        SidebarSectionName,
     },
     user::{User, UserExt},
     user_sessions_list::{UserSession, UserSessionsList},

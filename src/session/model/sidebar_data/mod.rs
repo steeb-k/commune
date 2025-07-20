@@ -3,7 +3,6 @@ mod item;
 mod item_list;
 mod list_model;
 mod section;
-mod selection;
 
 pub use self::{
     icon_item::{SidebarIconItem, SidebarIconItemType},
@@ -11,5 +10,4 @@ pub use self::{
     item_list::SidebarItemList,
     list_model::SidebarListModel,
     section::{SidebarSection, SidebarSectionName},
-    selection::Selection,
 };

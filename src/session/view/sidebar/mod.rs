@@ -21,10 +21,10 @@ use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{
-        CryptoIdentityState, RecoveryState, RoomCategory, Selection, Session,
-        SessionVerificationState, SidebarListModel, SidebarSection, TargetRoomCategory, User,
+        CryptoIdentityState, RecoveryState, RoomCategory, Session, SessionVerificationState,
+        SidebarListModel, SidebarSection, TargetRoomCategory, User,
     },
-    utils::expression,
+    utils::{FixedSelection, expression},
 };
 
 mod imp {
@@ -126,7 +126,7 @@ mod imp {
             self.listview.set_factory(Some(&factory));
 
             self.listview.connect_activate(move |listview, pos| {
-                let Some(model) = listview.model().and_downcast::<Selection>() else {
+                let Some(model) = listview.model().and_downcast::<FixedSelection>() else {
                     return;
                 };
                 let Some(item) = model.item(pos) else {

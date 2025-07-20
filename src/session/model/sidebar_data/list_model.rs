@@ -1,9 +1,9 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Selection, SidebarItemList};
+use super::SidebarItemList;
 use crate::{
     session::model::{IdentityVerification, Room},
-    utils::{BoundObjectWeakRef, expression},
+    utils::{BoundObjectWeakRef, FixedSelection, expression},
 };
 
 mod imp {
@@ -25,7 +25,7 @@ mod imp {
         pub is_filtered: Cell<bool>,
         /// The selection model.
         #[property(get)]
-        pub selection_model: Selection,
+        pub selection_model: FixedSelection,
         /// The selected item, if it has signal handlers.
         pub selected_item: BoundObjectWeakRef<glib::Object>,
         item_type_filter: gtk::CustomFilter,
