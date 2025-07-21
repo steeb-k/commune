@@ -122,6 +122,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction/reaction_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction_list.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reply.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/sender_name.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/visual_media.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/attachment_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_popover.ui</file>

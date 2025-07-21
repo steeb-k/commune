@@ -10,11 +10,15 @@ mod message_state_stack;
 mod reaction;
 mod reaction_list;
 mod reply;
+mod sender_name;
 mod text;
 mod visual_media;
 
 pub use self::content::{ContentFormat, MessageContent};
-use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
+use self::{
+    message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
+    sender_name::MessageSenderName,
+};
 use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
     Application, gettext_f,
@@ -42,7 +46,7 @@ mod imp {
         #[template_child]
         header: TemplateChild<gtk::Box>,
         #[template_child]
-        display_name: TemplateChild<gtk::Label>,
+        display_name: TemplateChild<MessageSenderName>,
         #[template_child]
         timestamp: TemplateChild<gtk::Label>,
         #[template_child]
@@ -53,7 +57,7 @@ mod imp {
         reactions: TemplateChild<MessageReactionList>,
         #[template_child]
         read_receipts: TemplateChild<ReadReceiptsList>,
-        bindings: RefCell<Vec<glib::Binding>>,
+        binding: RefCell<Option<glib::Binding>>,
         system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
@@ -116,7 +120,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            for binding in self.bindings.take() {
+            if let Some(binding) = self.binding.take() {
                 binding.unbind();
             }
 
@@ -136,26 +140,20 @@ mod imp {
 
             // Remove signals and bindings from the previous event.
             self.event.disconnect_signals();
-            while let Some(binding) = self.bindings.borrow_mut().pop() {
+            if let Some(binding) = self.binding.take() {
                 binding.unbind();
             }
 
-            self.avatar.set_sender(Some(event.sender()));
-
-            let display_name_binding = event
-                .sender()
-                .bind_property("disambiguated-name", &*self.display_name, "label")
-                .sync_create()
-                .build();
+            let sender = event.sender();
+            self.avatar.set_sender(Some(sender.clone()));
+            self.display_name.set_sender(Some(sender));
 
             let state_binding = event
                 .bind_property("state", &*self.message_state, "state")
                 .sync_create()
                 .build();
 
-            self.bindings
-                .borrow_mut()
-                .append(&mut vec![display_name_binding, state_binding]);
+            self.binding.replace(Some(state_binding));
 
             let header_state_handler = event.connect_header_state_notify(clone!(
                 #[weak(rename_to = imp)]

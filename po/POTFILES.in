@@ -165,6 +165,7 @@ src/session/view/content/room_history/message_row/mod.rs
 src/session/view/content/room_history/message_row/reaction/mod.rs
 src/session/view/content/room_history/message_row/reaction_list.ui
 src/session/view/content/room_history/message_row/reply.ui
+src/session/view/content/room_history/message_row/sender_name.rs
 src/session/view/content/room_history/message_row/text/widgets.rs
 src/session/view/content/room_history/message_row/visual_media.rs
 src/session/view/content/room_history/message_row/visual_media.ui

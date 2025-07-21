@@ -138,6 +138,20 @@ sender-avatar {
   }
 }
 
+message-sender {
+  @include vendor.focus-ring($offset: -1px, $focus-state: ':focus-within');
+
+  border-radius: 3px;
+
+  &.activatable {
+    &:hover, &:focus {
+      label {
+        text-decoration-line: underline;
+      }
+    }
+  }
+}
+
 .event-content {
   .h1 {
     font-weight: 800;

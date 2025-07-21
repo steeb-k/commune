@@ -203,7 +203,7 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl SenderAvatar {
-        /// Set the list of room members.
+        /// Set the displayed member.
         fn set_sender(&self, sender: Option<Member>) {
             let prev_sender = self.sender.obj();
 

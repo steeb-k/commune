@@ -26,15 +26,9 @@
               <property name="column-span">2</property>
             </layout>
             <child>
-              <object class="GtkLabel" id="display_name">
+              <object class="ContentMessageSenderName" id="display_name">
                 <property name="hexpand">true</property>
                 <property name="halign">start</property>
-                <property name="ellipsize">end</property>
-                <property name="selectable">True</property>
-                <style>
-                  <class name="heading"/>
-                  <class name="accent"/>
-                </style>
               </object>
             </child>
             <child>
