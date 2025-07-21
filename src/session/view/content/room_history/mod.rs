@@ -40,6 +40,7 @@ use self::{
 };
 use super::{RoomDetails, room_details};
 use crate::{
+    Window,
     components::{DragOverlay, confirm_leave_room_dialog},
     ngettext_f,
     prelude::*,
@@ -129,6 +130,7 @@ mod imp {
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
         knock_items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
+        window_active_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -281,10 +283,38 @@ mod imp {
                         revealer.set_visible(false);
                     }
                 });
+
+            self.obj().connect_root_notify(|obj| {
+                let imp = obj.imp();
+
+                let Some(window) = imp.parent_window() else {
+                    return;
+                };
+
+                let active_handler = window.connect_is_active_notify(clone!(
+                    #[weak]
+                    imp,
+                    move |window| {
+                        if !window.is_active() {
+                            return;
+                        }
+
+                        // When the window becomes active, trigger a read receipt update.
+                        imp.trigger_read_receipts_update();
+                    }
+                ));
+                imp.window_active_handler.replace(Some(active_handler));
+            });
         }
 
         fn dispose(&self) {
             self.disconnect_all();
+
+            if let Some(handler) = self.window_active_handler.take() {
+                if let Some(window) = self.parent_window() {
+                    window.disconnect(handler);
+                }
+            }
         }
     }
 
@@ -295,6 +325,13 @@ mod imp {
             } else {
                 self.room_title.grab_focus()
             }
+        }
+
+        fn map(&self) {
+            self.parent_map();
+
+            // When the room history becomes mapped, trigger a read receipt update.
+            self.trigger_read_receipts_update();
         }
     }
 
@@ -811,6 +848,21 @@ mod imp {
             }
         }
 
+        /// The ancestor window of the room history.
+        fn parent_window(&self) -> Option<Window> {
+            self.obj().root().and_downcast()
+        }
+
+        /// Whether the room history is active.
+        ///
+        /// It means that the ancestor window is active and the room history is
+        /// mapped.
+        fn is_active(&self) -> bool {
+            self.parent_window()
+                .is_some_and(|window| window.is_active())
+                && self.obj().is_mapped()
+        }
+
         /// Trigger the process to update read receipts.
         fn trigger_read_receipts_update(&self) {
             let Some(timeline) = self.timeline.obj() else {
@@ -823,6 +875,10 @@ mod imp {
                 }
                 if let Some(source_id) = self.read_timeout.take() {
                     source_id.remove();
+                }
+
+                if !self.is_active() {
+                    return;
                 }
 
                 // Only send read receipt when scrolling stopped.
@@ -846,6 +902,10 @@ mod imp {
 
             if let Some(source_id) = self.read_timeout.take() {
                 source_id.remove();
+            }
+
+            if !self.is_active() {
+                return;
             }
 
             self.read_timeout.replace(Some(glib::timeout_add_local_once(
@@ -876,6 +936,10 @@ mod imp {
         /// Update the read marker.
         fn update_read_marker(&self) {
             self.read_timeout.take();
+
+            if !self.is_active() {
+                return;
+            }
 
             let Some(position) = self.receipt_position() else {
                 return;
