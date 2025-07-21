@@ -142,6 +142,7 @@ src/session/view/content/room_details/members_page/members_list_view/mod.ui
 src/session/view/content/room_details/mod.rs
 src/session/view/content/room_details/mod.ui
 src/session/view/content/room_details/permissions/add_members_subpage.ui
+src/session/view/content/room_details/permissions/members_subpage.rs
 src/session/view/content/room_details/permissions/members_subpage.ui
 src/session/view/content/room_details/permissions/permissions_subpage.rs
 src/session/view/content/room_details/permissions/permissions_subpage.ui

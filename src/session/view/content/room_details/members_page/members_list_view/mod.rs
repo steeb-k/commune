@@ -347,7 +347,7 @@ mod imp {
         /// Update the view for the current state.
         fn update_view(&self) {
             let Some(members) = self.members.obj() else {
-                self.stack.set_visible_child_name("no-members");
+                self.stack.set_visible_child_name("empty");
                 return;
             };
 

@@ -1,4 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{
     CompositeTemplate, glib,
     glib::{clone, closure},
@@ -25,6 +26,10 @@ mod imp {
         search_bar: TemplateChild<gtk::SearchBar>,
         #[template_child]
         search_entry: TemplateChild<gtk::SearchEntry>,
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        empty_page: TemplateChild<adw::StatusPage>,
         #[template_child]
         list_view: TemplateChild<gtk::ListView>,
         filtered_model: gtk::FilterListModel,
@@ -81,6 +86,22 @@ mod imp {
             );
 
             self.filtered_model.set_filter(Some(&search_filter));
+
+            self.filtered_model.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_visible_page();
+                }
+            ));
+            self.search_entry.connect_text_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_visible_page();
+                }
+            ));
+            self.update_visible_page();
 
             // Sort members by power level, then display name, then user ID.
             let power_level_expr = MemberPowerLevel::this_expression("power-level");
@@ -160,6 +181,24 @@ mod imp {
 
             self.editable.set(editable);
             self.obj().notify_editable();
+        }
+
+        /// Update the visible page for the current state.
+        fn update_visible_page(&self) {
+            if self.filtered_model.n_items() > 0 {
+                self.stack.set_visible_child_name("members");
+                return;
+            }
+
+            // Update the empty page before showing it.
+            let description = if self.search_entry.text().is_empty() {
+                gettext("There are no room members with assigned power levels in this room")
+            } else {
+                gettext("There are no room members with assigned power levels matching the search")
+            };
+            self.empty_page.set_description(Some(&description));
+
+            self.stack.set_visible_child_name("empty");
         }
     }
 }
