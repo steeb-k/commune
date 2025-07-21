@@ -87,6 +87,18 @@ pub(crate) trait StrMutExt {
 
     /// Append an ellipsis, except if this string already ends with an ellipsis.
     fn append_ellipsis(&mut self);
+
+    /// Strip the NUL byte.
+    ///
+    /// Since they are used by GTK as the end of a string, strings in properties
+    /// will be truncated at the first NUL byte.
+    fn strip_nul(&mut self);
+
+    /// Remove unnecessary or problematic characters from the string.
+    fn clean_string(&mut self) {
+        self.strip_nul();
+        self.truncate_end_whitespaces();
+    }
 }
 
 impl StrMutExt for String {
@@ -124,6 +136,35 @@ impl StrMutExt for String {
         if !self.ends_with('…') && !self.ends_with("..") {
             self.push('…');
         }
+    }
+
+    fn strip_nul(&mut self) {
+        self.retain(|c| c != '\0');
+    }
+}
+
+/// Extensions to `Option<String>`.
+pub(crate) trait OptionStringExt: Sized {
+    /// Remove unnecessary or problematic characters from the string.
+    ///
+    /// If the final string is empty, replaces it with `None`.
+    fn clean_string(&mut self);
+
+    /// Remove unnecessary or problematic characters from the string.
+    ///
+    /// If the final string is empty, replaces it with `None`.
+    fn into_clean_string(mut self) -> Self {
+        self.clean_string();
+        self
+    }
+}
+
+impl OptionStringExt for Option<String> {
+    fn clean_string(&mut self) {
+        self.take_if(|s| {
+            s.clean_string();
+            s.is_empty()
+        });
     }
 }
 

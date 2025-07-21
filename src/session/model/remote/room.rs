@@ -274,8 +274,8 @@ mod imp {
         pub(super) fn set_data(&self, data: RoomSummary) {
             self.set_room_id(data.room_id);
             self.set_canonical_alias(data.canonical_alias);
-            self.set_name(data.name);
-            self.set_topic(data.topic);
+            self.set_name(data.name.into_clean_string());
+            self.set_topic(data.topic.into_clean_string());
             self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
             self.set_join_rule(&data.join_rule);
 

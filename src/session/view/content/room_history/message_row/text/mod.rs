@@ -65,7 +65,9 @@ mod imp {
 
     impl MessageText {
         /// Display the given plain text.
-        pub(super) fn with_plain_text(&self, body: String, format: ContentFormat) {
+        pub(super) fn with_plain_text(&self, mut body: String, format: ContentFormat) {
+            body.clean_string();
+
             if !self.original_text_changed(&body) && !self.format_changed(format) {
                 return;
             }
@@ -85,12 +87,15 @@ mod imp {
         /// It will detect if it should display the body or the formatted body.
         pub(super) fn with_markup(
             &self,
-            formatted: Option<FormattedBody>,
-            body: String,
+            mut formatted: Option<FormattedBody>,
+            mut body: String,
             room: &Room,
             format: ContentFormat,
             detect_at_room: bool,
         ) {
+            formatted.clean_string();
+            body.clean_string();
+
             self.set_detect_at_room(detect_at_room);
 
             if let Some(formatted) = formatted.filter(formatted_body_is_html).map(|f| f.body) {
@@ -123,13 +128,16 @@ mod imp {
         /// It will detect if it should display the body or the formatted body.
         pub(super) fn with_emote(
             &self,
-            formatted: Option<FormattedBody>,
-            body: String,
+            mut formatted: Option<FormattedBody>,
+            mut body: String,
             sender: &Member,
             room: &Room,
             format: ContentFormat,
             detect_at_room: bool,
         ) {
+            formatted.clean_string();
+            body.clean_string();
+
             self.set_detect_at_room(detect_at_room);
 
             if let Some(formatted) = formatted.filter(formatted_body_is_html).map(|f| f.body) {

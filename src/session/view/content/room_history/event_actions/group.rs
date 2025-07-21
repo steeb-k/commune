@@ -497,7 +497,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
             _ => {
                 if let Some(caption) = event
                     .media_message()
-                    .and_then(|m| m.caption().map(|(caption, _)| caption.to_owned()))
+                    .and_then(|m| m.caption().map(|(caption, _)| caption))
                 {
                     caption
                 } else {

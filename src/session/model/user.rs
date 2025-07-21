@@ -371,7 +371,7 @@ pub trait UserExt: IsA<User> {
             Ok(response) => {
                 let user = self.upcast_ref::<User>();
 
-                user.set_name(response.displayname);
+                user.set_name(response.displayname.into_clean_string());
                 user.set_avatar_url(response.avatar_url);
                 Ok(())
             }

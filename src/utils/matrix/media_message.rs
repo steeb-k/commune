@@ -30,7 +30,8 @@ use crate::{
 /// Get the filename of a media message.
 macro_rules! filename {
     ($message:ident, $mime_fallback:expr) => {{
-        let filename = $message.filename();
+        let mut filename = $message.filename().to_owned();
+        filename.clean_string();
 
         if filename.is_empty() {
             let mimetype = $message
@@ -40,7 +41,7 @@ macro_rules! filename {
 
             $crate::utils::media::filename_for_mime(mimetype, $mime_fallback)
         } else {
-            filename.to_owned()
+            filename
         }
     }};
 }
@@ -88,14 +89,31 @@ impl MediaMessage {
     /// The caption of the media, if any.
     ///
     /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub(crate) fn caption(&self) -> Option<(&str, Option<&FormattedBody>)> {
-        match self {
-            Self::Audio(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
-            Self::File(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
-            Self::Image(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
-            Self::Video(c) => c.caption().map(|caption| (caption, c.formatted.as_ref())),
+    pub(crate) fn caption(&self) -> Option<(String, Option<FormattedBody>)> {
+        let mut caption = match self {
+            Self::Audio(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::File(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::Image(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::Video(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
             Self::Sticker(_) => None,
-        }
+        };
+
+        caption.take_if(|(caption, formatted)| {
+            caption.clean_string();
+            formatted.clean_string();
+
+            caption.is_empty()
+        });
+
+        caption
     }
 
     /// Fetch the content of the media with the given client.

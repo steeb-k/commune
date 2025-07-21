@@ -299,7 +299,10 @@ mod imp {
         /// The pretty-formatted JSON source, if it has been echoed back by the
         /// server.
         fn source(&self) -> Option<String> {
-            self.item().original_json().map(raw_to_pretty_string)
+            self.item()
+                .original_json()
+                .map(raw_to_pretty_string)
+                .into_clean_string()
         }
 
         /// Whether we have the JSON source.
@@ -373,6 +376,7 @@ mod imp {
             self.latest_edit_raw()
                 .as_ref()
                 .map(raw_to_pretty_string)
+                .into_clean_string()
                 .unwrap_or_default()
         }
 

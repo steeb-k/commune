@@ -414,13 +414,7 @@ trait MessageContentContainer: ChildPropertyExt {
         if let Some((caption, formatted_caption)) = media_message.caption() {
             let caption_widget = self.child_or_default::<MessageCaption>();
 
-            caption_widget.set_caption(
-                caption.to_owned(),
-                formatted_caption.cloned(),
-                room,
-                format,
-                detect_at_room,
-            );
+            caption_widget.set_caption(caption, formatted_caption, room, format, detect_at_room);
 
             caption_widget.build_media_content(media_message, format, room, cache_key);
         } else {

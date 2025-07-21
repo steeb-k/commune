@@ -351,14 +351,7 @@ mod imp {
 
         /// Update the name of this room.
         fn update_name(&self) {
-            let name = self
-                .matrix_room()
-                .name()
-                .map(|mut s| {
-                    s.truncate_end_whitespaces();
-                    s
-                })
-                .filter(|s| !s.is_empty());
+            let name = self.matrix_room().name().into_clean_string();
 
             if *self.name.borrow() == name {
                 return;
@@ -399,7 +392,7 @@ mod imp {
                 Default::default()
             };
 
-            display_name.truncate_end_whitespaces();
+            display_name.clean_string();
 
             if display_name.is_empty() {
                 // Translators: This is displayed when the room name is unknown yet.
@@ -493,6 +486,7 @@ mod imp {
                 .matrix_room()
                 .topic()
                 .map(|mut s| {
+                    s.strip_nul();
                     s.truncate_end_whitespaces();
                     s
                 })

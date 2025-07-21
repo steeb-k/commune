@@ -9,10 +9,15 @@ use matrix_sdk_ui::timeline::{
 };
 use ruma::{
     UserId,
-    events::{AnySyncTimelineEvent, room::message::MessageType},
+    events::{
+        AnySyncTimelineEvent,
+        room::message::{FormattedBody, MessageType},
+    },
     serde::Raw,
 };
 use serde::Deserialize;
+
+use crate::utils::string::StrMutExt;
 
 /// Helper trait for types possibly containing an `@room` mention.
 pub(crate) trait AtMentionExt {
@@ -222,4 +227,21 @@ struct RawUnsigned {
 struct RawBundledRelations {
     #[serde(rename = "m.replace")]
     replace: Option<Raw<AnySyncTimelineEvent>>,
+}
+
+/// Extension trait for `Option<FormattedBody>`.
+pub(crate) trait FormattedBodyExt {
+    /// Clean the body in the `FormattedBody`.
+    ///
+    /// Replaces it with `None` if the body is empty after being cleaned.
+    fn clean_string(&mut self);
+}
+
+impl FormattedBodyExt for Option<FormattedBody> {
+    fn clean_string(&mut self) {
+        self.take_if(|formatted| {
+            formatted.body.clean_string();
+            formatted.body.is_empty()
+        });
+    }
 }
