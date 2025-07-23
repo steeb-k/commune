@@ -867,9 +867,9 @@ mod imp {
 
             let member_event = match raw_member_event {
                 RawSyncOrStrippedState::Sync(raw) => {
-                    raw.deserialize_as::<RoomMemberMembershipEvent>()
+                    raw.deserialize_as_unchecked::<RoomMemberMembershipEvent>()
                 }
-                RawSyncOrStrippedState::Stripped(raw) => raw.deserialize_as(),
+                RawSyncOrStrippedState::Stripped(raw) => raw.deserialize_as_unchecked(),
             };
 
             let member_event = match member_event {
@@ -927,7 +927,7 @@ mod imp {
             match raw_prev_member_event
                 .kind
                 .raw()
-                .deserialize_as::<RoomMemberMembershipEvent>()
+                .deserialize_as_unchecked::<RoomMemberMembershipEvent>()
             {
                 Ok(prev_member_event) => {
                     prev_member_event.content.membership == MembershipState::Invite

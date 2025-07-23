@@ -77,8 +77,8 @@
                 <child>
                   <object class="PowerLevelSelectionPopover" id="popover">
                     <signal name="notify::visible" handler="popover_visible" swapped="true" />
+                    <signal name="notify::selected-power-level" handler="power_level_changed" swapped="true" />
                     <property name="permissions" bind-source="PowerLevelSelectionRow" bind-property="permissions" bind-flags="sync-create"/>
-                    <property name="selected-power-level" bind-source="PowerLevelSelectionRow" bind-property="selected-power-level" bind-flags="sync-create | bidirectional"/>
                   </object>
                 </child>
               </object>

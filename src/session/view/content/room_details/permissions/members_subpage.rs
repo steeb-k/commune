@@ -104,7 +104,7 @@ mod imp {
             self.update_visible_page();
 
             // Sort members by power level, then display name, then user ID.
-            let power_level_expr = MemberPowerLevel::this_expression("power-level");
+            let power_level_expr = MemberPowerLevel::this_expression("power-level-i64");
             let power_level_sorter = gtk::NumericSorter::builder()
                 .expression(power_level_expr)
                 .sort_order(gtk::SortType::Descending)

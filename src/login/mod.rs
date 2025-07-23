@@ -288,7 +288,7 @@ mod imp {
             let oauth = client.oauth();
             let handle = spawn_tokio!(async move {
                 oauth
-                    .login(redirect_uri, None, Some(client_registration_data()))
+                    .login(redirect_uri, None, Some(client_registration_data()), None)
                     .build()
                     .await
             });

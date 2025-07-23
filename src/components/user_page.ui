@@ -130,7 +130,7 @@
                             <child>
                               <object class="PowerLevelSelectionRow" id="power_level_row">
                                 <property name="title" translatable="yes" comments="Translators: value used to assign room member roles">Power Level</property>
-                                <signal name="notify::selected-power-level" handler="set_power_level" swapped="yes" />
+                                <signal name="selected-power-level-changed" handler="set_power_level" swapped="yes" />
                               </object>
                             </child>
                             <child>

@@ -216,7 +216,7 @@ mod imp {
                 .insert(kind, items_changed_handler);
 
             // Sort the members list by power level, then display name.
-            let power_level_expr = Member::this_expression("power-level");
+            let power_level_expr = Member::this_expression("power-level-i64");
             let sorter = gtk::MultiSorter::new();
             sorter.append(
                 gtk::NumericSorter::builder()

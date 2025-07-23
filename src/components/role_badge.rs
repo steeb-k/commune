@@ -77,6 +77,12 @@ mod imp {
 
             self.label.set_text(&role.to_string());
 
+            if role == MemberRole::Creator {
+                obj.add_css_class("creator");
+            } else {
+                obj.remove_css_class("creator");
+            }
+
             if role == MemberRole::Administrator {
                 obj.add_css_class("admin");
             } else {

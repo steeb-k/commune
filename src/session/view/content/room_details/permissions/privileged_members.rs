@@ -7,7 +7,7 @@ use ruma::{Int, OwnedUserId};
 
 use super::MemberPowerLevel;
 use crate::{
-    session::model::{Permissions, PowerLevel, User},
+    session::model::{Permissions, User},
     utils::BoundObjectWeakRef,
 };
 
@@ -115,7 +115,7 @@ mod imp {
                     });
                 let member = MemberPowerLevel::new(&user, &permissions);
 
-                let handler = member.connect_power_level_notify(clone!(
+                let handler = member.connect_power_level_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -184,7 +184,7 @@ mod imp {
                     return true;
                 };
 
-                if member.power_level() != PowerLevel::from(*pl) {
+                if member.power_level() != *pl {
                     return true;
                 }
             }

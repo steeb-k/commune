@@ -6,7 +6,7 @@
 inline-pill {
   border-radius: 9999px;
   background-color: vendor.$button_color;
-  
+
   @include vendor.focus-ring();
 
   &.activatable {
@@ -46,14 +46,19 @@ role-badge {
   padding: 0.1em 0.5em;
   font-size: 0.8em;
 
+  &.creator {
+    color: var(--accent-fg-color);
+    background-color: var(--accent-purple);
+  }
+
   &.admin {
-    color: var(--error-fg-color);
-    background-color: var(--error-bg-color);
+    color: var(--accent-fg-color);
+    background-color: var(--accent-red);
   }
 
   &.mod {
-    color: var(--warning-fg-color);
-    background-color: var(--warning-bg-color);
+    color: var(--accent-fg-color);
+    background-color: var(--accent-yellow);
   }
 
   &.muted {

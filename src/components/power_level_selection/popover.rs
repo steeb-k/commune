@@ -1,8 +1,9 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{CompositeTemplate, glib, glib::clone};
+use ruma::events::room::power_levels::UserPowerLevel;
 
 use crate::{
-    session::model::{POWER_LEVEL_ADMIN, POWER_LEVEL_MOD, Permissions, PowerLevel},
+    session::model::{POWER_LEVEL_ADMIN, POWER_LEVEL_MAX, POWER_LEVEL_MOD, Permissions},
     utils::BoundObject,
 };
 
@@ -48,7 +49,7 @@ mod imp {
         permissions: BoundObject<Permissions>,
         /// The selected power level.
         #[property(get, set = Self::set_selected_power_level, explicit_notify)]
-        selected_power_level: Cell<PowerLevel>,
+        selected_power_level: Cell<i64>,
     }
 
     #[glib::object_subclass]
@@ -84,7 +85,7 @@ mod imp {
             self.permissions.disconnect_signals();
 
             if let Some(permissions) = permissions {
-                let own_pl_handler = permissions.connect_own_power_level_notify(clone!(
+                let own_pl_handler = permissions.connect_own_power_level_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -120,7 +121,7 @@ mod imp {
         }
 
         /// Set the selected power level.
-        fn set_selected_power_level(&self, power_level: PowerLevel) {
+        fn set_selected_power_level(&self, power_level: i64) {
             if self.selected_power_level.get() == power_level {
                 return;
             }
@@ -148,15 +149,10 @@ mod imp {
                 return;
             };
 
-            let can_change_to_admin = permissions.own_power_level() >= POWER_LEVEL_ADMIN;
+            let can_change_to_admin = permissions.can_set_user_power_level_to(POWER_LEVEL_ADMIN);
 
-            if can_change_to_admin {
-                self.admin_row.set_sensitive(true);
-                self.admin_row.set_activatable(true);
-            } else {
-                self.admin_row.set_sensitive(false);
-                self.admin_row.set_activatable(false);
-            }
+            self.admin_row.set_sensitive(can_change_to_admin);
+            self.admin_row.set_activatable(can_change_to_admin);
         }
 
         /// Update the moderator row.
@@ -165,15 +161,10 @@ mod imp {
                 return;
             };
 
-            let can_change_to_mod = permissions.own_power_level() >= POWER_LEVEL_MOD;
+            let can_change_to_mod = permissions.can_set_user_power_level_to(POWER_LEVEL_MOD);
 
-            if can_change_to_mod {
-                self.mod_row.set_sensitive(true);
-                self.mod_row.set_activatable(true);
-            } else {
-                self.mod_row.set_sensitive(false);
-                self.mod_row.set_activatable(false);
-            }
+            self.mod_row.set_sensitive(can_change_to_mod);
+            self.mod_row.set_activatable(can_change_to_mod);
         }
 
         /// Update the default row.
@@ -185,15 +176,10 @@ mod imp {
             let default = permissions.default_power_level();
             self.default_pl_label.set_label(&default.to_string());
 
-            let can_change_to_default = permissions.own_power_level() >= default;
+            let can_change_to_default = permissions.can_set_user_power_level_to(default);
 
-            if can_change_to_default {
-                self.default_row.set_sensitive(true);
-                self.default_row.set_activatable(true);
-            } else {
-                self.default_row.set_sensitive(false);
-                self.default_row.set_activatable(false);
-            }
+            self.default_row.set_sensitive(can_change_to_default);
+            self.default_row.set_activatable(can_change_to_default);
         }
 
         /// Update the muted row.
@@ -214,15 +200,10 @@ mod imp {
 
             self.muted_pl_label.set_label(&mute.to_string());
 
-            let can_change_to_muted = permissions.own_power_level() >= mute;
+            let can_change_to_muted = permissions.can_set_user_power_level_to(mute);
 
-            if can_change_to_muted {
-                self.muted_row.set_sensitive(true);
-                self.muted_row.set_activatable(true);
-            } else {
-                self.muted_row.set_sensitive(false);
-                self.muted_row.set_activatable(false);
-            }
+            self.muted_row.set_sensitive(can_change_to_muted);
+            self.muted_row.set_activatable(can_change_to_muted);
 
             self.muted_row.set_visible(true);
         }
@@ -233,8 +214,13 @@ mod imp {
                 return;
             };
 
-            self.custom_adjustment
-                .set_upper(permissions.own_power_level() as f64);
+            let max = if let UserPowerLevel::Int(value) = permissions.own_power_level() {
+                i64::from(value)
+            } else {
+                POWER_LEVEL_MAX
+            };
+            self.custom_adjustment.set_upper(max as f64);
+
             self.custom_adjustment
                 .set_value(self.selected_power_level.get() as f64);
         }
@@ -260,7 +246,7 @@ mod imp {
         /// The custom value changed.
         #[template_callback]
         fn custom_value_changed(&self) {
-            let power_level = self.custom_adjustment.value() as PowerLevel;
+            let power_level = self.custom_adjustment.value() as i64;
             let can_confirm = power_level != self.selected_power_level.get();
 
             self.custom_confirm.set_sensitive(can_confirm);
@@ -269,7 +255,7 @@ mod imp {
         /// The custom value was confirmed.
         #[template_callback]
         fn custom_value_confirmed(&self) {
-            let power_level = self.custom_adjustment.value() as PowerLevel;
+            let power_level = self.custom_adjustment.value() as i64;
 
             self.obj().popdown();
             self.set_selected_power_level(power_level);

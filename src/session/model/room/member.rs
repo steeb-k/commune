@@ -1,18 +1,21 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::room::RoomMember;
 use ruma::{
     OwnedEventId, OwnedUserId,
     events::room::{
         member::MembershipState,
-        power_levels::{NotificationPowerLevelType, PowerLevelAction},
+        power_levels::{NotificationPowerLevelType, PowerLevelAction, UserPowerLevel},
     },
+    int,
 };
 use tracing::{debug, error};
 
-use super::{
-    MemberRole, Room,
-    permissions::{POWER_LEVEL_MAX, POWER_LEVEL_MIN, PowerLevel},
-};
+use super::{MemberRole, Room};
 use crate::{components::PillSource, prelude::*, session::model::User, spawn, spawn_tokio};
 
 /// The possible states of membership of a user in a room.
@@ -54,19 +57,32 @@ impl From<MembershipState> for Membership {
 }
 
 mod imp {
-    use std::cell::{Cell, OnceCell, RefCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        marker::PhantomData,
+        sync::LazyLock,
+    };
+
+    use glib::subclass::Signal;
 
     use super::*;
 
-    #[derive(Debug, Default, glib::Properties)]
+    #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::Member)]
     pub struct Member {
         /// The room of the member.
         #[property(get, set = Self::set_room, construct_only)]
         room: OnceCell<Room>,
         /// The power level of the member.
-        #[property(get, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
-        power_level: Cell<PowerLevel>,
+        pub(super) power_level: Cell<UserPowerLevel>,
+        /// The power level of the member, as an `i64`.
+        ///
+        /// Should only be used for sorting.
+        ///
+        /// `i64::MAX` is used to represent an infinite power level, since it
+        /// cannot be reached with the Matrix specification.
+        #[property(get = Self::power_level_i64)]
+        power_level_i64: PhantomData<i64>,
         /// The role of the member.
         #[property(get, builder(MemberRole::default()))]
         role: Cell<MemberRole>,
@@ -79,6 +95,20 @@ mod imp {
         power_level_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
+    impl Default for Member {
+        fn default() -> Self {
+            Self {
+                room: Default::default(),
+                power_level: Cell::new(UserPowerLevel::Int(int!(0))),
+                power_level_i64: Default::default(),
+                role: Default::default(),
+                membership: Default::default(),
+                latest_activity: Default::default(),
+                power_level_handlers: Default::default(),
+            }
+        }
+    }
+
     #[glib::object_subclass]
     impl ObjectSubclass for Member {
         const NAME: &'static str = "Member";
@@ -88,6 +118,12 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Member {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("power-level-changed").build()]);
+            SIGNALS.as_ref()
+        }
+
         fn dispose(&self) {
             if let Some(room) = self.room.get() {
                 for handler in self.power_level_handlers.take() {
@@ -129,14 +165,28 @@ mod imp {
         }
 
         /// Set the power level of the member.
-        pub(super) fn set_power_level(&self, power_level: PowerLevel) {
+        pub(super) fn set_power_level(&self, power_level: UserPowerLevel) {
             if self.power_level.get() == power_level {
                 return;
             }
 
             self.power_level.set(power_level);
             self.update_role();
-            self.obj().notify_power_level();
+
+            let obj = self.obj();
+            obj.emit_by_name::<()>("power-level-changed", &[]);
+            obj.notify_power_level_i64();
+        }
+
+        /// The power level of the member, as an `i64`.
+        fn power_level_i64(&self) -> i64 {
+            if let UserPowerLevel::Int(power_level) = self.power_level.get() {
+                power_level.into()
+            } else {
+                // Represent the infinite power level with a value out of range for a power
+                // level.
+                i64::MAX
+            }
         }
 
         /// Update the role of the member.
@@ -195,8 +245,13 @@ impl Member {
         obj
     }
 
+    /// The power level of the member.
+    pub(crate) fn power_level(&self) -> UserPowerLevel {
+        self.imp().power_level.get()
+    }
+
     /// Set the power level of the member.
-    pub(super) fn set_power_level(&self, power_level: PowerLevel) {
+    pub(super) fn set_power_level(&self, power_level: UserPowerLevel) {
         self.imp().set_power_level(power_level);
     }
 
@@ -268,12 +323,21 @@ impl Member {
 
     /// The string to use to search for this member.
     pub(crate) fn search_string(&self) -> String {
-        format!(
-            "{} {} {} {}",
-            self.display_name(),
-            self.user_id(),
-            self.role(),
-            self.power_level(),
+        format!("{} {} {}", self.display_name(), self.user_id(), self.role())
+    }
+
+    /// Connect to the signal emitted when the power level of the member
+    /// changed.
+    pub(crate) fn connect_power_level_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "power-level-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
         )
     }
 }

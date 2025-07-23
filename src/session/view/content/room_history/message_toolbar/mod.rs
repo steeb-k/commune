@@ -8,13 +8,12 @@ use gtk::{
     glib::{self, clone},
 };
 use matrix_sdk::{
-    attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
-    room::{
-        edit::EditedContent,
-        reply::{EnforceThread, Reply},
-    },
+    attachment::{AttachmentInfo, BaseFileInfo, Thumbnail},
+    room::edit::EditedContent,
 };
-use matrix_sdk_ui::timeline::{AttachmentSource, TimelineEventItemId, TimelineItemContent};
+use matrix_sdk_ui::timeline::{
+    AttachmentConfig, AttachmentSource, TimelineEventItemId, TimelineItemContent,
+};
 use ruma::{
     OwnedRoomId,
     events::{
@@ -693,14 +692,11 @@ mod imp {
             // Send event depending on relation.
             match composer_state.related_to() {
                 Some(RelationInfo::Reply(message_event)) => {
-                    let reply = Reply {
-                        event_id: message_event.event_id(),
-                        enforce_thread: EnforceThread::MaybeThreaded,
-                    };
+                    let event_id = message_event.event_id();
 
                     let handle =
                         spawn_tokio!(
-                            async move { matrix_timeline.send_reply(content, reply).await }
+                            async move { matrix_timeline.send_reply(content, event_id).await }
                         );
 
                     if let Err(error) = handle.await.expect("task was not aborted") {
@@ -888,7 +884,11 @@ mod imp {
                 return;
             };
 
-            let config = AttachmentConfig::new().thumbnail(thumbnail).info(info);
+            let config = AttachmentConfig {
+                info: Some(info),
+                thumbnail,
+                ..Default::default()
+            };
 
             let matrix_timeline = timeline.matrix_timeline();
 

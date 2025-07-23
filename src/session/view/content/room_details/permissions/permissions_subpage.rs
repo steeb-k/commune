@@ -5,9 +5,10 @@ use ruma::{
     Int,
     events::{
         StateEventType, TimelineEventType,
-        room::power_levels::{PowerLevelAction, RoomPowerLevels},
+        room::power_levels::{PowerLevelAction, RoomPowerLevels, UserPowerLevel},
     },
 };
+use tracing::error;
 
 use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedMembers};
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
         ButtonCountRow, LoadingButton, PowerLevelSelectionRow, UnsavedChangesResponse,
         unsaved_changes_dialog,
     },
-    session::model::{Permissions, PowerLevel},
+    session::model::Permissions,
     toast,
     utils::BoundObjectWeakRef,
 };
@@ -26,6 +27,7 @@ mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
+    use crate::session::model::POWER_LEVEL_MAX;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
@@ -235,7 +237,7 @@ mod imp {
             };
             let power_levels = permissions.power_levels();
 
-            let events_default = PowerLevel::from(power_levels.events_default);
+            let events_default = UserPowerLevel::from(power_levels.events_default);
             if self.messages_row.selected_power_level() != events_default {
                 return true;
             }
@@ -254,12 +256,12 @@ mod imp {
                 return true;
             }
 
-            let notify_room = PowerLevel::from(power_levels.notifications.room);
+            let notify_room = power_levels.notifications.room;
             if self.notify_room_row.selected_power_level() != notify_room {
                 return true;
             }
 
-            let state_default = PowerLevel::from(power_levels.state_default);
+            let state_default = UserPowerLevel::from(power_levels.state_default);
             if self.state_row.selected_power_level() != state_default {
                 return true;
             }
@@ -336,23 +338,23 @@ mod imp {
                 return true;
             }
 
-            let invite = PowerLevel::from(power_levels.invite);
+            let invite = power_levels.invite;
             if self.invite_row.selected_power_level() != invite {
                 return true;
             }
 
-            let kick = PowerLevel::from(power_levels.kick);
+            let kick = power_levels.kick;
             if self.kick_row.selected_power_level() != kick {
                 return true;
             }
 
-            let ban = PowerLevel::from(power_levels.ban);
+            let ban = power_levels.ban;
             if self.ban_row.selected_power_level() != ban {
                 return true;
             }
 
-            let default_pl = PowerLevel::from(power_levels.users_default);
-            self.members_default_adjustment.value() as PowerLevel != default_pl
+            let default_pl = i64::from(power_levels.users_default);
+            self.members_default_adjustment.value() as i64 != default_pl
         }
 
         /// Update the room actions section.
@@ -365,15 +367,16 @@ mod imp {
             let power_levels = permissions.power_levels();
             let own_pl = permissions.own_power_level();
 
-            let events_default = PowerLevel::from(power_levels.events_default);
-            self.messages_row.set_selected_power_level(events_default);
+            let events_default = power_levels.events_default;
+            self.messages_row
+                .set_selected_power_level(events_default.into());
             self.messages_row
                 .set_read_only(!editable || own_pl < events_default);
 
             let redact_own = event_power_level(
                 &power_levels,
                 &TimelineEventType::RoomRedaction,
-                events_default,
+                events_default.into(),
             );
             self.redact_own_row.set_selected_power_level(redact_own);
             self.redact_own_row
@@ -385,12 +388,12 @@ mod imp {
             self.redact_others_row
                 .set_read_only(!editable || own_pl < redact_others);
 
-            let notify_room = PowerLevel::from(power_levels.notifications.room);
+            let notify_room = power_levels.notifications.room.into();
             self.notify_room_row.set_selected_power_level(notify_room);
             self.notify_room_row
                 .set_read_only(!editable || own_pl < notify_room);
 
-            let state_default = PowerLevel::from(power_levels.state_default);
+            let state_default = power_levels.state_default.into();
             self.state_row.set_selected_power_level(state_default);
             self.state_row
                 .set_read_only(!editable || own_pl < state_default);
@@ -490,15 +493,15 @@ mod imp {
             let power_levels = permissions.power_levels();
             let own_pl = permissions.own_power_level();
 
-            let invite = PowerLevel::from(power_levels.invite);
+            let invite = power_levels.invite.into();
             self.invite_row.set_selected_power_level(invite);
             self.invite_row.set_read_only(!editable || own_pl < invite);
 
-            let kick = PowerLevel::from(power_levels.kick);
+            let kick = power_levels.kick.into();
             self.kick_row.set_selected_power_level(kick);
             self.kick_row.set_read_only(!editable || own_pl < kick);
 
-            let ban = PowerLevel::from(power_levels.ban);
+            let ban = power_levels.ban.into();
             self.ban_row.set_selected_power_level(ban);
             self.ban_row.set_read_only(!editable || own_pl < ban);
         }
@@ -510,14 +513,21 @@ mod imp {
             };
             let power_levels = permissions.power_levels();
 
-            let default_pl = PowerLevel::from(power_levels.users_default);
-            self.members_default_adjustment.set_value(default_pl as f64);
+            let default_pl = power_levels.users_default;
+            self.members_default_adjustment
+                .set_value(i64::from(default_pl) as f64);
             self.members_default_label
                 .set_label(&default_pl.to_string());
 
-            // We cannot change any required power level to something higher than ours.
             let own_pl = permissions.own_power_level();
-            let max = default_pl.max(own_pl);
+            let own_max = if let UserPowerLevel::Int(pl) = own_pl {
+                // We cannot change any power level to something higher than ours.
+                i64::from(pl)
+            } else {
+                // We can change the power level to any valid value.
+                POWER_LEVEL_MAX
+            };
+            let max = i64::from(default_pl).max(own_max);
             self.members_default_adjustment.set_upper(max as f64);
 
             let editable = self.editable.get();
@@ -579,13 +589,27 @@ mod imp {
         /// Collect the current power levels.
         ///
         /// Returns `None` if the permissions could not be upgraded.
+        #[allow(clippy::too_many_lines)]
         fn collect_power_levels(&self) -> Option<RoomPowerLevels> {
+            macro_rules! set_power_level {
+                ($power_levels:ident, $field:ident, $value:ident) => {
+                    set_power_level_inner(&mut $power_levels.$field, stringify!($field), $value);
+                };
+                ($power_levels:ident, $field:ident.$nested:ident , $value:ident) => {
+                    set_power_level_inner(
+                        &mut $power_levels.$field.$nested,
+                        stringify!($field.$nested),
+                        $value,
+                    );
+                };
+            }
+
             let permissions = self.permissions.obj()?;
 
             let mut power_levels = permissions.power_levels();
 
             let events_default = self.messages_row.selected_power_level();
-            power_levels.events_default = Int::new_saturating(events_default);
+            set_power_level!(power_levels, events_default, events_default);
 
             let mut redact_own = self.redact_own_row.selected_power_level();
             let redact_others = self.redact_others_row.selected_power_level();
@@ -600,13 +624,13 @@ mod imp {
                 events_default,
             );
 
-            power_levels.redact = Int::new_saturating(redact_others);
+            set_power_level!(power_levels, redact, redact_others);
 
             let notify_room = self.notify_room_row.selected_power_level();
-            power_levels.notifications.room = Int::new_saturating(notify_room);
+            set_power_level!(power_levels, notifications.room, notify_room);
 
             let state_default = self.state_row.selected_power_level();
-            power_levels.state_default = Int::new_saturating(state_default);
+            set_power_level!(power_levels, state_default, state_default);
 
             let name = self.name_row.selected_power_level();
             set_event_power_level(
@@ -681,15 +705,15 @@ mod imp {
             );
 
             let invite = self.invite_row.selected_power_level();
-            power_levels.invite = Int::new_saturating(invite);
+            set_power_level!(power_levels, invite, invite);
 
             let kick = self.kick_row.selected_power_level();
-            power_levels.kick = Int::new_saturating(kick);
+            set_power_level!(power_levels, kick, kick);
 
             let ban = self.ban_row.selected_power_level();
-            power_levels.ban = Int::new_saturating(ban);
+            set_power_level!(power_levels, ban, ban);
 
-            let default_pl = self.members_default_adjustment.value() as PowerLevel;
+            let default_pl = self.members_default_adjustment.value() as i64;
             power_levels.users_default = Int::new_saturating(default_pl);
 
             let privileged_members = self.privileged_members();
@@ -789,19 +813,32 @@ impl PermissionsSubpage {
     }
 }
 
+/// Set the power level for the given field.
+fn set_power_level_inner(current_value: &mut Int, field_name: &str, new_value: UserPowerLevel) {
+    let UserPowerLevel::Int(new_value) = new_value else {
+        error!("Cannot set power level for field `{field_name}` to infinite");
+        return;
+    };
+
+    *current_value = new_value;
+}
+
 /// Set the power level for the given event type in the given power levels.
 fn set_event_power_level(
     power_levels: &mut RoomPowerLevels,
     event_type: TimelineEventType,
-    value: PowerLevel,
-    default: PowerLevel,
+    value: UserPowerLevel,
+    default: UserPowerLevel,
 ) {
     if value == default {
         power_levels.events.remove(&event_type);
     } else {
-        power_levels
-            .events
-            .insert(event_type, Int::new_saturating(value));
+        let UserPowerLevel::Int(value) = value else {
+            error!("Cannot set power level for event `{event_type}` to infinite");
+            return;
+        };
+
+        power_levels.events.insert(event_type, value);
     }
 }
 
@@ -810,8 +847,8 @@ fn set_event_power_level(
 fn event_power_level(
     power_levels: &RoomPowerLevels,
     event_type: &TimelineEventType,
-    default: i64,
-) -> i64 {
+    default: UserPowerLevel,
+) -> UserPowerLevel {
     power_levels
         .events
         .get(event_type)

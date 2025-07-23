@@ -318,7 +318,7 @@ impl MemberList {
         // We need to go through the whole list because we don't know who was
         // added/removed.
         for (user_id, member) in &*self.imp().members.borrow() {
-            member.set_power_level(power_levels.for_user(user_id).into());
+            member.set_power_level(power_levels.for_user(user_id));
         }
     }
 }

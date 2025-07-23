@@ -1,23 +1,25 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::{CompositeTemplate, glib, glib::closure_local};
+use ruma::{Int, events::room::power_levels::UserPowerLevel, int};
 
 use super::PowerLevelSelectionPopover;
 use crate::{
     components::{LoadingBin, RoleBadge},
-    session::model::{Permissions, PowerLevel},
+    session::model::Permissions,
 };
 
 mod imp {
     use std::{
         cell::{Cell, RefCell},
         marker::PhantomData,
+        sync::LazyLock,
     };
 
-    use glib::subclass::InitializingObject;
+    use glib::subclass::{InitializingObject, Signal};
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/power_level_selection/row.ui")]
     #[properties(wrapper_type = super::PowerLevelSelectionRow)]
     pub struct PowerLevelSelectionRow {
@@ -41,8 +43,7 @@ mod imp {
         #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
         permissions: RefCell<Option<Permissions>>,
         /// The selected power level.
-        #[property(get, set = Self::set_selected_power_level, explicit_notify)]
-        selected_power_level: Cell<PowerLevel>,
+        pub(super) selected_power_level: Cell<UserPowerLevel>,
         /// Whether the selected power level should be displayed in the
         /// subtitle, rather than next to the combo arrow.
         #[property(get, set = Self::set_use_subtitle, explicit_notify)]
@@ -53,6 +54,26 @@ mod imp {
         /// Whether the row is read-only.
         #[property(get, set = Self::set_read_only, explicit_notify)]
         read_only: Cell<bool>,
+    }
+
+    impl Default for PowerLevelSelectionRow {
+        fn default() -> Self {
+            Self {
+                subtitle_bin: Default::default(),
+                combo_selection_bin: Default::default(),
+                arrow_box: Default::default(),
+                loading_bin: Default::default(),
+                popover: Default::default(),
+                selected_box: Default::default(),
+                selected_level_label: Default::default(),
+                selected_role_badge: Default::default(),
+                permissions: Default::default(),
+                selected_power_level: Cell::new(UserPowerLevel::Int(int!(0))),
+                use_subtitle: Default::default(),
+                is_loading: PhantomData,
+                read_only: Default::default(),
+            }
+        }
     }
 
     #[glib::object_subclass]
@@ -81,6 +102,12 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for PowerLevelSelectionRow {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("selected-power-level-changed").build()]);
+            SIGNALS.as_ref()
+        }
+
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -110,21 +137,28 @@ mod imp {
             let Some(permissions) = self.permissions.borrow().clone() else {
                 return;
             };
-            let obj = self.obj();
 
             let power_level = self.selected_power_level.get();
             let role = permissions.role(power_level);
 
             self.selected_role_badge.set_role(role);
-            self.selected_level_label
-                .set_label(&power_level.to_string());
 
-            let role_string = format!("{power_level} {role}");
-            obj.update_property(&[gtk::accessible::Property::Description(&role_string)]);
+            let (level_visible, accessible_desc) = if let UserPowerLevel::Int(value) = power_level {
+                self.selected_level_label.set_label(&value.to_string());
+                self.popover.set_selected_power_level(i64::from(value));
+                (true, format!("{value} {role}"))
+            } else {
+                (false, role.to_string())
+            };
+
+            self.selected_level_label.set_visible(level_visible);
+
+            self.obj()
+                .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);
         }
 
         /// Set the selected power level.
-        fn set_selected_power_level(&self, power_level: PowerLevel) {
+        pub(super) fn set_selected_power_level(&self, power_level: UserPowerLevel) {
             if self.selected_power_level.get() == power_level {
                 return;
             }
@@ -132,7 +166,8 @@ mod imp {
             self.selected_power_level.set(power_level);
 
             self.update_selected_label();
-            self.obj().notify_selected_power_level();
+            self.obj()
+                .emit_by_name::<()>("selected-power-level-changed", &[]);
         }
 
         /// Set whether the selected power level should be displayed in the
@@ -216,6 +251,14 @@ mod imp {
                 obj.remove_css_class("has-open-popup");
             }
         }
+
+        /// The selected power level changed.
+        #[template_callback]
+        fn power_level_changed(&self) {
+            self.set_selected_power_level(UserPowerLevel::Int(Int::new_saturating(
+                self.popover.selected_power_level(),
+            )));
+        }
     }
 }
 
@@ -229,5 +272,29 @@ glib::wrapper! {
 impl PowerLevelSelectionRow {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// The selected power level.
+    pub(crate) fn selected_power_level(&self) -> UserPowerLevel {
+        self.imp().selected_power_level.get()
+    }
+
+    /// Set the selected power level.
+    pub(crate) fn set_selected_power_level(&self, power_level: UserPowerLevel) {
+        self.imp().set_selected_power_level(power_level);
+    }
+
+    /// Connect to the signal emitted when the selected power level changed.
+    pub fn connect_power_level_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "selected-power-level-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }

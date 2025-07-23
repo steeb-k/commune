@@ -48,7 +48,7 @@
                             <property name="title" translatable="yes">Send Messages</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -59,7 +59,7 @@
                             <property name="title" translatable="yes">Remove Own Messages</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="redact_own_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="redact_own_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -70,7 +70,7 @@
                             <property name="title" translatable="yes">Remove Messages of Other Members</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="redact_others_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="redact_others_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -81,7 +81,7 @@
                             <property name="title" translatable="yes">Notify Entire Room</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -92,7 +92,7 @@
                             <property name="title" translatable="yes">Change Room Settings</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="state_default_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="state_default_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -103,7 +103,7 @@
                             <property name="title" translatable="yes">Change Room Name</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -114,7 +114,7 @@
                             <property name="title" translatable="yes">Change Room Description</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -125,7 +125,7 @@
                             <property name="title" translatable="yes">Change Room Avatar</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -136,7 +136,7 @@
                             <property name="title" translatable="yes">Change Addresses</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -147,7 +147,7 @@
                             <property name="title" translatable="yes">Change Who Can Read History</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -158,7 +158,7 @@
                             <property name="title" translatable="yes">Enable Encryption</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -169,7 +169,7 @@
                             <property name="title" translatable="yes">Change Permissions</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -180,7 +180,7 @@
                             <property name="title" translatable="yes">Change Server Access Control List</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -191,7 +191,7 @@
                             <property name="title" translatable="yes">Upgrade Room</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -209,7 +209,7 @@
                             <property name="title" translatable="yes">Invite</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -221,7 +221,7 @@
                             <property name="title" translatable="yes">Kick</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>
@@ -233,7 +233,7 @@
                             <property name="title" translatable="yes">Ban</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
-                            <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
+                            <signal name="selected-power-level-changed" handler="value_changed" swapped="yes"/>
                             <style>
                               <class name="property"/>
                             </style>

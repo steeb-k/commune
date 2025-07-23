@@ -14,36 +14,28 @@ use ruma::{
         MessageLikeEventType, StateEventType, SyncStateEvent,
         room::power_levels::{
             NotificationPowerLevelType, PowerLevelAction, PowerLevelUserAction, RoomPowerLevels,
-            RoomPowerLevelsEventContent,
+            RoomPowerLevelsEventContent, RoomPowerLevelsSource, UserPowerLevel,
         },
     },
+    int,
+    room_version_rules::AuthorizationRules,
 };
 use tracing::error;
 
 use super::{Member, Membership, Room};
 use crate::{prelude::*, spawn, spawn_tokio};
 
-/// Power level of a user.
-///
-/// Is usually in the range (0..=100), but can be any JS integer.
-pub type PowerLevel = i64;
-
 /// The maximum power level that can be set, according to the Matrix
 /// specification.
 ///
 /// This is the same value as `MAX_SAFE_INT` from the `js_int` crate.
-pub const POWER_LEVEL_MAX: PowerLevel = 0x001F_FFFF_FFFF_FFFF;
-/// The minimum power level that can be set, according to the Matrix
-/// specification.
-///
-/// This is the same value as `MIN_SAFE_INT` from the `js_int` crate.
-pub const POWER_LEVEL_MIN: PowerLevel = -POWER_LEVEL_MAX;
+pub const POWER_LEVEL_MAX: i64 = 0x001F_FFFF_FFFF_FFFF;
 /// The minimum power level to have the role of Administrator, according to the
 /// Matrix specification.
-pub const POWER_LEVEL_ADMIN: PowerLevel = 100;
+pub const POWER_LEVEL_ADMIN: i64 = 100;
 /// The minimum power level to have the role of Moderator, according to the
 /// Matrix specification.
-pub const POWER_LEVEL_MOD: PowerLevel = 50;
+pub const POWER_LEVEL_MOD: i64 = 50;
 
 /// Role of a room member, like admin or moderator.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -59,6 +51,8 @@ pub enum MemberRole {
     Moderator,
     /// An administrator.
     Administrator,
+    /// A creator.
+    Creator,
     /// A room member that cannot send messages.
     Muted,
 }
@@ -72,6 +66,7 @@ impl fmt::Display for MemberRole {
             Self::Custom => write!(f, "{}", gettext("Custom")),
             Self::Moderator => write!(f, "{}", gettext("Moderator")),
             Self::Administrator => write!(f, "{}", gettext("Admin")),
+            Self::Creator => write!(f, "{}", gettext("Creator")),
             // Translators: As in 'Muted room member', a member that cannot send messages.
             Self::Muted => write!(f, "{}", gettext("Muted")),
         }
@@ -101,14 +96,13 @@ mod imp {
         #[property(get)]
         is_joined: Cell<bool>,
         /// The power level of our own member.
-        #[property(get)]
-        own_power_level: Cell<PowerLevel>,
+        pub(super) own_power_level: Cell<UserPowerLevel>,
         /// The default power level for members.
         #[property(get)]
-        default_power_level: Cell<PowerLevel>,
+        default_power_level: Cell<i64>,
         /// The power level to mute members.
         #[property(get)]
-        mute_power_level: Cell<PowerLevel>,
+        mute_power_level: Cell<i64>,
         /// Whether our own member can change the room's avatar.
         #[property(get)]
         can_change_avatar: Cell<bool>,
@@ -142,10 +136,14 @@ mod imp {
         fn default() -> Self {
             Self {
                 room: Default::default(),
-                power_levels: RefCell::new(RoomPowerLevelsEventContent::default().into()),
+                power_levels: RefCell::new(RoomPowerLevels::new(
+                    RoomPowerLevelsSource::None,
+                    &AuthorizationRules::V1,
+                    None,
+                )),
                 power_levels_drop_guard: Default::default(),
                 is_joined: Default::default(),
-                own_power_level: Default::default(),
+                own_power_level: Cell::new(UserPowerLevel::Int(int!(0))),
                 default_power_level: Default::default(),
                 mute_power_level: Default::default(),
                 can_change_avatar: Default::default(),
@@ -170,8 +168,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Permissions {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("changed").build(),
+                    Signal::builder("own-power-level-changed").build(),
+                ]
+            });
             SIGNALS.as_ref()
         }
     }
@@ -206,27 +208,19 @@ mod imp {
             // We will probably not be able to load the power levels if we were never in the
             // room, so skip this. We should get the power levels when we join the room.
             if !matches!(matrix_room.state(), RoomState::Invited | RoomState::Knocked) {
-                let matrix_room_clone = matrix_room.clone();
-                let handle = spawn_tokio!(async move { matrix_room_clone.power_levels().await });
-
-                match handle.await.expect("task was not aborted") {
-                    Ok(power_levels) => self.update_power_levels(&power_levels),
-                    Err(error) => {
-                        error!("Could not load room power levels: {error}");
-                    }
-                }
+                self.update_power_levels().await;
             }
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
             let handle = matrix_room.add_event_handler(
-                move |event: SyncStateEvent<RoomPowerLevelsEventContent>| {
+                move |_event: SyncStateEvent<RoomPowerLevelsEventContent>| {
                     let obj_weak = obj_weak.clone();
                     async move {
                         let ctx = glib::MainContext::default();
                         ctx.spawn(async move {
                             spawn!(async move {
                                 if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_power_levels(&event.power_levels());
+                                    obj.imp().update_power_levels().await;
                                 }
                             });
                         });
@@ -256,19 +250,32 @@ mod imp {
             self.permissions_changed();
         }
 
-        /// Update the power levels with the given data.
-        fn update_power_levels(&self, power_levels: &RoomPowerLevels) {
+        /// Update the power levels with the data from the SDK's room.
+        async fn update_power_levels(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.power_levels().await });
+
+            let power_levels = match handle.await.expect("task was not aborted") {
+                Ok(power_levels) => power_levels,
+                Err(error) => {
+                    error!("Could not load room power levels: {error}");
+                    return;
+                }
+            };
+
             self.power_levels.replace(power_levels.clone());
             self.permissions_changed();
 
-            if let Some(room) = self.room.upgrade() {
-                if let Some(members) = room.members() {
-                    members.update_power_levels(power_levels);
-                } else {
-                    let own_member = room.own_member();
-                    let own_user_id = own_member.user_id();
-                    own_member.set_power_level(power_levels.for_user(own_user_id).into());
-                }
+            if let Some(members) = room.members() {
+                members.update_power_levels(&power_levels);
+            } else {
+                let own_member = room.own_member();
+                let own_user_id = own_member.user_id();
+                own_member.set_power_level(power_levels.for_user(own_user_id));
             }
         }
 
@@ -296,18 +303,15 @@ mod imp {
             };
             let own_member = room.own_member();
 
-            let power_level = self
-                .power_levels
-                .borrow()
-                .for_user(own_member.user_id())
-                .into();
+            let power_level = self.power_levels.borrow().for_user(own_member.user_id());
 
             if self.own_power_level.get() == power_level {
                 return;
             }
 
             self.own_power_level.set(power_level);
-            self.obj().notify_own_power_level();
+            self.obj()
+                .emit_by_name::<()>("own-power-level-changed", &[]);
         }
 
         /// Update the default power level for members.
@@ -500,13 +504,24 @@ impl Permissions {
         self.imp().power_levels.borrow().clone()
     }
 
+    /// The power level of our own member.
+    pub(crate) fn own_power_level(&self) -> UserPowerLevel {
+        self.imp().own_power_level.get()
+    }
+
     /// The power level for the user with the given ID.
-    pub(crate) fn user_power_level(&self, user_id: &UserId) -> PowerLevel {
-        self.imp().power_levels.borrow().for_user(user_id).into()
+    pub(crate) fn user_power_level(&self, user_id: &UserId) -> UserPowerLevel {
+        self.imp().power_levels.borrow().for_user(user_id)
     }
 
     /// The current [`MemberRole`] for the given power level.
-    pub(crate) fn role(&self, power_level: PowerLevel) -> MemberRole {
+    pub(crate) fn role(&self, power_level: UserPowerLevel) -> MemberRole {
+        let UserPowerLevel::Int(power_level) = power_level else {
+            return MemberRole::Creator;
+        };
+
+        let power_level = i64::from(power_level);
+
         if power_level >= POWER_LEVEL_ADMIN {
             MemberRole::Administrator
         } else if power_level >= POWER_LEVEL_MOD {
@@ -546,19 +561,26 @@ impl Permissions {
         let power_levels = imp.power_levels.borrow();
 
         if own_user_id == user_id {
-            // The only action we can do for our own user is change the power level.
+            // The only action we can do for our own user is change the power level, if it's
+            // not a creator.
             return action == PowerLevelUserAction::ChangePowerLevel
-                && power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels);
+                && power_levels.user_can_change_user_power_level(own_user_id, own_user_id);
         }
 
         power_levels.user_can_do_to_user(own_user_id, user_id, action)
+    }
+
+    /// Whether our user can set the given power level for another user.
+    pub(crate) fn can_set_user_power_level_to(&self, power_level: i64) -> bool {
+        self.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomPowerLevels))
+            && self.own_power_level() >= Int::new_saturating(power_level)
     }
 
     /// Set the power level of the room member with the given user ID.
     pub(crate) async fn set_user_power_level(
         &self,
         user_id: OwnedUserId,
-        power_level: PowerLevel,
+        power_level: Int,
     ) -> Result<(), ()> {
         let Some(room) = self.room() else {
             return Err(());
@@ -566,7 +588,6 @@ impl Permissions {
 
         let matrix_room = room.matrix_room().clone();
         let handle = spawn_tokio!(async move {
-            let power_level = Int::new_saturating(power_level);
             matrix_room
                 .update_power_levels(vec![(&user_id, power_level)])
                 .await
@@ -587,16 +608,17 @@ impl Permissions {
             return Err(());
         };
 
+        let event = RoomPowerLevelsEventContent::try_from(power_levels).map_err(|error| {
+            error!("Could not set power levels: {error}");
+        })?;
+
         let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move {
-            let event = RoomPowerLevelsEventContent::from(power_levels);
-            matrix_room.send_state_event(event).await
-        });
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event).await });
 
         match handle.await.expect("task was not aborted") {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to set power levels: {error}");
+                error!("Could not set power levels: {error}");
                 Err(())
             }
         }
@@ -618,6 +640,21 @@ impl Permissions {
     pub(crate) fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+
+    /// Connect to the signal emitted when the power level of our own member
+    /// changed.
+    pub(crate) fn connect_own_power_level_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "own-power-level-changed",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);

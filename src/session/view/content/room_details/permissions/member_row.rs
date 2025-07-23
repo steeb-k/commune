@@ -1,6 +1,7 @@
 use std::slice;
 
 use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use ruma::{Int, events::room::power_levels::UserPowerLevel};
 
 use super::MemberPowerLevel;
 use crate::{
@@ -103,7 +104,7 @@ mod imp {
             self.member.disconnect_signals();
 
             if let Some(member) = member {
-                let power_level_handler = member.connect_power_level_notify(clone!(
+                let power_level_handler = member.connect_power_level_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -127,14 +128,21 @@ mod imp {
             self.obj().notify_member();
         }
 
-        /// Update the power level label.
+        /// Update the power level.
         fn update_power_level(&self) {
             let Some(member) = self.member.obj() else {
                 return;
             };
 
+            // We should only show power levels with a value.
+            let UserPowerLevel::Int(power_level) = member.power_level() else {
+                return;
+            };
+
             self.selected_level_label
-                .set_label(&member.power_level().to_string());
+                .set_label(&power_level.to_string());
+            self.popover
+                .set_selected_power_level(i64::from(power_level));
         }
 
         /// Update the accessible role of this row.
@@ -187,8 +195,12 @@ mod imp {
                 return;
             };
 
-            let power_level = self.popover.selected_power_level();
-            let old_power_level = member.power_level();
+            let power_level = Int::new_saturating(self.popover.selected_power_level());
+
+            let UserPowerLevel::Int(old_power_level) = member.power_level() else {
+                // We should only edit power levels with a value.
+                return;
+            };
 
             if power_level == old_power_level {
                 // Nothing changed.
@@ -204,7 +216,7 @@ mod imp {
 
             if room_power_level == power_level {
                 // The power level was reset to the one in the room, nothing to check.
-                member.set_power_level(power_level);
+                member.set_power_level(power_level.into());
                 return;
             }
 
@@ -214,18 +226,20 @@ mod imp {
                 // Warn that demoting oneself is irreversible.
                 if !confirm_own_demotion_dialog(&*obj).await {
                     // Reset the value in the popover.
-                    self.popover.set_selected_power_level(old_power_level);
+                    self.popover
+                        .set_selected_power_level(i64::from(old_power_level));
                     return;
                 }
             } else {
                 // Warn if user is muted but was not before.
                 let mute_power_level = permissions.mute_power_level();
-                let is_muted =
-                    power_level <= mute_power_level && old_power_level > mute_power_level;
+                let is_muted = i64::from(power_level) <= mute_power_level
+                    && i64::from(old_power_level) > mute_power_level;
                 if is_muted && !confirm_mute_room_member_dialog(slice::from_ref(&user), &*obj).await
                 {
                     // Reset the value in the popover.
-                    self.popover.set_selected_power_level(old_power_level);
+                    self.popover
+                        .set_selected_power_level(i64::from(old_power_level));
                     return;
                 }
 
@@ -239,12 +253,13 @@ mod imp {
                     .await
                 {
                     // Reset the value in the popover.
-                    self.popover.set_selected_power_level(old_power_level);
+                    self.popover
+                        .set_selected_power_level(i64::from(old_power_level));
                     return;
                 }
             }
 
-            member.set_power_level(power_level);
+            member.set_power_level(power_level.into());
         }
     }
 }

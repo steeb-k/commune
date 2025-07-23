@@ -92,11 +92,6 @@
               <object class="PowerLevelSelectionPopover" id="popover">
                 <signal name="notify::visible" handler="popover_visible" swapped="true" />
                 <signal name="notify::selected-power-level" handler="power_level_changed" swapped="true" />
-                <binding name="selected-power-level">
-                  <lookup name="power-level">
-                    <lookup name="member">RoomDetailsPermissionsMemberRow</lookup>
-                  </lookup>
-                </binding>
               </object>
             </child>
           </object>

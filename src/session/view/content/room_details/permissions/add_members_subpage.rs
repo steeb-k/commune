@@ -3,7 +3,7 @@ use gtk::{
     CompositeTemplate, glib,
     glib::{clone, closure, closure_local},
 };
-use ruma::OwnedUserId;
+use ruma::{Int, OwnedUserId, events::room::power_levels::UserPowerLevel};
 use tracing::error;
 
 use super::{MemberPowerLevel, PermissionsSelectMemberRow, PrivilegedMembers};
@@ -125,7 +125,12 @@ mod imp {
 
                         // Since this is a view to add custom power levels, filter out members with
                         // a custom power level already.
-                        member.power_level() == permissions.default_power_level()
+                        if let UserPowerLevel::Int(power_level) = member.power_level() {
+                            i64::from(power_level) == permissions.default_power_level()
+                        } else {
+                            // There should not be members with infinite power level.
+                            false
+                        }
                     }
                 ));
             }
@@ -245,6 +250,8 @@ mod imp {
                 return;
             }
 
+            let power_level = Int::new_saturating(power_level);
+
             // Warn if power level is set at same level as own power level.
             let is_own_power_level = power_level == permissions.own_power_level();
             if is_own_power_level
@@ -259,7 +266,7 @@ mod imp {
                 .into_iter()
                 .map(|(user_id, member)| {
                     let member = MemberPowerLevel::new(&member, &permissions);
-                    member.set_power_level(power_level);
+                    member.set_power_level(power_level.into());
 
                     (user_id, member)
                 });

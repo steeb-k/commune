@@ -6,7 +6,10 @@ use gtk::{
     CompositeTemplate, glib,
     glib::{clone, closure_local},
 };
-use ruma::{OwnedEventId, events::room::power_levels::PowerLevelUserAction};
+use ruma::{
+    OwnedEventId,
+    events::room::power_levels::{PowerLevelUserAction, UserPowerLevel},
+};
 
 use super::{Avatar, LoadingButton, LoadingButtonRow, PowerLevelSelectionRow};
 use crate::{
@@ -194,7 +197,7 @@ mod imp {
                             }
                         }
                     ));
-                    let power_level_handler = member.connect_power_level_notify(clone!(
+                    let power_level_handler = member.connect_power_level_changed(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         move |_| {
@@ -433,8 +436,15 @@ mod imp {
             };
 
             let row = &self.power_level_row;
-            let power_level = row.selected_power_level();
-            let old_power_level = member.power_level();
+            let UserPowerLevel::Int(power_level) = row.selected_power_level() else {
+                // We cannot set the power level to infinite.
+                return;
+            };
+
+            let UserPowerLevel::Int(old_power_level) = member.power_level() else {
+                // We cannot change the power level if it is currently infinite.
+                return;
+            };
 
             if old_power_level == power_level {
                 // Nothing to do.
@@ -456,8 +466,8 @@ mod imp {
             } else {
                 // Warn if user is muted but was not before.
                 let mute_power_level = permissions.mute_power_level();
-                let is_muted =
-                    power_level <= mute_power_level && old_power_level > mute_power_level;
+                let is_muted = i64::from(power_level) <= mute_power_level
+                    && i64::from(old_power_level) > mute_power_level;
                 if is_muted
                     && !confirm_mute_room_member_dialog(slice::from_ref(&member), &*obj).await
                 {

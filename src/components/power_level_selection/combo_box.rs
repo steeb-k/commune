@@ -1,11 +1,9 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{CompositeTemplate, gdk, glib};
+use ruma::{Int, events::room::power_levels::UserPowerLevel};
 
 use super::PowerLevelSelectionPopover;
-use crate::{
-    components::RoleBadge,
-    session::model::{Permissions, PowerLevel},
-};
+use crate::{components::RoleBadge, session::model::Permissions};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -29,7 +27,7 @@ mod imp {
         permissions: RefCell<Option<Permissions>>,
         /// The selected power level.
         #[property(get, set = Self::set_selected_power_level, explicit_notify)]
-        selected_power_level: Cell<PowerLevel>,
+        selected_power_level: Cell<i64>,
     }
 
     #[glib::object_subclass]
@@ -75,7 +73,7 @@ mod imp {
             };
 
             let power_level = self.selected_power_level.get();
-            let role = permissions.role(power_level);
+            let role = permissions.role(UserPowerLevel::Int(Int::new_saturating(power_level)));
 
             self.selected_role_badge.set_role(role);
             self.selected_level_label
@@ -87,7 +85,7 @@ mod imp {
         }
 
         /// Set the selected power level.
-        fn set_selected_power_level(&self, power_level: PowerLevel) {
+        fn set_selected_power_level(&self, power_level: i64) {
             if self.selected_power_level.get() == power_level {
                 return;
             }

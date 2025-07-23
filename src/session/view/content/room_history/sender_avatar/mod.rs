@@ -3,7 +3,10 @@ use std::slice;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{CompositeTemplate, gdk, glib, glib::clone};
-use ruma::{OwnedEventId, events::room::power_levels::PowerLevelUserAction};
+use ruma::{
+    Int, OwnedEventId,
+    events::room::power_levels::{PowerLevelUserAction, UserPowerLevel},
+};
 
 use crate::{
     Window,
@@ -247,7 +250,7 @@ mod imp {
                     }
                 ));
 
-                let power_level_handler = sender.connect_power_level_notify(clone!(
+                let power_level_handler = sender.connect_power_level_changed(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -610,9 +613,14 @@ mod imp {
             let Some(sender) = self.sender.obj() else {
                 return;
             };
-            let obj = self.obj();
 
-            let old_power_level = sender.power_level();
+            let UserPowerLevel::Int(old_power_level) = sender.power_level() else {
+                // We cannot mute someone with an infinite power level.
+                return;
+            };
+
+            let old_power_level = i64::from(old_power_level);
+            let obj = self.obj();
             let permissions = sender.room().permissions();
 
             // Warn if user is muted but was not before.
@@ -635,7 +643,7 @@ mod imp {
             toast!(obj, text);
 
             let text = if permissions
-                .set_user_power_level(user_id, new_power_level)
+                .set_user_power_level(user_id, Int::new_saturating(new_power_level))
                 .await
                 .is_ok()
             {
