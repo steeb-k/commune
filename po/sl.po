@@ -9,43 +9,35 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-18 18:07+0000\n"
-"PO-Revision-Date: 2025-07-19 11:23+0200\n"
+"POT-Creation-Date: 2025-07-23 00:22+0000\n"
+"PO-Revision-Date: 2025-07-23 13:22+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n"
-"%100==4 ? 3 : 0);\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n%100==4 ? 3 : 0);\n"
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Generator: Poedit 2.2.1\n"
 
-#: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: data/org.gnome.Fractal.desktop.in.in:2 data/org.gnome.Fractal.metainfo.xml.in.in:7
 #: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "Fraktal"
 
-#: data/org.gnome.Fractal.desktop.in.in:4
-msgid ""
-"Fractal is a decentralized, secure messaging client for collaborative group "
-"communication."
-msgstr ""
-"Fraktal je decentraliziran in varen program za hipno sporočanje v "
-"sodelovalnih okoljih."
+#: data/org.gnome.Fractal.desktop.in.in:3
+msgid "Fractal is a decentralized, secure messaging client for collaborative group communication."
+msgstr "Fraktal je decentraliziran in varen program za hipno sporočanje v sodelovalnih okoljih."
 
-#: data/org.gnome.Fractal.desktop.in.in:5
+#: data/org.gnome.Fractal.desktop.in.in:4
 msgid "Fractal group messaging"
 msgstr "Skupinsko sporočanje Fraktal"
 
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
-#: data/org.gnome.Fractal.desktop.in.in:14
+#: data/org.gnome.Fractal.desktop.in.in:13
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;element;"
-msgstr ""
-"Matrix;matrix.org;chat;irc;communications;talk;riot;klepet;čet;element;"
-"klepetalnica;klepetalnice;"
+msgstr "Matrix;matrix.org;chat;irc;communications;talk;riot;klepet;čet;element;klepetalnica;klepetalnice;"
 
 #: data/org.gnome.Fractal.gschema.xml.in:6
 msgid "Window width"
@@ -85,13 +77,11 @@ msgstr "Klepet v Matrixu"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
 msgid ""
-"Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
-"is optimized for collaboration in large groups, such as free software "
-"projects, and will fit all screens, big or small."
+"Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for "
+"collaboration in large groups, such as free software projects, and will fit all screens, big or small."
 msgstr ""
-"Fraktal je program za GNOME s podporo za protokol sporočanja Matrix, napisan "
-"pa je v jeziku Rust. Vmesnik je prilagojen za sodelovalno delo velikih "
-"skupin, kot so projekti prostega programja."
+"Fraktal je program za GNOME s podporo za protokol sporočanja Matrix, napisan pa je v jeziku Rust. "
+"Vmesnik je prilagojen za sodelovalno delo velikih skupin, kot so projekti prostega programja."
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
@@ -99,32 +89,25 @@ msgstr "Poudarki:"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:16
 msgid ""
-"Find rooms to discuss your favorite topics, or talk privately to people, "
-"securely thanks to end-to-end encryption"
+"Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to end-to-end "
+"encryption"
 msgstr ""
-"Poiščite klepetalnice za razpravo o svojih najljubših temah ali se zasebno "
-"pogovarjajte z ljudmi, zahvaljujoč šifriranju od začetka do konca"
+"Poiščite klepetalnice za razpravo o svojih najljubših temah ali se zasebno pogovarjajte z ljudmi, "
+"zahvaljujoč šifriranju od začetka do konca"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:17
 msgid "Send rich formatted messages, files, or your current location"
-msgstr ""
-"Pošiljajte obogateno oblikovana sporočila, datoteke ali svojo trenutno "
-"lokacijo"
+msgstr "Pošiljajte obogateno oblikovana sporočila, datoteke ali svojo trenutno lokacijo"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
-msgid ""
-"Reply to specific messages, react with emoji, mention users or rooms, edit "
-"or remove messages"
+msgid "Reply to specific messages, react with emoji, mention users or rooms, edit or remove messages"
 msgstr ""
-"Odgovarjajte na določena sporočila, odzivajte se s čustvenimi simboli, "
-"omenite uporabnike ali sobe oz. klepetalnice, urejajte ali odstranjujte "
-"sporočila"
+"Odgovarjajte na določena sporočila, odzivajte se s čustvenimi simboli, omenite uporabnike ali sobe oz. "
+"klepetalnice, urejajte ali odstranjujte sporočila"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
 msgid "View images, and play audio and video directly in the conversation"
-msgstr ""
-"Oglejte si slike ter predvajajte zvočne in videoposnetke neposredno v "
-"pogovoru"
+msgstr "Oglejte si slike ter predvajajte zvočne in videoposnetke neposredno v pogovoru"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:20
 msgid "See who has read messages, and who is typing"
@@ -154,7 +137,7 @@ msgstr "Izberite račun"
 msgid "Select the account you want to open the URI with"
 msgstr "Izberite račun, s katerim želite odpreti URI"
 
-#: src/account_switcher/account_switcher_button.ui:26
+#: src/account_switcher/account_switcher_button.ui:24
 msgid "Switch Accounts"
 msgstr "Preklopi med računi"
 
@@ -162,31 +145,30 @@ msgstr "Preklopi med računi"
 msgid "_Add Account"
 msgstr "_Dodaj račun"
 
-#: src/account_switcher/session_item.ui:62
-#: src/session/view/account_settings/mod.ui:4
+#: src/account_switcher/session_item.ui:62 src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Nastavitve računa"
 
-#: src/application.rs:253
+#: src/application.rs:245
 msgid "The Fractal Team"
 msgstr "Ekipa Fraktala"
 
-#: src/application.rs:259
+#: src/application.rs:251
 msgid "© The Fractal Team"
 msgstr "© Ekipa Fraktala"
 
-#: src/application.rs:273
+#: src/application.rs:265
 msgid "translator-credits"
 msgstr ""
 "Matej Urbančič <mateju@src.gnome.org>\n"
 "Martin Srebotnjak <miles@filmsi.net>"
 
 #. This can't be added via the builder
-#: src/application.rs:277
+#: src/application.rs:269
 msgid "Name by"
 msgstr "Ime po"
 
-#: src/application.rs:391
+#: src/application.rs:383
 msgid "Session not found"
 msgstr "Seje ni bilo mogoče najti"
 
@@ -201,18 +183,16 @@ msgstr "Potrdi spremembo"
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:198
+#: src/session/view/content/room_history/mod.ui:201
 msgid "Try Again"
 msgstr "Poskusi znova"
 
-#: src/components/action_button.ui:65
-#: src/components/camera/qrcode_scanner.ui:13
-#: src/login/session_setup_view.ui:15
-#: src/session/view/content/explore/mod.ui:61
+#: src/components/action_button.ui:65 src/components/camera/qrcode_scanner.ui:13
+#: src/login/session_setup_view.ui:15 src/session/view/content/explore/mod.ui:61
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:177 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:180 src/window.ui:17
 msgid "Loading"
 msgstr "Poteka nalaganje"
 
@@ -224,8 +204,7 @@ msgstr "Uspešno"
 msgid "Warning"
 msgstr "Opozorilo"
 
-#: src/components/action_button.ui:126 src/error_page.ui:10
-#: src/session/view/content/explore/mod.ui:117
+#: src/components/action_button.ui:126 src/error_page.ui:10 src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
 #: src/session/view/content/room_details/invite_subpage/mod.ui:135
@@ -272,8 +251,7 @@ msgstr "Izberite novo sliko podobe"
 msgid "Camera"
 msgstr "Kamera"
 
-#: src/components/camera/qrcode_scanner.ui:22
-#: src/components/camera/qrcode_scanner.ui:35
+#: src/components/camera/qrcode_scanner.ui:22 src/components/camera/qrcode_scanner.ui:35
 msgid "Could Not Connect to Camera"
 msgstr "Povezave s kamero ni mogoče vzpostaviti"
 
@@ -281,8 +259,7 @@ msgstr "Povezave s kamero ni mogoče vzpostaviti"
 msgid "Viewfinder"
 msgstr "Iskalo"
 
-#: src/components/crypto/identity_setup_view.rs:384
-#: src/identity_verification_view/cancelled_page.rs:195
+#: src/components/crypto/identity_setup_view.rs:384 src/identity_verification_view/cancelled_page.rs:195
 msgid "Could not send a new verification request"
 msgstr "Nove zahteve za preverjanje ni bilo mogoče poslati"
 
@@ -290,19 +267,17 @@ msgstr "Nove zahteve za preverjanje ni bilo mogoče poslati"
 msgid "Could not create the crypto identity"
 msgstr "Ni bilo mogoče ustvariti kripto identitete"
 
-#: src/components/crypto/identity_setup_view.ui:9
-#: src/components/crypto/identity_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.ui:9 src/components/crypto/identity_setup_view.ui:35
 msgid "Verify Your New Session"
 msgstr "Overite svojo novo sejo"
 
 #: src/components/crypto/identity_setup_view.ui:46
 msgid ""
-"Verifying your session allows you and the people you chat with to be sure "
-"that no one is trying to impersonate you or intercept your conversations."
+"Verifying your session allows you and the people you chat with to be sure that no one is trying to "
+"impersonate you or intercept your conversations."
 msgstr ""
-"Preverjanje seje vam in osebam, s katerimi klepetate, omogoča, da se "
-"prepričate, da se nihče ne poskuša lažno predstavljati za vas ali prestreči "
-"vaše pogovore."
+"Preverjanje seje vam in osebam, s katerimi klepetate, omogoča, da se prepričate, da se nihče ne poskuša "
+"lažno predstavljati za vas ali prestreči vaše pogovore."
 
 #: src/components/crypto/identity_setup_view.ui:55
 msgid "Verify With Another Session"
@@ -312,51 +287,43 @@ msgstr "Preveri z drugo sejo"
 msgid "No other devices logged into this account?"
 msgstr "Nobena druga naprava ni prijavljena v ta račun?"
 
-#: src/components/crypto/identity_setup_view.ui:74
-#: src/components/crypto/recovery_setup_view.ui:9
+#: src/components/crypto/identity_setup_view.ui:74 src/components/crypto/recovery_setup_view.ui:9
 #: src/components/crypto/recovery_setup_view.ui:35
 msgid "Recover Account"
 msgstr "Obnovi račun"
 
-#: src/components/crypto/identity_setup_view.ui:85
-#: src/components/crypto/identity_setup_view.ui:262
-#: src/components/crypto/recovery_setup_view.ui:98
-#: src/components/crypto/recovery_setup_view.ui:209
+#: src/components/crypto/identity_setup_view.ui:85 src/components/crypto/identity_setup_view.ui:262
+#: src/components/crypto/recovery_setup_view.ui:98 src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:515
 msgid "Reset"
 msgstr "Ponastavi"
 
-#: src/components/crypto/identity_setup_view.ui:106
-#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
+#: src/components/crypto/identity_setup_view.ui:106 src/identity_verification_view/mod.ui:5
+#: src/session/view/content/mod.ui:79
 msgid "Identity Verification"
 msgstr "Preverjanje identitete"
 
-#: src/components/crypto/identity_setup_view.ui:125
-#: src/components/crypto/identity_setup_view.ui:151
+#: src/components/crypto/identity_setup_view.ui:125 src/components/crypto/identity_setup_view.ui:151
 msgid "Set Up Crypto Identity"
 msgstr "Nastavi kripto identiteto"
 
-#: src/components/crypto/identity_setup_view.ui:162
-#: src/components/crypto/identity_setup_view.ui:237
+#: src/components/crypto/identity_setup_view.ui:162 src/components/crypto/identity_setup_view.ui:237
 msgid ""
-"Your crypto identity allows you to verify other Matrix accounts and "
-"automatically trust their verified sessions."
+"Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified "
+"sessions."
 msgstr ""
-"Vaša kripto identiteta vam omogoča, da preverite druge račune Matrix in "
-"samodejno zaupate njihovim preverjenim sejam."
+"Vaša kripto identiteta vam omogoča, da preverite druge račune Matrix in samodejno zaupate njihovim "
+"preverjenim sejam."
 
 #: src/components/crypto/identity_setup_view.ui:170
 msgid "You need to set up a crypto identity, since it has never been created."
-msgstr ""
-"Vzpostaviti morate kripto identiteto, saj še nikoli ni bila ustvarjena."
+msgstr "Vzpostaviti morate kripto identiteto, saj še nikoli ni bila ustvarjena."
 
-#: src/components/crypto/identity_setup_view.ui:178
-#: src/components/crypto/recovery_setup_view.ui:305
+#: src/components/crypto/identity_setup_view.ui:178 src/components/crypto/recovery_setup_view.ui:305
 msgid "Set Up"
 msgstr "Nastavitev"
 
-#: src/components/crypto/identity_setup_view.ui:200
-#: src/components/crypto/identity_setup_view.ui:226
+#: src/components/crypto/identity_setup_view.ui:200 src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
 #: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
@@ -364,17 +331,12 @@ msgstr "Ponastavi kripto identiteto"
 
 #: src/components/crypto/identity_setup_view.ui:245
 msgid ""
-"You should reset your crypto identity if a device that does not belong to "
-"you managed to be verified."
-msgstr ""
-"Ponastavite svojo kripto identiteto, če je bilo mogoče preveriti napravo, ki "
-"ni v vaši lasti."
+"You should reset your crypto identity if a device that does not belong to you managed to be verified."
+msgstr "Ponastavite svojo kripto identiteto, če je bilo mogoče preveriti napravo, ki ni v vaši lasti."
 
 #: src/components/crypto/identity_setup_view.ui:253
 msgid "To proceed, you will also need to reset your account recovery key."
-msgstr ""
-"Če želite nadaljevati, boste morali tudi ponastaviti obnovitveni ključ "
-"računa."
+msgstr "Če želite nadaljevati, boste morali tudi ponastaviti obnovitveni ključ računa."
 
 #: src/components/crypto/recovery_setup_view.rs:182
 msgid "Invalidates the verifications of all users and sessions"
@@ -382,11 +344,11 @@ msgstr "Razveljavi preverjanja vseh uporabnikov in sej"
 
 #: src/components/crypto/recovery_setup_view.rs:188
 msgid ""
-"Required because the crypto identity in the recovery data is incomplete. "
-"Invalidates the verifications of all users and sessions."
+"Required because the crypto identity in the recovery data is incomplete. Invalidates the verifications "
+"of all users and sessions."
 msgstr ""
-"Obvezno, ker je kripto identiteta v podatkih za obnovitev nepopolna. "
-"Razveljavi preverjanja vseh uporabnikov in sej."
+"Obvezno, ker je kripto identiteta v podatkih za obnovitev nepopolna. Razveljavi preverjanja vseh "
+"uporabnikov in sej."
 
 #: src/components/crypto/recovery_setup_view.rs:199
 msgid "You might not be able to read your past encrypted messages anymore"
@@ -394,27 +356,27 @@ msgstr "Morda svojih preteklih šifriranih sporočil ne boste mogli več brati."
 
 #: src/components/crypto/recovery_setup_view.rs:205
 msgid ""
-"Required because the backup is not set up properly. You might not be able to "
-"read your past encrypted messages anymore."
+"Required because the backup is not set up properly. You might not be able to read your past encrypted "
+"messages anymore."
 msgstr ""
-"Obvezno, ker varnostno kopiranje ni pravilno nastavljeno. Morda ne boste "
-"mogli več brati preteklih šifriranih sporočil."
+"Obvezno, ker varnostno kopiranje ni pravilno nastavljeno. Morda ne boste mogli več brati preteklih "
+"šifriranih sporočil."
 
 #: src/components/crypto/recovery_setup_view.rs:225
 msgid ""
-"Make sure to store this recovery key in a safe place. You will need it to "
-"recover your account if you lose access to all your sessions."
+"Make sure to store this recovery key in a safe place. You will need it to recover your account if you "
+"lose access to all your sessions."
 msgstr ""
-"Obnovitveni ključ shranite na varno mesto. Potrebovali ga boste za obnovitev "
-"računa, če izgubite dostop do vseh sej."
+"Obnovitveni ključ shranite na varno mesto. Potrebovali ga boste za obnovitev računa, če izgubite dostop "
+"do vseh sej."
 
 #: src/components/crypto/recovery_setup_view.rs:229
 msgid ""
-"Make sure to remember your passphrase or to store it in a safe place. You "
-"will need it to recover your account if you lose access to all your sessions."
+"Make sure to remember your passphrase or to store it in a safe place. You will need it to recover your "
+"account if you lose access to all your sessions."
 msgstr ""
-"Zapomnite si geslo ali ga shranite na varno mesto. Potrebovali ga boste za "
-"obnovitev računa, če izgubite dostop do vseh sej."
+"Zapomnite si geslo ali ga shranite na varno mesto. Potrebovali ga boste za obnovitev računa, če "
+"izgubite dostop do vseh sej."
 
 #: src/components/crypto/recovery_setup_view.rs:290
 msgid "The recovery passphrase or key is invalid"
@@ -428,8 +390,7 @@ msgstr "Dostop do podatkov za obnovitev ni mogoč"
 msgid "Could not reset the crypto identity"
 msgstr "Ni bilo mogoče ponastaviti kripto identitete"
 
-#: src/components/crypto/recovery_setup_view.rs:397
-#: src/components/crypto/recovery_setup_view.rs:406
+#: src/components/crypto/recovery_setup_view.rs:397 src/components/crypto/recovery_setup_view.rs:406
 #: src/components/crypto/recovery_setup_view.rs:431
 msgid "Could not reset account recovery"
 msgstr "Obnovitve računa ni bilo mogoče ponastaviti"
@@ -448,18 +409,17 @@ msgstr "Obnovite poln dostop do svojega računa."
 
 #: src/components/crypto/recovery_setup_view.ui:54
 msgid ""
-"To access the recovery data, we need the recovery passphrase or the recovery "
-"key that is usually set up when you create your account."
+"To access the recovery data, we need the recovery passphrase or the recovery key that is usually set up "
+"when you create your account."
 msgstr ""
-"Za dostop do podatkov za obnovitev potrebujemo geslo za obnovitev ali "
-"obnovitveni ključ, ki ga običajno nastavite, ko ustvarite račun."
+"Za dostop do podatkov za obnovitev potrebujemo geslo za obnovitev ali obnovitveni ključ, ki ga običajno "
+"nastavite, ko ustvarite račun."
 
 #: src/components/crypto/recovery_setup_view.ui:67
 msgid "Recovery Passphrase or Key"
 msgstr "Obnovitveno geslo ali ključ"
 
-#: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/sidebar/mod.rs:329
+#: src/components/crypto/recovery_setup_view.ui:77 src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "Obnovi"
 
@@ -467,66 +427,54 @@ msgstr "Obnovi"
 msgid "Lost your recovery passphrase or key?"
 msgstr "Ste izgubili geslo ali ključ za obnovitev?"
 
-#: src/components/crypto/recovery_setup_view.ui:119
-#: src/components/crypto/recovery_setup_view.ui:145
+#: src/components/crypto/recovery_setup_view.ui:119 src/components/crypto/recovery_setup_view.ui:145
 msgid "Reset Account Recovery"
 msgstr "Ponastavi ključ za obnovitev računa"
 
 #: src/components/crypto/recovery_setup_view.ui:156
-msgid ""
-"Resetting account recovery can allow you to fix or reset part or all of your "
-"recovery setup."
+msgid "Resetting account recovery can allow you to fix or reset part or all of your recovery setup."
 msgstr ""
-"Če ponastavite obnovitev računa, lahko popravite ali ponastavite del ali "
-"celotno nastavitev obnovitve."
+"Če ponastavite obnovitev računa, lahko popravite ali ponastavite del ali celotno nastavitev obnovitve."
 
 #: src/components/crypto/recovery_setup_view.ui:174
 msgid "Reset Room Encryption Keys Backup"
 msgstr "Ponastavi varnostno kopiranje ključev za šifriranje klepetalnice"
 
 #: src/components/crypto/recovery_setup_view.ui:181
-msgid ""
-"If you do not provide a new recovery passphrase, a recovery key will be "
-"created."
-msgstr ""
-"Če ne vnesete novega gesla za obnovitev, bo ustvarjen obnovitveni ključ."
+msgid "If you do not provide a new recovery passphrase, a recovery key will be created."
+msgstr "Če ne vnesete novega gesla za obnovitev, bo ustvarjen obnovitveni ključ."
 
-#: src/components/crypto/recovery_setup_view.ui:189
-#: src/components/crypto/recovery_setup_view.ui:284
+#: src/components/crypto/recovery_setup_view.ui:189 src/components/crypto/recovery_setup_view.ui:284
 msgid ""
-"You should not reuse the password of your Matrix account as a passphrase. "
-"Otherwise, if someone manages to get your account password, they will also "
-"be able to access all your encrypted conversations and to impersonate you."
+"You should not reuse the password of your Matrix account as a passphrase. Otherwise, if someone manages "
+"to get your account password, they will also be able to access all your encrypted conversations and to "
+"impersonate you."
 msgstr ""
-"Gesla računa Matrix ne uporabljajte znova kot geslo. V nasprotnem primeru, "
-"če nekdo uspe pridobiti geslo za vaš račun, bo lahko dostopal tudi do vseh "
-"vaših šifriranih pogovorov in se lažno predstavljal kot vi."
+"Gesla računa Matrix ne uporabljajte znova kot geslo. V nasprotnem primeru, če nekdo uspe pridobiti "
+"geslo za vaš račun, bo lahko dostopal tudi do vseh vaših šifriranih pogovorov in se lažno predstavljal "
+"kot vi."
 
-#: src/components/crypto/recovery_setup_view.ui:202
-#: src/components/crypto/recovery_setup_view.ui:297
+#: src/components/crypto/recovery_setup_view.ui:202 src/components/crypto/recovery_setup_view.ui:297
 msgid "Recovery Passphrase (Optional)"
 msgstr "Obnovitveno geslo (neobvezno)"
 
-#: src/components/crypto/recovery_setup_view.ui:231
-#: src/components/crypto/recovery_setup_view.ui:257
+#: src/components/crypto/recovery_setup_view.ui:231 src/components/crypto/recovery_setup_view.ui:257
 msgid "Set Up Account Recovery"
 msgstr "Nastavi obnovitve računa"
 
 #: src/components/crypto/recovery_setup_view.ui:268
 msgid ""
-"Account recovery allows you to recover your crypto identity and to read your "
-"encrypted messages even if you lose access to all your sessions."
+"Account recovery allows you to recover your crypto identity and to read your encrypted messages even if "
+"you lose access to all your sessions."
 msgstr ""
-"Obnovitev računa vam omogoča, da obnovite svojo kripto identiteto in "
-"preberete šifrirana sporočila, tudi če izgubite dostop do vseh sej."
+"Obnovitev računa vam omogoča, da obnovite svojo kripto identiteto in preberete šifrirana sporočila, "
+"tudi če izgubite dostop do vseh sej."
 
 #: src/components/crypto/recovery_setup_view.ui:276
-msgid ""
-"If you do not provide a recovery passphrase, a recovery key will be created."
+msgid "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr "Če ne vnesete gesla za obnovitev, bo ustvarjen obnovitveni ključ."
 
-#: src/components/crypto/recovery_setup_view.ui:327
-#: src/components/crypto/recovery_setup_view.ui:354
+#: src/components/crypto/recovery_setup_view.ui:327 src/components/crypto/recovery_setup_view.ui:354
 msgid "Account Recovery Set Up Successfully"
 msgstr "Uspešno nastavljena obnovitev računa"
 
@@ -534,74 +482,62 @@ msgstr "Uspešno nastavljena obnovitev računa"
 msgid "Copy Recovery Key"
 msgstr "Kopiraj obnovitveni ključ"
 
-#: src/components/crypto/recovery_setup_view.ui:408
-#: src/components/crypto/recovery_setup_view.ui:494
-#: src/identity_verification_view/cancelled_page.ui:46
-#: src/identity_verification_view/completed_page.ui:48
+#: src/components/crypto/recovery_setup_view.ui:408 src/components/crypto/recovery_setup_view.ui:494
+#: src/identity_verification_view/cancelled_page.ui:46 src/identity_verification_view/completed_page.ui:48
 #: src/identity_verification_view/room_left_page.ui:44
 msgid "_Done"
 msgstr "_Opravljeno"
 
-#: src/components/crypto/recovery_setup_view.ui:431
-#: src/components/crypto/recovery_setup_view.ui:458
+#: src/components/crypto/recovery_setup_view.ui:431 src/components/crypto/recovery_setup_view.ui:458
 #: src/session/view/account_settings/encryption_page/mod.rs:267
 msgid "Account Recovery Incomplete"
 msgstr "Obnovitev računa ni popolna"
 
 #: src/components/crypto/recovery_setup_view.ui:469
 msgid "The recovery was successful but the recovery data was incomplete."
-msgstr ""
-"Obnovitev je bila uspešna, vendar so bili podatki o obnovitvi nepopolni."
+msgstr "Obnovitev je bila uspešna, vendar so bili podatki o obnovitvi nepopolni."
 
 #: src/components/crypto/recovery_setup_view.ui:477
 msgid ""
-"To fix this, you should reset the recovery from a session that has all the "
-"data, and attempt to recover this session again."
+"To fix this, you should reset the recovery from a session that has all the data, and attempt to recover "
+"this session again."
 msgstr ""
-"Če želite odpraviti to težavo, ponastavite obnovitev iz seje, ki vsebuje vse "
-"podatke, in poskusite znova obnoviti to sejo."
+"Če želite odpraviti to težavo, ponastavite obnovitev iz seje, ki vsebuje vse podatke, in poskusite "
+"znova obnoviti to sejo."
 
 #: src/components/crypto/recovery_setup_view.ui:485
 msgid ""
-"Note that account recovery can have a different name in other Matrix "
-"clients, like “key backup” or “secure backup”."
+"Note that account recovery can have a different name in other Matrix clients, like “key backup” or "
+"“secure backup”."
 msgstr ""
-"Upoštevajte, da ima lahko obnovitev računa drugačno ime v drugih odjemalcih "
-"Matrix, na primer »varnostno kopiranje ključev« ali »varno varnostno "
-"kopiranje«."
+"Upoštevajte, da ima lahko obnovitev računa drugačno ime v drugih odjemalcih Matrix, na primer "
+"»varnostno kopiranje ključev« ali »varno varnostno kopiranje«."
 
 #: src/components/crypto/recovery_setup_view.ui:506
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Obnovitev računa lahko tudi ponastavite."
 
-#: src/components/dialogs/auth/in_browser_page.ui:35
-#: src/components/dialogs/auth/mod.ui:4
-#: src/components/dialogs/auth/password_page.ui:35
-#: src/login/in_browser_page.ui:5 src/login/in_browser_page.ui:40
+#: src/components/dialogs/auth/in_browser_page.ui:35 src/components/dialogs/auth/mod.ui:4
+#: src/components/dialogs/auth/password_page.ui:35 src/login/in_browser_page.ui:5
+#: src/login/in_browser_page.ui:40
 msgid "Authentication"
 msgstr "Overitev"
 
 #: src/components/dialogs/auth/in_browser_page.ui:50
-msgid ""
-"Please authenticate the operation via the browser and, once completed, press "
-"confirm"
-msgstr ""
-"Postopek overite prek brskalnika in po končanem pritisku pritisnite Potrdi"
+msgid "Please authenticate the operation via the browser and, once completed, press confirm"
+msgstr "Postopek overite prek brskalnika in po končanem pritisku pritisnite Potrdi"
 
-#: src/components/dialogs/auth/in_browser_page.ui:73
-#: src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.ui:73 src/login/in_browser_page.ui:74
 msgid "Contin_ue"
 msgstr "Na_daljuj"
 
-#: src/components/dialogs/auth/in_browser_page.ui:107
-#: src/components/dialogs/auth/password_page.ui:83
+#: src/components/dialogs/auth/in_browser_page.ui:107 src/components/dialogs/auth/password_page.ui:83
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Prekliči"
 
-#: src/components/dialogs/auth/in_browser_page.ui:115
-#: src/components/dialogs/auth/password_page.ui:91
+#: src/components/dialogs/auth/in_browser_page.ui:115 src/components/dialogs/auth/password_page.ui:91
 msgid "C_onfirm"
 msgstr "P_otrdi"
 
@@ -623,23 +559,14 @@ msgid "Decline Invite?"
 msgstr "Želite zavrniti povabilo?"
 
 #: src/components/dialogs/message_dialogs.rs:27
-msgid ""
-"Do you really want to decline this invite? You can join this room on your "
-"own later."
-msgstr ""
-"Ali res želite zavrniti to povabilo? Kasneje se lahko sami pridružite tej "
-"klepetalnici."
+msgid "Do you really want to decline this invite? You can join this room on your own later."
+msgstr "Ali res želite zavrniti to povabilo? Kasneje se lahko sami pridružite tej klepetalnici."
 
 #: src/components/dialogs/message_dialogs.rs:31
-msgid ""
-"Do you really want to decline this invite? You will not be able to join this "
-"room without it."
-msgstr ""
-"Ali res želite zavrniti to povabilo? Brez nje se ne boste mogli pridružiti "
-"tej klepetalnici."
+msgid "Do you really want to decline this invite? You will not be able to join this room without it."
+msgstr "Ali res želite zavrniti to povabilo? Brez nje se ne boste mogli pridružiti tej klepetalnici."
 
-#: src/components/dialogs/message_dialogs.rs:34
-#: src/identity_verification_view/accept_request_page.ui:52
+#: src/components/dialogs/message_dialogs.rs:34 src/identity_verification_view/accept_request_page.ui:52
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Zavrni"
@@ -654,28 +581,20 @@ msgid "Do you really want to leave this room? You can come back later."
 msgstr "Ali res želite zapustiti to klepetalnico? Lahko se vrnete kasneje."
 
 #: src/components/dialogs/message_dialogs.rs:44
-msgid ""
-"Do you really want to leave this room? You will not be able to come back "
-"without an invitation."
-msgstr ""
-"Ali res želite zapustiti to klepetalnico? Brez povabila se ne boste mogli "
-"vrniti."
+msgid "Do you really want to leave this room? You will not be able to come back without an invitation."
+msgstr "Ali res želite zapustiti to klepetalnico? Brez povabila se ne boste mogli vrniti."
 
 #: src/components/dialogs/message_dialogs.rs:47
 msgid "Leave"
 msgstr "Zapusti"
 
-#: src/components/dialogs/message_dialogs.rs:58
-#: src/components/dialogs/message_dialogs.rs:323
-#: src/components/dialogs/message_dialogs.rs:398
-#: src/components/dialogs/message_dialogs.rs:447
-#: src/components/dialogs/message_dialogs.rs:469
+#: src/components/dialogs/message_dialogs.rs:58 src/components/dialogs/message_dialogs.rs:323
+#: src/components/dialogs/message_dialogs.rs:398 src/components/dialogs/message_dialogs.rs:447
+#: src/components/dialogs/message_dialogs.rs:469 src/components/dialogs/message_dialogs.rs:491
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
-#: src/session/view/content/room_details/edit_details_subpage.rs:266
-#: src/session/view/content/room_details/edit_details_subpage.rs:541
-#: src/session/view/content/room_details/general_page.rs:1071
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:551
+#: src/session/view/content/room_details/edit_details_subpage.rs:267
+#: src/session/view/content/room_details/general_page.rs:1033
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:116
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
@@ -702,15 +621,14 @@ msgstr "Želite prepovedati {user}?"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:136
 msgid ""
-"Are you sure you want to ban {user_id}? They will not be able to join the "
-"room again until someone unbans them."
+"Are you sure you want to ban {user_id}? They will not be able to join the room again until someone "
+"unbans them."
 msgstr ""
-"Ali ste prepričani, da želite prepovedati {user_id}? Ne bodo se mogli "
-"ponovno pridružiti klepetalnici, dokler nekdo ne prekliče prepovedi."
+"Ali ste prepričani, da želite prepovedati {user_id}? Ne bodo se mogli ponovno pridružiti klepetalnici, "
+"dokler nekdo ne prekliče prepovedi."
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:139
-#: src/components/user_page.ui:155
+#: src/components/dialogs/message_dialogs.rs:139 src/components/user_page.ui:157
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Prepovej"
@@ -725,24 +643,23 @@ msgstr "Želite preklicati povabilo za {user}?"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:157
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will still be "
-"able to join the room on their own."
+"Are you sure you want to revoke the invite for {user_id}? They will still be able to join the room on "
+"their own."
 msgstr ""
-"Ali ste prepričani, da želite preklicati povabilo za {user_id}? Še vedno se "
-"bodo lahko sami pridružili klepetalnici."
+"Ali ste prepričani, da želite preklicati povabilo za {user_id}? Še vedno se bodo lahko sami pridružili "
+"klepetalnici."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:164
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will not be "
-"able to join the room again until someone reinvites them."
+"Are you sure you want to revoke the invite for {user_id}? They will not be able to join the room again "
+"until someone reinvites them."
 msgstr ""
-"Ali ste prepričani, da želite preklicati povabilo za {user_id}? Ne bodo se "
-"mogli znova pridružiti klepetalnici, dokler jih nekdo ponovno ne povabi."
+"Ali ste prepričani, da želite preklicati povabilo za {user_id}? Ne bodo se mogli znova pridružiti "
+"klepetalnici, dokler jih nekdo ponovno ne povabi."
 
-#: src/components/dialogs/message_dialogs.rs:168
-#: src/components/user_page.rs:392
+#: src/components/dialogs/message_dialogs.rs:168 src/components/user_page.rs:387
 msgid "Revoke Invite"
 msgstr "Prekliči povabila"
 
@@ -759,7 +676,6 @@ msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Ali ste prepričani, da želite zavrniti dostop do {user_id}?"
 
 #: src/components/dialogs/message_dialogs.rs:184
-#: src/components/user_page.rs:393
 msgid "Deny Access"
 msgstr "Zavrni dostop"
 
@@ -771,26 +687,22 @@ msgstr "Želite brcniti {user}?"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:196
 msgid ""
-"Are you sure you want to kick {user_id}? They will still be able to join the "
-"room again on their own."
-msgstr ""
-"Ste prepričani, da želite brcniti {user_id}? Še vedno se bodo lahko sami "
-"pridružili klepetalnici."
+"Are you sure you want to kick {user_id}? They will still be able to join the room again on their own."
+msgstr "Ste prepričani, da želite brcniti {user_id}? Še vedno se bodo lahko sami pridružili klepetalnici."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:203
 msgid ""
-"Are you sure you want to kick {user_id}? They will not be able to join the "
-"room again until someone invites them."
+"Are you sure you want to kick {user_id}? They will not be able to join the room again until someone "
+"invites them."
 msgstr ""
-"Ste prepričani, da želite brcniti {user_id}? Ne bodo se mogli ponovno "
-"pridružiti klepetalnici, dokler jih nekdo ne povabi."
+"Ste prepričani, da želite brcniti {user_id}? Ne bodo se mogli ponovno pridružiti klepetalnici, dokler "
+"jih nekdo ne povabi."
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:207
-#: src/components/user_page.rs:395
+#: src/components/dialogs/message_dialogs.rs:207 src/components/user_page.rs:390
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "Brcni"
@@ -805,31 +717,26 @@ msgstr "Želite odstraniti sporočila, ki jih je poslal/a {user}?"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:224
 msgid ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove 1 message sent by {user_id}? This cannot be undone."
+"This removes all the messages received from the homeserver. Are you sure you want to remove 1 message "
+"sent by {user_id}? This cannot be undone."
 msgid_plural ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove {n} messages sent by {user_id}? This cannot be undone."
+"This removes all the messages received from the homeserver. Are you sure you want to remove {n} "
+"messages sent by {user_id}? This cannot be undone."
 msgstr[0] ""
-"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste "
-"prepričani, da želite odstraniti {n} sporočil, ki jih je poslal {user_id}? "
-"Tega ni mogoče razveljaviti."
+"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste prepričani, da želite odstraniti "
+"{n} sporočil, ki jih je poslal {user_id}? Tega ni mogoče razveljaviti."
 msgstr[1] ""
-"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste "
-"prepričani, da želite odstraniti {n} sporočilo, ki ga je poslal {user_id}? "
-"Tega ni mogoče razveljaviti."
+"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste prepričani, da želite odstraniti "
+"{n} sporočilo, ki ga je poslal {user_id}? Tega ni mogoče razveljaviti."
 msgstr[2] ""
-"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste "
-"prepričani, da želite odstraniti {n} sporočili, ki ju je poslal {user_id}? "
-"Tega ni mogoče razveljaviti."
+"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste prepričani, da želite odstraniti "
+"{n} sporočili, ki ju je poslal {user_id}? Tega ni mogoče razveljaviti."
 msgstr[3] ""
-"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste "
-"prepričani, da želite odstraniti {n} sporočila, ki jih je poslal {user_id}? "
-"Tega ni mogoče razveljaviti."
+"S tem odstranite vsa sporočila, prejeta od domačega strežnika. Ali ste prepričani, da želite odstraniti "
+"{n} sporočila, ki jih je poslal {user_id}? Tega ni mogoče razveljaviti."
 
-#: src/components/dialogs/message_dialogs.rs:232
-#: src/session/view/account_settings/general_page/mod.rs:392
-#: src/session/view/content/room_details/edit_details_subpage.rs:267
+#: src/components/dialogs/message_dialogs.rs:232 src/session/view/account_settings/general_page/mod.rs:392
+#: src/session/view/content/room_details/edit_details_subpage.rs:268
 #: src/session/view/content/room_history/event_actions/group.rs:584
 msgid "Remove"
 msgstr "Odstrani"
@@ -844,11 +751,11 @@ msgstr "Ni sporočil, ki bi jih poslal/a {user}"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:244
 msgid ""
-"There are no messages received from the homeserver sent by {user_id}. You "
-"can try to load more by going further back in the room history."
+"There are no messages received from the homeserver sent by {user_id}. You can try to load more by going "
+"further back in the room history."
 msgstr ""
-"Ni z domačega strežnika prejetih sporočil, ki bi jih poslal/a {user_id}. Več "
-"lahko poskusite naložiti tako, da se vrnete nazaj v zgodovino klepetalnice."
+"Ni z domačega strežnika prejetih sporočil, ki bi jih poslal/a {user_id}. Več lahko poskusite naložiti "
+"tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:272
 #: src/session/view/content/room_history/event_actions/group.rs:629
@@ -878,24 +785,16 @@ msgstr[3] "Želite izklopiti zvok uporabnikom?"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. The count cannot be zero.
 #: src/components/dialogs/message_dialogs.rs:385
-msgid ""
-"Are you sure you want to mute {user_id}? They will not be able to send new "
-"messages to this room."
+msgid "Are you sure you want to mute {user_id}? They will not be able to send new messages to this room."
 msgid_plural ""
-"Are you sure you want to mute these members? They will not be able to send "
-"new messages to this room."
+"Are you sure you want to mute these members? They will not be able to send new messages to this room."
 msgstr[0] ""
-"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več "
-"pošiljati novih sporočil."
-msgstr[1] ""
-"Ali ste prepričani, da želite utišati up. {user_id}? Ne bo mogel več "
-"pošiljati novih sporočil."
+"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več pošiljati novih sporočil."
+msgstr[1] "Ali ste prepričani, da želite utišati up. {user_id}? Ne bo mogel več pošiljati novih sporočil."
 msgstr[2] ""
-"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več "
-"pošiljati novih sporočil."
+"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več pošiljati novih sporočil."
 msgstr[3] ""
-"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več "
-"pošiljati novih sporočil."
+"Ali ste prepričani, da želite utišati te uporabnike? Ne bodo mogli več pošiljati novih sporočil."
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
 #: src/components/dialogs/message_dialogs.rs:400
@@ -916,23 +815,14 @@ msgstr[3] "Želite povišati uporabnike?"
 #. this is a variable name. The count cannot be zero.
 #: src/components/dialogs/message_dialogs.rs:434
 msgid ""
-"If you promote {user_id} to the same level as yours, you will not be able to "
-"demote them in the future."
+"If you promote {user_id} to the same level as yours, you will not be able to demote them in the future."
 msgid_plural ""
-"If you promote these members to the same level as yours, you will not be "
-"able to demote them in the future."
-msgstr[0] ""
-"Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli "
-"ponižati."
-msgstr[1] ""
-"Če povišate {user_id} na svojo raven, jih v prihodnosti ne boste mogli "
-"ponižati."
-msgstr[2] ""
-"Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli "
-"ponižati."
-msgstr[3] ""
-"Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli "
-"ponižati."
+"If you promote these members to the same level as yours, you will not be able to demote them in the "
+"future."
+msgstr[0] "Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli ponižati."
+msgstr[1] "Če povišate {user_id} na svojo raven, jih v prihodnosti ne boste mogli ponižati."
+msgstr[2] "Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli ponižati."
+msgstr[3] "Če povišate te uporabnike na svojo raven, jih v prihodnosti ne boste mogli ponižati."
 
 #: src/components/dialogs/message_dialogs.rs:448
 msgid "Promote"
@@ -944,45 +834,61 @@ msgstr "Želite ponižati sebe?"
 
 #: src/components/dialogs/message_dialogs.rs:459
 msgid ""
-"Are you sure you want to lower your power level? You will need to ask "
-"another member with a higher power level to undo this."
+"Are you sure you want to lower your power level? You will need to ask another member with a higher "
+"power level to undo this."
 msgstr ""
-"Ste prepričani, da želite znižati raven svoje moči? Za razveljavitev tega "
-"boste morali prositi drugega člana z višjo stopnjo moči."
+"Ste prepričani, da želite znižati raven svoje moči? Za razveljavitev tega boste morali prositi drugega "
+"člana z višjo stopnjo moči."
 
 #: src/components/dialogs/message_dialogs.rs:470
 msgid "Demote"
 msgstr "Ponižaj"
 
+#: src/components/dialogs/message_dialogs.rs:481
+msgid "Save Changes?"
+msgstr "Ali želite shraniti spremembe?"
+
+#: src/components/dialogs/message_dialogs.rs:483
+msgid "This page contains unsaved changes. Changes which are not saved will be lost."
+msgstr "Ta stran vsebuje neshranjene spremembe. Spremembe, ki niso shranjene, bodo izgubljene."
+
+#: src/components/dialogs/message_dialogs.rs:492
+msgid "Discard"
+msgstr "Zavrzi"
+
+#: src/components/dialogs/message_dialogs.rs:493
+#: src/session/view/content/room_details/edit_details_subpage.ui:140
+#: src/session/view/content/room_details/history_viewer/file_row.rs:144
+#: src/utils/matrix/media_message.rs:175
+msgid "Save"
+msgstr "Shrani"
+
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/dialogs/room_preview.rs:239
-#: src/components/dialogs/room_preview.rs:346
+#. Translators: This is a verb, as in 'View Room'
+#: src/components/dialogs/room_preview.rs:239 src/components/dialogs/room_preview.rs:347
 #: src/session/view/content/explore/public_room_row.rs:182
 #: src/session/view/content/room_history/message_toolbar/mod.rs:364
+#: src/session/view/content/room_history/mod.ui:169
 #: src/session/view/content/room_history/state/creation.ui:20
 msgid "View"
 msgstr "Pogled"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/room_preview.rs:242
-#: src/components/dialogs/room_preview.ui:91
+#: src/components/dialogs/room_preview.rs:242 src/components/dialogs/room_preview.ui:91
 msgid "Look Up"
 msgstr "Poišči"
 
 #: src/components/dialogs/room_preview.rs:302
 msgid ""
-"The room details cannot be previewed. It can be because the room is not "
-"known by the homeserver or because its details are private. You can still "
-"try to join it."
+"The room details cannot be previewed. It can be because the room is not known by the homeserver or "
+"because its details are private. You can still try to join it."
 msgstr ""
-"Podrobnosti o klepetalnici si ni mogoče ogledati. To je lahko zato, ker "
-"domači strežnik klepetalnice ne pozna ali ker so njeni podatki zasebni. Še "
-"vedno se ji lahko poskusite pridružiti."
+"Podrobnosti o klepetalnici si ni mogoče ogledati. To je lahko zato, ker domači strežnik klepetalnice ne "
+"pozna ali ker so njeni podatki zasebni. Še vedno se ji lahko poskusite pridružiti."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/room_preview.rs:325
-#: src/session/view/content/explore/public_room_row.rs:161
+#: src/components/dialogs/room_preview.rs:325 src/session/view/content/explore/public_room_row.rs:161
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} članov"
@@ -990,20 +896,22 @@ msgstr[1] "{n} član"
 msgstr[2] "{n} člana"
 msgstr[3] "{n} člani"
 
-#: src/components/dialogs/room_preview.rs:348
-#: src/session/view/content/explore/public_room_row.rs:187
+#: src/components/dialogs/room_preview.rs:349 src/session/view/content/explore/public_room_row.rs:187
+msgid "Request an Invite"
+msgstr "Prosi za povabilo"
+
+#: src/components/dialogs/room_preview.rs:351 src/session/view/content/explore/public_room_row.rs:195
 #: src/session/view/content/room_history/message_toolbar/mod.rs:366
 msgid "Join"
 msgstr "Pridruži se"
 
-#: src/components/dialogs/room_preview.ui:4
-#: src/components/dialogs/room_preview.ui:38
+#: src/components/dialogs/room_preview.ui:4 src/components/dialogs/room_preview.ui:38
 msgid "Join a Room"
 msgstr "Pridruži se klepetalnici"
 
-#: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16
-#: src/login/greeter.ui:18
+#: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16 src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
+#: src/session/view/content/room_details/join_rule_subpage.ui:16
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
 #: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
@@ -1011,9 +919,7 @@ msgstr "Nazaj"
 
 #: src/components/dialogs/room_preview.ui:72
 msgid "Enter a room ID, room alias, or link to look up a room"
-msgstr ""
-"Vnesite ID klepetalnice, vzdevek klepetalnice ali trajno povezavo, da "
-"poiščete klepetalnico"
+msgstr "Vnesite ID klepetalnice, vzdevek klepetalnice ali trajno povezavo, da poiščete klepetalnico"
 
 #: src/components/dialogs/user_profile.ui:4
 msgid "User Profile"
@@ -1057,8 +963,7 @@ msgstr "Obvesti celotno klepetalnico"
 
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
-#: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:72
+#: src/components/power_level_selection/popover.ui:149 src/session/model/room/permissions.rs:72
 msgid "Custom"
 msgstr "Po meri"
 
@@ -1066,8 +971,7 @@ msgstr "Po meri"
 msgid "Confirm Custom Role"
 msgstr "Potrdi vlogo po meri"
 
-#: src/components/user_page.rs:253
-#: src/session/view/account_settings/general_page/mod.ui:60
+#: src/components/user_page.rs:253 src/session/view/account_settings/general_page/mod.ui:60
 #: src/session/view/content/room_history/sender_avatar/mod.rs:79
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID uporabnika Matrix je kopiran v odložišče"
@@ -1080,8 +984,7 @@ msgstr "Odpri neposredni klepet"
 msgid "Create Direct Chat"
 msgstr "Ustvari neposredni klepet"
 
-#: src/components/user_page.rs:302
-#: src/session/view/content/room_history/sender_avatar/mod.rs:555
+#: src/components/user_page.rs:302 src/session/view/content/room_history/sender_avatar/mod.rs:544
 #: src/session/view/create_direct_chat_dialog/mod.rs:190
 msgid "Could not create a new Direct Chat"
 msgstr "Ni bilo mogoče ustvariti novega neposrednega klepeta"
@@ -1102,11 +1005,11 @@ msgctxt "member"
 msgid "Banned"
 msgstr "Prepovedan"
 
-#. Translators: As in, 'The room member knocked to request access to the room'.
+#. Translators: As in, 'The room member requested an invite'.
 #: src/components/user_page.rs:352
 msgctxt "member"
-msgid "Knocked"
-msgstr "Brcnjen"
+msgid "Requested an Invite"
+msgstr "Zaprošeno za povabilo"
 
 #. Translators: As in, 'The room member has an unknown role'.
 #: src/components/user_page.rs:356
@@ -1114,49 +1017,42 @@ msgctxt "member"
 msgid "Unknown"
 msgstr "Neznan"
 
-#: src/components/user_page.rs:380
-msgid "Allow Access"
-msgstr "Dovoli dostop"
+#: src/components/user_page.rs:388
+msgid "Deny Request"
+msgstr "Zavrni zahtevo"
 
-#: src/components/user_page.rs:494
+#: src/components/user_page.rs:489
 msgid "Could not change the role"
 msgstr "Vloge ni bilo mogoče spremeniti"
 
-#: src/components/user_page.rs:515
-#: src/session/view/content/room_history/sender_avatar/mod.rs:579
+#: src/components/user_page.rs:510 src/session/view/content/room_history/sender_avatar/mod.rs:568
 msgid "Could not invite user"
 msgstr "Uporabnika ni bilo mogoče povabiti"
 
-#: src/components/user_page.rs:549
-#: src/session/view/content/room_history/event_actions/group.rs:721
-#: src/session/view/content/room_history/sender_avatar/mod.rs:613
+#: src/components/user_page.rs:544 src/session/view/content/room_history/event_actions/group.rs:721
+#: src/session/view/content/room_history/sender_avatar/mod.rs:601
 msgid "Could not revoke invite of user"
 msgstr "Ni bilo mogoče preklicati povabila uporabnika"
 
-#: src/components/user_page.rs:550
-#: src/session/view/content/room_history/sender_avatar/mod.rs:614
+#: src/components/user_page.rs:545
 msgid "Could not deny access to user"
 msgstr "Uporabniku ni bilo mogoče zavrniti dostopa"
 
-#: src/components/user_page.rs:551
-#: src/session/view/content/room_history/sender_avatar/mod.rs:615
+#: src/components/user_page.rs:546 src/session/view/content/room_history/sender_avatar/mod.rs:602
 msgid "Could not kick user"
 msgstr "Uporabnika ni bilo mogoče brcniti"
 
-#: src/components/user_page.rs:597
-#: src/session/view/content/room_history/sender_avatar/mod.rs:701
+#: src/components/user_page.rs:592 src/session/view/content/room_history/sender_avatar/mod.rs:688
 msgid "Could not ban user"
 msgstr "Uporabnika ni bilo mogoče prepovedati"
 
-#: src/components/user_page.rs:628
-#: src/session/view/content/room_history/sender_avatar/mod.rs:722
+#: src/components/user_page.rs:623 src/session/view/content/room_history/sender_avatar/mod.rs:709
 msgid "Could not unban user"
 msgstr "Prepovedi uporabnika ni bilo mogoče preklicati"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:676
-#: src/session/view/content/room_history/sender_avatar/mod.rs:777
+#: src/components/user_page.rs:671 src/session/view/content/room_history/sender_avatar/mod.rs:764
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
@@ -1164,49 +1060,47 @@ msgstr[1] "Ni bilo mogoče odstraniti {n} sporočila, ki ga je poslal uporabnik"
 msgstr[2] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
 msgstr[3] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
 
-#: src/components/user_page.rs:692
+#: src/components/user_page.rs:687
 msgid "Identity verified"
 msgstr "Preverjena identiteta"
 
-#: src/components/user_page.rs:699
+#: src/components/user_page.rs:694
 msgid "Identity not verified"
 msgstr "Identiteta ni preverjena"
 
-#: src/components/user_page.rs:714
+#: src/components/user_page.rs:709
 msgid "Could not start user verification"
 msgstr "Preverjanja uporabnika ni bilo mogoče zagnati"
 
-#: src/components/user_page.rs:739
+#: src/components/user_page.rs:734
 msgid "Ignored"
 msgstr "Prezrto"
 
-#: src/components/user_page.rs:741
+#: src/components/user_page.rs:736
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Nehaj ignorirati"
 
-#: src/components/user_page.rs:744
+#: src/components/user_page.rs:739
 msgid "Not Ignored"
 msgstr "Ni prezrt"
 
-#: src/components/user_page.rs:745
+#: src/components/user_page.rs:740
 msgid "Ignore"
 msgstr "Prezri"
 
-#: src/components/user_page.rs:762
+#: src/components/user_page.rs:757
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs:85
-#: src/session/view/content/room_history/sender_avatar/mod.rs:803
+#: src/session/view/content/room_history/sender_avatar/mod.rs:790
 msgid "Could not stop ignoring user"
 msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
-#: src/components/user_page.rs:765 src/session/view/content/invite.rs:290
-#: src/session/view/content/room_history/sender_avatar/mod.rs:806
-#: src/session/view/sidebar/row.rs:749
+#: src/components/user_page.rs:760 src/session/view/content/invite.rs:290
+#: src/session/view/content/room_history/sender_avatar/mod.rs:793 src/session/view/sidebar/row.rs:766
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
-#: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/components/user_page.ui:66 src/session/view/account_settings/general_page/mod.ui:59
 #: src/session/view/content/room_history/sender_avatar/mod.ui:28
 msgid "Copy Matrix User ID"
 msgstr "Kopiraj ID uporabnika Matrix"
@@ -1220,23 +1114,30 @@ msgstr "Vloga"
 msgid "Power Level"
 msgstr "Raven moči"
 
+#. Translators: In this string, 'Invite' is a verb.
+#. Translators: This is a verb.
+#: src/components/user_page.ui:139 src/session/view/content/invite.ui:13
+#: src/session/view/content/invite.ui:39
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
+msgid "Invite"
+msgstr "Povabi"
+
 #. Translators: As in, 'Unan room member'.
-#: src/components/user_page.ui:162
+#: src/components/user_page.ui:164
 msgid "Unban"
 msgstr "Odstrani prepoved"
 
-#: src/components/user_page.ui:171
+#: src/components/user_page.ui:173
 msgid "Remove Messages"
 msgstr "Odstrani sporočila"
 
-#: src/components/user_page.ui:185
+#: src/components/user_page.ui:187
 msgid "Security"
 msgstr "Varnost"
 
-#: src/components/user_page.ui:212
-#: src/identity_verification_view/accept_request_page.ui:63
-#: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:322
+#: src/components/user_page.ui:214 src/identity_verification_view/accept_request_page.ui:63
+#: src/session/view/content/room_history/verification_info_bar.rs:172 src/session/view/sidebar/mod.rs:322
 msgid "Verify"
 msgstr "Preveri"
 
@@ -1248,10 +1149,9 @@ msgstr "Koda QR"
 msgid "Command copied to clipboard"
 msgstr "Ukaz je kopiran na odložišče"
 
-#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31
-#: src/error_page.ui:34 src/login/greeter.ui:26 src/login/greeter.ui:29
-#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.ui:30
-#: src/window.ui:33
+#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31 src/error_page.ui:34
+#: src/login/greeter.ui:26 src/login/greeter.ui:29 src/login/greeter.ui:37 src/login/greeter.ui:40
+#: src/window.ui:30 src/window.ui:33
 msgid "About Fractal"
 msgstr "O programu Fraktal"
 
@@ -1261,36 +1161,26 @@ msgstr "Napaka ponudnika tajnih storitev"
 
 #: src/error_page.ui:61
 msgid ""
-"Fractal relies on a Secret Portal to manage your sensitive session "
-"information and an error occurred while we were trying to restore your "
-"sessions."
+"Fractal relies on a Secret Portal to manage your sensitive session information and an error occurred "
+"while we were trying to restore your sessions."
 msgstr ""
-"Fraktal se zanaša na ponudnika tajnih storitev za upravljanje vaših "
-"občutljivih podatkov o seji in prišlo je do napake pri poskusu shranjevanja "
-"ali obnovitve vaše seje."
+"Fraktal se zanaša na ponudnika tajnih storitev za upravljanje vaših občutljivih podatkov o seji in "
+"prišlo je do napake pri poskusu shranjevanja ali obnovitve vaše seje."
 
 #: src/error_page.ui:73
-msgid ""
-"Here are a few things that might help you fix issues with the Secret Portal:"
-msgstr ""
-"Tukaj je nekaj stvari, ki vam lahko pomagajo pri reševanju težav s "
-"ponudnikom tajnih storitev:"
+msgid "Here are a few things that might help you fix issues with the Secret Portal:"
+msgstr "Tukaj je nekaj stvari, ki vam lahko pomagajo pri reševanju težav s ponudnikom tajnih storitev:"
 
 #: src/error_page.ui:90
-msgid ""
-"Make sure you have a Secret Portal Backend Provider installed, like gnome-"
-"keyring."
-msgstr ""
-"Prepričajte se, da imate nameščenega ponudnika zaledja tajnih storitev, kot "
-"je gnome-keyring."
+msgid "Make sure you have a Secret Portal Backend Provider installed, like gnome-keyring."
+msgstr "Prepričajte se, da imate nameščenega ponudnika zaledja tajnih storitev, kot je gnome-keyring."
 
 #: src/error_page.ui:113
 msgid ""
-"If you prefer to use a Secret Service Provider instead, you need to allow "
-"Fractal to interact with it, like this:"
+"If you prefer to use a Secret Service Provider instead, you need to allow Fractal to interact with it, "
+"like this:"
 msgstr ""
-"Če raje uporabljate ponudnika tajnih storitev, morate Fraktalu dovoliti "
-"interakcijo z njim, kot je ta:"
+"Če raje uporabljate ponudnika tajnih storitev, morate Fraktalu dovoliti interakcijo z njim, kot je ta:"
 
 #: src/error_page.ui:135
 msgid "Copy Command"
@@ -1301,19 +1191,14 @@ msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Preverite, ali imate privzeto zbirko ključev in ali je odklenjena."
 
 #: src/error_page.ui:182
-msgid ""
-"Check the application logs and your distribution’s documentation for more "
-"details."
-msgstr ""
-"Za več podrobnosti preverite zapisnike programov in dokumentacijo "
-"distribucije."
+msgid "Check the application logs and your distribution’s documentation for more details."
+msgstr "Za več podrobnosti preverite zapisnike programov in dokumentacijo distribucije."
 
 #: src/error_page.ui:198
 msgid "Could Not Initialize Session"
 msgstr "Seje ni bilo mogoče inicializirati"
 
-#: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:388
+#: src/identity_verification_view/accept_request_page.rs:129 src/session/model/notifications/mod.rs:388
 msgid "Login Request From Another Session"
 msgstr "Zahteva za prijavo iz druge seje"
 
@@ -1322,22 +1207,16 @@ msgid "Verify the new session from the current session."
 msgstr "Preverite novo sejo iz trenutne seje."
 
 #: src/identity_verification_view/accept_request_page.rs:134
-#: src/identity_verification_view/choose_method_page.rs:183
-#: src/identity_verification_view/sas_page.rs:159
-#: src/identity_verification_view/scan_qr_code_page.rs:158
-#: src/session/model/notifications/mod.rs:326
+#: src/identity_verification_view/choose_method_page.rs:183 src/identity_verification_view/sas_page.rs:159
+#: src/identity_verification_view/scan_qr_code_page.rs:158 src/session/model/notifications/mod.rs:326
 msgid "Verification Request"
 msgstr "Zahtevek za preverjanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/accept_request_page.rs:138
-msgid ""
-"{user} asked to be verified. Verifying a user increases the security of the "
-"conversation."
-msgstr ""
-"Uporabnik {user} je zahteval preverjanje. Preverjanje uporabnika poveča "
-"varnost pogovora."
+msgid "{user} asked to be verified. Verifying a user increases the security of the conversation."
+msgstr "Uporabnik {user} je zahteval preverjanje. Preverjanje uporabnika poveča varnost pogovora."
 
 #: src/identity_verification_view/accept_request_page.rs:161
 msgid "Could not decline verification request"
@@ -1377,10 +1256,8 @@ msgstr "Številke se niso ujemale."
 msgid "An unexpected error happened during the verification process."
 msgstr "Med postopkom preverjanja je prišlo do nepričakovane napake."
 
-#: src/identity_verification_view/cancelled_page.rs:166
-#: src/identity_verification_view/mod.ui:103
-#: src/identity_verification_view/mod.ui:114
-#: src/identity_verification_view/room_left_page.ui:22
+#: src/identity_verification_view/cancelled_page.rs:166 src/identity_verification_view/mod.ui:103
+#: src/identity_verification_view/mod.ui:114 src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "Preverjanje preklicano"
 
@@ -1392,8 +1269,7 @@ msgstr "Napaka pri preverjanju"
 msgid "Send New Request"
 msgstr "Pošlji novo zahtevo"
 
-#: src/identity_verification_view/choose_method_page.rs:175
-#: src/identity_verification_view/sas_page.rs:147
+#: src/identity_verification_view/choose_method_page.rs:175 src/identity_verification_view/sas_page.rs:147
 #: src/identity_verification_view/scan_qr_code_page.rs:153
 msgid "Verify Session"
 msgstr "Preveri sejo"
@@ -1460,8 +1336,7 @@ msgstr "Zahteva dokončana"
 
 #: src/identity_verification_view/completed_page.rs:123
 msgid "The new session is now ready to send and receive secure messages."
-msgstr ""
-"Nova seja je zdaj pripravljena za pošiljanje in prejemanje varnih sporočil."
+msgstr "Nova seja je zdaj pripravljena za pošiljanje in prejemanje varnih sporočil."
 
 #: src/identity_verification_view/completed_page.rs:127
 msgid "Verification Complete"
@@ -1470,12 +1345,8 @@ msgstr "Preverjanje je končano"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/completed_page.rs:130
-msgid ""
-"{user} is verified and you can now be sure that your communication will be "
-"private."
-msgstr ""
-"{user} je preverjen in zdaj ste lahko prepričani, da bo vaša komunikacija "
-"zasebna."
+msgid "{user} is verified and you can now be sure that your communication will be private."
+msgstr "{user} je preverjen in zdaj ste lahko prepričani, da bo vaša komunikacija zasebna."
 
 #: src/identity_verification_view/confirm_qr_code_page.rs:128
 msgid "Does the other session show a confirmation?"
@@ -1511,8 +1382,7 @@ msgstr "Nova zahteva za preverjanje identitete"
 msgid "Wait for Other Party"
 msgstr "Počakaj na drugo stranko"
 
-#: src/identity_verification_view/mod.ui:37
-#: src/identity_verification_view/no_supported_methods_page.ui:22
+#: src/identity_verification_view/mod.ui:37 src/identity_verification_view/no_supported_methods_page.ui:22
 msgid "No Supported Verification Methods"
 msgstr "Ni podprtih načinov preverjanja"
 
@@ -1520,8 +1390,7 @@ msgstr "Ni podprtih načinov preverjanja"
 msgid "Verification Request Methods"
 msgstr "Načini zahteve za preverjanje"
 
-#: src/identity_verification_view/mod.ui:59
-#: src/identity_verification_view/qr_code_scanned_page.ui:19
+#: src/identity_verification_view/mod.ui:59 src/identity_verification_view/qr_code_scanned_page.ui:19
 msgid "Scan Complete"
 msgstr "Optično branje je dokončano"
 
@@ -1538,35 +1407,32 @@ msgid "Verification Successful"
 msgstr "Preverjanje uspešno"
 
 #: src/identity_verification_view/no_supported_methods_page.rs:138
-msgid ""
-"None of the methods offered by the other client are supported by Fractal."
+msgid "None of the methods offered by the other client are supported by Fractal."
 msgstr "Fraktal ne podpira nobene od metod, ki jih ponuja drugi odjemalec."
 
 #: src/identity_verification_view/no_supported_methods_page.rs:141
 msgid ""
-"A login request was received, but none of the methods offered by the other "
-"client are supported by Fractal."
+"A login request was received, but none of the methods offered by the other client are supported by "
+"Fractal."
 msgstr ""
-"Prejeta je bila zahteva za prijavo, vendar Fraktal ne podpira nobene metode, "
-"ki jo ponuja drugi odjemalec."
+"Prejeta je bila zahteva za prijavo, vendar Fraktal ne podpira nobene metode, ki jo ponuja drugi "
+"odjemalec."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/no_supported_methods_page.rs:150
-msgid ""
-"None of the methods offered by {user}’s client are supported by Fractal."
-msgstr ""
-"Fraktal ne podpira nobene metode, ki jo ponuja odjemalec uporabnika {user}."
+msgid "None of the methods offered by {user}’s client are supported by Fractal."
+msgstr "Fraktal ne podpira nobene metode, ki jo ponuja odjemalec uporabnika {user}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/no_supported_methods_page.rs:157
 msgid ""
-"{user} sent a verification request, but none of the methods offered by the "
-"other client are supported by Fractal."
+"{user} sent a verification request, but none of the methods offered by the other client are supported "
+"by Fractal."
 msgstr ""
-"{user} je poslal zahtevo za preverjanje, vendar Fraktal ne podpira nobene "
-"metode, ki jo ponuja drugi odjemalec."
+"{user} je poslal zahtevo za preverjanje, vendar Fraktal ne podpira nobene metode, ki jo ponuja drugi "
+"odjemalec."
 
 #: src/identity_verification_view/no_supported_methods_page.rs:169
 msgid "Decline Verification"
@@ -1577,29 +1443,19 @@ msgid "Could not decline the verification"
 msgstr "Preverjanja ni bilo mogoče zavrniti"
 
 #: src/identity_verification_view/no_supported_methods_page.ui:44
-msgid ""
-"You can accept this verification from another session or decline it for all "
-"your sessions"
-msgstr ""
-"To preverjanje lahko sprejmete iz druge seje ali ga zavrnete za vse seje"
+msgid "You can accept this verification from another session or decline it for all your sessions"
+msgstr "To preverjanje lahko sprejmete iz druge seje ali ga zavrnete za vse seje"
 
 #: src/identity_verification_view/qr_code_scanned_page.rs:118
 msgid ""
-"You scanned the QR code successfully. You may need to confirm the "
-"verification from the other session."
-msgstr ""
-"Kodo QR ste uspešno optično prebrali. Morda boste morali potrditi "
-"preverjanje iz druge seje."
+"You scanned the QR code successfully. You may need to confirm the verification from the other session."
+msgstr "Kodo QR ste uspešno optično prebrali. Morda boste morali potrditi preverjanje iz druge seje."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/qr_code_scanned_page.rs:123
-msgid ""
-"You scanned the QR code successfully. {user} may need to confirm the "
-"verification."
-msgstr ""
-"Kodo QR ste uspešno optično prebrali. {user} bo morda moral potrditi "
-"preverjanje."
+msgid "You scanned the QR code successfully. {user} may need to confirm the verification."
+msgstr "Kodo QR ste uspešno optično prebrali. {user} bo morda moral potrditi preverjanje."
 
 #: src/identity_verification_view/room_left_page.ui:37
 msgid "You are no longer in the room where the verification was taking place"
@@ -1607,35 +1463,23 @@ msgstr "Niste več v sobi, kjer je potekalo preverjanje"
 
 #: src/identity_verification_view/sas_page.rs:150
 msgid "Check if the same emoji appear in the same order on the other client."
-msgstr ""
-"Preverite, ali so isti čustveni simboli prikazani v istem vrstnem redu v "
-"drugem odjemalcu."
+msgstr "Preverite, ali so isti čustveni simboli prikazani v istem vrstnem redu v drugem odjemalcu."
 
 #: src/identity_verification_view/sas_page.rs:154
 msgid "Check if the same numbers appear in the same order on the other client."
-msgstr ""
-"Preverite, ali so iste številke v drugem odjemalcu prikazane v istem vrstnem "
-"redu."
+msgstr "Preverite, ali so iste številke v drugem odjemalcu prikazane v istem vrstnem redu."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:164
-msgid ""
-"Ask {user} if they see the following emoji appear in the same order on their "
-"screen."
-msgstr ""
-"Vprašajte {user}, če so na zaslonu prikazani naslednji čustveni simboli v "
-"enakem vrstnem redu."
+msgid "Ask {user} if they see the following emoji appear in the same order on their screen."
+msgstr "Vprašajte {user}, če so na zaslonu prikazani naslednji čustveni simboli v enakem vrstnem redu."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:171
-msgid ""
-"Ask {user} if they see the following numbers appear in the same order on "
-"their screen."
-msgstr ""
-"Vprašajte {user}, če so na zaslonu prikazane naslednje številke v enakem "
-"vrstnem redu."
+msgid "Ask {user} if they see the following numbers appear in the same order on their screen."
+msgstr "Vprašajte {user}, če so na zaslonu prikazane naslednje številke v enakem vrstnem redu."
 
 #: src/identity_verification_view/sas_page.rs:252
 msgid "Could not send that the data does not match"
@@ -1694,12 +1538,9 @@ msgid "Ask {user} to accept the verification request."
 msgstr "Prosite {user}, da sprejme zahtevo za preverjanje."
 
 #: src/identity_verification_view/wait_for_other_page.ui:41
-msgid ""
-"To be secure, the verification should happen in person or use a trusted way "
-"of communication."
+msgid "To be secure, the verification should happen in person or use a trusted way of communication."
 msgstr ""
-"Zaradi varnosti je treba preverjanje opraviti osebno ali uporabiti zaupanja "
-"vreden način komunikacije."
+"Zaradi varnosti je treba preverjanje opraviti osebno ali uporabiti zaupanja vreden način komunikacije."
 
 #: src/identity_verification_view/wait_for_other_page.ui:55
 msgid "The request is not showing up on the other device?"
@@ -1715,15 +1556,13 @@ msgstr "Odkrivanje domačega strežnika"
 
 #: src/login/advanced_dialog.ui:11
 msgid ""
-"Auto-discovery, also known as “well-known lookup”, allows to discover the "
-"URL of a Matrix homeserver from a domain name. This should only be disabled "
-"if your homeserver doesn’t support auto-discovery or if you want to provide "
-"the URL yourself."
+"Auto-discovery, also known as “well-known lookup”, allows to discover the URL of a Matrix homeserver "
+"from a domain name. This should only be disabled if your homeserver doesn’t support auto-discovery or "
+"if you want to provide the URL yourself."
 msgstr ""
-"Samodejno odkrivanje, znano tudi kot »dobro znano iskanje«, omogoča "
-"odkrivanje URL-ja domačega strežnika Matrix iz imena domene. To onemogočite "
-"le, če domači strežnik ne podpira samodejnega odkrivanja ali če želite URL-"
-"ja navesti sami."
+"Samodejno odkrivanje, znano tudi kot »dobro znano iskanje«, omogoča odkrivanje URL-ja domačega "
+"strežnika Matrix iz imena domene. To onemogočite le, če domači strežnik ne podpira samodejnega "
+"odkrivanja ali če želite URL-ja navesti sami."
 
 #: src/login/advanced_dialog.ui:14
 msgid "_Auto-Discovery"
@@ -1760,8 +1599,8 @@ msgstr "Naslov URL osnovnega strežnika"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "URL vašega domačega strežnika Matrix, npr. {address}"
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324
-#: src/login/mod.rs:370 src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324 src/login/mod.rs:370
+#: src/login/mod.rs:387
 msgid "Could not set up login"
 msgstr "Prijave ni bilo mogoče nastaviti"
 
@@ -1830,11 +1669,8 @@ msgid "Authorization Completed"
 msgstr "Overitev je končana"
 
 #: src/login/mod.rs:587
-msgid ""
-"The authorization step is complete. You can close this page and go back to "
-"Fractal."
-msgstr ""
-"Korak avtorizacije je končan. To stran lahko zaprete in se vrnete k Fraktalu."
+msgid "The authorization step is complete. You can close this page and go back to Fractal."
+msgstr "Korak avtorizacije je končan. To stran lahko zaprete in se vrnete k Fraktalu."
 
 #: src/login/mod.ui:27 src/login/mod.ui:61
 msgid "Login Complete"
@@ -1880,54 +1716,43 @@ msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
 #: src/secret/linux.rs:532
 msgid "An unexpected error occurred when accessing the secret storage file."
-msgstr ""
-"Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do "
-"nepričakovane napake."
+msgstr "Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do nepričakovane napake."
 
 #: src/secret/linux.rs:535
 msgid "The secret storage file has been changed by another process."
-msgstr ""
-"Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
+msgstr "Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
 
 #: src/secret/linux.rs:538
 msgid ""
-"The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
-"any prompt asking to access it."
+"The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access "
+"it."
 msgstr ""
-"Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
-"pozive, ki zahtevajo dostop do njega."
+"Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse pozive, ki zahtevajo dostop "
+"do njega."
 
 #: src/secret/linux.rs:541
 msgid ""
-"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
-"installed, and it is at least at version 1.5.0."
+"The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at "
+"least at version 1.5.0."
 msgstr ""
-"Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
-"nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
+"Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je nameščen xdg-desktop-portal "
+"in da je nameščena vsaj različica 1.5.0."
 
 #: src/secret/linux.rs:544
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Portal "
-"backend."
-msgstr ""
-"Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
-"nepričakovane napake."
+msgid "An unexpected error occurred when interacting with the D-Bus Secret Portal backend."
+msgstr "Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do nepričakovane napake."
 
 #: src/secret/linux.rs:547
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
-msgstr ""
-"Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, "
-"da bi bil varen."
+msgstr "Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, da bi bil varen."
 
 #: src/secret/linux.rs:560
 msgid "The item was deleted."
 msgstr "Element je bil izbrisan."
 
 #: src/secret/linux.rs:563 src/secret/linux.rs:578
-msgid ""
-"An unexpected error occurred when interacting with the D-Bus Secret Service."
-msgstr ""
-"Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
+msgid "An unexpected error occurred when interacting with the D-Bus Secret Service."
+msgstr "Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
 
 #: src/secret/linux.rs:565
 msgid "The collection or item is locked."
@@ -1943,19 +1768,16 @@ msgstr "Zbirka ali predmet ne obstaja."
 
 #: src/secret/linux.rs:572
 msgid ""
-"The request to the D-Bus Secret Service was cancelled. Make sure to accept "
-"any prompt asking to access it."
+"The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access "
+"it."
 msgstr ""
-"Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
-"zahtevajo dostop do nje."
+"Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki zahtevajo dostop do nje."
 
 #: src/secret/linux.rs:575
-msgid ""
-"Could not access the default collection. Make sure a keyring was created and "
-"set as default."
+msgid "Could not access the default collection. Make sure a keyring was created and set as default."
 msgstr ""
-"Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
-"ključev ustvarjena in nastavljena kot privzeta."
+"Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka ključev ustvarjena in "
+"nastavljena kot privzeta."
 
 #: src/session/model/session.rs:817
 msgid "Could not log the session out"
@@ -2007,49 +1829,48 @@ msgstr "{user}: {message}"
 msgid "{user} invited you"
 msgstr "{user} vas je povabil/a"
 
-#: src/session/model/room/join_rule.rs:247
-msgid "Only invited users, and users can knock"
-msgstr "Samo povabljeni uporabniki in uporabniki lahko potrkajo"
+#: src/session/model/room/join_rule.rs:259
+msgid "Only invited users, and users can request an invite"
+msgstr "Samo povabljeni uporabniki in uporabniki lahko prosijo za povabilo"
 
-#: src/session/model/room/join_rule.rs:249
+#: src/session/model/room/join_rule.rs:261
 msgid "Only invited users"
 msgstr "Samo povabljeni uporabniki"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:263
-msgid "Members of {room}, and users can knock"
-msgstr "Člani {room} in uporabniki lahko trkajo"
+#: src/session/model/room/join_rule.rs:275
+msgid "Members of {room}, and users can request an invite"
+msgstr "Člani {room} in uporabniki lahko prosijo za povabilo"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:270
+#: src/session/model/room/join_rule.rs:282
 msgid "Members of {room}"
 msgstr "Člani {room}"
 
-#: src/session/model/room/join_rule.rs:275
+#: src/session/model/room/join_rule.rs:287
 msgid "Any registered user"
 msgstr "Vsak registriran uporabnik"
 
-#: src/session/model/room/join_rule.rs:276
-#: src/session/view/content/room_details/general_page.rs:977
+#: src/session/model/room/join_rule.rs:288 src/session/view/content/room_details/general_page.rs:939
 msgid "Unsupported rule"
 msgstr "Nepodprto pravilo"
 
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:392
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room (was {user})"
 msgstr "Prazna klepetalnica (prej {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:395
+#: src/session/model/room/mod.rs:389
 msgid "Empty Room"
 msgstr "Prazna klepetalnica"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:405
+#: src/session/model/room/mod.rs:399
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -2073,32 +1894,42 @@ msgstr "Utišan"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:313
+#: src/session/model/room_list/mod.rs:330
 msgid "Could not join room {room_name}"
 msgstr "Ni se možno pridružiti klepetalnici {room_name}"
 
-#: src/session/model/sidebar_data/section/name.rs:78
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/room_list/mod.rs:362
+msgid "Could not request an invite to room {room_name}"
+msgstr "Ni se možno prositi za povabilo v klepetalnico {room_name}"
+
+#: src/session/model/sidebar_data/section/name.rs:82
 msgid "Verifications"
 msgstr "Preverjanja"
 
-#: src/session/model/sidebar_data/section/name.rs:79
+#: src/session/model/sidebar_data/section/name.rs:83
+msgid "Invite Requests"
+msgstr "Prošnje za povabilo"
+
+#: src/session/model/sidebar_data/section/name.rs:84
 #: src/session/view/content/room_details/invite_subpage/list.rs:262
 msgid "Invited"
 msgstr "Povabljen"
 
-#: src/session/model/sidebar_data/section/name.rs:80
+#: src/session/model/sidebar_data/section/name.rs:85
 msgid "Favorites"
 msgstr "Priljubljeni"
 
-#: src/session/model/sidebar_data/section/name.rs:81
+#: src/session/model/sidebar_data/section/name.rs:86
 msgid "Rooms"
 msgstr "Klepetalnice"
 
-#: src/session/model/sidebar_data/section/name.rs:82
+#: src/session/model/sidebar_data/section/name.rs:87
 msgid "Low Priority"
 msgstr "Nizka prednost"
 
-#: src/session/model/sidebar_data/section/name.rs:83
+#: src/session/model/sidebar_data/section/name.rs:88
 msgid "Historical"
 msgstr "Zgodovinsko"
 
@@ -2204,21 +2035,19 @@ msgstr "Izvozi šifrirne ključe klepetalnice"
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:153
 msgid ""
-"Exporting your room encryption keys allows you to make a backup to be able "
-"to decrypt your messages in end-to-end encrypted rooms on another device or "
-"with another Matrix client."
+"Exporting your room encryption keys allows you to make a backup to be able to decrypt your messages in "
+"end-to-end encrypted rooms on another device or with another Matrix client."
 msgstr ""
-"Izvoz šifrirnih ključev klepetalnice vam omogoča, da ustvarite varnostno "
-"kopijo, da lahko dešifrirate sporočila v šifriranih klepetalnicah od začetka "
-"do konca v drugi napravi ali z drugim odjemalcem Matrix."
+"Izvoz šifrirnih ključev klepetalnice vam omogoča, da ustvarite varnostno kopijo, da lahko dešifrirate "
+"sporočila v šifriranih klepetalnicah od začetka do konca v drugi napravi ali z drugim odjemalcem Matrix."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:156
 msgid ""
-"The backup must be stored in a safe place and must be protected with a "
-"strong passphrase that will be used to encrypt the data."
+"The backup must be stored in a safe place and must be protected with a strong passphrase that will be "
+"used to encrypt the data."
 msgstr ""
-"Varnostna kopija mora biti shranjena na varnem mestu in zaščitena z močnim "
-"geslom, ki se bo uporabljalo za šifriranje podatkov."
+"Varnostna kopija mora biti shranjena na varnem mestu in zaščitena z močnim geslom, ki se bo uporabljalo "
+"za šifriranje podatkov."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:159
 msgid "Export Keys"
@@ -2233,18 +2062,15 @@ msgstr "Uvozi šifrirne ključe klepetalnice"
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:165
 msgid ""
-"Importing your room encryption keys allows you to decrypt your messages in "
-"end-to-end encrypted rooms with a previous backup from a Matrix client."
+"Importing your room encryption keys allows you to decrypt your messages in end-to-end encrypted rooms "
+"with a previous backup from a Matrix client."
 msgstr ""
-"Uvoz šifrirnih ključev klepetalnice omogoča dešifriranje sporočil v "
-"šifriranih klepetalnicah od začetka do konca s predhodno varnostno kopijo iz "
-"odjemalca Matrix."
+"Uvoz šifrirnih ključev klepetalnice omogoča dešifriranje sporočil v šifriranih klepetalnicah od začetka "
+"do konca s predhodno varnostno kopijo iz odjemalca Matrix."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:168
 msgid "Enter the passphrase provided when the backup file was created."
-msgstr ""
-"Vnesite geslo, ki ste ga navedli, ko je bila ustvarjena datoteka varnostne "
-"kopije."
+msgstr "Vnesite geslo, ki ste ga navedli, ko je bila ustvarjena datoteka varnostne kopije."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:171
 msgid "Import Keys"
@@ -2263,7 +2089,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Uvozi šifrirne ključe iz ..."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:182
+#: src/utils/matrix/media_message.rs:200
 msgid "Could not access file"
 msgstr "Ni mogoče dostopati do datoteke"
 
@@ -2364,8 +2190,7 @@ msgid "Account Recovery Disabled"
 msgstr "Obnovitev računa je onemogočena"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:230
-msgid ""
-"Enable recovery to be able to restore your account without another device"
+msgid "Enable recovery to be able to restore your account without another device"
 msgstr "Omogočite obnovitev, da boste lahko obnovili račun brez druge naprave"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:236
@@ -2405,12 +2230,8 @@ msgid "Crypto Identity"
 msgstr "Kripto identiteta"
 
 #: src/session/view/account_settings/encryption_page/mod.ui:10
-msgid ""
-"Allows you to verify other Matrix accounts and automatically trust their "
-"verified sessions"
-msgstr ""
-"Omogoča preverjanje drugih računov Matrix in samodejno zaupanje njihovim "
-"preverjenim sejam"
+msgid "Allows you to verify other Matrix accounts and automatically trust their verified sessions"
+msgstr "Omogoča preverjanje drugih računov Matrix in samodejno zaupanje njihovim preverjenim sejam"
 
 #: src/session/view/account_settings/encryption_page/mod.ui:72
 msgid "Account Recovery"
@@ -2418,11 +2239,10 @@ msgstr "Obnovitev računa"
 
 #: src/session/view/account_settings/encryption_page/mod.ui:73
 msgid ""
-"Allows to fully recover your account with a recovery key or passphrase, if "
-"you ever lose access to all your sessions"
+"Allows to fully recover your account with a recovery key or passphrase, if you ever lose access to all "
+"your sessions"
 msgstr ""
-"Omogoča popolno obnovitev računa z obnovitvenim ključem ali geslom, če kdaj "
-"izgubite dostop do vseh sej"
+"Omogoča popolno obnovitev računa z obnovitvenim ključem ali geslom, če kdaj izgubite dostop do vseh sej"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.rs:104
 msgid "Password must be at least 8 characters long"
@@ -2502,39 +2322,31 @@ msgstr "Deaktiviraj račun"
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:43
 msgid ""
-"Deactivating your account means you will lose access to all your messages, "
-"contacts, files, and more, forever."
-msgstr ""
-"Izbris računa pomeni trajen izbris vseh sporočil, stikov, datotek in drugega."
+"Deactivating your account means you will lose access to all your messages, contacts, files, and more, "
+"forever."
+msgstr "Izbris računa pomeni trajen izbris vseh sporočil, stikov, datotek in drugega."
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:52
-msgid ""
-"To confirm that you really want to deactivate this account, type in your "
-"Matrix user ID:"
-msgstr ""
-"Če želite potrditi, da res želite deaktivirati ta račun, vnesite svoj "
-"uporabniški ID za Matrix:"
+msgid "To confirm that you really want to deactivate this account, type in your Matrix user ID:"
+msgstr "Če želite potrditi, da res želite deaktivirati ta račun, vnesite svoj uporabniški ID za Matrix:"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.rs:87
 msgid ""
-"The crypto identity and account recovery are not set up properly. If this is "
-"your last connected session and you have no recent local backup of your "
-"encryption keys, you will not be able to restore your account."
+"The crypto identity and account recovery are not set up properly. If this is your last connected "
+"session and you have no recent local backup of your encryption keys, you will not be able to restore "
+"your account."
 msgstr ""
-"Kripto identiteta in obnovitev računa nista pravilno nastavljena. Če je to "
-"vaša zadnja povezana seja in nimate nedavne krajevne varnostne kopije "
-"šifrirnih ključev, računa ne boste mogli obnoviti."
+"Kripto identiteta in obnovitev računa nista pravilno nastavljena. Če je to vaša zadnja povezana seja in "
+"nimate nedavne krajevne varnostne kopije šifrirnih ključev, računa ne boste mogli obnoviti."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.rs:95
 msgid ""
-"This is your last connected session. Make sure that you can still access "
-"your recovery key or passphrase, or to backup your encryption keys before "
-"logging out."
+"This is your last connected session. Make sure that you can still access your recovery key or "
+"passphrase, or to backup your encryption keys before logging out."
 msgstr ""
-"To je vaša zadnja povezana seja. Pred odjavo se prepričajte, da še vedno "
-"lahko dostopate do obnovitvenega ključa ali gesla ali varnostno kopirate "
-"šifrirne ključe."
+"To je vaša zadnja povezana seja. Pred odjavo se prepričajte, da še vedno lahko dostopate do "
+"obnovitvenega ključa ali gesla ali varnostno kopirate šifrirne ključe."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 #: src/session/view/account_settings/general_page/mod.ui:100
@@ -2560,54 +2372,52 @@ msgstr "Odjava ni uspela"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 msgid ""
-"Logging out of this session failed. You can try again, or, if this is a "
-"permanent error, you can remove the session."
+"Logging out of this session failed. You can try again, or, if this is a permanent error, you can remove "
+"the session."
 msgstr ""
-"Odjava iz te seje ni uspela. Lahko poskusite znova, če pa je to trajna "
-"napaka, lahko sejo odstranite."
+"Odjava iz te seje ni uspela. Lahko poskusite znova, če pa je to trajna napaka, lahko sejo odstranite."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:150
 msgid ""
-"Removing the session deletes the associated data from the system, but your "
-"homeserver and other sessions will not be aware that this session was logged "
-"out."
+"Removing the session deletes the associated data from the system, but your homeserver and other "
+"sessions will not be aware that this session was logged out."
 msgstr ""
-"Če odstranite sejo, izbrišete povezane podatke iz sistema, vendar vaš domači "
-"strežnik in druge seje ne bodo vedele, da ste bili iz te seje odjavljeni."
+"Če odstranite sejo, izbrišete povezane podatke iz sistema, vendar vaš domači strežnik in druge seje ne "
+"bodo vedele, da ste bili iz te seje odjavljeni."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:167
 msgid "Remove Session"
 msgstr "Odstrani sejo"
 
 #: src/session/view/account_settings/general_page/mod.rs:290
-#: src/session/view/content/room_details/edit_details_subpage.rs:148
+#: src/session/view/content/room_details/edit_details_subpage.rs:149
 msgid "Avatar removed successfully"
 msgstr "Avatar uspešno odstranjen"
 
 #: src/session/view/account_settings/general_page/mod.rs:292
-#: src/session/view/content/room_details/edit_details_subpage.rs:150
+#: src/session/view/content/room_details/edit_details_subpage.rs:151
 msgid "Avatar changed successfully"
 msgstr "Avatar se je uspešno spremenil"
 
 #: src/session/view/account_settings/general_page/mod.rs:310
 #: src/session/view/account_settings/general_page/mod.rs:320
-#: src/session/view/content/room_details/edit_details_subpage.rs:175
-#: src/session/view/content/room_details/edit_details_subpage.rs:185
+#: src/session/view/content/room_details/edit_details_subpage.rs:176
+#: src/session/view/content/room_details/edit_details_subpage.rs:186
 msgid "Could not load file"
 msgstr "Napaka pri odpiranju datoteke: »%s«"
 
 #: src/session/view/account_settings/general_page/mod.rs:339
-#: src/session/view/content/room_details/edit_details_subpage.rs:212
+#: src/session/view/content/room_details/edit_details_subpage.rs:213
 msgid "Could not upload avatar"
 msgstr "Avatarja ni bilo mogoče naložiti"
 
 #: src/session/view/account_settings/general_page/mod.rs:370
-#: src/session/view/content/room_details/edit_details_subpage.rs:235
+#: src/session/view/content/room_details/edit_details_subpage.rs:236
 msgid "Could not change avatar"
 msgstr "Avatarja ni bilo mogoče spremeniti"
 
 #: src/session/view/account_settings/general_page/mod.rs:387
-#: src/session/view/content/room_details/edit_details_subpage.rs:260
+#: src/session/view/content/room_details/edit_details_subpage.rs:261
 msgid "Remove Avatar?"
 msgstr "Želite odstraniti avatar?"
 
@@ -2616,7 +2426,7 @@ msgid "Do you really want to remove your avatar?"
 msgstr "Ali res želite odstraniti svoj avatar?"
 
 #: src/session/view/account_settings/general_page/mod.rs:426
-#: src/session/view/content/room_details/edit_details_subpage.rs:292
+#: src/session/view/content/room_details/edit_details_subpage.rs:293
 msgid "Could not remove avatar"
 msgstr "Avatarja ni bilo mogoče odstraniti"
 
@@ -2639,8 +2449,7 @@ msgstr "Avatar računa"
 #: src/session/view/account_settings/general_page/mod.ui:31
 #: src/session/view/content/room_details/edit_details_subpage.ui:58
 #: src/session/view/content/room_details/edit_details_subpage.ui:68
-#: src/session/view/create_room_dialog.ui:47
-#: src/session/view/create_room_dialog.ui:50
+#: src/session/view/create_room_dialog.ui:47 src/session/view/create_room_dialog.ui:50
 msgid "Name"
 msgstr "Ime"
 
@@ -2658,7 +2467,7 @@ msgid "Manage Account"
 msgstr "Upravljaj račun"
 
 #: src/session/view/account_settings/general_page/mod.ui:125
-#: src/session/view/content/room_details/general_page.ui:295
+#: src/session/view/content/room_details/general_page.ui:288
 msgid "Advanced Information"
 msgstr "Napredne podrobnosti"
 
@@ -2727,12 +2536,8 @@ msgid "Global"
 msgstr "Splošno"
 
 #: src/session/view/account_settings/notifications_page.ui:28
-msgid ""
-"Which messages trigger notifications in rooms that do not have more specific "
-"rules"
-msgstr ""
-"Katera sporočila sprožijo obvestila v klepetalnicah, ki nimajo natančnejših "
-"pravil"
+msgid "Which messages trigger notifications in rooms that do not have more specific rules"
+msgstr "Katera sporočila sprožijo obvestila v klepetalnicah, ki nimajo natančnejših pravil"
 
 #: src/session/view/account_settings/notifications_page.ui:31
 msgid "All messages in all rooms"
@@ -2740,9 +2545,7 @@ msgstr "Vsa sporočila v vseh klepetalnicah"
 
 #: src/session/view/account_settings/notifications_page.ui:38
 msgid "All messages in direct chats, and mentions and keywords in all rooms"
-msgstr ""
-"Vsa sporočila v neposrednih klepetih ter omembe in ključne besede v vseh "
-"klepetalnicah"
+msgstr "Vsa sporočila v neposrednih klepetih ter omembe in ključne besede v vseh klepetalnicah"
 
 #: src/session/view/account_settings/notifications_page.ui:45
 msgid "Only mentions and keywords in all rooms"
@@ -2754,11 +2557,11 @@ msgstr "Ključne besede"
 
 #: src/session/view/account_settings/notifications_page.ui:55
 msgid ""
-"Messages that contain one of these keywords trigger notifications. Matching "
-"on these keywords is case-insensitive."
+"Messages that contain one of these keywords trigger notifications. Matching on these keywords is case-"
+"insensitive."
 msgstr ""
-"Sporočila, ki vsebujejo eno od teh ključnih besed, sprožijo obvestila. "
-"Ujemanje teh ključnih besed ne razlikuje med velikimi in malimi črkami."
+"Sporočila, ki vsebujejo eno od teh ključnih besed, sprožijo obvestila. Ujemanje teh ključnih besed ne "
+"razlikuje med velikimi in malimi črkami."
 
 #: src/session/view/account_settings/notifications_page.ui:67
 #: src/session/view/account_settings/notifications_page.ui:68
@@ -2784,8 +2587,7 @@ msgstr "Brez prezrtih uporabnikov"
 
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui:75
 msgid "You can add users to this list from their room member profile"
-msgstr ""
-"Uporabnike lahko na ta seznam dodate iz njihovega profila člana klepetalnice"
+msgstr "Uporabnike lahko na ta seznam dodate iz njihovega profila člana klepetalnice"
 
 #: src/session/view/account_settings/safety_page/mod.rs:232
 msgid "Could not change media previews setting"
@@ -2805,12 +2607,11 @@ msgstr "Varnost"
 
 #: src/session/view/account_settings/safety_page/mod.ui:12
 msgid ""
-"All messages or invitations sent by these users will be ignored. You will "
-"still see some of their activity, like when they join or leave a room."
+"All messages or invitations sent by these users will be ignored. You will still see some of their "
+"activity, like when they join or leave a room."
 msgstr ""
-"Vsa sporočila ali vabila, ki jih pošljejo ti uporabniki, bodo prezrta. Še "
-"vedno boste videli nekaj njihovih dejavnosti, ko se npr. pridružijo "
-"klepetalnici ali jo zapustijo."
+"Vsa sporočila ali vabila, ki jih pošljejo ti uporabniki, bodo prezrta. Še vedno boste videli nekaj "
+"njihovih dejavnosti, ko se npr. pridružijo klepetalnici ali jo zapustijo."
 
 #: src/session/view/account_settings/safety_page/mod.ui:21
 msgid "Privacy"
@@ -2821,24 +2622,17 @@ msgid "Send Read Receipts"
 msgstr "Pošlji potrdila o branju"
 
 #: src/session/view/account_settings/safety_page/mod.ui:26
-msgid ""
-"Allow other members of the rooms you participate in to track which messages "
-"you have seen"
+msgid "Allow other members of the rooms you participate in to track which messages you have seen"
 msgstr ""
-"Dovolite drugim članom klepetalnic, v katerih sodelujete, da spremljajo, "
-"katera sporočila ste videli"
+"Dovolite drugim članom klepetalnic, v katerih sodelujete, da spremljajo, katera sporočila ste videli"
 
 #: src/session/view/account_settings/safety_page/mod.ui:32
 msgid "Send Typing Notifications"
 msgstr "Pošlji obvestila o tipkanju"
 
 #: src/session/view/account_settings/safety_page/mod.ui:33
-msgid ""
-"Allow other members of the rooms you participate in to see when you are "
-"typing a message"
-msgstr ""
-"Dovolite drugim članom klepetalnic, v katerih sodelujete, da vidijo, kdaj "
-"vnašate sporočilo"
+msgid "Allow other members of the rooms you participate in to see when you are typing a message"
+msgstr "Dovolite drugim članom klepetalnic, v katerih sodelujete, da vidijo, kdaj vnašate sporočilo"
 
 #: src/session/view/account_settings/safety_page/mod.ui:40
 msgid "Media Previews"
@@ -2846,11 +2640,11 @@ msgstr "Predogledi predstavnosti"
 
 #: src/session/view/account_settings/safety_page/mod.ui:41
 msgid ""
-"Which rooms automatically show previews for images and videos. Hidden "
-"previews can always be shown by clicking on the media."
+"Which rooms automatically show previews for images and videos. Hidden previews can always be shown by "
+"clicking on the media."
 msgstr ""
-"Katere klepetalnice samodejno prikažejo predogled slik in videoposnetkov. "
-"Skrite predoglede lahko vedno prikažete s klikom na medij."
+"Katere klepetalnice samodejno prikažejo predogled slik in videoposnetkov. Skrite predoglede lahko vedno "
+"prikažete s klikom na medij."
 
 #: src/session/view/account_settings/safety_page/mod.ui:44
 msgid "Show in all rooms"
@@ -2975,7 +2769,11 @@ msgstr "Prišlo je do napake pri iskanju zadetkov"
 msgid "View {room_name}"
 msgstr "Pokaži {room_name}"
 
-#: src/session/view/content/explore/public_room_row.rs:188
+#: src/session/view/content/explore/public_room_row.rs:189
+msgid "Request an invite to {room_name}"
+msgstr "Prosi za povabilo v klepetalnico {room_name}"
+
+#: src/session/view/content/explore/public_room_row.rs:196
 msgid "Join {room_name}"
 msgstr "Pridruži se {room_name}"
 
@@ -3000,22 +2798,15 @@ msgstr "{user_name} ({user_id}) vas je povabil/a"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:704
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:721
 msgid "Could not accept invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče sprejeti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:694
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:711
 msgid "Could not decline invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče zavrniti"
-
-#. Translators: This is a verb.
-#: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
-msgid "Invite"
-msgstr "Povabi"
 
 #: src/session/view/content/invite.ui:120
 msgid "_Decline"
@@ -3024,6 +2815,28 @@ msgstr "_Odkloni"
 #: src/session/view/content/invite.ui:130 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "_Sprejmi"
+
+#: src/session/view/content/invite_request.rs:168
+msgid "Could not retract invite request"
+msgstr "Prošnje za povabilo ni bilo mogoče umakniti"
+
+#: src/session/view/content/invite_request.ui:12 src/session/view/content/invite_request.ui:37
+#: src/session/view/content/mod.ui:50
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:367
+msgid "Invite Request"
+msgid_plural "Invite Requests"
+msgstr[0] "Prošnje za povabilo"
+msgstr[1] "Prošnja za povabilo"
+msgstr[2] "Prošnji za povabilo"
+msgstr[3] "Prošnje za povabilo"
+
+#: src/session/view/content/invite_request.ui:107
+msgid "You requested an invite to this room"
+msgstr "Zaprosili ste za povabilo v to klepetalnico."
+
+#: src/session/view/content/invite_request.ui:117 src/session/view/sidebar/mod.ui:42
+msgid "_Retract"
+msgstr "_Umakni"
 
 #: src/session/view/content/mod.ui:4
 msgid "Main Content"
@@ -3037,16 +2850,15 @@ msgstr "Ni izbrane klepetalnice"
 msgid "Join a room to start chatting"
 msgstr "Pridružite se klepetalnici za začetek klepeta"
 
-#: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:213
+#: src/session/view/content/mod.ui:39 src/session/view/content/room_history/mod.ui:216
 msgid "Room History"
 msgstr "Zgodovina klepetalnice"
 
-#: src/session/view/content/mod.ui:50
+#: src/session/view/content/mod.ui:59
 msgid "Room Invite"
 msgstr "Povabilo v klepetalnico"
 
-#: src/session/view/content/mod.ui:59
+#: src/session/view/content/mod.ui:68
 msgid "Explore Rooms"
 msgstr "Razišči klepetalnice"
 
@@ -3071,8 +2883,7 @@ msgid "Remove “{address}”"
 msgstr "Odstrani »{address}«"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:675
-#: src/session/view/create_room_dialog.ui:132
+#: src/session/view/content/room_details/general_page.rs:677 src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "Glavni naslov"
 
@@ -3145,21 +2956,20 @@ msgstr "Javni naslovi"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:15
 msgid ""
-"Public addresses are advertised for all users in the room and the main "
-"address is used to identify a room publicly. Before adding an address to "
-"this list, it must be registered as a local address."
+"Public addresses are advertised for all users in the room and the main address is used to identify a "
+"room publicly. Before adding an address to this list, it must be registered as a local address."
 msgstr ""
-"Javni naslovi se oglašujejo za vse uporabnike v klepetalnici, glavni naslov "
-"pa se uporablja za javno identifikacijo klepetalnice. Preden dodate naslov "
-"na ta seznam, ga morate registrirati kot krajevnni naslov."
+"Javni naslovi se oglašujejo za vse uporabnike v klepetalnici, glavni naslov pa se uporablja za javno "
+"identifikacijo klepetalnice. Preden dodate naslov na ta seznam, ga morate registrirati kot krajevnni "
+"naslov."
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:46
 msgid ""
-"Local addresses can only be registered with your own homeserver. If they are "
-"not made public, only people on your homeserver can discover them."
+"Local addresses can only be registered with your own homeserver. If they are not made public, only "
+"people on your homeserver can discover them."
 msgstr ""
-"Krajevne naslove lahko registrirate samo na svojem domačem strežniku. Če "
-"niso objavljeni, jih lahko odkrijejo samo osebe na vašem domačem strežniku."
+"Krajevne naslove lahko registrirate samo na svojem domačem strežniku. Če niso objavljeni, jih lahko "
+"odkrijejo samo osebe na vašem domačem strežniku."
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:81
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:82
@@ -3182,42 +2992,25 @@ msgstr "moja-klepetalnica"
 msgid "First part of the address, for example “my-room”"
 msgstr "Prvi del naslova, npr. »moja-klepetalnica«"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:262
+#: src/session/view/content/room_details/edit_details_subpage.rs:263
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Ali res želite odstraniti avatar za to klepetalnico?"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:325
+#: src/session/view/content/room_details/edit_details_subpage.rs:326
 msgid "Room name saved successfully"
 msgstr "Ime klepetalnice je uspešno shranjeno"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:396
+#: src/session/view/content/room_details/edit_details_subpage.rs:397
 msgid "Could not change room name"
 msgstr "Imena klepetalnice ni mogoče spremeniti"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:434
+#: src/session/view/content/room_details/edit_details_subpage.rs:435
 msgid "Room description saved successfully"
 msgstr "Opis klepetalnice uspešno shranjen"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:510
+#: src/session/view/content/room_details/edit_details_subpage.rs:511
 msgid "Could not change room description"
 msgstr "Opisa klepetalnnice ni bilo mogoče spremeniti"
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:530
-msgid "Discard Unsaved Changes?"
-msgstr "Ali želite opustiti neshranjene spremembe?"
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:532
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:542
-msgid ""
-"This page contains unsaved changes. Changes which are not saved will be lost."
-msgstr ""
-"Ta stran vsebuje neshranjene spremembe. Spremembe, ki niso shranjene, bodo "
-"izgubljene."
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:542
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:552
-msgid "Discard"
-msgstr "Zavrzi"
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:4
 msgid "Edit Room Details"
@@ -3231,19 +3024,12 @@ msgstr "Avatar klepetalnice"
 msgid "Description"
 msgstr "Opis"
 
-#: src/session/view/content/room_details/edit_details_subpage.ui:140
-#: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:553
-#: src/utils/matrix/media_message.rs:157
-msgid "Save"
-msgstr "Shrani"
-
 #: src/session/view/content/room_details/edit_details_subpage.ui:143
 msgid "Save Description"
 msgstr "Shrani opis"
 
-#: src/session/view/content/room_details/general_page.rs:460
-#: src/session/view/content/room_details/general_page.rs:506
+#: src/session/view/content/room_details/general_page.rs:462
+#: src/session/view/content/room_details/general_page.rs:508
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
@@ -3252,111 +3038,106 @@ msgstr[1] "člani"
 msgstr[2] "člani"
 msgstr[3] "člani"
 
-#: src/session/view/content/room_details/general_page.rs:630
+#: src/session/view/content/room_details/general_page.rs:632
 msgid "Could not change notifications setting"
 msgstr "Nastavitve obvestil ni bilo mogoče spremeniti"
 
-#: src/session/view/content/room_details/general_page.rs:670
-#: src/session/view/content/room_details/general_page.rs:709
+#: src/session/view/content/room_details/general_page.rs:672
+#: src/session/view/content/room_details/general_page.rs:711
 msgid "Copy address"
 msgstr "Kopiraj naslov"
 
-#: src/session/view/content/room_details/general_page.rs:671
-#: src/session/view/content/room_details/general_page.rs:710
+#: src/session/view/content/room_details/general_page.rs:673
+#: src/session/view/content/room_details/general_page.rs:712
 msgid "Address copied to clipboard"
 msgstr "Naslov je kopiran v odložišče"
 
-#: src/session/view/content/room_details/general_page.rs:752
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Room link copied to clipboard"
 msgstr "Povezava do klepetalnice kopirana v odložišče"
 
-#: src/session/view/content/room_details/general_page.rs:805
-msgid "Could not change who can join"
-msgstr "Ni bilo mogoče spremeniti, kdo se lahko pridruži"
-
-#: src/session/view/content/room_details/general_page.rs:853
+#: src/session/view/content/room_details/general_page.rs:815
 msgid "Could not change guest access"
 msgstr "Ni bilo mogoče spremeniti dostopa za goste"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:870
+#: src/session/view/content/room_details/general_page.rs:832
 msgid "Publish in the {homeserver} directory"
 msgstr "Objavi v imeniku {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:945
+#: src/session/view/content/room_details/general_page.rs:907
 msgid "Could not publish room in directory"
 msgstr "Klepetalnice ni bilo mogoče objaviti v imeniku"
 
-#: src/session/view/content/room_details/general_page.rs:947
+#: src/session/view/content/room_details/general_page.rs:909
 msgid "Could not unpublish room from directory"
 msgstr "Objave klepetalnice v imeniku ni bilo mogoče preklicati"
 
-#: src/session/view/content/room_details/general_page.rs:968
-#: src/session/view/content/room_details/general_page.ui:281
+#: src/session/view/content/room_details/general_page.rs:930
+#: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr "Kdorkoli, tudi če ni v klepetalnici"
 
-#: src/session/view/content/room_details/general_page.rs:971
-#: src/session/view/content/room_details/general_page.ui:282
+#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr "Samo člani, saj je bila ta možnost izbrana"
 
-#: src/session/view/content/room_details/general_page.rs:973
-#: src/session/view/content/room_details/general_page.ui:284
+#: src/session/view/content/room_details/general_page.rs:935
+#: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr "Samo člani, saj so bili povabljeni"
 
-#: src/session/view/content/room_details/general_page.rs:975
-#: src/session/view/content/room_details/general_page.ui:283
+#: src/session/view/content/room_details/general_page.rs:937
+#: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr "Samo člani, ker so se pridružili klepetalnici"
 
-#: src/session/view/content/room_details/general_page.rs:1024
+#: src/session/view/content/room_details/general_page.rs:986
 msgid "Could not change who can read history"
 msgstr "Ni bilo mogoče spremeniti, kdo sme brati zgodovino"
 
-#: src/session/view/content/room_details/general_page.rs:1066
+#: src/session/view/content/room_details/general_page.rs:1028
 msgid "Enable Encryption?"
 msgstr "Želite omogočiti šifriranja?"
 
-#: src/session/view/content/room_details/general_page.rs:1067
+#: src/session/view/content/room_details/general_page.rs:1029
 msgid ""
-"Enabling encryption will prevent new members to read the history before they "
-"arrived. This cannot be disabled later."
+"Enabling encryption will prevent new members to read the history before they arrived. This cannot be "
+"disabled later."
 msgstr ""
-"Če omogočite šifriranje, novi člani ne bodo mogli prebrati zgodovine pred "
-"svojo včlanitvijo. Tega pozneje ni možno onemogočiti."
+"Če omogočite šifriranje, novi člani ne bodo mogli prebrati zgodovine pred svojo včlanitvijo. Tega "
+"pozneje ni možno onemogočiti."
 
-#: src/session/view/content/room_details/general_page.rs:1072
-#: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
+#: src/session/view/content/room_details/general_page.rs:1034 src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "Omogoči"
 
-#: src/session/view/content/room_details/general_page.rs:1083
+#: src/session/view/content/room_details/general_page.rs:1045
 msgid "Could not enable encryption"
 msgstr "Šifriranja ni bilo mogoče omogočiti"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1109
+#: src/session/view/content/room_details/general_page.rs:1071
 msgid "Federated"
 msgstr "Združeno"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1112
+#: src/session/view/content/room_details/general_page.rs:1074
 msgid "Not federated"
 msgstr "Ni združeno"
 
-#: src/session/view/content/room_details/general_page.rs:1143
+#: src/session/view/content/room_details/general_page.rs:1105
 msgid "Room upgraded successfully"
 msgstr "Klepetalnica uspešno nadgrajena"
 
-#: src/session/view/content/room_details/general_page.rs:1147
+#: src/session/view/content/room_details/general_page.rs:1109
 msgid "Could not upgrade room"
 msgstr "Klepetalnice ni bilo mogoče nadgraditi"
 
-#: src/session/view/content/room_details/general_page.ui:4
-#: src/session/view/content/room_details/mod.ui:4
+#: src/session/view/content/room_details/general_page.ui:4 src/session/view/content/room_details/mod.ui:4
 msgid "Room Details"
 msgstr "Podrobnosti klepetalnice"
 
@@ -3365,7 +3146,7 @@ msgid "Edit Details"
 msgstr "Uredi podrobnosti"
 
 #: src/session/view/content/room_details/general_page.ui:93
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:332
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:405
 msgid "There are no members in this room"
 msgstr "V tej klepetalnnici ni članov"
 
@@ -3428,62 +3209,55 @@ msgid "Access and Visibility"
 msgstr "Dostop in vidnost"
 
 #: src/session/view/content/room_details/general_page.ui:244
+#: src/session/view/content/room_details/join_rule_subpage.ui:4
 msgid "Who Can Join"
 msgstr "Kdo se lahko pridruži"
 
-#: src/session/view/content/room_details/general_page.ui:248
-msgid "Only Invited Users"
-msgstr "Samo povabljeni uporabniki"
-
-#: src/session/view/content/room_details/general_page.ui:249
-msgid "Any Registered User"
-msgstr "Vsak registriran uporabnik"
-
-#: src/session/view/content/room_details/general_page.ui:265
+#: src/session/view/content/room_details/general_page.ui:258
 msgid "Allow Guests"
 msgstr "Dovoli goste"
 
-#: src/session/view/content/room_details/general_page.ui:266
+#: src/session/view/content/room_details/general_page.ui:259
 msgid "Guests are Matrix users without a registered account"
 msgstr "Gostje so uporabniki Matrix brez registriranega računa"
 
-#: src/session/view/content/room_details/general_page.ui:277
+#: src/session/view/content/room_details/general_page.ui:270
 msgid "Who Can Read History"
 msgstr "Kdo lahko bere zgodovino"
 
-#: src/session/view/content/room_details/general_page.ui:298
+#: src/session/view/content/room_details/general_page.ui:291
 msgid "Matrix Room ID"
 msgstr "ID klepetalnice Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:305
+#: src/session/view/content/room_details/general_page.ui:298
 msgid "Copy Matrix Room ID"
 msgstr "Kopiraj ID klepetalnice Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:306
+#: src/session/view/content/room_details/general_page.ui:299
 msgid "Matrix room ID copied to clipboard"
 msgstr "ID klepetalnice Matrix je kopiran v odložišče"
 
-#: src/session/view/content/room_details/general_page.ui:311
+#: src/session/view/content/room_details/general_page.ui:304
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Omogoči šifriranje"
 
-#: src/session/view/content/room_details/general_page.ui:322
+#: src/session/view/content/room_details/general_page.ui:315
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Dovoljenja"
 
-#: src/session/view/content/room_details/general_page.ui:337
+#: src/session/view/content/room_details/general_page.ui:330
 msgid "Room Version"
 msgstr "Različica klepetalnice"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page.ui:349
+#: src/session/view/content/room_details/general_page.ui:342
 msgid "Upgrade…"
 msgstr "Nadgradi …"
 
-#: src/session/view/content/room_details/general_page.ui:362
+#: src/session/view/content/room_details/general_page.ui:355
 msgid "Federation"
 msgstr "Združba (federacija)"
 
@@ -3520,7 +3294,7 @@ msgstr "Zvoka ni bilo mogoče naložiti"
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:194
+#: src/session/view/content/room_history/mod.ui:197
 msgid "Check your network connection"
 msgstr "Preverite omrežno povezavo"
 
@@ -3546,13 +3320,12 @@ msgstr "Odpri datoteko"
 #: src/session/view/content/room_details/history_viewer/file_row.rs:143
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
-#: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:155
+#: src/session/view/content/room_history/message_row/file.ui:27 src/utils/matrix/media_message.rs:173
 msgid "Save File"
 msgstr "Shrani datoteko"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:174
+#: src/utils/matrix/media_message.rs:192
 msgid "Could not save file"
 msgstr "Datoteke ni mogoče shraniti"
 
@@ -3643,12 +3416,41 @@ msgstr "Ni članov, skladnih z iskalnim nizom"
 msgid "Searching for Users"
 msgstr "Iskanje članov"
 
+#: src/session/view/content/room_details/join_rule_subpage.rs:112
+msgid ""
+"The version of this room does not support all possibilities. Upgrade this room to the latest version to "
+"see more options."
+msgstr ""
+"Različica te klepetalnice ne podpira vseh možnosti. Nadgradite to klepetalnico na najnovejšo različico, "
+"da si ogledate več možnosti."
+
+#: src/session/view/content/room_details/join_rule_subpage.rs:230
+msgid "Could not change who can join"
+msgstr "Ni bilo mogoče spremeniti, kdo se lahko pridruži"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:26
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
+msgid "_Save"
+msgstr "_Shrani"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:76
+msgid "Only Invited Users"
+msgstr "Samo povabljeni uporabniki"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:83
+msgid "Any Registered User"
+msgstr "Vsak registriran uporabnik"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:98
+msgid "Allow Invite Requests"
+msgstr "Dovoli prošnje za povabilo"
+
 #: src/session/view/content/room_details/member_row.ui:45
 msgid "Identity Verified"
 msgstr "Preverjena identiteta"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:116
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
@@ -3658,7 +3460,7 @@ msgstr[2] "Povabi"
 msgstr[3] "Povabi"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:118
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
@@ -3667,23 +3469,21 @@ msgstr[1] "Prepovedan"
 msgstr[2] "Prepovedana"
 msgstr[3] "Prepovedani"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:277
-msgid "Invited Room Member"
-msgid_plural "Invited Room Members"
-msgstr[0] "Povabljeni novi člani"
-msgstr[1] "Povabljeni novi član"
-msgstr[2] "Povabljena nova člana"
-msgstr[3] "Povabljeni novi člani"
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:120
+msgctxt "members"
+msgid "Invite Request"
+msgid_plural "Invite Requests"
+msgstr[0] "Prošnje za povabilo"
+msgstr[1] "Prošnja za povabilo"
+msgstr[2] "Prošnji za povabilo"
+msgstr[3] "Prošnje za povabilo"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:279
-msgid "Banned Room Member"
-msgid_plural "Banned Room Members"
-msgstr[0] "Prepovedani člani klepetalnice"
-msgstr[1] "Prepovedani član klepetalnice"
-msgstr[2] "Prepovedana člana klepetalnice"
-msgstr[3] "Prepovedani člani klepetalnice"
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
+msgid "Could not load the full list of room members"
+msgstr "Ni bilo mogoče naložiti celotnega seznama članov klepetalnice"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:280
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:360
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Člani klepetalnice"
@@ -3691,25 +3491,50 @@ msgstr[1] "Član klepetalnice"
 msgstr[2] "Člana klepetalnice"
 msgstr[3] "Člani klepetalnice"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:321
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:362
+msgid "Invited Room Member"
+msgid_plural "Invited Room Members"
+msgstr[0] "Povabljeni novi člani"
+msgstr[1] "Povabljeni novi član"
+msgstr[2] "Povabljena nova člana"
+msgstr[3] "Povabljeni novi člani"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:365
+msgid "Banned Room Member"
+msgid_plural "Banned Room Members"
+msgstr[0] "Prepovedani člani klepetalnice"
+msgstr[1] "Prepovedani član klepetalnice"
+msgstr[2] "Prepovedana člana klepetalnice"
+msgstr[3] "Prepovedani člani klepetalnice"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:404
+#: src/session/view/content/room_details/permissions/members_subpage.ui:52
+msgid "No Room Members"
+msgstr "Klepetalnica nima članov"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:409
 msgid "No Invited Room Members"
 msgstr "Ni povabljenih članov klepetalnice"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:322
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:410
 msgid "There are no invited members in this room"
 msgstr "V tej klepetalnici ni povabljenih članov"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:326
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:414
 msgid "No Banned Room Members"
 msgstr "Ni prepovedanih članov klepetalnice"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:327
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:415
 msgid "There are no banned members in this room"
 msgstr "V tej klepetalnici ni prepovedanih članov"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:331
-msgid "No Room Members"
-msgstr "Klepetalnica nima članov"
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:419
+msgid "No Invite Requests"
+msgstr "Ni prošenj za povabilo"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:420
+msgid "There are no invite requests in this room"
+msgstr "V tej klepetalnici ni prošenj za povabilo"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3725,12 +3550,7 @@ msgstr "Preklopi iskanje članov klepetalnice"
 msgid "Search for room members"
 msgstr "Poišči člane klepetalnice"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
-#: src/session/view/content/room_details/membership_lists.rs:190
-msgid "Could not load the full list of room members"
-msgstr "Ni bilo mogoče naložiti celotnega seznama članov klepetalnice"
-
-#: src/session/view/content/room_details/mod.rs:132
+#: src/session/view/content/room_details/mod.rs:149
 msgid "The user is not in the room members list anymore"
 msgstr "Uporabnika ni več na seznamu članov klepetalnice"
 
@@ -3760,27 +3580,27 @@ msgstr "Ni članov, skladnih z iskalnim nizom"
 msgid "No room members matching the search were found"
 msgstr "Najdeni niso bili nobeni člani klepetalnice, ki bi ustrezali iskanju"
 
+#: src/session/view/content/room_details/permissions/members_subpage.rs:195
+msgid "There are no room members with assigned power levels in this room"
+msgstr "V tej klepetalnici ni članov klepetalnice z dodeljenimi ravnmi moči"
+
+#: src/session/view/content/room_details/permissions/members_subpage.rs:197
+msgid "There are no room members with assigned power levels matching the search"
+msgstr "Ni članov klepetalnice z dodeljenimi ravnmi moči, ki bi ustrezali iskanju"
+
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
 msgid "Members With Assigned Power Levels"
 msgstr "Člani z dodeljenimi ravnmi moči"
 
-#: src/session/view/content/room_details/permissions/members_subpage.ui:83
+#: src/session/view/content/room_details/permissions/members_subpage.ui:105
 msgid "Add"
 msgstr "Dodaj"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:540
-msgid "Save Changes?"
-msgstr "Ali želite shraniti spremembe?"
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:596
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:575
 msgid "Could not save permissions"
 msgstr "Dovoljenj ni bilo mogoče shraniti"
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
-msgid "_Save"
-msgstr "_Shrani"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:44
 msgid "Room Actions"
@@ -3851,8 +3671,7 @@ msgstr "Dejanja članov"
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:205
 msgid "Power level required to perform different actions on room members"
-msgstr ""
-"Raven moči, potrebna za izvajanje različnih dejanj s člani klepetalnice"
+msgstr "Raven moči, potrebna za izvajanje različnih dejanj s člani klepetalnice"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:246
@@ -3886,17 +3705,15 @@ msgstr "Različica"
 
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:112
 msgid ""
-"Upgrading a room to a more recent version allows to benefit from new "
-"features from the Matrix specification. It can also be used to reset the "
-"room state, which should make the room faster to join. However it should be "
-"used sparingly because it can be disruptive, as room members need to join "
-"the new room manually."
+"Upgrading a room to a more recent version allows to benefit from new features from the Matrix "
+"specification. It can also be used to reset the room state, which should make the room faster to join. "
+"However it should be used sparingly because it can be disruptive, as room members need to join the new "
+"room manually."
 msgstr ""
-"Nadgradnja klepetalnice na novejšo različico omogoča, da izkoristite nove "
-"funkcije specifikacije Matrix. Uporablja se lahko tudi za ponastavitev "
-"stanja klepetalnice, zaradi česar naj bi se v klepetalnico hitreje "
-"pridružili. Vendar pa je to treba uporabljati zmerno, ker je lahko moteče, "
-"saj se morajo člani klepetalnice ročno pridružiti novi klepetalnici."
+"Nadgradnja klepetalnice na novejšo različico omogoča, da izkoristite nove funkcije specifikacije "
+"Matrix. Uporablja se lahko tudi za ponastavitev stanja klepetalnice, zaradi česar naj bi se v "
+"klepetalnico hitreje pridružili. Vendar pa je to treba uporabljati zmerno, ker je lahko moteče, saj se "
+"morajo člani klepetalnice ročno pridružiti novi klepetalnici."
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:118
@@ -3980,7 +3797,7 @@ msgid "Copy Message _Link"
 msgstr "Kopiraj povezavo sporoči_la"
 
 #: src/session/view/content/room_history/event_actions/context_menu.ui:71
-#: src/session/view/content/room_history/mod.ui:121
+#: src/session/view/content/room_history/mod.ui:116
 msgid "_View Details"
 msgstr "_Pokaži podrobnosti"
 
@@ -3996,8 +3813,7 @@ msgstr "P_oročaj ..."
 msgid "Re_move"
 msgstr "_Odstrani"
 
-#: src/session/view/content/room_history/event_actions/group.rs:65
-#: src/session/view/media_viewer.rs:499
+#: src/session/view/content/room_history/event_actions/group.rs:65 src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Povezava sporočila kopirana v odložišče"
 
@@ -4031,12 +3847,11 @@ msgstr "Želite prijaviti dogodek?"
 
 #: src/session/view/content/room_history/event_actions/group.rs:642
 msgid ""
-"Reporting an event will send its unique ID to the administrator of your "
-"homeserver. The administrator will not be able to see the content of the "
-"event if it is encrypted or redacted."
+"Reporting an event will send its unique ID to the administrator of your homeserver. The administrator "
+"will not be able to see the content of the event if it is encrypted or redacted."
 msgstr ""
-"Če prijavite dogodek, bo skrbniku domačega strežnika poslan njegov enolični "
-"ID. Skrbnik ne bo mogel videti vsebine dogodka, če je šifriran ali redigiran."
+"Če prijavite dogodek, bo skrbniku domačega strežnika poslan njegov enolični ID. Skrbnik ne bo mogel "
+"videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
 #: src/session/view/content/room_history/event_actions/group.rs:649
@@ -4052,7 +3867,7 @@ msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
 #: src/session/view/content/room_history/event_actions/group.rs:716
-#: src/session/view/content/room_history/sender_avatar/mod.rs:603
+#: src/session/view/content/room_history/sender_avatar/mod.rs:592
 msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
 
@@ -4077,12 +3892,10 @@ msgid "Error reading audio file"
 msgstr "Napaka pri branju zvočne datoteke"
 
 #: src/session/view/content/room_history/message_row/content.rs:310
-msgid ""
-"Could not decrypt this message, decryption will be retried once the keys are "
-"available."
+msgid "Could not decrypt this message, decryption will be retried once the keys are available."
 msgstr ""
-"Tega sporočila ni bilo mogoče dešifrirati, zato bo poskus dešifriranja znova "
-"izveden, ko bodo ključi na voljo."
+"Tega sporočila ni bilo mogoče dešifrirati, zato bo poskus dešifriranja znova izveden, ko bodo ključi na "
+"voljo."
 
 #: src/session/view/content/room_history/message_row/content.rs:314
 msgid "This message was removed."
@@ -4186,13 +3999,11 @@ msgstr "Nalepka: {filename}"
 msgid "Video: {filename}"
 msgstr "Videoposnetek: {imedatoteke }"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:740
-#: src/utils/media/image/mod.rs:872
+#: src/session/view/content/room_history/message_row/visual_media.rs:740 src/utils/media/image/mod.rs:872
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:789
-#: src/utils/media/image/mod.rs:875
+#: src/session/view/content/room_history/message_row/visual_media.rs:789 src/utils/media/image/mod.rs:875
 msgid "An unexpected error occurred"
 msgstr "Prišlo je do nepričakovane napake"
 
@@ -4208,11 +4019,11 @@ msgstr "Skrij predogled predstavnosti"
 msgid "_Send"
 msgstr "_Pošlji"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:687
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:684
 msgid "Public Room Mention Auto-completion"
 msgstr "Samodokončanje omembe javne klepetalnice"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:689
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:686
 msgid "Room Member Mention Auto-completion"
 msgstr "Samodokončanje omemba člana klepetalnice"
 
@@ -4354,30 +4165,37 @@ msgstr "%-e. %b ob %I∶%M %p"
 msgid "%B %-e at %H:%M"
 msgstr "%-e. %b ob %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:377
+#: src/session/view/content/room_history/mod.rs:423
 msgid "Error getting file from drop"
 msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:926
-#: src/session/view/sidebar/row.rs:727
+#: src/session/view/content/room_history/mod.rs:1031 src/session/view/sidebar/row.rs:744
 msgid "Could not leave {room}"
 msgstr "Ni možno zapustiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:949
-#: src/session/view/sidebar/row.rs:716
+#: src/session/view/content/room_history/mod.rs:1054 src/session/view/sidebar/row.rs:733
 msgid "Could not join {room}"
 msgstr "Ni se možno pridružiti {room_name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:966
-#: src/session/view/sidebar/row.rs:760
+#: src/session/view/content/room_history/mod.rs:1071 src/session/view/sidebar/row.rs:777
 msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
-#: src/session/view/content/room_history/mod.rs:999
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/view/content/room_history/mod.rs:1115
+msgid "There is a pending invite request"
+msgid_plural "There are {n} pending invite requests"
+msgstr[0] "Na čakanju je {n} zahtev za povabilo"
+msgstr[1] "Na čakanju je {n} zahteva za povabilo"
+msgstr[2] "Na čakanju sta {n} zahtevi za povabilo"
+msgstr[3] "Na čakanju so {n} zahteve za povabilo"
+
+#: src/session/view/content/room_history/mod.rs:1139
 msgid "Sender Context Menu"
 msgstr "Kontekstni meni pošiljatelja"
 
@@ -4389,18 +4207,15 @@ msgstr "Po_drobnosti klepetalnice"
 msgid "_Invite New Members…"
 msgstr "Pova_bi nove člane …"
 
-#: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:83
+#: src/session/view/content/room_history/mod.ui:18 src/session/view/sidebar/mod.ui:88
 msgid "_Leave Room"
 msgstr "_Zapusti sobo"
 
-#: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/content/room_history/mod.ui:23 src/session/view/sidebar/mod.ui:93
 msgid "Re_join Room"
 msgstr "Z_nova se pridruži klepetalnici"
 
-#: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:93
+#: src/session/view/content/room_history/mod.ui:28 src/session/view/sidebar/mod.ui:98
 msgid "_Forget Room"
 msgstr "Poza_bi klepetalnico"
 
@@ -4437,45 +4252,40 @@ msgstr "Povrni _glas"
 msgid "_Kick"
 msgstr "_Brcni"
 
-#: src/session/view/content/room_history/mod.ui:88
-msgid "_Deny Access"
-msgstr "Zavrni _dostop"
-
 #. Translators: In this string, 'Ban' is a verb.
-#: src/session/view/content/room_history/mod.ui:94
+#: src/session/view/content/room_history/mod.ui:89
 msgid "_Ban"
 msgstr "Prepo_vej"
 
-#: src/session/view/content/room_history/mod.ui:99
+#: src/session/view/content/room_history/mod.ui:94
 msgid "Un_ban"
 msgstr "_Umakni prepoved"
 
-#: src/session/view/content/room_history/mod.ui:104
+#: src/session/view/content/room_history/mod.ui:99
 msgid "_Remove Messages"
 msgstr "_Odstrani sporočila"
 
-#: src/session/view/content/room_history/mod.ui:109
+#: src/session/view/content/room_history/mod.ui:104
 msgid "I_gnore"
 msgstr "Pre_zri"
 
-#: src/session/view/content/room_history/mod.ui:114
+#: src/session/view/content/room_history/mod.ui:109
 msgid "Stop I_gnoring"
 msgstr "Nehaj i_gnorirati"
 
-#: src/session/view/content/room_history/mod.ui:152
+#: src/session/view/content/room_history/mod.ui:147
 msgid "Room Menu"
 msgstr "Meni klepetalnic"
 
-#: src/session/view/content/room_history/mod.ui:186
-#: src/session/view/content/room_history/mod.ui:193
+#: src/session/view/content/room_history/mod.ui:189 src/session/view/content/room_history/mod.ui:196
 msgid "Could Not Load Room"
 msgstr "Ni bilo mogoče naložiti klepetalnice"
 
-#: src/session/view/content/room_history/mod.ui:227
+#: src/session/view/content/room_history/mod.ui:230
 msgid "Scroll to Bottom"
 msgstr "Pomakni se na dno"
 
-#: src/session/view/content/room_history/mod.ui:240
+#: src/session/view/content/room_history/mod.ui:243
 msgid "Drop Here to Send"
 msgstr "Spustite tukaj za pošiljanje"
 
@@ -4499,61 +4309,57 @@ msgstr "Videl/a: {name}"
 msgid "Link copied to clipboard"
 msgstr "Povezava je kopirana v odložišče"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:308
+#: src/session/view/content/room_history/sender_avatar/mod.rs:304
 msgid "{user}’s avatar"
 msgstr "Avatar za {user}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:550
+#: src/session/view/content/room_history/sender_avatar/mod.rs:539
 msgid "Creating a new Direct Chat…"
 msgstr "Ustvarjanje novega neposrednega klepeta ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:574
+#: src/session/view/content/room_history/sender_avatar/mod.rs:563
 msgid "Inviting user…"
 msgstr "Povabljanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:604
-msgid "Denying access…"
-msgstr "Zavrnitev dostopa ..."
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:605
+#: src/session/view/content/room_history/sender_avatar/mod.rs:593
 msgid "Kicking user…"
 msgstr "Brcanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:641
+#: src/session/view/content/room_history/sender_avatar/mod.rs:628
 msgid "Muting member…"
 msgstr "Utišanje člana ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:645
+#: src/session/view/content/room_history/sender_avatar/mod.rs:632
 msgid "Unmuting member…"
 msgstr "Vklapljanje zvoka člana ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:656
+#: src/session/view/content/room_history/sender_avatar/mod.rs:643
 msgid "Member muted"
 msgstr "Član je bil utišan"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:658
+#: src/session/view/content/room_history/sender_avatar/mod.rs:645
 msgid "Member unmuted"
 msgstr "Član je bil ozvočen"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:661
+#: src/session/view/content/room_history/sender_avatar/mod.rs:648
 msgid "Could not mute member"
 msgstr "Ni bilo mogoče utišati člana"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:663
+#: src/session/view/content/room_history/sender_avatar/mod.rs:650
 msgid "Could not unmute member"
 msgstr "Zvoka članu ni bilo mogoče vklopiti"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:692
+#: src/session/view/content/room_history/sender_avatar/mod.rs:679
 msgid "Banning user…"
 msgstr "Prepovedovanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:717
+#: src/session/view/content/room_history/sender_avatar/mod.rs:704
 msgid "Unbanning user…"
 msgstr "Preklicevanje prepovedi uporabnika ..."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:761
+#: src/session/view/content/room_history/sender_avatar/mod.rs:748
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Odstranjevanje {n} sporočil, ki jih je poslal uporabnik ..."
@@ -4561,11 +4367,11 @@ msgstr[1] "Odstranjevanje {n} sporočila, ki ga je poslal uporabnik …"
 msgstr[2] "Odstranjevanje {n} sporočil, ki ju je poslal uporabnik …"
 msgstr[3] "Odstranjevanje {n} sporočil, ki jih je poslal uporabnik …"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:795
+#: src/session/view/content/room_history/sender_avatar/mod.rs:782
 msgid "Stop ignoring user…"
 msgstr "Nehaj ignorirati uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:797
+#: src/session/view/content/room_history/sender_avatar/mod.rs:784
 msgid "Ignoring user…"
 msgstr "Prezrtje uporabnika ..."
 
@@ -4647,8 +4453,7 @@ msgstr "{user} je zahteval/a, da ga/jo povabijo v to klepetalnico."
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:246
 msgid "{user} retracted their request to be invited to this room."
-msgstr ""
-"{user} je umaknil/a svojo prošnjo, da bi bil/a povabljen/a v to klepetalnico."
+msgstr "{user} je umaknil/a svojo prošnjo, da bi bil/a povabljen/a v to klepetalnico."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
@@ -4845,8 +4650,7 @@ msgstr "Najnovejši vir urejanja"
 msgid "Source copied to clipboard"
 msgstr "Vir je kopiran v odložišče"
 
-#: src/session/view/event_details_dialog.ui:4
-#: src/session/view/event_details_dialog.ui:14
+#: src/session/view/event_details_dialog.ui:4 src/session/view/event_details_dialog.ui:14
 msgid "Event Details"
 msgstr "Podrobnosti dogodka"
 
@@ -4854,18 +4658,15 @@ msgstr "Podrobnosti dogodka"
 msgid "Original Event"
 msgstr "Izvirni dogodek"
 
-#: src/session/view/event_details_dialog.ui:63
-#: src/session/view/event_details_dialog.ui:173
+#: src/session/view/event_details_dialog.ui:63 src/session/view/event_details_dialog.ui:173
 msgid "Event ID"
 msgstr "ID dogodka"
 
-#: src/session/view/event_details_dialog.ui:69
-#: src/session/view/event_details_dialog.ui:179
+#: src/session/view/event_details_dialog.ui:69 src/session/view/event_details_dialog.ui:179
 msgid "Copy Event ID"
 msgstr "Kopiraj ID dogodka"
 
-#: src/session/view/event_details_dialog.ui:70
-#: src/session/view/event_details_dialog.ui:180
+#: src/session/view/event_details_dialog.ui:70 src/session/view/event_details_dialog.ui:180
 msgid "Event ID copied to clipboard"
 msgstr "ID dogodka je kopiran v odložišče"
 
@@ -4885,23 +4686,19 @@ msgstr "ID klepetalnice je kopiran v odložišče"
 msgid "Sender ID"
 msgstr "ID pošiljatelja"
 
-#: src/session/view/event_details_dialog.ui:117
-#: src/session/view/event_details_dialog.ui:186
+#: src/session/view/event_details_dialog.ui:117 src/session/view/event_details_dialog.ui:186
 msgid "Timestamp"
 msgstr "Časovni žig"
 
-#: src/session/view/event_details_dialog.ui:123
-#: src/session/view/event_details_dialog.ui:192
+#: src/session/view/event_details_dialog.ui:123 src/session/view/event_details_dialog.ui:192
 msgid "Copy Timestamp"
 msgstr "Kopiraj časovni žig"
 
-#: src/session/view/event_details_dialog.ui:124
-#: src/session/view/event_details_dialog.ui:193
+#: src/session/view/event_details_dialog.ui:124 src/session/view/event_details_dialog.ui:193
 msgid "Timestamp copied to clipboard"
 msgstr "Časovni žig je kopiran v odložišče"
 
-#: src/session/view/event_details_dialog.ui:135
-#: src/session/view/event_details_dialog.ui:199
+#: src/session/view/event_details_dialog.ui:135 src/session/view/event_details_dialog.ui:199
 msgid "View Source"
 msgstr "Poglej vir"
 
@@ -4973,59 +4770,59 @@ msgstr "_O programu Fraktal"
 msgid "Dec_line"
 msgstr "Zavr_ni"
 
-#: src/session/view/sidebar/mod.ui:44
+#: src/session/view/sidebar/mod.ui:49
 msgid "_Mark as Read"
 msgstr "Označi kot pre_brano"
 
-#: src/session/view/sidebar/mod.ui:49
+#: src/session/view/sidebar/mod.ui:54
 msgid "_Mark as Unread"
 msgstr "Označi kot nepre_brano"
 
-#: src/session/view/sidebar/mod.ui:56
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to _Favorites"
 msgstr "Premakni _med priljubljene"
 
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/sidebar/mod.ui:66
 msgid "Move to _Rooms"
 msgstr "Premakni med _klepetalnice"
 
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/sidebar/mod.ui:71
 msgid "Move to Low _Priority"
 msgstr "Premakni na nizko _prioriteto"
 
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:76
 msgid "Mark as _Direct Chat"
 msgstr "Označi kot _neposredni klepet"
 
-#: src/session/view/sidebar/mod.ui:76
+#: src/session/view/sidebar/mod.ui:81
 msgid "Unmark as _Direct Chat"
 msgstr "Počisti oznako kot _neposredni klepet"
 
-#: src/session/view/sidebar/mod.ui:100
+#: src/session/view/sidebar/mod.ui:105
 msgid "Sidebar"
 msgstr "Stranska vrstica"
 
-#: src/session/view/sidebar/mod.ui:117
+#: src/session/view/sidebar/mod.ui:122
 msgid "Main Menu"
 msgstr "Glavni meni"
 
-#: src/session/view/sidebar/mod.ui:126
+#: src/session/view/sidebar/mod.ui:131
 msgid "Toggle Room Search"
 msgstr "Preklopi iskanje klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:139
+#: src/session/view/sidebar/mod.ui:144
 msgid "Room Search"
 msgstr "Iskanje klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:140
+#: src/session/view/sidebar/mod.ui:145
 msgid "Search for a room"
 msgstr "Išči v tej klepetalnici"
 
-#: src/session/view/sidebar/mod.ui:175
+#: src/session/view/sidebar/mod.ui:180
 msgid "Room List"
 msgstr "Seznam klepetalnic"
 
-#: src/session/view/sidebar/mod.ui:176
+#: src/session/view/sidebar/mod.ui:181
 msgid "Allows to navigate between rooms"
 msgstr "Omogoča krmarjenje med klepetalnicami"
 
@@ -5048,20 +4845,19 @@ msgstr[2] "{count} obvestili"
 msgstr[3] "{count} obvestila"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:736
+#: src/session/view/sidebar/row.rs:753
 msgid "Could not move {room} from {previous_category} to {new_category}"
-msgstr ""
-"{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
+msgstr "{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:778
+#: src/session/view/sidebar/row.rs:795
 msgid "Could not mark {room} as direct chat"
 msgstr "Ni mogoče označiti {room} kot neposrednega klepeta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:783
+#: src/session/view/sidebar/row.rs:800
 msgid "Could not unmark {room} as direct chat"
 msgstr "Ni mogoče umakniti oznake {room} kot neposrednega klepeta"
 
@@ -5085,24 +4881,20 @@ msgstr "Pridružite se klepetalnici z nizko prioriteto"
 msgid "Reject Invite"
 msgstr "Zavrni povabilo"
 
-#: src/session/view/sidebar/section_row.rs:136
-#: src/session/view/sidebar/section_row.rs:149
+#: src/session/view/sidebar/section_row.rs:136 src/session/view/sidebar/section_row.rs:149
 msgid "Move to Rooms"
 msgstr "Premakni med klepetalnice"
 
-#: src/session/view/sidebar/section_row.rs:137
-#: src/session/view/sidebar/section_row.rs:143
+#: src/session/view/sidebar/section_row.rs:137 src/session/view/sidebar/section_row.rs:143
 msgid "Move to Low Priority"
 msgstr "Premakni na nizko prioriteto"
 
-#: src/session/view/sidebar/section_row.rs:138
-#: src/session/view/sidebar/section_row.rs:144
+#: src/session/view/sidebar/section_row.rs:138 src/session/view/sidebar/section_row.rs:144
 #: src/session/view/sidebar/section_row.rs:150
 msgid "Leave Room"
 msgstr "Zapusti klepetalnico"
 
-#: src/session/view/sidebar/section_row.rs:142
-#: src/session/view/sidebar/section_row.rs:148
+#: src/session/view/sidebar/section_row.rs:142 src/session/view/sidebar/section_row.rs:148
 msgid "Move to Favorites"
 msgstr "Premakni med priljubljene"
 
@@ -5122,11 +4914,11 @@ msgstr "Znova se pridruži klepetalnici"
 msgid "Rejoin Room as Low Priority"
 msgstr "Znova se pridružite klepetalnici z nizko prioriteto"
 
-#: src/session_list/mod.rs:162 src/session_list/mod.rs:198
+#: src/session_list/mod.rs:164 src/session_list/mod.rs:199
 msgid "Could not restore previous sessions"
 msgstr "Prejšnjih sej ni bilo mogoče obnoviti"
 
-#: src/session_list/mod.rs:199
+#: src/session_list/mod.rs:200
 msgid "An unexpected error happened while accessing the data directory"
 msgstr "Pri dostopu do podatkovne mape je prišlo do nepričakovane napake"
 
