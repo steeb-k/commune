@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-23 00:22+0000\n"
-"PO-Revision-Date: 2025-07-23 13:22+0200\n"
+"POT-Creation-Date: 2025-07-24 11:35+0000\n"
+"PO-Revision-Date: 2025-07-24 18:28+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -659,7 +659,7 @@ msgstr ""
 "Ali ste prepričani, da želite preklicati povabilo za {user_id}? Ne bodo se mogli znova pridružiti "
 "klepetalnici, dokler jih nekdo ponovno ne povabi."
 
-#: src/components/dialogs/message_dialogs.rs:168 src/components/user_page.rs:387
+#: src/components/dialogs/message_dialogs.rs:168 src/components/user_page.rs:390
 msgid "Revoke Invite"
 msgstr "Prekliči povabila"
 
@@ -702,7 +702,7 @@ msgstr ""
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:207 src/components/user_page.rs:390
+#: src/components/dialogs/message_dialogs.rs:207 src/components/user_page.rs:393
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "Brcni"
@@ -867,7 +867,7 @@ msgstr "Shrani"
 #. Translators: This is a verb, as in 'View Room'
 #: src/components/dialogs/room_preview.rs:239 src/components/dialogs/room_preview.rs:347
 #: src/session/view/content/explore/public_room_row.rs:182
-#: src/session/view/content/room_history/message_toolbar/mod.rs:364
+#: src/session/view/content/room_history/message_toolbar/mod.rs:363
 #: src/session/view/content/room_history/mod.ui:169
 #: src/session/view/content/room_history/state/creation.ui:20
 msgid "View"
@@ -901,7 +901,7 @@ msgid "Request an Invite"
 msgstr "Prosi za povabilo"
 
 #: src/components/dialogs/room_preview.rs:351 src/session/view/content/explore/public_room_row.rs:195
-#: src/session/view/content/room_history/message_toolbar/mod.rs:366
+#: src/session/view/content/room_history/message_toolbar/mod.rs:365
 msgid "Join"
 msgstr "Pridruži se"
 
@@ -963,7 +963,7 @@ msgstr "Obvesti celotno klepetalnico"
 
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
-#: src/components/power_level_selection/popover.ui:149 src/session/model/room/permissions.rs:72
+#: src/components/power_level_selection/popover.ui:149 src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "Po meri"
 
@@ -971,88 +971,88 @@ msgstr "Po meri"
 msgid "Confirm Custom Role"
 msgstr "Potrdi vlogo po meri"
 
-#: src/components/user_page.rs:253 src/session/view/account_settings/general_page/mod.ui:60
-#: src/session/view/content/room_history/sender_avatar/mod.rs:79
+#: src/components/user_page.rs:256 src/session/view/account_settings/general_page/mod.ui:60
+#: src/session/view/content/room_history/sender_avatar/mod.rs:82
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID uporabnika Matrix je kopiran v odložišče"
 
-#: src/components/user_page.rs:280
+#: src/components/user_page.rs:283
 msgid "Open Direct Chat"
 msgstr "Odpri neposredni klepet"
 
-#: src/components/user_page.rs:282
+#: src/components/user_page.rs:285
 msgid "Create Direct Chat"
 msgstr "Ustvari neposredni klepet"
 
-#: src/components/user_page.rs:302 src/session/view/content/room_history/sender_avatar/mod.rs:544
+#: src/components/user_page.rs:305 src/session/view/content/room_history/sender_avatar/mod.rs:547
 #: src/session/view/create_direct_chat_dialog/mod.rs:190
 msgid "Could not create a new Direct Chat"
 msgstr "Ni bilo mogoče ustvariti novega neposrednega klepeta"
 
-#: src/components/user_page.rs:333
+#: src/components/user_page.rs:336
 msgid "In {room_name}"
 msgstr "V {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:344
+#: src/components/user_page.rs:347
 msgctxt "member"
 msgid "Invited"
 msgstr "Povabljen"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:348
+#: src/components/user_page.rs:351
 msgctxt "member"
 msgid "Banned"
 msgstr "Prepovedan"
 
 #. Translators: As in, 'The room member requested an invite'.
-#: src/components/user_page.rs:352
+#: src/components/user_page.rs:355
 msgctxt "member"
 msgid "Requested an Invite"
 msgstr "Zaprošeno za povabilo"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:356
+#: src/components/user_page.rs:359
 msgctxt "member"
 msgid "Unknown"
 msgstr "Neznan"
 
-#: src/components/user_page.rs:388
+#: src/components/user_page.rs:391
 msgid "Deny Request"
 msgstr "Zavrni zahtevo"
 
-#: src/components/user_page.rs:489
+#: src/components/user_page.rs:499
 msgid "Could not change the role"
 msgstr "Vloge ni bilo mogoče spremeniti"
 
-#: src/components/user_page.rs:510 src/session/view/content/room_history/sender_avatar/mod.rs:568
+#: src/components/user_page.rs:520 src/session/view/content/room_history/sender_avatar/mod.rs:571
 msgid "Could not invite user"
 msgstr "Uporabnika ni bilo mogoče povabiti"
 
-#: src/components/user_page.rs:544 src/session/view/content/room_history/event_actions/group.rs:721
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
+#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:721
+#: src/session/view/content/room_history/sender_avatar/mod.rs:604
 msgid "Could not revoke invite of user"
 msgstr "Ni bilo mogoče preklicati povabila uporabnika"
 
-#: src/components/user_page.rs:545
+#: src/components/user_page.rs:555
 msgid "Could not deny access to user"
 msgstr "Uporabniku ni bilo mogoče zavrniti dostopa"
 
-#: src/components/user_page.rs:546 src/session/view/content/room_history/sender_avatar/mod.rs:602
+#: src/components/user_page.rs:556 src/session/view/content/room_history/sender_avatar/mod.rs:605
 msgid "Could not kick user"
 msgstr "Uporabnika ni bilo mogoče brcniti"
 
-#: src/components/user_page.rs:592 src/session/view/content/room_history/sender_avatar/mod.rs:688
+#: src/components/user_page.rs:602 src/session/view/content/room_history/sender_avatar/mod.rs:696
 msgid "Could not ban user"
 msgstr "Uporabnika ni bilo mogoče prepovedati"
 
-#: src/components/user_page.rs:623 src/session/view/content/room_history/sender_avatar/mod.rs:709
+#: src/components/user_page.rs:633 src/session/view/content/room_history/sender_avatar/mod.rs:717
 msgid "Could not unban user"
 msgstr "Prepovedi uporabnika ni bilo mogoče preklicati"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:671 src/session/view/content/room_history/sender_avatar/mod.rs:764
+#: src/components/user_page.rs:681 src/session/view/content/room_history/sender_avatar/mod.rs:772
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
@@ -1060,43 +1060,43 @@ msgstr[1] "Ni bilo mogoče odstraniti {n} sporočila, ki ga je poslal uporabnik"
 msgstr[2] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
 msgstr[3] "Ni bilo mogoče odstraniti {n} sporočil, ki jih je poslal uporabnik"
 
-#: src/components/user_page.rs:687
+#: src/components/user_page.rs:697
 msgid "Identity verified"
 msgstr "Preverjena identiteta"
 
-#: src/components/user_page.rs:694
+#: src/components/user_page.rs:704
 msgid "Identity not verified"
 msgstr "Identiteta ni preverjena"
 
-#: src/components/user_page.rs:709
+#: src/components/user_page.rs:719
 msgid "Could not start user verification"
 msgstr "Preverjanja uporabnika ni bilo mogoče zagnati"
 
-#: src/components/user_page.rs:734
+#: src/components/user_page.rs:744
 msgid "Ignored"
 msgstr "Prezrto"
 
-#: src/components/user_page.rs:736
+#: src/components/user_page.rs:746
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Nehaj ignorirati"
 
-#: src/components/user_page.rs:739
+#: src/components/user_page.rs:749
 msgid "Not Ignored"
 msgstr "Ni prezrt"
 
-#: src/components/user_page.rs:740
+#: src/components/user_page.rs:750
 msgid "Ignore"
 msgstr "Prezri"
 
-#: src/components/user_page.rs:757
+#: src/components/user_page.rs:767
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs:85
-#: src/session/view/content/room_history/sender_avatar/mod.rs:790
+#: src/session/view/content/room_history/sender_avatar/mod.rs:798
 msgid "Could not stop ignoring user"
 msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
-#: src/components/user_page.rs:760 src/session/view/content/invite.rs:290
-#: src/session/view/content/room_history/sender_avatar/mod.rs:793 src/session/view/sidebar/row.rs:766
+#: src/components/user_page.rs:770 src/session/view/content/invite.rs:290
+#: src/session/view/content/room_history/sender_avatar/mod.rs:801 src/session/view/sidebar/row.rs:766
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
@@ -1875,20 +1875,24 @@ msgid "Unknown"
 msgstr "Neznano"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:70
+#: src/session/model/room/permissions.rs:64
 msgid "Default"
 msgstr "Privzeto"
 
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:67
 msgid "Moderator"
 msgstr "Moderator"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:68
 msgid "Admin"
 msgstr "Skrbnik"
 
+#: src/session/model/room/permissions.rs:69
+msgid "Creator"
+msgstr "Avtor"
+
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:76
+#: src/session/model/room/permissions.rs:71
 msgid "Muted"
 msgstr "Utišan"
 
@@ -3598,7 +3602,7 @@ msgstr "Člani z dodeljenimi ravnmi moči"
 msgid "Add"
 msgstr "Dodaj"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:575
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:585
 msgid "Could not save permissions"
 msgstr "Dovoljenj ni bilo mogoče shraniti"
 
@@ -3867,7 +3871,7 @@ msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
 #: src/session/view/content/room_history/event_actions/group.rs:716
-#: src/session/view/content/room_history/sender_avatar/mod.rs:592
+#: src/session/view/content/room_history/sender_avatar/mod.rs:595
 msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
 
@@ -4027,61 +4031,61 @@ msgstr "Samodokončanje omembe javne klepetalnice"
 msgid "Room Member Mention Auto-completion"
 msgstr "Samodokončanje omemba člana klepetalnice"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:354
+#: src/session/view/content/room_history/message_toolbar/mod.rs:353
 msgid "The conversation continues in a new room"
 msgstr "Pogovor se nadaljuje v novi klepetalnici"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:356
+#: src/session/view/content/room_history/message_toolbar/mod.rs:355
 msgid "The conversation has ended"
 msgstr "Pogovor se je končal"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:518
+#: src/session/view/content/room_history/message_toolbar/mod.rs:517
 msgid "Reply to {user}"
 msgstr "Odgovori {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:536
+#: src/session/view/content/room_history/message_toolbar/mod.rs:535
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Uredi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:708
+#: src/session/view/content/room_history/message_toolbar/mod.rs:704
 msgid "Could not send reply"
 msgstr "Odgovora ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:724
+#: src/session/view/content/room_history/message_toolbar/mod.rs:720
 msgid "Could not send edit"
 msgstr "Urejanja ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:735
+#: src/session/view/content/room_history/message_toolbar/mod.rs:731
 msgid "Could not send message"
 msgstr "Ni mogoče poslati sporočila."
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:781
+#: src/session/view/content/room_history/message_toolbar/mod.rs:777
 msgid "Your Location"
 msgstr "Vaša lokacija"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:842
+#: src/session/view/content/room_history/message_toolbar/mod.rs:838
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Lokacija uporabnika {geo_uri} ob {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:864
+#: src/session/view/content/room_history/message_toolbar/mod.rs:860
 msgid "Could not send location"
 msgstr "Lokacije ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:871
+#: src/session/view/content/room_history/message_toolbar/mod.rs:867
 msgid "The location request has been cancelled"
 msgstr "Zahteva za lokacijo je preklicana"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:872
+#: src/session/view/content/room_history/message_toolbar/mod.rs:868
 msgid "The location services are disabled"
 msgstr "Lokacijske storitve so onemogočene"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:873
+#: src/session/view/content/room_history/message_toolbar/mod.rs:869
 msgid "Could not retrieve current location"
 msgstr "Ni mogoče pridobiti trenutne lokacije"
 
@@ -4305,61 +4309,61 @@ msgstr[3] "Videli {n} člani"
 msgid "Seen by {name}"
 msgstr "Videl/a: {name}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:101
+#: src/session/view/content/room_history/sender_avatar/mod.rs:104
 msgid "Link copied to clipboard"
 msgstr "Povezava je kopirana v odložišče"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:304
+#: src/session/view/content/room_history/sender_avatar/mod.rs:307
 msgid "{user}’s avatar"
 msgstr "Avatar za {user}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:539
+#: src/session/view/content/room_history/sender_avatar/mod.rs:542
 msgid "Creating a new Direct Chat…"
 msgstr "Ustvarjanje novega neposrednega klepeta ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:563
+#: src/session/view/content/room_history/sender_avatar/mod.rs:566
 msgid "Inviting user…"
 msgstr "Povabljanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:593
+#: src/session/view/content/room_history/sender_avatar/mod.rs:596
 msgid "Kicking user…"
 msgstr "Brcanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:628
+#: src/session/view/content/room_history/sender_avatar/mod.rs:636
 msgid "Muting member…"
 msgstr "Utišanje člana ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:632
+#: src/session/view/content/room_history/sender_avatar/mod.rs:640
 msgid "Unmuting member…"
 msgstr "Vklapljanje zvoka člana ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:643
+#: src/session/view/content/room_history/sender_avatar/mod.rs:651
 msgid "Member muted"
 msgstr "Član je bil utišan"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:645
+#: src/session/view/content/room_history/sender_avatar/mod.rs:653
 msgid "Member unmuted"
 msgstr "Član je bil ozvočen"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:648
+#: src/session/view/content/room_history/sender_avatar/mod.rs:656
 msgid "Could not mute member"
 msgstr "Ni bilo mogoče utišati člana"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:650
+#: src/session/view/content/room_history/sender_avatar/mod.rs:658
 msgid "Could not unmute member"
 msgstr "Zvoka članu ni bilo mogoče vklopiti"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:679
+#: src/session/view/content/room_history/sender_avatar/mod.rs:687
 msgid "Banning user…"
 msgstr "Prepovedovanje uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:704
+#: src/session/view/content/room_history/sender_avatar/mod.rs:712
 msgid "Unbanning user…"
 msgstr "Preklicevanje prepovedi uporabnika ..."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:748
+#: src/session/view/content/room_history/sender_avatar/mod.rs:756
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Odstranjevanje {n} sporočil, ki jih je poslal uporabnik ..."
@@ -4367,11 +4371,11 @@ msgstr[1] "Odstranjevanje {n} sporočila, ki ga je poslal uporabnik …"
 msgstr[2] "Odstranjevanje {n} sporočil, ki ju je poslal uporabnik …"
 msgstr[3] "Odstranjevanje {n} sporočil, ki jih je poslal uporabnik …"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:782
+#: src/session/view/content/room_history/sender_avatar/mod.rs:790
 msgid "Stop ignoring user…"
 msgstr "Nehaj ignorirati uporabnika ..."
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:784
+#: src/session/view/content/room_history/sender_avatar/mod.rs:792
 msgid "Ignoring user…"
 msgstr "Prezrtje uporabnika ..."
 
