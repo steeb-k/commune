@@ -194,7 +194,7 @@ mod imp {
             self.obj().notify_backup_enabled();
         }
 
-        /// Set whether the room keys backup existson the homeserver.
+        /// Set whether the room keys backup exists on the homeserver.
         pub(super) fn set_backup_exists_on_server(&self, exists: bool) {
             if self.backup_exists_on_server.get() == exists {
                 return;

@@ -211,7 +211,9 @@ pub(crate) async fn client_with_stored_session(
     let encryption_settings = EncryptionSettings {
         auto_enable_cross_signing: true,
         backup_download_strategy: BackupDownloadStrategy::AfterDecryptionFailure,
-        auto_enable_backups: true,
+        // This only enables room keys backup and not recovery, which would leave us in an awkward
+        // state, because we want both to be enabled at the same time.
+        auto_enable_backups: false,
     };
 
     let mut client_builder = Client::builder()
