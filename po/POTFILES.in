@@ -32,6 +32,7 @@ src/components/media/content_viewer.rs
 src/components/media/location_viewer.rs
 src/components/pill/at_room.rs
 src/components/power_level_selection/popover.ui
+src/components/power_level_selection/row.ui
 src/components/rows/loading_row.ui
 src/components/user_page.rs
 src/components/user_page.ui

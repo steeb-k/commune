@@ -38,6 +38,8 @@ mod imp {
         #[template_child]
         selected_level_label: TemplateChild<gtk::Label>,
         #[template_child]
+        creator_info_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
         selected_role_badge: TemplateChild<RoleBadge>,
         /// The permissions to watch.
         #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
@@ -66,6 +68,7 @@ mod imp {
                 popover: Default::default(),
                 selected_box: Default::default(),
                 selected_level_label: Default::default(),
+                creator_info_button: Default::default(),
                 selected_role_badge: Default::default(),
                 permissions: Default::default(),
                 selected_power_level: Cell::new(UserPowerLevel::Int(int!(0))),
@@ -143,15 +146,17 @@ mod imp {
 
             self.selected_role_badge.set_role(role);
 
-            let (level_visible, accessible_desc) = if let UserPowerLevel::Int(value) = power_level {
-                self.selected_level_label.set_label(&value.to_string());
-                self.popover.set_selected_power_level(i64::from(value));
-                (true, format!("{value} {role}"))
-            } else {
-                (false, role.to_string())
-            };
+            let (creator_info_visible, accessible_desc) =
+                if let UserPowerLevel::Int(value) = power_level {
+                    self.selected_level_label.set_label(&value.to_string());
+                    self.popover.set_selected_power_level(i64::from(value));
+                    (false, format!("{value} {role}"))
+                } else {
+                    (true, role.to_string())
+                };
 
-            self.selected_level_label.set_visible(level_visible);
+            self.creator_info_button.set_visible(creator_info_visible);
+            self.selected_level_label.set_visible(!creator_info_visible);
 
             self.obj()
                 .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);

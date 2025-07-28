@@ -96,6 +96,34 @@
       <object class="GtkLabel" id="selected_level_label" />
     </child>
     <child>
+      <object class="GtkMenuButton" id="creator_info_button">
+        <property name="icon-name">info-symbolic</property>
+        <property name="tooltip-text" translatable="yes">More Information</property>
+        <property name="valign">center</property>
+        <style>
+          <class name="flat"/>
+        </style>
+        <property name="popover">
+          <object class="GtkPopover">
+            <property name="child">
+              <object class="GtkLabel">
+                <property name="halign">center</property>
+                <property name="margin-bottom">6</property>
+                <property name="margin-top">6</property>
+                <property name="margin-start">6</property>
+                <property name="margin-end">6</property>
+                <property name="max-width-chars">50</property>
+                <property name="valign">center</property>
+                <property name="wrap">True</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="label" translatable="yes">Creator is an immutable role that can be attributed to several users when creating a room. Creators always have a higher power level than any other room members, except other creators, and have the permission to do anything in the room. The only way to demote a creator is to replace the current room with another one with a different creator, by upgrading the room for example.</property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+    <child>
       <object class="RoleBadge" id="selected_role_badge">
         <property name="valign">center</property>
       </object>
