@@ -50,8 +50,6 @@ enum LoginPage {
     Method,
     /// The page to log in with the browser.
     InBrowser,
-    /// The loading page.
-    Loading,
     /// The session setup stack.
     SessionSetup,
     /// The login is completed.
@@ -162,7 +160,6 @@ mod imp {
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
                 LoginPage::InBrowser => self.in_browser_page.grab_focus(),
-                LoginPage::Loading => false,
                 LoginPage::SessionSetup => {
                     if let Some(session_setup) = self.session_setup() {
                         session_setup.grab_focus()
