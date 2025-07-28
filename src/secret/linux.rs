@@ -54,7 +54,7 @@ impl SecretExt for LinuxSecret {
         match handle.await.expect("task was not aborted") {
             Ok(sessions) => Ok(sessions),
             Err(error) => {
-                error!("Could not restore previous sessions: {error}");
+                error!("Could not restore previous sessions: secret error: {error}");
                 Err(error.into())
             }
         }
@@ -153,7 +153,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                 // We already log the specific errors for this.
             }
             Err(error) => {
-                error!("Could not restore previous session: {error}");
+                error!("Could not restore previous session: secret error: {error}");
             }
         }
     }

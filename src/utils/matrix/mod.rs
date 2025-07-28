@@ -155,10 +155,10 @@ impl AnySyncOrStrippedTimelineEvent {
 #[derive(Error, Debug)]
 pub(crate) enum ClientSetupError {
     /// An error when building the client.
-    #[error(transparent)]
+    #[error("Matrix client build error: {0}")]
     Client(#[from] ClientBuildError),
     /// An error when using the client.
-    #[error(transparent)]
+    #[error("Matrix client restoration error: {0}")]
     Sdk(#[from] matrix_sdk::Error),
     /// An error creating the unique local ID of the session.
     #[error("Could not generate unique session ID")]
