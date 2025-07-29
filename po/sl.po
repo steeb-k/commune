@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-24 11:35+0000\n"
-"PO-Revision-Date: 2025-07-26 17:11+0200\n"
+"POT-Creation-Date: 2025-07-29 01:25+0000\n"
+"PO-Revision-Date: 2025-07-29 10:53+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -971,6 +971,22 @@ msgstr "Po meri"
 msgid "Confirm Custom Role"
 msgstr "Potrdi vlogo po meri"
 
+#: src/components/power_level_selection/row.ui:101
+msgid "More Information"
+msgstr "Več podrobnosti"
+
+#: src/components/power_level_selection/row.ui:119
+msgid ""
+"Creator is an immutable role that can be attributed to several users when creating a room. Creators "
+"always have a higher power level than any other room members, except other creators, and have the "
+"permission to do anything in the room. The only way to demote a creator is to replace the current room "
+"with another one with a different creator, by upgrading the room for example."
+msgstr ""
+"Avtor je nespremenljiva vloga, ki jo lahko pri ustvarjanju klepetalnice pripišemo več uporabnikom. "
+"Avtorji imajo vedno višjo raven moči kot kateri koli drugi člani klepetalnice, razen drugih avtorjev, "
+"in imajo dovoljenje, da počno karkoli v klepetalnici. Edini način za degradacijo avtorja je, da "
+"zamenjate trenutno klepetalnico z drugo z drugim avtorjem, npr. z nadgradnjo klepetalnice."
+
 #: src/components/user_page.rs:256 src/session/view/account_settings/general_page/mod.ui:60
 #: src/session/view/content/room_history/sender_avatar/mod.rs:82
 msgid "Matrix user ID copied to clipboard"
@@ -1599,8 +1615,8 @@ msgstr "Naslov URL osnovnega strežnika"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "URL vašega domačega strežnika Matrix, npr. {address}"
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324 src/login/mod.rs:370
-#: src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321 src/login/mod.rs:367
+#: src/login/mod.rs:384
 msgid "Could not set up login"
 msgstr "Prijave ni bilo mogoče nastaviti"
 
@@ -1660,15 +1676,15 @@ msgstr "Geslo"
 msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
-#: src/login/mod.rs:456
+#: src/login/mod.rs:453
 msgid "Could not store session"
 msgstr "Seje ni mogoče shraniti"
 
-#: src/login/mod.rs:585
+#: src/login/mod.rs:582
 msgid "Authorization Completed"
 msgstr "Overitev je končana"
 
-#: src/login/mod.rs:587
+#: src/login/mod.rs:584
 msgid "The authorization step is complete. You can close this page and go back to Fractal."
 msgstr "Korak avtorizacije je končan. To stran lahko zaprete in se vrnete k Fraktalu."
 
@@ -1688,7 +1704,7 @@ msgstr "Začni klepet"
 msgid "Session Setup"
 msgstr "Nastavitev seje"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.ui:63
 msgid "Fetching Account Data…"
 msgstr "Pridobivanje podatkov o računu ..."
 
