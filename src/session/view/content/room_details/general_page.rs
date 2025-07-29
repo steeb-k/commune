@@ -22,7 +22,7 @@ use ruma::{
 };
 use tracing::error;
 
-use super::{MemberRow, RoomDetails, room_upgrade_dialog::confirm_room_upgrade};
+use super::{MemberRow, RoomDetails, UpgradeDialog};
 use crate::{
     Window,
     components::{
@@ -1085,11 +1085,12 @@ mod imp {
             };
 
             let obj = self.obj();
-            // TODO: Hide upgrade button if room already upgraded?
             self.upgrade_button.set_is_loading(true);
             let room_versions_capability = self.capabilities.borrow().room_versions.clone();
 
-            let Some(new_version) = confirm_room_upgrade(room_versions_capability, &*obj).await
+            let Some(new_version) = UpgradeDialog::new()
+                .confirm_upgrade(room_versions_capability, &*obj)
+                .await
             else {
                 self.upgrade_button.set_is_loading(false);
                 return;

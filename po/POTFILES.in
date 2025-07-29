@@ -147,7 +147,8 @@ src/session/view/content/room_details/permissions/members_subpage.rs
 src/session/view/content/room_details/permissions/members_subpage.ui
 src/session/view/content/room_details/permissions/permissions_subpage.rs
 src/session/view/content/room_details/permissions/permissions_subpage.ui
-src/session/view/content/room_details/room_upgrade_dialog.rs
+src/session/view/content/room_details/upgrade_dialog/mod.rs
+src/session/view/content/room_details/upgrade_dialog/mod.ui
 src/session/view/content/room_history/divider_row.rs
 src/session/view/content/room_history/event_actions/context_menu.rs
 src/session/view/content/room_history/event_actions/context_menu.ui

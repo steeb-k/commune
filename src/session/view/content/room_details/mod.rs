@@ -17,7 +17,7 @@ mod member_row;
 mod members_page;
 mod membership_subpage_item;
 mod permissions;
-mod room_upgrade_dialog;
+mod upgrade_dialog;
 
 use self::{
     addresses_subpage::AddressesSubpage,
@@ -32,6 +32,7 @@ use self::{
     members_page::MembersPage,
     membership_subpage_item::MembershipSubpageItem,
     permissions::PermissionsSubpage,
+    upgrade_dialog::UpgradeDialog,
 };
 use crate::{
     components::UserPage,
