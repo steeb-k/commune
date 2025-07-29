@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-24 11:35+0000\n"
-"PO-Revision-Date: 2025-07-25 08:45+0800\n"
+"POT-Creation-Date: 2025-07-28 17:58+0000\n"
+"PO-Revision-Date: 2025-07-29 09:23+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -997,6 +997,23 @@ msgstr "自定义"
 msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
+#: src/components/power_level_selection/row.ui:101
+msgid "More Information"
+msgstr "更多信息"
+
+#: src/components/power_level_selection/row.ui:119
+msgid ""
+"Creator is an immutable role that can be attributed to several users when "
+"creating a room. Creators always have a higher power level than any other "
+"room members, except other creators, and have the permission to do anything "
+"in the room. The only way to demote a creator is to replace the current room "
+"with another one with a different creator, by upgrading the room for example."
+msgstr ""
+"创建者是在创建聊天室时可归属于数名用户的不可变角色。创建者总是拥有高于其他创"
+"建者除外的聊天室成员的权力级别，且拥有在聊天室中执行任意操作的权限。唯一对创"
+"建者降级的方式是用另一个具有不同创建者的聊天室代替当前聊天室，例如通过升级聊"
+"天室的方式。"
+
 #: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.ui:60
 #: src/session/view/content/room_history/sender_avatar/mod.rs:82
@@ -1664,8 +1681,8 @@ msgstr "主服务器网址"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "您的 Matrix 主服务器网址，比如 {address}"
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324
-#: src/login/mod.rs:370 src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321
+#: src/login/mod.rs:367 src/login/mod.rs:384
 msgid "Could not set up login"
 msgstr "无法部署登录"
 
@@ -1725,15 +1742,15 @@ msgstr "密码"
 msgid "Single Sign-On Providers"
 msgstr "单点登录提供者"
 
-#: src/login/mod.rs:456
+#: src/login/mod.rs:453
 msgid "Could not store session"
 msgstr "无法存储会话"
 
-#: src/login/mod.rs:585
+#: src/login/mod.rs:582
 msgid "Authorization Completed"
 msgstr "授权已完成"
 
-#: src/login/mod.rs:587
+#: src/login/mod.rs:584
 msgid ""
 "The authorization step is complete. You can close this page and go back to "
 "Fractal."
@@ -1755,7 +1772,7 @@ msgstr "开始聊天"
 msgid "Session Setup"
 msgstr "会话设置"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.ui:63
 msgid "Fetching Account Data…"
 msgstr "正在获取账号数据…"
 
