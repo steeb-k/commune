@@ -1,10 +1,11 @@
-use std::{cmp::Ordering, str::FromStr};
-
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use ruma::{RoomVersionId, api::client::discovery::get_capabilities::v3::RoomVersionStability};
+use ruma::RoomVersionId;
 
 mod imp {
-    use std::{cell::OnceCell, marker::PhantomData};
+    use std::{
+        cell::{Cell, OnceCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
@@ -16,8 +17,9 @@ mod imp {
         /// The ID of the version as a string.
         #[property(get = Self::id_string)]
         id_string: PhantomData<String>,
-        /// The stability of the version.
-        stability: OnceCell<RoomVersionStability>,
+        /// Whether the version is stable.
+        #[property(get, construct_only)]
+        is_stable: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -44,18 +46,6 @@ mod imp {
         fn id_string(&self) -> String {
             self.id().to_string()
         }
-
-        /// Set the stability of this version.
-        pub(super) fn set_stability(&self, stability: RoomVersionStability) {
-            self.stability
-                .set(stability)
-                .expect("stability is uninitialized");
-        }
-
-        /// The stability of this version.
-        pub(super) fn stability(&self) -> &RoomVersionStability {
-            self.stability.get().expect("stability is initialized")
-        }
     }
 }
 
@@ -66,12 +56,12 @@ glib::wrapper! {
 
 impl RoomVersion {
     /// Constructs a new `RoomVersion`.
-    pub fn new(id: RoomVersionId, stability: RoomVersionStability) -> Self {
-        let obj = glib::Object::new::<Self>();
+    pub fn new(id: RoomVersionId, is_stable: bool) -> Self {
+        let obj = glib::Object::builder::<Self>()
+            .property("is-stable", is_stable)
+            .build();
 
-        let imp = obj.imp();
-        imp.set_id(id);
-        imp.set_stability(stability);
+        obj.imp().set_id(id);
 
         obj
     }
@@ -79,26 +69,5 @@ impl RoomVersion {
     /// The ID of this version.
     pub(crate) fn id(&self) -> &RoomVersionId {
         self.imp().id()
-    }
-
-    /// The stability of this version.
-    pub(crate) fn stability(&self) -> &RoomVersionStability {
-        self.imp().stability()
-    }
-
-    /// Compare the IDs of the two given `RoomVersion`s.
-    ///
-    /// Correctly sorts numbers: string comparison will sort `1, 10, 2`, we want
-    /// `1, 2, 10`.
-    pub(crate) fn cmp_ids(a: &RoomVersion, b: &RoomVersion) -> Ordering {
-        match (
-            i64::from_str(a.id().as_str()),
-            i64::from_str(b.id().as_str()),
-        ) {
-            (Ok(a), Ok(b)) => a.cmp(&b),
-            (Ok(_), _) => Ordering::Less,
-            (_, Ok(_)) => Ordering::Greater,
-            _ => a.id().cmp(b.id()),
-        }
     }
 }

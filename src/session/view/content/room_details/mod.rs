@@ -32,7 +32,7 @@ use self::{
     members_page::MembersPage,
     membership_subpage_item::MembershipSubpageItem,
     permissions::PermissionsSubpage,
-    upgrade_dialog::UpgradeDialog,
+    upgrade_dialog::{UpgradeDialog, UpgradeInfo},
 };
 use crate::{
     components::UserPage,

@@ -22,7 +22,7 @@ use ruma::{
 };
 use tracing::error;
 
-use super::{MemberRow, RoomDetails, UpgradeDialog};
+use super::{MemberRow, RoomDetails, UpgradeDialog, UpgradeInfo};
 use crate::{
     Window,
     components::{
@@ -118,6 +118,9 @@ mod imp {
         /// Whether the room is published in the directory.
         #[property(get)]
         is_published: Cell<bool>,
+        capabilities: RefCell<Capabilities>,
+        upgrade_info: RefCell<Option<UpgradeInfo>>,
+        direct_members_list_has_bound_model: Cell<bool>,
         expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
         notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -125,8 +128,6 @@ mod imp {
         canonical_alias_handler: RefCell<Option<glib::SignalHandlerId>>,
         alt_aliases_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
-        capabilities: RefCell<Capabilities>,
-        direct_members_list_has_bound_model: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -402,7 +403,7 @@ mod imp {
                     self,
                     async move {
                         let handle = spawn_tokio!(async move { client.get_capabilities().await });
-                        match handle.await.unwrap() {
+                        match handle.await.expect("task was not aborted") {
                             Ok(capabilities) => {
                                 imp.capabilities.replace(capabilities);
                             }
@@ -411,6 +412,8 @@ mod imp {
                                 imp.capabilities.take();
                             }
                         }
+
+                        imp.update_upgrade_info();
                     }
                 )
             );
@@ -1047,6 +1050,26 @@ mod imp {
             }
         }
 
+        /// Update the room upgrade info.
+        fn update_upgrade_info(&self) {
+            let current_room_version = self
+                .room
+                .obj()
+                .and_then(|room| room.matrix_room().create_content())
+                .map(|create_content| create_content.room_version);
+
+            let upgrade_info = current_room_version.map(|current_room_version| {
+                UpgradeInfo::new(
+                    &current_room_version,
+                    &self.capabilities.borrow().room_versions,
+                )
+            });
+
+            self.upgrade_info.replace(upgrade_info);
+
+            self.update_upgrade_button();
+        }
+
         /// Update the room upgrade button.
         fn update_upgrade_button(&self) {
             let Some(room) = self.room.obj() else {
@@ -1056,7 +1079,8 @@ mod imp {
             let can_upgrade = !room.is_tombstoned()
                 && room
                     .permissions()
-                    .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomTombstone));
+                    .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomTombstone))
+                && self.upgrade_info.borrow().is_some();
             self.upgrade_button.set_visible(can_upgrade);
         }
 
@@ -1083,13 +1107,15 @@ mod imp {
             let Some(room) = self.room.obj() else {
                 return;
             };
+            let Some(upgrade_info) = self.upgrade_info.borrow().clone() else {
+                return;
+            };
 
             let obj = self.obj();
             self.upgrade_button.set_is_loading(true);
-            let room_versions_capability = self.capabilities.borrow().room_versions.clone();
 
             let Some(new_version) = UpgradeDialog::new()
-                .confirm_upgrade(room_versions_capability, &*obj)
+                .confirm_upgrade(&upgrade_info, &*obj)
                 .await
             else {
                 self.upgrade_button.set_is_loading(false);
