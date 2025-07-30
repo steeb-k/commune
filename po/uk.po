@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-24 10:47+0000\n"
-"PO-Revision-Date: 2025-07-24 14:34+0300\n"
+"POT-Creation-Date: 2025-07-30 15:22+0000\n"
+"PO-Revision-Date: 2025-07-30 21:56+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -686,8 +686,8 @@ msgstr "Полишити"
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_details/general_page.rs:1033
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:116
+#: src/session/view/content/room_details/general_page.rs:1036
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:98
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
@@ -1113,6 +1113,25 @@ msgstr "Нетипове"
 #: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
+
+#: src/components/power_level_selection/row.ui:101
+#| msgid "Advanced Information"
+msgid "More Information"
+msgstr "Докладніше"
+
+#: src/components/power_level_selection/row.ui:119
+msgid ""
+"Creator is an immutable role that can be attributed to several users when "
+"creating a room. Creators always have a higher power level than any other "
+"room members, except other creators, and have the permission to do anything "
+"in the room. The only way to demote a creator is to replace the current room "
+"with another one with a different creator, by upgrading the room for example."
+msgstr ""
+"Автор є незмінною роллю, яку можна пов'язати із декількома користувачами під"
+" час створення кімнати. Автори завжди мають вищий рівень прав доступу за"
+" будь-якого з учасників кімнати, окрім інших авторів, і мають право роботи у"
+" кімнаті будь-що. Єдиним способом позбавити автора прав є заміна поточної"
+" кімнати на іншу із іншим автором, наприклад, шляхом оновлення кімнати."
 
 #: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.ui:60
@@ -1821,8 +1840,8 @@ msgstr "Адреса домашнього сервера"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Адреса вашого домашнього сервера Matrix, наприклад {address}"
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324
-#: src/login/mod.rs:370 src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321
+#: src/login/mod.rs:367 src/login/mod.rs:384
 msgid "Could not set up login"
 msgstr "Не вдалося налаштувати вхід до системи"
 
@@ -1882,15 +1901,15 @@ msgstr "Пароль"
 msgid "Single Sign-On Providers"
 msgstr "Надавачі єдиної системи розпізнавання"
 
-#: src/login/mod.rs:456
+#: src/login/mod.rs:453
 msgid "Could not store session"
 msgstr "Не вдалося зберегти сеанс"
 
-#: src/login/mod.rs:585
+#: src/login/mod.rs:582
 msgid "Authorization Completed"
 msgstr "Уповноваження завершено"
 
-#: src/login/mod.rs:587
+#: src/login/mod.rs:584
 msgid ""
 "The authorization step is complete. You can close this page and go back to "
 "Fractal."
@@ -1914,7 +1933,7 @@ msgstr "Почати спілкування"
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.ui:63
 msgid "Fetching Account Data…"
 msgstr "Отримуємо дані облікового запису…"
 
@@ -2100,7 +2119,7 @@ msgid "Any registered user"
 msgstr "Будь-який зареєстрований користувач"
 
 #: src/session/model/room/join_rule.rs:288
-#: src/session/view/content/room_details/general_page.rs:939
+#: src/session/view/content/room_details/general_page.rs:942
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
@@ -2135,7 +2154,6 @@ msgid "Admin"
 msgstr "Адміністратор"
 
 #: src/session/model/room/permissions.rs:69
-#| msgid "C_reate"
 msgid "Creator"
 msgstr "Автор"
 
@@ -3182,7 +3200,7 @@ msgid "Remove “{address}”"
 msgstr "Вилучити «{address}»"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:677
+#: src/session/view/content/room_details/general_page.rs:680
 #: src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "Основна адреса"
@@ -3331,8 +3349,8 @@ msgstr "Опис"
 msgid "Save Description"
 msgstr "Зберегти опис"
 
-#: src/session/view/content/room_details/general_page.rs:462
-#: src/session/view/content/room_details/general_page.rs:508
+#: src/session/view/content/room_details/general_page.rs:465
+#: src/session/view/content/room_details/general_page.rs:511
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
@@ -3341,71 +3359,71 @@ msgstr[1] "Учасники"
 msgstr[2] "Учасники"
 msgstr[3] "Учасник"
 
-#: src/session/view/content/room_details/general_page.rs:632
+#: src/session/view/content/room_details/general_page.rs:635
 msgid "Could not change notifications setting"
 msgstr "Не вдалося змінити параметр сповіщень"
 
-#: src/session/view/content/room_details/general_page.rs:672
-#: src/session/view/content/room_details/general_page.rs:711
+#: src/session/view/content/room_details/general_page.rs:675
+#: src/session/view/content/room_details/general_page.rs:714
 msgid "Copy address"
 msgstr "Копіювати адресу"
 
-#: src/session/view/content/room_details/general_page.rs:673
-#: src/session/view/content/room_details/general_page.rs:712
+#: src/session/view/content/room_details/general_page.rs:676
+#: src/session/view/content/room_details/general_page.rs:715
 msgid "Address copied to clipboard"
 msgstr "Адресу скопійовано до буфера даних"
 
-#: src/session/view/content/room_details/general_page.rs:754
+#: src/session/view/content/room_details/general_page.rs:757
 msgid "Room link copied to clipboard"
 msgstr "Посилання на кімнату скопійовано до буфера обміну"
 
-#: src/session/view/content/room_details/general_page.rs:815
+#: src/session/view/content/room_details/general_page.rs:818
 msgid "Could not change guest access"
 msgstr "Не вдалося змінити доступ для гостів"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:832
+#: src/session/view/content/room_details/general_page.rs:835
 msgid "Publish in the {homeserver} directory"
 msgstr "Оприлюднити у каталозі {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:907
+#: src/session/view/content/room_details/general_page.rs:910
 msgid "Could not publish room in directory"
 msgstr "Не вдалося оприлюднити кімнату у каталозі"
 
-#: src/session/view/content/room_details/general_page.rs:909
+#: src/session/view/content/room_details/general_page.rs:912
 msgid "Could not unpublish room from directory"
 msgstr "Не вдалося скасувати оприлюднення кімнати у каталозі"
 
-#: src/session/view/content/room_details/general_page.rs:930
+#: src/session/view/content/room_details/general_page.rs:933
 #: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr "Будь-хто, навіть якщо їх немає у кімнаті"
 
-#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.rs:936
 #: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr "Лише учасники, з моменту позначення цього пункту"
 
-#: src/session/view/content/room_details/general_page.rs:935
+#: src/session/view/content/room_details/general_page.rs:938
 #: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr "Лише учасники, з моменту запрошення"
 
-#: src/session/view/content/room_details/general_page.rs:937
+#: src/session/view/content/room_details/general_page.rs:940
 #: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr "Лише учасники, з моменту долучення до кімнати"
 
-#: src/session/view/content/room_details/general_page.rs:986
+#: src/session/view/content/room_details/general_page.rs:989
 msgid "Could not change who can read history"
 msgstr "Не вдалося змінити правила читання журналу"
 
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1031
 msgid "Enable Encryption?"
 msgstr "Увімкнути шифрування?"
 
-#: src/session/view/content/room_details/general_page.rs:1029
+#: src/session/view/content/room_details/general_page.rs:1032
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3413,30 +3431,30 @@ msgstr ""
 "Вмикання шифрування заважатиме новим учасникам читати журнал до того, як "
 "вони з'явилися у кімнаті. Цю можливість не можна буде вимкнути пізніше."
 
-#: src/session/view/content/room_details/general_page.rs:1034
+#: src/session/view/content/room_details/general_page.rs:1037
 #: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "Увімкнути"
 
-#: src/session/view/content/room_details/general_page.rs:1045
+#: src/session/view/content/room_details/general_page.rs:1048
 msgid "Could not enable encryption"
 msgstr "Не вдалося увімкнути шифрування"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1071
+#: src/session/view/content/room_details/general_page.rs:1095
 msgid "Federated"
 msgstr "Інтегрований"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1074
+#: src/session/view/content/room_details/general_page.rs:1098
 msgid "Not federated"
 msgstr "Не федеровано"
 
-#: src/session/view/content/room_details/general_page.rs:1105
+#: src/session/view/content/room_details/general_page.rs:1132
 msgid "Room upgraded successfully"
 msgstr "Кімнату успішно оновлено"
 
-#: src/session/view/content/room_details/general_page.rs:1109
+#: src/session/view/content/room_details/general_page.rs:1136
 msgid "Could not upgrade room"
 msgstr "Не вдалося оновити кімнату"
 
@@ -3855,7 +3873,7 @@ msgstr "Увімкнути або вимкнути пошук учасників
 msgid "Search for room members"
 msgstr "Пошук учасників в кімнаті"
 
-#: src/session/view/content/room_details/mod.rs:149
+#: src/session/view/content/room_details/mod.rs:150
 msgid "The user is not in the room members list anymore"
 msgstr "Користувача вже немає у списку учасників кімнати"
 
@@ -3968,7 +3986,8 @@ msgid "Change Server Access Control List"
 msgstr "Змінити списки керування доступом сервера"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:111
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:4
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:43
 msgid "Upgrade Room"
 msgstr "Оновити кімнату"
 
@@ -4000,20 +4019,16 @@ msgid "Default Power Level"
 msgstr "Типовий рівень повноважень"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:85
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:112
 msgid "Stable"
 msgstr "Стабільна"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:87
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:115
 msgid "Experimental"
 msgstr "Експериментальна"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:94
-msgid "Version"
-msgstr "Версія"
-
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new "
 "features from the Matrix specification. It can also be used to reset the "
@@ -4028,8 +4043,12 @@ msgstr ""
 "незручностей, оскільки учасникам кімнати доведеться долучатися до нової "
 "кімнати вручну."
 
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:74
+msgid "Version"
+msgstr "Версія"
+
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:106
 msgid "Upgrade"
 msgstr "Оновити"
 
