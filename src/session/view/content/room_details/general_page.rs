@@ -1052,17 +1052,29 @@ mod imp {
 
         /// Update the room upgrade info.
         fn update_upgrade_info(&self) {
-            let current_room_version = self
-                .room
-                .obj()
-                .and_then(|room| room.matrix_room().create_content())
-                .map(|create_content| create_content.room_version);
+            let Some(room) = self.room.obj() else {
+                return;
+            };
 
-            let upgrade_info = current_room_version.map(|current_room_version| {
-                UpgradeInfo::new(
-                    &current_room_version,
-                    &self.capabilities.borrow().room_versions,
-                )
+            let room_info = room.matrix_room().clone_info();
+
+            let upgrade_info = room_info.create().map(|create_content| {
+                let privileged_creators = room_info
+                    .room_version_rules_or_default()
+                    .authorization
+                    .explicitly_privilege_room_creators
+                    .then(|| room_info.creators())
+                    .flatten();
+
+                UpgradeInfo::new()
+                    .with_room_versions(
+                        &create_content.room_version,
+                        &self.capabilities.borrow().room_versions,
+                    )
+                    .with_privileged_creators(
+                        room.own_member().user_id(),
+                        &privileged_creators.unwrap_or_default(),
+                    )
             });
 
             self.upgrade_info.replace(upgrade_info);

@@ -2,10 +2,10 @@ use std::cmp::Ordering;
 
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gettextrs::gettext;
+use gettextrs::{gettext, ngettext};
 use gtk::{gio, glib, pango};
 use ruma::{
-    RoomVersionId,
+    OwnedUserId, RoomVersionId,
     api::client::discovery::get_capabilities::v3::{RoomVersionStability, RoomVersionsCapability},
 };
 use tracing::error;
@@ -28,6 +28,8 @@ mod imp {
     pub struct UpgradeDialog {
         #[template_child]
         version_combo: TemplateChild<adw::ComboRow>,
+        #[template_child]
+        warning_label: TemplateChild<gtk::Label>,
         header_factory: OnceCell<gtk::SignalListItemFactory>,
         /// The sender for the response of the user.
         sender: RefCell<Option<oneshot::Sender<Option<RoomVersionId>>>>,
@@ -132,6 +134,7 @@ mod imp {
             parent: &gtk::Widget,
         ) -> Option<RoomVersionId> {
             self.update_version_combo(info);
+            self.update_warning(info);
 
             let (sender, receiver) = oneshot::channel();
             self.sender.replace(Some(sender));
@@ -176,6 +179,34 @@ mod imp {
             self.version_combo.set_model(Some(&model));
             self.version_combo
                 .set_selected(info.selected.try_into().unwrap_or(u32::MAX));
+        }
+
+        /// Update the warning.
+        fn update_warning(&self, info: &UpgradeInfo) {
+            if info.other_creators_count == 0 {
+                // We are not changing the list of privileged creators.
+                self.warning_label.set_visible(false);
+                return;
+            }
+
+            let other_creators_count = u32::try_from(info.other_creators_count).unwrap_or(u32::MAX);
+
+            let text = if info.own_user_is_creator {
+                ngettext(
+                    "After the upgrade, you will be the only creator in the room. The other creator will be demoted to the default power level.",
+                    "After the upgrade, you will be the only creator in the room. The other creators will be demoted to the default power level.",
+                    other_creators_count,
+                )
+            } else {
+                ngettext(
+                    "After the upgrade, you will be the only creator in the room. The current creator will be demoted to the default power level.",
+                    "After the upgrade, you will be the only creator in the room. The current creators will be demoted to the default power level.",
+                    other_creators_count,
+                )
+            };
+
+            self.warning_label.set_label(&text);
+            self.warning_label.set_visible(true);
         }
 
         /// Confirm the upgrade.
@@ -233,7 +264,7 @@ impl UpgradeDialog {
 }
 
 /// The information necessary for [`UpgradeDialog`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct UpgradeInfo {
     /// The sorted stable room versions available for the upgrade.
     pub(crate) stable_room_versions: Vec<RoomVersionId>,
@@ -243,11 +274,20 @@ pub(crate) struct UpgradeInfo {
     /// when `stable_room_versions` and `unstable_room_versions` are
     /// concatenated.
     pub(crate) selected: usize,
+    /// Whether our own user is a privileged creator in the current room.
+    pub(crate) own_user_is_creator: bool,
+    /// The number of privileged creators that are not our own user in the
+    /// current room.
+    pub(crate) other_creators_count: usize,
 }
 
 impl UpgradeInfo {
-    /// Construct the `UpgradeInfo` with the given capability and current room
-    /// version.
+    /// Construct an empty `UpgradeInfo`.
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add information about the possible room versions for the upgrade.
     ///
     /// We do not allow users to:
     ///
@@ -259,7 +299,8 @@ impl UpgradeInfo {
     ///
     /// If the server's default is experimental, we also allow to upgrade to the
     /// highest stable version.
-    pub(crate) fn new(
+    pub(crate) fn with_room_versions(
+        mut self,
         current_room_version: &RoomVersionId,
         capability: &RoomVersionsCapability,
     ) -> Self {
@@ -283,7 +324,7 @@ impl UpgradeInfo {
         };
         let selected_room_version = minimum_stable_version.unwrap_or(&capability.default);
 
-        let mut stable_room_versions = if let Some(minimum) = minimum_stable_version {
+        self.stable_room_versions = if let Some(minimum) = minimum_stable_version {
             // Keep all the stable versions higher than the minimum.
             capability
                 .available
@@ -303,7 +344,7 @@ impl UpgradeInfo {
                     }
                 })
                 .cloned()
-                .collect::<Vec<_>>()
+                .collect()
         } else {
             // The only allowed stable version will be the maximum.
             maximum_stable_version.into_iter().cloned().collect()
@@ -311,7 +352,7 @@ impl UpgradeInfo {
 
         // Add the current and default room versions if they are unstable.
         let current_is_default = *current_room_version == capability.default;
-        let mut unstable_room_versions = Some(current_room_version)
+        self.unstable_room_versions = Some(current_room_version)
             .filter(|_| !current_is_stable)
             .cloned()
             .into_iter()
@@ -323,28 +364,37 @@ impl UpgradeInfo {
             .collect::<Vec<_>>();
 
         // Sort all the versions.
-        numeric_sort::sort_unstable(&mut stable_room_versions);
-        numeric_sort::sort_unstable(&mut unstable_room_versions);
+        numeric_sort::sort_unstable(&mut self.stable_room_versions);
+        numeric_sort::sort_unstable(&mut self.unstable_room_versions);
 
         // Find the position of the selected version.
-        let selected = stable_room_versions
+        self.selected = self
+            .stable_room_versions
             .binary_search_by(|version| {
                 numeric_sort::cmp(version.as_ref(), selected_room_version.as_ref())
             })
             .or_else(|_| {
-                unstable_room_versions
+                self.unstable_room_versions
                     .binary_search_by(|version| {
                         numeric_sort::cmp(version.as_ref(), selected_room_version.as_ref())
                     })
-                    .map(|pos| stable_room_versions.len() + pos)
+                    .map(|pos| self.stable_room_versions.len() + pos)
             })
             .unwrap_or_default();
 
-        Self {
-            stable_room_versions,
-            unstable_room_versions,
-            selected,
-        }
+        self
+    }
+
+    /// Add information about the privileged creators changes.
+    pub(crate) fn with_privileged_creators(
+        mut self,
+        own_creator: &OwnedUserId,
+        privileged_creators: &[OwnedUserId],
+    ) -> Self {
+        self.own_user_is_creator = privileged_creators.contains(own_creator);
+        self.other_creators_count =
+            privileged_creators.len() - usize::from(self.own_user_is_creator);
+        self
     }
 }
 

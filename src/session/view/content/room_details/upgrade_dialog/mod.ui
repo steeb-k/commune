@@ -79,6 +79,20 @@
                         </style>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkLabel" id="warning_label">
+                        <property name="vexpand">True</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="justify">center</property>
+                        <property name="xalign">0.5</property>
+                        <property name="max-width-chars">60</property>
+                        <style>
+                          <class name="warning"/>
+                          <class name="body"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </property>
               </object>
