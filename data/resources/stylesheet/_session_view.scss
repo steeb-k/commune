@@ -120,8 +120,10 @@ sidebar {
       font-weight: bold;
       font-size: 0.8em;
       border-radius: 9999px;
-      min-width: 0.7em;
-      padding: 2px 5px;
+      min-width: 0.8em;
+      min-height: 0.8em;
+      line-height: 0.8em;
+      padding: 0.4em 5px;
       color: currentColor;
       background-color: color-mix(in srgb, currentColor 15%, transparent);
     }
