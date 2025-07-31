@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-30 15:22+0000\n"
-"PO-Revision-Date: 2025-07-30 21:56+0300\n"
+"POT-Creation-Date: 2025-07-31 17:47+0000\n"
+"PO-Revision-Date: 2025-07-31 21:28+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -687,7 +687,7 @@ msgstr "Полишити"
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:1036
-#: src/session/view/content/room_details/upgrade_dialog/mod.ui:98
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:112
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
@@ -1115,7 +1115,6 @@ msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
 
 #: src/components/power_level_selection/row.ui:101
-#| msgid "Advanced Information"
 msgid "More Information"
 msgstr "Докладніше"
 
@@ -1127,11 +1126,11 @@ msgid ""
 "in the room. The only way to demote a creator is to replace the current room "
 "with another one with a different creator, by upgrading the room for example."
 msgstr ""
-"Автор є незмінною роллю, яку можна пов'язати із декількома користувачами під"
-" час створення кімнати. Автори завжди мають вищий рівень прав доступу за"
-" будь-якого з учасників кімнати, окрім інших авторів, і мають право роботи у"
-" кімнаті будь-що. Єдиним способом позбавити автора прав є заміна поточної"
-" кімнати на іншу із іншим автором, наприклад, шляхом оновлення кімнати."
+"Автор є незмінною роллю, яку можна пов'язати із декількома користувачами під "
+"час створення кімнати. Автори завжди мають вищий рівень прав доступу за будь-"
+"якого з учасників кімнати, окрім інших авторів, і мають право роботи у "
+"кімнаті будь-що. Єдиним способом позбавити автора прав є заміна поточної "
+"кімнати на іншу із іншим автором, наприклад, шляхом оновлення кімнати."
 
 #: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.ui:60
@@ -3441,20 +3440,20 @@ msgid "Could not enable encryption"
 msgstr "Не вдалося увімкнути шифрування"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1095
+#: src/session/view/content/room_details/general_page.rs:1107
 msgid "Federated"
 msgstr "Інтегрований"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1098
+#: src/session/view/content/room_details/general_page.rs:1110
 msgid "Not federated"
 msgstr "Не федеровано"
 
-#: src/session/view/content/room_details/general_page.rs:1132
+#: src/session/view/content/room_details/general_page.rs:1144
 msgid "Room upgraded successfully"
 msgstr "Кімнату успішно оновлено"
 
-#: src/session/view/content/room_details/general_page.rs:1136
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Could not upgrade room"
 msgstr "Не вдалося оновити кімнату"
 
@@ -4019,14 +4018,54 @@ msgid "Default Power Level"
 msgstr "Типовий рівень повноважень"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:114
 msgid "Stable"
 msgstr "Стабільна"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:115
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
 msgid "Experimental"
 msgstr "Експериментальна"
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:196
+msgid ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creators will be demoted to the default power level."
+msgstr[0] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Інших авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[1] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Інших авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[2] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Інших авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[3] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Іншого автора буде"
+" звужено у правах до типового рівня доступу."
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:202
+msgid ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creators will be demoted to the default power level."
+msgstr[0] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Поточних авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[1] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Поточних авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[2] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Поточних авторів буде"
+" звужено у правах до типового рівня доступу."
+msgstr[3] ""
+"Після оновлення ви станете єдиним автором у кімнаті. Поточного автора буде"
+" звужено у правах до типового рівня доступу."
 
 #: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
@@ -4048,7 +4087,7 @@ msgid "Version"
 msgstr "Версія"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.ui:106
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:120
 msgid "Upgrade"
 msgstr "Оновити"
 
@@ -4283,7 +4322,7 @@ msgstr "Надіслано"
 msgid "Edited"
 msgstr "Змінено"
 
-#: src/session/view/content/room_history/message_row/mod.rs:245
+#: src/session/view/content/room_history/message_row/mod.rs:243
 msgid "Sent at {time}"
 msgstr "Надіслано {time}"
 
@@ -4308,6 +4347,12 @@ msgstr "Реакції"
 #: src/session/view/content/room_history/message_row/reply.ui:9
 msgid "In Reply To"
 msgstr "У відповідь на"
+
+#. Translators: This is a verb, as in 'Mention user'.
+#: src/session/view/content/room_history/message_row/sender_name.rs:188
+#| msgid "_Mention"
+msgid "Mention"
+msgstr "Згадка"
 
 #. Translators: this is the fallback title for an expander.
 #: src/session/view/content/room_history/message_row/text/widgets.rs:439
