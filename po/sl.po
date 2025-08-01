@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-29 01:25+0000\n"
-"PO-Revision-Date: 2025-07-29 10:53+0200\n"
+"POT-Creation-Date: 2025-07-31 20:08+0000\n"
+"PO-Revision-Date: 2025-08-01 12:38+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -594,8 +594,8 @@ msgstr "Zapusti"
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_details/general_page.rs:1033
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:116
+#: src/session/view/content/room_details/general_page.rs:1036
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:112
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
@@ -1869,7 +1869,7 @@ msgstr "Člani {room}"
 msgid "Any registered user"
 msgstr "Vsak registriran uporabnik"
 
-#: src/session/model/room/join_rule.rs:288 src/session/view/content/room_details/general_page.rs:939
+#: src/session/model/room/join_rule.rs:288 src/session/view/content/room_details/general_page.rs:942
 msgid "Unsupported rule"
 msgstr "Nepodprto pravilo"
 
@@ -2903,7 +2903,7 @@ msgid "Remove “{address}”"
 msgstr "Odstrani »{address}«"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:677 src/session/view/create_room_dialog.ui:132
+#: src/session/view/content/room_details/general_page.rs:680 src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "Glavni naslov"
 
@@ -3048,8 +3048,8 @@ msgstr "Opis"
 msgid "Save Description"
 msgstr "Shrani opis"
 
-#: src/session/view/content/room_details/general_page.rs:462
-#: src/session/view/content/room_details/general_page.rs:508
+#: src/session/view/content/room_details/general_page.rs:465
+#: src/session/view/content/room_details/general_page.rs:511
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
@@ -3058,71 +3058,71 @@ msgstr[1] "člani"
 msgstr[2] "člani"
 msgstr[3] "člani"
 
-#: src/session/view/content/room_details/general_page.rs:632
+#: src/session/view/content/room_details/general_page.rs:635
 msgid "Could not change notifications setting"
 msgstr "Nastavitve obvestil ni bilo mogoče spremeniti"
 
-#: src/session/view/content/room_details/general_page.rs:672
-#: src/session/view/content/room_details/general_page.rs:711
+#: src/session/view/content/room_details/general_page.rs:675
+#: src/session/view/content/room_details/general_page.rs:714
 msgid "Copy address"
 msgstr "Kopiraj naslov"
 
-#: src/session/view/content/room_details/general_page.rs:673
-#: src/session/view/content/room_details/general_page.rs:712
+#: src/session/view/content/room_details/general_page.rs:676
+#: src/session/view/content/room_details/general_page.rs:715
 msgid "Address copied to clipboard"
 msgstr "Naslov je kopiran v odložišče"
 
-#: src/session/view/content/room_details/general_page.rs:754
+#: src/session/view/content/room_details/general_page.rs:757
 msgid "Room link copied to clipboard"
 msgstr "Povezava do klepetalnice kopirana v odložišče"
 
-#: src/session/view/content/room_details/general_page.rs:815
+#: src/session/view/content/room_details/general_page.rs:818
 msgid "Could not change guest access"
 msgstr "Ni bilo mogoče spremeniti dostopa za goste"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:832
+#: src/session/view/content/room_details/general_page.rs:835
 msgid "Publish in the {homeserver} directory"
 msgstr "Objavi v imeniku {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:907
+#: src/session/view/content/room_details/general_page.rs:910
 msgid "Could not publish room in directory"
 msgstr "Klepetalnice ni bilo mogoče objaviti v imeniku"
 
-#: src/session/view/content/room_details/general_page.rs:909
+#: src/session/view/content/room_details/general_page.rs:912
 msgid "Could not unpublish room from directory"
 msgstr "Objave klepetalnice v imeniku ni bilo mogoče preklicati"
 
-#: src/session/view/content/room_details/general_page.rs:930
+#: src/session/view/content/room_details/general_page.rs:933
 #: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr "Kdorkoli, tudi če ni v klepetalnici"
 
-#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.rs:936
 #: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr "Samo člani, saj je bila ta možnost izbrana"
 
-#: src/session/view/content/room_details/general_page.rs:935
+#: src/session/view/content/room_details/general_page.rs:938
 #: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr "Samo člani, saj so bili povabljeni"
 
-#: src/session/view/content/room_details/general_page.rs:937
+#: src/session/view/content/room_details/general_page.rs:940
 #: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr "Samo člani, ker so se pridružili klepetalnici"
 
-#: src/session/view/content/room_details/general_page.rs:986
+#: src/session/view/content/room_details/general_page.rs:989
 msgid "Could not change who can read history"
 msgstr "Ni bilo mogoče spremeniti, kdo sme brati zgodovino"
 
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1031
 msgid "Enable Encryption?"
 msgstr "Želite omogočiti šifriranja?"
 
-#: src/session/view/content/room_details/general_page.rs:1029
+#: src/session/view/content/room_details/general_page.rs:1032
 msgid ""
 "Enabling encryption will prevent new members to read the history before they arrived. This cannot be "
 "disabled later."
@@ -3130,30 +3130,30 @@ msgstr ""
 "Če omogočite šifriranje, novi člani ne bodo mogli prebrati zgodovine pred svojo včlanitvijo. Tega "
 "pozneje ni možno onemogočiti."
 
-#: src/session/view/content/room_details/general_page.rs:1034 src/session/view/sidebar/mod.rs:320
+#: src/session/view/content/room_details/general_page.rs:1037 src/session/view/sidebar/mod.rs:320
 #: src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "Omogoči"
 
-#: src/session/view/content/room_details/general_page.rs:1045
+#: src/session/view/content/room_details/general_page.rs:1048
 msgid "Could not enable encryption"
 msgstr "Šifriranja ni bilo mogoče omogočiti"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1071
+#: src/session/view/content/room_details/general_page.rs:1107
 msgid "Federated"
 msgstr "Združeno"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1074
+#: src/session/view/content/room_details/general_page.rs:1110
 msgid "Not federated"
 msgstr "Ni združeno"
 
-#: src/session/view/content/room_details/general_page.rs:1105
+#: src/session/view/content/room_details/general_page.rs:1144
 msgid "Room upgraded successfully"
 msgstr "Klepetalnica uspešno nadgrajena"
 
-#: src/session/view/content/room_details/general_page.rs:1109
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Could not upgrade room"
 msgstr "Klepetalnice ni bilo mogoče nadgraditi"
 
@@ -3570,7 +3570,7 @@ msgstr "Preklopi iskanje članov klepetalnice"
 msgid "Search for room members"
 msgstr "Poišči člane klepetalnice"
 
-#: src/session/view/content/room_details/mod.rs:149
+#: src/session/view/content/room_details/mod.rs:150
 msgid "The user is not in the room members list anymore"
 msgstr "Uporabnika ni več na seznamu članov klepetalnice"
 
@@ -3680,7 +3680,8 @@ msgid "Change Server Access Control List"
 msgstr "Spremeni seznam za nadzor dostopa do strežnika"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:111
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:4
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:43
 msgid "Upgrade Room"
 msgstr "Nadgradi klepetalnico"
 
@@ -3710,20 +3711,51 @@ msgid "Default Power Level"
 msgstr "Privzeta raven moči"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:85
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:114
 msgid "Stable"
 msgstr "Stabilno"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:87
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
 msgid "Experimental"
 msgstr "Poskusno"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:94
-msgid "Version"
-msgstr "Različica"
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:196
+msgid ""
+"After the upgrade, you will be the only creator in the room. The other creator will be demoted to the "
+"default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The other creators will be demoted to the "
+"default power level."
+msgstr[0] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Drugi avtorji bodo degradirani na privzeto raven moči."
+msgstr[1] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Drug avtor bo degradiran na privzeto raven moči."
+msgstr[2] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Druga avtorja bosta degradirana na privzeto raven moči."
+msgstr[3] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Drugi avtorji bodo degradirani na privzeto raven moči."
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:202
+msgid ""
+"After the upgrade, you will be the only creator in the room. The current creator will be demoted to the "
+"default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The current creators will be demoted to "
+"the default power level."
+msgstr[0] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Trenutni avtorji bodo degradirani na privzeto raven "
+"moči."
+msgstr[1] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Trenutni avtor bo degradiran na privzeto raven moči."
+msgstr[2] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Trenutna avtorja bosta degradirana na privzeto raven "
+"moči."
+msgstr[3] ""
+"Po nadgradnji boste edini avtor v klepetalnici. Trenutni avtorji bodo degradirani na privzeto raven "
+"moči."
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new features from the Matrix "
 "specification. It can also be used to reset the room state, which should make the room faster to join. "
@@ -3735,8 +3767,12 @@ msgstr ""
 "klepetalnico hitreje pridružili. Vendar pa je to treba uporabljati zmerno, ker je lahko moteče, saj se "
 "morajo člani klepetalnice ročno pridružiti novi klepetalnici."
 
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:74
+msgid "Version"
+msgstr "Različica"
+
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:120
 msgid "Upgrade"
 msgstr "Nadgradi"
 
@@ -3964,7 +4000,7 @@ msgstr "Poslano"
 msgid "Edited"
 msgstr "Urejeno"
 
-#: src/session/view/content/room_history/message_row/mod.rs:245
+#: src/session/view/content/room_history/message_row/mod.rs:243
 msgid "Sent at {time}"
 msgstr "Poslano {time}"
 
@@ -3989,6 +4025,11 @@ msgstr "Odzivi"
 #: src/session/view/content/room_history/message_row/reply.ui:9
 msgid "In Reply To"
 msgstr "Odgovor na"
+
+#. Translators: This is a verb, as in 'Mention user'.
+#: src/session/view/content/room_history/message_row/sender_name.rs:188
+msgid "Mention"
+msgstr "Omeni"
 
 #. Translators: this is the fallback title for an expander.
 #: src/session/view/content/room_history/message_row/text/widgets.rs:439
