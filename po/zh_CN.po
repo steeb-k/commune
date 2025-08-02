@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-28 17:58+0000\n"
-"PO-Revision-Date: 2025-07-29 09:23+0800\n"
+"POT-Creation-Date: 2025-08-01 15:53+0000\n"
+"PO-Revision-Date: 2025-08-02 08:09+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -637,8 +637,8 @@ msgstr "离开"
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_details/general_page.rs:1033
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:116
+#: src/session/view/content/room_details/general_page.rs:1036
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:112
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
@@ -1938,7 +1938,7 @@ msgid "Any registered user"
 msgstr "任何注册的用户"
 
 #: src/session/model/room/join_rule.rs:288
-#: src/session/view/content/room_details/general_page.rs:939
+#: src/session/view/content/room_details/general_page.rs:942
 msgid "Unsupported rule"
 msgstr "不支持的规则"
 
@@ -2978,7 +2978,7 @@ msgid "Remove “{address}”"
 msgstr "移除“{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:677
+#: src/session/view/content/room_details/general_page.rs:680
 #: src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "主地址"
@@ -3124,107 +3124,107 @@ msgstr "说明"
 msgid "Save Description"
 msgstr "保存说明"
 
-#: src/session/view/content/room_details/general_page.rs:462
-#: src/session/view/content/room_details/general_page.rs:508
+#: src/session/view/content/room_details/general_page.rs:465
+#: src/session/view/content/room_details/general_page.rs:511
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "成员"
 
-#: src/session/view/content/room_details/general_page.rs:632
+#: src/session/view/content/room_details/general_page.rs:635
 msgid "Could not change notifications setting"
 msgstr "无法更改通知设置"
 
-#: src/session/view/content/room_details/general_page.rs:672
-#: src/session/view/content/room_details/general_page.rs:711
+#: src/session/view/content/room_details/general_page.rs:675
+#: src/session/view/content/room_details/general_page.rs:714
 msgid "Copy address"
 msgstr "复制地址"
 
-#: src/session/view/content/room_details/general_page.rs:673
-#: src/session/view/content/room_details/general_page.rs:712
+#: src/session/view/content/room_details/general_page.rs:676
+#: src/session/view/content/room_details/general_page.rs:715
 msgid "Address copied to clipboard"
 msgstr "地址已复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page.rs:754
+#: src/session/view/content/room_details/general_page.rs:757
 msgid "Room link copied to clipboard"
 msgstr "聊天室链接已复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page.rs:815
+#: src/session/view/content/room_details/general_page.rs:818
 msgid "Could not change guest access"
 msgstr "无法更改访客访问权限"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:832
+#: src/session/view/content/room_details/general_page.rs:835
 msgid "Publish in the {homeserver} directory"
 msgstr "公布在 {homeserver} 目录"
 
-#: src/session/view/content/room_details/general_page.rs:907
+#: src/session/view/content/room_details/general_page.rs:910
 msgid "Could not publish room in directory"
 msgstr "无法在目录公布聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:909
+#: src/session/view/content/room_details/general_page.rs:912
 msgid "Could not unpublish room from directory"
 msgstr "无法从目录撤下聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:930
+#: src/session/view/content/room_details/general_page.rs:933
 #: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr "任何人，即使他们未加入聊天室"
 
-#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.rs:936
 #: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr "仅成员，在选择该选项之后"
 
-#: src/session/view/content/room_details/general_page.rs:935
+#: src/session/view/content/room_details/general_page.rs:938
 #: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr "仅成员，在他们被邀请之后"
 
-#: src/session/view/content/room_details/general_page.rs:937
+#: src/session/view/content/room_details/general_page.rs:940
 #: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr "仅成员，在他们加入聊天室后"
 
-#: src/session/view/content/room_details/general_page.rs:986
+#: src/session/view/content/room_details/general_page.rs:989
 msgid "Could not change who can read history"
 msgstr "无法更改历史查阅权限"
 
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1031
 msgid "Enable Encryption?"
 msgstr "启用加密吗？"
 
-#: src/session/view/content/room_details/general_page.rs:1029
+#: src/session/view/content/room_details/general_page.rs:1032
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
 msgstr "启用加密将阻止新成员在到达聊天室前查阅聊天历史。该选项无法在随后禁用。"
 
-#: src/session/view/content/room_details/general_page.rs:1034
+#: src/session/view/content/room_details/general_page.rs:1037
 #: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "启用"
 
-#: src/session/view/content/room_details/general_page.rs:1045
+#: src/session/view/content/room_details/general_page.rs:1048
 msgid "Could not enable encryption"
 msgstr "无法启用加密"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1071
+#: src/session/view/content/room_details/general_page.rs:1107
 msgid "Federated"
 msgstr "联合的"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1074
+#: src/session/view/content/room_details/general_page.rs:1110
 msgid "Not federated"
 msgstr "未联合"
 
-#: src/session/view/content/room_details/general_page.rs:1105
+#: src/session/view/content/room_details/general_page.rs:1144
 msgid "Room upgraded successfully"
 msgstr "聊天室已成功升级"
 
-#: src/session/view/content/room_details/general_page.rs:1109
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Could not upgrade room"
 msgstr "无法升级聊天室"
 
@@ -3621,7 +3621,7 @@ msgstr "切换聊天室成员搜索"
 msgid "Search for room members"
 msgstr "搜索聊天室成员"
 
-#: src/session/view/content/room_details/mod.rs:149
+#: src/session/view/content/room_details/mod.rs:150
 msgid "The user is not in the room members list anymore"
 msgstr "该用户不再在聊天室成员列表中"
 
@@ -3732,7 +3732,8 @@ msgid "Change Server Access Control List"
 msgstr "更改服务器访问控制列表"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:111
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:4
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:43
 msgid "Upgrade Room"
 msgstr "升级聊天室"
 
@@ -3762,20 +3763,38 @@ msgid "Default Power Level"
 msgstr "默认权力等级"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:85
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:114
 msgid "Stable"
 msgstr "稳定版"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:87
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
 msgid "Experimental"
 msgstr "体验版"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:94
-msgid "Version"
-msgstr "版本"
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:196
+msgid ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creators will be demoted to the default power level."
+msgstr[0] ""
+"升级之后，您将成为该聊天室中唯一的创建者。其他创建者将被降级为默认的权力级"
+"别。"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:202
+msgid ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creators will be demoted to the default power level."
+msgstr[0] ""
+"升级之后，您将成为该聊天室中唯一的创建者。当前的创建者将被降级为默认的权力级"
+"别。"
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new "
 "features from the Matrix specification. It can also be used to reset the "
@@ -3787,8 +3806,12 @@ msgstr ""
 "态，可使加入聊天室速度更快。然而由于其可能引起混乱应保守使用，因为聊天室成员"
 "需要手动加入新聊天室。"
 
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:74
+msgid "Version"
+msgstr "版本"
+
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:120
 msgid "Upgrade"
 msgstr "升级"
 
@@ -4018,7 +4041,7 @@ msgstr "已发送"
 msgid "Edited"
 msgstr "已编辑"
 
-#: src/session/view/content/room_history/message_row/mod.rs:245
+#: src/session/view/content/room_history/message_row/mod.rs:243
 msgid "Sent at {time}"
 msgstr "在 {time} 发送"
 
@@ -4040,6 +4063,11 @@ msgstr "回应"
 #: src/session/view/content/room_history/message_row/reply.ui:9
 msgid "In Reply To"
 msgstr "在回复中"
+
+#. Translators: This is a verb, as in 'Mention user'.
+#: src/session/view/content/room_history/message_row/sender_name.rs:188
+msgid "Mention"
+msgstr "提到"
 
 #. Translators: this is the fallback title for an expander.
 #: src/session/view/content/room_history/message_row/text/widgets.rs:439
