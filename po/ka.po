@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-07-19 15:51+0000\n"
-"PO-Revision-Date: 2025-07-20 04:48+0200\n"
+"POT-Creation-Date: 2025-08-02 00:11+0000\n"
+"PO-Revision-Date: 2025-08-06 01:19+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <ka@li.org>\n"
 "Language: ka\n"
@@ -18,24 +18,24 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.6\n"
 
-#: data/org.gnome.Fractal.desktop.in.in:3
+#: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
 #: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "ფრაქტალი"
 
-#: data/org.gnome.Fractal.desktop.in.in:4
+#: data/org.gnome.Fractal.desktop.in.in:3
 msgid ""
 "Fractal is a decentralized, secure messaging client for collaborative group "
 "communication."
 msgstr ""
 
-#: data/org.gnome.Fractal.desktop.in.in:5
+#: data/org.gnome.Fractal.desktop.in.in:4
 msgid "Fractal group messaging"
 msgstr ""
 
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
-#: data/org.gnome.Fractal.desktop.in.in:14
+#: data/org.gnome.Fractal.desktop.in.in:13
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;element;"
 msgstr ""
 
@@ -134,7 +134,7 @@ msgstr "აირჩიეთ ანგარიში"
 msgid "Select the account you want to open the URI with"
 msgstr ""
 
-#: src/account_switcher/account_switcher_button.ui:26
+#: src/account_switcher/account_switcher_button.ui:24
 msgid "Switch Accounts"
 msgstr "ანგარიშების გადართვა"
 
@@ -147,24 +147,24 @@ msgstr "_ანგარიშის დამატება"
 msgid "Account Settings"
 msgstr "ანგარიშის მორგება"
 
-#: src/application.rs:253
+#: src/application.rs:245
 msgid "The Fractal Team"
 msgstr "Fractal-ის გუნდი"
 
-#: src/application.rs:259
+#: src/application.rs:251
 msgid "© The Fractal Team"
 msgstr "© Fractal-ის გუნდი"
 
-#: src/application.rs:273
+#: src/application.rs:265
 msgid "translator-credits"
 msgstr "თემური დოღონაძე"
 
 #. This can't be added via the builder
-#: src/application.rs:277
+#: src/application.rs:269
 msgid "Name by"
 msgstr "სახელის ავტორი"
 
-#: src/application.rs:391
+#: src/application.rs:383
 msgid "Session not found"
 msgstr "სესია ვერ ვიპოვე"
 
@@ -262,16 +262,16 @@ msgstr ""
 #: src/components/crypto/identity_setup_view.rs:384
 #: src/identity_verification_view/cancelled_page.rs:195
 msgid "Could not send a new verification request"
-msgstr ""
+msgstr "ახალი გადამოწმების მოთხოვნის გაგზავნა შეუძლებელია"
 
 #: src/components/crypto/identity_setup_view.rs:436
 msgid "Could not create the crypto identity"
-msgstr ""
+msgstr "კრიპტოგრაფიის იდენტიფიკატორის შექმნა შეუძლებელია"
 
 #: src/components/crypto/identity_setup_view.ui:9
 #: src/components/crypto/identity_setup_view.ui:35
 msgid "Verify Your New Session"
-msgstr ""
+msgstr "გადაამოწმეთ თქვენი ახალი სესია"
 
 #: src/components/crypto/identity_setup_view.ui:46
 msgid ""
@@ -281,7 +281,7 @@ msgstr ""
 
 #: src/components/crypto/identity_setup_view.ui:55
 msgid "Verify With Another Session"
-msgstr ""
+msgstr "გადამოწმება სხვა სესიით"
 
 #: src/components/crypto/identity_setup_view.ui:65
 msgid "No other devices logged into this account?"
@@ -382,7 +382,7 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:293
 msgid "Could not access recovery data"
-msgstr ""
+msgstr "აღდგენის მონაცემებთან წვდომა შეუძლებელია"
 
 #: src/components/crypto/recovery_setup_view.rs:344
 msgid "Could not reset the crypto identity"
@@ -550,7 +550,7 @@ msgstr "_დასტური"
 
 #: src/components/dialogs/auth/mod.rs:308
 msgid "The password is invalid."
-msgstr ""
+msgstr "პაროლი არასწორია."
 
 #: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
@@ -563,7 +563,7 @@ msgstr ""
 #. We are rejecting an invite.
 #: src/components/dialogs/message_dialogs.rs:24
 msgid "Decline Invite?"
-msgstr ""
+msgstr "უარვყო მოწვევა?"
 
 #: src/components/dialogs/message_dialogs.rs:27
 msgid ""
@@ -586,7 +586,7 @@ msgstr "უარყოფა"
 #. We are leaving a room that was joined.
 #: src/components/dialogs/message_dialogs.rs:39
 msgid "Leave Room?"
-msgstr ""
+msgstr "გახვალთ ოთახიდან?"
 
 #: src/components/dialogs/message_dialogs.rs:41
 msgid "Do you really want to leave this room? You can come back later."
@@ -611,8 +611,8 @@ msgstr "გასვლა"
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_details/general_page.rs:1033
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:116
+#: src/session/view/content/room_details/general_page.rs:1036
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:112
 #: src/session/view/content/room_history/event_actions/group.rs:583
 #: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
@@ -632,7 +632,7 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:132
 msgid "Ban {user}?"
-msgstr ""
+msgstr "დავბანო {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -672,15 +672,15 @@ msgid ""
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:168
-#: src/components/user_page.rs:387
+#: src/components/user_page.rs:390
 msgid "Revoke Invite"
-msgstr ""
+msgstr "მოწვევის გაუქმება"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:175
 msgid "Deny Access to {user}?"
-msgstr ""
+msgstr "უკრძალავთ წვდომას მომხმარებელს {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -694,7 +694,7 @@ msgstr "წვდომის უარყოფა"
 
 #: src/components/dialogs/message_dialogs.rs:191
 msgid "Kick {user}?"
-msgstr ""
+msgstr "გააგდებთ მომხმარებელს {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -715,7 +715,7 @@ msgstr ""
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
 #: src/components/dialogs/message_dialogs.rs:207
-#: src/components/user_page.rs:390
+#: src/components/user_page.rs:393
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "გაგდება"
@@ -845,7 +845,7 @@ msgstr "გაუქმება"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:157
+#: src/utils/matrix/media_message.rs:175
 msgid "Save"
 msgstr "შენახვა"
 
@@ -854,7 +854,7 @@ msgstr "შენახვა"
 #: src/components/dialogs/room_preview.rs:239
 #: src/components/dialogs/room_preview.rs:347
 #: src/session/view/content/explore/public_room_row.rs:182
-#: src/session/view/content/room_history/message_toolbar/mod.rs:364
+#: src/session/view/content/room_history/message_toolbar/mod.rs:363
 #: src/session/view/content/room_history/mod.ui:169
 #: src/session/view/content/room_history/state/creation.ui:20
 msgid "View"
@@ -879,7 +879,7 @@ msgstr ""
 #: src/session/view/content/explore/public_room_row.rs:161
 msgid "1 member"
 msgid_plural "{n} members"
-msgstr[0] ""
+msgstr[0] "{n} წევრი"
 
 #: src/components/dialogs/room_preview.rs:349
 #: src/session/view/content/explore/public_room_row.rs:187
@@ -888,7 +888,7 @@ msgstr "მოსაწვევის მოთხოვნა"
 
 #: src/components/dialogs/room_preview.rs:351
 #: src/session/view/content/explore/public_room_row.rs:195
-#: src/session/view/content/room_history/message_toolbar/mod.rs:366
+#: src/session/view/content/room_history/message_toolbar/mod.rs:365
 msgid "Join"
 msgstr "შეერთება"
 
@@ -953,7 +953,7 @@ msgstr ""
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:72
+#: src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "მომხმარებლის"
 
@@ -961,137 +961,150 @@ msgstr "მომხმარებლის"
 msgid "Confirm Custom Role"
 msgstr ""
 
-#: src/components/user_page.rs:253
+#: src/components/power_level_selection/row.ui:101
+msgid "More Information"
+msgstr "მეტი ინფორმაცია"
+
+#: src/components/power_level_selection/row.ui:119
+msgid ""
+"Creator is an immutable role that can be attributed to several users when "
+"creating a room. Creators always have a higher power level than any other "
+"room members, except other creators, and have the permission to do anything "
+"in the room. The only way to demote a creator is to replace the current room "
+"with another one with a different creator, by upgrading the room for example."
+msgstr ""
+
+#: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.ui:60
-#: src/session/view/content/room_history/sender_avatar/mod.rs:79
+#: src/session/view/content/room_history/sender_avatar/mod.rs:82
 msgid "Matrix user ID copied to clipboard"
 msgstr ""
 
-#: src/components/user_page.rs:280
+#: src/components/user_page.rs:283
 msgid "Open Direct Chat"
 msgstr ""
 
-#: src/components/user_page.rs:282
+#: src/components/user_page.rs:285
 msgid "Create Direct Chat"
 msgstr ""
 
-#: src/components/user_page.rs:302
-#: src/session/view/content/room_history/sender_avatar/mod.rs:544
+#: src/components/user_page.rs:305
+#: src/session/view/content/room_history/sender_avatar/mod.rs:547
 #: src/session/view/create_direct_chat_dialog/mod.rs:190
 msgid "Could not create a new Direct Chat"
 msgstr ""
 
-#: src/components/user_page.rs:333
+#: src/components/user_page.rs:336
 msgid "In {room_name}"
 msgstr ""
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:344
+#: src/components/user_page.rs:347
 msgctxt "member"
 msgid "Invited"
 msgstr "მოწვეულია"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:348
+#: src/components/user_page.rs:351
 msgctxt "member"
 msgid "Banned"
-msgstr ""
+msgstr "ბანი ადევს"
 
 #. Translators: As in, 'The room member requested an invite'.
-#: src/components/user_page.rs:352
+#: src/components/user_page.rs:355
 msgctxt "member"
 msgid "Requested an Invite"
 msgstr "მოსაწვევი მოთხოვნილია"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:356
+#: src/components/user_page.rs:359
 msgctxt "member"
 msgid "Unknown"
 msgstr "უცნობი"
 
-#: src/components/user_page.rs:388
+#: src/components/user_page.rs:391
 msgid "Deny Request"
 msgstr "მოთხოვნის უარყოფა"
 
-#: src/components/user_page.rs:489
+#: src/components/user_page.rs:499
 msgid "Could not change the role"
-msgstr ""
+msgstr "როლის შეცვლა შეუძლებელია"
 
-#: src/components/user_page.rs:510
-#: src/session/view/content/room_history/sender_avatar/mod.rs:568
+#: src/components/user_page.rs:520
+#: src/session/view/content/room_history/sender_avatar/mod.rs:571
 msgid "Could not invite user"
-msgstr ""
+msgstr "მომხმარებლის მოწვევა შეუძლებელია"
 
-#: src/components/user_page.rs:544
+#: src/components/user_page.rs:554
 #: src/session/view/content/room_history/event_actions/group.rs:721
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
+#: src/session/view/content/room_history/sender_avatar/mod.rs:604
 msgid "Could not revoke invite of user"
-msgstr ""
+msgstr "მომხმარებლის მოწვევის გაუქმება შეუძლებელია"
 
-#: src/components/user_page.rs:545
+#: src/components/user_page.rs:555
 msgid "Could not deny access to user"
-msgstr ""
+msgstr "მომხმარებლისთვის წვდომის აკრძალვა შეუძლებელია"
 
-#: src/components/user_page.rs:546
-#: src/session/view/content/room_history/sender_avatar/mod.rs:602
+#: src/components/user_page.rs:556
+#: src/session/view/content/room_history/sender_avatar/mod.rs:605
 msgid "Could not kick user"
-msgstr ""
+msgstr "მომხმარებლის გაგდება შეუძლებელია"
 
-#: src/components/user_page.rs:592
-#: src/session/view/content/room_history/sender_avatar/mod.rs:688
+#: src/components/user_page.rs:602
+#: src/session/view/content/room_history/sender_avatar/mod.rs:696
 msgid "Could not ban user"
-msgstr ""
+msgstr "მომხმარებლისთვის ბანის დადება შეუძლებელია"
 
-#: src/components/user_page.rs:623
-#: src/session/view/content/room_history/sender_avatar/mod.rs:709
+#: src/components/user_page.rs:633
+#: src/session/view/content/room_history/sender_avatar/mod.rs:717
 msgid "Could not unban user"
-msgstr ""
+msgstr "მომხმარებლისთვის ბანის მოხსნა შეუძლებელია"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:671
-#: src/session/view/content/room_history/sender_avatar/mod.rs:764
+#: src/components/user_page.rs:681
+#: src/session/view/content/room_history/sender_avatar/mod.rs:772
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] ""
 
-#: src/components/user_page.rs:687
+#: src/components/user_page.rs:697
 msgid "Identity verified"
 msgstr ""
 
-#: src/components/user_page.rs:694
+#: src/components/user_page.rs:704
 msgid "Identity not verified"
 msgstr ""
 
-#: src/components/user_page.rs:709
+#: src/components/user_page.rs:719
 msgid "Could not start user verification"
 msgstr ""
 
-#: src/components/user_page.rs:734
+#: src/components/user_page.rs:744
 msgid "Ignored"
 msgstr "იგნორირებულია"
 
-#: src/components/user_page.rs:736
+#: src/components/user_page.rs:746
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr ""
 
-#: src/components/user_page.rs:739
+#: src/components/user_page.rs:749
 msgid "Not Ignored"
 msgstr ""
 
-#: src/components/user_page.rs:740
+#: src/components/user_page.rs:750
 msgid "Ignore"
 msgstr "გამოტოვება"
 
-#: src/components/user_page.rs:757
+#: src/components/user_page.rs:767
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs:85
-#: src/session/view/content/room_history/sender_avatar/mod.rs:790
+#: src/session/view/content/room_history/sender_avatar/mod.rs:798
 msgid "Could not stop ignoring user"
 msgstr ""
 
-#: src/components/user_page.rs:760 src/session/view/content/invite.rs:290
-#: src/session/view/content/room_history/sender_avatar/mod.rs:793
+#: src/components/user_page.rs:770 src/session/view/content/invite.rs:290
+#: src/session/view/content/room_history/sender_avatar/mod.rs:801
 #: src/session/view/sidebar/row.rs:766
 msgid "Could not ignore user"
 msgstr ""
@@ -1624,8 +1637,8 @@ msgstr ""
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr ""
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324
-#: src/login/mod.rs:370 src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321
+#: src/login/mod.rs:367 src/login/mod.rs:384
 msgid "Could not set up login"
 msgstr "შესვლის მორგება შეუძლებელია"
 
@@ -1685,15 +1698,15 @@ msgstr "პაროლი"
 msgid "Single Sign-On Providers"
 msgstr ""
 
-#: src/login/mod.rs:456
+#: src/login/mod.rs:453
 msgid "Could not store session"
 msgstr ""
 
-#: src/login/mod.rs:585
+#: src/login/mod.rs:582
 msgid "Authorization Completed"
 msgstr "ავტორიზაცია დასრულდა"
 
-#: src/login/mod.rs:587
+#: src/login/mod.rs:584
 msgid ""
 "The authorization step is complete. You can close this page and go back to "
 "Fractal."
@@ -1715,7 +1728,7 @@ msgstr "საუბრის დაწყება"
 msgid "Session Setup"
 msgstr ""
 
-#: src/login/session_setup_view.ui:43 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.ui:63
 msgid "Fetching Account Data…"
 msgstr "ანგარიშის მონაცემების გამოთხოვა…"
 
@@ -1879,42 +1892,46 @@ msgid "Any registered user"
 msgstr ""
 
 #: src/session/model/room/join_rule.rs:288
-#: src/session/view/content/room_details/general_page.rs:939
+#: src/session/view/content/room_details/general_page.rs:942
 msgid "Unsupported rule"
 msgstr ""
 
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:393
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room (was {user})"
 msgstr ""
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:396
+#: src/session/model/room/mod.rs:389
 msgid "Empty Room"
 msgstr ""
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:406
+#: src/session/model/room/mod.rs:399
 msgid "Unknown"
 msgstr "უცნობი"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:70
+#: src/session/model/room/permissions.rs:64
 msgid "Default"
 msgstr "ნაგულისხმევი"
 
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:67
 msgid "Moderator"
 msgstr "მოდერატორი"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:68
 msgid "Admin"
 msgstr "ადმინისტრატორი"
 
+#: src/session/model/room/permissions.rs:69
+msgid "Creator"
+msgstr "შემქმნელი"
+
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:76
+#: src/session/model/room/permissions.rs:71
 msgid "Muted"
 msgstr "დადუმებული"
 
@@ -2110,7 +2127,7 @@ msgid "Import Encryption Keys From…"
 msgstr ""
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:182
+#: src/utils/matrix/media_message.rs:200
 msgid "Could not access file"
 msgstr ""
 
@@ -2900,7 +2917,7 @@ msgid "Remove “{address}”"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:677
+#: src/session/view/content/room_details/general_page.rs:680
 #: src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr ""
@@ -3042,107 +3059,107 @@ msgstr "აღწერა"
 msgid "Save Description"
 msgstr "აღწერის შენახვა"
 
-#: src/session/view/content/room_details/general_page.rs:462
-#: src/session/view/content/room_details/general_page.rs:508
+#: src/session/view/content/room_details/general_page.rs:465
+#: src/session/view/content/room_details/general_page.rs:511
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "წევრი"
 
-#: src/session/view/content/room_details/general_page.rs:632
+#: src/session/view/content/room_details/general_page.rs:635
 msgid "Could not change notifications setting"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:672
-#: src/session/view/content/room_details/general_page.rs:711
+#: src/session/view/content/room_details/general_page.rs:675
+#: src/session/view/content/room_details/general_page.rs:714
 msgid "Copy address"
 msgstr "მისამართის კოპირება"
 
-#: src/session/view/content/room_details/general_page.rs:673
-#: src/session/view/content/room_details/general_page.rs:712
+#: src/session/view/content/room_details/general_page.rs:676
+#: src/session/view/content/room_details/general_page.rs:715
 msgid "Address copied to clipboard"
 msgstr "მისამართი დაკოპირდა ბუფერში"
 
-#: src/session/view/content/room_details/general_page.rs:754
+#: src/session/view/content/room_details/general_page.rs:757
 msgid "Room link copied to clipboard"
 msgstr "ოთახის ბმული დაკოპირდა ბუფერში"
 
-#: src/session/view/content/room_details/general_page.rs:815
+#: src/session/view/content/room_details/general_page.rs:818
 msgid "Could not change guest access"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:832
+#: src/session/view/content/room_details/general_page.rs:835
 msgid "Publish in the {homeserver} directory"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:907
+#: src/session/view/content/room_details/general_page.rs:910
 msgid "Could not publish room in directory"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:909
+#: src/session/view/content/room_details/general_page.rs:912
 msgid "Could not unpublish room from directory"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:930
+#: src/session/view/content/room_details/general_page.rs:933
 #: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.rs:936
 #: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:935
+#: src/session/view/content/room_details/general_page.rs:938
 #: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:937
+#: src/session/view/content/room_details/general_page.rs:940
 #: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:986
+#: src/session/view/content/room_details/general_page.rs:989
 msgid "Could not change who can read history"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1031
 msgid "Enable Encryption?"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:1029
+#: src/session/view/content/room_details/general_page.rs:1032
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:1034
+#: src/session/view/content/room_details/general_page.rs:1037
 #: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "ჩართვა"
 
-#: src/session/view/content/room_details/general_page.rs:1045
+#: src/session/view/content/room_details/general_page.rs:1048
 msgid "Could not enable encryption"
 msgstr ""
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1071
+#: src/session/view/content/room_details/general_page.rs:1107
 msgid "Federated"
 msgstr ""
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1074
+#: src/session/view/content/room_details/general_page.rs:1110
 msgid "Not federated"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:1105
+#: src/session/view/content/room_details/general_page.rs:1144
 msgid "Room upgraded successfully"
 msgstr ""
 
-#: src/session/view/content/room_details/general_page.rs:1109
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Could not upgrade room"
 msgstr ""
 
@@ -3331,12 +3348,12 @@ msgstr "ფაილის გახსნა"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:155
+#: src/utils/matrix/media_message.rs:173
 msgid "Save File"
 msgstr "ფაილის შენახვა"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:174
+#: src/utils/matrix/media_message.rs:192
 msgid "Could not save file"
 msgstr "ფაილის შენახვა შეუძლებელია"
 
@@ -3496,6 +3513,7 @@ msgid_plural "Banned Room Members"
 msgstr[0] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:404
+#: src/session/view/content/room_details/permissions/members_subpage.ui:52
 msgid "No Room Members"
 msgstr ""
 
@@ -3537,7 +3555,7 @@ msgstr ""
 msgid "Search for room members"
 msgstr ""
 
-#: src/session/view/content/room_details/mod.rs:149
+#: src/session/view/content/room_details/mod.rs:150
 msgid "The user is not in the room members list anymore"
 msgstr ""
 
@@ -3567,17 +3585,26 @@ msgstr ""
 msgid "No room members matching the search were found"
 msgstr ""
 
+#: src/session/view/content/room_details/permissions/members_subpage.rs:195
+msgid "There are no room members with assigned power levels in this room"
+msgstr ""
+
+#: src/session/view/content/room_details/permissions/members_subpage.rs:197
+msgid ""
+"There are no room members with assigned power levels matching the search"
+msgstr ""
+
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
 msgid "Members With Assigned Power Levels"
 msgstr ""
 
-#: src/session/view/content/room_details/permissions/members_subpage.ui:83
+#: src/session/view/content/room_details/permissions/members_subpage.ui:105
 msgid "Add"
 msgstr "დამატება"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:575
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:585
 msgid "Could not save permissions"
 msgstr ""
 
@@ -3639,7 +3666,8 @@ msgid "Change Server Access Control List"
 msgstr ""
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:111
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:4
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:43
 msgid "Upgrade Room"
 msgstr "ოთახის გაუმჯობესება"
 
@@ -3669,20 +3697,34 @@ msgid "Default Power Level"
 msgstr ""
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:85
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:114
 msgid "Stable"
 msgstr "სტაბილური"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:87
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
 msgid "Experimental"
 msgstr "ექსპერიმენტული"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:94
-msgid "Version"
-msgstr "ვერსია"
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:196
+msgid ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creators will be demoted to the default power level."
+msgstr[0] ""
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:202
+msgid ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creators will be demoted to the default power level."
+msgstr[0] ""
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new "
 "features from the Matrix specification. It can also be used to reset the "
@@ -3691,8 +3733,12 @@ msgid ""
 "the new room manually."
 msgstr ""
 
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:74
+msgid "Version"
+msgstr "ვერსია"
+
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:120
 msgid "Upgrade"
 msgstr "გაუმჯობესება"
 
@@ -3843,7 +3889,7 @@ msgid "Could not discard message"
 msgstr ""
 
 #: src/session/view/content/room_history/event_actions/group.rs:716
-#: src/session/view/content/room_history/sender_avatar/mod.rs:592
+#: src/session/view/content/room_history/sender_avatar/mod.rs:595
 msgid "Revoking invite…"
 msgstr ""
 
@@ -3920,7 +3966,7 @@ msgstr "გაგზავნილია"
 msgid "Edited"
 msgstr "ჩასწორებულია"
 
-#: src/session/view/content/room_history/message_row/mod.rs:245
+#: src/session/view/content/room_history/message_row/mod.rs:243
 msgid "Sent at {time}"
 msgstr ""
 
@@ -3942,6 +3988,11 @@ msgstr "რეაქციები"
 #: src/session/view/content/room_history/message_row/reply.ui:9
 msgid "In Reply To"
 msgstr ""
+
+#. Translators: This is a verb, as in 'Mention user'.
+#: src/session/view/content/room_history/message_row/sender_name.rs:188
+msgid "Mention"
+msgstr "ხსენება"
 
 #. Translators: this is the fallback title for an expander.
 #: src/session/view/content/room_history/message_row/text/widgets.rs:439
@@ -4002,61 +4053,61 @@ msgstr ""
 msgid "Room Member Mention Auto-completion"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:354
+#: src/session/view/content/room_history/message_toolbar/mod.rs:353
 msgid "The conversation continues in a new room"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:356
+#: src/session/view/content/room_history/message_toolbar/mod.rs:355
 msgid "The conversation has ended"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:518
+#: src/session/view/content/room_history/message_toolbar/mod.rs:517
 msgid "Reply to {user}"
 msgstr ""
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:536
+#: src/session/view/content/room_history/message_toolbar/mod.rs:535
 msgctxt "room-history"
 msgid "Edit"
 msgstr "ჩასწორება"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:708
+#: src/session/view/content/room_history/message_toolbar/mod.rs:704
 msgid "Could not send reply"
 msgstr "პასუხის გაგზავნა შეუძლებელია"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:724
+#: src/session/view/content/room_history/message_toolbar/mod.rs:720
 msgid "Could not send edit"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:735
+#: src/session/view/content/room_history/message_toolbar/mod.rs:731
 msgid "Could not send message"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:781
+#: src/session/view/content/room_history/message_toolbar/mod.rs:777
 msgid "Your Location"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:842
+#: src/session/view/content/room_history/message_toolbar/mod.rs:838
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:864
+#: src/session/view/content/room_history/message_toolbar/mod.rs:860
 msgid "Could not send location"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:871
+#: src/session/view/content/room_history/message_toolbar/mod.rs:867
 msgid "The location request has been cancelled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:872
+#: src/session/view/content/room_history/message_toolbar/mod.rs:868
 msgid "The location services are disabled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:873
+#: src/session/view/content/room_history/message_toolbar/mod.rs:869
 msgid "Could not retrieve current location"
 msgstr ""
 
@@ -4140,37 +4191,37 @@ msgstr ""
 msgid "%B %-e at %H:%M"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:386
+#: src/session/view/content/room_history/mod.rs:423
 msgid "Error getting file from drop"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:967
+#: src/session/view/content/room_history/mod.rs:1031
 #: src/session/view/sidebar/row.rs:744
 msgid "Could not leave {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:990
+#: src/session/view/content/room_history/mod.rs:1054
 #: src/session/view/sidebar/row.rs:733
 msgid "Could not join {room}"
 msgstr "{room}-ში შესვლა შეუძლებელია"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1007
+#: src/session/view/content/room_history/mod.rs:1071
 #: src/session/view/sidebar/row.rs:777
 msgid "Could not forget {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1051
+#: src/session/view/content/room_history/mod.rs:1115
 msgid "There is a pending invite request"
 msgid_plural "There are {n} pending invite requests"
 msgstr[0] ""
 
-#: src/session/view/content/room_history/mod.rs:1075
+#: src/session/view/content/room_history/mod.rs:1139
 msgid "Sender Context Menu"
 msgstr ""
 
@@ -4281,70 +4332,70 @@ msgstr[0] ""
 msgid "Seen by {name}"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:101
+#: src/session/view/content/room_history/sender_avatar/mod.rs:104
 msgid "Link copied to clipboard"
 msgstr "ბმული დაკოპირებულია"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:304
+#: src/session/view/content/room_history/sender_avatar/mod.rs:307
 msgid "{user}’s avatar"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:539
+#: src/session/view/content/room_history/sender_avatar/mod.rs:542
 msgid "Creating a new Direct Chat…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:563
+#: src/session/view/content/room_history/sender_avatar/mod.rs:566
 msgid "Inviting user…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:593
+#: src/session/view/content/room_history/sender_avatar/mod.rs:596
 msgid "Kicking user…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:628
+#: src/session/view/content/room_history/sender_avatar/mod.rs:636
 msgid "Muting member…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:632
+#: src/session/view/content/room_history/sender_avatar/mod.rs:640
 msgid "Unmuting member…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:643
+#: src/session/view/content/room_history/sender_avatar/mod.rs:651
 msgid "Member muted"
 msgstr "წევრი დადუმებულია"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:645
+#: src/session/view/content/room_history/sender_avatar/mod.rs:653
 msgid "Member unmuted"
 msgstr "წევრის დადუმება მოიხსნა"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:648
+#: src/session/view/content/room_history/sender_avatar/mod.rs:656
 msgid "Could not mute member"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:650
+#: src/session/view/content/room_history/sender_avatar/mod.rs:658
 msgid "Could not unmute member"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:679
+#: src/session/view/content/room_history/sender_avatar/mod.rs:687
 msgid "Banning user…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:704
+#: src/session/view/content/room_history/sender_avatar/mod.rs:712
 msgid "Unbanning user…"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:748
+#: src/session/view/content/room_history/sender_avatar/mod.rs:756
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:782
+#: src/session/view/content/room_history/sender_avatar/mod.rs:790
 msgid "Stop ignoring user…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:784
+#: src/session/view/content/room_history/sender_avatar/mod.rs:792
 msgid "Ignoring user…"
 msgstr ""
 
@@ -4890,11 +4941,11 @@ msgstr ""
 msgid "Rejoin Room as Low Priority"
 msgstr ""
 
-#: src/session_list/mod.rs:162 src/session_list/mod.rs:198
+#: src/session_list/mod.rs:164 src/session_list/mod.rs:199
 msgid "Could not restore previous sessions"
 msgstr ""
 
-#: src/session_list/mod.rs:199
+#: src/session_list/mod.rs:200
 msgid "An unexpected error happened while accessing the data directory"
 msgstr ""
 
