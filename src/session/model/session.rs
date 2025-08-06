@@ -462,6 +462,7 @@ mod imp {
 
                 let sync_settings = SyncSettings::new()
                     .timeout(Duration::from_secs(30))
+                    .ignore_timeout_on_first_sync(true)
                     .filter(filter.into());
 
                 let mut sync_stream = Box::pin(client.sync_stream(sync_settings).await);
