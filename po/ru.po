@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-04-16 20:44+0000\n"
-"PO-Revision-Date: 2025-04-17 20:46+0300\n"
+"POT-Creation-Date: 2025-08-06 18:29+0000\n"
+"PO-Revision-Date: 2025-08-08 11:17+0300\n"
 "Last-Translator: Artur So <arturios2005@mail.ru>\n"
 "Language-Team: Russian <gnome-cyr@gnome.org>\n"
 "Language: ru\n"
@@ -19,13 +19,13 @@ msgstr ""
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: data/org.gnome.Fractal.desktop.in.in:3
+#: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
 #: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
 
-#: data/org.gnome.Fractal.desktop.in.in:4
+#: data/org.gnome.Fractal.desktop.in.in:3
 msgid ""
 "Fractal is a decentralized, secure messaging client for collaborative group "
 "communication."
@@ -33,12 +33,12 @@ msgstr ""
 "Fractal — это децентрализованный, безопасный клиент обмена сообщениями для "
 "совместного группового общения."
 
-#: data/org.gnome.Fractal.desktop.in.in:5
+#: data/org.gnome.Fractal.desktop.in.in:4
 msgid "Fractal group messaging"
 msgstr "Fractal групповой обмен сообщениями"
 
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
-#: data/org.gnome.Fractal.desktop.in.in:14
+#: data/org.gnome.Fractal.desktop.in.in:13
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;element;"
 msgstr "Matrix;matrix.org;chat;irc;communications;talk;riot;element;матрикс;чат;общение;"
 
@@ -148,7 +148,7 @@ msgstr "Выберите учетную запись"
 msgid "Select the account you want to open the URI with"
 msgstr "Выберите учетную запись, с помощью которой вы хотите открыть URI"
 
-#: src/account_switcher/account_switcher_button.ui:26
+#: src/account_switcher/account_switcher_button.ui:24
 msgid "Switch Accounts"
 msgstr "Переключить учетные записи"
 
@@ -161,26 +161,26 @@ msgstr "_Добавить учетную запись"
 msgid "Account Settings"
 msgstr "Настройки учетной записи"
 
-#: src/application.rs:254
+#: src/application.rs:245
 msgid "The Fractal Team"
 msgstr "Команда Fractal"
 
-#: src/application.rs:260
+#: src/application.rs:251
 msgid "© The Fractal Team"
 msgstr "© Команда Fractal"
 
-#: src/application.rs:274
+#: src/application.rs:265
 msgid "translator-credits"
 msgstr ""
 "Artem Polishchuk <ego.cordatus@gmail.com>, 2018-2019\n"
 "Aleksandr Melman <alexmelman88@gmail.com>, 2022-2023"
 
 #. This can't be added via the builder
-#: src/application.rs:278
+#: src/application.rs:269
 msgid "Name by"
 msgstr "Имя"
 
-#: src/application.rs:392
+#: src/application.rs:383
 msgid "Session not found"
 msgstr "Сеанс не найден"
 
@@ -195,18 +195,18 @@ msgstr "Подтвердить изменение"
 #: src/session/view/content/room_details/history_viewer/file.ui:53
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:60
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:86
-#: src/session/view/content/room_history/mod.ui:203
+#: src/session/view/content/room_history/mod.ui:201
 msgid "Try Again"
 msgstr "Попробовать снова"
 
 #: src/components/action_button.ui:65
 #: src/components/camera/qrcode_scanner.ui:13
 #: src/login/session_setup_view.ui:15
-#: src/session/view/content/explore/mod.ui:63
+#: src/session/view/content/explore/mod.ui:61
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:182 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:180 src/window.ui:17
 msgid "Loading"
 msgstr "Загрузка"
 
@@ -219,38 +219,38 @@ msgid "Warning"
 msgstr "Предупреждение"
 
 #: src/components/action_button.ui:126 src/error_page.ui:10
-#: src/session/view/content/explore/mod.ui:139
-#: src/session/view/content/explore/mod.ui:143
-#: src/session/view/content/room_details/invite_subpage/mod.ui:136
-#: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/explore/mod.ui:117
+#: src/session/view/content/explore/mod.ui:121
+#: src/session/view/content/room_details/invite_subpage/mod.ui:131
+#: src/session/view/content/room_details/invite_subpage/mod.ui:135
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
 #: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.ui:100
 msgid "Error"
 msgstr "Ошибка"
 
-#: src/components/avatar/editable.rs:509
+#: src/components/avatar/editable.rs:507
 msgid "Images"
 msgstr "Изображения"
 
-#: src/components/avatar/editable.rs:515
+#: src/components/avatar/editable.rs:513
 msgid "Choose Avatar"
 msgstr "Выбрать аватар"
 
-#: src/components/avatar/editable.rs:517
+#: src/components/avatar/editable.rs:515
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:184
 msgid "Choose"
 msgstr "Выбрать"
 
-#: src/components/avatar/editable.rs:531
+#: src/components/avatar/editable.rs:529
 msgid "Could not open avatar file"
 msgstr "Не удалось открыть файл аватара"
 
-#: src/components/avatar/editable.rs:552
+#: src/components/avatar/editable.rs:550
 msgid "The chosen file is not an image"
 msgstr "Выбранный файл не является изображением"
 
-#: src/components/avatar/editable.rs:558
+#: src/components/avatar/editable.rs:556
 msgid "Could not determine the type of the chosen file"
 msgstr "Не удалось определить тип выбранного файла"
 
@@ -262,7 +262,7 @@ msgstr "Удалить аватар"
 msgid "Select New Avatar"
 msgstr "Выбрать новый аватар"
 
-#: src/components/camera/qrcode_scanner.rs:90
+#: src/components/camera/qrcode_scanner.rs:92
 msgid "Camera"
 msgstr "Камера"
 
@@ -271,16 +271,16 @@ msgstr "Камера"
 msgid "Could Not Connect to Camera"
 msgstr "Не удалось подключиться к камере"
 
-#: src/components/camera/viewfinder.rs:72
+#: src/components/camera/viewfinder.rs:74
 msgid "Viewfinder"
 msgstr "Видоискатель"
 
-#: src/components/crypto/identity_setup_view.rs:385
+#: src/components/crypto/identity_setup_view.rs:384
 #: src/identity_verification_view/cancelled_page.rs:195
 msgid "Could not send a new verification request"
 msgstr "Не удалось отправить новый запрос на проверку"
 
-#: src/components/crypto/identity_setup_view.rs:437
+#: src/components/crypto/identity_setup_view.rs:436
 msgid "Could not create the crypto identity"
 msgstr "Не удалось создать криптоидентификацию"
 
@@ -321,7 +321,7 @@ msgid "Reset"
 msgstr "Сброс"
 
 #: src/components/crypto/identity_setup_view.ui:106
-#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
+#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:79
 msgid "Identity Verification"
 msgstr "Проверка личности"
 
@@ -374,7 +374,7 @@ msgstr ""
 msgid "Invalidates the verifications of all users and sessions"
 msgstr "Аннулирует проверки всех пользователей и сеансов"
 
-#: src/components/crypto/recovery_setup_view.rs:187
+#: src/components/crypto/recovery_setup_view.rs:188
 msgid ""
 "Required because the crypto identity in the recovery data is incomplete. "
 "Invalidates the verifications of all users and sessions."
@@ -382,12 +382,12 @@ msgstr ""
 "Требуется, поскольку криптоидентификация в данных восстановления неполная. "
 "Аннулирует проверки всех пользователей и сеансов."
 
-#: src/components/crypto/recovery_setup_view.rs:197
+#: src/components/crypto/recovery_setup_view.rs:199
 msgid "You might not be able to read your past encrypted messages anymore"
 msgstr ""
 "Возможно, вы больше не сможете читать свои прошлые зашифрованные сообщения"
 
-#: src/components/crypto/recovery_setup_view.rs:202
+#: src/components/crypto/recovery_setup_view.rs:205
 msgid ""
 "Required because the backup is not set up properly. You might not be able to "
 "read your past encrypted messages anymore."
@@ -395,7 +395,7 @@ msgstr ""
 "Требуется, потому что резервное копирование настроено неправильно. Возможно, "
 "вы больше не сможете читать свои прошлые зашифрованные сообщения."
 
-#: src/components/crypto/recovery_setup_view.rs:220
+#: src/components/crypto/recovery_setup_view.rs:225
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
@@ -404,7 +404,7 @@ msgstr ""
 "понадобится вам для восстановления учетной записи, если вы потеряете доступ "
 "ко всем своим сеансам."
 
-#: src/components/crypto/recovery_setup_view.rs:222
+#: src/components/crypto/recovery_setup_view.rs:229
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
@@ -413,29 +413,29 @@ msgstr ""
 "Она понадобится вам для восстановления учетной записи, если вы потеряете "
 "доступ ко всем сеансам."
 
-#: src/components/crypto/recovery_setup_view.rs:282
+#: src/components/crypto/recovery_setup_view.rs:290
 msgid "The recovery passphrase or key is invalid"
 msgstr "Парольная фраза или ключ восстановления недействительны"
 
-#: src/components/crypto/recovery_setup_view.rs:285
+#: src/components/crypto/recovery_setup_view.rs:293
 msgid "Could not access recovery data"
 msgstr "Не удалось получить доступ к данным восстановления"
 
-#: src/components/crypto/recovery_setup_view.rs:336
+#: src/components/crypto/recovery_setup_view.rs:344
 msgid "Could not reset the crypto identity"
 msgstr "Не удалось сбросить криптоидентификацию"
 
-#: src/components/crypto/recovery_setup_view.rs:389
-#: src/components/crypto/recovery_setup_view.rs:398
-#: src/components/crypto/recovery_setup_view.rs:423
+#: src/components/crypto/recovery_setup_view.rs:397
+#: src/components/crypto/recovery_setup_view.rs:406
+#: src/components/crypto/recovery_setup_view.rs:431
 msgid "Could not reset account recovery"
 msgstr "Не удалось сбросить восстановление учетной записи"
 
-#: src/components/crypto/recovery_setup_view.rs:458
+#: src/components/crypto/recovery_setup_view.rs:466
 msgid "Could not reset account recovery key"
 msgstr "Не удалось сбросить ключ восстановления учетной записи"
 
-#: src/components/crypto/recovery_setup_view.rs:496
+#: src/components/crypto/recovery_setup_view.rs:504
 msgid "Could not enable account recovery"
 msgstr "Не удалось включить восстановление учетной записи"
 
@@ -456,7 +456,7 @@ msgid "Recovery Passphrase or Key"
 msgstr "Восстановление парольной фразы или ключа"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/sidebar/mod.rs:330
+#: src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "Восстановить"
 
@@ -613,7 +613,6 @@ msgid "The password is invalid."
 msgstr "Пароль неверен."
 
 #: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
-#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unexpected error occurred."
 msgstr "Произошла непредвиденная ошибка."
 
@@ -626,7 +625,7 @@ msgstr "Пожалуйста, подтвердите операцию с пом�
 msgid "Decline Invite?"
 msgstr "Отклонить приглашение?"
 
-#: src/components/dialogs/message_dialogs.rs:26
+#: src/components/dialogs/message_dialogs.rs:27
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
@@ -634,7 +633,7 @@ msgstr ""
 "Вы действительно хотите отклонить это приглашение? Вы можете присоединиться "
 "позже к этой комнате самостоятельно."
 
-#: src/components/dialogs/message_dialogs.rs:29
+#: src/components/dialogs/message_dialogs.rs:31
 msgid ""
 "Do you really want to decline this invite? You will not be able to join this "
 "room without it."
@@ -642,23 +641,23 @@ msgstr ""
 "Вы действительно хотите отклонить это приглашение? Без него Вы не сможете "
 "присоединиться к этой комнате."
 
-#: src/components/dialogs/message_dialogs.rs:32
+#: src/components/dialogs/message_dialogs.rs:34
 #: src/identity_verification_view/accept_request_page.ui:52
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Отклонить"
 
 #. We are leaving a room that was joined.
-#: src/components/dialogs/message_dialogs.rs:37
+#: src/components/dialogs/message_dialogs.rs:39
 msgid "Leave Room?"
 msgstr "Покинуть комнату?"
 
-#: src/components/dialogs/message_dialogs.rs:39
+#: src/components/dialogs/message_dialogs.rs:41
 msgid "Do you really want to leave this room? You can come back later."
 msgstr ""
 "Вы действительно хотите покинуть эту комнату? Вы можете вернуться позже."
 
-#: src/components/dialogs/message_dialogs.rs:42
+#: src/components/dialogs/message_dialogs.rs:44
 msgid ""
 "Do you really want to leave this room? You will not be able to come back "
 "without an invitation."
@@ -666,33 +665,33 @@ msgstr ""
 "Вы действительно хотите покинуть эту комнату? Вы не сможете вернуться без "
 "приглашения."
 
-#: src/components/dialogs/message_dialogs.rs:45
+#: src/components/dialogs/message_dialogs.rs:47
 msgid "Leave"
 msgstr "Покинуть"
 
-#: src/components/dialogs/message_dialogs.rs:56
-#: src/components/dialogs/message_dialogs.rs:318
-#: src/components/dialogs/message_dialogs.rs:379
-#: src/components/dialogs/message_dialogs.rs:414
+#: src/components/dialogs/message_dialogs.rs:58
+#: src/components/dialogs/message_dialogs.rs:323
+#: src/components/dialogs/message_dialogs.rs:398
+#: src/components/dialogs/message_dialogs.rs:447
+#: src/components/dialogs/message_dialogs.rs:469
+#: src/components/dialogs/message_dialogs.rs:491
 #: src/identity_verification_view/confirm_qr_code_page.ui:52
 #: src/session/view/account_settings/general_page/mod.rs:391
-#: src/session/view/content/room_details/edit_details_subpage.rs:266
-#: src/session/view/content/room_details/edit_details_subpage.rs:541
-#: src/session/view/content/room_details/general_page.rs:1070
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:551
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:116
-#: src/session/view/content/room_history/event_actions/group.rs:541
-#: src/session/view/content/room_history/event_actions/group.rs:605
+#: src/session/view/content/room_details/edit_details_subpage.rs:267
+#: src/session/view/content/room_details/general_page.rs:1036
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:112
+#: src/session/view/content/room_history/event_actions/group.rs:583
+#: src/session/view/content/room_history/event_actions/group.rs:647
 #: src/session/view/content/room_history/message_toolbar/mod.ui:76
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
 msgstr "Отменить"
 
-#: src/components/dialogs/message_dialogs.rs:65
+#: src/components/dialogs/message_dialogs.rs:67
 msgid "Ignore {user}"
 msgstr "Игнорировать {user}"
 
-#: src/components/dialogs/message_dialogs.rs:69
+#: src/components/dialogs/message_dialogs.rs:71
 msgid "All messages or invitations sent by this user will be ignored"
 msgstr ""
 "Все сообщения или приглашения, отправленные этим пользователем, будут "
@@ -700,13 +699,13 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:130
+#: src/components/dialogs/message_dialogs.rs:132
 msgid "Ban {user}?"
 msgstr "Заблокировать {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:134
+#: src/components/dialogs/message_dialogs.rs:136
 msgid ""
 "Are you sure you want to ban {user_id}? They will not be able to join the "
 "room again until someone unbans them."
@@ -715,21 +714,21 @@ msgstr ""
 "к комнате, пока кто-нибудь не снимет с них блокировку."
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:137
-#: src/components/user_page.ui:155
+#: src/components/dialogs/message_dialogs.rs:139
+#: src/components/user_page.ui:157
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Заблокировать"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:148
+#: src/components/dialogs/message_dialogs.rs:150
 msgid "Revoke Invite for {user}?"
 msgstr "Отозвать приглашение для {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:155
+#: src/components/dialogs/message_dialogs.rs:157
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will still be "
 "able to join the room on their own."
@@ -739,7 +738,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:162
+#: src/components/dialogs/message_dialogs.rs:164
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will not be "
 "able to join the room again until someone reinvites them."
@@ -747,35 +746,34 @@ msgstr ""
 "Вы уверены, что хотите отозвать приглашение для {user_id}? Они не смогут "
 "присоединиться к комнате, пока кто-нибудь не пригласит их заново."
 
-#: src/components/dialogs/message_dialogs.rs:166
+#: src/components/dialogs/message_dialogs.rs:168
 #: src/components/user_page.rs:390
 msgid "Revoke Invite"
 msgstr "Отозвать приглашение"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:173
+#: src/components/dialogs/message_dialogs.rs:175
 msgid "Deny Access to {user}?"
 msgstr "Отказать в доступе {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:179
+#: src/components/dialogs/message_dialogs.rs:181
 msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Вы уверены, что хотите отказать в доступе {user_id}?"
 
-#: src/components/dialogs/message_dialogs.rs:182
-#: src/components/user_page.rs:391
+#: src/components/dialogs/message_dialogs.rs:184
 msgid "Deny Access"
 msgstr "Отказать в доступе"
 
-#: src/components/dialogs/message_dialogs.rs:189
+#: src/components/dialogs/message_dialogs.rs:191
 msgid "Kick {user}?"
 msgstr "Удалить {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:194
+#: src/components/dialogs/message_dialogs.rs:196
 msgid ""
 "Are you sure you want to kick {user_id}? They will still be able to join the "
 "room again on their own."
@@ -785,7 +783,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:201
+#: src/components/dialogs/message_dialogs.rs:203
 msgid ""
 "Are you sure you want to kick {user_id}? They will not be able to join the "
 "room again until someone invites them."
@@ -795,7 +793,7 @@ msgstr ""
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:205
+#: src/components/dialogs/message_dialogs.rs:207
 #: src/components/user_page.rs:393
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
@@ -803,13 +801,13 @@ msgstr "Удалить"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:216
+#: src/components/dialogs/message_dialogs.rs:218
 msgid "Remove Messages Sent by {user}?"
 msgstr "Удалить сообщения, отправленные {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:222
+#: src/components/dialogs/message_dialogs.rs:224
 msgid ""
 "This removes all the messages received from the homeserver. Are you sure you "
 "want to remove 1 message sent by {user_id}? This cannot be undone."
@@ -826,22 +824,22 @@ msgstr[2] ""
 "Это удалит все сообщения, полученные с домашнего сервера. Вы уверены, что "
 "хотите удалить {n} сообщений, отправленных {user_id}? Это нельзя отменить."
 
-#: src/components/dialogs/message_dialogs.rs:227
+#: src/components/dialogs/message_dialogs.rs:232
 #: src/session/view/account_settings/general_page/mod.rs:392
-#: src/session/view/content/room_details/edit_details_subpage.rs:267
-#: src/session/view/content/room_history/event_actions/group.rs:542
+#: src/session/view/content/room_details/edit_details_subpage.rs:268
+#: src/session/view/content/room_history/event_actions/group.rs:584
 msgid "Remove"
 msgstr "Удалить"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:233
+#: src/components/dialogs/message_dialogs.rs:238
 msgid "No Messages Sent by {user}"
 msgstr "Нет сообщений, отправленных {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:239
+#: src/components/dialogs/message_dialogs.rs:244
 msgid ""
 "There are no messages received from the homeserver sent by {user_id}. You "
 "can try to load more by going further back in the room history."
@@ -849,14 +847,14 @@ msgstr ""
 "На домашнем сервере нет сообщений, отправленных {user_id}. Вы можете "
 "попробовать загрузить больше, перейдя дальше в историю комнат."
 
-#: src/components/dialogs/message_dialogs.rs:267
-#: src/session/view/content/room_history/event_actions/group.rs:587
+#: src/components/dialogs/message_dialogs.rs:272
+#: src/session/view/content/room_history/event_actions/group.rs:629
 msgid "Reason (optional)"
 msgstr "Причина (необязательно)"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:291
+#: src/components/dialogs/message_dialogs.rs:296
 msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] "Удалить последнее сообщение, отправленное пользователем"
@@ -864,61 +862,126 @@ msgstr[1] "Удалить {n} последних сообщения, отпра�
 msgstr[2] "Удалить {n} последних сообщений, отправленных пользователем"
 
 #. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:362
+#. this is a variable name. The count cannot be zero.
+#: src/components/dialogs/message_dialogs.rs:377
 msgid "Mute {user}?"
-msgstr "Приглушить {user}?"
+msgid_plural "Mute Members?"
+msgstr[0] "Приглушить {user}?"
+msgstr[1] "Приглушить участников?"
+msgstr[2] "Приглушить участников?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:368
+#. this is a variable name. The count cannot be zero.
+#: src/components/dialogs/message_dialogs.rs:385
 msgid ""
 "Are you sure you want to mute {user_id}? They will not be able to send new "
-"messages."
-msgstr ""
+"messages to this room."
+msgid_plural ""
+"Are you sure you want to mute these members? They will not be able to send "
+"new messages to this room."
+msgstr[0] ""
 "Вы уверены, что хотите приглушить {user_id}? Они не смогут отправлять новые "
-"сообщения."
+"сообщения в эту комнату."
+msgstr[1] ""
+"Вы уверены, что хотите приглушить этих участников? Они не смогут отправлять новые "
+"сообщения в эту комнату."
+msgstr[2] ""
+"Вы уверены, что хотите приглушить этих участников? Они не смогут отправлять новые "
+"сообщения в эту комнату."
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/components/dialogs/message_dialogs.rs:381
+#: src/components/dialogs/message_dialogs.rs:400
 msgid "Mute"
 msgstr "Приглушить"
 
 #. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:397
+#. this is a variable name. The count cannot be zero.
+#: src/components/dialogs/message_dialogs.rs:426
 msgid "Promote {user}?"
-msgstr "Повысить {user}?"
+msgid_plural "Promote Members?"
+msgstr[0] "Повысить {user}?"
+msgstr[1] "Повысить участников?"
+msgstr[2] "Повысить участников?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:403
+#. this is a variable name. The count cannot be zero.
+#: src/components/dialogs/message_dialogs.rs:434
 msgid ""
 "If you promote {user_id} to the same level as yours, you will not be able to "
 "demote them in the future."
-msgstr ""
+msgid_plural ""
+"If you promote these members to the same level as yours, you will not be "
+"able to demote them in the future."
+msgstr[0] ""
 "Если вы повысите {user_id} до того же уровня, что и ваш, вы не сможете "
 "понизить его в будущем."
+msgstr[1] ""
+"Если вы повысите этих участников до того же уровня, что и ваш, вы не сможете "
+"понизить его в будущем."
+msgstr[2] ""
+"Если вы повысите этих участников до того же уровня, что и ваш, вы не сможете "
+"понизить его в будущем."
 
-#: src/components/dialogs/message_dialogs.rs:415
+#: src/components/dialogs/message_dialogs.rs:448
 msgid "Promote"
 msgstr "Повысить"
 
+#: src/components/dialogs/message_dialogs.rs:457
+msgid "Demote Yourself?"
+msgstr "Понизить себя?"
+
+#: src/components/dialogs/message_dialogs.rs:459
+msgid ""
+"Are you sure you want to lower your power level? You will need to ask "
+"another member with a higher power level to undo this."
+msgstr ""
+"Вы уверены, что хотите понизить уровень своих полномочий? Вам нужно "
+"будет попросить другого участника с более высоким уровнем полномочий, чтобы отменить это."
+
+#: src/components/dialogs/message_dialogs.rs:470
+msgid "Demote"
+msgstr "Понизить"
+
+#: src/components/dialogs/message_dialogs.rs:481
+msgid "Save Changes?"
+msgstr "Сохранить изменения?"
+
+#: src/components/dialogs/message_dialogs.rs:483
+msgid ""
+"This page contains unsaved changes. Changes which are not saved will be lost."
+msgstr ""
+"Эта страница содержит несохраненные изменения. Изменения, которые не были "
+"сохранены, будут потеряны."
+
+#: src/components/dialogs/message_dialogs.rs:492
+msgid "Discard"
+msgstr "Отклонить"
+
+#: src/components/dialogs/message_dialogs.rs:493
+#: src/session/view/content/room_details/edit_details_subpage.ui:140
+#: src/session/view/content/room_details/history_viewer/file_row.rs:144
+#: src/utils/matrix/media_message.rs:175
+msgid "Save"
+msgstr "Сохранить"
+
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/dialogs/room_preview.rs:208
-#: src/session/view/content/explore/public_room_row.rs:174
-#: src/session/view/content/room_history/mod.rs:928
-#: src/session/view/content/room_history/state/tombstone.rs:77
+#. Translators: This is a verb, as in 'View Room'
+#: src/components/dialogs/room_preview.rs:239
+#: src/components/dialogs/room_preview.rs:347
+#: src/session/view/content/explore/public_room_row.rs:182
+#: src/session/view/content/room_history/message_toolbar/mod.rs:363
+#: src/session/view/content/room_history/mod.ui:169
+#: src/session/view/content/room_history/state/creation.ui:20
 msgid "View"
 msgstr "Посмотреть"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/room_preview.rs:211
+#: src/components/dialogs/room_preview.rs:242
 #: src/components/dialogs/room_preview.ui:91
 msgid "Look Up"
 msgstr "Искать"
 
-#: src/components/dialogs/room_preview.rs:272
+#: src/components/dialogs/room_preview.rs:302
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -930,13 +993,24 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/room_preview.rs:295
-#: src/session/view/content/explore/public_room_row.rs:155
+#: src/components/dialogs/room_preview.rs:325
+#: src/session/view/content/explore/public_room_row.rs:161
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 участник"
 msgstr[1] "{n} участника"
 msgstr[2] "{n} участников"
+
+#: src/components/dialogs/room_preview.rs:349
+#: src/session/view/content/explore/public_room_row.rs:187
+msgid "Request an Invite"
+msgstr "Запросить приглашение"
+
+#: src/components/dialogs/room_preview.rs:351
+#: src/session/view/content/explore/public_room_row.rs:195
+#: src/session/view/content/room_history/message_toolbar/mod.rs:365
+msgid "Join"
+msgstr "Присоединиться"
 
 #: src/components/dialogs/room_preview.ui:4
 #: src/components/dialogs/room_preview.ui:38
@@ -946,6 +1020,7 @@ msgstr "Присоединиться к комнате"
 #: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
+#: src/session/view/content/room_details/join_rule_subpage.ui:16
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
 #: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
@@ -954,13 +1029,6 @@ msgstr "Назад"
 #: src/components/dialogs/room_preview.ui:72
 msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "Введите ID комнаты, псевдоним комнаты или ссылку, чтобы найти комнату"
-
-#: src/components/dialogs/room_preview.ui:190
-#: src/session/view/content/explore/public_room_row.rs:176
-#: src/session/view/content/room_history/mod.rs:931
-#: src/session/view/content/room_history/state/tombstone.rs:79
-msgid "Join"
-msgstr "Присоединиться"
 
 #: src/components/dialogs/user_profile.ui:4
 msgid "User Profile"
@@ -998,14 +1066,14 @@ msgstr "Файл не просматривается"
 msgid "Location at latitude {latitude} and longitude {longitude}"
 msgstr "Местоположение на широте {latitude} и долготе {longitude}"
 
-#: src/components/pill/at_room.rs:29
+#: src/components/pill/at_room.rs:32
 msgid "Notify the whole room"
 msgstr "Оповещение всех участников"
 
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
-#: src/session/model/room/permissions.rs:72
+#: src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "Пользовательский(-ая)"
 
@@ -1013,140 +1081,159 @@ msgstr "Пользовательский(-ая)"
 msgid "Confirm Custom Role"
 msgstr "Подтвердить пользовательскую роль"
 
-#: src/components/user_page.rs:251
+#: src/components/power_level_selection/row.ui:101
+msgid "More Information"
+msgstr "Больше информации"
+
+#: src/components/power_level_selection/row.ui:119
+msgid ""
+"Creator is an immutable role that can be attributed to several users when "
+"creating a room. Creators always have a higher power level than any other "
+"room members, except other creators, and have the permission to do anything "
+"in the room. The only way to demote a creator is to replace the current room "
+"with another one with a different creator, by upgrading the room for example."
+msgstr ""
+"Создатель - это неизменяемая роль, которая может быть присвоена нескольким "
+"пользователям при создании комнаты. Создатели всегда имеют более высокий "
+"уровень полномочий, чем любые другие участники комнаты, за исключением других "
+"создателей, и имеют право делать в комнате все, что угодно. Единственный способ "
+"понизить статус создателя - это заменить текущую комнату на другую с другим "
+"создателем, например, обновив ее."
+
+#: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.ui:60
-#: src/session/view/content/room_history/sender_avatar/mod.rs:77
+#: src/session/view/content/room_history/sender_avatar/mod.rs:82
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID пользователя Matrix скопирован в буфер обмена"
 
-#: src/components/user_page.rs:278
+#: src/components/user_page.rs:283
 msgid "Open Direct Chat"
 msgstr "Открыть прямой чат"
 
-#: src/components/user_page.rs:280
+#: src/components/user_page.rs:285
 msgid "Create Direct Chat"
 msgstr "Создать прямой чат"
 
-#: src/components/user_page.rs:300
-#: src/session/view/content/room_history/sender_avatar/mod.rs:553
+#: src/components/user_page.rs:305
+#: src/session/view/content/room_history/sender_avatar/mod.rs:547
 #: src/session/view/create_direct_chat_dialog/mod.rs:190
 msgid "Could not create a new Direct Chat"
 msgstr "Не удалось создать новый прямой чат"
 
-#: src/components/user_page.rs:331
+#: src/components/user_page.rs:336
 msgid "In {room_name}"
 msgstr "В {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:342
+#: src/components/user_page.rs:347
 msgctxt "member"
 msgid "Invited"
 msgstr "Приглашен"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:346
+#: src/components/user_page.rs:351
 msgctxt "member"
 msgid "Banned"
 msgstr "Заблокирован"
 
-#. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:350
+#. Translators: As in, 'The room member requested an invite'.
+#: src/components/user_page.rs:355
 msgctxt "member"
-msgid "Knocked"
-msgstr "Попросился"
+msgid "Requested an Invite"
+msgstr "Запросил приглашение"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:354
+#: src/components/user_page.rs:359
 msgctxt "member"
 msgid "Unknown"
 msgstr "Неизвестно"
 
-#: src/components/user_page.rs:378
-msgid "Allow Access"
-msgstr "Разрешить доступ"
+#: src/components/user_page.rs:391
+msgid "Deny Request"
+msgstr "Отклонить запрос"
 
-#: src/components/user_page.rs:477
+#: src/components/user_page.rs:499
 msgid "Could not change the role"
 msgstr "Не удалось изменить роль"
 
-#: src/components/user_page.rs:498
-#: src/session/view/content/room_history/sender_avatar/mod.rs:577
+#: src/components/user_page.rs:520
+#: src/session/view/content/room_history/sender_avatar/mod.rs:571
 msgid "Could not invite user"
 msgstr "Не удалось пригласить пользователя"
 
-#: src/components/user_page.rs:532
-#: src/session/view/content/room_history/sender_avatar/mod.rs:611
+#: src/components/user_page.rs:554
+#: src/session/view/content/room_history/event_actions/group.rs:721
+#: src/session/view/content/room_history/sender_avatar/mod.rs:604
 msgid "Could not revoke invite of user"
 msgstr "Не удалось отозвать приглашение пользователя"
 
-#: src/components/user_page.rs:533
-#: src/session/view/content/room_history/sender_avatar/mod.rs:612
+#: src/components/user_page.rs:555
 msgid "Could not deny access to user"
 msgstr "Не удалось отказать в доступе пользователю"
 
-#: src/components/user_page.rs:534
-#: src/session/view/content/room_history/sender_avatar/mod.rs:613
+#: src/components/user_page.rs:556
+#: src/session/view/content/room_history/sender_avatar/mod.rs:605
 msgid "Could not kick user"
 msgstr "Не удалось удалить пользователя"
 
-#: src/components/user_page.rs:580
-#: src/session/view/content/room_history/sender_avatar/mod.rs:699
+#: src/components/user_page.rs:602
+#: src/session/view/content/room_history/sender_avatar/mod.rs:696
 msgid "Could not ban user"
 msgstr "Не удалось заблокировать пользователя"
 
-#: src/components/user_page.rs:611
-#: src/session/view/content/room_history/sender_avatar/mod.rs:720
+#: src/components/user_page.rs:633
+#: src/session/view/content/room_history/sender_avatar/mod.rs:717
 msgid "Could not unban user"
 msgstr "Не удалось разблокировать пользователя"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:659
-#: src/session/view/content/room_history/sender_avatar/mod.rs:775
+#: src/components/user_page.rs:681
+#: src/session/view/content/room_history/sender_avatar/mod.rs:772
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Не удалось удалить 1 сообщение, отправленное пользователем"
 msgstr[1] "Не удалось удалить {n} сообщения, отправленные пользователем"
 msgstr[2] "Не удалось удалить {n} сообщений, отправленных пользователем"
 
-#: src/components/user_page.rs:675
+#: src/components/user_page.rs:697
 msgid "Identity verified"
 msgstr "Идентификация подтверждена"
 
-#: src/components/user_page.rs:682
+#: src/components/user_page.rs:704
 msgid "Identity not verified"
 msgstr "Идентификация не подтверждена"
 
-#: src/components/user_page.rs:697
+#: src/components/user_page.rs:719
 msgid "Could not start user verification"
 msgstr "Не удалось запустить проверку пользователя"
 
-#: src/components/user_page.rs:722
+#: src/components/user_page.rs:744
 msgid "Ignored"
 msgstr "Игнорируется"
 
-#: src/components/user_page.rs:724
+#: src/components/user_page.rs:746
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Остановить игнорирование"
 
-#: src/components/user_page.rs:727
+#: src/components/user_page.rs:749
 msgid "Not Ignored"
 msgstr "Не игнорируется"
 
-#: src/components/user_page.rs:728
+#: src/components/user_page.rs:750
 msgid "Ignore"
 msgstr "Игнорировать"
 
-#: src/components/user_page.rs:745
+#: src/components/user_page.rs:767
 #: src/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.rs:85
-#: src/session/view/content/room_history/sender_avatar/mod.rs:801
+#: src/session/view/content/room_history/sender_avatar/mod.rs:798
 msgid "Could not stop ignoring user"
 msgstr "Не удалось остановить игнорирование пользователя"
 
-#: src/components/user_page.rs:748 src/session/view/content/invite.rs:309
-#: src/session/view/content/room_history/sender_avatar/mod.rs:804
-#: src/session/view/sidebar/row.rs:761
+#: src/components/user_page.rs:770 src/session/view/content/invite.rs:290
+#: src/session/view/content/room_history/sender_avatar/mod.rs:801
+#: src/session/view/sidebar/row.rs:766
 msgid "Could not ignore user"
 msgstr "Не удалось проигнорировать пользователя"
 
@@ -1165,23 +1252,32 @@ msgstr "Роль"
 msgid "Power Level"
 msgstr "Уровень полномочий"
 
+#. Translators: In this string, 'Invite' is a verb.
+#. Translators: This is a verb.
+#: src/components/user_page.ui:139 src/session/view/content/invite.ui:13
+#: src/session/view/content/invite.ui:39
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
+msgid "Invite"
+msgstr "Пригласить"
+
 #. Translators: As in, 'Unan room member'.
-#: src/components/user_page.ui:162
+#: src/components/user_page.ui:164
 msgid "Unban"
 msgstr "Разблокировать"
 
-#: src/components/user_page.ui:171
+#: src/components/user_page.ui:173
 msgid "Remove Messages"
 msgstr "Удалить сообщения"
 
-#: src/components/user_page.ui:185
+#: src/components/user_page.ui:187
 msgid "Security"
 msgstr "Безопасность"
 
-#: src/components/user_page.ui:212
+#: src/components/user_page.ui:214
 #: src/identity_verification_view/accept_request_page.ui:63
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:323
+#: src/session/view/sidebar/mod.rs:322
 msgid "Verify"
 msgstr "Проверить"
 
@@ -1189,15 +1285,22 @@ msgstr "Проверить"
 msgid "QR Code"
 msgstr "QR-код"
 
-#: src/error_page.rs:98
+#: src/error_page.rs:94
 msgid "Command copied to clipboard"
 msgstr "Команда скопирована в буфер обмена"
 
-#: src/error_page.ui:25
+#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31
+#: src/error_page.ui:34 src/login/greeter.ui:26 src/login/greeter.ui:29
+#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.ui:30
+#: src/window.ui:33
+msgid "About Fractal"
+msgstr "О приложении"
+
+#: src/error_page.ui:47
 msgid "Secret Portal Error"
 msgstr "Ошибка секретного портала"
 
-#: src/error_page.ui:39
+#: src/error_page.ui:61
 msgid ""
 "Fractal relies on a Secret Portal to manage your sensitive session "
 "information and an error occurred while we were trying to restore your "
@@ -1207,14 +1310,14 @@ msgstr ""
 "информацией о сеансе, и при попытке восстановить ваши сеансы произошла "
 "ошибка."
 
-#: src/error_page.ui:51
+#: src/error_page.ui:73
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr ""
 "Вот несколько вещей, которые могут помочь вам решить проблемы с Секретным "
 "порталом:"
 
-#: src/error_page.ui:68
+#: src/error_page.ui:90
 msgid ""
 "Make sure you have a Secret Portal Backend Provider installed, like gnome-"
 "keyring."
@@ -1222,7 +1325,7 @@ msgstr ""
 "Убедитесь, что у вас установлен поставщик Секретного портала, например gnome-"
 "keyring."
 
-#: src/error_page.ui:91
+#: src/error_page.ui:113
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow "
 "Fractal to interact with it, like this:"
@@ -1230,17 +1333,17 @@ msgstr ""
 "Если вы предпочитаете использовать другого поставщика Секретной службы, вам "
 "нужно разрешить Fractal взаимодействовать с ним, как показано ниже:"
 
-#: src/error_page.ui:113
+#: src/error_page.ui:135
 msgid "Copy Command"
 msgstr "Копировать команду"
 
-#: src/error_page.ui:148
+#: src/error_page.ui:170
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr ""
 "Убедитесь, что у вас есть связка ключей по умолчанию и что она "
 "разблокирована."
 
-#: src/error_page.ui:160
+#: src/error_page.ui:182
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -1248,12 +1351,12 @@ msgstr ""
 "Проверьте журналы приложений и документацию вашего дистрибутива для "
 "получения более подробной информации."
 
-#: src/error_page.ui:176
+#: src/error_page.ui:198
 msgid "Could Not Initialize Session"
 msgstr "Не удалось инициализировать сеанс"
 
 #: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:327
+#: src/session/model/notifications/mod.rs:388
 msgid "Login Request From Another Session"
 msgstr "Запрос на вход из другого сеанса"
 
@@ -1265,7 +1368,7 @@ msgstr "Проверьте новый сеанс из текущего сеан�
 #: src/identity_verification_view/choose_method_page.rs:183
 #: src/identity_verification_view/sas_page.rs:159
 #: src/identity_verification_view/scan_qr_code_page.rs:158
-#: src/session/model/notifications/mod.rs:265
+#: src/session/model/notifications/mod.rs:326
 msgid "Verification Request"
 msgstr "Запрос на проверку"
 
@@ -1677,11 +1780,6 @@ msgstr "_Автообнаружение"
 msgid "Welcome to Fractal"
 msgstr "Добро пожаловать в Fractal"
 
-#: src/login/greeter.ui:26 src/login/greeter.ui:29 src/login/greeter.ui:37
-#: src/login/greeter.ui:40 src/window.ui:30 src/window.ui:33
-msgid "About Fractal"
-msgstr "О приложении"
-
 #: src/login/greeter.ui:117
 msgid "_Log In"
 msgstr "_Войти"
@@ -1708,8 +1806,8 @@ msgstr "URL-адрес домашнего сервера"
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "URL-адрес вашего домашнего сервера Matrix, например {address}"
 
-#: src/login/homeserver_page.rs:254 src/login/mod.rs:300 src/login/mod.rs:324
-#: src/login/mod.rs:370 src/login/mod.rs:387
+#: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321
+#: src/login/mod.rs:367 src/login/mod.rs:384
 msgid "Could not set up login"
 msgstr "Не удалось установить вход"
 
@@ -1769,15 +1867,15 @@ msgstr "Пароль"
 msgid "Single Sign-On Providers"
 msgstr "Поставщики единого входа"
 
-#: src/login/mod.rs:456
+#: src/login/mod.rs:453
 msgid "Could not store session"
 msgstr "Не удалось сохранить сеанс"
 
-#: src/login/mod.rs:585
+#: src/login/mod.rs:582
 msgid "Authorization Completed"
 msgstr "Авторизация завершена"
 
-#: src/login/mod.rs:587
+#: src/login/mod.rs:584
 msgid ""
 "The authorization step is complete. You can close this page and go back to "
 "Fractal."
@@ -1801,7 +1899,7 @@ msgstr "Начать общение"
 msgid "Session Setup"
 msgstr "Установка сеанса"
 
-#: src/login/session_setup_view.ui:43 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.ui:63
 msgid "Fetching Account Data…"
 msgstr "Получение данных учетной записи…"
 
@@ -1819,24 +1917,24 @@ msgstr "Войти с помощью {brand}"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal: Учетные данные Matrix для {user_id}"
 
-#: src/secret/linux.rs:528
+#: src/secret/linux.rs:527
 msgid "The secret storage file is corrupted."
 msgstr "Файл секретного хранилища поврежден."
 
-#: src/secret/linux.rs:532
+#: src/secret/linux.rs:529
 msgid "Could not access the secret storage file location."
 msgstr "Не удалось получить доступ к расположению файла секретного хранилища."
 
-#: src/secret/linux.rs:535
+#: src/secret/linux.rs:532
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
 "Произошла непредвиденная ошибка при доступе к файлу секретного хранилища."
 
-#: src/secret/linux.rs:538
+#: src/secret/linux.rs:535
 msgid "The secret storage file has been changed by another process."
 msgstr "Файл секретного хранилища был изменен другим процессом."
 
-#: src/secret/linux.rs:541
+#: src/secret/linux.rs:538
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1844,7 +1942,7 @@ msgstr ""
 "Запрос на секретный портал Flatpak был отменен. Обязательно примите любое "
 "приглашение с просьбой получить к нему доступ."
 
-#: src/secret/linux.rs:544
+#: src/secret/linux.rs:541
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1852,7 +1950,7 @@ msgstr ""
 "Секретный портал Flatpak недоступен. Убедитесь, что xdg-desktop-portal "
 "установлен и имеет версию не ниже 1.5.0."
 
-#: src/secret/linux.rs:547
+#: src/secret/linux.rs:544
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1860,35 +1958,35 @@ msgstr ""
 "Произошла непредвиденная ошибка при взаимодействии с бэкендом Секретного "
 "портала D-Bus."
 
-#: src/secret/linux.rs:550
+#: src/secret/linux.rs:547
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Секретный портал Flatpak предоставил ключ, который слишком слаб, чтобы быть "
 "безопасным."
 
-#: src/secret/linux.rs:564
+#: src/secret/linux.rs:560
 msgid "The item was deleted."
 msgstr "Элемент был удален."
 
-#: src/secret/linux.rs:568 src/secret/linux.rs:589
+#: src/secret/linux.rs:563 src/secret/linux.rs:578
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Произошла непредвиденная ошибка при взаимодействии с Секретной службой D-Bus."
 
-#: src/secret/linux.rs:571
+#: src/secret/linux.rs:565
 msgid "The collection or item is locked."
 msgstr "Коллекция или элемент заблокированы."
 
-#: src/secret/linux.rs:574
+#: src/secret/linux.rs:567
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Сеанс Секретной службы D-Bus не существует."
 
-#: src/secret/linux.rs:577
+#: src/secret/linux.rs:569
 msgid "The collection or item does not exist."
 msgstr "Коллекция или элемент не существует."
 
-#: src/secret/linux.rs:581
+#: src/secret/linux.rs:572
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1896,7 +1994,7 @@ msgstr ""
 "Запрос в Секретную службу D-Bus был отменен. Обязательно примите любое "
 "приглашение с просьбой получить к нему доступ."
 
-#: src/secret/linux.rs:584
+#: src/secret/linux.rs:575
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1904,123 +2002,171 @@ msgstr ""
 "Не удалось получить доступ к коллекции по умолчанию. Убедитесь, что связка "
 "ключей была создана и установлена по умолчанию."
 
-#: src/session/model/session.rs:745
+#: src/session/model/session.rs:818
 msgid "Could not log the session out"
 msgstr "Не удалось выйти из сеанса"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:269
+#: src/session/model/notifications/mod.rs:330
 msgid "{user} sent a verification request"
 msgstr "{user} отправил(-а) запрос на проверку"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:331
+#: src/session/model/notifications/mod.rs:392
 msgid "Verify your new session “{name}”"
 msgstr "Проверить новый сеанс “{name}”"
 
-#: src/session/model/room/join_rule.rs:249
-msgid "Only invited users, and users can knock"
-msgstr ""
-"Только приглашенные пользователи и пользователи, которые могут проситься"
+#: src/session/model/notifications/mod.rs:484
+msgid "{user} sent an audio file."
+msgstr "{user} отправил(-а) аудиофайл."
 
-#: src/session/model/room/join_rule.rs:251
+#: src/session/model/notifications/mod.rs:487
+msgid "{user} sent a file."
+msgstr "{user} отправил(-а) файл."
+
+#: src/session/model/notifications/mod.rs:489
+msgid "{user} sent an image."
+msgstr "{user} отправил(-а) изображение."
+
+#: src/session/model/notifications/mod.rs:492
+msgid "{user} sent their location."
+msgstr "{user} отправил(-а) свое местоположение."
+
+#: src/session/model/notifications/mod.rs:504
+msgid "{user} sent a video."
+msgstr "{user} отправил(-а) видео."
+
+#: src/session/model/notifications/mod.rs:511
+msgid "{user} sent a sticker."
+msgstr "{user} отправил(-а) стикер."
+
+#: src/session/model/notifications/mod.rs:521
+msgid "{user}: {message}"
+msgstr "{user}: {message}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:571
+msgid "{user} invited you"
+msgstr "{user} пригласил(-а) вас"
+
+#: src/session/model/room/join_rule.rs:259
+msgid "Only invited users, and users can request an invite"
+msgstr ""
+"Только приглашенные пользователи и пользователи, которые могут запросить приглашение"
+
+#: src/session/model/room/join_rule.rs:261
 msgid "Only invited users"
 msgstr "Только приглашенные пользователи"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:265
-msgid "Members of {room}, and users can knock"
-msgstr "Участники {room}, и пользователи, которые могут проситься"
+#: src/session/model/room/join_rule.rs:275
+msgid "Members of {room}, and users can request an invite"
+msgstr "Участники {room}, и пользователи, которые могут запросить приглашение"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:272
+#: src/session/model/room/join_rule.rs:282
 msgid "Members of {room}"
 msgstr "Участники {room}"
 
-#: src/session/model/room/join_rule.rs:277
+#: src/session/model/room/join_rule.rs:287
 msgid "Any registered user"
 msgstr "Любой зарегистрированный пользователь"
 
-#: src/session/model/room/join_rule.rs:278
-#: src/session/view/content/room_details/general_page.rs:976
+#: src/session/model/room/join_rule.rs:288
+#: src/session/view/content/room_details/general_page.rs:942
 msgid "Unsupported rule"
 msgstr "Неподдерживаемое правило"
 
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:381
+#: src/session/model/room/mod.rs:386
 msgid "Empty Room (was {user})"
 msgstr "Пустая комната (был(-а) {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:384
+#: src/session/model/room/mod.rs:389
 msgid "Empty Room"
 msgstr "Пустая комната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:394
+#: src/session/model/room/mod.rs:399
 msgid "Unknown"
 msgstr "Неизвестно"
 
 #. Translators: As in 'Default power level', meaning permissions.
-#: src/session/model/room/permissions.rs:70
+#: src/session/model/room/permissions.rs:64
 msgid "Default"
 msgstr "По умолчанию"
 
-#: src/session/model/room/permissions.rs:73
+#: src/session/model/room/permissions.rs:67
 msgid "Moderator"
 msgstr "Модератор"
 
-#: src/session/model/room/permissions.rs:74
+#: src/session/model/room/permissions.rs:68
 msgid "Admin"
 msgstr "Администратор"
 
+#: src/session/model/room/permissions.rs:69
+msgid "Creator"
+msgstr "Создатель"
+
 #. Translators: As in 'Muted room member', a member that cannot send messages.
-#: src/session/model/room/permissions.rs:76
+#: src/session/model/room/permissions.rs:71
 msgid "Muted"
 msgstr "Приглушенный"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:299
+#: src/session/model/room_list/mod.rs:330
 msgid "Could not join room {room_name}"
 msgstr "Не удалось присоединиться к комнате {room_name}"
 
-#: src/session/model/sidebar_data/section/name.rs:78
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/room_list/mod.rs:362
+msgid "Could not request an invite to room {room_name}"
+msgstr "Не удалось запросить приглашение в комнату {room_name}"
+
+#: src/session/model/sidebar_data/section/name.rs:82
 msgid "Verifications"
 msgstr "Проверки"
 
-#: src/session/model/sidebar_data/section/name.rs:79
+#: src/session/model/sidebar_data/section/name.rs:83
+msgid "Invite Requests"
+msgstr "Запросы на приглашение"
+
+#: src/session/model/sidebar_data/section/name.rs:84
 #: src/session/view/content/room_details/invite_subpage/list.rs:262
 msgid "Invited"
 msgstr "Приглашен(-а)"
 
-#: src/session/model/sidebar_data/section/name.rs:80
+#: src/session/model/sidebar_data/section/name.rs:85
 msgid "Favorites"
 msgstr "Избранное"
 
-#: src/session/model/sidebar_data/section/name.rs:81
+#: src/session/model/sidebar_data/section/name.rs:86
 msgid "Rooms"
 msgstr "Комнаты"
 
-#: src/session/model/sidebar_data/section/name.rs:82
+#: src/session/model/sidebar_data/section/name.rs:87
 msgid "Low Priority"
 msgstr "Низкий приоритет"
 
-#: src/session/model/sidebar_data/section/name.rs:83
+#: src/session/model/sidebar_data/section/name.rs:88
 msgid "Historical"
 msgstr "Архивное"
 
-#: src/session/model/sidebar_data/icon_item.rs:32
+#: src/session/model/sidebar_data/icon_item.rs:31
 msgid "Explore"
 msgstr "Обзор"
 
-#: src/session/model/sidebar_data/icon_item.rs:33
+#: src/session/model/sidebar_data/icon_item.rs:32
 msgid "Forget Room"
 msgstr "Забыть комнату"
 
@@ -2176,7 +2322,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Импортировать ключи шифрования из…"
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:181
+#: src/utils/matrix/media_message.rs:200
 msgid "Could not access file"
 msgstr "Не удалось получить доступ к файлу"
 
@@ -2499,34 +2645,34 @@ msgid "Remove Session"
 msgstr "Удалить сеанс"
 
 #: src/session/view/account_settings/general_page/mod.rs:290
-#: src/session/view/content/room_details/edit_details_subpage.rs:148
+#: src/session/view/content/room_details/edit_details_subpage.rs:149
 msgid "Avatar removed successfully"
 msgstr "Аватар успешно удален"
 
 #: src/session/view/account_settings/general_page/mod.rs:292
-#: src/session/view/content/room_details/edit_details_subpage.rs:150
+#: src/session/view/content/room_details/edit_details_subpage.rs:151
 msgid "Avatar changed successfully"
 msgstr "Аватар успешно изменен"
 
 #: src/session/view/account_settings/general_page/mod.rs:310
 #: src/session/view/account_settings/general_page/mod.rs:320
-#: src/session/view/content/room_details/edit_details_subpage.rs:175
-#: src/session/view/content/room_details/edit_details_subpage.rs:185
+#: src/session/view/content/room_details/edit_details_subpage.rs:176
+#: src/session/view/content/room_details/edit_details_subpage.rs:186
 msgid "Could not load file"
 msgstr "Не удалось загрузить файл"
 
 #: src/session/view/account_settings/general_page/mod.rs:339
-#: src/session/view/content/room_details/edit_details_subpage.rs:212
+#: src/session/view/content/room_details/edit_details_subpage.rs:213
 msgid "Could not upload avatar"
 msgstr "Не удалось загрузить аватар"
 
 #: src/session/view/account_settings/general_page/mod.rs:370
-#: src/session/view/content/room_details/edit_details_subpage.rs:235
+#: src/session/view/content/room_details/edit_details_subpage.rs:236
 msgid "Could not change avatar"
 msgstr "Не удалось изменить аватар"
 
 #: src/session/view/account_settings/general_page/mod.rs:387
-#: src/session/view/content/room_details/edit_details_subpage.rs:260
+#: src/session/view/content/room_details/edit_details_subpage.rs:261
 msgid "Remove Avatar?"
 msgstr "Удалить аватар?"
 
@@ -2535,7 +2681,7 @@ msgid "Do you really want to remove your avatar?"
 msgstr "Вы действительно хотите удалить аватар?"
 
 #: src/session/view/account_settings/general_page/mod.rs:426
-#: src/session/view/content/room_details/edit_details_subpage.rs:292
+#: src/session/view/content/room_details/edit_details_subpage.rs:293
 msgid "Could not remove avatar"
 msgstr "Не удалось удалить аватар"
 
@@ -2577,7 +2723,7 @@ msgid "Manage Account"
 msgstr "Управление учетной записью"
 
 #: src/session/view/account_settings/general_page/mod.ui:125
-#: src/session/view/content/room_details/general_page.ui:291
+#: src/session/view/content/room_details/general_page.ui:288
 msgid "Advanced Information"
 msgstr "Дополнительная информация"
 
@@ -2604,32 +2750,32 @@ msgstr "Копировать ID локального сеанса"
 msgid "Local session ID copied to clipboard"
 msgstr "ID локального сеанса скопирован в буфер обмена"
 
-#: src/session/view/account_settings/notifications_page.rs:269
+#: src/session/view/account_settings/notifications_page.rs:198
 msgid "Could not enable account notifications"
 msgstr "Не удалось включить уведомления учетной записи"
 
-#: src/session/view/account_settings/notifications_page.rs:271
+#: src/session/view/account_settings/notifications_page.rs:200
 msgid "Could not disable account notifications"
 msgstr "Не удалось отключить уведомления учетной записи"
 
-#: src/session/view/account_settings/notifications_page.rs:320
+#: src/session/view/account_settings/notifications_page.rs:290
 msgid "Could not change global notifications setting"
 msgstr "Не удалось изменить настройки глобальных уведомлений"
 
-#: src/session/view/account_settings/notifications_page.rs:339
+#: src/session/view/account_settings/notifications_page.rs:343
 msgid "Remove “{keyword}”"
 msgstr "Удалить \"{keyword}\""
 
-#: src/session/view/account_settings/notifications_page.rs:370
+#: src/session/view/account_settings/notifications_page.rs:374
 msgid "Could not remove notification keyword"
 msgstr "Не удалось удалить ключевое слово для уведомления"
 
-#: src/session/view/account_settings/notifications_page.rs:438
+#: src/session/view/account_settings/notifications_page.rs:442
 msgid "Could not add notification keyword"
 msgstr "Не удалось добавить ключевое слово для уведомления"
 
 #: src/session/view/account_settings/notifications_page.ui:5
-#: src/session/view/content/room_details/general_page.ui:136
+#: src/session/view/content/room_details/general_page.ui:140
 msgid "Notifications"
 msgstr "Уведомления"
 
@@ -2706,6 +2852,18 @@ msgid "You can add users to this list from their room member profile"
 msgstr ""
 "Вы можете добавить пользователей в этот список из профиля участника комнаты"
 
+#: src/session/view/account_settings/safety_page/mod.rs:232
+msgid "Could not change media previews setting"
+msgstr "Не удалось изменить настройки предпросмотра медиафайлов"
+
+#: src/session/view/account_settings/safety_page/mod.rs:289
+msgid "Could not enable avatars for invites"
+msgstr "Не удалось включить аватары для приглашений"
+
+#: src/session/view/account_settings/safety_page/mod.rs:291
+msgid "Could not disable avatars for invites"
+msgstr "Не удалось выключить аватары для приглашений"
+
 #: src/session/view/account_settings/safety_page/mod.ui:5
 msgid "Safety"
 msgstr "Безопасность"
@@ -2771,6 +2929,14 @@ msgstr "Показывать только в приватных комнатах
 msgid "Hide in all rooms"
 msgstr "Скрывать во всех комнатах"
 
+#: src/session/view/account_settings/safety_page/mod.ui:69
+msgid "Show Avatars for Invites"
+msgstr "Показывать аватары для приглашений"
+
+#: src/session/view/account_settings/safety_page/mod.ui:70
+msgid "Display the avatars of the room and the inviter"
+msgstr "Отображать аватары комнаты и приглашающего"
+
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:14
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:18
 msgid "Current Session"
@@ -2799,15 +2965,15 @@ msgstr "Проверенный"
 msgid "Not verified"
 msgstr "Не проверенный"
 
-#: src/session/view/account_settings/user_session/user_session_subpage.rs:213
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:210
 msgid "Session renamed"
 msgstr "Сеанс переименован"
 
-#: src/session/view/account_settings/user_session/user_session_subpage.rs:217
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:214
 msgid "Could not rename session"
 msgstr "Не удалось переименовать сеанс"
 
-#: src/session/view/account_settings/user_session/user_session_subpage.rs:247
+#: src/session/view/account_settings/user_session/user_session_subpage.rs:244
 msgid "Could not disconnect session “{device_name}”"
 msgstr "Не удалось отключить сеанс “{device_name}”"
 
@@ -2852,29 +3018,33 @@ msgstr "Поиск комнаты в открытом каталоге выбр�
 msgid "Switch servers"
 msgstr "Переключить серверы"
 
-#: src/session/view/content/explore/mod.ui:72
+#: src/session/view/content/explore/mod.ui:70
 msgid "No Rooms"
 msgstr "Нет комнат"
 
-#: src/session/view/content/explore/mod.ui:78
+#: src/session/view/content/explore/mod.ui:76
 msgid "No rooms matching the search were found"
 msgstr "Комнат, соответствующих запросу, не найдено"
 
-#: src/session/view/content/explore/mod.ui:89
+#: src/session/view/content/explore/mod.ui:87
 msgid "List of Public Rooms"
 msgstr "Список открытых комнат"
 
-#: src/session/view/content/explore/mod.ui:144
-#: src/session/view/content/room_details/invite_subpage/mod.ui:141
+#: src/session/view/content/explore/mod.ui:122
+#: src/session/view/content/room_details/invite_subpage/mod.ui:136
 #: src/session/view/create_direct_chat_dialog/mod.ui:105
 msgid "An error occurred while searching for matches"
 msgstr "Произошла ошибка при поиске совпадений"
 
-#: src/session/view/content/explore/public_room_row.rs:182
+#: src/session/view/content/explore/public_room_row.rs:183
 msgid "View {room_name}"
 msgstr "Посмотреть {room_name}"
 
-#: src/session/view/content/explore/public_room_row.rs:184
+#: src/session/view/content/explore/public_room_row.rs:189
+msgid "Request an invite to {room_name}"
+msgstr "Запросить приглашение в {room_name}"
+
+#: src/session/view/content/explore/public_room_row.rs:196
 msgid "Join {room_name}"
 msgstr "Присоединиться к {room_name}"
 
@@ -2891,38 +3061,54 @@ msgstr "Добавить сервер"
 msgid "Remove Server"
 msgstr "Удалить сервер"
 
-#. Translators: Do NOT translate the content between '{' and '}', these are
-#. variable names.
-#: src/session/view/content/invite.rs:193
+#. Translators: Do NOT translate the content between '{' and '}', these
+#. are variable names.
+#: src/session/view/content/invite.rs:189
 msgid "{user_name} ({user_id}) invited you"
 msgstr "{user_name} ({user_id}) пригласил(-а) вас"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:259 src/session/view/sidebar/row.rs:716
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:721
 msgid "Could not accept invitation for {room}"
 msgstr "Не удалось принять приглашение для {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:297 src/session/view/sidebar/row.rs:706
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:711
 msgid "Could not decline invitation for {room}"
 msgstr "Не удалось отклонить приглашение для {room}"
 
-#. Translators: This is a verb.
-#: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
-msgid "Invite"
-msgstr "Пригласить"
-
-#: src/session/view/content/invite.ui:116
+#: src/session/view/content/invite.ui:120
 msgid "_Decline"
 msgstr "_Отклонить"
 
-#: src/session/view/content/invite.ui:126 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:130 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "_Принять"
+
+#: src/session/view/content/invite_request.rs:168
+msgid "Could not retract invite request"
+msgstr "Не удалось отозвать запрос на приглашение"
+
+#: src/session/view/content/invite_request.ui:12
+#: src/session/view/content/invite_request.ui:37
+#: src/session/view/content/mod.ui:50
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:367
+msgid "Invite Request"
+msgid_plural "Invite Requests"
+msgstr[0] "Запрос на приглашение"
+msgstr[1] "Запросы на приглашение"
+msgstr[2] "Запросы на приглашение"
+
+#: src/session/view/content/invite_request.ui:107
+msgid "You requested an invite to this room"
+msgstr "Вы запросили приглашение в эту комнату"
+
+#: src/session/view/content/invite_request.ui:117
+#: src/session/view/sidebar/mod.ui:42
+msgid "_Retract"
+msgstr "_Отозвать"
 
 #: src/session/view/content/mod.ui:4
 msgid "Main Content"
@@ -2937,15 +3123,15 @@ msgid "Join a room to start chatting"
 msgstr "Присоединитесь к комнате, чтобы начать общение"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:218
+#: src/session/view/content/room_history/mod.ui:216
 msgid "Room History"
 msgstr "История комнаты"
 
-#: src/session/view/content/mod.ui:50
+#: src/session/view/content/mod.ui:59
 msgid "Room Invite"
 msgstr "Пригласить в комнату"
 
-#: src/session/view/content/mod.ui:59
+#: src/session/view/content/mod.ui:68
 msgid "Explore Rooms"
 msgstr "Обзор комнат"
 
@@ -2970,7 +3156,7 @@ msgid "Remove “{address}”"
 msgstr "Удалить “{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:431
-#: src/session/view/content/room_details/general_page.rs:674
+#: src/session/view/content/room_details/general_page.rs:680
 #: src/session/view/create_room_dialog.ui:132
 msgid "Main Address"
 msgstr "Основной адрес"
@@ -3038,7 +3224,7 @@ msgid "Edit Room Addresses"
 msgstr "Редактировать адрес комнат"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
-#: src/session/view/content/room_details/general_page.ui:170
+#: src/session/view/content/room_details/general_page.ui:174
 msgid "Public Addresses"
 msgstr "Открытые адреса"
 
@@ -3082,42 +3268,25 @@ msgstr "my-room"
 msgid "First part of the address, for example “my-room”"
 msgstr "Первая часть адреса, например, \"my-room\""
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:262
+#: src/session/view/content/room_details/edit_details_subpage.rs:263
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Вы действительно хотите удалить аватар для этой комнаты?"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:325
+#: src/session/view/content/room_details/edit_details_subpage.rs:326
 msgid "Room name saved successfully"
 msgstr "Имя комнаты успешно сохранено"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:396
+#: src/session/view/content/room_details/edit_details_subpage.rs:397
 msgid "Could not change room name"
 msgstr "Не удалось изменить имя комнаты"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:434
+#: src/session/view/content/room_details/edit_details_subpage.rs:435
 msgid "Room description saved successfully"
 msgstr "Описание комнаты успешно сохранено"
 
-#: src/session/view/content/room_details/edit_details_subpage.rs:510
+#: src/session/view/content/room_details/edit_details_subpage.rs:511
 msgid "Could not change room description"
 msgstr "Не удалось изменить описание комнаты"
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:530
-msgid "Discard Unsaved Changes?"
-msgstr "Отклонить несохраненные изменения?"
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:532
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:542
-msgid ""
-"This page contains unsaved changes. Changes which are not saved will be lost."
-msgstr ""
-"Эта страница содержит несохраненные изменения. Изменения, которые не были "
-"сохранены, будут потеряны."
-
-#: src/session/view/content/room_details/edit_details_subpage.rs:542
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:552
-msgid "Discard"
-msgstr "Отклонить"
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:4
 msgid "Edit Room Details"
@@ -3131,19 +3300,12 @@ msgstr "Аватар комнаты"
 msgid "Description"
 msgstr "Описание"
 
-#: src/session/view/content/room_details/edit_details_subpage.ui:140
-#: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:553
-#: src/utils/matrix/media_message.rs:156
-msgid "Save"
-msgstr "Сохранить"
-
 #: src/session/view/content/room_details/edit_details_subpage.ui:143
 msgid "Save Description"
 msgstr "Сохранить описание"
 
-#: src/session/view/content/room_details/general_page.rs:458
-#: src/session/view/content/room_details/general_page.rs:504
+#: src/session/view/content/room_details/general_page.rs:465
+#: src/session/view/content/room_details/general_page.rs:511
 #: src/session/view/content/room_details/invite_subpage/list.rs:260
 msgid "Member"
 msgid_plural "Members"
@@ -3151,75 +3313,71 @@ msgstr[0] "Участник"
 msgstr[1] "Участники"
 msgstr[2] "Участники"
 
-#: src/session/view/content/room_details/general_page.rs:629
+#: src/session/view/content/room_details/general_page.rs:635
 msgid "Could not change notifications setting"
 msgstr "Не удалось изменить настройки уведомлений"
 
-#: src/session/view/content/room_details/general_page.rs:669
-#: src/session/view/content/room_details/general_page.rs:708
+#: src/session/view/content/room_details/general_page.rs:675
+#: src/session/view/content/room_details/general_page.rs:714
 msgid "Copy address"
 msgstr "Копировать адрес"
 
-#: src/session/view/content/room_details/general_page.rs:670
-#: src/session/view/content/room_details/general_page.rs:709
+#: src/session/view/content/room_details/general_page.rs:676
+#: src/session/view/content/room_details/general_page.rs:715
 msgid "Address copied to clipboard"
 msgstr "Адрес скопирован в буфер обмена"
 
-#: src/session/view/content/room_details/general_page.rs:751
+#: src/session/view/content/room_details/general_page.rs:757
 msgid "Room link copied to clipboard"
 msgstr "Ссылка на комнату скопирована в буфер обмена"
 
-#: src/session/view/content/room_details/general_page.rs:804
-msgid "Could not change who can join"
-msgstr "Не удалось изменить, кто может присоединиться"
-
-#: src/session/view/content/room_details/general_page.rs:852
+#: src/session/view/content/room_details/general_page.rs:818
 msgid "Could not change guest access"
 msgstr "Не удалось изменить гостевой доступ"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:869
+#: src/session/view/content/room_details/general_page.rs:835
 msgid "Publish in the {homeserver} directory"
 msgstr "Опубликовать в каталоге {homeserver}"
 
-#: src/session/view/content/room_details/general_page.rs:944
+#: src/session/view/content/room_details/general_page.rs:910
 msgid "Could not publish room in directory"
 msgstr "Не удалось опубликовать комнату в каталоге"
 
-#: src/session/view/content/room_details/general_page.rs:946
+#: src/session/view/content/room_details/general_page.rs:912
 msgid "Could not unpublish room from directory"
 msgstr "Не удалось снять публикацию комнаты из каталога"
 
-#: src/session/view/content/room_details/general_page.rs:967
-#: src/session/view/content/room_details/general_page.ui:277
+#: src/session/view/content/room_details/general_page.rs:933
+#: src/session/view/content/room_details/general_page.ui:274
 msgid "Anyone, even if they are not in the room"
 msgstr "Любой желающий, даже если его нет в комнате"
 
-#: src/session/view/content/room_details/general_page.rs:970
-#: src/session/view/content/room_details/general_page.ui:278
+#: src/session/view/content/room_details/general_page.rs:936
+#: src/session/view/content/room_details/general_page.ui:275
 msgid "Members only, since this option was selected"
 msgstr "Только участники, с тех пор как этот параметр был выбран"
 
-#: src/session/view/content/room_details/general_page.rs:972
-#: src/session/view/content/room_details/general_page.ui:280
+#: src/session/view/content/room_details/general_page.rs:938
+#: src/session/view/content/room_details/general_page.ui:277
 msgid "Members only, since they were invited"
 msgstr "Только участники, с тех пор как они были приглашены"
 
-#: src/session/view/content/room_details/general_page.rs:974
-#: src/session/view/content/room_details/general_page.ui:279
+#: src/session/view/content/room_details/general_page.rs:940
+#: src/session/view/content/room_details/general_page.ui:276
 msgid "Members only, since they joined the room"
 msgstr "Только участники, с тех пор как они присоединились к комнате"
 
-#: src/session/view/content/room_details/general_page.rs:1023
+#: src/session/view/content/room_details/general_page.rs:989
 msgid "Could not change who can read history"
 msgstr "Не удалось изменить, кто может читать историю"
 
-#: src/session/view/content/room_details/general_page.rs:1065
+#: src/session/view/content/room_details/general_page.rs:1031
 msgid "Enable Encryption?"
 msgstr "Включить шифрование?"
 
-#: src/session/view/content/room_details/general_page.rs:1066
+#: src/session/view/content/room_details/general_page.rs:1032
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3227,30 +3385,30 @@ msgstr ""
 "Включение шифрования не позволит новым пользователям прочитать историю до их "
 "прихода. Это нельзя будет отключить позже."
 
-#: src/session/view/content/room_details/general_page.rs:1071
-#: src/session/view/sidebar/mod.rs:321 src/session/view/sidebar/mod.rs:327
+#: src/session/view/content/room_details/general_page.rs:1037
+#: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "Включить"
 
-#: src/session/view/content/room_details/general_page.rs:1082
+#: src/session/view/content/room_details/general_page.rs:1048
 msgid "Could not enable encryption"
 msgstr "Не удалось включить шифрование"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1108
+#: src/session/view/content/room_details/general_page.rs:1107
 msgid "Federated"
 msgstr "Федеративная"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1111
+#: src/session/view/content/room_details/general_page.rs:1110
 msgid "Not federated"
 msgstr "Не федеративная"
 
-#: src/session/view/content/room_details/general_page.rs:1142
+#: src/session/view/content/room_details/general_page.rs:1144
 msgid "Room upgraded successfully"
 msgstr "Комната успешно обновлена"
 
-#: src/session/view/content/room_details/general_page.rs:1146
+#: src/session/view/content/room_details/general_page.rs:1148
 msgid "Could not upgrade room"
 msgstr "Не удалось обновить комнату"
 
@@ -3259,131 +3417,124 @@ msgstr "Не удалось обновить комнату"
 msgid "Room Details"
 msgstr "Информация о комнате"
 
-#: src/session/view/content/room_details/general_page.ui:62
+#: src/session/view/content/room_details/general_page.ui:66
 msgid "Edit Details"
 msgstr "Редактировать подробности"
 
-#: src/session/view/content/room_details/general_page.ui:89
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:333
+#: src/session/view/content/room_details/general_page.ui:93
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:405
 msgid "There are no members in this room"
 msgstr "В этой комнате нет участников"
 
-#: src/session/view/content/room_details/general_page.ui:112
+#: src/session/view/content/room_details/general_page.ui:116
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
 msgstr "Мультимедиа"
 
-#: src/session/view/content/room_details/general_page.ui:119
+#: src/session/view/content/room_details/general_page.ui:123
 msgid "Files"
 msgstr "Файлы"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page.ui:127
+#: src/session/view/content/room_details/general_page.ui:131
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:90
 msgid "Audio"
 msgstr "Аудио"
 
-#: src/session/view/content/room_details/general_page.ui:137
+#: src/session/view/content/room_details/general_page.ui:141
 msgid "Which messages trigger notifications in this room"
 msgstr "Какие сообщения вызывают уведомления в этой комнате"
 
-#: src/session/view/content/room_details/general_page.ui:140
+#: src/session/view/content/room_details/general_page.ui:144
 msgid "Use Global Setting"
 msgstr "Использовать глобальные настройки"
 
-#: src/session/view/content/room_details/general_page.ui:147
+#: src/session/view/content/room_details/general_page.ui:151
 msgid "All Messages"
 msgstr "Все сообщения"
 
-#: src/session/view/content/room_details/general_page.ui:154
+#: src/session/view/content/room_details/general_page.ui:158
 msgid "Only Mentions and Keywords"
 msgstr "Только упоминания и ключевые слова"
 
-#: src/session/view/content/room_details/general_page.ui:161
+#: src/session/view/content/room_details/general_page.ui:165
 msgid "Disable Notifications"
 msgstr "Отключить уведомления"
 
-#: src/session/view/content/room_details/general_page.ui:183
+#: src/session/view/content/room_details/general_page.ui:187
 msgid "Edit Public Addresses"
 msgstr "Редактировать открытые адреса"
 
 #. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page.ui:193
+#: src/session/view/content/room_details/general_page.ui:197
 #: src/session/view/content/room_history/event_actions/context_menu.ui:13
 msgid "_Edit"
 msgstr "_Редактировать"
 
-#: src/session/view/content/room_details/general_page.ui:203
+#: src/session/view/content/room_details/general_page.ui:207
 msgid "This room has no public addresses"
 msgstr "Эта комната не имеет открытых адресов"
 
-#: src/session/view/content/room_details/general_page.ui:220
+#: src/session/view/content/room_details/general_page.ui:224
 msgid "Copy Room Link"
 msgstr "Копировать ссылку на комнату"
 
-#: src/session/view/content/room_details/general_page.ui:230
+#: src/session/view/content/room_details/general_page.ui:234
 msgid "Access and Visibility"
 msgstr "Доступ и видимость"
 
-#: src/session/view/content/room_details/general_page.ui:240
+#: src/session/view/content/room_details/general_page.ui:244
+#: src/session/view/content/room_details/join_rule_subpage.ui:4
 msgid "Who Can Join"
 msgstr "Кто может присоединиться"
 
-#: src/session/view/content/room_details/general_page.ui:244
-msgid "Only Invited Users"
-msgstr "Только приглашенные пользователи"
-
-#: src/session/view/content/room_details/general_page.ui:245
-msgid "Any Registered User"
-msgstr "Любой зарегистрированный пользователь"
-
-#: src/session/view/content/room_details/general_page.ui:261
+#: src/session/view/content/room_details/general_page.ui:258
 msgid "Allow Guests"
 msgstr "Разрешить гостей"
 
-#: src/session/view/content/room_details/general_page.ui:262
+#: src/session/view/content/room_details/general_page.ui:259
 msgid "Guests are Matrix users without a registered account"
 msgstr ""
 "Гости - это пользователи Matrix, не имеющие зарегистрированной учетной записи"
 
-#: src/session/view/content/room_details/general_page.ui:273
+#: src/session/view/content/room_details/general_page.ui:270
 msgid "Who Can Read History"
 msgstr "Кто может читать историю"
 
-#: src/session/view/content/room_details/general_page.ui:294
+#: src/session/view/content/room_details/general_page.ui:291
 msgid "Matrix Room ID"
 msgstr "ID комнаты Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:301
+#: src/session/view/content/room_details/general_page.ui:298
 msgid "Copy Matrix Room ID"
 msgstr "Копировать ID комнаты Matrix"
 
-#: src/session/view/content/room_details/general_page.ui:302
+#: src/session/view/content/room_details/general_page.ui:299
 msgid "Matrix room ID copied to clipboard"
 msgstr "ID комнаты Matrix скопирован в буфер обмена"
 
-#: src/session/view/content/room_details/general_page.ui:307
+#: src/session/view/content/room_details/general_page.ui:304
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Включение шифрования"
 
-#: src/session/view/content/room_details/general_page.ui:318
+#: src/session/view/content/room_details/general_page.ui:315
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Разрешения"
 
-#: src/session/view/content/room_details/general_page.ui:333
+#: src/session/view/content/room_details/general_page.ui:330
 msgid "Room Version"
 msgstr "Версия комнаты"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page.ui:345
+#: src/session/view/content/room_details/general_page.ui:342
 msgid "Upgrade…"
 msgstr "Обновить…"
 
-#: src/session/view/content/room_details/general_page.ui:358
+#: src/session/view/content/room_details/general_page.ui:355
 msgid "Federation"
 msgstr "Федерация"
 
@@ -3420,7 +3571,7 @@ msgstr "Не удалось загрузить аудиофайлы"
 #: src/session/view/content/room_details/history_viewer/audio.ui:50
 #: src/session/view/content/room_details/history_viewer/file.ui:49
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:56
-#: src/session/view/content/room_history/mod.ui:199
+#: src/session/view/content/room_history/mod.ui:197
 msgid "Check your network connection"
 msgstr "Проверьте свое сетевое подключение"
 
@@ -3447,12 +3598,12 @@ msgstr "Открыть файл"
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/matrix/media_message.rs:154
+#: src/utils/matrix/media_message.rs:173
 msgid "Save File"
 msgstr "Сохранить файл"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:173
+#: src/utils/matrix/media_message.rs:192
 msgid "Could not save file"
 msgstr "Не удалось сохранить файл"
 
@@ -3498,7 +3649,7 @@ msgstr "Заблокирован(-а)"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
-#: src/session/view/content/room_details/invite_subpage/mod.rs:228
+#: src/session/view/content/room_details/invite_subpage/mod.rs:235
 msgid "Could not invite {user} to {room}"
 msgid_plural "Could not invite {n} users to {room}"
 msgstr[0] "Не удалось пригласить {user} в {room}"
@@ -3514,40 +3665,69 @@ msgid "I_nvite"
 msgstr "П_ригласить"
 
 #. Translators: In this string, this is a verb.
-#: src/session/view/content/room_details/invite_subpage/mod.ui:58
-#: src/session/view/content/room_details/invite_subpage/mod.ui:64
+#: src/session/view/content/room_details/invite_subpage/mod.ui:53
+#: src/session/view/content/room_details/invite_subpage/mod.ui:59
 #: src/session/view/create_direct_chat_dialog/mod.ui:53
 msgid "Search"
 msgstr "Поиск"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:65
+#: src/session/view/content/room_details/invite_subpage/mod.ui:60
 msgid "Search for users to invite them to this room"
 msgstr "Поиск пользователей, чтобы пригласить их в эту комнату"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:73
+#: src/session/view/content/room_details/invite_subpage/mod.ui:68
 msgid "Matching Users"
 msgstr "Соответствующие пользователи"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:123
-#: src/session/view/content/room_details/invite_subpage/mod.ui:127
+#: src/session/view/content/room_details/invite_subpage/mod.ui:118
+#: src/session/view/content/room_details/invite_subpage/mod.ui:122
 #: src/session/view/create_direct_chat_dialog/mod.ui:92
 msgid "No Users Found"
 msgstr "Пользователи не найдены"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:128
+#: src/session/view/content/room_details/invite_subpage/mod.ui:123
 msgid "No users matching the search were found"
 msgstr "Пользователей, соответствующих запросу, не найдено"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:149
+#: src/session/view/content/room_details/invite_subpage/mod.ui:144
 msgid "Searching for Users"
 msgstr "Поиск пользователей"
+
+#: src/session/view/content/room_details/join_rule_subpage.rs:112
+msgid ""
+"The version of this room does not support all possibilities. Upgrade this "
+"room to the latest version to see more options."
+msgstr ""
+"Версия этой комнаты поддерживает не все возможности. Обновите эту "
+"комнату до последней версии, чтобы увидеть больше возможностей."
+
+#: src/session/view/content/room_details/join_rule_subpage.rs:230
+msgid "Could not change who can join"
+msgstr "Не удалось изменить, кто может присоединиться"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:26
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
+msgid "_Save"
+msgstr "_Сохранить"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:76
+msgid "Only Invited Users"
+msgstr "Только приглашенные пользователи"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:83
+msgid "Any Registered User"
+msgstr "Любой зарегистрированный пользователь"
+
+#: src/session/view/content/room_details/join_rule_subpage.ui:98
+msgid "Allow Invite Requests"
+msgstr "Разрешить запросы на приглашение"
 
 #: src/session/view/content/room_details/member_row.ui:45
 msgid "Identity Verified"
 msgstr "Идентификация подтверждена"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:116
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
@@ -3556,7 +3736,7 @@ msgstr[1] "Приглашенные"
 msgstr[2] "Приглашенные"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:123
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:118
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
@@ -3564,46 +3744,68 @@ msgstr[0] "Заблокированный"
 msgstr[1] "Заблокированные"
 msgstr[2] "Заблокированные"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:278
-msgid "Invited Room Member"
-msgid_plural "Invited Room Members"
-msgstr[0] "Приглашенный участник комнаты"
-msgstr[1] "Приглашенные участники комнаты"
-msgstr[2] "Приглашенные участники комнаты"
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:120
+msgctxt "members"
+msgid "Invite Request"
+msgid_plural "Invite Requests"
+msgstr[0] "Запрос на приглашение"
+msgstr[1] "Запросы на приглашение"
+msgstr[2] "Запросы на приглашение"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:280
-msgid "Banned Room Member"
-msgid_plural "Banned Room Members"
-msgstr[0] "Заблокированный участник комнаты"
-msgstr[1] "Заблокированные участники комнаты"
-msgstr[2] "Заблокированные участники комнаты"
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
+msgid "Could not load the full list of room members"
+msgstr "Не удалось загрузить полный список участников комнаты"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:281
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:360
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Участник комнаты"
 msgstr[1] "Участники комнаты"
 msgstr[2] "Участники комнаты"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:322
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:362
+msgid "Invited Room Member"
+msgid_plural "Invited Room Members"
+msgstr[0] "Приглашенный участник комнаты"
+msgstr[1] "Приглашенные участники комнаты"
+msgstr[2] "Приглашенные участники комнаты"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:365
+msgid "Banned Room Member"
+msgid_plural "Banned Room Members"
+msgstr[0] "Заблокированный участник комнаты"
+msgstr[1] "Заблокированные участники комнаты"
+msgstr[2] "Заблокированные участники комнаты"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:404
+#: src/session/view/content/room_details/permissions/members_subpage.ui:52
+msgid "No Room Members"
+msgstr "Нет участников комнаты"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:409
 msgid "No Invited Room Members"
 msgstr "Нет приглашенных участников комнаты"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:323
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:410
 msgid "There are no invited members in this room"
 msgstr "В этой комнате нет приглашенных участников"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:327
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:414
 msgid "No Banned Room Members"
 msgstr "Нет заблокированных участников комнаты"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:328
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:415
 msgid "There are no banned members in this room"
 msgstr "В этой комнате нет заблокированных участников"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:332
-msgid "No Room Members"
-msgstr "Нет участников комнаты"
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:419
+msgid "No Invite Requests"
+msgstr "Нет запросов на приглашение"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:420
+msgid "There are no invite requests in this room"
+msgstr "В этой комнате нет запросов на приглашение"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3619,12 +3821,7 @@ msgstr "Переключить поиск участников комнаты"
 msgid "Search for room members"
 msgstr "Поиск участников комнаты"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:82
-#: src/session/view/content/room_details/membership_lists.rs:184
-msgid "Could not load the full list of room members"
-msgstr "Не удалось загрузить полный список участников комнаты"
-
-#: src/session/view/content/room_details/mod.rs:132
+#: src/session/view/content/room_details/mod.rs:150
 msgid "The user is not in the room members list anymore"
 msgstr "Пользователь больше не находится в списке участников комнаты"
 
@@ -3637,22 +3834,32 @@ msgid "_Add"
 msgstr "_Добавить"
 
 #. Translators: value used to assign room member roles
-#: src/session/view/content/room_details/permissions/add_members_subpage.ui:50
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:45
 msgid "Assign Power Level"
 msgstr "Назначить уровень полномочий"
 
-#: src/session/view/content/room_details/permissions/add_members_subpage.ui:71
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:66
 msgid "Search Results"
 msgstr "Результаты поиска"
 
-#: src/session/view/content/room_details/permissions/add_members_subpage.ui:96
-#: src/session/view/content/room_details/permissions/add_members_subpage.ui:100
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:91
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:95
 msgid "No Matching Members Found"
 msgstr "Не найдено подходящих участников"
 
-#: src/session/view/content/room_details/permissions/add_members_subpage.ui:101
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:96
 msgid "No room members matching the search were found"
 msgstr "Участников комнаты, соответствующих запросу, не найдено"
+
+#: src/session/view/content/room_details/permissions/members_subpage.rs:195
+msgid "There are no room members with assigned power levels in this room"
+msgstr "В этой комнате нет участников с назначенными уровнями полномочий"
+
+#: src/session/view/content/room_details/permissions/members_subpage.rs:197
+msgid ""
+"There are no room members with assigned power levels matching the search"
+msgstr ""
+"В этой комнате нет участников с назначенными уровнями полномочий, соответствующих поиску"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
@@ -3660,21 +3867,13 @@ msgstr "Участников комнаты, соответствующих за
 msgid "Members With Assigned Power Levels"
 msgstr "Участники с назначенными уровнями полномочий"
 
-#: src/session/view/content/room_details/permissions/members_subpage.ui:83
+#: src/session/view/content/room_details/permissions/members_subpage.ui:105
 msgid "Add"
 msgstr "Добавить"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:540
-msgid "Save Changes?"
-msgstr "Сохранить изменения?"
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:596
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:585
 msgid "Could not save permissions"
 msgstr "Не удалось сохранить разрешения"
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
-msgid "_Save"
-msgstr "_Сохранить"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:44
 msgid "Room Actions"
@@ -3735,7 +3934,8 @@ msgid "Change Server Access Control List"
 msgstr "Изменение списка контроля доступа к серверу"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:111
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:4
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:43
 msgid "Upgrade Room"
 msgstr "Обновить комнату"
 
@@ -3767,20 +3967,38 @@ msgid "Default Power Level"
 msgstr "Уровень полномочий по умолчанию"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:85
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:114
 msgid "Stable"
 msgstr "Стабильная"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:87
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
 msgid "Experimental"
 msgstr "Экспериментальная"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:94
-msgid "Version"
-msgstr "Версия"
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:196
+msgid ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The other "
+"creators will be demoted to the default power level."
+msgstr[0] "После обновления вы будете единственным создателем в комнате. Другой создатель будет понижен до уровня полномочий по умолчанию."
+msgstr[1] "После обновления вы будете единственным создателем в комнате. Другие создатели будут понижены до уровня полномочий по умолчанию."
+msgstr[2] "После обновления вы будете единственным создателем в комнате. Другие создатели будут понижены до уровня полномочий по умолчанию."
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:112
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:202
+msgid ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creator will be demoted to the default power level."
+msgid_plural ""
+"After the upgrade, you will be the only creator in the room. The current "
+"creators will be demoted to the default power level."
+msgstr[0] "После обновления вы будете единственным создателем в комнате. Текущий создатель будет понижен до уровня полномочий по умолчанию."
+msgstr[1] "После обновления вы будете единственным создателем в комнате. Текущие создатели будут понижены до уровня полномочий по умолчанию."
+msgstr[2] "После обновления вы будете единственным создателем в комнате. Текущие создатели будут понижены до уровня полномочий по умолчанию."
+
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:59
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new "
 "features from the Matrix specification. It can also be used to reset the "
@@ -3795,8 +4013,12 @@ msgstr ""
 "может привести к сбоям в работе, поскольку участникам комнаты придется "
 "присоединяться к новой комнате вручную."
 
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:74
+msgid "Version"
+msgstr "Версия"
+
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:118
+#: src/session/view/content/room_details/upgrade_dialog/mod.ui:120
 msgid "Upgrade"
 msgstr "Обновить"
 
@@ -3825,7 +4047,7 @@ msgid "New Messages"
 msgstr "Новые сообщения"
 
 #: src/session/view/content/room_history/event_actions/context_menu.rs:83
-#: src/session/view/sidebar/mod.rs:373
+#: src/session/view/sidebar/mod.rs:372
 msgid "Context Menu"
 msgstr "Контекстное меню"
 
@@ -3845,84 +4067,89 @@ msgid "_Select"
 msgstr "_Выбрать"
 
 #: src/session/view/content/room_history/event_actions/context_menu.ui:34
+#: src/session/view/content/room_history/mod.ui:66
+msgid "Revoke _Invite"
+msgstr "Отозвать _приглашение"
+
+#: src/session/view/content/room_history/event_actions/context_menu.ui:41
 msgid "_Copy Text"
 msgstr "_Копировать текст"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:39
+#: src/session/view/content/room_history/event_actions/context_menu.ui:46
 msgid "Copy T_humbnail"
 msgstr "Копировать _эскиз"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:44
+#: src/session/view/content/room_history/event_actions/context_menu.ui:51
 #: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "Со_хранить изображение"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:49
+#: src/session/view/content/room_history/event_actions/context_menu.ui:56
 #: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "Со_хранить видео"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:54
+#: src/session/view/content/room_history/event_actions/context_menu.ui:61
 msgid "S_ave Audio"
 msgstr "Со_хранить аудио"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:59
+#: src/session/view/content/room_history/event_actions/context_menu.ui:66
 #: src/session/view/media_viewer.ui:21
 msgid "Copy Message _Link"
 msgstr "Копировать _ссылку на сообщение"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:64
-#: src/session/view/content/room_history/mod.ui:121
+#: src/session/view/content/room_history/event_actions/context_menu.ui:71
+#: src/session/view/content/room_history/mod.ui:116
 msgid "_View Details"
 msgstr "П_осмотреть подробности"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:71
+#: src/session/view/content/room_history/event_actions/context_menu.ui:78
 msgid "_Discard"
 msgstr "О_тклонить"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:78
+#: src/session/view/content/room_history/event_actions/context_menu.ui:85
 msgid "Rep_ort…"
 msgstr "_Сообщить…"
 
-#: src/session/view/content/room_history/event_actions/context_menu.ui:83
+#: src/session/view/content/room_history/event_actions/context_menu.ui:90
 msgid "Re_move"
 msgstr "_Удалить"
 
-#: src/session/view/content/room_history/event_actions/group.rs:63
+#: src/session/view/content/room_history/event_actions/group.rs:65
 #: src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Ссылка на сообщение скопирована в буфер обмена"
 
-#: src/session/view/content/room_history/event_actions/group.rs:336
+#: src/session/view/content/room_history/event_actions/group.rs:339
 msgid "Thumbnail copied to clipboard"
 msgstr "Эскиз скопирован в буфер обмена"
 
-#: src/session/view/content/room_history/event_actions/group.rs:470
+#: src/session/view/content/room_history/event_actions/group.rs:512
 msgid "Text copied to clipboard"
 msgstr "Текст скопирован в буфер обмена"
 
-#: src/session/view/content/room_history/event_actions/group.rs:535
+#: src/session/view/content/room_history/event_actions/group.rs:577
 msgid "Remove Message?"
 msgstr "Удалить сообщение?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:537
+#: src/session/view/content/room_history/event_actions/group.rs:579
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Вы действительно хотите удалить это сообщение? Это невозможно отменить."
 
-#: src/session/view/content/room_history/event_actions/group.rs:551
+#: src/session/view/content/room_history/event_actions/group.rs:593
 msgid "Could not remove message"
 msgstr "Не удалось удалить сообщение"
 
-#: src/session/view/content/room_history/event_actions/group.rs:566
+#: src/session/view/content/room_history/event_actions/group.rs:608
 msgid "Could not toggle reaction"
 msgstr "Не удалось переключить реакцию"
 
-#: src/session/view/content/room_history/event_actions/group.rs:598
+#: src/session/view/content/room_history/event_actions/group.rs:640
 msgid "Report Event?"
 msgstr "Сообщить о событии?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:600
+#: src/session/view/content/room_history/event_actions/group.rs:642
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3933,17 +4160,22 @@ msgstr ""
 "содержимое события, если оно зашифровано или отредактировано."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:607
+#: src/session/view/content/room_history/event_actions/group.rs:649
 msgid "Report"
 msgstr "Сообщить"
 
-#: src/session/view/content/room_history/event_actions/group.rs:625
+#: src/session/view/content/room_history/event_actions/group.rs:667
 msgid "Could not report event"
 msgstr "Не удалось сообщить о событии"
 
-#: src/session/view/content/room_history/event_actions/group.rs:645
+#: src/session/view/content/room_history/event_actions/group.rs:687
 msgid "Could not discard message"
 msgstr "Не удалось отклонить сообщение"
+
+#: src/session/view/content/room_history/event_actions/group.rs:716
+#: src/session/view/content/room_history/sender_avatar/mod.rs:595
+msgid "Revoking invite…"
+msgstr "Отзыв приглашения…"
 
 #: src/session/view/content/room_history/event_actions/quick_reaction_chooser.ui:7
 msgid "Send a Reaction"
@@ -3965,7 +4197,7 @@ msgstr "Не удалось получить аудиофайл"
 msgid "Error reading audio file"
 msgstr "Ошибка чтения аудиофайла"
 
-#: src/session/view/content/room_history/message_row/content.rs:283
+#: src/session/view/content/room_history/message_row/content.rs:310
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3973,8 +4205,12 @@ msgstr ""
 "Не удалось расшифровать это сообщение, расшифровка будет повторена, как "
 "только ключи будут доступны."
 
-#: src/session/view/content/room_history/message_row/content.rs:300
-#: src/session/view/content/room_history/message_row/content.rs:368
+#: src/session/view/content/room_history/message_row/content.rs:314
+msgid "This message was removed."
+msgstr "Это сообщение было удалено."
+
+#: src/session/view/content/room_history/message_row/content.rs:331
+#: src/session/view/content/room_history/message_row/content.rs:399
 msgid "Unsupported event"
 msgstr "Неподдерживаемое событие"
 
@@ -4016,7 +4252,7 @@ msgstr "Отправлено"
 msgid "Edited"
 msgstr "Изменено"
 
-#: src/session/view/content/room_history/message_row/mod.rs:234
+#: src/session/view/content/room_history/message_row/mod.rs:243
 msgid "Sent at {time}"
 msgstr "Отправлено в {time}"
 
@@ -4041,50 +4277,55 @@ msgstr "Реакции"
 msgid "In Reply To"
 msgstr "В ответ на"
 
+#. Translators: This is a verb, as in 'Mention user'.
+#: src/session/view/content/room_history/message_row/sender_name.rs:188
+msgid "Mention"
+msgstr "Упомянуть"
+
 #. Translators: this is the fallback title for an expander.
-#: src/session/view/content/room_history/message_row/text/widgets.rs:434
+#: src/session/view/content/room_history/message_row/text/widgets.rs:439
 msgid "Details"
 msgstr "Подробности"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:441
+#: src/session/view/content/room_history/message_row/visual_media.rs:553
 msgid "Image"
 msgstr "Изображение"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:442
+#: src/session/view/content/room_history/message_row/visual_media.rs:554
 msgid "Sticker"
 msgstr "Стикер"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:443
+#: src/session/view/content/room_history/message_row/visual_media.rs:555
 msgid "Video"
 msgstr "Видео"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:448
+#: src/session/view/content/room_history/message_row/visual_media.rs:560
 msgid "Image: {filename}"
 msgstr "Изображение: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:451
+#: src/session/view/content/room_history/message_row/visual_media.rs:563
 msgid "Sticker: {filename}"
 msgstr "Стикер: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:454
+#: src/session/view/content/room_history/message_row/visual_media.rs:566
 msgid "Video: {filename}"
 msgstr "Видео: {filename}"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:648
-#: src/utils/media/image/mod.rs:762
+#: src/session/view/content/room_history/message_row/visual_media.rs:740
+#: src/utils/media/image/mod.rs:872
 msgid "Could not retrieve media"
 msgstr "Не удалось получить медиафайл"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:697
-#: src/utils/media/image/mod.rs:765
+#: src/session/view/content/room_history/message_row/visual_media.rs:789
+#: src/utils/media/image/mod.rs:875
 msgid "An unexpected error occurred"
 msgstr "Произошла непредвиденная ошибка"
 
-#: src/session/view/content/room_history/message_row/visual_media.ui:54
+#: src/session/view/content/room_history/message_row/visual_media.ui:53
 msgid "Click to show preview"
 msgstr "Нажмите, чтобы показать предпросмотр"
 
-#: src/session/view/content/room_history/message_row/visual_media.ui:83
+#: src/session/view/content/room_history/message_row/visual_media.ui:84
 msgid "Hide media preview"
 msgstr "Скрыть предпросмотр медиафайла"
 
@@ -4092,90 +4333,98 @@ msgstr "Скрыть предпросмотр медиафайла"
 msgid "_Send"
 msgstr "_Отправить"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:668
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:684
 msgid "Public Room Mention Auto-completion"
 msgstr "Автозаполнение упоминания открытой комнаты"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:670
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:686
 msgid "Room Member Mention Auto-completion"
 msgstr "Автозаполнение упоминания участника комнаты"
 
+#: src/session/view/content/room_history/message_toolbar/mod.rs:353
+msgid "The conversation continues in a new room"
+msgstr "Разговор продолжается в новой комнате"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:355
+msgid "The conversation has ended"
+msgstr "Разговор завершен"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:363
+#: src/session/view/content/room_history/message_toolbar/mod.rs:517
 msgid "Reply to {user}"
 msgstr "Ответ для {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:379
+#: src/session/view/content/room_history/message_toolbar/mod.rs:535
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редактирование"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:523
+#: src/session/view/content/room_history/message_toolbar/mod.rs:704
 msgid "Could not send reply"
 msgstr "Не удалось отправить ответ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:539
+#: src/session/view/content/room_history/message_toolbar/mod.rs:720
 msgid "Could not send edit"
 msgstr "Не удалось отправить правку"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:550
+#: src/session/view/content/room_history/message_toolbar/mod.rs:731
 msgid "Could not send message"
 msgstr "Не удалось отправить сообщение"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:596
+#: src/session/view/content/room_history/message_toolbar/mod.rs:777
 msgid "Your Location"
 msgstr "Ваше местоположение"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:657
+#: src/session/view/content/room_history/message_toolbar/mod.rs:838
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Местоположение пользователя {geo_uri} в {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:679
+#: src/session/view/content/room_history/message_toolbar/mod.rs:860
 msgid "Could not send location"
 msgstr "Не удалось отправить местоположение"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:686
+#: src/session/view/content/room_history/message_toolbar/mod.rs:867
 msgid "The location request has been cancelled"
 msgstr "Запрос местоположения был отменен"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:687
+#: src/session/view/content/room_history/message_toolbar/mod.rs:868
 msgid "The location services are disabled"
 msgstr "Службы определения местоположения отключены"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:688
+#: src/session/view/content/room_history/message_toolbar/mod.rs:869
 msgid "Could not retrieve current location"
 msgstr "Не удалось получить текущее местоположение"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:719
+#: src/session/view/content/room_history/message_toolbar/mod.rs:904
 msgid "Could not send file"
 msgstr "Не удалось отправить файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:773
+#: src/session/view/content/room_history/message_toolbar/mod.rs:958
 msgid "Select File"
 msgstr "Выбрать файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:775
+#: src/session/view/content/room_history/message_toolbar/mod.rs:960
 msgid "Select"
 msgstr "Выбрать"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:790
+#: src/session/view/content/room_history/message_toolbar/mod.rs:975
 msgid "Could not open file"
 msgstr "Не удалось открыть файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:816
-#: src/session/view/content/room_history/message_toolbar/mod.rs:824
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1001
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1009
 msgid "Error reading file"
 msgstr "Ошибка чтения файла"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:885
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1070
 msgid "Error getting image from clipboard"
 msgstr "Ошибка получения изображения из буфера обмена"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:902
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1087
 msgid "Error getting file from clipboard"
 msgstr "Ошибка получения файла из буфера обмена"
 
@@ -4210,7 +4459,7 @@ msgstr "Больше опций"
 msgid "Send Message"
 msgstr "Отправить сообщение"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:175
+#: src/session/view/content/room_history/message_toolbar/mod.ui:181
 msgid "You don’t have permission to send messages to this room"
 msgstr "У вас нет разрешения на отправку сообщений в эту комнату"
 
@@ -4219,51 +4468,50 @@ msgstr "У вас нет разрешения на отправку сообще
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:109
-msgid "%B %-e at %I∶%M %p"
-msgstr "%-e %B в %I∶%M %p"
+msgid "%B %-e at %I:%M %p"
+msgstr "%-e %B в %I:%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:115
-msgid "%B %-e at %H∶%M"
-msgstr "%-e %B в %H∶%M"
+msgid "%B %-e at %H:%M"
+msgstr "%-e %B в %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:344
+#: src/session/view/content/room_history/mod.rs:423
 msgid "Error getting file from drop"
 msgstr "Ошибка получения файла из сброса"
 
-#: src/session/view/content/room_history/mod.rs:926
-#: src/session/view/content/room_history/mod.rs:930
-#: src/session/view/content/room_history/state/tombstone.ui:14
-msgid "There is a newer version of this room"
-msgstr "Есть более новая версия этой комнаты"
-
-#: src/session/view/content/room_history/mod.rs:933
-msgid "This room was closed"
-msgstr "Эта комната была закрыта"
-
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:962
-#: src/session/view/sidebar/row.rs:739
+#: src/session/view/content/room_history/mod.rs:1031
+#: src/session/view/sidebar/row.rs:744
 msgid "Could not leave {room}"
 msgstr "Не удалось покинуть {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:985
-#: src/session/view/sidebar/row.rs:728
+#: src/session/view/content/room_history/mod.rs:1054
+#: src/session/view/sidebar/row.rs:733
 msgid "Could not join {room}"
 msgstr "Не удалось присоединиться к {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1002
-#: src/session/view/sidebar/row.rs:772
+#: src/session/view/content/room_history/mod.rs:1071
+#: src/session/view/sidebar/row.rs:777
 msgid "Could not forget {room}"
 msgstr "Не удалось забыть {room}"
 
-#: src/session/view/content/room_history/mod.rs:1073
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/view/content/room_history/mod.rs:1115
+msgid "There is a pending invite request"
+msgid_plural "There are {n} pending invite requests"
+msgstr[0] "Есть ожидающий ответа запрос на приглашение"
+msgstr[1] "Есть {n} ожидающих ответа запроса на приглашение"
+msgstr[2] "Есть {n} ожидающих ответа запросов на приглашение"
+
+#: src/session/view/content/room_history/mod.rs:1139
 msgid "Sender Context Menu"
 msgstr "Контекстное меню отправителя"
 
@@ -4276,17 +4524,17 @@ msgid "_Invite New Members…"
 msgstr "_Пригласить новых участников…"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:78
+#: src/session/view/sidebar/mod.ui:88
 msgid "_Leave Room"
 msgstr "_Покинуть комнату"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:83
+#: src/session/view/sidebar/mod.ui:93
 msgid "Re_join Room"
 msgstr "Ве_рнуться в комнату"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:98
 msgid "_Forget Room"
 msgstr "_Забыть комнату"
 
@@ -4309,10 +4557,6 @@ msgstr "Копировать _ссылку"
 msgid "_Invite"
 msgstr "_Пригласить"
 
-#: src/session/view/content/room_history/mod.ui:66
-msgid "Revoke _Invite"
-msgstr "Отозвать _приглашение"
-
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
 #: src/session/view/content/room_history/mod.ui:72
 msgid "M_ute"
@@ -4327,51 +4571,47 @@ msgstr "_Разглушить"
 msgid "_Kick"
 msgstr "_Удалить"
 
-#: src/session/view/content/room_history/mod.ui:88
-msgid "_Deny Access"
-msgstr "_Отказать в доступе"
-
 #. Translators: In this string, 'Ban' is a verb.
-#: src/session/view/content/room_history/mod.ui:94
+#: src/session/view/content/room_history/mod.ui:89
 msgid "_Ban"
 msgstr "_Заблокировать"
 
-#: src/session/view/content/room_history/mod.ui:99
+#: src/session/view/content/room_history/mod.ui:94
 msgid "Un_ban"
 msgstr "Ра_зблокировать"
 
-#: src/session/view/content/room_history/mod.ui:104
+#: src/session/view/content/room_history/mod.ui:99
 msgid "_Remove Messages"
 msgstr "_Удалить сообщения"
 
-#: src/session/view/content/room_history/mod.ui:109
+#: src/session/view/content/room_history/mod.ui:104
 msgid "I_gnore"
 msgstr "_Игнорировать"
 
-#: src/session/view/content/room_history/mod.ui:114
+#: src/session/view/content/room_history/mod.ui:109
 msgid "Stop I_gnoring"
 msgstr "Остановить _игнорирование"
 
-#: src/session/view/content/room_history/mod.ui:152
+#: src/session/view/content/room_history/mod.ui:147
 msgid "Room Menu"
 msgstr "Меню комнаты"
 
-#: src/session/view/content/room_history/mod.ui:191
-#: src/session/view/content/room_history/mod.ui:198
+#: src/session/view/content/room_history/mod.ui:189
+#: src/session/view/content/room_history/mod.ui:196
 msgid "Could Not Load Room"
 msgstr "Не удалось загрузить комнату"
 
-#: src/session/view/content/room_history/mod.ui:232
+#: src/session/view/content/room_history/mod.ui:230
 msgid "Scroll to Bottom"
 msgstr "Прокрутить вниз"
 
-#: src/session/view/content/room_history/mod.ui:245
+#: src/session/view/content/room_history/mod.ui:243
 msgid "Drop Here to Send"
 msgstr "Сбросьте здесь, чтобы отправить"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:260
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:259
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Просмотрено 1 участником"
@@ -4380,84 +4620,76 @@ msgstr[2] "Просмотрено {n} участниками"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:274
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:273
 msgid "Seen by {name}"
 msgstr "Просмотрено {name}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:99
+#: src/session/view/content/room_history/sender_avatar/mod.rs:104
 msgid "Link copied to clipboard"
 msgstr "Ссылка скопирована в буфер обмена"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:306
+#: src/session/view/content/room_history/sender_avatar/mod.rs:307
 msgid "{user}’s avatar"
 msgstr "Аватар {user}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:548
+#: src/session/view/content/room_history/sender_avatar/mod.rs:542
 msgid "Creating a new Direct Chat…"
 msgstr "Создание нового прямого чата…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:572
+#: src/session/view/content/room_history/sender_avatar/mod.rs:566
 msgid "Inviting user…"
 msgstr "Приглашение пользователя…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
-msgid "Revoking invite…"
-msgstr "Отзыв приглашения…"
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:602
-msgid "Denying access…"
-msgstr "Отказ в доступе…"
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:603
+#: src/session/view/content/room_history/sender_avatar/mod.rs:596
 msgid "Kicking user…"
 msgstr "Удаление пользователя…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:639
+#: src/session/view/content/room_history/sender_avatar/mod.rs:636
 msgid "Muting member…"
 msgstr "Приглушение участника…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:643
+#: src/session/view/content/room_history/sender_avatar/mod.rs:640
 msgid "Unmuting member…"
 msgstr "Разглушение участника…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:654
+#: src/session/view/content/room_history/sender_avatar/mod.rs:651
 msgid "Member muted"
 msgstr "Участник приглушен"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:656
+#: src/session/view/content/room_history/sender_avatar/mod.rs:653
 msgid "Member unmuted"
 msgstr "Участник разглушен"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:659
+#: src/session/view/content/room_history/sender_avatar/mod.rs:656
 msgid "Could not mute member"
 msgstr "Не удалось приглушить участника"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:661
+#: src/session/view/content/room_history/sender_avatar/mod.rs:658
 msgid "Could not unmute member"
 msgstr "Не удалось разглушить участника"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:690
+#: src/session/view/content/room_history/sender_avatar/mod.rs:687
 msgid "Banning user…"
 msgstr "Блокировка пользователя…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:715
+#: src/session/view/content/room_history/sender_avatar/mod.rs:712
 msgid "Unbanning user…"
 msgstr "Разблокировка пользователя…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:759
+#: src/session/view/content/room_history/sender_avatar/mod.rs:756
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Удаление 1 сообщения, отправленного пользователем…"
 msgstr[1] "Удаление {n} сообщений, отправленных пользователем…"
 msgstr[2] "Удаление {n} сообщений, отправленных пользователем…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:793
+#: src/session/view/content/room_history/sender_avatar/mod.rs:790
 msgid "Stop ignoring user…"
 msgstr "Остановка игнорирования пользователя…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:795
+#: src/session/view/content/room_history/sender_avatar/mod.rs:792
 msgid "Ignoring user…"
 msgstr "Игнорирование пользователя…"
 
@@ -4465,151 +4697,136 @@ msgstr "Игнорирование пользователя…"
 msgid "Open Sender Context Menu"
 msgstr "Открыть контекстное меню отправителя"
 
-#: src/session/view/content/room_history/state/content.rs:74
+#: src/session/view/content/room_history/state/content.rs:100
 msgid "This room is encrypted from this point on."
 msgstr "С этого момента эта комната зашифрована."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#. Translators: Do NOT translate the content between '{' and '}', this is
-#. a variable name.
-#: src/session/view/content/room_history/state/content.rs:89
-#: src/session/view/content/room_history/state/content.rs:168
-msgid "{user} was invited to this room."
-msgstr "{user} был(-а) приглашен(-а) в эту комнату."
+#. Translators: Do NOT translate the content between '{' and '}', these are
+#. variable names.
+#: src/session/view/content/room_history/state/content.rs:115
+#: src/session/view/content/room_history/state/content.rs:203
+msgid "{sender} invited {user}."
+msgstr "{sender} пригласил(-а) {user}."
 
-#: src/session/view/content/room_history/state/content.rs:101
+#: src/session/view/content/room_history/state/content.rs:127
 msgid "An unsupported state event was received."
 msgstr "Получено неподдерживаемое событие состояния."
 
-#. Translators: Do NOT translate the content between '{' and '}', this
-#. is a variable name.
-#. We don't know what changed so fall back to the membership.
-#. Translators: Do NOT translate the content between '{' and '}', this
-#. is a variable name.
-#: src/session/view/content/room_history/state/content.rs:140
-#: src/session/view/content/room_history/state/content.rs:349
+#: src/session/view/content/room_history/state/content.rs:164
+#: src/session/view/content/room_history/state/content.rs:389
 msgid "{user} joined this room."
 msgstr "{user} присоединился(-ась) к этой комнате."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:145
+#: src/session/view/content/room_history/state/content.rs:171
 msgid "{user} left the room."
 msgstr "{user} покинул(-а) комнату."
 
 #. Translators: Do NOT translate the content between
-#. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:150
-msgid "{user} was banned."
-msgstr "{user} был(-а) заблокирован(-а)."
+#. '{' and '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:176
+msgid "{sender} banned {user}."
+msgstr "{sender} заблокировал(-а) {user}."
 
 #. Translators: Do NOT translate the content between
-#. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:156
-msgid "{user} was unbanned."
-msgstr "{user} был(-а) разблокирован(-а)."
+#. '{' and '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:185
+msgid "{sender} unbanned {user}."
+msgstr "{sender} разблокировал(-а) {user}."
 
 #. Translators: Do NOT translate the content between '{' and
-#. '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:162
-msgid "{user} was kicked out of the room."
-msgstr "{user} был(-а) удален(-а) из комнаты."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is
-#. a variable name.
-#: src/session/view/content/room_history/state/content.rs:174
-msgid "{user} was kicked out of the room and banned."
-msgstr "{user} был(-а) удален(-а) из комнаты и заблокирован(-а)."
+#. '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:194
+msgid "{sender} kicked {user} out."
+msgstr "{sender} удалил(-а) {user}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:180
+#: src/session/view/content/room_history/state/content.rs:212
 msgid "{user} accepted the invite."
 msgstr "{user} принял(-а) приглашение."
 
 #. Translators: Do NOT translate the content between
-#. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:186
-msgid "{user} rejected the invite."
+#. '{' and '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:218
+msgid "{user} declined the invite."
 msgstr "{user} отклонил(-а) приглашение."
 
 #. Translators: Do NOT translate the content between
-#. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:192
-msgid "The invitation for {user} has been revoked."
-msgstr "Приглашение для {user} было отозвано."
+#. '{' and '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:227
+msgid "{sender} revoked the invitation for {user}."
+msgstr "{sender} отозвал(-а) приглашение для {user}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state/content.rs:201
+#: src/session/view/content/room_history/state/content.rs:239
 msgid "{user} requested to be invited to this room."
 msgstr "{user} запросил(-а) приглашение в эту комнату."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:208
+#: src/session/view/content/room_history/state/content.rs:246
 msgid "{user} retracted their request to be invited to this room."
 msgstr "{user} отозвал(-а) свой запрос на приглашение в эту комнату."
 
 #. Translators: Do NOT translate the content between
-#. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:214
-msgid "{user}’s request to be invited to this room was denied."
-msgstr "Запрос {user} на приглашение в эту комнату был отклонен."
+#. '{' and '}', these are variable names.
+#: src/session/view/content/room_history/state/content.rs:252
+msgid "{sender} denied {user}’s request to be invited to this room."
+msgstr "{sender} отклонил(-а) запрос на приглашение от {user} в эту комнату."
 
-#: src/session/view/content/room_history/state/content.rs:222
+#: src/session/view/content/room_history/state/content.rs:263
 msgid "An unsupported room member event was received."
 msgstr "Получено неподдерживаемое событие участника комнаты."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:293
+#: src/session/view/content/room_history/state/content.rs:330
 msgid "{previous_user_name} changed their display name to {new_user_name}."
 msgstr ""
 "{previous_user_name} изменил(-а) свое отображаемое имя на {new_user_name}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:303
+#: src/session/view/content/room_history/state/content.rs:340
 msgid "{previous_user_name} removed their display name."
 msgstr "{previous_user_name} удалил(-а) свое отображаемое имя."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:315
+#: src/session/view/content/room_history/state/content.rs:352
 msgid "{user_id} set their display name to {new_user_name}."
 msgstr "{user_id} установил(-а) свое отображаемое имя на {new_user_name}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:327
+#: src/session/view/content/room_history/state/content.rs:366
 msgid "{user} set their avatar."
 msgstr "{user} установил(-а) свой аватар."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:334
+#: src/session/view/content/room_history/state/content.rs:373
 msgid "{user} removed their avatar."
 msgstr "{user} удалил(-а) свой аватар."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state/content.rs:341
+#: src/session/view/content/room_history/state/content.rs:380
 msgid "{user} changed their avatar."
 msgstr "{user} изменил(-а) свой аватар."
 
 #: src/session/view/content/room_history/state/creation.rs:57
-msgid "This is the continuation of an upgraded room."
-msgstr "Это продолжение обновленной комнаты."
+msgid "This conversation started in another room."
+msgstr "Этот разговор начался в другой комнате."
 
 #: src/session/view/content/room_history/state/creation.rs:62
-msgid "This is the beginning of this room."
-msgstr "Это начало этой комнаты."
-
-#: src/session/view/content/room_history/state/creation.ui:20
-msgid "Previous room"
-msgstr "Предыдущая комната"
+msgid "The conversation starts here."
+msgstr "Разговор начинается здесь."
 
 #. Translators: This is a change in the room, not a change between
 #. rooms. Do NOT translate the content between '{' and '}', this
@@ -4678,19 +4895,19 @@ msgstr "Поиск тех, с кем можно начать новый чат"
 msgid "No users matching the search pattern were found"
 msgstr "Пользователей, отвечающих критерию поиска, не найдено"
 
-#: src/session/view/create_room_dialog.rs:119
+#: src/session/view/create_room_dialog.rs:120
 msgid "Cannot contain “:”"
 msgstr "Не может содержать “:”"
 
-#: src/session/view/create_room_dialog.rs:122
+#: src/session/view/create_room_dialog.rs:123
 msgid "Cannot contain “#”"
 msgstr "Не может содержать “#”"
 
-#: src/session/view/create_room_dialog.rs:125
+#: src/session/view/create_room_dialog.rs:126
 msgid "Too long. Use a shorter address."
 msgstr "Слишком длинный. Используйте более короткий адрес."
 
-#: src/session/view/create_room_dialog.rs:234
+#: src/session/view/create_room_dialog.rs:239
 msgid "The address is already taken."
 msgstr "Адрес уже занят."
 
@@ -4838,19 +5055,19 @@ msgstr "Во весь экран"
 msgid "Exit Fullscreen"
 msgstr "Выйти из полноэкранного режима"
 
-#: src/session/view/sidebar/mod.rs:321
+#: src/session/view/sidebar/mod.rs:320
 msgid "No crypto identity"
 msgstr "Нет криптоидентификации"
 
-#: src/session/view/sidebar/mod.rs:323
+#: src/session/view/sidebar/mod.rs:322
 msgid "Crypto identity incomplete"
 msgstr "Криптоидентификация не завершена"
 
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:326
 msgid "Account recovery disabled"
 msgstr "Восстановление учетной записи отключено"
 
-#: src/session/view/sidebar/mod.rs:330
+#: src/session/view/sidebar/mod.rs:329
 msgid "Account recovery incomplete"
 msgstr "Восстановление учетной записи не завершено"
 
@@ -4878,69 +5095,73 @@ msgstr "_О приложении"
 msgid "Dec_line"
 msgstr "Отк_лонить"
 
-#: src/session/view/sidebar/mod.ui:44
+#: src/session/view/sidebar/mod.ui:49
 msgid "_Mark as Read"
 msgstr "О_тметить как прочитанное"
 
-#: src/session/view/sidebar/mod.ui:51
+#: src/session/view/sidebar/mod.ui:54
+msgid "_Mark as Unread"
+msgstr "О_тметить как непрочитанное"
+
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to _Favorites"
 msgstr "Переместить в _Избранное"
 
-#: src/session/view/sidebar/mod.ui:56
+#: src/session/view/sidebar/mod.ui:66
 msgid "Move to _Rooms"
 msgstr "Переместить в _Комнаты"
 
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/sidebar/mod.ui:71
 msgid "Move to Low _Priority"
 msgstr "Переместить в Низкий _приоритет"
 
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/sidebar/mod.ui:76
 msgid "Mark as _Direct Chat"
 msgstr "Отметить как _прямой чат"
 
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:81
 msgid "Unmark as _Direct Chat"
 msgstr "Снять отметку о _прямом чате"
 
-#: src/session/view/sidebar/mod.ui:95
+#: src/session/view/sidebar/mod.ui:105
 msgid "Sidebar"
 msgstr "Боковая панель"
 
-#: src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:122
 msgid "Main Menu"
 msgstr "Главное меню"
 
-#: src/session/view/sidebar/mod.ui:121
+#: src/session/view/sidebar/mod.ui:131
 msgid "Toggle Room Search"
 msgstr "Переключить поиск комнаты"
 
-#: src/session/view/sidebar/mod.ui:134
+#: src/session/view/sidebar/mod.ui:144
 msgid "Room Search"
 msgstr "Поиск комнаты"
 
-#: src/session/view/sidebar/mod.ui:135
+#: src/session/view/sidebar/mod.ui:145
 msgid "Search for a room"
 msgstr "Поиск в комнате"
 
-#: src/session/view/sidebar/mod.ui:170
+#: src/session/view/sidebar/mod.ui:180
 msgid "Room List"
 msgstr "Список комнат"
 
-#: src/session/view/sidebar/mod.ui:171
+#: src/session/view/sidebar/mod.ui:181
 msgid "Allows to navigate between rooms"
 msgstr "Позволяет перемещаться между комнатами"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:265
+#: src/session/view/sidebar/room_row.rs:285
 msgid "Direct chat with {name}"
 msgstr "Прямой чат с {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session/view/sidebar/room_row.rs:277
+#: src/session/view/sidebar/room_row.rs:297
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "1 уведомление"
@@ -4948,84 +5169,84 @@ msgstr[1] "{count} уведомления"
 msgstr[2] "{count} уведомлений"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:748
+#: src/session/view/sidebar/row.rs:753
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "Не удалось переместить {room} из {previous_category} в {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:790
+#: src/session/view/sidebar/row.rs:795
 msgid "Could not mark {room} as direct chat"
 msgstr "Не удалось отметить {room} как прямой чат"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:795
+#: src/session/view/sidebar/row.rs:800
 msgid "Could not unmark {room} as direct chat"
 msgstr "Не удалось снять отметку с {room} как прямой чат"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/section_row.rs:108
+#: src/session/view/sidebar/section_row.rs:127
 msgid "Join Room as Favorite"
 msgstr "Присоединиться к комнате как Избранное"
 
-#: src/session/view/sidebar/section_row.rs:109
+#: src/session/view/sidebar/section_row.rs:128
 msgid "Join Room"
 msgstr "Присоединиться к комнате"
 
 #. Translators: This is an action to join a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/section_row.rs:112
+#: src/session/view/sidebar/section_row.rs:131
 msgid "Join Room as Low Priority"
 msgstr "Присоединиться к комнате как Низкий приоритет"
 
-#: src/session/view/sidebar/section_row.rs:113
+#: src/session/view/sidebar/section_row.rs:132
 msgid "Reject Invite"
 msgstr "Отклонить приглашение"
 
-#: src/session/view/sidebar/section_row.rs:117
-#: src/session/view/sidebar/section_row.rs:130
+#: src/session/view/sidebar/section_row.rs:136
+#: src/session/view/sidebar/section_row.rs:149
 msgid "Move to Rooms"
 msgstr "Переместить в Комнаты"
 
-#: src/session/view/sidebar/section_row.rs:118
-#: src/session/view/sidebar/section_row.rs:124
+#: src/session/view/sidebar/section_row.rs:137
+#: src/session/view/sidebar/section_row.rs:143
 msgid "Move to Low Priority"
 msgstr "Переместить в Низкий приоритет"
 
-#: src/session/view/sidebar/section_row.rs:119
-#: src/session/view/sidebar/section_row.rs:125
-#: src/session/view/sidebar/section_row.rs:131
+#: src/session/view/sidebar/section_row.rs:138
+#: src/session/view/sidebar/section_row.rs:144
+#: src/session/view/sidebar/section_row.rs:150
 msgid "Leave Room"
 msgstr "Покинуть комнату"
 
-#: src/session/view/sidebar/section_row.rs:123
-#: src/session/view/sidebar/section_row.rs:129
+#: src/session/view/sidebar/section_row.rs:142
+#: src/session/view/sidebar/section_row.rs:148
 msgid "Move to Favorites"
 msgstr "Переместить в Избранное"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/section_row.rs:137
+#: src/session/view/sidebar/section_row.rs:156
 msgid "Rejoin Room as Favorite"
 msgstr "Вернуться в комнату как Избранное"
 
-#: src/session/view/sidebar/section_row.rs:138
+#: src/session/view/sidebar/section_row.rs:157
 msgid "Rejoin Room"
 msgstr "Вернуться в комнату"
 
 #. Translators: This is an action to rejoin a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/section_row.rs:141
+#: src/session/view/sidebar/section_row.rs:160
 msgid "Rejoin Room as Low Priority"
 msgstr "Вернуться в комнату как Низкий приоритет"
 
-#: src/session_list/mod.rs:160 src/session_list/mod.rs:196
+#: src/session_list/mod.rs:164 src/session_list/mod.rs:199
 msgid "Could not restore previous sessions"
 msgstr "Не удалось восстановить предыдущие сеансы"
 
-#: src/session_list/mod.rs:197
+#: src/session_list/mod.rs:200
 msgid "An unexpected error happened while accessing the data directory"
 msgstr "Произошла непредвиденная ошибка при доступе к каталогу данных"
 
@@ -5085,107 +5306,68 @@ msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Закрыть комнату"
 
-#: src/user_facing_error.rs:26
-msgid "The connection timed out. Try again later."
-msgstr "Подключение прервалось. Повторите попытку позже."
+#: src/user_facing_error.rs:18
+msgid "Connection timed out."
+msgstr "Время ожидания подключения истекло."
 
-#: src/user_facing_error.rs:28
+#: src/user_facing_error.rs:20
 msgid "Could not connect to the homeserver."
 msgstr "Не удалось подключиться к домашнему серверу."
 
-#: src/user_facing_error.rs:38
-msgid "The provided username or password is invalid."
-msgstr "Предоставленные имя пользователя или пароль неверны."
+#: src/user_facing_error.rs:26
+msgid "Invalid credentials."
+msgstr "Неверные учетные данные."
 
-#: src/user_facing_error.rs:39
-msgid "The account is deactivated."
+#: src/user_facing_error.rs:27
+msgid "Account deactivated."
 msgstr "Учетная запись деактивирована."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/user_facing_error.rs:55
-msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
-msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
-msgstr[0] ""
-"Вы превысили лимит скорости домашнего сервера, повторная попытка через {n} "
-"секунду."
-msgstr[1] ""
-"Вы превысили лимит скорости домашнего сервера, повторная попытка через {n} "
-"секунды."
-msgstr[2] ""
-"Вы превысили лимит скорости домашнего сервера, повторная попытка через {n} "
-"секунд."
+#: src/user_facing_error.rs:43
+msgid "Rate limit exceeded, retry in 1 second."
+msgid_plural "Rate limit exceeded, retry in {n} seconds."
+msgstr[0] "Превышен лимит запросов, повтор через 1 секунду."
+msgstr[1] "Превышен лимит запросов, повтор через {n} секунды."
+msgstr[2] "Превышен лимит запросов, повтор через {n} секунд."
 
-#: src/user_facing_error.rs:61
-msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr ""
-"Вы превысили лимит скорости домашнего сервера, повторите попытку позже."
+#: src/user_facing_error.rs:49
+msgid "Rate limit exceeded, try again later."
+msgstr "Превышен лимит запросов, повторите попытку позже."
 
-#: src/user_facing_error.rs:71
-msgid "An unexpected connection error occurred."
-msgstr "Произошла непредвиденная ошибка подключения."
+#: src/user_facing_error.rs:59
+msgid "Unexpected connection error."
+msgstr "Непредвиденная ошибка подключения."
 
-#: src/user_facing_error.rs:79
+#: src/user_facing_error.rs:67
 msgid "Could not decrypt the event."
 msgstr "Не удалось расшифровать событие."
 
-#: src/user_facing_error.rs:89
-msgid "This is not a valid URL."
-msgstr "Это неверный URL-адрес."
+#: src/user_facing_error.rs:69 src/user_facing_error.rs:81
+msgid "Unexpected error."
+msgstr "Непредвиденная ошибка."
 
-#: src/user_facing_error.rs:91
-msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
-msgstr ""
-"Сбой автообнаружения домашнего сервера. Попробуйте ввести полный URL-адрес "
-"вручную."
+#: src/user_facing_error.rs:77
+msgid "Invalid URL."
+msgstr "Неверный URL-адрес."
 
-#: src/user_facing_error.rs:94
+#: src/user_facing_error.rs:78
+msgid "Could not discover homeserver."
+msgstr "Не удалось обнаружить домашний сервер."
+
+#: src/user_facing_error.rs:80
 msgid "Could not open the store."
 msgstr "Не удалось открыть хранилище."
 
-#: src/utils/matrix/mod.rs:196
-msgid "{user} sent an audio file."
-msgstr "{user} отправил(-а) аудиофайл."
-
-#: src/utils/matrix/mod.rs:199
-msgid "{user} sent a file."
-msgstr "{user} отправил(-а) файл."
-
-#: src/utils/matrix/mod.rs:201
-msgid "{user} sent an image."
-msgstr "{user} отправил(-а) изображение."
-
-#: src/utils/matrix/mod.rs:204
-msgid "{user} sent their location."
-msgstr "{user} отправил(-а) свое местоположение."
-
-#: src/utils/matrix/mod.rs:216
-msgid "{user} sent a video."
-msgstr "{user} отправил(-а) видео."
-
-#: src/utils/matrix/mod.rs:223
-msgid "{user} sent a sticker."
-msgstr "{user} отправил(-а) стикер."
-
-#: src/utils/matrix/mod.rs:233
-msgid "{user}: {message}"
-msgstr "{user}: {message}"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/utils/matrix/mod.rs:257
-msgid "{user} invited you"
-msgstr "{user} пригласил(-а) вас"
-
-#: src/utils/matrix/mod.rs:286
+#: src/utils/matrix/mod.rs:176
 msgid "Could not generate unique session ID"
 msgstr "Не удалось сгенерировать уникальный ID сеанса"
 
-#: src/utils/matrix/mod.rs:287
+#: src/utils/matrix/mod.rs:177
 msgid "Could not access the session tokens"
 msgstr "Не удалось получить доступ к токенам сеанса"
 
-#: src/utils/media/image/mod.rs:763
+#: src/utils/media/image/mod.rs:873
 msgid "Image format not supported"
 msgstr "Формат изображения не поддерживается"
 
@@ -5213,8 +5395,77 @@ msgstr "файл"
 msgid "Session"
 msgstr "Сеанс"
 
-#~ msgid "This message was removed."
-#~ msgstr "Это сообщение было удалено."
+#~ msgctxt "member"
+#~ msgid "Knocked"
+#~ msgstr "Попросился"
+
+#~ msgid "Allow Access"
+#~ msgstr "Разрешить доступ"
+
+#~ msgid "Discard Unsaved Changes?"
+#~ msgstr "Отклонить несохраненные изменения?"
+
+#~ msgid "There is a newer version of this room"
+#~ msgstr "Есть более новая версия этой комнаты"
+
+#~ msgid "This room was closed"
+#~ msgstr "Эта комната была закрыта"
+
+#~ msgid "_Deny Access"
+#~ msgstr "_Отказать в доступе"
+
+#~ msgid "Denying access…"
+#~ msgstr "Отказ в доступе…"
+
+#~ msgid "{user} was invited to this room."
+#~ msgstr "{user} был(-а) приглашен(-а) в эту комнату."
+
+#~ msgid "{user} was kicked out of the room."
+#~ msgstr "{user} был(-а) удален(-а) из комнаты."
+
+#~ msgid "{user} was kicked out of the room and banned."
+#~ msgstr "{user} был(-а) удален(-а) из комнаты и заблокирован(-а)."
+
+#~ msgid "The invitation for {user} has been revoked."
+#~ msgstr "Приглашение для {user} было отозвано."
+
+#~ msgid "{user}’s request to be invited to this room was denied."
+#~ msgstr "Запрос {user} на приглашение в эту комнату был отклонен."
+
+#~ msgid "This is the continuation of an upgraded room."
+#~ msgstr "Это продолжение обновленной комнаты."
+
+#~ msgid "This is the beginning of this room."
+#~ msgstr "Это начало этой комнаты."
+
+#~ msgid "Previous room"
+#~ msgstr "Предыдущая комната"
+
+#~ msgid "The provided username or password is invalid."
+#~ msgstr "Предоставленные имя пользователя или пароль неверны."
+
+#~ msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
+#~ msgid_plural ""
+#~ "You exceeded the homeserver’s rate limit, retry in {n} seconds."
+#~ msgstr[0] ""
+#~ "Вы превысили лимит скорости домашнего сервера, повторная попытка через "
+#~ "{n} секунду."
+#~ msgstr[1] ""
+#~ "Вы превысили лимит скорости домашнего сервера, повторная попытка через "
+#~ "{n} секунды."
+#~ msgstr[2] ""
+#~ "Вы превысили лимит скорости домашнего сервера, повторная попытка через "
+#~ "{n} секунд."
+
+#~ msgid "You exceeded the homeserver’s rate limit, try again later."
+#~ msgstr ""
+#~ "Вы превысили лимит скорости домашнего сервера, повторите попытку позже."
+
+#~ msgid ""
+#~ "Homeserver auto-discovery failed. Try entering the full URL manually."
+#~ msgstr ""
+#~ "Сбой автообнаружения домашнего сервера. Попробуйте ввести полный URL-"
+#~ "адрес вручную."
 
 #~ msgid "Copy Sender ID"
 #~ msgstr "Копировать ID отправителя"
@@ -5739,9 +5990,6 @@ msgstr "Сеанс"
 
 #~ msgid "Room History Search"
 #~ msgstr "Поиск по истории комнаты"
-
-#~ msgid "C_reate"
-#~ msgstr "С_оздать"
 
 #~ msgid "> quote"
 #~ msgstr "> цитата"
