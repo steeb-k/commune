@@ -6,7 +6,7 @@ use tracing::error;
 
 use crate::{
     spawn, spawn_tokio,
-    utils::{CountedRef, File},
+    utils::{CountedRef, File, TokioDrop},
 };
 
 mod imp {
@@ -20,7 +20,7 @@ mod imp {
     #[derive(Default)]
     pub struct AnimatedImagePaintable {
         /// The image loader.
-        image_loader: OnceCell<Arc<Image<'static>>>,
+        image_loader: OnceCell<Arc<TokioDrop<Image>>>,
         /// The file of the image.
         file: OnceCell<File>,
         /// The current frame that is displayed.
@@ -49,7 +49,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.image_loader().info().height, |f| f.height())
+                .map_or_else(|| self.image_loader().details().height(), |f| f.height())
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -58,7 +58,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.image_loader().info().width, |f| f.width())
+                .map_or_else(|| self.image_loader().details().width(), |f| f.width())
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -95,23 +95,23 @@ mod imp {
 
     impl AnimatedImagePaintable {
         /// The image loader.
-        fn image_loader(&self) -> &Arc<Image<'static>> {
+        fn image_loader(&self) -> &Arc<TokioDrop<Image>> {
             self.image_loader
                 .get()
-                .expect("image loader is initialized")
+                .expect("image loader should be initialized")
         }
 
         /// Initialize the image.
         pub(super) fn init(
             &self,
             file: File,
-            image_loader: Arc<Image<'static>>,
+            image_loader: Arc<TokioDrop<Image>>,
             first_frame: Arc<Frame>,
         ) {
-            self.file.set(file).expect("file is uninitialized");
+            self.file.set(file).expect("file should be uninitialized");
             self.image_loader
                 .set(image_loader)
-                .expect("image loader is uninitialized");
+                .expect("image loader should be uninitialized");
             self.current_frame.replace(Some(first_frame));
 
             self.update_animation();
@@ -233,7 +233,7 @@ impl AnimatedImagePaintable {
     /// frame.
     pub(crate) fn new(
         file: File,
-        image_loader: Arc<Image<'static>>,
+        image_loader: Arc<TokioDrop<Image>>,
         first_frame: Arc<Frame>,
     ) -> Self {
         let obj = glib::Object::new::<Self>();

@@ -217,6 +217,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-lock"
+version = "3.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd03604047cee9b6ce9de9f70c6cd540a0520c813cbd49bae61f33ab80ed1dc"
+dependencies = [
+ "event-listener",
+ "event-listener-strategy",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-recursion"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -258,6 +269,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "async-task"
+version = "4.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
@@ -451,6 +468,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8894febbff9f758034a5b8e12d87918f56dfc64a8e1fe757d65e29041538d93"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "blocking"
+version = "1.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e83f8d02be6967315521be875afa792a316e28d57b5a2d401897e2a7921b7f21"
+dependencies = [
+ "async-channel",
+ "async-task",
+ "futures-io",
+ "futures-lite",
+ "piper",
 ]
 
 [[package]]
@@ -696,10 +726,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-deque"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dd111b7b7f7d55b72c0a6ae361660ee5853c9af73f70c3c2ef6858b950e2e51"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-utils"
 version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
+
+[[package]]
+name = "crunchy"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-common"
@@ -1684,14 +1739,16 @@ dependencies = [
 
 [[package]]
 name = "glycin"
-version = "2.1.1"
+version = "3.0.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37cb9e103cb6b8925bf5e8a1cf8a1166797d8aaefaabd03e68cf6ad7443a1baa"
+checksum = "0ca9a2584f5315609d3284b8885ebd7f8475b991b2ae77b7fdfb22b723fe3321"
 dependencies = [
  "futures-channel",
  "futures-util",
  "gdk4",
  "gio",
+ "glib",
+ "glycin-common",
  "glycin-utils",
  "gufo-common",
  "gufo-exif",
@@ -1712,24 +1769,50 @@ dependencies = [
 ]
 
 [[package]]
-name = "glycin-utils"
-version = "3.0.1"
+name = "glycin-common"
+version = "1.0.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0816d1db00696479cda3cd6c914fb07115982b019dac96555d203c0d5b6d37a"
+checksum = "3344437ebbb38f373d52a2636cefdae31689d32042bbed402438d29abe04d9e9"
 dependencies = [
- "env_logger",
+ "bitflags 2.9.1",
  "gufo-common",
- "libc",
- "libseccomp",
- "log",
+ "half",
  "memmap2",
  "nix 0.29.0",
  "paste",
  "rmp-serde",
  "serde",
  "thiserror 2.0.12",
+ "zerocopy",
+ "zvariant",
+]
+
+[[package]]
+name = "glycin-utils"
+version = "4.0.0-beta.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bb0e781372a461edbf6efddf5fb5ea4b700581773ca6a962cbf9666c8765a46"
+dependencies = [
+ "async-lock",
+ "bitflags 2.9.1",
+ "blocking",
+ "env_logger",
+ "futures-util",
+ "glycin-common",
+ "gufo-common",
+ "half",
+ "libc",
+ "libseccomp",
+ "log",
+ "memmap2",
+ "nix 0.29.0",
+ "paste",
+ "rayon",
+ "serde",
+ "thiserror 2.0.12",
  "tokio",
  "zbus",
+ "zerocopy",
 ]
 
 [[package]]
@@ -2073,9 +2156,9 @@ dependencies = [
 
 [[package]]
 name = "gufo-common"
-version = "0.2.0"
+version = "1.0.0-beta"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccb2b4c040e67e6d6ad954f04693a11864df82bce6c6c468524b6a78bb75581f"
+checksum = "6b369fe87840c7f9769e475e65500420072bf040c09b12d00fda83567190ea0f"
 dependencies = [
  "paste",
  "serde",
@@ -2084,9 +2167,9 @@ dependencies = [
 
 [[package]]
 name = "gufo-exif"
-version = "0.2.2"
+version = "0.3.0-beta"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1448d72e2458b35dd10c0f148ea913b38c61b649552b22a97fa836ec376189ff"
+checksum = "42ed15d1144c2ea214eaf8cb8a83168c9a4dccdbc3b18b889e5610f8cf33128d"
 dependencies = [
  "gufo-common",
  "thiserror 2.0.12",
@@ -2110,6 +2193,16 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+]
+
+[[package]]
+name = "half"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "459196ed295495a68f7d7fe1d84f6c4b7ff0e21fe3017b2f283c6fac3ad803c9"
+dependencies = [
+ "cfg-if",
+ "crunchy",
 ]
 
 [[package]]
@@ -3867,6 +3960,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "piper"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96c8c490f422ef9a4efd2cb5b42b76c8613d7e7dfc1caf667b8a3350a5acc066"
+dependencies = [
+ "atomic-waker",
+ "fastrand",
+ "futures-io",
+]
+
+[[package]]
 name = "pkcs8"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4106,6 +4210,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f703f4665700daf5512dcca5f43afa6af89f09db47fb56be587f80636bda2d41"
 dependencies = [
  "rand_core 0.9.3",
+]
+
+[[package]]
+name = "rayon"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b418a60154510ca1a002a752ca9714984e21e4241e804d32555251faf8b78ffa"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
 ]
 
 [[package]]

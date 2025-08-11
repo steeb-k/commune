@@ -28,7 +28,10 @@ pub(crate) use queue::{IMAGE_QUEUE, ImageRequestPriority};
 
 use super::{FrameDimensions, MediaFileError};
 use crate::{
-    DISABLE_GLYCIN_SANDBOX, RUNTIME, components::AnimatedImagePaintable, spawn_tokio, utils::File,
+    DISABLE_GLYCIN_SANDBOX, RUNTIME,
+    components::AnimatedImagePaintable,
+    spawn_tokio,
+    utils::{File, TokioDrop},
 };
 
 /// The maximum dimensions of a thumbnail in the timeline.
@@ -65,7 +68,7 @@ const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 const SUPPORTED_ANIMATED_IMAGE_MIME_TYPES: &[&str] = &["image/gif", "image/png", "image/webp"];
 
 /// Get an image loader for the given file.
-async fn image_loader(file: gio::File) -> Result<glycin::Image<'static>, glycin::ErrorCtx> {
+async fn image_loader(file: gio::File) -> Result<glycin::Image, glycin::ErrorCtx> {
     let mut loader = glycin::Loader::new(file);
 
     if DISABLE_GLYCIN_SANDBOX {
@@ -88,11 +91,11 @@ async fn load_image(
     let image_loader = image_loader(file.as_gfile()).await?;
 
     let frame_request = request_dimensions.map(|request| {
-        let image_info = image_loader.info();
+        let image_details = image_loader.details();
 
         let original_dimensions = FrameDimensions {
-            width: image_info.width,
-            height: image_info.height,
+            width: image_details.width(),
+            height: image_details.height(),
         };
 
         original_dimensions.to_image_loader_request(request)
@@ -104,9 +107,10 @@ async fn load_image(
         } else {
             image_loader.next_frame().await?
         };
+
         Ok(Image {
             file,
-            loader: image_loader.into(),
+            loader: TokioDrop::new(image_loader).into(),
             first_frame: first_frame.into(),
         })
     })
@@ -120,7 +124,7 @@ pub(crate) struct Image {
     /// The file of the image.
     file: File,
     /// The image loader.
-    loader: Arc<glycin::Image<'static>>,
+    loader: Arc<TokioDrop<glycin::Image>>,
     /// The first frame of the image.
     first_frame: Arc<glycin::Frame>,
 }

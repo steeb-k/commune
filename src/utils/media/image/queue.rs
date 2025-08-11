@@ -491,14 +491,13 @@ impl IntoFuture for DownloadRequestData {
 
         Box::pin(async move {
             let media = client.media();
-            let data = match media.get_media_content(&settings, true).await {
-                Ok(data) => data,
-                Err(error) => {
-                    return Err(MediaFileError::from(error));
-                }
-            };
+            let data = media
+                .get_media_content(&settings, true)
+                .await
+                .map_err(MediaFileError::from)?;
 
             let file = save_data_to_tmp_file(data).await?;
+
             Ok(file)
         })
     }
@@ -516,7 +515,7 @@ struct FileRequestData {
 impl FileRequestData {
     /// The ID of the image request with this data.
     fn request_id(&self) -> ImageRequestId {
-        ImageRequestId::File(self.file.path().expect("file has a path"))
+        ImageRequestId::File(self.file.path().expect("file should have a path"))
     }
 }
 
@@ -535,13 +534,7 @@ impl IntoFuture for FileRequestData {
 #[derive(Clone)]
 enum ImageRequestData {
     /// The data for a download request.
-    Download {
-        /// The data to download the image.
-        download_data: DownloadRequestData,
-        /// The data to load the image into a paintable, after it was
-        /// downloaded.
-        file_data: Option<FileRequestData>,
-    },
+    Download(DownloadRequestData),
     /// The data for a file request.
     File(FileRequestData),
 }
@@ -550,25 +543,8 @@ impl ImageRequestData {
     /// The ID of the image request with this data.
     fn request_id(&self) -> ImageRequestId {
         match self {
-            ImageRequestData::Download { download_data, .. } => download_data.request_id(),
+            ImageRequestData::Download(download_data) => download_data.request_id(),
             ImageRequestData::File(file_data) => file_data.request_id(),
-        }
-    }
-
-    /// The data for the next request with this image request data.
-    fn into_next_request_data(self) -> DownloadOrFileRequestData {
-        match self {
-            Self::Download {
-                download_data,
-                file_data,
-            } => {
-                if let Some(file_data) = file_data {
-                    file_data.into()
-                } else {
-                    download_data.into()
-                }
-            }
-            Self::File(file_data) => file_data.into(),
         }
     }
 }
@@ -579,8 +555,8 @@ impl IntoFuture for ImageRequestData {
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move {
-            let file_data = match self.into_next_request_data() {
-                DownloadOrFileRequestData::Download(download_data) => {
+            let file_data = match self {
+                Self::Download(download_data) => {
                     let dimensions = download_data.dimensions;
 
                     // Download the image to a file.
@@ -592,11 +568,11 @@ impl IntoFuture for ImageRequestData {
                         }
                     }
                 }
-                DownloadOrFileRequestData::File(file_data) => file_data,
+                Self::File(file_data) => file_data,
             };
 
             // Load the image from the file.
-            match file_data.clone().await {
+            match file_data.await {
                 Ok(image) => Ok(image),
                 Err(error) => {
                     warn!("Could not load image from file: {error}");
@@ -609,35 +585,11 @@ impl IntoFuture for ImageRequestData {
 
 impl From<DownloadRequestData> for ImageRequestData {
     fn from(download_data: DownloadRequestData) -> Self {
-        Self::Download {
-            download_data,
-            file_data: None,
-        }
-    }
-}
-
-impl From<FileRequestData> for ImageRequestData {
-    fn from(value: FileRequestData) -> Self {
-        Self::File(value)
-    }
-}
-
-/// The data of a download request or a file request.
-#[derive(Clone)]
-enum DownloadOrFileRequestData {
-    /// The data for a download request.
-    Download(DownloadRequestData),
-    /// The data for a file request.
-    File(FileRequestData),
-}
-
-impl From<DownloadRequestData> for DownloadOrFileRequestData {
-    fn from(download_data: DownloadRequestData) -> Self {
         Self::Download(download_data)
     }
 }
 
-impl From<FileRequestData> for DownloadOrFileRequestData {
+impl From<FileRequestData> for ImageRequestData {
     fn from(value: FileRequestData) -> Self {
         Self::File(value)
     }
