@@ -58,10 +58,6 @@ pub enum SessionState {
     Ready = 2,
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedClient")]
-pub struct BoxedClient(Client);
-
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
 
@@ -70,9 +66,8 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Session)]
     pub struct Session {
-        /// The Matrix client.
-        #[property(construct_only)]
-        client: TokioDrop<BoxedClient>,
+        /// The Matrix client for this session.
+        client: TokioDrop<Client>,
         /// The list model of the sidebar.
         #[property(get = Self::sidebar_list_model)]
         sidebar_list_model: OnceCell<SidebarListModel>,
@@ -128,27 +123,6 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Session {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.ignored_users.set_session(Some(obj.clone()));
-            self.notifications.set_session(Some(obj.clone()));
-            self.user_sessions.init(&obj, obj.user_id().clone());
-
-            let monitor = gio::NetworkMonitor::default();
-            let handler_id = monitor.connect_network_changed(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_, _| {
-                    spawn!(async move {
-                        imp.update_homeserver_reachable().await;
-                    });
-                }
-            ));
-            self.network_monitor_handler_id.replace(Some(handler_id));
-        }
-
         fn dispose(&self) {
             // Needs to be disconnected or else it may restart the sync
             if let Some(handler_id) = self.network_monitor_handler_id.take() {
@@ -176,9 +150,34 @@ mod imp {
     }
 
     impl Session {
-        // The Matrix client.
+        /// Set the Matrix client for this session.
+        pub(super) fn set_client(&self, client: Client) {
+            self.client
+                .set(client)
+                .expect("client should be uninitialized");
+
+            let obj = self.obj();
+
+            self.ignored_users.set_session(Some(obj.clone()));
+            self.notifications.set_session(Some(obj.clone()));
+            self.user_sessions.init(&obj, obj.user_id().clone());
+
+            let monitor = gio::NetworkMonitor::default();
+            let handler_id = monitor.connect_network_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _| {
+                    spawn!(async move {
+                        imp.update_homeserver_reachable().await;
+                    });
+                }
+            ));
+            self.network_monitor_handler_id.replace(Some(handler_id));
+        }
+
+        /// The Matrix client for this session.
         pub(super) fn client(&self) -> &Client {
-            &self.client.get().expect("session should be restored").0
+            self.client.get().expect("client should be initialized")
         }
 
         /// The list model of the sidebar.
@@ -752,11 +751,13 @@ impl Session {
         .await
         .expect("task was not aborted")?;
 
-        Ok(glib::Object::builder()
+        let obj = glib::Object::builder::<Self>()
             .property("info", stored_session)
             .property("settings", settings)
-            .property("client", BoxedClient(client))
-            .build())
+            .build();
+        obj.imp().set_client(client);
+
+        Ok(obj)
     }
 
     /// Create a new session from the session of the given Matrix client.
