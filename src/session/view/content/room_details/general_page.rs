@@ -953,7 +953,7 @@ mod imp {
             row.set_read_only(!is_supported || !can_change);
         }
 
-        /// Set the history_visibility of the room.
+        /// Set the history visibility of the room.
         #[template_callback]
         async fn set_history_visibility(&self) {
             let Some(room) = self.room.obj() else {

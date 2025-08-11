@@ -290,7 +290,10 @@ mod imp {
                     })
                     .collect::<Vec<_>>()
             };
-            groups.into_iter().for_each(|group| group.process_batch());
+
+            for group in groups {
+                group.process_batch();
+            }
         }
 
         /// Handle when items were removed in the underlying model.

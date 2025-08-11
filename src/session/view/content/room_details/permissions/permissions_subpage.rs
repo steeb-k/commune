@@ -733,7 +733,7 @@ mod imp {
             self.update_changed();
         }
 
-        /// Handle when the redact_own row has changed.
+        /// Handle when the `redact_own` row has changed.
         #[template_callback]
         fn redact_own_changed(&self) {
             if self.update_in_progress.get() {
@@ -757,7 +757,7 @@ mod imp {
             self.update_changed();
         }
 
-        /// Handle when the redact_others row has changed.
+        /// Handle when the `redact_others` row has changed.
         #[template_callback]
         fn redact_others_changed(&self) {
             if self.update_in_progress.get() {
