@@ -35,15 +35,15 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/main.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-12/screenshots/main.png</image>
       <caption>Fractal’s main window</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/media-history.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-12/screenshots/media-history.png</image>
       <caption>View the media history of a Matrix room</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-11/screenshots/adaptive.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-12/screenshots/adaptive.png</image>
       <caption>Fractal’s interface adapts to small screens</caption>
     </screenshot>
   </screenshots>
@@ -71,57 +71,34 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="12~rc" type="development" date="2025-07-31">
+    <release version="12" type="stable" date="2025-08-11">
       <description>
         <p>
-          Want to get a head start and try out Fractal 12 before its release? That’s what this
-          Release Candidate is for! New since 12.beta:
+          Knock, knock, knock… on rooms, baby 🎵 Ooh ooh ooh ooh ooh ooh 🎶 That's right, Fractal 12
+          adds support for knocking, among other things. Read all about the improvements since 11.2:
         </p>
         <ul>
           <li>
-            The upcoming room version 12 is supported, with the special power level of room creators
+            Requesting invites to rooms (aka knocking) is now possible, as is enabling such requests
+            for room admins.
           </li>
           <li>
-            Requesting invites to rooms (aka knocking) is now possible
-          </li>
-          <li>
-            Clicking on the name of the sender of a message adds a mention to them in the composer
-          </li>
-        </ul>
-        <p>
-          As usual, this release includes other improvements, fixes and new translations thanks to
-          all our contributors, and our upstream projects.
-        </p>
-        <p>
-          As the version implies, it should be mostly stable and we expect to only include minor
-          improvements until the release of Fractal 12.
-        </p>
-      </description>
-    </release>
-    <release version="12~beta" type="development" date="2025-06-26">
-      <description>
-        <p>
-          Hot! Hot! Hot! No, we are not talking about the summer weather in the northern hemisphere,
-          but about the brand new release of Fractal 12.beta! Coming soon to your device:
-        </p>
-        <ul>
-          <li>
-            The safety setting to hide media previews in rooms is now synced between Matrix
-            clients.
-          </li>
-          <li>
-            We added another safety setting (which is also synced) to hide avatars in invites.
+            The upcoming room version 12 is supported, with the special power level of room
+            creators.
           </li>
           <li>
             A room can be marked as unread via the context menu in the sidebar.
           </li>
           <li>
-            We changed the UX a little for tombstoned rooms. Instead of showing a banner at the top
-            of the history, it now replaces the composer at the bottom of the history.
-          </li>
-          <li>
             You can now see if a section in the sidebar has any notifications or activity when it is
             collapsed.
+          </li>
+          <li>
+            Clicking on the name of the sender of a message adds a mention to them in the composer.
+          </li>
+          <li>
+            The safety setting to hide media previews in rooms is now synced between Matrix clients
+            and we added another safety setting (which is also synced) to hide avatars in invites.
           </li>
         </ul>
         <p>
@@ -129,8 +106,9 @@
           all our contributors, and our upstream projects.
         </p>
         <p>
-          As the version implies, there might be a slight risk of regressions, but it should be
-          mostly stable. If all goes well the next step is the release candidate!
+          We want to address special thanks to the translators who worked on this version. We know
+          this is a huge undertaking and have a deep appreciation for what you’ve done. If you want
+          to help with this effort, head over to Damned Lies.
         </p>
       </description>
     </release>
