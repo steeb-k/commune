@@ -813,8 +813,7 @@ mod imp {
                     }
                     future::Either::Right((response, _)) => {
                         // The linux location stream requires a tokio executor when dropped.
-                        let stream_drop = TokioDrop::new();
-                        let _ = stream_drop.set(location_stream);
+                        let _ = TokioDrop::new(location_stream);
 
                         if response == gtk::ResponseType::Ok {
                             break;

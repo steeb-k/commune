@@ -3,8 +3,9 @@
 use std::{
     borrow::Cow,
     cell::{Cell, OnceCell, RefCell},
-    fmt, fs, io,
-    io::Write,
+    fmt, fs,
+    io::{self, Write},
+    ops::Deref,
     path::{Path, PathBuf},
     rc::{Rc, Weak},
     sync::{Arc, LazyLock},
@@ -384,36 +385,30 @@ impl<T> AsyncAction<T> {
     }
 }
 
-/// A type that requires the tokio runtime to be running when dropped.
-///
-/// This is basically usable as a [`OnceCell`].
+/// A wrapper that requires the tokio runtime to be running when dropped.
 #[derive(Debug, Clone)]
-pub struct TokioDrop<T>(OnceCell<T>);
+pub struct TokioDrop<T>(Option<T>);
 
 impl<T> TokioDrop<T> {
-    /// Create a new empty `TokioDrop`;
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Gets a reference to the underlying value.
-    ///
-    /// Returns `None` if the cell is empty.
-    pub fn get(&self) -> Option<&T> {
-        self.0.get()
-    }
-
-    /// Sets the contents of this cell to `value`.
-    ///
-    /// Returns `Ok(())` if the cell was empty and `Err(value)` if it was full.
-    pub(crate) fn set(&self, value: T) -> Result<(), T> {
-        self.0.set(value)
+    /// Create a new `TokioDrop` wrapping the given type.
+    pub fn new(value: T) -> Self {
+        Self(Some(value))
     }
 }
 
-impl<T> Default for TokioDrop<T> {
-    fn default() -> Self {
-        Self(Default::default())
+impl<T> Deref for TokioDrop<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+            .as_ref()
+            .expect("TokioDrop should always contain a value")
+    }
+}
+
+impl<T> From<T> for TokioDrop<T> {
+    fn from(value: T) -> Self {
+        Self::new(value)
     }
 }
 
@@ -421,32 +416,9 @@ impl<T> Drop for TokioDrop<T> {
     fn drop(&mut self) {
         let _guard = RUNTIME.enter();
 
-        if let Some(inner) = self.0.take() {
-            drop(inner);
+        if let Some(value) = self.0.take() {
+            drop(value);
         }
-    }
-}
-
-impl<T: glib::property::Property> glib::property::Property for TokioDrop<T> {
-    type Value = T::Value;
-}
-
-impl<T> glib::property::PropertyGet for TokioDrop<T> {
-    type Value = T;
-
-    fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
-        f(self.get().unwrap())
-    }
-}
-
-impl<T> glib::property::PropertySet for TokioDrop<T> {
-    type SetValue = T;
-
-    fn set(&self, v: Self::SetValue) {
-        assert!(
-            self.set(v).is_ok(),
-            "TokioDrop value was already initialized"
-        );
     }
 }
 

@@ -67,7 +67,7 @@ mod imp {
     #[properties(wrapper_type = super::Session)]
     pub struct Session {
         /// The Matrix client for this session.
-        client: TokioDrop<Client>,
+        client: OnceCell<TokioDrop<Client>>,
         /// The list model of the sidebar.
         #[property(get = Self::sidebar_list_model)]
         sidebar_list_model: OnceCell<SidebarListModel>,
@@ -153,7 +153,7 @@ mod imp {
         /// Set the Matrix client for this session.
         pub(super) fn set_client(&self, client: Client) {
             self.client
-                .set(client)
+                .set(TokioDrop::new(client))
                 .expect("client should be uninitialized");
 
             let obj = self.obj();
