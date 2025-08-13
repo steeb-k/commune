@@ -316,7 +316,7 @@ mod imp {
 
             if let Some(send_state) = item.send_state() {
                 match send_state {
-                    EventSendState::NotSentYet => return MessageState::Sending,
+                    EventSendState::NotSentYet { .. } => return MessageState::Sending,
                     EventSendState::SendingFailed {
                         error,
                         is_recoverable,
