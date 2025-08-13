@@ -31,7 +31,7 @@ use crate::{
     DISABLE_GLYCIN_SANDBOX, RUNTIME,
     components::AnimatedImagePaintable,
     spawn_tokio,
-    utils::{File, TokioDrop},
+    utils::{File, TokioDrop, save_data_to_tmp_file},
 };
 
 /// The maximum dimensions of a thumbnail in the timeline.
@@ -67,64 +67,111 @@ const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 /// [supported image formats of glycin]: https://gitlab.gnome.org/GNOME/glycin/-/tree/main?ref_type=heads#supported-image-formats
 const SUPPORTED_ANIMATED_IMAGE_MIME_TYPES: &[&str] = &["image/gif", "image/png", "image/webp"];
 
-/// Get an image loader for the given file.
-async fn image_loader(file: gio::File) -> Result<glycin::Image, glycin::ErrorCtx> {
-    let mut loader = glycin::Loader::new(file);
-
-    if DISABLE_GLYCIN_SANDBOX {
-        loader.sandbox_selector(glycin::SandboxSelector::NotSandboxed);
-    }
-
-    spawn_tokio!(async move { loader.load().await })
-        .await
-        .unwrap()
+/// The source for decoding an image.
+enum ImageDecoderSource {
+    /// The bytes containing the encoded image.
+    Data(Vec<u8>),
+    /// The file containing the encoded image.
+    File(File),
 }
 
-/// Load the given file as an image into a `GdkPaintable`.
-///
-/// Set `request_dimensions` if the image will be shown at specific dimensions.
-/// To show the image at its natural size, set it to `None`.
-async fn load_image(
-    file: File,
-    request_dimensions: Option<FrameDimensions>,
-) -> Result<Image, glycin::ErrorCtx> {
-    let image_loader = image_loader(file.as_gfile()).await?;
+impl ImageDecoderSource {
+    /// The maximum size of the `Data` variant. This is 1 MB.
+    const MAX_DATA_SIZE: usize = 1_048_576;
 
-    let frame_request = request_dimensions.map(|request| {
-        let image_details = image_loader.details();
-
-        let original_dimensions = FrameDimensions {
-            width: image_details.width(),
-            height: image_details.height(),
-        };
-
-        original_dimensions.to_image_loader_request(request)
-    });
-
-    spawn_tokio!(async move {
-        let first_frame = if let Some(frame_request) = frame_request {
-            image_loader.specific_frame(frame_request).await?
+    /// Construct an `ImageSource` from the given bytes.
+    ///
+    /// If the size of the bytes are too big to be kept in memory, they are
+    /// written to a temporary file.
+    async fn with_bytes(bytes: Vec<u8>) -> Result<Self, MediaFileError> {
+        if bytes.len() > Self::MAX_DATA_SIZE {
+            Ok(Self::File(save_data_to_tmp_file(bytes).await?))
         } else {
-            image_loader.next_frame().await?
+            Ok(Self::Data(bytes))
+        }
+    }
+
+    /// Convert this image source into a loader.
+    ///
+    /// Returns the created loader, and the image file, if any.
+    fn into_loader(self) -> (glycin::Loader, Option<File>) {
+        let (mut loader, file) = match self {
+            Self::Data(bytes) => (glycin::Loader::new_vec(bytes), None),
+            Self::File(file) => (glycin::Loader::new(file.as_gfile()), Some(file)),
         };
 
-        Ok(Image {
-            file,
-            loader: TokioDrop::new(image_loader).into(),
-            first_frame: first_frame.into(),
+        if DISABLE_GLYCIN_SANDBOX {
+            loader.sandbox_selector(glycin::SandboxSelector::NotSandboxed);
+        }
+
+        (loader, file)
+    }
+
+    /// Decode this image source into an [`Image`].
+    ///
+    /// Set `request_dimensions` if the image will be shown at specific
+    /// dimensions. To show the image at its natural size, set it to `None`.
+    async fn decode_image(
+        self,
+        request_dimensions: Option<FrameDimensions>,
+    ) -> Result<Image, ImageError> {
+        let (loader, file) = self.into_loader();
+
+        let decoder = spawn_tokio!(async move { loader.load().await })
+            .await
+            .expect("task was not aborted")?;
+
+        let frame_request = request_dimensions.map(|request| {
+            let image_details = decoder.details();
+
+            let original_dimensions = FrameDimensions {
+                width: image_details.width(),
+                height: image_details.height(),
+            };
+
+            original_dimensions.to_image_loader_request(request)
+        });
+
+        spawn_tokio!(async move {
+            let first_frame = if let Some(frame_request) = frame_request {
+                decoder.specific_frame(frame_request).await?
+            } else {
+                decoder.next_frame().await?
+            };
+
+            Ok(Image {
+                file,
+                decoder: TokioDrop::new(decoder).into(),
+                first_frame: first_frame.into(),
+            })
         })
-    })
-    .await
-    .expect("task was not aborted")
+        .await
+        .expect("task was not aborted")
+    }
+}
+
+impl From<File> for ImageDecoderSource {
+    fn from(value: File) -> Self {
+        Self::File(value)
+    }
+}
+
+impl From<gio::File> for ImageDecoderSource {
+    fn from(value: gio::File) -> Self {
+        Self::File(value.into())
+    }
 }
 
 /// An image that was just loaded.
 #[derive(Clone)]
 pub(crate) struct Image {
-    /// The file of the image.
-    file: File,
-    /// The image loader.
-    loader: Arc<TokioDrop<glycin::Image>>,
+    /// The file containing the image, if any.
+    ///
+    /// We need to keep a strong reference to the temporary file or it will be
+    /// destroyed.
+    file: Option<File>,
+    /// The image decoder.
+    decoder: Arc<TokioDrop<glycin::Image>>,
     /// The first frame of the image.
     first_frame: Arc<glycin::Frame>,
 }
@@ -138,7 +185,7 @@ impl fmt::Debug for Image {
 impl From<Image> for gdk::Paintable {
     fn from(value: Image) -> Self {
         if value.first_frame.delay().is_some() {
-            AnimatedImagePaintable::new(value.file, value.loader, value.first_frame).upcast()
+            AnimatedImagePaintable::new(value.decoder, value.first_frame, value.file).upcast()
         } else {
             value.first_frame.texture().upcast()
         }
@@ -161,9 +208,14 @@ impl ImageInfoLoader {
     async fn into_first_frame(self) -> Option<Frame> {
         match self {
             Self::File(file) => {
-                let image_loader = image_loader(file).await.ok()?;
-                let handle = spawn_tokio!(async move { image_loader.next_frame().await });
-                Some(Frame::Glycin(handle.await.unwrap().ok()?))
+                let (loader, _) = ImageDecoderSource::from(file).into_loader();
+
+                let frame = spawn_tokio!(async move { loader.load().await?.next_frame().await })
+                    .await
+                    .expect("task was not aborted")
+                    .ok()?;
+
+                Some(Frame::Glycin(frame))
             }
             Self::Texture(texture) => Some(Frame::Texture(texture)),
         }

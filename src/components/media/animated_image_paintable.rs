@@ -19,9 +19,12 @@ mod imp {
 
     #[derive(Default)]
     pub struct AnimatedImagePaintable {
-        /// The image loader.
-        image_loader: OnceCell<Arc<TokioDrop<Image>>>,
+        /// The image decoder.
+        decoder: OnceCell<Arc<TokioDrop<Image>>>,
         /// The file of the image.
+        ///
+        /// We need to keep a strong reference to the temporary file or it will
+        /// be destroyed.
         file: OnceCell<File>,
         /// The current frame that is displayed.
         pub(super) current_frame: RefCell<Option<Arc<Frame>>>,
@@ -49,7 +52,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.image_loader().details().height(), |f| f.height())
+                .map_or_else(|| self.decoder().details().height(), |f| f.height())
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -58,7 +61,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.image_loader().details().width(), |f| f.width())
+                .map_or_else(|| self.decoder().details().width(), |f| f.width())
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -94,25 +97,26 @@ mod imp {
     }
 
     impl AnimatedImagePaintable {
-        /// The image loader.
-        fn image_loader(&self) -> &Arc<TokioDrop<Image>> {
-            self.image_loader
-                .get()
-                .expect("image loader should be initialized")
+        /// The image decoder.
+        fn decoder(&self) -> &Arc<TokioDrop<Image>> {
+            self.decoder.get().expect("decoder should be initialized")
         }
 
         /// Initialize the image.
         pub(super) fn init(
             &self,
-            file: File,
-            image_loader: Arc<TokioDrop<Image>>,
+            decoder: Arc<TokioDrop<Image>>,
             first_frame: Arc<Frame>,
+            file: Option<File>,
         ) {
-            self.file.set(file).expect("file should be uninitialized");
-            self.image_loader
-                .set(image_loader)
-                .expect("image loader should be uninitialized");
+            self.decoder
+                .set(decoder)
+                .expect("decoder should be uninitialized");
             self.current_frame.replace(Some(first_frame));
+
+            if let Some(file) = file {
+                self.file.set(file).expect("file should be uninitialized");
+            }
 
             self.update_animation();
         }
@@ -198,9 +202,9 @@ mod imp {
         }
 
         async fn load_next_frame_inner(&self) {
-            let image = self.image_loader().clone();
+            let decoder = self.decoder().clone();
 
-            let result = spawn_tokio!(async move { image.next_frame().await })
+            let result = spawn_tokio!(async move { decoder.next_frame().await })
                 .await
                 .unwrap();
 
@@ -229,16 +233,16 @@ glib::wrapper! {
 }
 
 impl AnimatedImagePaintable {
-    /// Construct an `AnimatedImagePaintable` with the given loader and first
-    /// frame.
+    /// Construct an `AnimatedImagePaintable` with the given  decoder, first
+    /// frame, and the file containing the image, if any.
     pub(crate) fn new(
-        file: File,
-        image_loader: Arc<TokioDrop<Image>>,
+        decoder: Arc<TokioDrop<Image>>,
         first_frame: Arc<Frame>,
+        file: Option<File>,
     ) -> Self {
         let obj = glib::Object::new::<Self>();
 
-        obj.imp().init(file, image_loader, first_frame);
+        obj.imp().init(decoder, first_frame, file);
 
         obj
     }

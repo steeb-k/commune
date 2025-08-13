@@ -19,13 +19,12 @@ use tokio::{
 };
 use tracing::{debug, warn};
 
-use super::{Image, ImageError, load_image};
+use super::{Image, ImageDecoderSource, ImageError};
 use crate::{
     spawn_tokio,
     utils::{
         File,
         media::{FrameDimensions, MediaFileError},
-        save_data_to_tmp_file,
     },
 };
 
@@ -156,7 +155,7 @@ impl ImageRequestQueueInner {
     }
 
     /// Add the given request to the queue.
-    fn add_request(&mut self, request_id: ImageRequestId, request: ImageRequest) {
+    fn queue_request(&mut self, request_id: ImageRequestId, request: ImageRequest) {
         let is_limit_reached = self.is_limit_reached();
         if !is_limit_reached || request.priority == ImageRequestPriority::High {
             // Spawn the request right away.
@@ -175,6 +174,31 @@ impl ImageRequestQueueInner {
         self.requests.insert(request_id, request);
     }
 
+    /// Add the given image request.
+    ///
+    /// If another request for the same image already exists, this will reuse
+    /// the same request.
+    fn add_request(
+        &mut self,
+        inner: ImageLoaderRequest,
+        priority: ImageRequestPriority,
+    ) -> ImageRequestHandle {
+        let request_id = inner.source.request_id();
+
+        // If the request already exists, use the existing one.
+        if let Some(request) = self.requests.get(&request_id) {
+            let result_receiver = request.result_sender.subscribe();
+            return ImageRequestHandle::new(result_receiver);
+        }
+
+        // Build and add the request.
+        let (request, result_receiver) = ImageRequest::new(inner, priority);
+
+        self.queue_request(request_id.clone(), request);
+
+        ImageRequestHandle::new(result_receiver)
+    }
+
     /// Add a request to download an image.
     ///
     /// If another request for the same image already exists, this will reuse
@@ -186,24 +210,13 @@ impl ImageRequestQueueInner {
         dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
-        let data = DownloadRequestData {
-            client,
-            settings,
-            dimensions,
-        };
-        let request_id = data.request_id();
-
-        // If the request already exists, use the existing one.
-        if let Some(request) = self.requests.get(&request_id) {
-            let result_receiver = request.result_sender.subscribe();
-            return ImageRequestHandle::new(result_receiver);
-        }
-
-        // Build and add the request.
-        let (request, result_receiver) = ImageRequest::new(data, priority);
-        self.add_request(request_id.clone(), request);
-
-        ImageRequestHandle::new(result_receiver)
+        self.add_request(
+            ImageLoaderRequest {
+                source: ImageRequestSource::Download(DownloadRequest { client, settings }),
+                dimensions,
+            },
+            priority,
+        )
     }
 
     /// Add a request to load an image from a file.
@@ -215,23 +228,15 @@ impl ImageRequestQueueInner {
         file: File,
         dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
-        let data = FileRequestData { file, dimensions };
-        let request_id = data.request_id();
-
-        // If the request already exists, use the existing one.
-        if let Some(request) = self.requests.get(&request_id) {
-            let result_receiver = request.result_sender.subscribe();
-            return ImageRequestHandle::new(result_receiver);
-        }
-
-        // Build and add the request.
         // Always use high priority because file requests should always be for
         // previewing a local image.
-        let (request, result_receiver) = ImageRequest::new(data, ImageRequestPriority::High);
-
-        self.add_request(request_id.clone(), request);
-
-        ImageRequestHandle::new(result_receiver)
+        self.add_request(
+            ImageLoaderRequest {
+                source: ImageRequestSource::File(file),
+                dimensions,
+            },
+            ImageRequestPriority::High,
+        )
     }
 
     /// Mark the request with the given ID as stalled.
@@ -335,8 +340,8 @@ impl ImageRequestQueueInner {
 
 /// A request for an image.
 struct ImageRequest {
-    /// The data of the request.
-    data: ImageRequestData,
+    /// The request to the image loader.
+    inner: ImageLoaderRequest,
     /// The priority of the request.
     priority: ImageRequestPriority,
     /// The sender of the channel to use to send the result.
@@ -352,13 +357,13 @@ struct ImageRequest {
 impl ImageRequest {
     /// Construct an image request with the given data and priority.
     fn new(
-        data: impl Into<ImageRequestData>,
+        inner: ImageLoaderRequest,
         priority: ImageRequestPriority,
     ) -> (Self, broadcast::Receiver<Result<Image, ImageError>>) {
         let (result_sender, result_receiver) = broadcast::channel(1);
         (
             Self {
-                data: data.into(),
+                inner,
                 priority,
                 result_sender,
                 retries_count: 0,
@@ -379,14 +384,14 @@ impl ImageRequest {
 
     /// Spawn this request.
     fn spawn(&self) {
-        let data = self.data.clone();
+        let inner = self.inner.clone();
         let result_sender = self.result_sender.clone();
         let retries_count = self.retries_count;
         let task_handle = self.task_handle.clone();
         let stalled_timeout_source = self.stalled_timeout_source.clone();
 
         let abort_handle = spawn_tokio!(async move {
-            let request_id = data.request_id();
+            let request_id = inner.source.request_id();
 
             let stalled_timeout_source_clone = stalled_timeout_source.clone();
             let request_id_clone = request_id.clone();
@@ -404,7 +409,7 @@ impl ImageRequest {
                 source.remove();
             }
 
-            let result = data.await;
+            let result = inner.await;
 
             // Cancel the timeout.
             if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.take()) {
@@ -451,7 +456,7 @@ impl Drop for ImageRequest {
             handle.abort();
 
             // Broadcast that the request was aborted.
-            let request_id = self.data.request_id();
+            let request_id = self.inner.source.request_id();
             let result_sender = self.result_sender.clone();
             spawn_tokio!(async move {
                 if let Err(error) = result_sender.send(Err(ImageError::Aborted)) {
@@ -462,26 +467,17 @@ impl Drop for ImageRequest {
     }
 }
 
-/// The data of a request to download an image.
+/// A request to download an image.
 #[derive(Clone)]
-struct DownloadRequestData {
+struct DownloadRequest {
     /// The Matrix client to use to make the request.
     client: Client,
     /// The settings of the request.
     settings: MediaRequestParameters,
-    /// The dimensions to request.
-    dimensions: Option<FrameDimensions>,
 }
 
-impl DownloadRequestData {
-    /// The ID of the image request with this data.
-    fn request_id(&self) -> ImageRequestId {
-        ImageRequestId::Download(self.settings.unique_key())
-    }
-}
-
-impl IntoFuture for DownloadRequestData {
-    type Output = Result<File, MediaFileError>;
+impl IntoFuture for DownloadRequest {
+    type Output = Result<ImageDecoderSource, MediaFileError>;
     type IntoFuture = BoxFuture<'static, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -496,102 +492,71 @@ impl IntoFuture for DownloadRequestData {
                 .await
                 .map_err(MediaFileError::from)?;
 
-            let file = save_data_to_tmp_file(data).await?;
+            let file = ImageDecoderSource::with_bytes(data).await?;
 
             Ok(file)
         })
     }
 }
 
-/// The data of a request to load an image file into a paintable.
+/// A request to the image loader.
 #[derive(Clone)]
-struct FileRequestData {
-    /// The image file to load.
-    file: File,
+struct ImageLoaderRequest {
+    /// The source of the image data.
+    source: ImageRequestSource,
     /// The dimensions to request.
     dimensions: Option<FrameDimensions>,
 }
 
-impl FileRequestData {
-    /// The ID of the image request with this data.
-    fn request_id(&self) -> ImageRequestId {
-        ImageRequestId::File(self.file.path().expect("file should have a path"))
-    }
-}
-
-impl IntoFuture for FileRequestData {
-    type Output = Result<Image, glycin::ErrorCtx>;
-    type IntoFuture = BoxFuture<'static, Self::Output>;
-
-    fn into_future(self) -> Self::IntoFuture {
-        let Self { file, dimensions } = self;
-
-        Box::pin(async move { load_image(file, dimensions).await })
-    }
-}
-
-/// The data of an image request.
-#[derive(Clone)]
-enum ImageRequestData {
-    /// The data for a download request.
-    Download(DownloadRequestData),
-    /// The data for a file request.
-    File(FileRequestData),
-}
-
-impl ImageRequestData {
-    /// The ID of the image request with this data.
-    fn request_id(&self) -> ImageRequestId {
-        match self {
-            ImageRequestData::Download(download_data) => download_data.request_id(),
-            ImageRequestData::File(file_data) => file_data.request_id(),
-        }
-    }
-}
-
-impl IntoFuture for ImageRequestData {
+impl IntoFuture for ImageLoaderRequest {
     type Output = Result<Image, ImageError>;
     type IntoFuture = BoxFuture<'static, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move {
-            let file_data = match self {
-                Self::Download(download_data) => {
-                    let dimensions = download_data.dimensions;
+            // Load the data from the source.
+            let source = self.source.try_into_decoder_source().await?;
 
-                    // Download the image to a file.
-                    match download_data.await {
-                        Ok(file) => FileRequestData { file, dimensions },
-                        Err(error) => {
-                            warn!("Could not retrieve image: {error}");
-                            return Err(error.into());
-                        }
-                    }
-                }
-                Self::File(file_data) => file_data,
-            };
-
-            // Load the image from the file.
-            match file_data.await {
-                Ok(image) => Ok(image),
-                Err(error) => {
-                    warn!("Could not load image from file: {error}");
-                    Err(error.into())
-                }
-            }
+            // Decode the image from the data.
+            source
+                .decode_image(self.dimensions)
+                .await
+                .inspect_err(|error| warn!("Could not decode image: {error}"))
         })
     }
 }
 
-impl From<DownloadRequestData> for ImageRequestData {
-    fn from(download_data: DownloadRequestData) -> Self {
-        Self::Download(download_data)
-    }
+/// The source for an image request.
+#[derive(Clone)]
+enum ImageRequestSource {
+    /// The image must be downloaded from the media cache or the server.
+    Download(DownloadRequest),
+    /// The image is in the given file.
+    File(File),
 }
 
-impl From<FileRequestData> for ImageRequestData {
-    fn from(value: FileRequestData) -> Self {
-        Self::File(value)
+impl ImageRequestSource {
+    /// The ID of the image request with this source.
+    fn request_id(&self) -> ImageRequestId {
+        match self {
+            Self::Download(download_request) => {
+                ImageRequestId::Download(download_request.settings.unique_key())
+            }
+            Self::File(file) => ImageRequestId::File(file.path().expect("file should have a path")),
+        }
+    }
+
+    /// Try to download the image, if necessary.
+    async fn try_into_decoder_source(self) -> Result<ImageDecoderSource, ImageError> {
+        match self {
+            Self::Download(download_request) => {
+                // Download the image.
+                Ok(download_request
+                    .await
+                    .inspect_err(|error| warn!("Could not retrieve image: {error}"))?)
+            }
+            Self::File(data) => Ok(data.into()),
+        }
     }
 }
 

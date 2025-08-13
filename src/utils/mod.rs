@@ -511,6 +511,7 @@ pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io
                 }
             }
             let mut file = NamedTempFile::new_in(dir)?;
+            tracing::debug!("Created new tmp file: {}", file.path().to_string_lossy());
             file.write_all(&data)?;
 
             Ok(file.into())
