@@ -208,7 +208,6 @@ message-sender {
   .codeview {
     border-radius: vendor.$menu_radius;
     padding: 6px;
-    font-family: monospace;
     background-color: var(--text-view-bg);
     color: var(--view-fg-color);
   }

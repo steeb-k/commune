@@ -409,7 +409,7 @@ fn widget_for_preformatted_text(
     let view = sourceview::View::builder()
         .buffer(&buffer)
         .editable(false)
-        .css_classes(["codeview", "frame"])
+        .css_classes(["codeview", "frame", "monospace"])
         .hexpand(true)
         .build();
 
