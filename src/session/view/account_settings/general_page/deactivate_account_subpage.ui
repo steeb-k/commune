@@ -44,6 +44,9 @@
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="xalign">0.0</property>
+                            <style>
+                              <class name="body"/>
+                            </style>
                           </object>
                         </child>
                         <child>
@@ -53,6 +56,9 @@
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="xalign">0.0</property>
+                            <style>
+                              <class name="body"/>
+                            </style>
                           </object>
                         </child>
                       </object>

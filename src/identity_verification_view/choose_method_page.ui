@@ -33,6 +33,9 @@
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
+                    <style>
+                      <class name="body"/>
+                    </style>
                   </object>
                 </child>
                 <child>

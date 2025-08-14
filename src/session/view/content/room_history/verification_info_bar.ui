@@ -15,6 +15,9 @@
                 <property name="halign">start</property>
                 <property name="wrap">True</property>
                 <property name="wrap-mode">word-char</property>
+                <style>
+                  <class name="body"/>
+                </style>
               </object>
             </child>
             <child>

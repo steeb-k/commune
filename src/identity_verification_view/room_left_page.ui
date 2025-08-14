@@ -35,6 +35,9 @@
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
                     <property name="label" translatable="yes">You are no longer in the room where the verification was taking place</property>
+                    <style>
+                      <class name="body"/>
+                    </style>
                   </object>
                 </child>
                 <child>

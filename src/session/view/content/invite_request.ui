@@ -95,6 +95,7 @@
                         </binding>
                         <style>
                           <class name="dimmed"/>
+                          <class name="body"/>
                         </style>
                       </object>
                     </child>
@@ -105,6 +106,9 @@
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="label" translatable="yes">You requested an invite to this room</property>
+                        <style>
+                          <class name="body"/>
+                        </style>
                       </object>
                     </child>
                     <child>

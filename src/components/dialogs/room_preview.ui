@@ -72,7 +72,6 @@
                                 <property name="label" translatable="yes">Enter a room ID, room alias, or link to look up a room</property>
                                 <style>
                                   <class name="body"/>
-                                  <class name="description"/>
                                 </style>
                               </object>
                             </child>
@@ -161,6 +160,9 @@
                                 <property name="justify">center</property>
                                 <property name="use-markup">True</property>
                                 <property name="selectable">True</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
                               </object>
                             </child>
                             <child>

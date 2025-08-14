@@ -62,7 +62,6 @@
                         <property name="label" translatable="yes">Select the account you want to open the URI with</property>
                         <style>
                           <class name="body"/>
-                          <class name="description"/>
                         </style>
                       </object>
                     </child>

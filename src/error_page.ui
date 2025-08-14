@@ -59,6 +59,9 @@
                                 <property name="wrap-mode">word-char</property>
                                 <property name="xalign">0.0</property>
                                 <property name="label" translatable="yes">Fractal relies on a Secret Portal to manage your sensitive session information and an error occurred while we were trying to restore your sessions.</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
                               </object>
                             </child>
                             <child>
@@ -71,6 +74,9 @@
                                     <property name="wrap-mode">word-char</property>
                                     <property name="xalign">0.0</property>
                                     <property name="label" translatable="yes">Here are a few things that might help you fix issues with the Secret Portal:</property>
+                                    <style>
+                                      <class name="body"/>
+                                    </style>
                                   </object>
                                 </child>
                                 <child>
@@ -88,6 +94,9 @@
                                         <property name="wrap-mode">word-char</property>
                                         <property name="xalign">0.0</property>
                                         <property name="label" translatable="yes">Make sure you have a Secret Portal Backend Provider installed, like gnome-keyring.</property>
+                                        <style>
+                                          <class name="body"/>
+                                        </style>
                                       </object>
                                     </child>
                                   </object>
@@ -111,6 +120,9 @@
                                             <property name="wrap-mode">word-char</property>
                                             <property name="xalign">0.0</property>
                                             <property name="label" translatable="yes">If you prefer to use a Secret Service Provider instead, you need to allow Fractal to interact with it, like this:</property>
+                                            <style>
+                                              <class name="body"/>
+                                            </style>
                                           </object>
                                         </child>
                                         <child>
@@ -168,6 +180,9 @@
                                         <property name="wrap-mode">word-char</property>
                                         <property name="xalign">0.0</property>
                                         <property name="label" translatable="yes">Check that you have a default keyring and that it is unlocked.</property>
+                                        <style>
+                                          <class name="body"/>
+                                        </style>
                                       </object>
                                     </child>
                                   </object>
@@ -180,6 +195,9 @@
                                 <property name="wrap-mode">word-char</property>
                                 <property name="xalign">0.0</property>
                                 <property name="label" translatable="yes">Check the application logs and your distribution’s documentation for more details.</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
                               </object>
                             </child>
                           </object>

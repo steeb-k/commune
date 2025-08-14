@@ -57,6 +57,9 @@
                     </lookup>
                   </closure>
                 </binding>
+                <style>
+                  <class name="body"/>
+                </style>
               </object>
             </child>
             <child>
@@ -93,6 +96,7 @@
             <property name="label" translatable="yes">There are no members in this room</property>
             <style>
               <class name="dimmed"/>
+              <class name="body"/>
             </style>
           </object>
         </child>

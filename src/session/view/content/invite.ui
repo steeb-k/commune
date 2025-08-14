@@ -101,6 +101,7 @@
                         </binding>
                         <style>
                           <class name="dimmed"/>
+                          <class name="body"/>
                         </style>
                       </object>
                     </child>
@@ -108,6 +109,9 @@
                       <object class="LabelWithWidgets" id="inviter">
                         <property name="halign">center</property>
                         <property name="justify">center</property>
+                        <style>
+                          <class name="body"/>
+                        </style>
                       </object>
                     </child>
                     <child>

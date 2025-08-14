@@ -33,7 +33,6 @@
             </child>
             <child>
               <object class="GtkLabel" id="description">
-                <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <property name="lines">4</property>
                 <property name="wrap">True</property>
@@ -41,6 +40,9 @@
                 <property name="xalign">0</property>
                 <property name="use-markup">True</property>
                 <property name="selectable">True</property>
+                <style>
+                  <class name="body"/>
+                </style>
               </object>
             </child>
             <child>
