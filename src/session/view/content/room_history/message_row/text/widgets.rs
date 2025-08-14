@@ -32,6 +32,7 @@ pub(super) fn new_message_label() -> gtk::Label {
         .xalign(0.0)
         .valign(gtk::Align::Start)
         .use_markup(true)
+        .css_classes(["document"])
         .build()
 }
 
@@ -190,6 +191,7 @@ fn label_for_inline_html(
             }
         }
         let w = LabelWithWidgets::new();
+        w.add_css_class("document");
         w.set_use_markup(true);
         w.set_ellipsize(config.ellipsize);
         w.set_label_and_widgets(text, widgets);
@@ -318,7 +320,10 @@ impl ListType {
     /// Construct the widget for the bullet of the current type at the given
     /// position.
     fn bullet(&self, position: usize) -> gtk::Label {
-        let bullet = gtk::Label::builder().valign(gtk::Align::Baseline).build();
+        let bullet = gtk::Label::builder()
+            .css_classes(["document"])
+            .valign(gtk::Align::Baseline)
+            .build();
 
         match self {
             ListType::Unordered => bullet.set_label("•"),
