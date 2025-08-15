@@ -130,7 +130,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/read_receipts_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/sender_avatar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/group_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/row.ui</file>

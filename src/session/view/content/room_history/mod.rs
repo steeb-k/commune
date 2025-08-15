@@ -19,7 +19,6 @@ mod member_timestamp;
 mod message_row;
 mod message_toolbar;
 mod read_receipts_list;
-mod sender_avatar;
 mod state;
 mod title;
 mod typing_row;
@@ -32,7 +31,6 @@ use self::{
     message_row::MessageRow,
     message_toolbar::MessageToolbar,
     read_receipts_list::ReadReceiptsList,
-    sender_avatar::SenderAvatar,
     state::{StateGroupRow, StateRow},
     title::RoomHistoryTitle,
     typing_row::TypingRow,
@@ -72,8 +70,6 @@ mod imp {
     #[properties(wrapper_type = super::RoomHistory)]
     pub struct RoomHistory {
         #[template_child]
-        sender_menu_model: TemplateChild<gio::Menu>,
-        #[template_child]
         pub(super) header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         room_title: TemplateChild<RoomHistoryTitle>,
@@ -103,7 +99,6 @@ mod imp {
         drag_overlay: TemplateChild<DragOverlay>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
-        sender_context_menu: OnceCell<gtk::PopoverMenu>,
         /// The timeline currently displayed.
         #[property(get, set = Self::set_timeline, explicit_notify, nullable)]
         timeline: BoundObject<Timeline>,
@@ -1127,21 +1122,6 @@ mod imp {
             self.event_context_menu.get_or_init(Default::default)
         }
 
-        /// The context menu for the sender avatars.
-        pub(super) fn sender_context_menu(&self) -> &gtk::PopoverMenu {
-            self.sender_context_menu.get_or_init(|| {
-                let popover = gtk::PopoverMenu::builder()
-                    .has_arrow(false)
-                    .halign(gtk::Align::Start)
-                    .menu_model(&*self.sender_menu_model)
-                    .build();
-                popover.update_property(&[gtk::accessible::Property::Label(&gettext(
-                    "Sender Context Menu",
-                ))]);
-                popover
-            })
-        }
-
         /// Opens the room details with the given initial view.
         fn open_room_details(&self, initial_view: room_details::InitialView) {
             let Some(room) = self.room() else {
@@ -1204,11 +1184,6 @@ impl RoomHistory {
     /// The context menu for rows presenting an [`Event`].
     fn event_context_menu(&self) -> &EventActionsContextMenu {
         self.imp().event_context_menu()
-    }
-
-    /// The context menu for the sender avatars.
-    fn sender_context_menu(&self) -> &gtk::PopoverMenu {
-        self.imp().sender_context_menu()
     }
 }
 

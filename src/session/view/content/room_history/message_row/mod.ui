@@ -8,7 +8,26 @@
         </style>
         <property name="column-spacing">8</property>
         <child>
-          <object class="ContentSenderAvatar" id="avatar">
+          <object class="GtkButton" id="avatar_button">
+            <property name="tooltip-text" translatable="yes">View Sender Profile</property>
+            <property name="valign">start</property>
+            <property name="child">
+              <object class="Avatar" id="avatar">
+                <property name="size">36</property>
+                <property name="accessible-role">presentation</property>
+                <binding name="data">
+                  <lookup name="avatar-data">
+                    <lookup name="sender">ContentMessageRow</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </property>
+            <signal name="clicked" handler="view_sender_profile" swapped="yes"/>
+            <style>
+              <class name="circular"/>
+              <class name="flat"/>
+              <class name="sender-avatar"/>
+            </style>
             <layout>
               <property name="column">0</property>
               <property name="row">0</property>

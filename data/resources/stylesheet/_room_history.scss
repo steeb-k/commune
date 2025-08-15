@@ -99,42 +99,29 @@ room-title {
       }
     }
   }
-}
 
-sender-avatar {
-  padding: 5px;
-  border-radius: 100%;
+  button.sender-avatar {
+    padding: 5px;
 
-  @include vendor.focus-ring();
+    /* @include vendor.focus-ring(); */
 
-  &:hover {
-    background-color: vendor.$hover_color;
-
-    image {
-      filter: brightness(1.07) ;
+    &:hover {
+      image {
+        filter: brightness(1.07) ;
+      }
     }
-  }
 
-  &:active {
-    background-color: vendor.$active_color;
-
-    image {
-      filter: brightness(1.16) ;
+    &:active {
+      image {
+        filter: brightness(1.16) ;
+      }
     }
-  }
 
-  &:checked {
-    background-color: vendor.$selected_color;
-
-    image {
-      filter: brightness(1.1) ;
+    &:checked {
+      image {
+        filter: brightness(1.1) ;
+      }
     }
-  }
-
-  popover button.text-button {
-    padding-left: 10px;
-    padding-right: 10px;
-    font-weight: 400;
   }
 }
 

@@ -1,5 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use tracing::error;
 
 mod audio;
 mod caption;
@@ -19,11 +20,13 @@ use self::{
     message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
     sender_name::MessageSenderName,
 };
-use super::{ReadReceiptsList, SenderAvatar};
+use super::ReadReceiptsList;
 use crate::{
-    Application, gettext_f,
+    Application,
+    components::UserProfileDialog,
+    gettext_f,
     prelude::*,
-    session::model::{Event, EventHeaderState},
+    session::model::{Event, EventHeaderState, Member},
     system_settings::ClockFormat,
     utils::BoundObject,
 };
@@ -42,7 +45,7 @@ mod imp {
     #[properties(wrapper_type = super::MessageRow)]
     pub struct MessageRow {
         #[template_child]
-        avatar: TemplateChild<SenderAvatar>,
+        avatar_button: TemplateChild<gtk::Button>,
         #[template_child]
         header: TemplateChild<gtk::Box>,
         #[template_child]
@@ -62,6 +65,9 @@ mod imp {
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
         event: BoundObject<Event>,
+        /// The sender of the event that is presented.
+        #[property(get = Self::sender)]
+        sender: PhantomData<Option<Member>>,
         /// The texture of the image preview displayed by the descendant of this
         /// widget, if any.
         #[property(get = Self::texture)]
@@ -76,6 +82,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -133,6 +140,7 @@ mod imp {
     impl WidgetImpl for MessageRow {}
     impl BinImpl for MessageRow {}
 
+    #[gtk::template_callbacks]
     impl MessageRow {
         /// Set the event that is presented.
         fn set_event(&self, event: Event) {
@@ -145,7 +153,6 @@ mod imp {
             }
 
             let sender = event.sender();
-            self.avatar.set_sender(Some(sender.clone()));
             self.display_name.set_sender(Some(sender));
 
             let state_binding = event
@@ -193,10 +200,16 @@ mod imp {
                 ],
             );
             obj.notify_event();
+            obj.notify_sender();
 
             self.update_content();
             self.update_header();
             self.update_timestamp();
+        }
+
+        /// The sender of the event that is presented.
+        fn sender(&self) -> Option<Member> {
+            self.event.obj().map(|event| event.sender())
         }
 
         /// Update the header for the current event.
@@ -209,7 +222,7 @@ mod imp {
             let avatar_name_visible = header_state == EventHeaderState::Full;
             let header_visible = header_state != EventHeaderState::Hidden;
 
-            self.avatar.set_visible(avatar_name_visible);
+            self.avatar_button.set_visible(avatar_name_visible);
             self.display_name.set_visible(avatar_name_visible);
             self.header.set_visible(header_visible);
 
@@ -257,6 +270,19 @@ mod imp {
         /// Get the texture displayed by this widget, if any.
         pub(super) fn texture(&self) -> Option<gdk::Texture> {
             self.content.texture()
+        }
+
+        /// View the profile of the sender.
+        #[template_callback]
+        fn view_sender_profile(&self) {
+            let Some(sender) = self.sender() else {
+                error!("Could not open profile for missing sender");
+                return;
+            };
+
+            let dialog = UserProfileDialog::new();
+            dialog.set_room_member(sender);
+            dialog.present(Some(&*self.obj()));
         }
     }
 }
