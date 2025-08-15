@@ -1,15 +1,19 @@
-target/
-build/
+# Common build directory names
 _build/
+build/
 builddir/
-build-aux/app
+
+# Cargo
+target/
+
+# Flatpak
 .flatpak-builder
-src/config.rs
+.flatpak
+.fenv
+
+# Temporary files
 *.ui.in~
 *.ui~
-.flatpak
-subprojects/libadwaita
-subprojects/gtksourceview
-.vscode
-.fenv
-.zed
+
+# Dynamically-generated file
+src/config.rs
