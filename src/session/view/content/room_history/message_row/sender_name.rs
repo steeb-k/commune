@@ -147,7 +147,7 @@ mod imp {
             let prev_activatable = self.gesture_click.borrow().is_some();
 
             let obj = self.obj();
-            obj.action_set_enabled("message-sender.mention", activatable);
+            obj.action_set_enabled("message-sender.activate", activatable);
 
             if activatable == prev_activatable {
                 // Nothing to update.
