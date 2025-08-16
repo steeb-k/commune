@@ -1,16 +1,24 @@
 // SCSS reused directly from other projects.
 
-@use 'config';
-
 // https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.6.1/src/stylesheet/_colors.scss
-$focus_border_opacity: if(config.$contrast == 'high', 80%, 50%);
-$focus_border_color: color-mix(in srgb, var(--accent-color) $focus_border_opacity, transparent);
+$focus_border_color: color-mix(in srgb, var(--accent-color) var(--focus-border-opacity), transparent);
 $hover_color: color-mix(in srgb, currentColor 7%, transparent);
 $active_color: color-mix(in srgb, currentColor 16%, transparent);
 $selected_color: color-mix(in srgb, currentColor 10%, transparent);
 $selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);
 $selected_active_color: color-mix(in srgb, currentColor 19%, transparent);
 $osd_fg_color: RGB(255 255 255 / 90%);
+
+// Adapted from the same file but converted to CSS variable to use media query.
+:root {
+  @media not (prefers-contrast: more) {
+     --focus-border-opacity: 50%;
+  }
+
+  @media (prefers-contrast: more) {
+     --focus-border-opacity: 80%;
+  }
+}
 
 // https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.6.1/src/stylesheet/widgets/_buttons.scss
 $button_color: color-mix(in srgb, currentColor 10%, transparent);

@@ -1,4 +1,4 @@
-# Stylesheets
+# Stylesheet
 # We accept grass (a Rust SASS compiler) or sass (the official dart SASS compiler).
 sass_bin = find_program('grass', required: false)
 sass_options = []
@@ -12,16 +12,10 @@ if not sass_bin.found()
   endif
 endif
 
-scss_files = [
-  'style',
-  'style-hc',
-]
-
 # Keep ordered alphabetically.
 scss_deps = files([
   'stylesheet/_common.scss',
   'stylesheet/_components.scss',
-  'stylesheet/_config.scss',
   'stylesheet/_login.scss',
   'stylesheet/_room_details.scss',
   'stylesheet/_room_history.scss',
@@ -29,18 +23,15 @@ scss_deps = files([
   'stylesheet/_vendor.scss',
 ])
 
-stylesheet_deps = []
-
-foreach scss: scss_files
-  stylesheet_deps += custom_target('@0@.scss'.format(scss),
-    input: '@0@.scss'.format(scss),
-    output: '@0@.css'.format(scss),
-    command: [
-      sass_bin, sass_options, '@INPUT@', '@OUTPUT@',
-    ],
-    depend_files: scss_deps,
-  )
-endforeach
+stylesheet = custom_target(
+  'stylesheet',
+  input: 'style.scss',
+  output: 'style.css',
+  command: [
+    sass_bin, sass_options, '@INPUT@', '@OUTPUT@',
+  ],
+  depend_files: scss_deps,
+)
 
 
 # Resources
@@ -50,5 +41,5 @@ resources = gnome.compile_resources(
   gresource_bundle: true,
   install: true,
   install_dir: pkgdatadir,
-  dependencies: stylesheet_deps,
+  dependencies: stylesheet,
 )

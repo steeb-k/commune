@@ -106,7 +106,6 @@
     <file compressed="true">sas-emoji/uk.json</file>
     <file compressed="true">sas-emoji/vi.json</file>
     <file compressed="true">sas-emoji/zh_Hans.json</file>
-    <file compressed="true">style-hc.css</file>
     <file compressed="true">style.css</file>
   </gresource>
 </gresources>

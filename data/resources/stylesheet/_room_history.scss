@@ -1,12 +1,18 @@
 // Room history.
 
-@use 'config';
 @use 'vendor';
 
 %nested-effect {
   border-left: 2px solid var(--accent-bg-color);
   padding-left: 6px;
-  opacity: if(config.$contrast == 'high', 90%, 70%);
+
+  @media not (prefers-contrast: more) {
+    opacity: 70%;
+  }
+
+  @media (prefers-contrast: more) {
+    opacity: 90%;
+  }
 }
 
 room-title {
@@ -296,7 +302,7 @@ message-visual-media {
       color: vendor.$osd_fg_color;
       background-color: rgb(0 0 0 / 65%);
 
-      @if config.$contrast == 'high' {
+      @media (prefers-contrast: more) {
         box-shadow: 0 0 0 1px currentColor;
       }
     }
