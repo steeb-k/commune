@@ -4,7 +4,7 @@
 .remove_build_only_modules:
   variables:
     # JSON array of the names of the Flatpak modules to remove.
-    MODULES_TO_REMOVE: '["grass", "glycin-loaders"]'
+    MODULES_TO_REMOVE: '["grass"]'
   before_script:
     # Create a temporary file.
     - TMP_FILE=$(mktemp)
