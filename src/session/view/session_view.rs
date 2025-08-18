@@ -8,6 +8,7 @@ use crate::{
     Window,
     components::{RoomPreviewDialog, UserProfileDialog},
     intent::SessionIntent,
+    prelude::*,
     session::model::{
         IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
@@ -50,8 +51,30 @@ mod imp {
         type Type = super::SessionView;
         type ParentType = adw::Bin;
 
+        #[allow(clippy::too_many_lines)]
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_action("session.open-account-settings", None, |obj, _, _| {
+                let Some(session) = obj.session() else {
+                    return;
+                };
+
+                if obj
+                    .activate_action(
+                        "win.open-account-settings",
+                        Some(&session.session_id().to_variant()),
+                    )
+                    .is_err()
+                {
+                    error!("Could not activate action `win.open-account-settings`");
+                }
+            });
+            klass.add_binding_action(
+                gdk::Key::comma,
+                gdk::ModifierType::CONTROL_MASK,
+                "session.open-account-settings",
+            );
 
             klass.install_action("session.close-room", None, |obj, _, _| {
                 obj.imp().select_item(None);
