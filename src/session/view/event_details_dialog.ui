@@ -102,7 +102,7 @@
                                           <object class="GtkButton">
                                             <property name="valign">center</property>
                                             <property name="icon-name">user-info-symbolic</property>
-                                            <property name="tooltip-text">View Profile</property>
+                                            <property name="tooltip-text" translatable="yes">Show Profile</property>
                                             <signal name="clicked" handler="open_sender_profile" swapped="yes"/>
                                             <style>
                                               <class name="flat"/>

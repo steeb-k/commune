@@ -9,7 +9,7 @@
         <property name="column-spacing">8</property>
         <child>
           <object class="GtkButton" id="avatar_button">
-            <property name="tooltip-text" translatable="yes">View Sender Profile</property>
+            <property name="tooltip-text" translatable="yes">Show Sender Profile</property>
             <property name="valign">start</property>
             <property name="child">
               <object class="Avatar" id="avatar">
