@@ -56,7 +56,6 @@ mod imp {
             klass.install_action("session.close-room", None, |obj, _, _| {
                 obj.imp().select_item(None);
             });
-
             klass.add_binding_action(
                 gdk::Key::Escape,
                 gdk::ModifierType::empty(),
@@ -91,6 +90,11 @@ mod imp {
             klass.install_action("session.join-room", None, |obj, _, _| {
                 obj.imp().preview_room(None);
             });
+            klass.add_binding_action(
+                gdk::Key::L,
+                gdk::ModifierType::CONTROL_MASK,
+                "session.join-room",
+            );
 
             klass.install_action("session.create-direct-chat", None, |obj, _, _| {
                 obj.imp().create_direct_chat();
@@ -99,7 +103,6 @@ mod imp {
             klass.install_action("session.toggle-room-search", None, |obj, _, _| {
                 obj.imp().toggle_room_search();
             });
-
             klass.add_binding_action(
                 gdk::Key::k,
                 gdk::ModifierType::CONTROL_MASK,
@@ -109,7 +112,6 @@ mod imp {
             klass.install_action("session.select-unread-room", None, |obj, _, _| {
                 obj.imp().select_unread_room();
             });
-
             klass.add_binding_action(
                 gdk::Key::asterisk,
                 gdk::ModifierType::CONTROL_MASK,
