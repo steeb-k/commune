@@ -28,6 +28,7 @@ mod imp {
         event: BoundObject<Event>,
         /// The event action group of this row.
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
+        shortcut_controller: RefCell<Option<gtk::ShortcutController>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         target_user_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
@@ -354,6 +355,26 @@ mod imp {
                 .and_downcast::<gio::SimpleAction>()
             {
                 copy_image_action.set_enabled(self.texture().is_some());
+            }
+
+            if action_group
+                .as_ref()
+                .is_some_and(|action_group| action_group.has_action("view-details"))
+            {
+                if self.shortcut_controller.borrow().is_none() {
+                    let shortcut_controller = gtk::ShortcutController::new();
+                    shortcut_controller.add_shortcut(gtk::Shortcut::new(
+                        Some(
+                            gtk::ShortcutTrigger::parse_string("<Alt>Return")
+                                .expect("trigger string should be valid"),
+                        ),
+                        gtk::ShortcutAction::parse_string("action(event.view-details)"),
+                    ));
+                    obj.add_controller(shortcut_controller.clone());
+                    self.shortcut_controller.replace(Some(shortcut_controller));
+                }
+            } else if let Some(shortcut_controller) = self.shortcut_controller.take() {
+                obj.remove_controller(&shortcut_controller);
             }
 
             obj.insert_action_group("event", action_group.as_ref());
