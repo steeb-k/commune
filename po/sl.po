@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-16 10:44+0000\n"
-"PO-Revision-Date: 2025-08-16 17:10+0200\n"
+"POT-Creation-Date: 2025-08-19 15:39+0000\n"
+"PO-Revision-Date: 2025-08-19 19:29+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -22,7 +22,7 @@ msgstr ""
 "X-Generator: Poedit 2.2.1\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:2 data/org.gnome.Fractal.metainfo.xml.in.in:7
-#: src/login/session_setup_view.ui:22 src/window.ui:8
+#: src/login/session_setup_view.ui:22 src/window.blp:9
 msgid "Fractal"
 msgstr "Fraktal"
 
@@ -129,23 +129,23 @@ msgstr "Oglejte si medijsko zgodovino klepetalnice Matrix"
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Fraktalov vmesnik se prilagaja majhnim zaslonom"
 
-#: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:33
+#: src/account_chooser_dialog/mod.blp:5 src/account_chooser_dialog/mod.blp:35
 msgid "Select an Account"
 msgstr "Izberite račun"
 
-#: src/account_chooser_dialog/mod.ui:62
+#: src/account_chooser_dialog/mod.blp:62
 msgid "Select the account you want to open the URI with"
 msgstr "Izberite račun, s katerim želite odpreti URI"
 
-#: src/account_switcher/account_switcher_button.ui:24
+#: src/account_switcher/account_switcher_button.blp:9
 msgid "Switch Accounts"
 msgstr "Preklopi med računi"
 
-#: src/account_switcher/account_switcher_popover.ui:38
+#: src/account_switcher/account_switcher_popover.blp:35
 msgid "_Add Account"
 msgstr "_Dodaj račun"
 
-#: src/account_switcher/session_item.ui:62 src/session/view/account_settings/mod.ui:4
+#: src/account_switcher/session_item.blp:58 src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Nastavitve računa"
 
@@ -192,7 +192,7 @@ msgstr "Poskusi znova"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:93 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:93 src/window.blp:17
 msgid "Loading"
 msgstr "Poteka nalaganje"
 
@@ -204,13 +204,13 @@ msgstr "Uspešno"
 msgid "Warning"
 msgstr "Opozorilo"
 
-#: src/components/action_button.ui:126 src/error_page.ui:10 src/session/view/content/explore/mod.ui:117
+#: src/components/action_button.ui:126 src/error_page.blp:9 src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
 #: src/session/view/content/room_details/invite_subpage/mod.ui:135
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
-#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.ui:100
+#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.blp:87
 msgid "Error"
 msgstr "Napaka"
 
@@ -1156,21 +1156,17 @@ msgstr "Preveri"
 msgid "QR Code"
 msgstr "Koda QR"
 
-#: src/error_page.rs:94
-msgid "Command copied to clipboard"
-msgstr "Ukaz je kopiran na odložišče"
-
-#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31 src/error_page.ui:34
+#: src/error_page.blp:19 src/error_page.blp:23 src/error_page.blp:31 src/error_page.blp:35
 #: src/login/greeter.ui:26 src/login/greeter.ui:29 src/login/greeter.ui:37 src/login/greeter.ui:40
-#: src/window.ui:30 src/window.ui:33
+#: src/window.blp:29 src/window.blp:33
 msgid "About Fractal"
 msgstr "O programu Fraktal"
 
-#: src/error_page.ui:47
+#: src/error_page.blp:45
 msgid "Secret Portal Error"
 msgstr "Napaka ponudnika tajnih storitev"
 
-#: src/error_page.ui:61
+#: src/error_page.blp:58
 msgid ""
 "Fractal relies on a Secret Portal to manage your sensitive session information and an error occurred "
 "while we were trying to restore your sessions."
@@ -1178,36 +1174,40 @@ msgstr ""
 "Fraktal se zanaša na ponudnika tajnih storitev za upravljanje vaših občutljivih podatkov o seji in "
 "prišlo je do napake pri poskusu shranjevanja ali obnovitve vaše seje."
 
-#: src/error_page.ui:76
+#: src/error_page.blp:73
 msgid "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr "Tukaj je nekaj stvari, ki vam lahko pomagajo pri reševanju težav s ponudnikom tajnih storitev:"
 
-#: src/error_page.ui:96
+#: src/error_page.blp:92
 msgid "Make sure you have a Secret Portal Backend Provider installed, like gnome-keyring."
 msgstr "Prepričajte se, da imate nameščenega ponudnika zaledja tajnih storitev, kot je gnome-keyring."
 
-#: src/error_page.ui:122
+#: src/error_page.blp:116
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow Fractal to interact with it, "
 "like this:"
 msgstr ""
 "Če raje uporabljate ponudnika tajnih storitev, morate Fraktalu dovoliti interakcijo z njim, kot je ta:"
 
-#: src/error_page.ui:147
+#: src/error_page.blp:138
 msgid "Copy Command"
 msgstr "Ukaz Kopiraj"
 
-#: src/error_page.ui:182
+#: src/error_page.blp:170
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Preverite, ali imate privzeto zbirko ključev in ali je odklenjena."
 
-#: src/error_page.ui:197
+#: src/error_page.blp:183
 msgid "Check the application logs and your distribution’s documentation for more details."
 msgstr "Za več podrobnosti preverite zapisnike programov in dokumentacijo distribucije."
 
-#: src/error_page.ui:216
+#: src/error_page.blp:198
 msgid "Could Not Initialize Session"
 msgstr "Seje ni bilo mogoče inicializirati"
+
+#: src/error_page.rs:94
+msgid "Command copied to clipboard"
+msgstr "Ukaz je kopiran na odložišče"
 
 #: src/identity_verification_view/accept_request_page.rs:129 src/session/model/notifications/mod.rs:388
 msgid "Login Request From Another Session"
@@ -1655,7 +1655,7 @@ msgstr "Več ponudnikov enotne prijave"
 msgid "Login via SSO"
 msgstr "Prijava prek enotne prijave"
 
-#: src/login/method_page.ui:5 src/window.ui:82
+#: src/login/method_page.ui:5 src/window.blp:73
 msgid "Log In"
 msgstr "Prijavi se"
 
@@ -1699,7 +1699,7 @@ msgstr "Začni klepet"
 msgid "Session Setup"
 msgstr "Nastavitev seje"
 
-#: src/login/session_setup_view.ui:51 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.blp:59
 msgid "Fetching Account Data…"
 msgstr "Pridobivanje podatkov o računu ..."
 
@@ -3997,7 +3997,7 @@ msgid "Sent at {time}"
 msgstr "Poslano {time}"
 
 #: src/session/view/content/room_history/message_row/mod.ui:12
-msgid "View Sender Profile"
+msgid "Show Sender Profile"
 msgstr "Pokaži profil pošiljatelja"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
@@ -4611,6 +4611,10 @@ msgstr "ID klepetalnice je kopiran v odložišče"
 msgid "Sender ID"
 msgstr "ID pošiljatelja"
 
+#: src/session/view/event_details_dialog.ui:105
+msgid "Show Profile"
+msgstr "Pokaži profil"
+
 #: src/session/view/event_details_dialog.ui:117 src/session/view/event_details_dialog.ui:186
 msgid "Timestamp"
 msgstr "Časovni žig"
@@ -4989,6 +4993,6 @@ msgstr "avdio"
 msgid "file"
 msgstr "datoteka"
 
-#: src/window.ui:91
+#: src/window.blp:80
 msgid "Session"
 msgstr "Seja"
