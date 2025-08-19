@@ -2,10 +2,11 @@ project('fractal',
         'rust',
         version: '12',
         license: 'GPL-3.0-or-later',
-        meson_version: '>= 1.1')
+        meson_version: '>= 1.2')
 
-i18n = import('i18n')
+fs = import('fs')
 gnome = import('gnome')
+i18n = import('i18n')
 
 base_id = 'org.gnome.Fractal'
 application_id = base_id
@@ -50,11 +51,16 @@ glib_compile_resources = find_program('glib-compile-resources', required: true)
 glib_compile_schemas = find_program('glib-compile-schemas', required: true)
 desktop_file_validate = find_program('desktop-file-validate', required: false)
 appstreamcli = find_program('appstreamcli', required: false)
+
 cargo = find_program('cargo', required: true)
 cargo_version = run_command(cargo, '--version', check: true).stdout().strip()
 message(cargo_version)
 rustc_version = run_command('rustc', '--version', check: true).stdout().strip()
 message(rustc_version)
+
+blueprint_compiler = find_program('blueprint-compiler', required: true)
+blueprint_compiler_version = run_command('blueprint-compiler', '--version', check: true).stdout().strip()
+message('blueprint-compiler ' + blueprint_compiler_version)
 
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')

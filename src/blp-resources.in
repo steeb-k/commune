@@ -1,0 +1,10 @@
+# List of Blueprint files to compile.
+# Please keep this file sorted alphabetically.
+account_chooser_dialog/account_row.blp
+account_chooser_dialog/mod.blp
+account_switcher/account_switcher_button.blp
+account_switcher/account_switcher_popover.blp
+account_switcher/avatar_with_selection.blp
+account_switcher/session_item.blp
+error_page.blp
+window.blp

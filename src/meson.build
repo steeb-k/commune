@@ -1,4 +1,40 @@
-# UI resources
+# Compile Blueprint resources
+blp_files = []
+foreach line : fs.read('blp-resources.in').splitlines()
+  if not line.startswith('#') and line.strip() != ''
+    blp_files += line
+  endif
+endforeach
+
+blueprints = custom_target(
+  'blueprints',
+  input: blp_files,
+  output: '.',
+  command: [blueprint_compiler, 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
+)
+
+# Populate the GResource file for the compiled Blueprint files dynamically,
+# using the same file list
+compiled_ui_files = ''
+foreach file : blp_files
+  compiled_ui_files += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
+endforeach
+blp_resources_xml = configure_file(
+  input: 'blp-resources.gresource.xml.in',
+  output: 'blp-resources.gresource.xml',
+  configuration: { 'UI_FILES': compiled_ui_files }
+)
+
+blp_resources = gnome.compile_resources(
+  'blp-resources',
+  blp_resources_xml,
+  gresource_bundle: true,
+  install: true,
+  install_dir: pkgdatadir,
+  dependencies: [blueprints, blp_resources_xml],
+)
+
+# Compile UI resources
 ui_resources = gnome.compile_resources(
   'ui-resources',
   'ui-resources.gresource.xml',
@@ -7,6 +43,7 @@ ui_resources = gnome.compile_resources(
   install_dir: pkgdatadir,
 )
 
+# Generate config.rs
 global_conf = configuration_data()
 global_conf.set_quoted('APP_ID', application_id)
 global_conf.set('DISABLE_GLYCIN_SANDBOX', get_option('disable-glycin-sandbox').to_string())
@@ -20,7 +57,6 @@ config = configure_file(
   output: 'config.rs',
   configuration: global_conf
 )
-# Copy the config.rs output to the source directory.
 run_command(
   'cp',
   meson.project_build_root() / 'src' / 'config.rs',
@@ -28,6 +64,7 @@ run_command(
   check: true
 )
 
+# Build binary with cargo
 cargo_options = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_options += [ '--target-dir', meson.project_build_root() / 'src' ]
 
@@ -45,7 +82,7 @@ cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
 if build_env_only
   depends = []
 else
-  depends = [resources, ui_resources]
+  depends = [resources, blp_resources, ui_resources]
 endif
 
 custom_target(
@@ -67,6 +104,7 @@ custom_target(
   ]
 )
 
+# Build docs with rustdoc
 rustdoc_flags = ' '.join([
   '-Zunstable-options',
   '--enable-index-page',

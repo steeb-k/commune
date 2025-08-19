@@ -63,6 +63,9 @@ fn main() {
 
     let res = gio::Resource::load(RESOURCES_FILE).expect("Could not load gresource file");
     gio::resources_register(&res);
+    let blp_res = gio::Resource::load(BLUEPRINT_RESOURCES_FILE)
+        .expect("Could not load Blueprint gresource file");
+    gio::resources_register(&blp_res);
     let ui_res = gio::Resource::load(UI_RESOURCES_FILE).expect("Could not load UI gresource file");
     gio::resources_register(&ui_res);
 
