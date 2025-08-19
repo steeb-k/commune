@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-15 10:39+0000\n"
-"PO-Revision-Date: 2025-08-15 19:02+0300\n"
+"POT-Creation-Date: 2025-08-19 13:28+0000\n"
+"PO-Revision-Date: 2025-08-19 18:30+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -22,7 +22,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
-#: src/login/session_setup_view.ui:22 src/window.ui:8
+#: src/login/session_setup_view.ui:22 src/window.blp:9
 msgid "Fractal"
 msgstr "Фрактал"
 
@@ -150,23 +150,23 @@ msgstr "Перегляд журналу мультимедіа кімнати Ma
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Інтерфейс «Фрактала» адаптується до малих екранів"
 
-#: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:33
+#: src/account_chooser_dialog/mod.blp:5 src/account_chooser_dialog/mod.blp:35
 msgid "Select an Account"
 msgstr "Виберіть обліковий запис"
 
-#: src/account_chooser_dialog/mod.ui:62
+#: src/account_chooser_dialog/mod.blp:62
 msgid "Select the account you want to open the URI with"
 msgstr "Виберіть обліковий запис, для якого ви хочете відкрити адресу"
 
-#: src/account_switcher/account_switcher_button.ui:24
+#: src/account_switcher/account_switcher_button.blp:9
 msgid "Switch Accounts"
 msgstr "Перемкнути обліковий запис"
 
-#: src/account_switcher/account_switcher_popover.ui:38
+#: src/account_switcher/account_switcher_popover.blp:35
 msgid "_Add Account"
 msgstr "Д_одати обліковий запис"
 
-#: src/account_switcher/session_item.ui:62
+#: src/account_switcher/session_item.blp:58
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
@@ -214,7 +214,7 @@ msgstr "Повторити спробу"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:93 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:93 src/window.blp:17
 msgid "Loading"
 msgstr "Завантаження"
 
@@ -226,14 +226,14 @@ msgstr "Успіх"
 msgid "Warning"
 msgstr "Попередження"
 
-#: src/components/action_button.ui:126 src/error_page.ui:10
+#: src/components/action_button.ui:126 src/error_page.blp:9
 #: src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
 #: src/session/view/content/room_details/invite_subpage/mod.ui:135
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
-#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.ui:100
+#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.blp:87
 msgid "Error"
 msgstr "Помилка"
 
@@ -1307,22 +1307,18 @@ msgstr "Перевірити"
 msgid "QR Code"
 msgstr "QR-код"
 
-#: src/error_page.rs:94
-msgid "Command copied to clipboard"
-msgstr "Команду скопійовано до буфера обміну"
-
-#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31
-#: src/error_page.ui:34 src/login/greeter.ui:26 src/login/greeter.ui:29
-#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.ui:30
-#: src/window.ui:33
+#: src/error_page.blp:19 src/error_page.blp:23 src/error_page.blp:31
+#: src/error_page.blp:35 src/login/greeter.ui:26 src/login/greeter.ui:29
+#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.blp:29
+#: src/window.blp:33
 msgid "About Fractal"
 msgstr "Про «Фрактал»"
 
-#: src/error_page.ui:47
+#: src/error_page.blp:45
 msgid "Secret Portal Error"
 msgstr "Помилка «Секретного порталу»"
 
-#: src/error_page.ui:61
+#: src/error_page.blp:58
 msgid ""
 "Fractal relies on a Secret Portal to manage your sensitive session "
 "information and an error occurred while we were trying to restore your "
@@ -1331,14 +1327,14 @@ msgstr ""
 "«Фрактал» у керуванні конфіденційними даними ваших сеансів покладається на "
 "«Секретний портал». Під час спроби відновити ваші сеанси сталася помилка."
 
-#: src/error_page.ui:76
+#: src/error_page.blp:73
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr ""
 "Ось декілька порад, які можуть допомогти вам усунути проблеми із «Секретним "
 "порталом»:"
 
-#: src/error_page.ui:96
+#: src/error_page.blp:92
 msgid ""
 "Make sure you have a Secret Portal Backend Provider installed, like gnome-"
 "keyring."
@@ -1346,7 +1342,7 @@ msgstr ""
 "Переконайтеся, що встановлено модуль надання даних «Секретного порталу», "
 "наприклад gnome-keyring."
 
-#: src/error_page.ui:122
+#: src/error_page.blp:116
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow "
 "Fractal to interact with it, like this:"
@@ -1354,15 +1350,15 @@ msgstr ""
 "Якщо ви надаєте перевагу використанню надавача послуг «Секретної служби», "
 "вам слід дозволити «Фрактал» взаємодію зі службою, ось так:"
 
-#: src/error_page.ui:147
+#: src/error_page.blp:138
 msgid "Copy Command"
 msgstr "Скопіювати команду"
 
-#: src/error_page.ui:182
+#: src/error_page.blp:170
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Перевірте, чи є у вас типова в'язка ключів і чи її розблоковано."
 
-#: src/error_page.ui:197
+#: src/error_page.blp:183
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -1370,9 +1366,13 @@ msgstr ""
 "Ознайомтеся із журналом програми та документацією до вашого дистрибутива, "
 "щоб дізнатися більше."
 
-#: src/error_page.ui:216
+#: src/error_page.blp:198
 msgid "Could Not Initialize Session"
 msgstr "Не вдалося ініціалізувати сеанс"
+
+#: src/error_page.rs:94
+msgid "Command copied to clipboard"
+msgstr "Команду скопійовано до буфера обміну"
 
 #: src/identity_verification_view/accept_request_page.rs:129
 #: src/session/model/notifications/mod.rs:388
@@ -1873,7 +1873,7 @@ msgstr "Додаткові надавачі SSO"
 msgid "Login via SSO"
 msgstr "Вхід за допомогою SSO"
 
-#: src/login/method_page.ui:5 src/window.ui:82
+#: src/login/method_page.ui:5 src/window.blp:73
 msgid "Log In"
 msgstr "Увійти"
 
@@ -1921,7 +1921,7 @@ msgstr "Почати спілкування"
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
 
-#: src/login/session_setup_view.ui:51 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.blp:59
 msgid "Fetching Account Data…"
 msgstr "Отримуємо дані облікового запису…"
 
@@ -4313,9 +4313,9 @@ msgid "Sent at {time}"
 msgstr "Надіслано {time}"
 
 #: src/session/view/content/room_history/message_row/mod.ui:12
-#| msgid "User Profile"
-msgid "View Sender Profile"
-msgstr "Переглянути профіль відправника"
+#| msgid "View Sender Profile"
+msgid "Show Sender Profile"
+msgstr "Показати профіль відправника"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4941,6 +4941,11 @@ msgstr "Ідентифікатор кімнати скопійовано до б
 msgid "Sender ID"
 msgstr "Ід. відправника"
 
+#: src/session/view/event_details_dialog.ui:105
+#| msgid "User Profile"
+msgid "Show Profile"
+msgstr "Показувати профіль"
+
 #: src/session/view/event_details_dialog.ui:117
 #: src/session/view/event_details_dialog.ui:186
 msgid "Timestamp"
@@ -5329,7 +5334,7 @@ msgstr "звук"
 msgid "file"
 msgstr "файл"
 
-#: src/window.ui:91
+#: src/window.blp:80
 msgid "Session"
 msgstr "Сеанс"
 
