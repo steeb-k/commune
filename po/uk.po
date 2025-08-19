@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
 "POT-Creation-Date: 2025-08-19 13:28+0000\n"
-"PO-Revision-Date: 2025-08-19 18:30+0300\n"
+"PO-Revision-Date: 2025-08-19 18:34+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -4944,7 +4944,7 @@ msgstr "Ід. відправника"
 #: src/session/view/event_details_dialog.ui:105
 #| msgid "User Profile"
 msgid "Show Profile"
-msgstr "Показувати профіль"
+msgstr "Показати профіль"
 
 #: src/session/view/event_details_dialog.ui:117
 #: src/session/view/event_details_dialog.ui:186
