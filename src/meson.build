@@ -1,47 +1,49 @@
-# Compile Blueprint resources
-blp_files = []
-foreach line : fs.read('blp-resources.in').splitlines()
-  if not line.startswith('#') and line.strip() != ''
-    blp_files += line
-  endif
-endforeach
+if not build_env_only
+  # Compile Blueprint resources
+  blp_files = []
+  foreach line : fs.read('blp-resources.in').splitlines()
+    if not line.startswith('#') and line.strip() != ''
+      blp_files += line
+    endif
+  endforeach
 
-blueprints = custom_target(
-  'blueprints',
-  input: blp_files,
-  output: '.',
-  command: [blueprint_compiler, 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
-)
+  blueprints = custom_target(
+    'blueprints',
+    input: blp_files,
+    output: '.',
+    command: [blueprint_compiler, 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
+  )
 
-# Populate the GResource file for the compiled Blueprint files dynamically,
-# using the same file list
-compiled_ui_files = ''
-foreach file : blp_files
-  compiled_ui_files += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
-endforeach
-blp_resources_xml = configure_file(
-  input: 'blp-resources.gresource.xml.in',
-  output: 'blp-resources.gresource.xml',
-  configuration: { 'UI_FILES': compiled_ui_files }
-)
+  # Populate the GResource file for the compiled Blueprint files dynamically,
+  # using the same file list
+  compiled_ui_files = ''
+  foreach file : blp_files
+    compiled_ui_files += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
+  endforeach
+  blp_resources_xml = configure_file(
+    input: 'blp-resources.gresource.xml.in',
+    output: 'blp-resources.gresource.xml',
+    configuration: { 'UI_FILES': compiled_ui_files }
+  )
 
-blp_resources = gnome.compile_resources(
-  'blp-resources',
-  blp_resources_xml,
-  gresource_bundle: true,
-  install: true,
-  install_dir: pkgdatadir,
-  dependencies: [blueprints, blp_resources_xml],
-)
+  blp_resources = gnome.compile_resources(
+    'blp-resources',
+    blp_resources_xml,
+    gresource_bundle: true,
+    install: true,
+    install_dir: pkgdatadir,
+    dependencies: [blueprints, blp_resources_xml],
+  )
 
-# Compile UI resources
-ui_resources = gnome.compile_resources(
-  'ui-resources',
-  'ui-resources.gresource.xml',
-  gresource_bundle: true,
-  install: true,
-  install_dir: pkgdatadir,
-)
+  # Compile UI resources
+  ui_resources = gnome.compile_resources(
+    'ui-resources',
+    'ui-resources.gresource.xml',
+    gresource_bundle: true,
+    install: true,
+    install_dir: pkgdatadir,
+  )
+endif
 
 # Generate config.rs
 global_conf = configuration_data()
@@ -64,7 +66,7 @@ run_command(
   check: true
 )
 
-# Build binary with cargo
+# Cargo settings
 cargo_options = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_options += [ '--target-dir', meson.project_build_root() / 'src' ]
 
@@ -79,30 +81,27 @@ endif
 
 cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
 
-if build_env_only
-  depends = []
-else
-  depends = [resources, blp_resources, ui_resources]
+if not build_env_only
+  # Build binary with cargo
+  custom_target(
+    'cargo-build',
+    build_by_default: true,
+    build_always_stale: true,
+    output: meson.project_name(),
+    console: true,
+    install: true,
+    install_dir: bindir,
+    depends: [resources, blp_resources, ui_resources],
+    command: [
+      'env',
+      cargo_env,
+      cargo, 'build',
+      cargo_options,
+      '&&',
+      'cp', 'src' / rust_target / meson.project_name(), '@OUTPUT@',
+    ]
+  )
 endif
-
-custom_target(
-  'cargo-build',
-  build_by_default: true,
-  build_always_stale: true,
-  output: meson.project_name(),
-  console: true,
-  install: true,
-  install_dir: bindir,
-  depends: depends,
-  command: [
-    'env',
-    cargo_env,
-    cargo, 'build',
-    cargo_options,
-    '&&',
-    'cp', 'src' / rust_target / meson.project_name(), '@OUTPUT@',
-  ]
-)
 
 # Build docs with rustdoc
 rustdoc_flags = ' '.join([
@@ -136,14 +135,14 @@ doc_deps = [
 ]
 
 custom_target(
-    'cargo-doc',
-    build_by_default: false,
-    build_always_stale: true,
-    output: 'doc',
-    console: true,
-    command: [
-      'env', cargo_env + doc_env,
-      cargo, 'doc',
-      cargo_options + doc_deps + ['--no-deps', '-Zrustdoc-map'] ,
-    ],
-  )
+  'cargo-doc',
+  build_by_default: false,
+  build_always_stale: true,
+  output: 'doc',
+  console: true,
+  command: [
+    'env', cargo_env + doc_env,
+    cargo, 'doc',
+    cargo_options + doc_deps + ['--no-deps', '-Zrustdoc-map'] ,
+  ],
+)

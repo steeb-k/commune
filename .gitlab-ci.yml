@@ -14,7 +14,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 include:
-  - local: .gitlab-ci/run_checks.yml
+  - local: .gitlab-ci/check.yml
   - local: .gitlab-ci/build.yml
   - local: .gitlab-ci/test.yml
   - component: "gitlab.gnome.org/GNOME/citemplates/basic-deploy-docs@master"

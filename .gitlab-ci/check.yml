@@ -2,16 +2,16 @@
 
 include: '.gitlab-ci/utils.yml'
 
-# Custom checks and lints
-checks:
+# Checks from the pre-commit hook
+pre-commit-checks:
   stage: check
   image: "rustlang/rust:nightly-slim"
   interruptible: true
   script:
     - hooks/checks.sh --verbose --force-install
 
-# Lint the code
-cargo-clippy:
+# Checks needing dependencies in the Flatpak runtime
+flatpak-checks:
   extends:
     - .remove_build_only_modules
   stage: check
@@ -21,4 +21,7 @@ cargo-clippy:
   interruptible: true
   script:
     - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
+    # Lint the Rust code
     - echo "cargo clippy -- -D warnings" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+    # Lint the Blueprint files
+    - echo "blueprint-compiler format ../src" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}

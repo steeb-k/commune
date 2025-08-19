@@ -47,10 +47,10 @@ if build_machine.system() == 'linux'
   dependency('libseccomp', version: '>= 2.5.0')
 endif
 
-glib_compile_resources = find_program('glib-compile-resources', required: true)
-glib_compile_schemas = find_program('glib-compile-schemas', required: true)
-desktop_file_validate = find_program('desktop-file-validate', required: false)
-appstreamcli = find_program('appstreamcli', required: false)
+# When the `build-env` profile is used, we only want to set up the build
+# environment for the sandbox, we will not try to compile the app, so we can
+# remove some build steps.
+build_env_only = get_option('profile') == 'build-env'
 
 cargo = find_program('cargo', required: true)
 cargo_version = run_command(cargo, '--version', check: true).stdout().strip()
@@ -58,9 +58,16 @@ message(cargo_version)
 rustc_version = run_command('rustc', '--version', check: true).stdout().strip()
 message(rustc_version)
 
-blueprint_compiler = find_program('blueprint-compiler', required: true)
-blueprint_compiler_version = run_command('blueprint-compiler', '--version', check: true).stdout().strip()
-message('blueprint-compiler ' + blueprint_compiler_version)
+if not build_env_only
+  glib_compile_resources = find_program('glib-compile-resources', required: true)
+  glib_compile_schemas = find_program('glib-compile-schemas', required: true)
+  desktop_file_validate = find_program('desktop-file-validate', required: false)
+  appstreamcli = find_program('appstreamcli', required: false)
+
+  blueprint_compiler = find_program('blueprint-compiler', required: true)
+  blueprint_compiler_version = run_command('blueprint-compiler', '--version', check: true).stdout().strip()
+  message('blueprint-compiler ' + blueprint_compiler_version)
+endif
 
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
@@ -71,11 +78,6 @@ pkgdatadir = datadir / meson.project_name()
 iconsdir = datadir / 'icons'
 podir = meson.project_source_root() / 'po'
 gettext_package = meson.project_name()
-
-# When the `build-env` profile is used, we only want to set up the build
-# environment for the sandbox, we will not try to compile the app, so we can
-# remove some build steps.
-build_env_only = get_option('profile') == 'build-env'
 
 if get_option('profile') == 'development' or build_env_only
   profile = 'Devel'

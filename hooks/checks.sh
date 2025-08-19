@@ -437,6 +437,8 @@ check_potfiles() {
             fi
             if [[ ${line:(-3):3} == '.ui' ]]; then
                 ui_potfiles+=($line)
+            elif [[ ${line:(-4):4} == '.blp' ]]; then
+                blp_potfiles+=($line)
             elif [[ ${line:(-3):3} == '.rs' ]]; then
                 rs_potfiles+=($line)
             fi
@@ -458,6 +460,8 @@ check_potfiles() {
             fi
             if [[ ${line:(-3):3} == '.ui' ]]; then
                 ui_skip+=($line)
+            elif [[ ${line:(-4):4} == '.blp' ]]; then
+                blp_skip+=($line)
             elif [[ ${line:(-3):3} == '.rs' ]]; then
                 rs_skip+=($line)
             fi
@@ -471,13 +475,16 @@ check_potfiles() {
     fi
 
     # Get UI files with 'translatable="yes"'.
-    ui_files=(`grep -lIr 'translatable="yes"' src/*`)
+    ui_files=(`grep -lIr --include=*.ui 'translatable="yes"' src`)
+
+    # Get blueprint files with '_('.
+    blp_files=(`grep -lIr --include=*.blp '_(' src`)
 
     # Get Rust files with regex 'gettext(_f)?\('.
-    rs_files=(`grep -lIrE 'gettext(_f)?\(' src/*`)
+    rs_files=(`grep -lIrE --include=*.rs 'gettext(_f)?\(' src`)
 
     # Get Rust files with macros, regex 'gettext!\('.
-    rs_macro_files=(`grep -lIrE 'gettext!\(' src/*`)
+    rs_macro_files=(`grep -lIrE --include=*.rs 'gettext!\(' src`)
 
     # Remove common files
     to_diff1=("${ui_skip[@]}")
@@ -492,6 +499,18 @@ check_potfiles() {
     ui_potfiles=("${to_diff1[@]}")
     ui_files=("${to_diff2[@]}")
 
+    to_diff1=("${blp_skip[@]}")
+    to_diff2=("${blp_files[@]}")
+    diff
+    blp_skip=("${to_diff1[@]}")
+    blp_files=("${to_diff2[@]}")
+
+    to_diff1=("${blp_potfiles[@]}")
+    to_diff2=("${blp_files[@]}")
+    diff
+    blp_potfiles=("${to_diff1[@]}")
+    blp_files=("${to_diff2[@]}")
+
     to_diff1=("${rs_skip[@]}")
     to_diff2=("${rs_files[@]}")
     diff
@@ -504,7 +523,7 @@ check_potfiles() {
     rs_potfiles=("${to_diff1[@]}")
     rs_files=("${to_diff2[@]}")
 
-    potfiles_count=$((${#ui_potfiles[@]} + ${#rs_potfiles[@]}))
+    potfiles_count=$((${#ui_potfiles[@]} + ${#blp_potfiles[@]} + ${#rs_potfiles[@]}))
     if [[ $potfiles_count -eq 1 ]]; then
         echo ""
         echo -e "$error Found 1 file in POTFILES.in without translatable strings:"
@@ -517,11 +536,14 @@ check_potfiles() {
     for file in ${ui_potfiles[@]}; do
         echo $file
     done
+    for file in ${blp_potfiles[@]}; do
+        echo $file
+    done
     for file in ${rs_potfiles[@]}; do
         echo $file
     done
 
-    let files_count=$((${#ui_files[@]} + ${#rs_files[@]}))
+    let files_count=$((${#ui_files[@]} + ${#blp_files[@]} + ${#rs_files[@]}))
     if [[ $files_count -eq 1 ]]; then
         echo ""
         echo -e "$error Found 1 file with translatable strings not present in POTFILES.in:"
@@ -532,6 +554,9 @@ check_potfiles() {
         ret=1
     fi
     for file in ${ui_files[@]}; do
+        echo $file
+    done
+    for file in ${blp_files[@]}; do
         echo $file
     done
     for file in ${rs_files[@]}; do
@@ -613,6 +638,45 @@ check_resources() {
         exit 1
     else
         echo -e "  Checking $1 result: $ok"
+    fi
+}
+
+# Check if files in blp-resources.in are sorted alphabetically.
+check_blp_resources() {
+    echo -e "$Checking blp-resources.in…"
+
+    local ret=0
+    local files=()
+
+    # Get files.
+    while read -r line; do
+        if [[ -n $line &&  ${line::1} != '#' ]]; then
+            if [[ ! -f "src/${line}" ]]; then
+                echo -e "$error File '$line' in blp-resources.in does not exist"
+                ret=1
+            fi
+            files+=($line)
+        fi
+    done < src/blp-resources.in
+
+    # Check sorted alphabetically
+    local to_sort=("${files[@]}")
+    sort
+    for i in ${!files[@]}; do
+        if [[ "${files[$i]}" != "${to_sort[$i]}" ]]; then
+            echo -e "$error Found file '${files[$i]#src/}' before '${to_sort[$i]#src/}' in blp-resources.in"
+            ret=1
+            break
+        fi
+    done
+
+    if [[ ret -eq 1 ]]; then
+        echo ""
+        echo -e "  Checking blp-resources.in result: $fail"
+        echo "Please fix the above issues"
+        exit 1
+    else
+        echo -e "  Checking blp-resources.in result: $ok"
     fi
 }
 
@@ -726,6 +790,14 @@ if [[ $git_staged -eq 1 ]]; then
    fi
 else
    check_resources "data/resources/resources.gresource.xml"
+fi
+echo ""
+if [[ -n $staged_files ]]; then
+   if [[ $staged_files = *src/blp-resources.in* ]]; then
+        check_blp_resources
+   fi
+else
+   check_blp_resources
 fi
 echo ""
 if [[ $git_staged -eq 1 ]]; then
