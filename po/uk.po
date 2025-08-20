@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-19 13:28+0000\n"
-"PO-Revision-Date: 2025-08-19 18:34+0300\n"
+"POT-Creation-Date: 2025-08-20 15:53+0000\n"
+"PO-Revision-Date: 2025-08-20 19:16+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -22,7 +22,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
-#: src/login/session_setup_view.ui:22 src/window.blp:9
+#: src/login/session_setup_view.blp:22 src/window.blp:9
 msgid "Fractal"
 msgstr "Фрактал"
 
@@ -192,11 +192,11 @@ msgstr "Авторка назви"
 msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
-#: src/components/action_button.ui:33
+#: src/components/action_button.blp:33
 msgid "Confirm Change"
 msgstr "Підтвердити зміну"
 
-#: src/components/action_button.ui:52 src/components/rows/loading_row.ui:27
+#: src/components/action_button.blp:51 src/components/rows/loading_row.blp:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:145
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:86
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
@@ -207,9 +207,9 @@ msgstr "Підтвердити зміну"
 msgid "Try Again"
 msgstr "Повторити спробу"
 
-#: src/components/action_button.ui:65
-#: src/components/camera/qrcode_scanner.ui:13
-#: src/login/session_setup_view.ui:15
+#: src/components/action_button.blp:62
+#: src/components/camera/qrcode_scanner.blp:14
+#: src/login/session_setup_view.blp:16
 #: src/session/view/content/explore/mod.ui:61
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
@@ -218,15 +218,15 @@ msgstr "Повторити спробу"
 msgid "Loading"
 msgstr "Завантаження"
 
-#: src/components/action_button.ui:89
+#: src/components/action_button.blp:84
 msgid "Success"
 msgstr "Успіх"
 
-#: src/components/action_button.ui:108
+#: src/components/action_button.blp:102
 msgid "Warning"
 msgstr "Попередження"
 
-#: src/components/action_button.ui:126 src/error_page.blp:9
+#: src/components/action_button.blp:119 src/error_page.blp:9
 #: src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
@@ -262,11 +262,11 @@ msgstr "Вибраний файл не є файлом зображення"
 msgid "Could not determine the type of the chosen file"
 msgstr "Не вдалося визначити тип вибраного файла"
 
-#: src/components/avatar/editable.ui:70
+#: src/components/avatar/editable.blp:64
 msgid "Remove Avatar"
 msgstr "Вилучити аватар"
 
-#: src/components/avatar/editable.ui:87
+#: src/components/avatar/editable.blp:81
 msgid "Select New Avatar"
 msgstr "Виберіть новий аватар"
 
@@ -274,8 +274,13 @@ msgstr "Виберіть новий аватар"
 msgid "Camera"
 msgstr "Камера"
 
-#: src/components/camera/qrcode_scanner.ui:22
-#: src/components/camera/qrcode_scanner.ui:35
+#: src/components/camera/qrcode_scanner.blp:6
+#| msgid "QR Code"
+msgid "QR Code Scanner"
+msgstr "Засіб сканування QR-кодів"
+
+#: src/components/camera/qrcode_scanner.blp:21
+#: src/components/camera/qrcode_scanner.blp:33
 msgid "Could Not Connect to Camera"
 msgstr "Не вдалося встановити з'єднання з «Камерою»"
 
@@ -292,12 +297,12 @@ msgstr "Не вдалося надіслати новий запит щодо п
 msgid "Could not create the crypto identity"
 msgstr "Не вдалося створити криптопрофіль"
 
-#: src/components/crypto/identity_setup_view.ui:9
-#: src/components/crypto/identity_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:8
+#: src/components/crypto/identity_setup_view.blp:33
 msgid "Verify Your New Session"
 msgstr "Перевірити ваш новий сеанс"
 
-#: src/components/crypto/identity_setup_view.ui:46
+#: src/components/crypto/identity_setup_view.blp:44
 msgid ""
 "Verifying your session allows you and the people you chat with to be sure "
 "that no one is trying to impersonate you or intercept your conversations."
@@ -306,40 +311,40 @@ msgstr ""
 "певними, що ніхто не зможе втрутитися або перехопити ваш обмін "
 "повідомленнями."
 
-#: src/components/crypto/identity_setup_view.ui:58
+#: src/components/crypto/identity_setup_view.blp:56
 msgid "Verify With Another Session"
 msgstr "Перевірити за допомогою іншого сеансу"
 
-#: src/components/crypto/identity_setup_view.ui:68
+#: src/components/crypto/identity_setup_view.blp:66
 msgid "No other devices logged into this account?"
 msgstr "З цим обліковим записом не пов'язано інших пристроїв?"
 
-#: src/components/crypto/identity_setup_view.ui:77
-#: src/components/crypto/recovery_setup_view.ui:9
-#: src/components/crypto/recovery_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:74
+#: src/components/crypto/recovery_setup_view.blp:8
+#: src/components/crypto/recovery_setup_view.blp:33
 msgid "Recover Account"
 msgstr "Відновити обліковий запис"
 
-#: src/components/crypto/identity_setup_view.ui:88
-#: src/components/crypto/identity_setup_view.ui:280
-#: src/components/crypto/recovery_setup_view.ui:101
-#: src/components/crypto/recovery_setup_view.ui:221
-#: src/components/crypto/recovery_setup_view.ui:536
+#: src/components/crypto/identity_setup_view.blp:85
+#: src/components/crypto/identity_setup_view.blp:261
+#: src/components/crypto/recovery_setup_view.blp:95
+#: src/components/crypto/recovery_setup_view.blp:204
+#: src/components/crypto/recovery_setup_view.blp:493
 msgid "Reset"
 msgstr "Скинути"
 
-#: src/components/crypto/identity_setup_view.ui:109
-#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:79
+#: src/components/crypto/identity_setup_view.blp:101
+#: src/identity_verification_view/mod.blp:6 src/session/view/content/mod.ui:79
 msgid "Identity Verification"
 msgstr "Перевірка профілю"
 
-#: src/components/crypto/identity_setup_view.ui:128
-#: src/components/crypto/identity_setup_view.ui:154
+#: src/components/crypto/identity_setup_view.blp:116
+#: src/components/crypto/identity_setup_view.blp:141
 msgid "Set Up Crypto Identity"
 msgstr "Налаштовування криптопрофілю"
 
-#: src/components/crypto/identity_setup_view.ui:165
-#: src/components/crypto/identity_setup_view.ui:246
+#: src/components/crypto/identity_setup_view.blp:152
+#: src/components/crypto/identity_setup_view.blp:227
 msgid ""
 "Your crypto identity allows you to verify other Matrix accounts and "
 "automatically trust their verified sessions."
@@ -348,25 +353,25 @@ msgstr ""
 "записи Matrix і автоматично встановлювати довіру до їхніх перевірених "
 "сеансів."
 
-#: src/components/crypto/identity_setup_view.ui:176
+#: src/components/crypto/identity_setup_view.blp:163
 msgid "You need to set up a crypto identity, since it has never been created."
 msgstr ""
 "Вам слід налаштувати ваш криптопрофіль, оскільки ви ніколи його не "
 "створювали."
 
-#: src/components/crypto/identity_setup_view.ui:187
-#: src/components/crypto/recovery_setup_view.ui:326
+#: src/components/crypto/identity_setup_view.blp:174
+#: src/components/crypto/recovery_setup_view.blp:301
 msgid "Set Up"
 msgstr "Налаштувати"
 
-#: src/components/crypto/identity_setup_view.ui:209
-#: src/components/crypto/identity_setup_view.ui:235
-#: src/components/crypto/recovery_setup_view.ui:175
+#: src/components/crypto/identity_setup_view.blp:191
+#: src/components/crypto/identity_setup_view.blp:216
+#: src/components/crypto/recovery_setup_view.blp:163
 #: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
 msgstr "Скинути криптопрофіль"
 
-#: src/components/crypto/identity_setup_view.ui:257
+#: src/components/crypto/identity_setup_view.blp:238
 msgid ""
 "You should reset your crypto identity if a device that does not belong to "
 "you managed to be verified."
@@ -374,7 +379,7 @@ msgstr ""
 "Вам слід скинути ваш криптопрофіль, якщо пристрій, який вам не належить, "
 "вдалося затвердити."
 
-#: src/components/crypto/identity_setup_view.ui:268
+#: src/components/crypto/identity_setup_view.blp:249
 msgid "To proceed, you will also need to reset your account recovery key."
 msgstr ""
 "Щоб продовжити, вам також треба скинути ваш ключ відновлення облікового "
@@ -448,11 +453,11 @@ msgstr "Не вдалося скинути ключ відновлення об�
 msgid "Could not enable account recovery"
 msgstr "Не вдалося увімкнути відновлення облікового запису"
 
-#: src/components/crypto/recovery_setup_view.ui:46
+#: src/components/crypto/recovery_setup_view.blp:44
 msgid "Restore full access to your account."
 msgstr "Відновити повний доступ до вашого облікового запису."
 
-#: src/components/crypto/recovery_setup_view.ui:54
+#: src/components/crypto/recovery_setup_view.blp:51
 msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery "
 "key that is usually set up when you create your account."
@@ -461,25 +466,25 @@ msgstr ""
 "для відновлення, який, зазвичай, налаштовують при створенні облікового "
 "запису."
 
-#: src/components/crypto/recovery_setup_view.ui:70
+#: src/components/crypto/recovery_setup_view.blp:67
 msgid "Recovery Passphrase or Key"
 msgstr "Ключ або пароль для відновлення"
 
-#: src/components/crypto/recovery_setup_view.ui:80
+#: src/components/crypto/recovery_setup_view.blp:75
 #: src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "Відновити"
 
-#: src/components/crypto/recovery_setup_view.ui:91
+#: src/components/crypto/recovery_setup_view.blp:86
 msgid "Lost your recovery passphrase or key?"
 msgstr "Втратили ваш пароль або ключ відновлення?"
 
-#: src/components/crypto/recovery_setup_view.ui:122
-#: src/components/crypto/recovery_setup_view.ui:148
+#: src/components/crypto/recovery_setup_view.blp:111
+#: src/components/crypto/recovery_setup_view.blp:136
 msgid "Reset Account Recovery"
 msgstr "Скинути відновлення облікового запису"
 
-#: src/components/crypto/recovery_setup_view.ui:159
+#: src/components/crypto/recovery_setup_view.blp:147
 msgid ""
 "Resetting account recovery can allow you to fix or reset part or all of your "
 "recovery setup."
@@ -487,19 +492,19 @@ msgstr ""
 "Скидання відновлення облікового запису надасть вам змогу виправити або "
 "скинути частину або усіх ваших налаштувань відновлення."
 
-#: src/components/crypto/recovery_setup_view.ui:180
+#: src/components/crypto/recovery_setup_view.blp:167
 msgid "Reset Room Encryption Keys Backup"
 msgstr "Скинути резервні копії ключів шифрування кімнати"
 
-#: src/components/crypto/recovery_setup_view.ui:187
+#: src/components/crypto/recovery_setup_view.blp:172
 msgid ""
 "If you do not provide a new recovery passphrase, a recovery key will be "
 "created."
 msgstr ""
 "Якщо ви не вкажете новий пароль відновлення, буде створено ключ відновлення."
 
-#: src/components/crypto/recovery_setup_view.ui:198
-#: src/components/crypto/recovery_setup_view.ui:302
+#: src/components/crypto/recovery_setup_view.blp:183
+#: src/components/crypto/recovery_setup_view.blp:279
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. "
 "Otherwise, if someone manages to get your account password, they will also "
@@ -510,17 +515,17 @@ msgstr ""
 "облікового запису, зможе отримати і доступ до усіх ваших зашифрованих "
 "повідомлень і прикидатися вами."
 
-#: src/components/crypto/recovery_setup_view.ui:214
-#: src/components/crypto/recovery_setup_view.ui:318
+#: src/components/crypto/recovery_setup_view.blp:199
+#: src/components/crypto/recovery_setup_view.blp:295
 msgid "Recovery Passphrase (Optional)"
 msgstr "Пароль для відновлення (необов'язковий)"
 
-#: src/components/crypto/recovery_setup_view.ui:243
-#: src/components/crypto/recovery_setup_view.ui:269
+#: src/components/crypto/recovery_setup_view.blp:221
+#: src/components/crypto/recovery_setup_view.blp:246
 msgid "Set Up Account Recovery"
 msgstr "Налаштувати відновлення облікового запису"
 
-#: src/components/crypto/recovery_setup_view.ui:280
+#: src/components/crypto/recovery_setup_view.blp:257
 msgid ""
 "Account recovery allows you to recover your crypto identity and to read your "
 "encrypted messages even if you lose access to all your sessions."
@@ -529,41 +534,41 @@ msgstr ""
 "криптопрофіль і прочитати ваші шифровані повідомлення, навіть якщо втратите "
 "доступ до усіх ваших сеансів."
 
-#: src/components/crypto/recovery_setup_view.ui:291
+#: src/components/crypto/recovery_setup_view.blp:268
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr ""
 "Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
 
-#: src/components/crypto/recovery_setup_view.ui:348
-#: src/components/crypto/recovery_setup_view.ui:375
+#: src/components/crypto/recovery_setup_view.blp:318
+#: src/components/crypto/recovery_setup_view.blp:344
 msgid "Account Recovery Set Up Successfully"
 msgstr "Відновлення облікового запису успішно налаштовано"
 
-#: src/components/crypto/recovery_setup_view.ui:412
+#: src/components/crypto/recovery_setup_view.blp:379
 msgid "Copy Recovery Key"
 msgstr "Копіювати ключ відновлення"
 
-#: src/components/crypto/recovery_setup_view.ui:429
-#: src/components/crypto/recovery_setup_view.ui:515
-#: src/identity_verification_view/cancelled_page.ui:49
-#: src/identity_verification_view/completed_page.ui:51
-#: src/identity_verification_view/room_left_page.ui:47
+#: src/components/crypto/recovery_setup_view.blp:396
+#: src/components/crypto/recovery_setup_view.blp:473
+#: src/identity_verification_view/cancelled_page.blp:50
+#: src/identity_verification_view/completed_page.blp:51
+#: src/identity_verification_view/room_left_page.blp:48
 msgid "_Done"
 msgstr "Ви_конано"
 
-#: src/components/crypto/recovery_setup_view.ui:452
-#: src/components/crypto/recovery_setup_view.ui:479
+#: src/components/crypto/recovery_setup_view.blp:414
+#: src/components/crypto/recovery_setup_view.blp:440
 #: src/session/view/account_settings/encryption_page/mod.rs:267
 msgid "Account Recovery Incomplete"
 msgstr "Відновлення облікового запису є неповним"
 
-#: src/components/crypto/recovery_setup_view.ui:490
+#: src/components/crypto/recovery_setup_view.blp:451
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr ""
 "Відновлення успішно виконано, але дані для відновлення були неповними."
 
-#: src/components/crypto/recovery_setup_view.ui:498
+#: src/components/crypto/recovery_setup_view.blp:458
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
@@ -571,7 +576,7 @@ msgstr ""
 "Щоб виправити це, вам слід скинути дані до сеансу, де вони були повними, і "
 "спробувати повторити відновлення."
 
-#: src/components/crypto/recovery_setup_view.ui:506
+#: src/components/crypto/recovery_setup_view.blp:465
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
@@ -580,18 +585,18 @@ msgstr ""
 "клієнтах Matrix, зокрема «резервне копіювання ключа» (“key backup”) або "
 "«захисне резервне копіювання» (“secure backup”)."
 
-#: src/components/crypto/recovery_setup_view.ui:527
+#: src/components/crypto/recovery_setup_view.blp:485
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Крім того, ви можете скинути відновлення облікового запису"
 
-#: src/components/dialogs/auth/in_browser_page.ui:35
-#: src/components/dialogs/auth/mod.ui:4
-#: src/components/dialogs/auth/password_page.ui:35
-#: src/login/in_browser_page.ui:5 src/login/in_browser_page.ui:40
+#: src/components/dialogs/auth/in_browser_page.blp:36
+#: src/components/dialogs/auth/mod.blp:4
+#: src/components/dialogs/auth/password_page.blp:36
+#: src/login/in_browser_page.blp:6 src/login/in_browser_page.blp:39
 msgid "Authentication"
 msgstr "Розпізнавання"
 
-#: src/components/dialogs/auth/in_browser_page.ui:50
+#: src/components/dialogs/auth/in_browser_page.blp:50
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
@@ -599,20 +604,20 @@ msgstr ""
 "Будь ласка, пройдіть розпізнавання за допомогою браузера, а потім "
 "поверніться сюди і натисніть кнопку «Підтвердити»"
 
-#: src/components/dialogs/auth/in_browser_page.ui:73
-#: src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.blp:74
+#: src/login/in_browser_page.blp:74
 msgid "Contin_ue"
 msgstr "Продов_жити"
 
-#: src/components/dialogs/auth/in_browser_page.ui:107
-#: src/components/dialogs/auth/password_page.ui:83
+#: src/components/dialogs/auth/in_browser_page.blp:103
+#: src/components/dialogs/auth/password_page.blp:81
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Скасувати"
 
-#: src/components/dialogs/auth/in_browser_page.ui:115
-#: src/components/dialogs/auth/password_page.ui:91
+#: src/components/dialogs/auth/in_browser_page.blp:110
+#: src/components/dialogs/auth/password_page.blp:88
 msgid "C_onfirm"
 msgstr "_Підтвердити"
 
@@ -624,7 +629,7 @@ msgstr "Пароль є некоректним."
 msgid "An unexpected error occurred."
 msgstr "Сталася неочікувана помилка."
 
-#: src/components/dialogs/auth/password_page.ui:50
+#: src/components/dialogs/auth/password_page.blp:50
 msgid "Please authenticate the operation with your password"
 msgstr "Будь ласка, пройдіть розпізнавання, ввівши пароль"
 
@@ -650,7 +655,7 @@ msgstr ""
 "кімнати без запрошення."
 
 #: src/components/dialogs/message_dialogs.rs:34
-#: src/identity_verification_view/accept_request_page.ui:55
+#: src/identity_verification_view/accept_request_page.blp:55
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Відхилити"
@@ -683,7 +688,7 @@ msgstr "Полишити"
 #: src/components/dialogs/message_dialogs.rs:447
 #: src/components/dialogs/message_dialogs.rs:469
 #: src/components/dialogs/message_dialogs.rs:491
-#: src/identity_verification_view/confirm_qr_code_page.ui:55
+#: src/identity_verification_view/confirm_qr_code_page.blp:55
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:1036
@@ -723,7 +728,7 @@ msgstr ""
 
 #. Translators: As in, 'Ban room member'.
 #: src/components/dialogs/message_dialogs.rs:139
-#: src/components/user_page.ui:157
+#: src/components/user_page.blp:145
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Заблокувати"
@@ -1007,7 +1012,7 @@ msgstr "Перегляд"
 
 #. Translators: This is a verb, as in 'Look up Room'.
 #: src/components/dialogs/room_preview.rs:242
-#: src/components/dialogs/room_preview.ui:90
+#: src/components/dialogs/room_preview.blp:89
 msgid "Look Up"
 msgstr "Шукати"
 
@@ -1043,13 +1048,13 @@ msgstr "Надіслати запит щодо запрошення"
 msgid "Join"
 msgstr "Увійти"
 
-#: src/components/dialogs/room_preview.ui:4
-#: src/components/dialogs/room_preview.ui:38
+#: src/components/dialogs/room_preview.blp:5
+#: src/components/dialogs/room_preview.blp:39
 msgid "Join a Room"
 msgstr "Увійти до кімнати"
 
-#: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16
-#: src/login/greeter.ui:18
+#: src/components/dialogs/room_preview.blp:19 src/login/greeter.blp:16
+#: src/login/greeter.blp:19
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/join_rule_subpage.ui:16
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
@@ -1057,13 +1062,13 @@ msgstr "Увійти до кімнати"
 msgid "Back"
 msgstr "Назад"
 
-#: src/components/dialogs/room_preview.ui:72
+#: src/components/dialogs/room_preview.blp:70
 msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr ""
 "Введіть ідентифікатор кімнати, альтернативну назву кімнати або посилання, "
 "щоб виконати пошук кімнати"
 
-#: src/components/dialogs/user_profile.ui:4
+#: src/components/dialogs/user_profile.blp:5
 msgid "User Profile"
 msgstr "Профіль користувача"
 
@@ -1103,22 +1108,21 @@ msgstr "Розташування за широтою {latitude} і довгот�
 msgid "Notify the whole room"
 msgstr "Сповістити усю кімнату"
 
-#. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
-#: src/components/power_level_selection/popover.ui:149
+#: src/components/power_level_selection/popover.blp:126
 #: src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "Нетипове"
 
-#: src/components/power_level_selection/popover.ui:164
+#: src/components/power_level_selection/popover.blp:139
 msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
 
-#: src/components/power_level_selection/row.ui:101
+#: src/components/power_level_selection/row.blp:99
 msgid "More Information"
 msgstr "Докладніше"
 
-#: src/components/power_level_selection/row.ui:119
+#: src/components/power_level_selection/row.blp:117
 msgid ""
 "Creator is an immutable role that can be attributed to several users when "
 "creating a room. Creators always have a higher power level than any other "
@@ -1260,44 +1264,42 @@ msgstr "Не вдалося припинити ігнорувати корист
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
-#: src/components/user_page.ui:66
+#: src/components/user_page.blp:57
 #: src/session/view/account_settings/general_page/mod.ui:59
 msgid "Copy Matrix User ID"
 msgstr "Скопіювати ідентифікатор користувача Matrix"
 
-#: src/components/user_page.ui:119
+#: src/components/user_page.blp:108
 msgid "Role"
 msgstr "Роль"
 
 #. Translators: value used to assign room member roles
-#: src/components/user_page.ui:132
+#: src/components/user_page.blp:123
 msgid "Power Level"
 msgstr "Рівень повноважень"
 
-#. Translators: In this string, 'Invite' is a verb.
 #. Translators: This is a verb.
-#: src/components/user_page.ui:139 src/session/view/content/invite.ui:13
+#: src/components/user_page.blp:128 src/session/view/content/invite.ui:13
 #: src/session/view/content/invite.ui:39
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "Запросити"
 
-#. Translators: As in, 'Unan room member'.
-#: src/components/user_page.ui:164
+#: src/components/user_page.blp:150
 msgid "Unban"
 msgstr "Розблокувати"
 
-#: src/components/user_page.ui:173
+#: src/components/user_page.blp:159
 msgid "Remove Messages"
 msgstr "Вилучити повідомлення"
 
-#: src/components/user_page.ui:187
+#: src/components/user_page.blp:170
 msgid "Security"
 msgstr "Безпека"
 
-#: src/components/user_page.ui:214
-#: src/identity_verification_view/accept_request_page.ui:66
+#: src/components/user_page.blp:197
+#: src/identity_verification_view/accept_request_page.blp:66
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:322
 msgid "Verify"
@@ -1308,8 +1310,8 @@ msgid "QR Code"
 msgstr "QR-код"
 
 #: src/error_page.blp:19 src/error_page.blp:23 src/error_page.blp:31
-#: src/error_page.blp:35 src/login/greeter.ui:26 src/login/greeter.ui:29
-#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.blp:29
+#: src/error_page.blp:35 src/login/greeter.blp:27 src/login/greeter.blp:31
+#: src/login/greeter.blp:39 src/login/greeter.blp:43 src/window.blp:29
 #: src/window.blp:33
 msgid "About Fractal"
 msgstr "Про «Фрактал»"
@@ -1441,9 +1443,9 @@ msgid "An unexpected error happened during the verification process."
 msgstr "Під час процедури перевірки сталася неочікувана помилка."
 
 #: src/identity_verification_view/cancelled_page.rs:166
-#: src/identity_verification_view/mod.ui:103
-#: src/identity_verification_view/mod.ui:114
-#: src/identity_verification_view/room_left_page.ui:22
+#: src/identity_verification_view/mod.blp:88
+#: src/identity_verification_view/mod.blp:97
+#: src/identity_verification_view/room_left_page.blp:22
 msgid "Verification Cancelled"
 msgstr "Перевірку скасовано"
 
@@ -1451,7 +1453,7 @@ msgstr "Перевірку скасовано"
 msgid "Verification Error"
 msgstr "Помилка перевірки"
 
-#: src/identity_verification_view/cancelled_page.ui:59
+#: src/identity_verification_view/cancelled_page.blp:60
 msgid "Send New Request"
 msgstr "Надіслати новий запит"
 
@@ -1496,24 +1498,24 @@ msgstr "Не вдалося почати перевірку емодзі"
 msgid "Could not cancel the verification"
 msgstr "Не вдалося скасувати перевірку"
 
-#: src/identity_verification_view/choose_method_page.ui:54
-#: src/identity_verification_view/scan_qr_code_page.ui:51
+#: src/identity_verification_view/choose_method_page.blp:55
+#: src/identity_verification_view/scan_qr_code_page.blp:51
 msgid "Can’t scan QR code?"
 msgstr "Не вдалося сканувати QR-код?"
 
-#: src/identity_verification_view/choose_method_page.ui:63
+#: src/identity_verification_view/choose_method_page.blp:63
 msgid "Scan QR code with this session"
 msgstr "Сканувати QR-код з цим сеансом"
 
-#: src/identity_verification_view/choose_method_page.ui:72
-#: src/identity_verification_view/scan_qr_code_page.ui:73
+#: src/identity_verification_view/choose_method_page.blp:72
+#: src/identity_verification_view/scan_qr_code_page.blp:73
 msgid "Compare Emoji"
 msgstr "Порівняти емодзі"
 
-#: src/identity_verification_view/choose_method_page.ui:83
+#: src/identity_verification_view/choose_method_page.blp:83
 #: src/identity_verification_view/no_supported_methods_page.rs:167
-#: src/identity_verification_view/qr_code_scanned_page.ui:51
-#: src/identity_verification_view/scan_qr_code_page.ui:84
+#: src/identity_verification_view/qr_code_scanned_page.blp:51
+#: src/identity_verification_view/scan_qr_code_page.blp:84
 msgid "Cancel Verification"
 msgstr "Скасувати перевірку"
 
@@ -1554,11 +1556,11 @@ msgstr "Чи бачить {user} підтвердження у сеансі?"
 msgid "Could not confirm the scan of the QR Code"
 msgstr "Не вдалося підтвердити сканування QR-коду"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:19
+#: src/identity_verification_view/confirm_qr_code_page.blp:19
 msgid "Confirm Scan"
 msgstr "Підтвердити сканування"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:69
+#: src/identity_verification_view/confirm_qr_code_page.blp:72
 msgid "Confirm"
 msgstr "Підтвердити"
 
@@ -1566,37 +1568,37 @@ msgstr "Підтвердити"
 msgid "Scan QR Code"
 msgstr "Сканувати QR-код"
 
-#: src/identity_verification_view/mod.ui:15
+#: src/identity_verification_view/mod.blp:16
 msgid "New Identity Verification Request"
 msgstr "Новий запит щодо перевірки профілю"
 
-#: src/identity_verification_view/mod.ui:26
+#: src/identity_verification_view/mod.blp:25
 msgid "Wait for Other Party"
 msgstr "Очікувати на інший бік"
 
-#: src/identity_verification_view/mod.ui:37
-#: src/identity_verification_view/no_supported_methods_page.ui:22
+#: src/identity_verification_view/mod.blp:34
+#: src/identity_verification_view/no_supported_methods_page.blp:22
 msgid "No Supported Verification Methods"
 msgstr "Немає підтримуваних методів перевірки"
 
-#: src/identity_verification_view/mod.ui:48
+#: src/identity_verification_view/mod.blp:43
 msgid "Verification Request Methods"
 msgstr "Способи запиту щодо перевірки"
 
-#: src/identity_verification_view/mod.ui:59
-#: src/identity_verification_view/qr_code_scanned_page.ui:19
+#: src/identity_verification_view/mod.blp:52
+#: src/identity_verification_view/qr_code_scanned_page.blp:19
 msgid "Scan Complete"
 msgstr "Сканування завершено"
 
-#: src/identity_verification_view/mod.ui:70
+#: src/identity_verification_view/mod.blp:61
 msgid "Confirm Scan Result"
 msgstr "Підтвердити результат сканування"
 
-#: src/identity_verification_view/mod.ui:81
+#: src/identity_verification_view/mod.blp:70
 msgid "Short Authentication String Verification"
 msgstr "Коротке розпізнавання рядка перевірки"
 
-#: src/identity_verification_view/mod.ui:92
+#: src/identity_verification_view/mod.blp:79
 msgid "Verification Successful"
 msgstr "Перевірку пройдено"
 
@@ -1642,7 +1644,7 @@ msgstr "Відхилити перевірку"
 msgid "Could not decline the verification"
 msgstr "Не вдалося відхилити перевірку"
 
-#: src/identity_verification_view/no_supported_methods_page.ui:47
+#: src/identity_verification_view/no_supported_methods_page.blp:48
 msgid ""
 "You can accept this verification from another session or decline it for all "
 "your sessions"
@@ -1668,7 +1670,7 @@ msgstr ""
 "Вами успішно скановано QR-код. Можливо, {user} доведеться підтвердити "
 "перевірку."
 
-#: src/identity_verification_view/room_left_page.ui:37
+#: src/identity_verification_view/room_left_page.blp:38
 msgid "You are no longer in the room where the verification was taking place"
 msgstr "Ви перебуваєте поза кімнатою, де відбувалася перевірка"
 
@@ -1713,13 +1715,11 @@ msgstr "Не вдалося надіслати повідомлення про �
 msgid "Could not send confirmation that the data matches"
 msgstr "Не вдалося надіслати підтвердження відповідності даних"
 
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
-#: src/identity_verification_view/sas_page.ui:65
+#: src/identity_verification_view/sas_page.blp:63
 msgid "Do Not Match"
 msgstr "Не збігається"
 
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
-#: src/identity_verification_view/sas_page.ui:77
+#: src/identity_verification_view/sas_page.blp:74
 msgid "Match"
 msgstr "Збігається"
 
@@ -1737,7 +1737,7 @@ msgstr "Скануйте QR-код, який показано на пристр�
 msgid "Could not validate scanned QR Code"
 msgstr "Сканований QR-код не пройшов перевірки"
 
-#: src/identity_verification_view/scan_qr_code_page.ui:64
+#: src/identity_verification_view/scan_qr_code_page.blp:64
 msgid "Show a QR code to scan with another device"
 msgstr "Показати QR-код для скасування за допомогою іншого пристрою"
 
@@ -1761,7 +1761,7 @@ msgstr "Очікуємо на {user}"
 msgid "Ask {user} to accept the verification request."
 msgstr "Попросити {user} прийняти запит щодо перевірки."
 
-#: src/identity_verification_view/wait_for_other_page.ui:44
+#: src/identity_verification_view/wait_for_other_page.blp:45
 msgid ""
 "To be secure, the verification should happen in person or use a trusted way "
 "of communication."
@@ -1769,19 +1769,19 @@ msgstr ""
 "Для забезпечення безпеки перевірку слід виконувати особисто або за допомогою "
 "надійного способу спілкування."
 
-#: src/identity_verification_view/wait_for_other_page.ui:61
+#: src/identity_verification_view/wait_for_other_page.blp:61
 msgid "The request is not showing up on the other device?"
 msgstr "Запит не показано на іншому пристрої?"
 
-#: src/identity_verification_view/wait_for_other_page.ui:73
+#: src/identity_verification_view/wait_for_other_page.blp:73
 msgid "Cancel Verification Request"
 msgstr "Скасувати запит щодо перевірки"
 
-#: src/login/advanced_dialog.ui:4
+#: src/login/advanced_dialog.blp:5
 msgid "Homeserver Discovery"
 msgstr "Виявлення домашнього сервера"
 
-#: src/login/advanced_dialog.ui:11
+#: src/login/advanced_dialog.blp:11
 msgid ""
 "Auto-discovery, also known as “well-known lookup”, allows to discover the "
 "URL of a Matrix homeserver from a domain name. This should only be disabled "
@@ -1793,20 +1793,19 @@ msgstr ""
 "тоді, коли на вашому домашньому сервері не передбачено автовиявлення, або "
 "якщо ви хочете вказати адресу самостійно."
 
-#: src/login/advanced_dialog.ui:14
+#: src/login/advanced_dialog.blp:14
 msgid "_Auto-Discovery"
 msgstr "_Автовизначення"
 
-#. Translators: Fractal is the application name.
-#: src/login/greeter.ui:6 src/login/greeter.ui:91
+#: src/login/greeter.blp:6 src/login/greeter.blp:89
 msgid "Welcome to Fractal"
 msgstr "Вітаємо у «Фракталі»"
 
-#: src/login/greeter.ui:117
+#: src/login/greeter.blp:114
 msgid "_Log In"
 msgstr "Уві_йти"
 
-#: src/login/greeter.ui:130
+#: src/login/greeter.blp:127
 msgid "_Create Account"
 msgstr "С_творити обліковий запис"
 
@@ -1818,7 +1817,7 @@ msgstr "Назва домену"
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Домен вашого домашнього сервера Matrix, наприклад gnome.org"
 
-#: src/login/homeserver_page.rs:107 src/login/method_page.ui:63
+#: src/login/homeserver_page.rs:107 src/login/method_page.blp:69
 msgid "Homeserver URL"
 msgstr "Адреса домашнього сервера"
 
@@ -1833,17 +1832,16 @@ msgstr "Адреса вашого домашнього сервера Matrix, н
 msgid "Could not set up login"
 msgstr "Не вдалося налаштувати вхід до системи"
 
-#: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
+#: src/login/homeserver_page.blp:6 src/login/homeserver_page.blp:44
 #: src/session/view/account_settings/general_page/mod.ui:128
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
-#: src/login/homeserver_page.ui:100 src/login/method_page.ui:140
+#: src/login/homeserver_page.blp:103 src/login/method_page.blp:141
 msgid "Next"
 msgstr "Далі"
 
-#. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:115
+#: src/login/homeserver_page.blp:117
 msgid "Advanced…"
 msgstr "Додатково…"
 
@@ -1851,7 +1849,7 @@ msgstr "Додатково…"
 msgid "Could not open URL"
 msgstr "Не вдалося відкрити адресу"
 
-#: src/login/in_browser_page.ui:55
+#: src/login/in_browser_page.blp:55
 msgid "Click on the button below and follow the steps in the browser"
 msgstr "Натисніть розташовану нижче кнопку і виконайте настанови з браузера"
 
@@ -1873,19 +1871,19 @@ msgstr "Додаткові надавачі SSO"
 msgid "Login via SSO"
 msgstr "Вхід за допомогою SSO"
 
-#: src/login/method_page.ui:5 src/window.blp:73
+#: src/login/method_page.blp:6 src/window.blp:73
 msgid "Log In"
 msgstr "Увійти"
 
-#: src/login/method_page.ui:90
+#: src/login/method_page.blp:94
 msgid "Matrix Username"
 msgstr "Ім'я користувача Matrix"
 
-#: src/login/method_page.ui:106
+#: src/login/method_page.blp:109
 msgid "Password"
 msgstr "Пароль"
 
-#: src/login/method_page.ui:122
+#: src/login/method_page.blp:124
 msgid "Single Sign-On Providers"
 msgstr "Надавачі єдиної системи розпізнавання"
 
@@ -1905,23 +1903,23 @@ msgstr ""
 "Крок уповноваження завершено. Ви можете закрити цю сторінку і повернутися до "
 "«Фрактала»"
 
-#: src/login/mod.ui:27 src/login/mod.ui:61
+#: src/login/mod.blp:22 src/login/mod.blp:54
 msgid "Login Complete"
 msgstr "Вхід завершено"
 
-#: src/login/mod.ui:82
+#: src/login/mod.blp:75
 msgid "This session is ready to send and receive secure messages"
 msgstr "Цей сеанс готовий до надсилання і отримання захищених повідомлень"
 
-#: src/login/mod.ui:91
+#: src/login/mod.blp:84
 msgid "Start Chatting"
 msgstr "Почати спілкування"
 
-#: src/login/session_setup_view.ui:5
+#: src/login/session_setup_view.blp:6
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
 
-#: src/login/session_setup_view.ui:51 src/window.blp:59
+#: src/login/session_setup_view.blp:47 src/window.blp:59
 msgid "Fetching Account Data…"
 msgstr "Отримуємо дані облікового запису…"
 
@@ -4313,7 +4311,6 @@ msgid "Sent at {time}"
 msgstr "Надіслано {time}"
 
 #: src/session/view/content/room_history/message_row/mod.ui:12
-#| msgid "View Sender Profile"
 msgid "Show Sender Profile"
 msgstr "Показати профіль відправника"
 
@@ -4942,7 +4939,6 @@ msgid "Sender ID"
 msgstr "Ід. відправника"
 
 #: src/session/view/event_details_dialog.ui:105
-#| msgid "User Profile"
 msgid "Show Profile"
 msgstr "Показати профіль"
 
