@@ -1,41 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
-    <file compressed="true" preprocess="xml-stripblanks">components/action_button.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/avatar/editable.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/avatar/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/camera/qrcode_scanner.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/crypto/identity_setup_view.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/crypto/recovery_setup_view.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/in_browser_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/auth/password_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/room_preview.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/toastable.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/dialogs/user_profile.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/loading/bin.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/media/audio_player.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/media/content_viewer.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/media/location_viewer.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/media/video_player.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/pill/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/pill/search_entry.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/pill/source_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/combo_box.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/button_count_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/check_loading_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/combo_loading_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/copyable_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/entry_add_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/loading_button_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/loading_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/removable_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/substring_entry_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/switch_loading_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/user_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/accept_request_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/cancelled_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/choose_method_page.ui</file>

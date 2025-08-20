@@ -1,0 +1,32 @@
+using Gtk 4.0;
+using Adw 1;
+
+$GstPlay player {
+  video-renderer: $VideoPlayerRenderer video_renderer {};
+}
+
+template $VideoPlayer: Adw.Bin {
+  Gtk.Overlay {
+    Gtk.Picture video {
+      paintable: bind video_renderer.paintable;
+    }
+
+    [overlay]
+    Gtk.Label timestamp {
+      styles [
+        "osd",
+        "timestamp",
+      ]
+
+      visible: false;
+      halign: start;
+      valign: start;
+      margin-start: 5;
+      margin-top: 5;
+
+      layout {
+        measure: true;
+      }
+    }
+  }
+}
