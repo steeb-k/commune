@@ -1,19 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/accept_request_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/cancelled_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/choose_method_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/completed_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/confirm_qr_code_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/no_supported_methods_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/qr_code_scanned_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/room_left_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/sas_emoji.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/sas_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/scan_qr_code_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/wait_for_other_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/advanced_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/greeter.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/homeserver_page.ui</file>

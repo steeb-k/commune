@@ -42,4 +42,17 @@ components/rows/substring_entry_row.blp
 components/rows/switch_loading_row.blp
 components/user_page.blp
 error_page.blp
+identity_verification_view/accept_request_page.blp
+identity_verification_view/cancelled_page.blp
+identity_verification_view/choose_method_page.blp
+identity_verification_view/completed_page.blp
+identity_verification_view/confirm_qr_code_page.blp
+identity_verification_view/mod.blp
+identity_verification_view/no_supported_methods_page.blp
+identity_verification_view/qr_code_scanned_page.blp
+identity_verification_view/room_left_page.blp
+identity_verification_view/sas_emoji.blp
+identity_verification_view/sas_page.blp
+identity_verification_view/scan_qr_code_page.blp
+identity_verification_view/wait_for_other_page.blp
 window.blp
