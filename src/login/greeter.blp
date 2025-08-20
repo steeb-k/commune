@@ -1,0 +1,138 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $Greeter: Adw.NavigationPage {
+  tag: "greeter";
+  title: _("Welcome to Fractal");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Gtk.Button back_button {
+        action-name: "win.show-session";
+        visible: bind back_button.sensitive;
+        icon-name: "go-previous-symbolic";
+        tooltip-text: _("Back");
+
+        accessibility {
+          label: _("Back");
+        }
+      }
+
+      [start]
+      Gtk.Button {
+        visible: bind back_button.visible inverted;
+        action-name: "app.about";
+        tooltip-text: _("About Fractal");
+        icon-name: "about-symbolic";
+
+        accessibility {
+          label: _("About Fractal");
+        }
+      }
+
+      [end]
+      Gtk.Button {
+        visible: bind back_button.visible;
+        action-name: "app.about";
+        tooltip-text: _("About Fractal");
+        icon-name: "about-symbolic";
+
+        accessibility {
+          label: _("About Fractal");
+        }
+      }
+    }
+
+    content: Gtk.ScrolledWindow {
+      hscrollbar-policy: never;
+      propagate-natural-height: true;
+      vexpand: true;
+
+      child: Gtk.Box {
+        orientation: vertical;
+
+        $OfflineBanner {}
+
+        Adw.Clamp {
+          maximum-size: 440;
+          tightening-threshold: 340;
+          margin-top: 0;
+          margin-bottom: 24;
+          margin-start: 24;
+          margin-end: 24;
+          vexpand: true;
+
+          child: Gtk.Box {
+            orientation: vertical;
+            valign: center;
+            spacing: 24;
+
+            Adw.Clamp {
+              maximum-size: 360;
+
+              child: Gtk.Box {
+                orientation: vertical;
+                valign: center;
+                spacing: 24;
+
+                Gtk.Picture {
+                  file: "resource:///org/gnome/Fractal/assets/welcome.svg";
+                  height-request: 120;
+                }
+
+                Gtk.Label title {
+                  wrap: true;
+                  wrap-mode: word_char;
+                  justify: center;
+                  label: _("Welcome to Fractal");
+
+                  styles [
+                    "title-1",
+                  ]
+                }
+              };
+            }
+
+            Adw.Clamp {
+              maximum-size: 260;
+              margin-top: 10;
+
+              child: Gtk.Box {
+                orientation: vertical;
+                valign: center;
+                spacing: 16;
+
+                Gtk.Button login_button {
+                  styles [
+                    "pill",
+                    "suggested-action",
+                  ]
+
+                  can-shrink: true;
+                  label: _("_Log In");
+                  use-underline: true;
+                  action-name: "navigation.push";
+                  action-target: "'homeserver'";
+                }
+
+                Gtk.Button {
+                  styles [
+                    "pill",
+                  ]
+
+                  visible: false;
+                  can-shrink: true;
+                  label: _("_Create Account");
+                  use-underline: true;
+                  action-name: "app.create-account";
+                }
+              };
+            }
+          };
+        }
+      };
+    };
+  };
+}
