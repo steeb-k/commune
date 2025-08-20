@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-16 15:11+0000\n"
-"PO-Revision-Date: 2025-08-17 08:14+0800\n"
+"POT-Creation-Date: 2025-08-19 17:30+0000\n"
+"PO-Revision-Date: 2025-08-20 09:04+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -26,7 +26,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
-#: src/login/session_setup_view.ui:22 src/window.ui:8
+#: src/login/session_setup_view.ui:22 src/window.blp:9
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -138,23 +138,23 @@ msgstr "查看 Matrix 聊天室的媒体文件历史"
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Fractal 的界面可适应小屏幕"
 
-#: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:33
+#: src/account_chooser_dialog/mod.blp:5 src/account_chooser_dialog/mod.blp:35
 msgid "Select an Account"
 msgstr "选择账号"
 
-#: src/account_chooser_dialog/mod.ui:62
+#: src/account_chooser_dialog/mod.blp:62
 msgid "Select the account you want to open the URI with"
 msgstr "选择您想要打开该网址使用的账号"
 
-#: src/account_switcher/account_switcher_button.ui:24
+#: src/account_switcher/account_switcher_button.blp:9
 msgid "Switch Accounts"
 msgstr "切换账号"
 
-#: src/account_switcher/account_switcher_popover.ui:38
+#: src/account_switcher/account_switcher_popover.blp:35
 msgid "_Add Account"
 msgstr "添加账号(_A)"
 
-#: src/account_switcher/session_item.ui:62
+#: src/account_switcher/session_item.blp:58
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "账号设置"
@@ -204,7 +204,7 @@ msgstr "重试"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/visual_media.ui:23
-#: src/session/view/content/room_history/mod.ui:93 src/window.ui:17
+#: src/session/view/content/room_history/mod.ui:93 src/window.blp:17
 msgid "Loading"
 msgstr "正在加载"
 
@@ -216,14 +216,14 @@ msgstr "成功"
 msgid "Warning"
 msgstr "警告"
 
-#: src/components/action_button.ui:126 src/error_page.ui:10
+#: src/components/action_button.ui:126 src/error_page.blp:9
 #: src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
 #: src/session/view/content/room_details/invite_subpage/mod.ui:135
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:77
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:81
-#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.ui:100
+#: src/session/view/create_direct_chat_dialog/mod.ui:104 src/window.blp:87
 msgid "Error"
 msgstr "错误"
 
@@ -1186,22 +1186,18 @@ msgstr "验证"
 msgid "QR Code"
 msgstr "二维码"
 
-#: src/error_page.rs:94
-msgid "Command copied to clipboard"
-msgstr "命令已复制到剪贴板"
-
-#: src/error_page.ui:20 src/error_page.ui:23 src/error_page.ui:31
-#: src/error_page.ui:34 src/login/greeter.ui:26 src/login/greeter.ui:29
-#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.ui:30
-#: src/window.ui:33
+#: src/error_page.blp:19 src/error_page.blp:23 src/error_page.blp:31
+#: src/error_page.blp:35 src/login/greeter.ui:26 src/login/greeter.ui:29
+#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.blp:29
+#: src/window.blp:33
 msgid "About Fractal"
 msgstr "关于 Fractal"
 
-#: src/error_page.ui:47
+#: src/error_page.blp:45
 msgid "Secret Portal Error"
 msgstr "保密门户错误"
 
-#: src/error_page.ui:61
+#: src/error_page.blp:58
 msgid ""
 "Fractal relies on a Secret Portal to manage your sensitive session "
 "information and an error occurred while we were trying to restore your "
@@ -1210,41 +1206,45 @@ msgstr ""
 "Fractal 依赖于保密门户来管理您的敏感会话信息且在我们尝试恢复您的会话时发生了"
 "错误。"
 
-#: src/error_page.ui:76
+#: src/error_page.blp:73
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr "这里有一些方法可能会帮助您修复保密门户的问题："
 
-#: src/error_page.ui:96
+#: src/error_page.blp:92
 msgid ""
 "Make sure you have a Secret Portal Backend Provider installed, like gnome-"
 "keyring."
 msgstr "请确保您已安装了保密门户后端提供者，比如 gnome-keyring。"
 
-#: src/error_page.ui:122
+#: src/error_page.blp:116
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow "
 "Fractal to interact with it, like this:"
 msgstr ""
 "如果您更偏好使用保密服务提供者，您需要允许 Fractal 与其交互，就像这样："
 
-#: src/error_page.ui:147
+#: src/error_page.blp:138
 msgid "Copy Command"
 msgstr "复制命令"
 
-#: src/error_page.ui:182
+#: src/error_page.blp:170
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "请检查您有一个默认的密钥环并已解锁。"
 
-#: src/error_page.ui:197
+#: src/error_page.blp:183
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
 msgstr "请查阅应用程序日志和您的发行版文档获取更多详情。"
 
-#: src/error_page.ui:216
+#: src/error_page.blp:198
 msgid "Could Not Initialize Session"
 msgstr "无法初始化会话"
+
+#: src/error_page.rs:94
+msgid "Command copied to clipboard"
+msgstr "命令已复制到剪贴板"
 
 #: src/identity_verification_view/accept_request_page.rs:129
 #: src/session/model/notifications/mod.rs:388
@@ -1715,7 +1715,7 @@ msgstr "更多 SSO 提供者"
 msgid "Login via SSO"
 msgstr "通过 SSO 登录"
 
-#: src/login/method_page.ui:5 src/window.ui:82
+#: src/login/method_page.ui:5 src/window.blp:73
 msgid "Log In"
 msgstr "登录"
 
@@ -1761,7 +1761,7 @@ msgstr "开始聊天"
 msgid "Session Setup"
 msgstr "会话设置"
 
-#: src/login/session_setup_view.ui:51 src/window.ui:63
+#: src/login/session_setup_view.ui:51 src/window.blp:59
 msgid "Fetching Account Data…"
 msgstr "正在获取账号数据…"
 
@@ -4032,8 +4032,8 @@ msgid "Sent at {time}"
 msgstr "在 {time} 发送"
 
 #: src/session/view/content/room_history/message_row/mod.ui:12
-msgid "View Sender Profile"
-msgstr "查看发送人配置信息"
+msgid "Show Sender Profile"
+msgstr "显示发送人配置信息"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4644,6 +4644,10 @@ msgstr "聊天室标识已复制到剪贴板"
 msgid "Sender ID"
 msgstr "发送者标识"
 
+#: src/session/view/event_details_dialog.ui:105
+msgid "Show Profile"
+msgstr "显示用户配置"
+
 #: src/session/view/event_details_dialog.ui:117
 #: src/session/view/event_details_dialog.ui:186
 msgid "Timestamp"
@@ -5024,7 +5028,7 @@ msgstr "音频"
 msgid "file"
 msgstr "文件"
 
-#: src/window.ui:91
+#: src/window.blp:80
 msgid "Session"
 msgstr "会话"
 
