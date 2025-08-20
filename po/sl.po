@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-19 15:39+0000\n"
-"PO-Revision-Date: 2025-08-19 19:29+0200\n"
+"POT-Creation-Date: 2025-08-20 14:23+0000\n"
+"PO-Revision-Date: 2025-08-20 16:57+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -172,11 +172,11 @@ msgstr "Ime po"
 msgid "Session not found"
 msgstr "Seje ni bilo mogoče najti"
 
-#: src/components/action_button.ui:33
+#: src/components/action_button.blp:33
 msgid "Confirm Change"
 msgstr "Potrdi spremembo"
 
-#: src/components/action_button.ui:52 src/components/rows/loading_row.ui:27
+#: src/components/action_button.blp:51 src/components/rows/loading_row.blp:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:145
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:86
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
@@ -187,7 +187,7 @@ msgstr "Potrdi spremembo"
 msgid "Try Again"
 msgstr "Poskusi znova"
 
-#: src/components/action_button.ui:65 src/components/camera/qrcode_scanner.ui:13
+#: src/components/action_button.blp:62 src/components/camera/qrcode_scanner.blp:14
 #: src/login/session_setup_view.ui:15 src/session/view/content/explore/mod.ui:61
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
@@ -196,15 +196,15 @@ msgstr "Poskusi znova"
 msgid "Loading"
 msgstr "Poteka nalaganje"
 
-#: src/components/action_button.ui:89
+#: src/components/action_button.blp:84
 msgid "Success"
 msgstr "Uspešno"
 
-#: src/components/action_button.ui:108
+#: src/components/action_button.blp:102
 msgid "Warning"
 msgstr "Opozorilo"
 
-#: src/components/action_button.ui:126 src/error_page.blp:9 src/session/view/content/explore/mod.ui:117
+#: src/components/action_button.blp:119 src/error_page.blp:9 src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
 #: src/session/view/content/room_details/invite_subpage/mod.ui:135
@@ -239,11 +239,11 @@ msgstr "Izbrana datoteka ni slika"
 msgid "Could not determine the type of the chosen file"
 msgstr "Vrste izbrane datoteke ni bilo mogoče določiti"
 
-#: src/components/avatar/editable.ui:70
+#: src/components/avatar/editable.blp:64
 msgid "Remove Avatar"
 msgstr "Odstrani podobo"
 
-#: src/components/avatar/editable.ui:87
+#: src/components/avatar/editable.blp:81
 msgid "Select New Avatar"
 msgstr "Izberite novo sliko podobe"
 
@@ -251,7 +251,11 @@ msgstr "Izberite novo sliko podobe"
 msgid "Camera"
 msgstr "Kamera"
 
-#: src/components/camera/qrcode_scanner.ui:22 src/components/camera/qrcode_scanner.ui:35
+#: src/components/camera/qrcode_scanner.blp:6
+msgid "QR Code Scanner"
+msgstr "Optični bralnik kode QR"
+
+#: src/components/camera/qrcode_scanner.blp:21 src/components/camera/qrcode_scanner.blp:33
 msgid "Could Not Connect to Camera"
 msgstr "Povezave s kamero ni mogoče vzpostaviti"
 
@@ -267,11 +271,11 @@ msgstr "Nove zahteve za preverjanje ni bilo mogoče poslati"
 msgid "Could not create the crypto identity"
 msgstr "Ni bilo mogoče ustvariti kripto identitete"
 
-#: src/components/crypto/identity_setup_view.ui:9 src/components/crypto/identity_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:8 src/components/crypto/identity_setup_view.blp:33
 msgid "Verify Your New Session"
 msgstr "Overite svojo novo sejo"
 
-#: src/components/crypto/identity_setup_view.ui:46
+#: src/components/crypto/identity_setup_view.blp:44
 msgid ""
 "Verifying your session allows you and the people you chat with to be sure that no one is trying to "
 "impersonate you or intercept your conversations."
@@ -279,35 +283,35 @@ msgstr ""
 "Preverjanje seje vam in osebam, s katerimi klepetate, omogoča, da se prepričate, da se nihče ne poskuša "
 "lažno predstavljati za vas ali prestreči vaše pogovore."
 
-#: src/components/crypto/identity_setup_view.ui:58
+#: src/components/crypto/identity_setup_view.blp:56
 msgid "Verify With Another Session"
 msgstr "Preveri z drugo sejo"
 
-#: src/components/crypto/identity_setup_view.ui:68
+#: src/components/crypto/identity_setup_view.blp:66
 msgid "No other devices logged into this account?"
 msgstr "Nobena druga naprava ni prijavljena v ta račun?"
 
-#: src/components/crypto/identity_setup_view.ui:77 src/components/crypto/recovery_setup_view.ui:9
-#: src/components/crypto/recovery_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:74 src/components/crypto/recovery_setup_view.blp:8
+#: src/components/crypto/recovery_setup_view.blp:33
 msgid "Recover Account"
 msgstr "Obnovi račun"
 
-#: src/components/crypto/identity_setup_view.ui:88 src/components/crypto/identity_setup_view.ui:280
-#: src/components/crypto/recovery_setup_view.ui:101 src/components/crypto/recovery_setup_view.ui:221
-#: src/components/crypto/recovery_setup_view.ui:536
+#: src/components/crypto/identity_setup_view.blp:85 src/components/crypto/identity_setup_view.blp:261
+#: src/components/crypto/recovery_setup_view.blp:95 src/components/crypto/recovery_setup_view.blp:204
+#: src/components/crypto/recovery_setup_view.blp:493
 msgid "Reset"
 msgstr "Ponastavi"
 
-#: src/components/crypto/identity_setup_view.ui:109 src/identity_verification_view/mod.ui:5
+#: src/components/crypto/identity_setup_view.blp:101 src/identity_verification_view/mod.ui:5
 #: src/session/view/content/mod.ui:79
 msgid "Identity Verification"
 msgstr "Preverjanje identitete"
 
-#: src/components/crypto/identity_setup_view.ui:128 src/components/crypto/identity_setup_view.ui:154
+#: src/components/crypto/identity_setup_view.blp:116 src/components/crypto/identity_setup_view.blp:141
 msgid "Set Up Crypto Identity"
 msgstr "Nastavi kripto identiteto"
 
-#: src/components/crypto/identity_setup_view.ui:165 src/components/crypto/identity_setup_view.ui:246
+#: src/components/crypto/identity_setup_view.blp:152 src/components/crypto/identity_setup_view.blp:227
 msgid ""
 "Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified "
 "sessions."
@@ -315,26 +319,26 @@ msgstr ""
 "Vaša kripto identiteta vam omogoča, da preverite druge račune Matrix in samodejno zaupate njihovim "
 "preverjenim sejam."
 
-#: src/components/crypto/identity_setup_view.ui:176
+#: src/components/crypto/identity_setup_view.blp:163
 msgid "You need to set up a crypto identity, since it has never been created."
 msgstr "Vzpostaviti morate kripto identiteto, saj še nikoli ni bila ustvarjena."
 
-#: src/components/crypto/identity_setup_view.ui:187 src/components/crypto/recovery_setup_view.ui:326
+#: src/components/crypto/identity_setup_view.blp:174 src/components/crypto/recovery_setup_view.blp:301
 msgid "Set Up"
 msgstr "Nastavitev"
 
-#: src/components/crypto/identity_setup_view.ui:209 src/components/crypto/identity_setup_view.ui:235
-#: src/components/crypto/recovery_setup_view.ui:175
+#: src/components/crypto/identity_setup_view.blp:191 src/components/crypto/identity_setup_view.blp:216
+#: src/components/crypto/recovery_setup_view.blp:163
 #: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
 msgstr "Ponastavi kripto identiteto"
 
-#: src/components/crypto/identity_setup_view.ui:257
+#: src/components/crypto/identity_setup_view.blp:238
 msgid ""
 "You should reset your crypto identity if a device that does not belong to you managed to be verified."
 msgstr "Ponastavite svojo kripto identiteto, če je bilo mogoče preveriti napravo, ki ni v vaši lasti."
 
-#: src/components/crypto/identity_setup_view.ui:268
+#: src/components/crypto/identity_setup_view.blp:249
 msgid "To proceed, you will also need to reset your account recovery key."
 msgstr "Če želite nadaljevati, boste morali tudi ponastaviti obnovitveni ključ računa."
 
@@ -403,11 +407,11 @@ msgstr "Obnovitvenega ključa računa ni bilo mogoče ponastaviti"
 msgid "Could not enable account recovery"
 msgstr "Obnovitve računa ni bilo mogoče omogočiti"
 
-#: src/components/crypto/recovery_setup_view.ui:46
+#: src/components/crypto/recovery_setup_view.blp:44
 msgid "Restore full access to your account."
 msgstr "Obnovite poln dostop do svojega računa."
 
-#: src/components/crypto/recovery_setup_view.ui:54
+#: src/components/crypto/recovery_setup_view.blp:51
 msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery key that is usually set up "
 "when you create your account."
@@ -415,36 +419,36 @@ msgstr ""
 "Za dostop do podatkov za obnovitev potrebujemo geslo za obnovitev ali obnovitveni ključ, ki ga običajno "
 "nastavite, ko ustvarite račun."
 
-#: src/components/crypto/recovery_setup_view.ui:70
+#: src/components/crypto/recovery_setup_view.blp:67
 msgid "Recovery Passphrase or Key"
 msgstr "Obnovitveno geslo ali ključ"
 
-#: src/components/crypto/recovery_setup_view.ui:80 src/session/view/sidebar/mod.rs:329
+#: src/components/crypto/recovery_setup_view.blp:75 src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "Obnovi"
 
-#: src/components/crypto/recovery_setup_view.ui:91
+#: src/components/crypto/recovery_setup_view.blp:86
 msgid "Lost your recovery passphrase or key?"
 msgstr "Ste izgubili geslo ali ključ za obnovitev?"
 
-#: src/components/crypto/recovery_setup_view.ui:122 src/components/crypto/recovery_setup_view.ui:148
+#: src/components/crypto/recovery_setup_view.blp:111 src/components/crypto/recovery_setup_view.blp:136
 msgid "Reset Account Recovery"
 msgstr "Ponastavi ključ za obnovitev računa"
 
-#: src/components/crypto/recovery_setup_view.ui:159
+#: src/components/crypto/recovery_setup_view.blp:147
 msgid "Resetting account recovery can allow you to fix or reset part or all of your recovery setup."
 msgstr ""
 "Če ponastavite obnovitev računa, lahko popravite ali ponastavite del ali celotno nastavitev obnovitve."
 
-#: src/components/crypto/recovery_setup_view.ui:180
+#: src/components/crypto/recovery_setup_view.blp:167
 msgid "Reset Room Encryption Keys Backup"
 msgstr "Ponastavi varnostno kopiranje ključev za šifriranje klepetalnice"
 
-#: src/components/crypto/recovery_setup_view.ui:187
+#: src/components/crypto/recovery_setup_view.blp:172
 msgid "If you do not provide a new recovery passphrase, a recovery key will be created."
 msgstr "Če ne vnesete novega gesla za obnovitev, bo ustvarjen obnovitveni ključ."
 
-#: src/components/crypto/recovery_setup_view.ui:198 src/components/crypto/recovery_setup_view.ui:302
+#: src/components/crypto/recovery_setup_view.blp:183 src/components/crypto/recovery_setup_view.blp:279
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. Otherwise, if someone manages "
 "to get your account password, they will also be able to access all your encrypted conversations and to "
@@ -454,15 +458,15 @@ msgstr ""
 "geslo za vaš račun, bo lahko dostopal tudi do vseh vaših šifriranih pogovorov in se lažno predstavljal "
 "kot vi."
 
-#: src/components/crypto/recovery_setup_view.ui:214 src/components/crypto/recovery_setup_view.ui:318
+#: src/components/crypto/recovery_setup_view.blp:199 src/components/crypto/recovery_setup_view.blp:295
 msgid "Recovery Passphrase (Optional)"
 msgstr "Obnovitveno geslo (neobvezno)"
 
-#: src/components/crypto/recovery_setup_view.ui:243 src/components/crypto/recovery_setup_view.ui:269
+#: src/components/crypto/recovery_setup_view.blp:221 src/components/crypto/recovery_setup_view.blp:246
 msgid "Set Up Account Recovery"
 msgstr "Nastavi obnovitve računa"
 
-#: src/components/crypto/recovery_setup_view.ui:280
+#: src/components/crypto/recovery_setup_view.blp:257
 msgid ""
 "Account recovery allows you to recover your crypto identity and to read your encrypted messages even if "
 "you lose access to all your sessions."
@@ -470,34 +474,34 @@ msgstr ""
 "Obnovitev računa vam omogoča, da obnovite svojo kripto identiteto in preberete šifrirana sporočila, "
 "tudi če izgubite dostop do vseh sej."
 
-#: src/components/crypto/recovery_setup_view.ui:291
+#: src/components/crypto/recovery_setup_view.blp:268
 msgid "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr "Če ne vnesete gesla za obnovitev, bo ustvarjen obnovitveni ključ."
 
-#: src/components/crypto/recovery_setup_view.ui:348 src/components/crypto/recovery_setup_view.ui:375
+#: src/components/crypto/recovery_setup_view.blp:318 src/components/crypto/recovery_setup_view.blp:344
 msgid "Account Recovery Set Up Successfully"
 msgstr "Uspešno nastavljena obnovitev računa"
 
-#: src/components/crypto/recovery_setup_view.ui:412
+#: src/components/crypto/recovery_setup_view.blp:379
 msgid "Copy Recovery Key"
 msgstr "Kopiraj obnovitveni ključ"
 
-#: src/components/crypto/recovery_setup_view.ui:429 src/components/crypto/recovery_setup_view.ui:515
+#: src/components/crypto/recovery_setup_view.blp:396 src/components/crypto/recovery_setup_view.blp:473
 #: src/identity_verification_view/cancelled_page.ui:49 src/identity_verification_view/completed_page.ui:51
 #: src/identity_verification_view/room_left_page.ui:47
 msgid "_Done"
 msgstr "_Opravljeno"
 
-#: src/components/crypto/recovery_setup_view.ui:452 src/components/crypto/recovery_setup_view.ui:479
+#: src/components/crypto/recovery_setup_view.blp:414 src/components/crypto/recovery_setup_view.blp:440
 #: src/session/view/account_settings/encryption_page/mod.rs:267
 msgid "Account Recovery Incomplete"
 msgstr "Obnovitev računa ni popolna"
 
-#: src/components/crypto/recovery_setup_view.ui:490
+#: src/components/crypto/recovery_setup_view.blp:451
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr "Obnovitev je bila uspešna, vendar so bili podatki o obnovitvi nepopolni."
 
-#: src/components/crypto/recovery_setup_view.ui:498
+#: src/components/crypto/recovery_setup_view.blp:458
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the data, and attempt to recover "
 "this session again."
@@ -505,7 +509,7 @@ msgstr ""
 "Če želite odpraviti to težavo, ponastavite obnovitev iz seje, ki vsebuje vse podatke, in poskusite "
 "znova obnoviti to sejo."
 
-#: src/components/crypto/recovery_setup_view.ui:506
+#: src/components/crypto/recovery_setup_view.blp:465
 msgid ""
 "Note that account recovery can have a different name in other Matrix clients, like “key backup” or "
 "“secure backup”."
@@ -513,31 +517,31 @@ msgstr ""
 "Upoštevajte, da ima lahko obnovitev računa drugačno ime v drugih odjemalcih Matrix, na primer "
 "»varnostno kopiranje ključev« ali »varno varnostno kopiranje«."
 
-#: src/components/crypto/recovery_setup_view.ui:527
+#: src/components/crypto/recovery_setup_view.blp:485
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Obnovitev računa lahko tudi ponastavite."
 
-#: src/components/dialogs/auth/in_browser_page.ui:35 src/components/dialogs/auth/mod.ui:4
-#: src/components/dialogs/auth/password_page.ui:35 src/login/in_browser_page.ui:5
+#: src/components/dialogs/auth/in_browser_page.blp:36 src/components/dialogs/auth/mod.blp:4
+#: src/components/dialogs/auth/password_page.blp:36 src/login/in_browser_page.ui:5
 #: src/login/in_browser_page.ui:40
 msgid "Authentication"
 msgstr "Overitev"
 
-#: src/components/dialogs/auth/in_browser_page.ui:50
+#: src/components/dialogs/auth/in_browser_page.blp:50
 msgid "Please authenticate the operation via the browser and, once completed, press confirm"
 msgstr "Postopek overite prek brskalnika in po končanem pritisku pritisnite Potrdi"
 
-#: src/components/dialogs/auth/in_browser_page.ui:73 src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.blp:74 src/login/in_browser_page.ui:74
 msgid "Contin_ue"
 msgstr "Na_daljuj"
 
-#: src/components/dialogs/auth/in_browser_page.ui:107 src/components/dialogs/auth/password_page.ui:83
+#: src/components/dialogs/auth/in_browser_page.blp:103 src/components/dialogs/auth/password_page.blp:81
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "_Prekliči"
 
-#: src/components/dialogs/auth/in_browser_page.ui:115 src/components/dialogs/auth/password_page.ui:91
+#: src/components/dialogs/auth/in_browser_page.blp:110 src/components/dialogs/auth/password_page.blp:88
 msgid "C_onfirm"
 msgstr "P_otrdi"
 
@@ -549,7 +553,7 @@ msgstr "Geslo je neveljavno."
 msgid "An unexpected error occurred."
 msgstr "Prišlo je do nepričakovane napake."
 
-#: src/components/dialogs/auth/password_page.ui:50
+#: src/components/dialogs/auth/password_page.blp:50
 msgid "Please authenticate the operation with your password"
 msgstr "Postopek overite s svojim geslom"
 
@@ -628,7 +632,7 @@ msgstr ""
 "dokler nekdo ne prekliče prepovedi."
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:139 src/components/user_page.ui:157
+#: src/components/dialogs/message_dialogs.rs:139 src/components/user_page.blp:145
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Prepovej"
@@ -874,7 +878,7 @@ msgid "View"
 msgstr "Pogled"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/room_preview.rs:242 src/components/dialogs/room_preview.ui:90
+#: src/components/dialogs/room_preview.rs:242 src/components/dialogs/room_preview.blp:89
 msgid "Look Up"
 msgstr "Poišči"
 
@@ -905,11 +909,11 @@ msgstr "Prosi za povabilo"
 msgid "Join"
 msgstr "Pridruži se"
 
-#: src/components/dialogs/room_preview.ui:4 src/components/dialogs/room_preview.ui:38
+#: src/components/dialogs/room_preview.blp:5 src/components/dialogs/room_preview.blp:39
 msgid "Join a Room"
 msgstr "Pridruži se klepetalnici"
 
-#: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16 src/login/greeter.ui:18
+#: src/components/dialogs/room_preview.blp:19 src/login/greeter.ui:16 src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/join_rule_subpage.ui:16
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
@@ -917,11 +921,11 @@ msgstr "Pridruži se klepetalnici"
 msgid "Back"
 msgstr "Nazaj"
 
-#: src/components/dialogs/room_preview.ui:72
+#: src/components/dialogs/room_preview.blp:70
 msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "Vnesite ID klepetalnice, vzdevek klepetalnice ali trajno povezavo, da poiščete klepetalnico"
 
-#: src/components/dialogs/user_profile.ui:4
+#: src/components/dialogs/user_profile.blp:5
 msgid "User Profile"
 msgstr "Profil uporabnika"
 
@@ -961,21 +965,20 @@ msgstr "Lokacija na zemljepisni širini {latitude} in dolžini {longitude}"
 msgid "Notify the whole room"
 msgstr "Obvesti celotno klepetalnico"
 
-#. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
-#: src/components/power_level_selection/popover.ui:149 src/session/model/room/permissions.rs:66
+#: src/components/power_level_selection/popover.blp:126 src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "Po meri"
 
-#: src/components/power_level_selection/popover.ui:164
+#: src/components/power_level_selection/popover.blp:139
 msgid "Confirm Custom Role"
 msgstr "Potrdi vlogo po meri"
 
-#: src/components/power_level_selection/row.ui:101
+#: src/components/power_level_selection/row.blp:99
 msgid "More Information"
 msgstr "Več podrobnosti"
 
-#: src/components/power_level_selection/row.ui:119
+#: src/components/power_level_selection/row.blp:117
 msgid ""
 "Creator is an immutable role that can be attributed to several users when creating a room. Creators "
 "always have a higher power level than any other room members, except other creators, and have the "
@@ -1112,42 +1115,40 @@ msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
-#: src/components/user_page.ui:66 src/session/view/account_settings/general_page/mod.ui:59
+#: src/components/user_page.blp:57 src/session/view/account_settings/general_page/mod.ui:59
 msgid "Copy Matrix User ID"
 msgstr "Kopiraj ID uporabnika Matrix"
 
-#: src/components/user_page.ui:119
+#: src/components/user_page.blp:108
 msgid "Role"
 msgstr "Vloga"
 
 #. Translators: value used to assign room member roles
-#: src/components/user_page.ui:132
+#: src/components/user_page.blp:123
 msgid "Power Level"
 msgstr "Raven moči"
 
-#. Translators: In this string, 'Invite' is a verb.
 #. Translators: This is a verb.
-#: src/components/user_page.ui:139 src/session/view/content/invite.ui:13
+#: src/components/user_page.blp:128 src/session/view/content/invite.ui:13
 #: src/session/view/content/invite.ui:39
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "Povabi"
 
-#. Translators: As in, 'Unan room member'.
-#: src/components/user_page.ui:164
+#: src/components/user_page.blp:150
 msgid "Unban"
 msgstr "Odstrani prepoved"
 
-#: src/components/user_page.ui:173
+#: src/components/user_page.blp:159
 msgid "Remove Messages"
 msgstr "Odstrani sporočila"
 
-#: src/components/user_page.ui:187
+#: src/components/user_page.blp:170
 msgid "Security"
 msgstr "Varnost"
 
-#: src/components/user_page.ui:214 src/identity_verification_view/accept_request_page.ui:66
+#: src/components/user_page.blp:197 src/identity_verification_view/accept_request_page.ui:66
 #: src/session/view/content/room_history/verification_info_bar.rs:172 src/session/view/sidebar/mod.rs:322
 msgid "Verify"
 msgstr "Preveri"
