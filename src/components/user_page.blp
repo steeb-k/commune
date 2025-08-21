@@ -70,12 +70,11 @@ template $UserPage: Adw.NavigationPage {
 
           Gtk.ListBox direct_chat_box {
             visible: false;
+            accessible-role: group;
 
             styles [
               "boxed-list",
             ]
-
-            accessible-role: group;
 
             $LoadingButtonRow direct_chat_button {
               is-loading: true;
@@ -131,21 +130,21 @@ template $UserPage: Adw.NavigationPage {
               }
 
               $LoadingButtonRow kick_button {
+                activated => $kick_user() swapped;
+
                 styles [
                   "destructive-action",
                 ]
-
-                activated => $kick_user() swapped;
               }
 
               $LoadingButtonRow ban_button {
-                styles [
-                  "destructive-action",
-                ]
-
                 // Translators: As in, 'Ban room member'.
                 title: _("Ban");
                 activated => $ban_user() swapped;
+
+                styles [
+                  "destructive-action",
+                ]
               }
 
               $LoadingButtonRow unban_button {
@@ -155,12 +154,12 @@ template $UserPage: Adw.NavigationPage {
               }
 
               $LoadingButtonRow remove_messages_button {
+                title: _("Remove Messages");
+                activated => $remove_messages() swapped;
+
                 styles [
                   "destructive-action",
                 ]
-
-                title: _("Remove Messages");
-                activated => $remove_messages() swapped;
               }
             }
           }

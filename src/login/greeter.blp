@@ -107,28 +107,28 @@ template $Greeter: Adw.NavigationPage {
                 spacing: 16;
 
                 Gtk.Button login_button {
-                  styles [
-                    "pill",
-                    "suggested-action",
-                  ]
-
                   can-shrink: true;
                   label: _("_Log In");
                   use-underline: true;
                   action-name: "navigation.push";
                   action-target: "'homeserver'";
+
+                  styles [
+                    "pill",
+                    "suggested-action",
+                  ]
                 }
 
                 Gtk.Button {
-                  styles [
-                    "pill",
-                  ]
-
                   visible: false;
                   can-shrink: true;
                   label: _("_Create Account");
                   use-underline: true;
                   action-name: "app.create-account";
+
+                  styles [
+                    "pill",
+                  ]
                 }
               };
             }

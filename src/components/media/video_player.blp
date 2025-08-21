@@ -13,16 +13,16 @@ template $VideoPlayer: Adw.Bin {
 
     [overlay]
     Gtk.Label timestamp {
-      styles [
-        "osd",
-        "timestamp",
-      ]
-
       visible: false;
       halign: start;
       valign: start;
       margin-start: 5;
       margin-top: 5;
+
+      styles [
+        "osd",
+        "timestamp",
+      ]
 
       layout {
         measure: true;

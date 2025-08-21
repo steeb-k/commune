@@ -46,13 +46,13 @@ template $LoginHomeserverPage: Adw.NavigationPage {
               justify: center;
               accessible-role: heading;
 
-              accessibility {
-                level: 1;
-              }
-
               styles [
                 "title-1",
               ]
+
+              accessibility {
+                level: 1;
+              }
             }
 
             Gtk.Picture {
@@ -85,17 +85,17 @@ template $LoginHomeserverPage: Adw.NavigationPage {
               }
 
               Gtk.Label homeserver_help {
-                styles [
-                  "caption",
-                  "dimmed",
-                ]
-
                 justify: left;
                 xalign: 0.0;
                 margin-start: 6;
                 margin-end: 6;
                 wrap: true;
                 use-markup: true;
+
+                styles [
+                  "caption",
+                  "dimmed",
+                ]
               }
             }
 

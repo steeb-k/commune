@@ -39,13 +39,13 @@ template $LoginInBrowserPage: Adw.NavigationPage {
               label: _("Authentication");
               accessible-role: heading;
 
-              accessibility {
-                level: 1;
-              }
-
               styles [
                 "title-1",
               ]
+
+              accessibility {
+                level: 1;
+              }
             }
 
             Gtk.Label instructions {
@@ -60,6 +60,9 @@ template $LoginInBrowserPage: Adw.NavigationPage {
             }
 
             Gtk.Button continue_btn {
+              halign: center;
+              clicked => $launch_url() swapped;
+
               styles [
                 "suggested-action",
                 "standalone-button",
@@ -83,9 +86,6 @@ template $LoginInBrowserPage: Adw.NavigationPage {
                   valign: center;
                 }
               };
-
-              halign: center;
-              clicked => $launch_url() swapped;
             }
           };
         };

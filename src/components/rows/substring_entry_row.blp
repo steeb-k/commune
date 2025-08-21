@@ -54,17 +54,16 @@ template $SubstringEntryRow: Adw.PreferencesRow {
           max-length: 0;
           valign: baseline_fill;
           accessible-role: text_box;
+          activate => $add() swapped;
+          state-flags-changed => $text_state_flags_changed() swapped;
+          keynav-failed => $text_keynav_failed() swapped;
+          changed => $update_add_button() swapped;
 
           accessibility {
             labelled-by: [
               title,
             ];
           }
-
-          activate => $add() swapped;
-          state-flags-changed => $text_state_flags_changed() swapped;
-          keynav-failed => $text_keynav_failed() swapped;
-          changed => $update_add_button() swapped;
         }
 
         Gtk.Image edit_icon {

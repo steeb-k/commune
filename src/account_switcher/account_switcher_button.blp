@@ -5,15 +5,15 @@ template $AccountSwitcherButton: Gtk.ToggleButton {
   tooltip-text: bind template.root as <$Window>.session-selection as <$FixedSelection>.selected-item as <$SessionInfo>.user-id-string;
   toggled => $toggle_popover() swapped;
 
-  accessibility {
-    description: _("Switch Accounts");
-    has-popup: true;
-  }
-
   styles [
     "image-button",
     "circular",
   ]
+
+  accessibility {
+    description: _("Switch Accounts");
+    has-popup: true;
+  }
 
   child: $Avatar {
     size: 24;

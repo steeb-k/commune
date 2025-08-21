@@ -2,6 +2,8 @@ using Gtk 4.0;
 using Adw 1;
 
 template $IdentityVerificationSasEmoji: Adw.Bin {
+  valign: center;
+
   accessibility {
     labelled-by: [
       emoji,
@@ -11,8 +13,6 @@ template $IdentityVerificationSasEmoji: Adw.Bin {
       emoji_name,
     ];
   }
-
-  valign: center;
 
   Gtk.Box {
     spacing: 6;

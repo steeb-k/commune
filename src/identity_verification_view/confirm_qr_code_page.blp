@@ -22,13 +22,13 @@ template $IdentityVerificationConfirmQrCodePage: Adw.Bin {
           justify: center;
           accessible-role: heading;
 
-          accessibility {
-            level: 1;
-          }
-
           styles [
             "title-1",
           ]
+
+          accessibility {
+            level: 1;
+          }
         }
 
         Gtk.Picture {
@@ -56,16 +56,16 @@ template $IdentityVerificationConfirmQrCodePage: Adw.Bin {
             halign: center;
             clicked => $cancel() swapped;
 
+            styles [
+              "destructive-action",
+              "pill",
+            ]
+
             accessibility {
               described-by: [
                 question,
               ];
             }
-
-            styles [
-              "destructive-action",
-              "pill",
-            ]
           }
 
           $LoadingButton confirm_btn {
@@ -73,16 +73,16 @@ template $IdentityVerificationConfirmQrCodePage: Adw.Bin {
             halign: center;
             clicked => $confirm_scanned() swapped;
 
+            styles [
+              "suggested-action",
+              "pill",
+            ]
+
             accessibility {
               described-by: [
                 question,
               ];
             }
-
-            styles [
-              "suggested-action",
-              "pill",
-            ]
           }
         }
       };

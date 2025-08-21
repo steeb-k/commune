@@ -19,6 +19,11 @@ template $AccountSwitcherPopover: Gtk.Popover {
     Gtk.Button {
       action-name: "win.new-session";
 
+      styles [
+        "account-switcher-row",
+        "flat",
+      ]
+
       child: Gtk.Box {
         spacing: 10;
 
@@ -35,11 +40,6 @@ template $AccountSwitcherPopover: Gtk.Popover {
           label: _("_Add Account");
         }
       };
-
-      styles [
-        "account-switcher-row",
-        "flat",
-      ]
     }
   }
 }

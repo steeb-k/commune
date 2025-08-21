@@ -121,6 +121,12 @@ template $ErrorPage: Adw.Bin {
                     }
 
                     Gtk.Box {
+                      styles [
+                        "card",
+                        "linked",
+                        "command",
+                      ]
+
                       Gtk.ScrolledWindow {
                         vscrollbar-policy: never;
 
@@ -145,12 +151,6 @@ template $ErrorPage: Adw.Bin {
                           "flat",
                         ]
                       }
-
-                      styles [
-                        "card",
-                        "linked",
-                        "command",
-                      ]
                     }
                   }
                 }

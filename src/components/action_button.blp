@@ -9,15 +9,15 @@ template $ActionButton: Adw.Bin {
       name: "default";
 
       child: Gtk.Button button_default {
-        styles [
-          "circular",
-        ]
-
         valign: center;
         icon-name: bind template.icon-name;
         action-name: bind template.action-name;
         action-target: bind template.action-target;
         clicked => $button_clicked() swapped;
+
+        styles [
+          "circular",
+        ]
       };
     }
 
@@ -25,17 +25,17 @@ template $ActionButton: Adw.Bin {
       name: "confirm";
 
       child: Gtk.Button {
-        styles [
-          "circular",
-          "suggested-action",
-        ]
-
         tooltip-text: _("Confirm Change");
         valign: center;
         icon-name: "checkmark-symbolic";
         action-name: bind template.action-name;
         action-target: bind template.action-target;
         clicked => $button_clicked() swapped;
+
+        styles [
+          "circular",
+          "suggested-action",
+        ]
       };
     }
 
@@ -43,17 +43,17 @@ template $ActionButton: Adw.Bin {
       name: "retry";
 
       child: Gtk.Button {
-        styles [
-          "circular",
-          "suggested-action",
-        ]
-
         tooltip-text: _("Try Again");
         valign: center;
         icon-name: "refresh-symbolic";
         action-name: bind template.action-name;
         action-target: bind template.action-target;
         clicked => $button_clicked() swapped;
+
+        styles [
+          "circular",
+          "suggested-action",
+        ]
       };
     }
 
@@ -62,13 +62,13 @@ template $ActionButton: Adw.Bin {
       title: _("Loading");
 
       child: Gtk.Button {
-        styles [
-          "circular",
-        ]
-
         focusable: false;
         can-target: false;
         valign: center;
+
+        styles [
+          "circular",
+        ]
 
         Adw.Spinner {
           valign: center;
@@ -84,16 +84,16 @@ template $ActionButton: Adw.Bin {
       title: _("Success");
 
       child: Gtk.Button {
+        focusable: false;
+        can-target: false;
+        valign: center;
+        icon-name: "checkmark-symbolic";
+
         styles [
           "suggested-action",
           "circular",
           "success",
         ]
-
-        focusable: false;
-        can-target: false;
-        valign: center;
-        icon-name: "checkmark-symbolic";
       };
     }
 
@@ -102,15 +102,15 @@ template $ActionButton: Adw.Bin {
       title: _("Warning");
 
       child: Gtk.Button button_warning {
-        styles [
-          "circular",
-          "warning",
-        ]
-
         focusable: false;
         can-target: false;
         valign: center;
         icon-name: "warning-symbolic";
+
+        styles [
+          "circular",
+          "warning",
+        ]
       };
     }
 
@@ -119,15 +119,15 @@ template $ActionButton: Adw.Bin {
       title: _("Error");
 
       child: Gtk.Button {
-        styles [
-          "circular",
-          "error",
-        ]
-
         focusable: false;
         can-target: false;
         valign: center;
         icon-name: "error-symbolic";
+
+        styles [
+          "circular",
+          "error",
+        ]
       };
     }
   }

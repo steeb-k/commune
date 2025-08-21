@@ -50,13 +50,13 @@ template $LoginMethodPage: Adw.NavigationPage {
               halign: center;
 
               Gtk.Label title {
-                styles [
-                  "title-1",
-                ]
-
                 wrap: true;
                 justify: center;
                 accessible-role: heading;
+
+                styles [
+                  "title-1",
+                ]
 
                 accessibility {
                   level: 1;
@@ -74,11 +74,11 @@ template $LoginMethodPage: Adw.NavigationPage {
                 }
 
                 Gtk.Label homeserver_url {
+                  ellipsize: end;
+
                   styles [
                     "body",
                   ]
-
-                  ellipsize: end;
                 }
               }
             }

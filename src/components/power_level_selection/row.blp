@@ -7,15 +7,15 @@ template $PowerLevelSelectionRow: Adw.PreferencesRow {
   accessible-role: combo_box;
   action-name: "power-level-selection-row.popup";
 
+  styles [
+    "combo",
+  ]
+
   accessibility {
     labelled-by: [
       title,
     ];
   }
-
-  styles [
-    "combo",
-  ]
 
   child: Gtk.Box header {
     valign: center;
