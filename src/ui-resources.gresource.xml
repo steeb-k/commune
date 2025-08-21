@@ -2,33 +2,6 @@
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/context_menu.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/quick_reaction_chooser.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/member_timestamp/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/audio.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/file.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/location.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/message_state_stack.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction/reaction_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction_list.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reply.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/sender_name.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/visual_media.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/attachment_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/read_receipts_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/creation.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/group_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/title.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_direct_chat_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>

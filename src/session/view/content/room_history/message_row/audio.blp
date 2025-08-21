@@ -1,0 +1,40 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ContentMessageAudio: Adw.Bin {
+  Gtk.Box {
+    orientation: vertical;
+
+    Gtk.Box {
+      margin-top: 6;
+      spacing: 6;
+
+      Gtk.Image {
+        visible: bind template.compact;
+        icon-name: "audio-symbolic";
+      }
+
+      Gtk.Label {
+        ellipsize: end;
+        xalign: 0.0;
+        hexpand: true;
+        label: bind template.filename;
+      }
+
+      [end]
+      Adw.Spinner state_spinner {
+        height-request: 20;
+        width-request: 20;
+      }
+
+      [end]
+      Gtk.Image state_error {
+        icon-name: "error-symbolic";
+      }
+    }
+
+    $AudioPlayer player {
+      visible: bind template.compact inverted;
+    }
+  }
+}
