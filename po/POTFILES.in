@@ -194,7 +194,7 @@ src/session/view/event_details_dialog.blp
 src/session/view/media_viewer.rs
 src/session/view/media_viewer.blp
 src/session/view/sidebar/mod.rs
-src/session/view/sidebar/mod.ui
+src/session/view/sidebar/mod.blp
 src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
 src/session/view/sidebar/section_row.rs

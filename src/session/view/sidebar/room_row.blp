@@ -1,0 +1,40 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $SidebarRoomRow: Adw.Bin {
+  Gtk.Box {
+    tooltip-text: bind template.room as <$Room>.display-name;
+    spacing: 12;
+
+    $Avatar avatar {
+      size: 24;
+      data: bind template.room as <$Room>.avatar-data;
+      watched-room: bind template.room;
+      watched-safety-setting: invite-avatars;
+      accessible-role: presentation;
+    }
+
+    Gtk.Box display_name_box {
+      spacing: 6;
+
+      Gtk.Label display_name {
+        ellipsize: end;
+        label: bind template.room as <$Room>.display-name;
+      }
+    }
+
+    [end]
+    Gtk.Label notification_count {
+      hexpand: true;
+      halign: end;
+      valign: center;
+      yalign: 1.0;
+      visible: bind template.room as <$Room>.has-notifications;
+      label: bind template.room as <$Room>.notification-count;
+
+      styles [
+        "notification-count",
+      ]
+    }
+  }
+}
