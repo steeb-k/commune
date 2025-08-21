@@ -2,30 +2,6 @@
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/addresses_subpage/completion_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/addresses_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/edit_details_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/general_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/audio.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/audio_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/file.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/file_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/visual_media.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/visual_media_item.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/join_rule_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/add_members_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/member_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/members_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/permissions_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/permissions/select_member_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/upgrade_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/context_menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions/quick_reaction_chooser.ui</file>
