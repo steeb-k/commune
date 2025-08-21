@@ -123,10 +123,12 @@ template $PowerLevelSelectionPopover: Gtk.Popover {
       Gtk.ListBox {
         Adw.SpinRow custom_row {
           selectable: false;
+          // Translators: As in 'Custom role'.
           title: _("Custom");
           numeric: true;
 
           adjustment: Gtk.Adjustment custom_adjustment {
+            // js_int::MIN_SAFE_INT.
             lower: -9007199254740991;
             upper: 100;
             page-increment: 10;

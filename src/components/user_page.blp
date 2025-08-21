@@ -125,6 +125,7 @@ template $UserPage: Adw.NavigationPage {
               }
 
               $LoadingButtonRow invite_button {
+                // Translators: In this string, 'Invite' is a verb.
                 title: _("Invite");
                 activated => $invite_user() swapped;
               }
@@ -142,11 +143,13 @@ template $UserPage: Adw.NavigationPage {
                   "destructive-action",
                 ]
 
+                // Translators: As in, 'Ban room member'.
                 title: _("Ban");
                 activated => $ban_user() swapped;
               }
 
               $LoadingButtonRow unban_button {
+                // Translators: As in, 'Unban room member'.
                 title: _("Unban");
                 activated => $unban_user() swapped;
               }

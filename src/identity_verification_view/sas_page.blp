@@ -60,6 +60,8 @@ template $IdentityVerificationSasPage: Adw.Bin {
           align: 0.5;
 
           $LoadingButton mismatch_btn {
+            // Translators: During emoji comparison, this is the label of the button to click
+            // when the emojis do not match.
             content-label: _("Do Not Match");
             halign: center;
             clicked => $data_mismatch() swapped;
@@ -71,6 +73,8 @@ template $IdentityVerificationSasPage: Adw.Bin {
           }
 
           $LoadingButton match_btn {
+            // Translators: During emoji comparison, this is the label of the button to click
+            // when the emojis match.
             content-label: _("Match");
             halign: center;
             clicked => $data_match() swapped;
