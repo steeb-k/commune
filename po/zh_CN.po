@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-19 17:30+0000\n"
-"PO-Revision-Date: 2025-08-20 09:04+0800\n"
+"POT-Creation-Date: 2025-08-20 16:17+0000\n"
+"PO-Revision-Date: 2025-08-21 09:19+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -26,7 +26,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.desktop.in.in:2
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
-#: src/login/session_setup_view.ui:22 src/window.blp:9
+#: src/login/session_setup_view.blp:22 src/window.blp:9
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -182,11 +182,11 @@ msgstr "名字"
 msgid "Session not found"
 msgstr "会话未找到"
 
-#: src/components/action_button.ui:33
+#: src/components/action_button.blp:33
 msgid "Confirm Change"
 msgstr "确认更改"
 
-#: src/components/action_button.ui:52 src/components/rows/loading_row.ui:27
+#: src/components/action_button.blp:51 src/components/rows/loading_row.blp:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:145
 #: src/session/view/account_settings/user_session/user_session_list_subpage.ui:86
 #: src/session/view/content/room_details/history_viewer/audio.ui:54
@@ -197,9 +197,9 @@ msgstr "确认更改"
 msgid "Try Again"
 msgstr "重试"
 
-#: src/components/action_button.ui:65
-#: src/components/camera/qrcode_scanner.ui:13
-#: src/login/session_setup_view.ui:15
+#: src/components/action_button.blp:62
+#: src/components/camera/qrcode_scanner.blp:14
+#: src/login/session_setup_view.blp:16
 #: src/session/view/content/explore/mod.ui:61
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
@@ -208,15 +208,15 @@ msgstr "重试"
 msgid "Loading"
 msgstr "正在加载"
 
-#: src/components/action_button.ui:89
+#: src/components/action_button.blp:84
 msgid "Success"
 msgstr "成功"
 
-#: src/components/action_button.ui:108
+#: src/components/action_button.blp:102
 msgid "Warning"
 msgstr "警告"
 
-#: src/components/action_button.ui:126 src/error_page.blp:9
+#: src/components/action_button.blp:119 src/error_page.blp:9
 #: src/session/view/content/explore/mod.ui:117
 #: src/session/view/content/explore/mod.ui:121
 #: src/session/view/content/room_details/invite_subpage/mod.ui:131
@@ -252,11 +252,11 @@ msgstr "选择的文件不是图像"
 msgid "Could not determine the type of the chosen file"
 msgstr "无法判断选择文件的类型"
 
-#: src/components/avatar/editable.ui:70
+#: src/components/avatar/editable.blp:64
 msgid "Remove Avatar"
 msgstr "移除头像"
 
-#: src/components/avatar/editable.ui:87
+#: src/components/avatar/editable.blp:81
 msgid "Select New Avatar"
 msgstr "选择新头像"
 
@@ -264,8 +264,12 @@ msgstr "选择新头像"
 msgid "Camera"
 msgstr "摄像头"
 
-#: src/components/camera/qrcode_scanner.ui:22
-#: src/components/camera/qrcode_scanner.ui:35
+#: src/components/camera/qrcode_scanner.blp:6
+msgid "QR Code Scanner"
+msgstr "二维码扫描器"
+
+#: src/components/camera/qrcode_scanner.blp:21
+#: src/components/camera/qrcode_scanner.blp:33
 msgid "Could Not Connect to Camera"
 msgstr "无法连接至摄像头"
 
@@ -282,79 +286,79 @@ msgstr "无法发送新的验证请求"
 msgid "Could not create the crypto identity"
 msgstr "无法创建加密身份"
 
-#: src/components/crypto/identity_setup_view.ui:9
-#: src/components/crypto/identity_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:8
+#: src/components/crypto/identity_setup_view.blp:33
 msgid "Verify Your New Session"
 msgstr "验证您的新会话"
 
-#: src/components/crypto/identity_setup_view.ui:46
+#: src/components/crypto/identity_setup_view.blp:44
 msgid ""
 "Verifying your session allows you and the people you chat with to be sure "
 "that no one is trying to impersonate you or intercept your conversations."
 msgstr "验证您的会话可以让您和您聊天的人确保没有人尝试冒充您或截取您的对话。"
 
-#: src/components/crypto/identity_setup_view.ui:58
+#: src/components/crypto/identity_setup_view.blp:56
 msgid "Verify With Another Session"
 msgstr "用另一个会话验证"
 
-#: src/components/crypto/identity_setup_view.ui:68
+#: src/components/crypto/identity_setup_view.blp:66
 msgid "No other devices logged into this account?"
 msgstr "没有其它设备已登录该账号吗？"
 
-#: src/components/crypto/identity_setup_view.ui:77
-#: src/components/crypto/recovery_setup_view.ui:9
-#: src/components/crypto/recovery_setup_view.ui:35
+#: src/components/crypto/identity_setup_view.blp:74
+#: src/components/crypto/recovery_setup_view.blp:8
+#: src/components/crypto/recovery_setup_view.blp:33
 msgid "Recover Account"
 msgstr "恢复账号"
 
-#: src/components/crypto/identity_setup_view.ui:88
-#: src/components/crypto/identity_setup_view.ui:280
-#: src/components/crypto/recovery_setup_view.ui:101
-#: src/components/crypto/recovery_setup_view.ui:221
-#: src/components/crypto/recovery_setup_view.ui:536
+#: src/components/crypto/identity_setup_view.blp:85
+#: src/components/crypto/identity_setup_view.blp:261
+#: src/components/crypto/recovery_setup_view.blp:95
+#: src/components/crypto/recovery_setup_view.blp:204
+#: src/components/crypto/recovery_setup_view.blp:493
 msgid "Reset"
 msgstr "重置"
 
-#: src/components/crypto/identity_setup_view.ui:109
-#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:79
+#: src/components/crypto/identity_setup_view.blp:101
+#: src/identity_verification_view/mod.blp:6 src/session/view/content/mod.ui:79
 msgid "Identity Verification"
 msgstr "身份验证"
 
-#: src/components/crypto/identity_setup_view.ui:128
-#: src/components/crypto/identity_setup_view.ui:154
+#: src/components/crypto/identity_setup_view.blp:116
+#: src/components/crypto/identity_setup_view.blp:141
 msgid "Set Up Crypto Identity"
 msgstr "设置加密身份"
 
-#: src/components/crypto/identity_setup_view.ui:165
-#: src/components/crypto/identity_setup_view.ui:246
+#: src/components/crypto/identity_setup_view.blp:152
+#: src/components/crypto/identity_setup_view.blp:227
 msgid ""
 "Your crypto identity allows you to verify other Matrix accounts and "
 "automatically trust their verified sessions."
 msgstr "您的加密身份允许您去认证其他Matrix账号并自动的信任他们通过认证的会话。"
 
-#: src/components/crypto/identity_setup_view.ui:176
+#: src/components/crypto/identity_setup_view.blp:163
 msgid "You need to set up a crypto identity, since it has never been created."
 msgstr "由于从未创建加密身份，您需要设置一个。"
 
-#: src/components/crypto/identity_setup_view.ui:187
-#: src/components/crypto/recovery_setup_view.ui:326
+#: src/components/crypto/identity_setup_view.blp:174
+#: src/components/crypto/recovery_setup_view.blp:301
 msgid "Set Up"
 msgstr "设置"
 
-#: src/components/crypto/identity_setup_view.ui:209
-#: src/components/crypto/identity_setup_view.ui:235
-#: src/components/crypto/recovery_setup_view.ui:175
+#: src/components/crypto/identity_setup_view.blp:191
+#: src/components/crypto/identity_setup_view.blp:216
+#: src/components/crypto/recovery_setup_view.blp:163
 #: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
 msgstr "重置加密身份"
 
-#: src/components/crypto/identity_setup_view.ui:257
+#: src/components/crypto/identity_setup_view.blp:238
 msgid ""
 "You should reset your crypto identity if a device that does not belong to "
 "you managed to be verified."
 msgstr "如果有不属于您的设备成功认证了，您应该重置加密身份。"
 
-#: src/components/crypto/identity_setup_view.ui:268
+#: src/components/crypto/identity_setup_view.blp:249
 msgid "To proceed, you will also need to reset your account recovery key."
 msgstr "要继续进行，您将需要重置您的账号恢复密钥。"
 
@@ -420,52 +424,52 @@ msgstr "无法重置账号恢复密钥"
 msgid "Could not enable account recovery"
 msgstr "无法启用账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:46
+#: src/components/crypto/recovery_setup_view.blp:44
 msgid "Restore full access to your account."
 msgstr "恢复对您账号的全面访问。"
 
-#: src/components/crypto/recovery_setup_view.ui:54
+#: src/components/crypto/recovery_setup_view.blp:51
 msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery "
 "key that is usually set up when you create your account."
 msgstr "为了访问恢复数据，我们需要您创建账号时通常会设置的恢复口令或恢复密钥。"
 
-#: src/components/crypto/recovery_setup_view.ui:70
+#: src/components/crypto/recovery_setup_view.blp:67
 msgid "Recovery Passphrase or Key"
 msgstr "恢复口令或密钥"
 
-#: src/components/crypto/recovery_setup_view.ui:80
+#: src/components/crypto/recovery_setup_view.blp:75
 #: src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:91
+#: src/components/crypto/recovery_setup_view.blp:86
 msgid "Lost your recovery passphrase or key?"
 msgstr "弄丢了您的恢复口令或密钥？"
 
-#: src/components/crypto/recovery_setup_view.ui:122
-#: src/components/crypto/recovery_setup_view.ui:148
+#: src/components/crypto/recovery_setup_view.blp:111
+#: src/components/crypto/recovery_setup_view.blp:136
 msgid "Reset Account Recovery"
 msgstr "重置账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:159
+#: src/components/crypto/recovery_setup_view.blp:147
 msgid ""
 "Resetting account recovery can allow you to fix or reset part or all of your "
 "recovery setup."
 msgstr "重置账号恢复可让您修复或重置您的部分或全部恢复部署。"
 
-#: src/components/crypto/recovery_setup_view.ui:180
+#: src/components/crypto/recovery_setup_view.blp:167
 msgid "Reset Room Encryption Keys Backup"
 msgstr "重置聊天室加密密钥备份"
 
-#: src/components/crypto/recovery_setup_view.ui:187
+#: src/components/crypto/recovery_setup_view.blp:172
 msgid ""
 "If you do not provide a new recovery passphrase, a recovery key will be "
 "created."
 msgstr "如果您不提供一个新的恢复口令，将创建一个恢复密钥。"
 
-#: src/components/crypto/recovery_setup_view.ui:198
-#: src/components/crypto/recovery_setup_view.ui:302
+#: src/components/crypto/recovery_setup_view.blp:183
+#: src/components/crypto/recovery_setup_view.blp:279
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. "
 "Otherwise, if someone manages to get your account password, they will also "
@@ -474,17 +478,17 @@ msgstr ""
 "您不应该重复使用您的Matrix账号密码作为口令。否则，如果有人设法获得您的帐户密"
 "码，他们也将能够访问您的所有的加密对话并冒充您。"
 
-#: src/components/crypto/recovery_setup_view.ui:214
-#: src/components/crypto/recovery_setup_view.ui:318
+#: src/components/crypto/recovery_setup_view.blp:199
+#: src/components/crypto/recovery_setup_view.blp:295
 msgid "Recovery Passphrase (Optional)"
 msgstr "恢复口令（可选）"
 
-#: src/components/crypto/recovery_setup_view.ui:243
-#: src/components/crypto/recovery_setup_view.ui:269
+#: src/components/crypto/recovery_setup_view.blp:221
+#: src/components/crypto/recovery_setup_view.blp:246
 msgid "Set Up Account Recovery"
 msgstr "设置账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:280
+#: src/components/crypto/recovery_setup_view.blp:257
 msgid ""
 "Account recovery allows you to recover your crypto identity and to read your "
 "encrypted messages even if you lose access to all your sessions."
@@ -492,39 +496,39 @@ msgstr ""
 "即使无法访问所有您的会话，账号恢复使您能恢复您的加密身份并且读取您之前所有的"
 "加密信息。"
 
-#: src/components/crypto/recovery_setup_view.ui:291
+#: src/components/crypto/recovery_setup_view.blp:268
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr "如果您不提供一个恢复口令，将会创建一个恢复密钥。"
 
-#: src/components/crypto/recovery_setup_view.ui:348
-#: src/components/crypto/recovery_setup_view.ui:375
+#: src/components/crypto/recovery_setup_view.blp:318
+#: src/components/crypto/recovery_setup_view.blp:344
 msgid "Account Recovery Set Up Successfully"
 msgstr "成功设置账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:412
+#: src/components/crypto/recovery_setup_view.blp:379
 msgid "Copy Recovery Key"
 msgstr "复制恢复密钥"
 
-#: src/components/crypto/recovery_setup_view.ui:429
-#: src/components/crypto/recovery_setup_view.ui:515
-#: src/identity_verification_view/cancelled_page.ui:49
-#: src/identity_verification_view/completed_page.ui:51
-#: src/identity_verification_view/room_left_page.ui:47
+#: src/components/crypto/recovery_setup_view.blp:396
+#: src/components/crypto/recovery_setup_view.blp:473
+#: src/identity_verification_view/cancelled_page.blp:50
+#: src/identity_verification_view/completed_page.blp:51
+#: src/identity_verification_view/room_left_page.blp:48
 msgid "_Done"
 msgstr "完成(_D)"
 
-#: src/components/crypto/recovery_setup_view.ui:452
-#: src/components/crypto/recovery_setup_view.ui:479
+#: src/components/crypto/recovery_setup_view.blp:414
+#: src/components/crypto/recovery_setup_view.blp:440
 #: src/session/view/account_settings/encryption_page/mod.rs:267
 msgid "Account Recovery Incomplete"
 msgstr "账号恢复未完成"
 
-#: src/components/crypto/recovery_setup_view.ui:490
+#: src/components/crypto/recovery_setup_view.blp:451
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr "恢复成功，但恢复数据不完整。"
 
-#: src/components/crypto/recovery_setup_view.ui:498
+#: src/components/crypto/recovery_setup_view.blp:458
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
@@ -532,7 +536,7 @@ msgstr ""
 "要解决这个问题，您应该从具有所有数据的会话中重新设置备份，并尝试使用该备份恢"
 "复本会话。"
 
-#: src/components/crypto/recovery_setup_view.ui:506
+#: src/components/crypto/recovery_setup_view.blp:465
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
@@ -540,37 +544,37 @@ msgstr ""
 "请注意，账号备份在其他 Matrix 客户端中会有不同的名称，如“密钥备份”或“安全备"
 "份”。"
 
-#: src/components/crypto/recovery_setup_view.ui:527
+#: src/components/crypto/recovery_setup_view.blp:485
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "或者，您可以重置账号恢复"
 
-#: src/components/dialogs/auth/in_browser_page.ui:35
-#: src/components/dialogs/auth/mod.ui:4
-#: src/components/dialogs/auth/password_page.ui:35
-#: src/login/in_browser_page.ui:5 src/login/in_browser_page.ui:40
+#: src/components/dialogs/auth/in_browser_page.blp:36
+#: src/components/dialogs/auth/mod.blp:4
+#: src/components/dialogs/auth/password_page.blp:36
+#: src/login/in_browser_page.blp:6 src/login/in_browser_page.blp:39
 msgid "Authentication"
 msgstr "认证"
 
-#: src/components/dialogs/auth/in_browser_page.ui:50
+#: src/components/dialogs/auth/in_browser_page.blp:50
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
 msgstr "请通过浏览器认证该操作并在完成后按确认"
 
-#: src/components/dialogs/auth/in_browser_page.ui:73
-#: src/login/in_browser_page.ui:74
+#: src/components/dialogs/auth/in_browser_page.blp:74
+#: src/login/in_browser_page.blp:74
 msgid "Contin_ue"
 msgstr "继续(_U)"
 
-#: src/components/dialogs/auth/in_browser_page.ui:107
-#: src/components/dialogs/auth/password_page.ui:83
+#: src/components/dialogs/auth/in_browser_page.blp:103
+#: src/components/dialogs/auth/password_page.blp:81
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
 msgid "_Cancel"
 msgstr "取消(_C)"
 
-#: src/components/dialogs/auth/in_browser_page.ui:115
-#: src/components/dialogs/auth/password_page.ui:91
+#: src/components/dialogs/auth/in_browser_page.blp:110
+#: src/components/dialogs/auth/password_page.blp:88
 msgid "C_onfirm"
 msgstr "确认(_O)"
 
@@ -582,7 +586,7 @@ msgstr "密码无效。"
 msgid "An unexpected error occurred."
 msgstr "发生了意外错误。"
 
-#: src/components/dialogs/auth/password_page.ui:50
+#: src/components/dialogs/auth/password_page.blp:50
 msgid "Please authenticate the operation with your password"
 msgstr "请使用您的密码认证该操作"
 
@@ -604,7 +608,7 @@ msgid ""
 msgstr "您确定想要拒绝该邀请吗？您将无法在未受邀请的情况下加入该聊天室。"
 
 #: src/components/dialogs/message_dialogs.rs:34
-#: src/identity_verification_view/accept_request_page.ui:55
+#: src/identity_verification_view/accept_request_page.blp:55
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "拒绝"
@@ -634,7 +638,7 @@ msgstr "离开"
 #: src/components/dialogs/message_dialogs.rs:447
 #: src/components/dialogs/message_dialogs.rs:469
 #: src/components/dialogs/message_dialogs.rs:491
-#: src/identity_verification_view/confirm_qr_code_page.ui:55
+#: src/identity_verification_view/confirm_qr_code_page.blp:55
 #: src/session/view/account_settings/general_page/mod.rs:391
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:1036
@@ -670,7 +674,7 @@ msgstr "您确定想要封禁 {user_id} 吗？他们在被解封之前将无法�
 
 #. Translators: As in, 'Ban room member'.
 #: src/components/dialogs/message_dialogs.rs:139
-#: src/components/user_page.ui:157
+#: src/components/user_page.blp:145
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "封禁"
@@ -896,7 +900,7 @@ msgstr "查看"
 
 #. Translators: This is a verb, as in 'Look up Room'.
 #: src/components/dialogs/room_preview.rs:242
-#: src/components/dialogs/room_preview.ui:90
+#: src/components/dialogs/room_preview.blp:89
 msgid "Look Up"
 msgstr "查找"
 
@@ -928,13 +932,13 @@ msgstr "请求邀请"
 msgid "Join"
 msgstr "加入"
 
-#: src/components/dialogs/room_preview.ui:4
-#: src/components/dialogs/room_preview.ui:38
+#: src/components/dialogs/room_preview.blp:5
+#: src/components/dialogs/room_preview.blp:39
 msgid "Join a Room"
 msgstr "加入聊天室"
 
-#: src/components/dialogs/room_preview.ui:17 src/login/greeter.ui:16
-#: src/login/greeter.ui:18
+#: src/components/dialogs/room_preview.blp:19 src/login/greeter.blp:16
+#: src/login/greeter.blp:19
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/join_rule_subpage.ui:16
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
@@ -942,11 +946,11 @@ msgstr "加入聊天室"
 msgid "Back"
 msgstr "返回"
 
-#: src/components/dialogs/room_preview.ui:72
+#: src/components/dialogs/room_preview.blp:70
 msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "输入聊天室标识、别名或链接来查找聊天室"
 
-#: src/components/dialogs/user_profile.ui:4
+#: src/components/dialogs/user_profile.blp:5
 msgid "User Profile"
 msgstr "用户配置"
 
@@ -986,22 +990,21 @@ msgstr "位置在纬度 {latitude} 和经度 {longitude}"
 msgid "Notify the whole room"
 msgstr "通知整个房间"
 
-#. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
-#: src/components/power_level_selection/popover.ui:149
+#: src/components/power_level_selection/popover.blp:126
 #: src/session/model/room/permissions.rs:66
 msgid "Custom"
 msgstr "自定义"
 
-#: src/components/power_level_selection/popover.ui:164
+#: src/components/power_level_selection/popover.blp:139
 msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
-#: src/components/power_level_selection/row.ui:101
+#: src/components/power_level_selection/row.blp:99
 msgid "More Information"
 msgstr "更多信息"
 
-#: src/components/power_level_selection/row.ui:119
+#: src/components/power_level_selection/row.blp:117
 msgid ""
 "Creator is an immutable role that can be attributed to several users when "
 "creating a room. Creators always have a higher power level than any other "
@@ -1139,44 +1142,42 @@ msgstr "无法停止忽略用户"
 msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
-#: src/components/user_page.ui:66
+#: src/components/user_page.blp:57
 #: src/session/view/account_settings/general_page/mod.ui:59
 msgid "Copy Matrix User ID"
 msgstr "复制 Matrix 用户标识"
 
-#: src/components/user_page.ui:119
+#: src/components/user_page.blp:108
 msgid "Role"
 msgstr "角色"
 
 #. Translators: value used to assign room member roles
-#: src/components/user_page.ui:132
+#: src/components/user_page.blp:123
 msgid "Power Level"
 msgstr "权力等级"
 
-#. Translators: In this string, 'Invite' is a verb.
 #. Translators: This is a verb.
-#: src/components/user_page.ui:139 src/session/view/content/invite.ui:13
+#: src/components/user_page.blp:128 src/session/view/content/invite.ui:13
 #: src/session/view/content/invite.ui:39
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:167
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "邀请"
 
-#. Translators: As in, 'Unan room member'.
-#: src/components/user_page.ui:164
+#: src/components/user_page.blp:150
 msgid "Unban"
 msgstr "解封"
 
-#: src/components/user_page.ui:173
+#: src/components/user_page.blp:159
 msgid "Remove Messages"
 msgstr "移除消息"
 
-#: src/components/user_page.ui:187
+#: src/components/user_page.blp:170
 msgid "Security"
 msgstr "安全"
 
-#: src/components/user_page.ui:214
-#: src/identity_verification_view/accept_request_page.ui:66
+#: src/components/user_page.blp:197
+#: src/identity_verification_view/accept_request_page.blp:66
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:322
 msgid "Verify"
@@ -1187,8 +1188,8 @@ msgid "QR Code"
 msgstr "二维码"
 
 #: src/error_page.blp:19 src/error_page.blp:23 src/error_page.blp:31
-#: src/error_page.blp:35 src/login/greeter.ui:26 src/login/greeter.ui:29
-#: src/login/greeter.ui:37 src/login/greeter.ui:40 src/window.blp:29
+#: src/error_page.blp:35 src/login/greeter.blp:27 src/login/greeter.blp:31
+#: src/login/greeter.blp:39 src/login/greeter.blp:43 src/window.blp:29
 #: src/window.blp:33
 msgid "About Fractal"
 msgstr "关于 Fractal"
@@ -1310,9 +1311,9 @@ msgid "An unexpected error happened during the verification process."
 msgstr "验证过程中发生了预期外的错误。"
 
 #: src/identity_verification_view/cancelled_page.rs:166
-#: src/identity_verification_view/mod.ui:103
-#: src/identity_verification_view/mod.ui:114
-#: src/identity_verification_view/room_left_page.ui:22
+#: src/identity_verification_view/mod.blp:88
+#: src/identity_verification_view/mod.blp:97
+#: src/identity_verification_view/room_left_page.blp:22
 msgid "Verification Cancelled"
 msgstr "验证已取消"
 
@@ -1320,7 +1321,7 @@ msgstr "验证已取消"
 msgid "Verification Error"
 msgstr "验证出错"
 
-#: src/identity_verification_view/cancelled_page.ui:59
+#: src/identity_verification_view/cancelled_page.blp:60
 msgid "Send New Request"
 msgstr "发送新请求"
 
@@ -1365,24 +1366,24 @@ msgstr "无法开始表情验证"
 msgid "Could not cancel the verification"
 msgstr "无法取消验证"
 
-#: src/identity_verification_view/choose_method_page.ui:54
-#: src/identity_verification_view/scan_qr_code_page.ui:51
+#: src/identity_verification_view/choose_method_page.blp:55
+#: src/identity_verification_view/scan_qr_code_page.blp:51
 msgid "Can’t scan QR code?"
 msgstr "无法扫描二维码吗？"
 
-#: src/identity_verification_view/choose_method_page.ui:63
+#: src/identity_verification_view/choose_method_page.blp:63
 msgid "Scan QR code with this session"
 msgstr "用该会话扫描二维码"
 
-#: src/identity_verification_view/choose_method_page.ui:72
-#: src/identity_verification_view/scan_qr_code_page.ui:73
+#: src/identity_verification_view/choose_method_page.blp:72
+#: src/identity_verification_view/scan_qr_code_page.blp:73
 msgid "Compare Emoji"
 msgstr "比对表情"
 
-#: src/identity_verification_view/choose_method_page.ui:83
+#: src/identity_verification_view/choose_method_page.blp:83
 #: src/identity_verification_view/no_supported_methods_page.rs:167
-#: src/identity_verification_view/qr_code_scanned_page.ui:51
-#: src/identity_verification_view/scan_qr_code_page.ui:84
+#: src/identity_verification_view/qr_code_scanned_page.blp:51
+#: src/identity_verification_view/scan_qr_code_page.blp:84
 msgid "Cancel Verification"
 msgstr "取消验证"
 
@@ -1420,11 +1421,11 @@ msgstr "{user} 在他们的会话上看到确认了吗？"
 msgid "Could not confirm the scan of the QR Code"
 msgstr "无法确认二维码已被扫描"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:19
+#: src/identity_verification_view/confirm_qr_code_page.blp:19
 msgid "Confirm Scan"
 msgstr "确认扫描"
 
-#: src/identity_verification_view/confirm_qr_code_page.ui:69
+#: src/identity_verification_view/confirm_qr_code_page.blp:72
 msgid "Confirm"
 msgstr "确认"
 
@@ -1432,37 +1433,37 @@ msgstr "确认"
 msgid "Scan QR Code"
 msgstr "扫描二维码"
 
-#: src/identity_verification_view/mod.ui:15
+#: src/identity_verification_view/mod.blp:16
 msgid "New Identity Verification Request"
 msgstr "新的身份验证请求"
 
-#: src/identity_verification_view/mod.ui:26
+#: src/identity_verification_view/mod.blp:25
 msgid "Wait for Other Party"
 msgstr "等待其他成员"
 
-#: src/identity_verification_view/mod.ui:37
-#: src/identity_verification_view/no_supported_methods_page.ui:22
+#: src/identity_verification_view/mod.blp:34
+#: src/identity_verification_view/no_supported_methods_page.blp:22
 msgid "No Supported Verification Methods"
 msgstr "无支持的验证方式"
 
-#: src/identity_verification_view/mod.ui:48
+#: src/identity_verification_view/mod.blp:43
 msgid "Verification Request Methods"
 msgstr "验证请求方式"
 
-#: src/identity_verification_view/mod.ui:59
-#: src/identity_verification_view/qr_code_scanned_page.ui:19
+#: src/identity_verification_view/mod.blp:52
+#: src/identity_verification_view/qr_code_scanned_page.blp:19
 msgid "Scan Complete"
 msgstr "扫描完成"
 
-#: src/identity_verification_view/mod.ui:70
+#: src/identity_verification_view/mod.blp:61
 msgid "Confirm Scan Result"
 msgstr "确认扫描结果"
 
-#: src/identity_verification_view/mod.ui:81
+#: src/identity_verification_view/mod.blp:70
 msgid "Short Authentication String Verification"
 msgstr "短认证字符串验证"
 
-#: src/identity_verification_view/mod.ui:92
+#: src/identity_verification_view/mod.blp:79
 msgid "Verification Successful"
 msgstr "验证成功"
 
@@ -1503,7 +1504,7 @@ msgstr "拒绝验证"
 msgid "Could not decline the verification"
 msgstr "无法拒绝验证"
 
-#: src/identity_verification_view/no_supported_methods_page.ui:47
+#: src/identity_verification_view/no_supported_methods_page.blp:48
 msgid ""
 "You can accept this verification from another session or decline it for all "
 "your sessions"
@@ -1523,7 +1524,7 @@ msgid ""
 "verification."
 msgstr "您已成功扫描该二维码。{user} 可能需要确认该验证。"
 
-#: src/identity_verification_view/room_left_page.ui:37
+#: src/identity_verification_view/room_left_page.blp:38
 msgid "You are no longer in the room where the verification was taking place"
 msgstr "您已不在验证发生的聊天室中"
 
@@ -1559,13 +1560,11 @@ msgstr "无法发送数据不匹配的确认"
 msgid "Could not send confirmation that the data matches"
 msgstr "无法发送数据匹配的确认"
 
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
-#: src/identity_verification_view/sas_page.ui:65
+#: src/identity_verification_view/sas_page.blp:63
 msgid "Do Not Match"
 msgstr "不匹配"
 
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
-#: src/identity_verification_view/sas_page.ui:77
+#: src/identity_verification_view/sas_page.blp:74
 msgid "Match"
 msgstr "匹配"
 
@@ -1583,7 +1582,7 @@ msgstr "扫描在该设备上显示的 {user} 的二维码。"
 msgid "Could not validate scanned QR Code"
 msgstr "无法验证扫描的二维码"
 
-#: src/identity_verification_view/scan_qr_code_page.ui:64
+#: src/identity_verification_view/scan_qr_code_page.blp:64
 msgid "Show a QR code to scan with another device"
 msgstr "显示可用其它设备扫描的二维码"
 
@@ -1607,25 +1606,25 @@ msgstr "正在等待 {user}"
 msgid "Ask {user} to accept the verification request."
 msgstr "请求 {user} 接受验证请求。"
 
-#: src/identity_verification_view/wait_for_other_page.ui:44
+#: src/identity_verification_view/wait_for_other_page.blp:45
 msgid ""
 "To be secure, the verification should happen in person or use a trusted way "
 "of communication."
 msgstr "为了安全起见，验证应该亲自进行或使用可信的通信方式。"
 
-#: src/identity_verification_view/wait_for_other_page.ui:61
+#: src/identity_verification_view/wait_for_other_page.blp:61
 msgid "The request is not showing up on the other device?"
 msgstr "该请求没有出现在其它设备上吗？"
 
-#: src/identity_verification_view/wait_for_other_page.ui:73
+#: src/identity_verification_view/wait_for_other_page.blp:73
 msgid "Cancel Verification Request"
 msgstr "取消验证请求"
 
-#: src/login/advanced_dialog.ui:4
+#: src/login/advanced_dialog.blp:5
 msgid "Homeserver Discovery"
 msgstr "主服务器发现"
 
-#: src/login/advanced_dialog.ui:11
+#: src/login/advanced_dialog.blp:11
 msgid ""
 "Auto-discovery, also known as “well-known lookup”, allows to discover the "
 "URL of a Matrix homeserver from a domain name. This should only be disabled "
@@ -1635,20 +1634,19 @@ msgstr ""
 "自动发现，同时作为“知名查找”为人所知，允许从一个域名发现 Matrix 主服务器的网"
 "址。该功能应仅在您的主服务器不支持自动发现或您想要自己提供网址时被禁用。"
 
-#: src/login/advanced_dialog.ui:14
+#: src/login/advanced_dialog.blp:14
 msgid "_Auto-Discovery"
 msgstr "自动发现(_A)"
 
-#. Translators: Fractal is the application name.
-#: src/login/greeter.ui:6 src/login/greeter.ui:91
+#: src/login/greeter.blp:6 src/login/greeter.blp:89
 msgid "Welcome to Fractal"
 msgstr "欢迎使用 Fractal"
 
-#: src/login/greeter.ui:117
+#: src/login/greeter.blp:114
 msgid "_Log In"
 msgstr "登录(_L)"
 
-#: src/login/greeter.ui:130
+#: src/login/greeter.blp:127
 msgid "_Create Account"
 msgstr "创建账号(_C)"
 
@@ -1660,7 +1658,7 @@ msgstr "域名"
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "您的 Matrix 主服务器域名，比如 gnome.org"
 
-#: src/login/homeserver_page.rs:107 src/login/method_page.ui:63
+#: src/login/homeserver_page.rs:107 src/login/method_page.blp:69
 msgid "Homeserver URL"
 msgstr "主服务器网址"
 
@@ -1675,17 +1673,16 @@ msgstr "您的 Matrix 主服务器网址，比如 {address}"
 msgid "Could not set up login"
 msgstr "无法部署登录"
 
-#: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
+#: src/login/homeserver_page.blp:6 src/login/homeserver_page.blp:44
 #: src/session/view/account_settings/general_page/mod.ui:128
 msgid "Homeserver"
 msgstr "主服务器"
 
-#: src/login/homeserver_page.ui:100 src/login/method_page.ui:140
+#: src/login/homeserver_page.blp:103 src/login/method_page.blp:141
 msgid "Next"
 msgstr "下一步"
 
-#. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:115
+#: src/login/homeserver_page.blp:117
 msgid "Advanced…"
 msgstr "高级…"
 
@@ -1693,7 +1690,7 @@ msgstr "高级…"
 msgid "Could not open URL"
 msgstr "无法打开 URL"
 
-#: src/login/in_browser_page.ui:55
+#: src/login/in_browser_page.blp:55
 msgid "Click on the button below and follow the steps in the browser"
 msgstr "请点击下面的按钮并遵循浏览器中的步骤"
 
@@ -1715,19 +1712,19 @@ msgstr "更多 SSO 提供者"
 msgid "Login via SSO"
 msgstr "通过 SSO 登录"
 
-#: src/login/method_page.ui:5 src/window.blp:73
+#: src/login/method_page.blp:6 src/window.blp:73
 msgid "Log In"
 msgstr "登录"
 
-#: src/login/method_page.ui:90
+#: src/login/method_page.blp:94
 msgid "Matrix Username"
 msgstr "Matrix 用户名"
 
-#: src/login/method_page.ui:106
+#: src/login/method_page.blp:109
 msgid "Password"
 msgstr "密码"
 
-#: src/login/method_page.ui:122
+#: src/login/method_page.blp:124
 msgid "Single Sign-On Providers"
 msgstr "单点登录提供者"
 
@@ -1745,23 +1742,23 @@ msgid ""
 "Fractal."
 msgstr "授权步骤已完成。您可以关闭此页面并返回 Fractal 了。"
 
-#: src/login/mod.ui:27 src/login/mod.ui:61
+#: src/login/mod.blp:22 src/login/mod.blp:54
 msgid "Login Complete"
 msgstr "登录完成"
 
-#: src/login/mod.ui:82
+#: src/login/mod.blp:75
 msgid "This session is ready to send and receive secure messages"
 msgstr "该会话已准备好发送和接收安全消息"
 
-#: src/login/mod.ui:91
+#: src/login/mod.blp:84
 msgid "Start Chatting"
 msgstr "开始聊天"
 
-#: src/login/session_setup_view.ui:5
+#: src/login/session_setup_view.blp:6
 msgid "Session Setup"
 msgstr "会话设置"
 
-#: src/login/session_setup_view.ui:51 src/window.blp:59
+#: src/login/session_setup_view.blp:47 src/window.blp:59
 msgid "Fetching Account Data…"
 msgstr "正在获取账号数据…"
 
