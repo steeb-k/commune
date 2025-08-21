@@ -134,4 +134,9 @@ session/view/content/room_history/state/row.blp
 session/view/content/room_history/title.blp
 session/view/content/room_history/typing_row.blp
 session/view/content/room_history/verification_info_bar.blp
+session/view/create_direct_chat_dialog/mod.blp
+session/view/create_room_dialog.blp
+session/view/event_details_dialog.blp
+session/view/media_viewer.blp
+session/view/session_view.blp
 window.blp

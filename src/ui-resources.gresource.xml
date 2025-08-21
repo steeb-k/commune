@@ -2,11 +2,6 @@
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/create_direct_chat_dialog/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/create_room_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/media_viewer.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/session_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/icon_item_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/room_row.ui</file>
