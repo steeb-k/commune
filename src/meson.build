@@ -1,7 +1,7 @@
 if not build_env_only
   # Compile Blueprint resources
   blp_files = []
-  foreach line : fs.read('blp-resources.in').splitlines()
+  foreach line : fs.read('ui-blueprint-resources.in').splitlines()
     if not line.startswith('#') and line.strip() != ''
       blp_files += line
     endif
@@ -20,28 +20,19 @@ if not build_env_only
   foreach file : blp_files
     compiled_ui_files += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
   endforeach
-  blp_resources_xml = configure_file(
-    input: 'blp-resources.gresource.xml.in',
-    output: 'blp-resources.gresource.xml',
+  ui_resources_xml = configure_file(
+    input: 'ui-resources.gresource.xml.in',
+    output: 'ui-resources.gresource.xml',
     configuration: { 'UI_FILES': compiled_ui_files }
   )
 
-  blp_resources = gnome.compile_resources(
-    'blp-resources',
-    blp_resources_xml,
-    gresource_bundle: true,
-    install: true,
-    install_dir: pkgdatadir,
-    dependencies: [blueprints, blp_resources_xml],
-  )
-
-  # Compile UI resources
   ui_resources = gnome.compile_resources(
     'ui-resources',
-    'ui-resources.gresource.xml',
+    ui_resources_xml,
     gresource_bundle: true,
     install: true,
     install_dir: pkgdatadir,
+    dependencies: [blueprints, ui_resources_xml],
   )
 endif
 
@@ -91,7 +82,7 @@ if not build_env_only
     console: true,
     install: true,
     install_dir: bindir,
-    depends: [resources, blp_resources, ui_resources],
+    depends: [resources, ui_resources],
     command: [
       'env',
       cargo_env,

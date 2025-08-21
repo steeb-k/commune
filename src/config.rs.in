@@ -1,7 +1,6 @@
 use crate::application::AppProfile;
 
 pub const APP_ID: &str = @APP_ID@;
-pub const BLUEPRINT_RESOURCES_FILE: &str = concat!(@PKGDATADIR@, "/blp-resources.gresource");
 pub const DISABLE_GLYCIN_SANDBOX: bool = @DISABLE_GLYCIN_SANDBOX@;
 pub const GETTEXT_PACKAGE: &str = @GETTEXT_PACKAGE@;
 pub const LOCALEDIR: &str = @LOCALEDIR@;
