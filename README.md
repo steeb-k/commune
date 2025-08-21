@@ -225,8 +225,8 @@ They are translated on [Element’s translation platform](https://translate.elem
 * Can I run Fractal with the window closed?
 
 Currently Fractal does not support this. Fractal is a GNOME application, and accordingly adheres to
-the GNOME guidelines and paradigms. This will be revisited if or when GNOME gets a proper paradigm
-to interact with apps running in the background.
+the GNOME guidelines and paradigms. This will be revisited [if or when GNOME gets a proper paradigm
+to interact with apps running in the background](https://gitlab.gnome.org/World/fractal/-/issues/228#note_2054826).
 
 ## The origin of Fractal
 
