@@ -76,4 +76,8 @@ session/view/account_settings/safety_page/mod.blp
 session/view/account_settings/user_session/user_session_list_subpage.blp
 session/view/account_settings/user_session/user_session_row.blp
 session/view/account_settings/user_session/user_session_subpage.blp
+session/view/content/explore/mod.blp
+session/view/content/explore/public_room_row.blp
+session/view/content/explore/server_row.blp
+session/view/content/explore/servers_popover.blp
 window.blp

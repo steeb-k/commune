@@ -108,10 +108,10 @@ src/session/view/account_settings/user_session/user_session_list_subpage.blp
 src/session/view/account_settings/user_session/user_session_row.blp
 src/session/view/account_settings/user_session/user_session_subpage.rs
 src/session/view/account_settings/user_session/user_session_subpage.blp
-src/session/view/content/explore/mod.ui
+src/session/view/content/explore/mod.blp
 src/session/view/content/explore/public_room_row.rs
-src/session/view/content/explore/servers_popover.ui
-src/session/view/content/explore/server_row.ui
+src/session/view/content/explore/servers_popover.blp
+src/session/view/content/explore/server_row.blp
 src/session/view/content/invite.rs
 src/session/view/content/invite.ui
 src/session/view/content/invite_request.rs
