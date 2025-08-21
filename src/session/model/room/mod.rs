@@ -1004,7 +1004,7 @@ mod imp {
         }
 
         /// Set the other member of the room, if this room is a direct chat and
-        /// there is only one other member..
+        /// there is only one other member.
         fn set_direct_member(&self, member: Option<Member>) {
             if *self.direct_member.borrow() == member {
                 return;

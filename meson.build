@@ -103,7 +103,7 @@ if profile == 'Devel'
   release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
 
   # Setup pre-commit hook for ensuring coding style is always consistent
-  message('Setting up git pre-commit hook..')
+  message('Setting up git pre-commit hook…')
   run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
 endif
 

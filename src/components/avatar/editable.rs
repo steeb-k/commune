@@ -240,7 +240,7 @@ mod imp {
             self.obj().notify_editable();
         }
 
-        /// Set whether to prevent the remove button from showing..
+        /// Set whether to prevent the remove button from showing.
         fn set_inhibit_remove(&self, inhibit: bool) {
             if self.inhibit_remove.get() == inhibit {
                 return;
