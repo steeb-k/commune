@@ -80,4 +80,7 @@ session/view/content/explore/mod.blp
 session/view/content/explore/public_room_row.blp
 session/view/content/explore/server_row.blp
 session/view/content/explore/servers_popover.blp
+session/view/content/invite.blp
+session/view/content/invite_request.blp
+session/view/content/mod.blp
 window.blp

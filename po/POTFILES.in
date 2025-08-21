@@ -113,10 +113,10 @@ src/session/view/content/explore/public_room_row.rs
 src/session/view/content/explore/servers_popover.blp
 src/session/view/content/explore/server_row.blp
 src/session/view/content/invite.rs
-src/session/view/content/invite.ui
+src/session/view/content/invite.blp
 src/session/view/content/invite_request.rs
-src/session/view/content/invite_request.ui
-src/session/view/content/mod.ui
+src/session/view/content/invite_request.blp
+src/session/view/content/mod.blp
 src/session/view/content/room_details/addresses_subpage/completion_popover.ui
 src/session/view/content/room_details/addresses_subpage/mod.rs
 src/session/view/content/room_details/addresses_subpage/mod.ui
