@@ -1,20 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/encryption_page/import_export_keys_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/encryption_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/deactivate_account_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/log_out_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/notifications_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/safety_page/ignored_users_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/safety_page/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_session/user_session_list_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_session/user_session_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_session/user_session_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/public_room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/server_row.ui</file>

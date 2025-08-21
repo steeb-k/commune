@@ -63,4 +63,17 @@ login/method_page.blp
 login/mod.blp
 login/session_setup_view.blp
 login/sso_idp_button.blp
+session/view/account_settings/encryption_page/import_export_keys_subpage.blp
+session/view/account_settings/encryption_page/mod.blp
+session/view/account_settings/general_page/deactivate_account_subpage.blp
+session/view/account_settings/general_page/log_out_subpage.blp
+session/view/account_settings/general_page/mod.blp
+session/view/account_settings/mod.blp
+session/view/account_settings/notifications_page.blp
+session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.blp
+session/view/account_settings/safety_page/ignored_users_subpage/mod.blp
+session/view/account_settings/safety_page/mod.blp
+session/view/account_settings/user_session/user_session_list_subpage.blp
+session/view/account_settings/user_session/user_session_row.blp
+session/view/account_settings/user_session/user_session_subpage.blp
 window.blp
