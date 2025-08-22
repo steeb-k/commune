@@ -128,17 +128,10 @@ mod imp {
     impl ObjectImpl for Window {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
-
-            let builder = gtk::Builder::from_resource("/org/gnome/Fractal/ui/shortcuts.ui");
-            let shortcuts = builder
-                .object("shortcuts")
-                .expect("shortcuts object should exist in UI template");
-            obj.set_help_overlay(Some(&shortcuts));
 
             // Development Profile
             if PROFILE.should_use_devel_class() {
-                obj.add_css_class("devel");
+                self.obj().add_css_class("devel");
             }
 
             self.load_window_size();

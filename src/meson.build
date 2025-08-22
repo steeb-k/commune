@@ -15,17 +15,27 @@ if not build_env_only
   )
 
   # Populate the GResource file for the compiled Blueprint files dynamically,
-  # using the same file list
-  compiled_ui_files = ''
+  # using the same file list.
+  # These files are already added manually in the resources file because they
+  # need custom handling.
+  blp_exceptions = [
+    'shortcuts-dialog.blp', # Must use the root prefix for auto-detection, it must not be under `/ui`.
+  ]
+
+  ui_files_xml = ''
   foreach file : blp_files
-    compiled_ui_files += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
+    if not blp_exceptions.contains(file)
+      ui_files_xml += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace('.blp', '.ui') + '</file>'
+    endif
   endforeach
+
   ui_resources_xml = configure_file(
     input: 'ui-resources.gresource.xml.in',
     output: 'ui-resources.gresource.xml',
-    configuration: { 'UI_FILES': compiled_ui_files }
+    configuration: { 'UI_FILES': ui_files_xml }
   )
 
+  # Compile the UI files.
   ui_resources = gnome.compile_resources(
     'ui-resources',
     ui_resources_xml,

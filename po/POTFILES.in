@@ -201,7 +201,7 @@ src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
 src/session/view/sidebar/section_row.rs
 src/session_list/mod.rs
-src/shortcuts.ui
+src/shortcuts-dialog.blp
 src/user_facing_error.rs
 src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs

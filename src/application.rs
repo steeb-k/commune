@@ -233,7 +233,6 @@ mod imp {
         fn set_up_accels(&self) {
             let obj = self.obj();
             obj.set_accels_for_action("app.quit", &["<Control>q"]);
-            obj.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
             obj.set_accels_for_action("window.close", &["<Control>w"]);
         }
 

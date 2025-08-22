@@ -144,4 +144,5 @@ session/view/sidebar/mod.blp
 session/view/sidebar/room_row.blp
 session/view/sidebar/section_row.blp
 session/view/sidebar/verification_row.blp
+shortcuts-dialog.blp
 window.blp
