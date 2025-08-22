@@ -47,14 +47,13 @@ rust-tests:
 build-docs:
   extends:
     - .remove_build_only_modules
-    - .stable_runtime
   stage: test
+  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak
   interruptible: true
-  before_script:
-    - !reference [.remove_build_only_modules, before_script]
-    - !reference [.stable_runtime, before_script]
+  variables:
+    FREEDESKTOP_RUNTIME_BRANCH: "25.08beta"
   script:
     - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//${FREEDESKTOP_RUNTIME_BRANCH}
     # We want to use the nightly toolchain inside the build terminal.
