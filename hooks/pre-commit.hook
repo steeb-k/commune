@@ -16,8 +16,6 @@ if hooks/checks.sh --git-staged; then
     echo -e "Pre-commit checks result: ${pos}ok${res}"
 elif [[ $? -eq 2 ]]; then
     echo ""
-    echo "A missing dependency was found"
-    echo ""
     if [ ! -t 1 ]; then
         echo "This is a non-interactive shell, skipping checks."
         exit 0
@@ -37,7 +35,7 @@ elif [[ $? -eq 2 ]]; then
                     echo -e "  ${err}Aborting${res} commit"
                     exit  1
                     ;;
-                * ) 
+                * )
                     echo -e "${neg}Invalid input${res}"
                     ;;
             esac

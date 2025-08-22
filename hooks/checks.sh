@@ -33,7 +33,7 @@ res="\e[0m"
 # Common styled strings
 Installing="${act}Installing${res}"
 Checking="  ${act}Checking${res}"
-Failed="    ${err}Failed${res}"
+Could_not="    ${err}Could not${res}"
 error="${err}error:${res}"
 invalid="${neg}Invalid input${res}"
 ok="${pos}ok${res}"
@@ -93,7 +93,7 @@ check_rustup() {
             curl https://sh.rustup.rs -sSf  | sh -s -- -y --default-toolchain nightly
             export PATH=$PATH:$HOME/.cargo/bin
             if ! which rustup &> /dev/null; then
-                echo -e "$Could not install rustup"
+                echo -e "$Could_not install rustup"
                 exit 2
             fi
         else
@@ -106,7 +106,7 @@ check_rustup() {
 install_cargo() {
     check_rustup -i
     if ! which cargo >/dev/null 2>&1; then
-        echo -e "$Could not install cargo"
+        echo -e "$Could_not install cargo"
         exit 2
     fi
 }
@@ -159,7 +159,7 @@ install_rustfmt() {
     echo -e "$Installing rustfmt…"
     rustup component add --toolchain nightly rustfmt
     if ! cargo +nightly fmt --version >/dev/null 2>&1; then
-        echo -e "$Could not install rustfmt"
+        echo -e "$Could_not install rustfmt"
         exit 2
     fi
 }
@@ -238,7 +238,7 @@ install_typos() {
     echo -e "$Installing typos…"
     cargo install typos-cli
     if ! typos --version >/dev/null 2>&1; then
-        echo -e "$Could not install typos"
+        echo -e "$Could_not install typos"
         exit 2
     fi
 }
@@ -299,7 +299,7 @@ install_machete() {
     echo -e "$Installing cargo-machete…"
     cargo install cargo-machete
     if ! cargo machete --version>/dev/null 2>&1; then
-        echo -e "$Could not install cargo-machete"
+        echo -e "$Could_not install cargo-machete"
         exit 2
     fi
 }
@@ -358,7 +358,7 @@ install_cargo_deny() {
     echo -e "$Installing cargo-deny…"
     cargo install cargo-deny
     if ! cargo deny --version>/dev/null 2>&1; then
-        echo -e "$Could not install cargo-deny"
+        echo -e "$Could_not install cargo-deny"
         exit 2
     fi
 }
@@ -422,6 +422,7 @@ run_cargo_deny() {
 # This assumes the following:
 #   - POTFILES is located at 'po/POTFILES.in'
 #   - UI (Glade) files are located in 'src' and use 'translatable="yes"'
+#   - Blueprint files are located in 'src' and use '_('
 #   - Rust files are located in 'src' and use '*gettext' methods or macros
 check_potfiles() {
     echo -e "$Checking po/POTFILES.in…"
@@ -447,7 +448,6 @@ check_potfiles() {
 
     if [[ ret -eq 1 ]]; then
         echo -e "  Checking po/POTFILES.in result: $fail"
-        echo "Please fix the above issues"
         exit 1
     fi
 
@@ -470,7 +470,6 @@ check_potfiles() {
 
     if [[ ret -eq 1 ]]; then
         echo -e "  Checking po/POTFILES.skip result: $fail"
-        echo "Please fix the above issues"
         exit 1
     fi
 
@@ -580,7 +579,6 @@ check_potfiles() {
     if [[ ret -eq 1 ]]; then
         echo ""
         echo -e "  Checking po/POTFILES.in result: $fail"
-        echo "Please fix the above issues"
         exit 1
     fi
 
@@ -598,7 +596,6 @@ check_potfiles() {
     if [[ ret -eq 1 ]]; then
         echo ""
         echo -e "  Checking po/POTFILES.in result: $fail"
-        echo "Please fix the above issues"
         exit 1
     else
         echo -e "  Checking po/POTFILES.in result: $ok"
@@ -634,7 +631,6 @@ check_resources() {
     if [[ ret -eq 1 ]]; then
         echo ""
         echo -e "  Checking $1 result: $fail"
-        echo "Please fix the above issues"
         exit 1
     else
         echo -e "  Checking $1 result: $ok"
@@ -642,8 +638,9 @@ check_resources() {
 }
 
 # Check if files in blp-resources.in are sorted alphabetically.
-check_blp_resources() {
-    echo -e "$Checking blp-resources.in…"
+check_blueprint_resources() {
+    input_file="src/ui-blueprint-resources.in"
+    echo -e "$Checking $input_file…"
 
     local ret=0
     local files=()
@@ -652,19 +649,19 @@ check_blp_resources() {
     while read -r line; do
         if [[ -n $line &&  ${line::1} != '#' ]]; then
             if [[ ! -f "src/${line}" ]]; then
-                echo -e "$error File '$line' in blp-resources.in does not exist"
+                echo -e "$error File '$line' in $input_file does not exist"
                 ret=1
             fi
             files+=($line)
         fi
-    done < src/blp-resources.in
+    done < $input_file
 
     # Check sorted alphabetically
     local to_sort=("${files[@]}")
     sort
     for i in ${!files[@]}; do
         if [[ "${files[$i]}" != "${to_sort[$i]}" ]]; then
-            echo -e "$error Found file '${files[$i]#src/}' before '${to_sort[$i]#src/}' in blp-resources.in"
+            echo -e "$error Found file '${files[$i]#src/}' before '${to_sort[$i]#src/}' in $input_file"
             ret=1
             break
         fi
@@ -672,11 +669,10 @@ check_blp_resources() {
 
     if [[ ret -eq 1 ]]; then
         echo ""
-        echo -e "  Checking blp-resources.in result: $fail"
-        echo "Please fix the above issues"
+        echo -e "  Checking $input_file result: $fail"
         exit 1
     else
-        echo -e "  Checking blp-resources.in result: $ok"
+        echo -e "  Checking $input_file result: $ok"
     fi
 }
 
@@ -685,7 +681,7 @@ install_cargo_sort() {
     echo -e "$Installing cargo-sort…"
     cargo install cargo-sort
     if ! cargo-sort --version >/dev/null 2>&1; then
-        echo -e "$Could not install cargo-sort"
+        echo -e "$Could_not install cargo-sort"
         exit 2
     fi
 }
@@ -762,7 +758,7 @@ esac; shift; done
 if [[ $git_staged -eq 1 ]]; then
    staged_files=`git diff --name-only --cached`
    if [[ -z $staged_files ]]; then
-      echo -e "$Could not check files because none where staged"
+      echo -e "$Could_not check files because none where staged"
       exit 2
    fi
 else
@@ -783,31 +779,20 @@ run_cargo_deny
 echo ""
 check_potfiles
 echo ""
-if [[ $git_staged -eq 1 ]]; then
-   staged_files=`git diff --name-only --cached | xargs ls -d 2>/dev/null | grep data/resources/resources.gresource.xml`
-   if [[ -z $staged_files ]]; then
-        check_resources "data/resources/resources.gresource.xml"
-   fi
-else
-   check_resources "data/resources/resources.gresource.xml"
-fi
-echo ""
 if [[ -n $staged_files ]]; then
-   if [[ $staged_files = *src/blp-resources.in* ]]; then
-        check_blp_resources
-   fi
+    if [[ $staged_files = *src/ui-blueprint-resources.in* ]]; then
+        check_blueprint_resources
+        echo ""
+    fi
+    if [[ $staged_files = *data/resources/resources.gresource.xml* ]]; then
+        check_resources "data/resources/resources.gresource.xml"
+        echo ""
+    fi
 else
-   check_blp_resources
+    check_blueprint_resources
+    echo ""
+    check_resources "data/resources/resources.gresource.xml"
+    echo ""
 fi
-echo ""
-if [[ $git_staged -eq 1 ]]; then
-   staged_files=`git diff --name-only --cached | xargs ls -d 2>/dev/null | grep src/ui-resources.gresource.xml`
-   if [[ -z $staged_files ]]; then
-        check_resources "src/ui-resources.gresource.xml"
-   fi
-else
-   check_resources "src/ui-resources.gresource.xml"
-fi
-echo ""
 run_cargo_sort
 echo ""
