@@ -761,13 +761,11 @@ mod imp {
                 return;
             };
 
-            let join_rule_can_be_edited = room.join_rule().value().can_be_edited();
-            let can_change = room
-                .permissions()
-                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomJoinRules));
-
-            self.join_rule
-                .set_activatable(join_rule_can_be_edited && can_change);
+            let can_change = room.join_rule().value().can_be_edited()
+                && room
+                    .permissions()
+                    .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomJoinRules));
+            self.join_rule.set_activatable(can_change);
         }
 
         /// Update the guest access row.
