@@ -1042,7 +1042,8 @@ mod imp {
                 return;
             };
 
-            let can_upgrade = !room.is_tombstoned()
+            let can_upgrade = !room.is_direct()
+                && !room.is_tombstoned()
                 && room
                     .permissions()
                     .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomTombstone))
