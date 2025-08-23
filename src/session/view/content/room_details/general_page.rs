@@ -1020,7 +1020,7 @@ mod imp {
                     .then(|| room_info.creators())
                     .flatten();
 
-                UpgradeInfo::new()
+                UpgradeInfo::new(room.join_rule().value())
                     .with_room_versions(
                         &create_content.room_version,
                         &self.capabilities.borrow().room_versions,

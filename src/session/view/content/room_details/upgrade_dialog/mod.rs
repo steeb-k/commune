@@ -13,6 +13,7 @@ use tracing::error;
 mod room_version;
 
 use self::room_version::RoomVersion;
+use crate::session::model::JoinRuleValue;
 
 mod imp {
     use std::cell::{OnceCell, RefCell};
@@ -29,7 +30,9 @@ mod imp {
         #[template_child]
         version_combo: TemplateChild<adw::ComboRow>,
         #[template_child]
-        warning_label: TemplateChild<gtk::Label>,
+        invite_only_warning_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        creators_warning_label: TemplateChild<gtk::Label>,
         header_factory: OnceCell<gtk::SignalListItemFactory>,
         /// The sender for the response of the user.
         sender: RefCell<Option<oneshot::Sender<Option<RoomVersionId>>>>,
@@ -134,7 +137,8 @@ mod imp {
             parent: &gtk::Widget,
         ) -> Option<RoomVersionId> {
             self.update_version_combo(info);
-            self.update_warning(info);
+            self.update_invite_only_warning(info);
+            self.update_creators_warning(info);
 
             let (sender, receiver) = oneshot::channel();
             self.sender.replace(Some(sender));
@@ -181,11 +185,17 @@ mod imp {
                 .set_selected(info.selected.try_into().unwrap_or(u32::MAX));
         }
 
-        /// Update the warning.
-        fn update_warning(&self, info: &UpgradeInfo) {
+        /// Update the invite-only warning.
+        fn update_invite_only_warning(&self, info: &UpgradeInfo) {
+            self.invite_only_warning_label
+                .set_visible(info.join_rule == JoinRuleValue::Invite);
+        }
+
+        /// Update the creators warning.
+        fn update_creators_warning(&self, info: &UpgradeInfo) {
             if info.other_creators_count == 0 {
                 // We are not changing the list of privileged creators.
-                self.warning_label.set_visible(false);
+                self.creators_warning_label.set_visible(false);
                 return;
             }
 
@@ -205,8 +215,8 @@ mod imp {
                 )
             };
 
-            self.warning_label.set_label(&text);
-            self.warning_label.set_visible(true);
+            self.creators_warning_label.set_label(&text);
+            self.creators_warning_label.set_visible(true);
         }
 
         /// Confirm the upgrade.
@@ -264,7 +274,7 @@ impl UpgradeDialog {
 }
 
 /// The information necessary for [`UpgradeDialog`].
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct UpgradeInfo {
     /// The sorted stable room versions available for the upgrade.
     pub(crate) stable_room_versions: Vec<RoomVersionId>,
@@ -279,12 +289,21 @@ pub(crate) struct UpgradeInfo {
     /// The number of privileged creators that are not our own user in the
     /// current room.
     pub(crate) other_creators_count: usize,
+    /// The current join rule of the room.
+    pub(crate) join_rule: JoinRuleValue,
 }
 
 impl UpgradeInfo {
     /// Construct an empty `UpgradeInfo`.
-    pub(crate) fn new() -> Self {
-        Self::default()
+    pub(crate) fn new(join_rule: JoinRuleValue) -> Self {
+        Self {
+            stable_room_versions: vec![],
+            unstable_room_versions: vec![],
+            selected: 0,
+            own_user_is_creator: false,
+            other_creators_count: 0,
+            join_rule,
+        }
     }
 
     /// Add information about the possible room versions for the upgrade.

@@ -84,7 +84,22 @@ template $RoomDetailsUpgradeDialog: Adw.Dialog {
             }
           }
 
-          Gtk.Label warning_label {
+          Gtk.Label invite_only_warning_label {
+            vexpand: true;
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            xalign: 0.5;
+            max-width-chars: 60;
+            label: _("After the upgrade, you will be the only member of the room and other members will need to be re-invited manually. This could be avoided by using third-party upgrade tooling that handles this for you.");
+
+            styles [
+              "warning",
+              "body",
+            ]
+          }
+
+          Gtk.Label creators_warning_label {
             vexpand: true;
             wrap: true;
             wrap-mode: word_char;
