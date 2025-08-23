@@ -198,6 +198,10 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
       subtitle: bind template.room as <$Room>.join-rule as <$RoomJoinRule>.display-name;
       action-name: "details.show-subpage";
       action-target: "'join-rule'";
+
+      styles [
+        "property",
+      ]
     }
 
     $SwitchLoadingRow guest_access {
