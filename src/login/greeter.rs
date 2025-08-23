@@ -10,10 +10,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/login/greeter.ui")]
-    pub struct Greeter {
-        #[template_child]
-        login_button: TemplateChild<gtk::Button>,
-    }
+    pub struct Greeter {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for Greeter {
