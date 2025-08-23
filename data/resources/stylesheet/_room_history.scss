@@ -270,7 +270,7 @@ state-group-row.room-history-row {
   }
 }
 
-message-visual-media {
+message-location, message-visual-media {
   border-radius: vendor.$menu_radius;
 
   @include vendor.focus-ring();
