@@ -12,7 +12,7 @@ use tokio::task::AbortHandle;
 use tracing::error;
 
 use super::{Room, Session};
-use crate::{spawn, spawn_tokio};
+use crate::{session::model::JoinRuleValue, spawn, spawn_tokio};
 
 /// We default the media previews setting to private.
 const DEFAULT_MEDIA_PREVIEWS: MediaPreviews = MediaPreviews::Private;
@@ -271,7 +271,10 @@ impl GlobalAccountData {
     pub(crate) fn should_room_show_media_previews(&self, room: &Room) -> bool {
         match &*self.imp().media_previews_enabled.borrow() {
             MediaPreviews::Off => false,
-            MediaPreviews::Private => !room.join_rule().anyone_can_join(),
+            MediaPreviews::Private => matches!(
+                room.join_rule().value(),
+                JoinRuleValue::Invite | JoinRuleValue::RoomMembership
+            ),
             _ => true,
         }
     }

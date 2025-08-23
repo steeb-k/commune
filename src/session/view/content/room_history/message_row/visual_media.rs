@@ -475,7 +475,7 @@ mod imp {
                 return;
             };
 
-            let join_rule_handler = room.join_rule().connect_anyone_can_join_notify(clone!(
+            let join_rule_handler = room.join_rule().connect_value_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
