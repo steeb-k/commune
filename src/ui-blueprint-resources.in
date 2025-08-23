@@ -32,7 +32,6 @@ components/power_level_selection/popover.blp
 components/power_level_selection/row.blp
 components/rows/button_count_row.blp
 components/rows/check_loading_row.blp
-components/rows/combo_loading_row.blp
 components/rows/copyable_row.blp
 components/rows/entry_add_row.blp
 components/rows/loading_button_row.blp
@@ -93,6 +92,7 @@ session/view/content/room_details/history_viewer/file.blp
 session/view/content/room_details/history_viewer/file_row.blp
 session/view/content/room_details/history_viewer/visual_media.blp
 session/view/content/room_details/history_viewer/visual_media_item.blp
+session/view/content/room_details/history_visibility_subpage.blp
 session/view/content/room_details/invite_subpage/mod.blp
 session/view/content/room_details/invite_subpage/row.blp
 session/view/content/room_details/join_rule_subpage.blp

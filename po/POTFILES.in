@@ -131,6 +131,8 @@ src/session/view/content/room_details/history_viewer/file_row.rs
 src/session/view/content/room_details/history_viewer/file_row.blp
 src/session/view/content/room_details/history_viewer/file.blp
 src/session/view/content/room_details/history_viewer/visual_media.blp
+src/session/view/content/room_details/history_visibility_subpage.blp
+src/session/view/content/room_details/history_visibility_subpage.rs
 src/session/view/content/room_details/invite_subpage/list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.blp

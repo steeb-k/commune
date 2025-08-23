@@ -214,18 +214,14 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
       notify::is-active => $toggle_publish() swapped;
     }
 
-    $ComboLoadingRow history_visibility {
+    $ButtonCountRow history_visibility {
       title: _("Who Can Read History");
-      notify::selected-string => $set_history_visibility() swapped;
+      action-name: "details.show-subpage";
+      action-target: "'history-visibility'";
 
-      string-model: Gtk.StringList {
-        strings [
-          _("Anyone, even if they are not in the room"),
-          _("Members only, since this option was selected"),
-          _("Members only, since they joined the room"),
-          _("Members only, since they were invited"),
-        ]
-      };
+      styles [
+        "property",
+      ]
     }
   }
 

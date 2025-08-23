@@ -15,7 +15,6 @@ use ruma::{
         StateEventType,
         room::{
             guest_access::{GuestAccess, RoomGuestAccessEventContent},
-            history_visibility::RoomHistoryVisibilityEventContent,
             power_levels::PowerLevelAction,
         },
     },
@@ -26,8 +25,7 @@ use super::{MemberRow, RoomDetails, UpgradeDialog, UpgradeInfo};
 use crate::{
     Window,
     components::{
-        Avatar, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
-        SwitchLoadingRow,
+        Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
@@ -96,7 +94,7 @@ mod imp {
         #[template_child]
         publish: TemplateChild<SwitchLoadingRow>,
         #[template_child]
-        history_visibility: TemplateChild<ComboLoadingRow>,
+        history_visibility: TemplateChild<ButtonCountRow>,
         #[template_child]
         encryption: TemplateChild<SwitchLoadingRow>,
         #[template_child]
@@ -917,18 +915,15 @@ mod imp {
             self.update_publish().await;
         }
 
-        /// Update the history visibility edit button.
+        /// Update the history visibility row.
         fn update_history_visibility(&self) {
             let Some(room) = self.room.obj() else {
                 return;
             };
 
-            let row = &self.history_visibility;
-            row.set_is_loading(false);
+            let history_visibility = room.history_visibility();
 
-            let visibility = room.history_visibility();
-
-            let text = match visibility {
+            let text = match history_visibility {
                 HistoryVisibilityValue::WorldReadable => {
                     gettext("Anyone, even if they are not in the room")
                 }
@@ -941,55 +936,16 @@ mod imp {
                 }
                 HistoryVisibilityValue::Unsupported => gettext("Unsupported rule"),
             };
-            row.set_selected_string(Some(text));
+            self.history_visibility.set_subtitle(&text);
 
-            let is_supported = visibility != HistoryVisibilityValue::Unsupported;
-            let can_change = room
-                .permissions()
-                .is_allowed_to(PowerLevelAction::SendState(
-                    StateEventType::RoomHistoryVisibility,
-                ));
+            let can_change = history_visibility != HistoryVisibilityValue::Unsupported
+                && room
+                    .permissions()
+                    .is_allowed_to(PowerLevelAction::SendState(
+                        StateEventType::RoomHistoryVisibility,
+                    ));
 
-            row.set_read_only(!is_supported || !can_change);
-        }
-
-        /// Set the history visibility of the room.
-        #[template_callback]
-        async fn set_history_visibility(&self) {
-            let Some(room) = self.room.obj() else {
-                return;
-            };
-            let row = &self.history_visibility;
-
-            let visibility = match row.selected() {
-                0 => HistoryVisibilityValue::WorldReadable,
-                1 => HistoryVisibilityValue::Shared,
-                2 => HistoryVisibilityValue::Joined,
-                3 => HistoryVisibilityValue::Invited,
-                _ => {
-                    return;
-                }
-            };
-
-            if room.history_visibility() == visibility {
-                // Nothing to do.
-                return;
-            }
-
-            row.set_is_loading(true);
-            row.set_read_only(true);
-
-            let content = RoomHistoryVisibilityEventContent::new(visibility.into());
-
-            let matrix_room = room.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
-
-            if let Err(error) = handle.await.unwrap() {
-                error!("Could not change room history visibility: {error}");
-                toast!(self.obj(), gettext("Could not change who can read history"));
-
-                self.update_history_visibility();
-            }
+            self.history_visibility.set_activatable(can_change);
         }
 
         /// Update the encryption row.

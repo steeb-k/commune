@@ -11,6 +11,7 @@ mod addresses_subpage;
 mod edit_details_subpage;
 mod general_page;
 mod history_viewer;
+mod history_visibility_subpage;
 mod invite_subpage;
 mod join_rule_subpage;
 mod member_row;
@@ -26,6 +27,7 @@ use self::{
     history_viewer::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, VisualMediaHistoryViewer,
     },
+    history_visibility_subpage::HistoryVisibilitySubpage,
     invite_subpage::InviteSubpage,
     join_rule_subpage::JoinRuleSubpage,
     member_row::MemberRow,
@@ -61,6 +63,8 @@ pub(super) enum SubpageName {
     Permissions,
     /// The page to edit the join rule of the room.
     JoinRule,
+    /// The page to edit the history visibility of the room.
+    HistoryVisibility,
 }
 
 /// The view to present when opening the room details.
@@ -241,6 +245,7 @@ mod imp {
                         PermissionsSubpage::new(&room.permissions()).upcast()
                     }
                     SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
+                    SubpageName::HistoryVisibility => HistoryVisibilitySubpage::new(room).upcast(),
                 })
                 .clone()
         }

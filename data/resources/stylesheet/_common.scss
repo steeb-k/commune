@@ -32,9 +32,14 @@ headerbar .suggested-action, .standalone-button {
 }
 
 .form-page {
-  scrolledwindow > viewport > clamp > box {
-    margin: 42px 12px;
-    border-spacing: 24px;
+  scrolledwindow > viewport > clamp {
+    > * {
+      margin: 42px 12px;
+    }
+
+    > box {
+      border-spacing: 24px;
+    }
   }
 
   levelbar.discrete block {
@@ -77,7 +82,7 @@ button.overlaid {
 }
 
 .avatar-row-list {
-  row {    
+  row {
     &:first-child {
       margin-top: 0px;
     }
