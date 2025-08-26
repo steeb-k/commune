@@ -2,19 +2,15 @@ using Gtk 4.0;
 using Adw 1;
 using GtkSource 5;
 
-template $EventDetailsDialog: $ToastableDialog {
-  title: _("Event Details");
+template $EventPropertiesDialog: $ToastableDialog {
+  title: _("Event Properties");
   content-width: 500;
   content-height: 400;
 
-  styles [
-    "event-details-dialog",
-  ]
-
   child-content: Adw.NavigationView navigation_view {
     Adw.NavigationPage {
-      title: _("Event Details");
-      tag: "details";
+      title: _("Event Properties");
+      tag: "properties";
 
       child: Adw.ToolbarView {
         [top]

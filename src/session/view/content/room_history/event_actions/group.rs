@@ -7,13 +7,11 @@ use matrix_sdk_ui::timeline::MembershipChange;
 use ruma::events::room::{message::MessageType, power_levels::PowerLevelUserAction};
 use tracing::error;
 
+use super::EventPropertiesDialog;
 use crate::{
     components::{RoomMemberDestructiveAction, confirm_room_member_destructive_action_dialog},
     prelude::*,
-    session::{
-        model::{Event, Membership, MessageState, Room},
-        view::EventDetailsDialog,
-    },
+    session::model::{Event, Membership, MessageState, Room},
     spawn, spawn_tokio, toast,
 };
 
@@ -67,8 +65,8 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                         }
                     ))
                     .build(),
-                // View event details.
-                gio::ActionEntry::builder("view-details")
+                // View event properties.
+                gio::ActionEntry::builder("properties")
                     .activate(clone!(
                         #[weak(rename_to = imp)]
                         self,
@@ -77,7 +75,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                                 return;
                             };
 
-                            let dialog = EventDetailsDialog::new(&event);
+                            let dialog = EventPropertiesDialog::new(&event);
                             dialog.present(Some(&*imp.obj()));
                         }
                     ))

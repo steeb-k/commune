@@ -109,6 +109,7 @@ session/view/content/room_details/permissions/select_member_row.blp
 session/view/content/room_details/upgrade_dialog/mod.blp
 session/view/content/room_history/divider_row.blp
 session/view/content/room_history/event_actions/context_menu.blp
+session/view/content/room_history/event_actions/properties_dialog.blp
 session/view/content/room_history/event_actions/quick_reaction_chooser.blp
 session/view/content/room_history/member_timestamp/row.blp
 session/view/content/room_history/message_row/audio.blp
@@ -136,7 +137,6 @@ session/view/content/room_history/typing_row.blp
 session/view/content/room_history/verification_info_bar.blp
 session/view/create_direct_chat_dialog/mod.blp
 session/view/create_room_dialog.blp
-session/view/event_details_dialog.blp
 session/view/media_viewer.blp
 session/view/session_view.blp
 session/view/sidebar/icon_item_row.blp

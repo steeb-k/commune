@@ -155,6 +155,8 @@ src/session/view/content/room_history/divider_row.rs
 src/session/view/content/room_history/event_actions/context_menu.rs
 src/session/view/content/room_history/event_actions/context_menu.blp
 src/session/view/content/room_history/event_actions/group.rs
+src/session/view/content/room_history/event_actions/properties_dialog.rs
+src/session/view/content/room_history/event_actions/properties_dialog.blp
 src/session/view/content/room_history/event_actions/quick_reaction_chooser.blp
 src/session/view/content/room_history/message_row/audio.rs
 src/session/view/content/room_history/message_row/content.rs
@@ -191,8 +193,6 @@ src/session/view/create_direct_chat_dialog/mod.rs
 src/session/view/create_direct_chat_dialog/mod.blp
 src/session/view/create_room_dialog.rs
 src/session/view/create_room_dialog.blp
-src/session/view/event_details_dialog.rs
-src/session/view/event_details_dialog.blp
 src/session/view/media_viewer.rs
 src/session/view/media_viewer.blp
 src/session/view/sidebar/mod.rs

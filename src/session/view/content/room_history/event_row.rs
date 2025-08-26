@@ -359,7 +359,7 @@ mod imp {
 
             if action_group
                 .as_ref()
-                .is_some_and(|action_group| action_group.has_action("view-details"))
+                .is_some_and(|action_group| action_group.has_action("properties"))
             {
                 if self.shortcut_controller.borrow().is_none() {
                     let shortcut_controller = gtk::ShortcutController::new();
@@ -368,7 +368,7 @@ mod imp {
                             gtk::ShortcutTrigger::parse_string("<Alt>Return")
                                 .expect("trigger string should be valid"),
                         ),
-                        gtk::ShortcutAction::parse_string("action(event.view-details)"),
+                        gtk::ShortcutAction::parse_string("action(event.properties)"),
                     ));
                     obj.add_controller(shortcut_controller.clone());
                     self.shortcut_controller.replace(Some(shortcut_controller));

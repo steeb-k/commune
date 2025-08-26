@@ -19,9 +19,11 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/event_details_dialog.ui")]
-    #[properties(wrapper_type = super::EventDetailsDialog)]
-    pub struct EventDetailsDialog {
+    #[template(
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions/properties_dialog.ui"
+    )]
+    #[properties(wrapper_type = super::EventPropertiesDialog)]
+    pub struct EventPropertiesDialog {
         /// The event that is displayed in the dialog.
         #[property(get, construct_only)]
         event: RefCell<Option<Event>>,
@@ -34,9 +36,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for EventDetailsDialog {
-        const NAME: &'static str = "EventDetailsDialog";
-        type Type = super::EventDetailsDialog;
+    impl ObjectSubclass for EventPropertiesDialog {
+        const NAME: &'static str = "EventPropertiesDialog";
+        type Type = super::EventPropertiesDialog;
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
@@ -53,7 +55,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for EventDetailsDialog {
+    impl ObjectImpl for EventPropertiesDialog {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -69,12 +71,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for EventDetailsDialog {}
-    impl AdwDialogImpl for EventDetailsDialog {}
-    impl ToastableDialogImpl for EventDetailsDialog {}
+    impl WidgetImpl for EventPropertiesDialog {}
+    impl AdwDialogImpl for EventPropertiesDialog {}
+    impl ToastableDialogImpl for EventPropertiesDialog {}
 
     #[gtk::template_callbacks]
-    impl EventDetailsDialog {
+    impl EventPropertiesDialog {
         /// View the given source.
         fn show_source(&self, title: &str, source: &str) {
             self.source_view.buffer().set_text(source);
@@ -139,12 +141,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A dialog showing the details of an event.
-    pub struct EventDetailsDialog(ObjectSubclass<imp::EventDetailsDialog>)
+    /// A dialog showing the properties of an event.
+    pub struct EventPropertiesDialog(ObjectSubclass<imp::EventPropertiesDialog>)
         @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
 }
 
-impl EventDetailsDialog {
+impl EventPropertiesDialog {
     pub fn new(event: &Event) -> Self {
         glib::Object::builder().property("event", event).build()
     }
