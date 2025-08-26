@@ -71,6 +71,15 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="12.1" type="stable" date="2025-08-26">
+      <description>
+        <p>
+          Our latest stable release had a regression where sending media with the unauthenticated
+          endpoints was failing. This new release fixes it, and provides a couple other papercut
+          fixes.
+        </p>
+      </description>
+    </release>
     <release version="12" type="stable" date="2025-08-11">
       <description>
         <p>
