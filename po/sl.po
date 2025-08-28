@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-25 21:11+0000\n"
-"PO-Revision-Date: 2025-08-26 09:12+0200\n"
+"POT-Creation-Date: 2025-08-28 07:16+0000\n"
+"PO-Revision-Date: 2025-08-28 16:31+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -601,8 +601,8 @@ msgstr "Zapusti"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:583
-#: src/session/view/content/room_history/event_actions/group.rs:647
+#: src/session/view/content/room_history/event_actions/group.rs:581
+#: src/session/view/content/room_history/event_actions/group.rs:645
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -741,7 +741,7 @@ msgstr[3] ""
 
 #: src/components/dialogs/message_dialogs.rs:232 src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:582
 msgid "Remove"
 msgstr "Odstrani"
 
@@ -762,7 +762,7 @@ msgstr ""
 "tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:629
+#: src/session/view/content/room_history/event_actions/group.rs:627
 msgid "Reason (optional)"
 msgstr "Razlog (neobvezno)"
 
@@ -1047,7 +1047,7 @@ msgstr "Vloge ni bilo mogoče spremeniti"
 msgid "Could not invite user"
 msgstr "Uporabnika ni bilo mogoče povabiti"
 
-#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:721
+#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:719
 msgid "Could not revoke invite of user"
 msgstr "Ni bilo mogoče preklicati povabila uporabnika"
 
@@ -3867,8 +3867,8 @@ msgid "Copy Message _Link"
 msgstr "Kopiraj povezavo sporoči_la"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:82
-msgid "_View Details"
-msgstr "_Pokaži podrobnosti"
+msgid "_Properties"
+msgstr "_Lastnosti"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:90
 msgid "_Discard"
@@ -3882,39 +3882,39 @@ msgstr "P_oročaj ..."
 msgid "Re_move"
 msgstr "_Odstrani"
 
-#: src/session/view/content/room_history/event_actions/group.rs:65 src/session/view/media_viewer.rs:499
+#: src/session/view/content/room_history/event_actions/group.rs:63 src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Povezava sporočila kopirana v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:339
+#: src/session/view/content/room_history/event_actions/group.rs:337
 msgid "Thumbnail copied to clipboard"
 msgstr "Sličica je kopirana v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:512
+#: src/session/view/content/room_history/event_actions/group.rs:510
 msgid "Text copied to clipboard"
 msgstr "Besedilo je kopirano v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:577
+#: src/session/view/content/room_history/event_actions/group.rs:575
 msgid "Remove Message?"
 msgstr "Želite odstraniti sporočilo?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:579
+#: src/session/view/content/room_history/event_actions/group.rs:577
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Ali res želite odstraniti to sporočilo? Tega ni mogoče razveljaviti."
 
-#: src/session/view/content/room_history/event_actions/group.rs:593
+#: src/session/view/content/room_history/event_actions/group.rs:591
 msgid "Could not remove message"
 msgstr "Sporočila ni bilo mogoče odstraniti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:608
+#: src/session/view/content/room_history/event_actions/group.rs:606
 msgid "Could not toggle reaction"
 msgstr "Odziva ni bilo mogoče preklopiti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:640
+#: src/session/view/content/room_history/event_actions/group.rs:638
 msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:642
+#: src/session/view/content/room_history/event_actions/group.rs:640
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator "
 "will not be able to see the content of the event if it is encrypted or redacted."
@@ -3923,21 +3923,109 @@ msgstr ""
 "videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:649
+#: src/session/view/content/room_history/event_actions/group.rs:647
 msgid "Report"
 msgstr "Poročilo"
 
-#: src/session/view/content/room_history/event_actions/group.rs:667
+#: src/session/view/content/room_history/event_actions/group.rs:665
 msgid "Could not report event"
 msgstr "Dogodka ni bilo mogoče prijaviti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:687
+#: src/session/view/content/room_history/event_actions/group.rs:685
 msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
-#: src/session/view/content/room_history/event_actions/group.rs:716
+#: src/session/view/content/room_history/event_actions/group.rs:714
 msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:108
+msgid "Original Event Source"
+msgstr "Izvirni vir dogodka"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:110
+msgid "Event Source"
+msgstr "Vir dogodka"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:124
+msgid "Latest Edit Source"
+msgstr "Najnovejši vir urejanja"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:138
+msgid "Source copied to clipboard"
+msgstr "Vir je kopiran v odložišče"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:6
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:12
+msgid "Event Properties"
+msgstr "Podrobnosti dogodka"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:40
+msgid "Original Event"
+msgstr "Izvirni dogodek"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:56
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:130
+msgid "Event ID"
+msgstr "ID dogodka"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:58
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:132
+msgid "Copy Event ID"
+msgstr "Kopiraj ID dogodka"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:59
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:133
+msgid "Event ID copied to clipboard"
+msgstr "ID dogodka je kopiran v odložišče"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:64
+msgid "Room ID"
+msgstr "ID klepetalnice"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:66
+msgid "Copy Room ID"
+msgstr "Kopiraj ID klepetalnice"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:67
+msgid "Room ID copied to clipboard"
+msgstr "ID klepetalnice je kopiran v odložišče"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:71
+msgid "Sender ID"
+msgstr "ID pošiljatelja"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:81
+msgid "Show Profile"
+msgstr "Pokaži profil"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:92
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:138
+msgid "Timestamp"
+msgstr "Časovni žig"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:94
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:140
+msgid "Copy Timestamp"
+msgstr "Kopiraj časovni žig"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:95
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:141
+msgid "Timestamp copied to clipboard"
+msgstr "Časovni žig je kopiran v odložišče"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:101
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:146
+msgid "View Source"
+msgstr "Poglej vir"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:114
+msgid "Latest Edit"
+msgstr "Zadnje urejanje"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:168
+msgid "Copy Source"
+msgstr "Kopiraj vir"
 
 #: src/session/view/content/room_history/event_actions/quick_reaction_chooser.blp:15
 msgid "Send a Reaction"
@@ -4575,86 +4663,6 @@ msgstr "Pozneje ni mogoče onemogočiti"
 #: src/session/view/create_room_dialog.blp:155
 msgid "_Create Room"
 msgstr "_Ustvari klepetalnico"
-
-#: src/session/view/event_details_dialog.rs:106
-msgid "Original Event Source"
-msgstr "Izvirni vir dogodka"
-
-#: src/session/view/event_details_dialog.rs:108
-msgid "Event Source"
-msgstr "Vir dogodka"
-
-#: src/session/view/event_details_dialog.rs:122
-msgid "Latest Edit Source"
-msgstr "Najnovejši vir urejanja"
-
-#: src/session/view/event_details_dialog.rs:136
-msgid "Source copied to clipboard"
-msgstr "Vir je kopiran v odložišče"
-
-#: src/session/view/event_details_dialog.blp:6 src/session/view/event_details_dialog.blp:16
-msgid "Event Details"
-msgstr "Podrobnosti dogodka"
-
-#: src/session/view/event_details_dialog.blp:44
-msgid "Original Event"
-msgstr "Izvirni dogodek"
-
-#: src/session/view/event_details_dialog.blp:60 src/session/view/event_details_dialog.blp:134
-msgid "Event ID"
-msgstr "ID dogodka"
-
-#: src/session/view/event_details_dialog.blp:62 src/session/view/event_details_dialog.blp:136
-msgid "Copy Event ID"
-msgstr "Kopiraj ID dogodka"
-
-#: src/session/view/event_details_dialog.blp:63 src/session/view/event_details_dialog.blp:137
-msgid "Event ID copied to clipboard"
-msgstr "ID dogodka je kopiran v odložišče"
-
-#: src/session/view/event_details_dialog.blp:68
-msgid "Room ID"
-msgstr "ID klepetalnice"
-
-#: src/session/view/event_details_dialog.blp:70
-msgid "Copy Room ID"
-msgstr "Kopiraj ID klepetalnice"
-
-#: src/session/view/event_details_dialog.blp:71
-msgid "Room ID copied to clipboard"
-msgstr "ID klepetalnice je kopiran v odložišče"
-
-#: src/session/view/event_details_dialog.blp:75
-msgid "Sender ID"
-msgstr "ID pošiljatelja"
-
-#: src/session/view/event_details_dialog.blp:85
-msgid "Show Profile"
-msgstr "Pokaži profil"
-
-#: src/session/view/event_details_dialog.blp:96 src/session/view/event_details_dialog.blp:142
-msgid "Timestamp"
-msgstr "Časovni žig"
-
-#: src/session/view/event_details_dialog.blp:98 src/session/view/event_details_dialog.blp:144
-msgid "Copy Timestamp"
-msgstr "Kopiraj časovni žig"
-
-#: src/session/view/event_details_dialog.blp:99 src/session/view/event_details_dialog.blp:145
-msgid "Timestamp copied to clipboard"
-msgstr "Časovni žig je kopiran v odložišče"
-
-#: src/session/view/event_details_dialog.blp:105 src/session/view/event_details_dialog.blp:150
-msgid "View Source"
-msgstr "Poglej vir"
-
-#: src/session/view/event_details_dialog.blp:118
-msgid "Latest Edit"
-msgstr "Zadnje urejanje"
-
-#: src/session/view/event_details_dialog.blp:172
-msgid "Copy Source"
-msgstr "Kopiraj vir"
 
 #: src/session/view/media_viewer.rs:466
 msgid "Image copied to clipboard"
