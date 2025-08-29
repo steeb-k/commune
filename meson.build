@@ -1,8 +1,10 @@
-project('fractal',
-        'rust',
-        version: '12.1',
-        license: 'GPL-3.0-or-later',
-        meson_version: '>= 1.2')
+project(
+    'fractal',
+    'rust',
+    version: '12.1',
+    license: 'GPL-3.0-or-later',
+    meson_version: '>= 1.2',
+)
 
 fs = import('fs')
 gnome = import('gnome')
@@ -16,12 +18,12 @@ pre_release_version = ''
 
 version = major_version
 if pre_release_version != ''
-  version += '.' + pre_release_version
+    version += '.' + pre_release_version
 endif
 full_version = version
 
-dependency('glib-2.0', version: '>= 2.82') # update when changing gtk version
-dependency('gio-2.0', version: '>= 2.82') # always same version as glib
+dependency('glib-2.0', version: '>= 2.82')  # update when changing gtk version
+dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
 dependency('gtk4', version: '>= 4.19.3')
 dependency('libadwaita-1', version: '>= 1.8.beta')
 
@@ -43,8 +45,8 @@ dependency('lcms2', version: '>=2.12.0')
 
 # Linux-only dependencies
 if build_machine.system() == 'linux'
-  # Required by glycin crate
-  dependency('libseccomp', version: '>= 2.5.0')
+    # Required by glycin crate
+    dependency('libseccomp', version: '>= 2.5.0')
 endif
 
 # When the `build-env` profile is used, we only want to set up the build
@@ -59,14 +61,24 @@ rustc_version = run_command('rustc', '--version', check: true).stdout().strip()
 message(rustc_version)
 
 if not build_env_only
-  glib_compile_resources = find_program('glib-compile-resources', required: true)
-  glib_compile_schemas = find_program('glib-compile-schemas', required: true)
-  desktop_file_validate = find_program('desktop-file-validate', required: false)
-  appstreamcli = find_program('appstreamcli', required: false)
+    glib_compile_resources = find_program(
+        'glib-compile-resources',
+        required: true,
+    )
+    glib_compile_schemas = find_program('glib-compile-schemas', required: true)
+    desktop_file_validate = find_program(
+        'desktop-file-validate',
+        required: false,
+    )
+    appstreamcli = find_program('appstreamcli', required: false)
 
-  blueprint_compiler = find_program('blueprint-compiler', required: true)
-  blueprint_compiler_version = run_command('blueprint-compiler', '--version', check: true).stdout().strip()
-  message('blueprint-compiler ' + blueprint_compiler_version)
+    blueprint_compiler = find_program('blueprint-compiler', required: true)
+    blueprint_compiler_version = run_command(
+        'blueprint-compiler',
+        '--version',
+        check: true,
+    ).stdout().strip()
+    message('blueprint-compiler ' + blueprint_compiler_version)
 endif
 
 prefix = get_option('prefix')
@@ -80,42 +92,42 @@ podir = meson.project_source_root() / 'po'
 gettext_package = meson.project_name()
 
 if get_option('profile') == 'development' or build_env_only
-  profile = 'Devel'
-  application_id += '.Devel'
+    profile = 'Devel'
+    application_id += '.Devel'
 elif get_option('profile') == 'hack'
-  profile = 'Devel'
-  application_id += '.Hack'
+    profile = 'Devel'
+    application_id += '.Hack'
 elif get_option('profile') == 'beta'
-  profile = 'Beta'
+    profile = 'Beta'
 else
-  profile = 'Stable'
+    profile = 'Stable'
 endif
 
 if profile == 'Devel'
-  vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD').stdout().strip()
-  if vcs_tag == ''
-    devel_version = profile.to_lower()
-  else
-    devel_version = vcs_tag
-  endif
-  full_version += '-' + devel_version
+    vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD').stdout().strip()
+    if vcs_tag == ''
+        devel_version = profile.to_lower()
+    else
+        devel_version = vcs_tag
+    endif
+    full_version += '-' + devel_version
 
-  release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
+    release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
 
-  # Setup pre-commit hook for ensuring coding style is always consistent
-  message('Setting up git pre-commit hook…')
-  run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
+    # Setup pre-commit hook for ensuring coding style is always consistent
+    message('Setting up git pre-commit hook…')
+    run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
 endif
 
 if not build_env_only
-  subdir('data')
-  subdir('po')
+    subdir('data')
+    subdir('po')
 endif
 
 subdir('src')
 
 gnome.post_install(
-  gtk_update_icon_cache: true,
-  glib_compile_schemas: true,
-  update_desktop_database: true,
+    gtk_update_icon_cache: true,
+    glib_compile_schemas: true,
+    update_desktop_database: true,
 )
