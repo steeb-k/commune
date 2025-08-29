@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-26 07:13+0000\n"
-"PO-Revision-Date: 2025-08-26 20:26+0300\n"
+"POT-Creation-Date: 2025-08-29 08:59+0000\n"
+"PO-Revision-Date: 2025-08-29 21:37+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -692,8 +692,8 @@ msgstr "Полишити"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:583
-#: src/session/view/content/room_history/event_actions/group.rs:647
+#: src/session/view/content/room_history/event_actions/group.rs:581
+#: src/session/view/content/room_history/event_actions/group.rs:645
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -845,7 +845,7 @@ msgstr[3] ""
 #: src/components/dialogs/message_dialogs.rs:232
 #: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:582
 msgid "Remove"
 msgstr "Вилучити"
 
@@ -867,7 +867,7 @@ msgstr ""
 "журналі кімнати."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:629
+#: src/session/view/content/room_history/event_actions/group.rs:627
 msgid "Reason (optional)"
 msgstr "Причина (необов'язкова)"
 
@@ -1061,11 +1061,8 @@ msgid "Back"
 msgstr "Назад"
 
 #: src/components/dialogs/room_preview.blp:70
-#| msgid "Enter a room ID, room alias, or link to look up a room"
 msgid "Enter an address or link to look up a room"
-msgstr ""
-"Введіть адресу або посилання, "
-"щоб виконати пошук кімнати"
+msgstr "Введіть адресу або посилання, щоб виконати пошук кімнати"
 
 #: src/components/dialogs/user_profile.blp:5
 msgid "User Profile"
@@ -1195,7 +1192,7 @@ msgid "Could not invite user"
 msgstr "Не вдалося запросити користувача"
 
 #: src/components/user_page.rs:554
-#: src/session/view/content/room_history/event_actions/group.rs:721
+#: src/session/view/content/room_history/event_actions/group.rs:719
 msgid "Could not revoke invite of user"
 msgstr "Не вдалося відкликати запрошення користувача"
 
@@ -4091,9 +4088,9 @@ msgid ""
 "will need to be re-invited manually. This could be avoided by using third-"
 "party upgrade tooling that handles this for you."
 msgstr ""
-"Після оновлення ви лишитеся єдиним учасником кімнати, а інших учасників"
-" доведеться повторно запросити вручну. Цього можна уникнути за допомогою"
-" сторонніх інструментів оновлення, які виконають ці дії за вас."
+"Після оновлення ви лишитеся єдиним учасником кімнати, а інших учасників "
+"доведеться повторно запросити вручну. Цього можна уникнути за допомогою "
+"сторонніх інструментів оновлення, які виконають ці дії за вас."
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:137
@@ -4176,8 +4173,10 @@ msgid "Copy Message _Link"
 msgstr "Копіювати п_осилання на повідомлення"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:82
-msgid "_View Details"
-msgstr "_Переглянути подробиці"
+#| msgctxt "shortcut window"
+#| msgid "Event Properties"
+msgid "_Properties"
+msgstr "В_ластивості"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:90
 msgid "_Discard"
@@ -4191,42 +4190,42 @@ msgstr "Пос_каржитися…"
 msgid "Re_move"
 msgstr "В_илучити"
 
-#: src/session/view/content/room_history/event_actions/group.rs:65
+#: src/session/view/content/room_history/event_actions/group.rs:63
 #: src/session/view/media_viewer.rs:499
 msgid "Message link copied to clipboard"
 msgstr "Посилання на повідомлення скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/event_actions/group.rs:339
+#: src/session/view/content/room_history/event_actions/group.rs:337
 msgid "Thumbnail copied to clipboard"
 msgstr "Мініатюру скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/event_actions/group.rs:512
+#: src/session/view/content/room_history/event_actions/group.rs:510
 msgid "Text copied to clipboard"
 msgstr "Текст скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/event_actions/group.rs:577
+#: src/session/view/content/room_history/event_actions/group.rs:575
 msgid "Remove Message?"
 msgstr "Вилучити повідомлення?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:579
+#: src/session/view/content/room_history/event_actions/group.rs:577
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути "
 "скасовано."
 
-#: src/session/view/content/room_history/event_actions/group.rs:593
+#: src/session/view/content/room_history/event_actions/group.rs:591
 msgid "Could not remove message"
 msgstr "Не вдалося вилучити повідомлення"
 
-#: src/session/view/content/room_history/event_actions/group.rs:608
+#: src/session/view/content/room_history/event_actions/group.rs:606
 msgid "Could not toggle reaction"
 msgstr "Не вдалося перемкнути реакцію"
 
-#: src/session/view/content/room_history/event_actions/group.rs:640
+#: src/session/view/content/room_history/event_actions/group.rs:638
 msgid "Report Event?"
 msgstr "Поскаржитися на подію?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:642
+#: src/session/view/content/room_history/event_actions/group.rs:640
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -4237,21 +4236,111 @@ msgstr ""
 "вміст події, якщо його було зашифровано або змінено внаслідок редагування."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:649
+#: src/session/view/content/room_history/event_actions/group.rs:647
 msgid "Report"
 msgstr "Поскаржитися"
 
-#: src/session/view/content/room_history/event_actions/group.rs:667
+#: src/session/view/content/room_history/event_actions/group.rs:665
 msgid "Could not report event"
 msgstr "Не вдалося поскаржитися на подію"
 
-#: src/session/view/content/room_history/event_actions/group.rs:687
+#: src/session/view/content/room_history/event_actions/group.rs:685
 msgid "Could not discard message"
 msgstr "Не вдалося відкинути повідомлення"
 
-#: src/session/view/content/room_history/event_actions/group.rs:716
+#: src/session/view/content/room_history/event_actions/group.rs:714
 msgid "Revoking invite…"
 msgstr "Відкликаємо запрошення…"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:108
+msgid "Original Event Source"
+msgstr "Початкове джерело події"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:110
+msgid "Event Source"
+msgstr "Джерело подій"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:124
+msgid "Latest Edit Source"
+msgstr "Найсвіжіше джерело редагування"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.rs:138
+msgid "Source copied to clipboard"
+msgstr "Джерело скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:6
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:12
+#| msgctxt "shortcut window"
+#| msgid "Event Properties"
+msgid "Event Properties"
+msgstr "Властивості події"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:40
+msgid "Original Event"
+msgstr "Початкова подія"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:56
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:130
+msgid "Event ID"
+msgstr "Ід. події"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:58
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:132
+msgid "Copy Event ID"
+msgstr "Скопіювати ідентифікатор події"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:59
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:133
+msgid "Event ID copied to clipboard"
+msgstr "Ідентифікатор події скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:64
+msgid "Room ID"
+msgstr "Ід. кімнати"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:66
+msgid "Copy Room ID"
+msgstr "Скопіювати ідентифікатор кімнати"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:67
+msgid "Room ID copied to clipboard"
+msgstr "Ідентифікатор кімнати скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:71
+msgid "Sender ID"
+msgstr "Ід. відправника"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:81
+msgid "Show Profile"
+msgstr "Показати профіль"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:92
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:138
+msgid "Timestamp"
+msgstr "Часова позначка"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:94
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:140
+msgid "Copy Timestamp"
+msgstr "Скопіювати часову позначку"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:95
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:141
+msgid "Timestamp copied to clipboard"
+msgstr "Часову позначку скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:101
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:146
+msgid "View Source"
+msgstr "Перегляд джерела"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:114
+msgid "Latest Edit"
+msgstr "Найсвіжіше редагування"
+
+#: src/session/view/content/room_history/event_actions/properties_dialog.blp:168
+msgid "Copy Source"
+msgstr "Скопіювати джерело"
 
 #: src/session/view/content/room_history/event_actions/quick_reaction_chooser.blp:15
 msgid "Send a Reaction"
@@ -4901,94 +4990,6 @@ msgstr "Не можна вимикати пізніше"
 msgid "_Create Room"
 msgstr "С_творити кімнату"
 
-#: src/session/view/event_details_dialog.rs:106
-msgid "Original Event Source"
-msgstr "Початкове джерело події"
-
-#: src/session/view/event_details_dialog.rs:108
-msgid "Event Source"
-msgstr "Джерело подій"
-
-#: src/session/view/event_details_dialog.rs:122
-msgid "Latest Edit Source"
-msgstr "Найсвіжіше джерело редагування"
-
-#: src/session/view/event_details_dialog.rs:136
-msgid "Source copied to clipboard"
-msgstr "Джерело скопійовано до буфера обміну"
-
-#: src/session/view/event_details_dialog.blp:6
-#: src/session/view/event_details_dialog.blp:16
-msgid "Event Details"
-msgstr "Подробиці події"
-
-#: src/session/view/event_details_dialog.blp:44
-msgid "Original Event"
-msgstr "Початкова подія"
-
-#: src/session/view/event_details_dialog.blp:60
-#: src/session/view/event_details_dialog.blp:134
-msgid "Event ID"
-msgstr "Ід. події"
-
-#: src/session/view/event_details_dialog.blp:62
-#: src/session/view/event_details_dialog.blp:136
-msgid "Copy Event ID"
-msgstr "Скопіювати ідентифікатор події"
-
-#: src/session/view/event_details_dialog.blp:63
-#: src/session/view/event_details_dialog.blp:137
-msgid "Event ID copied to clipboard"
-msgstr "Ідентифікатор події скопійовано до буфера обміну"
-
-#: src/session/view/event_details_dialog.blp:68
-msgid "Room ID"
-msgstr "Ід. кімнати"
-
-#: src/session/view/event_details_dialog.blp:70
-msgid "Copy Room ID"
-msgstr "Скопіювати ідентифікатор кімнати"
-
-#: src/session/view/event_details_dialog.blp:71
-msgid "Room ID copied to clipboard"
-msgstr "Ідентифікатор кімнати скопійовано до буфера обміну"
-
-#: src/session/view/event_details_dialog.blp:75
-msgid "Sender ID"
-msgstr "Ід. відправника"
-
-#: src/session/view/event_details_dialog.blp:85
-msgid "Show Profile"
-msgstr "Показати профіль"
-
-#: src/session/view/event_details_dialog.blp:96
-#: src/session/view/event_details_dialog.blp:142
-msgid "Timestamp"
-msgstr "Часова позначка"
-
-#: src/session/view/event_details_dialog.blp:98
-#: src/session/view/event_details_dialog.blp:144
-msgid "Copy Timestamp"
-msgstr "Скопіювати часову позначку"
-
-#: src/session/view/event_details_dialog.blp:99
-#: src/session/view/event_details_dialog.blp:145
-msgid "Timestamp copied to clipboard"
-msgstr "Часову позначку скопійовано до буфера обміну"
-
-#: src/session/view/event_details_dialog.blp:105
-#: src/session/view/event_details_dialog.blp:150
-msgid "View Source"
-msgstr "Перегляд джерела"
-
-#: src/session/view/event_details_dialog.blp:118
-msgid "Latest Edit"
-msgstr "Найсвіжіше редагування"
-
-#: src/session/view/event_details_dialog.blp:172
-msgid "Copy Source"
-msgstr "Скопіювати джерело"
-
 #: src/session/view/media_viewer.rs:466
 msgid "Image copied to clipboard"
 msgstr "Зображення скопійовано до буфера обміну"
@@ -5213,26 +5214,21 @@ msgid "General"
 msgstr "Загальні"
 
 #: src/shortcuts-dialog.blp:9
-#| msgctxt "shortcut window"
-#| msgid "Search Room List"
 msgctxt "shortcut window"
 msgid "Search Room by Address or Link"
 msgstr "Шукати кімнату за адресою або посиланням"
 
 #: src/shortcuts-dialog.blp:14
-#| msgid "Account Settings"
 msgctxt "shortcut window"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
 #: src/shortcuts-dialog.blp:19
-#| msgid "Main Menu"
 msgctxt "shortcut window"
 msgid "Open Menu"
 msgstr "Відкрити меню"
 
 #: src/shortcuts-dialog.blp:24
-#| msgid "_Keyboard Shortcuts"
 msgctxt "shortcut window"
 msgid "Keyboard Shortcuts"
 msgstr "Клавіатурні скорочення"
@@ -5248,7 +5244,6 @@ msgid "Quit"
 msgstr "Завершити"
 
 #: src/shortcuts-dialog.blp:40
-#| msgid "Room List"
 msgctxt "shortcut window"
 msgid "Room List"
 msgstr "Список кімнат"
@@ -5259,46 +5254,36 @@ msgid "Search Room List"
 msgstr "Шукати у списку кімнат"
 
 #: src/shortcuts-dialog.blp:48
-#| msgid "New Room"
 msgctxt "shortcut window"
 msgid "Next Room"
 msgstr "Наступна кімната"
 
 #: src/shortcuts-dialog.blp:53
-#| msgid "Previous room"
 msgctxt "shortcut window"
 msgid "Previous Room"
 msgstr "Попередня кімната"
 
 #: src/shortcuts-dialog.blp:60
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "First Room With Unread Messages"
 msgstr "Перша кімната із непрочитаними повідомленнями"
 
 #: src/shortcuts-dialog.blp:65
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "Next Room With Unread Messages"
 msgstr "Наступна кімната з непрочитаними повідомленнями"
 
 #: src/shortcuts-dialog.blp:70
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "Previous Room With Unread Messages"
 msgstr "Попередня кімната з непрочитаними повідомленнями"
 
 #: src/shortcuts-dialog.blp:76
-#| msgid "Room History"
 msgctxt "shortcut window"
 msgid "Room History"
 msgstr "Журнал кімнати"
 
 #: src/shortcuts-dialog.blp:79
-#| msgid "Event Details"
 msgctxt "shortcut window"
 msgid "Event Properties"
 msgstr "Властивості події"
@@ -5397,6 +5382,12 @@ msgstr "файл"
 #: src/window.blp:80
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "_View Details"
+#~ msgstr "_Переглянути подробиці"
+
+#~ msgid "Event Details"
+#~ msgstr "Подробиці події"
 
 #~ msgctxt "shortcut window"
 #~ msgid "Show Shortcuts"
