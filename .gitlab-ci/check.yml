@@ -26,4 +26,4 @@ flatpak-checks:
     # Lint the Blueprint files
     - echo "blueprint-compiler format ../src" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
     # Lint the Meson files
-    - echo "meson format -qr" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+    - echo "meson format -qr .." | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
