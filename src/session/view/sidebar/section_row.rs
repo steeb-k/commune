@@ -1,6 +1,6 @@
-use adw::subclass::prelude::BinImpl;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone};
 
 use crate::{
     session::model::{HighlightFlags, RoomCategory, SidebarSection, SidebarSectionName},
@@ -17,7 +17,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/section_row.ui")]
     #[properties(wrapper_type = super::SidebarSectionRow)]
     pub struct SidebarSectionRow {
@@ -228,7 +228,8 @@ mod imp {
 glib::wrapper! {
     /// A sidebar row representing a category.
     pub struct SidebarSectionRow(ObjectSubclass<imp::SidebarSectionRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SidebarSectionRow {

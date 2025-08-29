@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone};
 
 use super::reaction::MessageReaction;
 use crate::session::model::{MemberList, ReactionList};
@@ -9,7 +9,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reaction_list.ui"
     )]
@@ -67,7 +67,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying the reactions of a message.
     pub struct MessageReactionList(ObjectSubclass<imp::MessageReactionList>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageReactionList {

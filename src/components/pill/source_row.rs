@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::{AtRoom, Avatar, AvatarImageSafetySetting, PillSource};
 use crate::session::model::Room;
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/pill/source_row.ui")]
     #[properties(wrapper_type = super::PillSourceRow)]
     pub struct PillSourceRow {
@@ -76,7 +76,8 @@ mod imp {
 glib::wrapper! {
     /// A list row to display a [`PillSource`].
     pub struct PillSourceRow(ObjectSubclass<imp::PillSourceRow>)
-        @extends gtk::Widget, gtk::ListBoxRow;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl PillSourceRow {

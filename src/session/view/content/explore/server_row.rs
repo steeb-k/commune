@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::ExploreServer;
 use crate::utils::TemplateCallbacks;
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/server_row.ui")]
     #[properties(wrapper_type = super::ExploreServerRow)]
     pub struct ExploreServerRow {
@@ -60,7 +60,8 @@ mod imp {
 glib::wrapper! {
     /// A row representing a server to explore.
     pub struct ExploreServerRow(ObjectSubclass<imp::ExploreServerRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl ExploreServerRow {

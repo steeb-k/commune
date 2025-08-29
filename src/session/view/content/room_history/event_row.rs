@@ -387,7 +387,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an event in the room history.
     pub struct EventRow(ObjectSubclass<imp::EventRow>)
-        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl EventRow {

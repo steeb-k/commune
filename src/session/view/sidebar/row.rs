@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
+use gtk::{gdk, gio, glib, glib::clone};
 use ruma::api::client::receipt::create_receipt::v3::ReceiptType;
 use tracing::error;
 
@@ -174,7 +174,9 @@ mod imp {
                 if let Some(section) = item.downcast_ref::<SidebarSection>() {
                     let child = obj.child_or_else::<SidebarSectionRow>(|| {
                         let child = SidebarSectionRow::new();
-                        obj.update_relation(&[Relation::LabelledBy(&[child.labelled_by()])]);
+                        obj.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+                            child.labelled_by()
+                        ])]);
                         child
                     });
                     child.set_section(Some(section.clone()));
@@ -808,7 +810,8 @@ mod imp {
 glib::wrapper! {
     /// A row of the sidebar.
     pub struct SidebarRow(ObjectSubclass<imp::SidebarRow>)
-        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SidebarRow {

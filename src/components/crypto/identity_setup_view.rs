@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
 };
 use tracing::{debug, error};
@@ -55,7 +55,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/crypto/identity_setup_view.ui")]
     #[properties(wrapper_type = super::CryptoIdentitySetupView)]
     pub struct CryptoIdentitySetupView {
@@ -458,7 +458,8 @@ mod imp {
 glib::wrapper! {
     /// A view with the different flows to setup a crypto identity.
     pub struct CryptoIdentitySetupView(ObjectSubclass<imp::CryptoIdentitySetupView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl CryptoIdentitySetupView {

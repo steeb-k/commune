@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 mod user;
 mod user_list;
@@ -34,7 +34,7 @@ mod imp {
     use super::*;
     use crate::utils::LoadingState;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/create_direct_chat_dialog/mod.ui")]
     #[properties(wrapper_type = super::CreateDirectChatDialog)]
     pub struct CreateDirectChatDialog {
@@ -197,7 +197,8 @@ mod imp {
 glib::wrapper! {
     /// Dialog to create a new direct chat.
     pub struct CreateDirectChatDialog(ObjectSubclass<imp::CreateDirectChatDialog>)
-        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl CreateDirectChatDialog {

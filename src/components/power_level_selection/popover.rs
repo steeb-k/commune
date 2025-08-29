@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use ruma::events::room::power_levels::UserPowerLevel;
 
 use crate::{
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/power_level_selection/popover.ui")]
     #[properties(wrapper_type = super::PowerLevelSelectionPopover)]
     pub struct PowerLevelSelectionPopover {
@@ -285,7 +285,8 @@ mod imp {
 glib::wrapper! {
     /// A popover to select a room member's power level.
     pub struct PowerLevelSelectionPopover(ObjectSubclass<imp::PowerLevelSelectionPopover>)
-        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl PowerLevelSelectionPopover {

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::components::{Avatar, AvatarData};
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/avatar_with_selection.ui")]
     #[properties(wrapper_type = super::AvatarWithSelection)]
     pub struct AvatarWithSelection {
@@ -105,7 +105,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying an [`Avatar`] and an optional selected effect.
     pub struct AvatarWithSelection(ObjectSubclass<imp::AvatarWithSelection>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AvatarWithSelection {

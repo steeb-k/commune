@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone, prelude::*};
+use gtk::{gio, glib, glib::clone};
 
 use super::sas_emoji::SasEmoji;
 use crate::{
@@ -17,7 +17,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/sas_page.ui")]
     #[properties(wrapper_type = super::SasPage)]
     pub struct SasPage {
@@ -127,7 +127,8 @@ mod imp {
 glib::wrapper! {
     /// A page to confirm if SAS verification data matches.
     pub struct SasPage(ObjectSubclass<imp::SasPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

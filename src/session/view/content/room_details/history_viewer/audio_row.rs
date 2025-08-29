@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use tracing::warn;
 
 use super::HistoryViewerEvent;
@@ -17,7 +17,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/audio_row.ui"
     )]
@@ -182,7 +182,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an audio event.
     pub struct AudioRow(ObjectSubclass<imp::AudioRow>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AudioRow {

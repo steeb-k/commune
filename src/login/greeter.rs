@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::components::OfflineBanner;
 
@@ -8,7 +8,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/login/greeter.ui")]
     pub struct Greeter {}
 
@@ -46,7 +46,8 @@ mod imp {
 glib::wrapper! {
     /// The welcome screen of the app.
     pub struct Greeter(ObjectSubclass<imp::Greeter>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Greeter {

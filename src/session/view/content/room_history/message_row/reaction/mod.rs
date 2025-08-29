@@ -1,5 +1,4 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, gio, glib, glib::clone, prelude::*};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod reaction_popover;
 
@@ -21,7 +20,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reaction/mod.ui"
     )]
@@ -253,7 +252,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a reaction of a message.
     pub struct MessageReaction(ObjectSubclass<imp::MessageReaction>)
-        @extends gtk::Widget, gtk::FlowBoxChild, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::FlowBoxChild,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageReaction {

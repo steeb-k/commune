@@ -92,7 +92,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an item in the list of room members.
     pub struct ItemRow(ObjectSubclass<imp::ItemRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ItemRow {

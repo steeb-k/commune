@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::closure_local};
+use gtk::{glib, glib::closure_local};
 
 use crate::components::LoadingButton;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/entry_add_row.ui")]
     #[properties(wrapper_type = super::EntryAddRow)]
     pub struct EntryAddRow {
@@ -132,7 +132,7 @@ glib::wrapper! {
     /// An `AdwEntryRow` with an "Add" button.
     pub struct EntryAddRow(ObjectSubclass<imp::EntryAddRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow, adw::EntryRow,
-        @implements gtk::Actionable, gtk::Editable, gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable, gtk::Editable;
 }
 
 impl EntryAddRow {

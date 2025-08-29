@@ -1,7 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
-use ruma::events::room::join_rules::JoinRule as MatrixJoinRule;
+use gtk::{glib, glib::clone};
+use ruma::events::{
+    StateEventType,
+    room::{join_rules::JoinRule as MatrixJoinRule, power_levels::PowerLevelAction},
+};
 
 use crate::{
     components::{CheckLoadingRow, LoadingButton, UnsavedChangesResponse, unsaved_changes_dialog},
@@ -13,11 +16,10 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use ruma::events::{StateEventType, room::power_levels::PowerLevelAction};
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/join_rule_subpage.ui"
     )]
@@ -273,7 +275,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to select the join rule of a room.
     pub struct JoinRuleSubpage(ObjectSubclass<imp::JoinRuleSubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl JoinRuleSubpage {

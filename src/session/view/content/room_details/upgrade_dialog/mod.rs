@@ -251,7 +251,8 @@ mod imp {
 glib::wrapper! {
     /// Dialog to confirm a room upgrade and select a room version.
     pub struct UpgradeDialog(ObjectSubclass<imp::UpgradeDialog>)
-        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl UpgradeDialog {

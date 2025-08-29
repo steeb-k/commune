@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
 };
 
@@ -34,7 +34,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/session_setup_view.ui")]
     #[properties(wrapper_type = super::SessionSetupView)]
     pub struct SessionSetupView {
@@ -338,7 +338,8 @@ mod imp {
 glib::wrapper! {
     /// A view with the different flows to verify a session.
     pub struct SessionSetupView(ObjectSubclass<imp::SessionSetupView>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SessionSetupView {

@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use super::ToastableDialog;
 use crate::{
@@ -23,7 +23,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/room_preview.ui")]
     #[properties(wrapper_type = super::RoomPreviewDialog)]
     pub struct RoomPreviewDialog {
@@ -447,7 +447,7 @@ glib::wrapper! {
     /// Dialog to preview a room and eventually join it.
     pub struct RoomPreviewDialog(ObjectSubclass<imp::RoomPreviewDialog>)
         @extends gtk::Widget, adw::Dialog, ToastableDialog,
-        @implements gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 #[gtk::template_callbacks]

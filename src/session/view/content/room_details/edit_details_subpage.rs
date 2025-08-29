@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use matrix_sdk::RoomState;
 use ruma::{OwnedMxcUri, assign, events::room::avatar::ImageInfo};
 use tracing::error;
@@ -26,7 +26,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/edit_details_subpage.ui"
     )]
@@ -565,7 +565,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to edit the room main details (avatar, name and topic).
     pub struct EditDetailsSubpage(ObjectSubclass<imp::EditDetailsSubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl EditDetailsSubpage {

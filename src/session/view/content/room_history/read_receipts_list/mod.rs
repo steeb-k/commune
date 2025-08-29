@@ -1,5 +1,4 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, prelude::*};
+use gtk::{gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod read_receipts_popover;
 
@@ -24,7 +23,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/read_receipts_list/mod.ui"
     )]
@@ -318,7 +317,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying the read receipts on a message.
     pub struct ReadReceiptsList(ObjectSubclass<imp::ReadReceiptsList>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ReadReceiptsList {

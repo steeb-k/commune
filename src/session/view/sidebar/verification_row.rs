@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::session::model::IdentityVerification;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/verification_row.ui")]
     #[properties(wrapper_type = super::SidebarVerificationRow)]
     pub struct SidebarVerificationRow {
@@ -56,7 +56,8 @@ mod imp {
 glib::wrapper! {
     /// A sidebar row representing an identity verification.
     pub struct SidebarVerificationRow(ObjectSubclass<imp::SidebarVerificationRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SidebarVerificationRow {

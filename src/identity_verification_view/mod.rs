@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone};
 
 mod accept_request_page;
 mod cancelled_page;
@@ -32,7 +32,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/mod.ui")]
     #[properties(wrapper_type = super::IdentityVerificationView)]
     pub struct IdentityVerificationView {
@@ -155,7 +155,8 @@ mod imp {
 glib::wrapper! {
     /// A view to show the different stages of an identity verification.
     pub struct IdentityVerificationView(ObjectSubclass<imp::IdentityVerificationView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl IdentityVerificationView {

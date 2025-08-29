@@ -94,7 +94,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a caption alongside a file message.
     pub struct MessageCaption(ObjectSubclass<imp::MessageCaption>)
-        @extends gtk::Widget, gtk::Grid, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Grid,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl MessageCaption {

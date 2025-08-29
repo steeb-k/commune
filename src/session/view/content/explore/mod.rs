@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use tracing::error;
 
 mod public_room_row;
@@ -28,7 +28,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/mod.ui")]
     #[properties(wrapper_type = super::Explore)]
     pub struct Explore {
@@ -309,7 +309,8 @@ mod imp {
 glib::wrapper! {
     /// A view to explore rooms in the public directory of homeservers.
     pub struct Explore(ObjectSubclass<imp::Explore>)
-        @extends gtk::Widget, adw::BreakpointBin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::BreakpointBin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Explore {

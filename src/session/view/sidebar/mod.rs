@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    CompositeTemplate, ListScrollFlags, gio,
-    glib::{self, clone, closure_local},
+    gio, glib,
+    glib::{clone, closure_local},
 };
 use tracing::error;
 
@@ -37,7 +37,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/mod.ui")]
     #[properties(wrapper_type = super::Sidebar)]
     pub struct Sidebar {
@@ -385,7 +385,7 @@ mod imp {
 
             if selected != gtk::INVALID_LIST_POSITION {
                 self.listview
-                    .scroll_to(selected, ListScrollFlags::FOCUS, None);
+                    .scroll_to(selected, gtk::ListScrollFlags::FOCUS, None);
             }
         }
 
@@ -423,7 +423,8 @@ glib::wrapper! {
     /// The sidebar of the session view, displaying the list of rooms
     /// available for the current session, among other things.
     pub struct Sidebar(ObjectSubclass<imp::Sidebar>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

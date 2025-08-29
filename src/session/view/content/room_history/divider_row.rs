@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use crate::{
     session::model::{VirtualItem, VirtualItemKind},
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/divider_row.ui")]
     #[properties(wrapper_type = super::DividerRow)]
     pub struct DividerRow {
@@ -131,7 +131,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a divider in the timeline.
     pub struct DividerRow(ObjectSubclass<imp::DividerRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl DividerRow {

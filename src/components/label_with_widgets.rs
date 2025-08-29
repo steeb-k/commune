@@ -316,7 +316,8 @@ mod imp {
 glib::wrapper! {
     /// A Label that can have multiple widgets placed inside the text.
     pub struct LabelWithWidgets(ObjectSubclass<imp::LabelWithWidgets>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LabelWithWidgets {

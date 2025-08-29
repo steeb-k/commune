@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone};
 
 mod explore;
 mod invite;
@@ -44,7 +44,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/mod.ui")]
     #[properties(wrapper_type = super::Content)]
     pub struct Content {
@@ -278,7 +278,8 @@ mod imp {
 glib::wrapper! {
     /// A view displaying the selected content in the sidebar.
     pub struct Content(ObjectSubclass<imp::Content>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Content {

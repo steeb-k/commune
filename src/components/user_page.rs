@@ -3,7 +3,7 @@ use std::slice;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext, pgettext};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
 };
 use ruma::{
@@ -33,7 +33,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/user_page.ui")]
     #[properties(wrapper_type = super::UserPage)]
     pub struct UserPage {
@@ -778,7 +778,8 @@ mod imp {
 glib::wrapper! {
     /// Page to view details about a user.
     pub struct UserPage(ObjectSubclass<imp::UserPage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl UserPage {

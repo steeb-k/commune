@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use ruma::{
     Int,
     events::{
@@ -16,7 +16,7 @@ use crate::{
         ButtonCountRow, LoadingButton, PowerLevelSelectionRow, UnsavedChangesResponse,
         unsaved_changes_dialog,
     },
-    session::model::Permissions,
+    session::model::{POWER_LEVEL_MAX, Permissions},
     toast,
     utils::BoundObjectWeakRef,
 };
@@ -27,9 +27,8 @@ mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
-    use crate::session::model::POWER_LEVEL_MAX;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/permissions_subpage.ui"
     )]
@@ -802,7 +801,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to view and change the permissions of a room.
     pub struct PermissionsSubpage(ObjectSubclass<imp::PermissionsSubpage>)
-        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PermissionsSubpage {

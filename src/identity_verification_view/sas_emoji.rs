@@ -1,12 +1,12 @@
 use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/sas_emoji.ui")]
     pub struct SasEmoji {
         #[template_child]
@@ -38,7 +38,8 @@ mod imp {
 glib::wrapper! {
     /// An emoji for SAS verification.
     pub struct SasEmoji(ObjectSubclass<imp::SasEmoji>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SasEmoji {

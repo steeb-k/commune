@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use tracing::error;
 
 mod ignored_user_row;
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/safety_page/ignored_users_subpage/mod.ui"
     )]
@@ -162,7 +162,8 @@ mod imp {
 glib::wrapper! {
     /// A subpage with the list of ignored users.
     pub struct IgnoredUsersSubpage(ObjectSubclass<imp::IgnoredUsersSubpage>)
-        @extends gtk::Widget, adw::NavigationPage;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl IgnoredUsersSubpage {

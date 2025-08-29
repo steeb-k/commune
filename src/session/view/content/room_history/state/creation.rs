@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use matrix_sdk::ruma::events::room::create::RoomCreateEventContent;
 use ruma::events::FullStateEventContent;
 
@@ -9,7 +9,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state/creation.ui"
     )]
@@ -68,7 +68,8 @@ mod imp {
 glib::wrapper! {
     /// A widget presenting a room create state event.
     pub struct StateCreation(ObjectSubclass<imp::StateCreation>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl StateCreation {

@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, prelude::*};
+use gtk::{glib, prelude::*};
 
 use super::ContentFormat;
 use crate::gettext_f;
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/file.ui"
     )]
@@ -85,7 +85,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying an interface to download the content of a file message.
     pub struct MessageFile(ObjectSubclass<imp::MessageFile>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageFile {

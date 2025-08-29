@@ -1,4 +1,4 @@
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     components::{Avatar, AvatarData},
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_chooser_dialog/account_row.ui")]
     #[properties(wrapper_type = super::AccountRow)]
     pub struct AccountRow {
@@ -122,7 +122,8 @@ mod imp {
 glib::wrapper! {
     /// A `GtkListBoxRow` representing a logged-in session in the `AccountChooserDialog`.
     pub struct AccountRow(ObjectSubclass<imp::AccountRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl AccountRow {

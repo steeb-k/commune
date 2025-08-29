@@ -1,5 +1,5 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::glib;
 
 use crate::{session::model::Member, utils::bool_to_accessible_tristate};
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/select_member_row.ui"
     )]
@@ -76,7 +76,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a room member that can be selected.
     pub struct PermissionsSelectMemberRow(ObjectSubclass<imp::PermissionsSelectMemberRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PermissionsSelectMemberRow {

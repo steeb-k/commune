@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     components::{Avatar, RoleBadge},
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_details/member_row.ui")]
     #[properties(wrapper_type = super::MemberRow)]
     pub struct MemberRow {
@@ -80,7 +80,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a room member.
     pub struct MemberRow(ObjectSubclass<imp::MemberRow>)
-        @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Box,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl MemberRow {

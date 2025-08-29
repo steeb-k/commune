@@ -1,9 +1,4 @@
-use gtk::{
-    CompositeTemplate,
-    glib::{self, clone},
-    prelude::*,
-    subclass::prelude::*,
-};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::session_item::SessionItemRow;
 use crate::utils::{BoundObjectWeakRef, FixedSelection};
@@ -13,7 +8,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/account_switcher_popover.ui")]
     #[properties(wrapper_type = super::AccountSwitcherPopover)]
     pub struct AccountSwitcherPopover {
@@ -133,7 +128,8 @@ glib::wrapper! {
     /// A popover allowing to switch between the available sessions, to open their
     /// account settings, or to log into a new account.
     pub struct AccountSwitcherPopover(ObjectSubclass<imp::AccountSwitcherPopover>)
-        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl AccountSwitcherPopover {

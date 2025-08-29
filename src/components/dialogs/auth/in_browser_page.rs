@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use tracing::error;
 
 use crate::components::LoadingButton;
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/auth/in_browser_page.ui")]
     #[properties(wrapper_type = super::AuthDialogInBrowserPage)]
     pub struct AuthDialogInBrowserPage {
@@ -83,7 +83,8 @@ mod imp {
 glib::wrapper! {
     /// Page to pass a stage in the browser for the [`AuthDialog`].
     pub struct AuthDialogInBrowserPage(ObjectSubclass<imp::AuthDialogInBrowserPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AuthDialogInBrowserPage {

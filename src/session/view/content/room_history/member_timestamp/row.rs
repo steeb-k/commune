@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use super::MemberTimestamp;
 use crate::{
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/member_timestamp/row.ui"
     )]
@@ -125,7 +125,8 @@ mod imp {
 glib::wrapper! {
     /// A row displaying a room member and timestamp.
     pub struct MemberTimestampRow(ObjectSubclass<imp::MemberTimestampRow>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MemberTimestampRow {

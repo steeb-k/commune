@@ -3,7 +3,7 @@ use std::{fmt::Debug, future::Future};
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
 use ruma::{
     api::{
@@ -36,7 +36,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/auth/mod.ui")]
     #[properties(wrapper_type = super::AuthDialog)]
     pub struct AuthDialog {
@@ -494,7 +494,7 @@ glib::wrapper! {
     /// [User-Interactive Authentication API]: https://spec.matrix.org/latest/client-server-api/#user-interactive-authentication-api
     pub struct AuthDialog(ObjectSubclass<imp::AuthDialog>)
         @extends gtk::Widget, adw::Dialog, ToastableDialog,
-        @implements gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl AuthDialog {

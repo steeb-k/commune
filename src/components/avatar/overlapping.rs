@@ -242,7 +242,8 @@ mod imp {
 glib::wrapper! {
     /// A horizontal list of overlapping avatars.
     pub struct OverlappingAvatars(ObjectSubclass<imp::OverlappingAvatars>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl OverlappingAvatars {

@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone};
 use matrix_sdk::crypto::CancelInfo;
 use ruma::events::key::verification::cancel::CancelCode;
 
@@ -16,7 +16,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/cancelled_page.ui")]
     #[properties(wrapper_type = super::CancelledPage)]
     pub struct CancelledPage {
@@ -116,7 +116,8 @@ mod imp {
 glib::wrapper! {
     /// A page to show when the verification was cancelled.
     pub struct CancelledPage(ObjectSubclass<imp::CancelledPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

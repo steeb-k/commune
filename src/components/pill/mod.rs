@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 mod at_room;
 mod search_entry;
@@ -32,7 +32,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/pill/mod.ui")]
     #[properties(wrapper_type = super::Pill)]
     pub struct Pill {
@@ -252,7 +252,8 @@ mod imp {
 glib::wrapper! {
     /// Inline widget displaying an emphasized `PillSource`.
     pub struct Pill(ObjectSubclass<imp::Pill>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Pill {

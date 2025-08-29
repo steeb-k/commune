@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::AccountSwitcherPopover;
 use crate::{
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/account_switcher_button.ui")]
     #[properties(wrapper_type = super::AccountSwitcherButton)]
     pub struct AccountSwitcherButton {
@@ -122,7 +122,8 @@ mod imp {
 glib::wrapper! {
     /// A button showing the currently selected session and opening the account switcher popover.
     pub struct AccountSwitcherButton(ObjectSubclass<imp::AccountSwitcherButton>)
-        @extends gtk::Widget, gtk::Button, gtk::ToggleButton, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Button, gtk::ToggleButton,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 #[gtk::template_callbacks]

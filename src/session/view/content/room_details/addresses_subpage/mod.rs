@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone, pango};
+use gtk::{gio, glib, glib::clone, pango};
 use ruma::RoomAliasId;
 use tracing::error;
 
@@ -27,7 +27,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/addresses_subpage/mod.ui"
     )]
@@ -794,7 +794,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to manage the public addresses of a room.
     pub struct AddressesSubpage(ObjectSubclass<imp::AddressesSubpage>)
-        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AddressesSubpage {

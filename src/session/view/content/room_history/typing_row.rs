@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone};
 
 use crate::{
     components::OverlappingAvatars,
@@ -16,7 +16,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/typing_row.ui")]
     #[properties(wrapper_type = super::TypingRow)]
     pub struct TypingRow {
@@ -153,7 +153,8 @@ mod imp {
 glib::wrapper! {
     /// A widget row used to display typing members.
     pub struct TypingRow(ObjectSubclass<imp::TypingRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl TypingRow {

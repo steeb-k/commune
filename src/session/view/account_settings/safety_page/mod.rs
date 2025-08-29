@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use ruma::events::media_preview_config::MediaPreviews;
 use tracing::error;
 
@@ -23,7 +23,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/safety_page/mod.ui")]
     #[properties(wrapper_type = super::SafetyPage)]
     pub struct SafetyPage {
@@ -326,7 +326,8 @@ mod imp {
 glib::wrapper! {
     /// Safety settings page.
     pub struct SafetyPage(ObjectSubclass<imp::SafetyPage>)
-        @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::PreferencesPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SafetyPage {

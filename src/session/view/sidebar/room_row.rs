@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 
 use super::SidebarRow;
 use crate::{
@@ -17,7 +17,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/room_row.ui")]
     #[properties(wrapper_type = super::SidebarRoomRow)]
     pub struct SidebarRoomRow {
@@ -310,7 +310,8 @@ mod imp {
 glib::wrapper! {
     /// A sidebar row representing a room.
     pub struct SidebarRoomRow(ObjectSubclass<imp::SidebarRoomRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SidebarRoomRow {

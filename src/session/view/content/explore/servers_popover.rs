@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use ruma::ServerName;
 use tracing::error;
 
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/servers_popover.ui")]
     #[properties(wrapper_type = super::ExploreServersPopover)]
     pub struct ExploreServersPopover {
@@ -187,7 +187,8 @@ mod imp {
 glib::wrapper! {
     /// A popover that lists the servers that can be explored.
     pub struct ExploreServersPopover(ObjectSubclass<imp::ExploreServersPopover>)
-        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl ExploreServersPopover {

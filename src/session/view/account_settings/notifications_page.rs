@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use tracing::error;
 
 use crate::{
@@ -18,7 +18,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/notifications_page.ui"
     )]
@@ -453,7 +453,8 @@ mod imp {
 glib::wrapper! {
     /// Preferences page to edit global notification settings.
     pub struct NotificationsPage(ObjectSubclass<imp::NotificationsPage>)
-        @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::PreferencesPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl NotificationsPage {

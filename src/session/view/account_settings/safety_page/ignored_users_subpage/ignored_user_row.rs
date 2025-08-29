@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::UserId;
 
 use crate::{components::LoadingButton, session::model::IgnoredUsers, toast};
@@ -11,7 +11,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/safety_page/ignored_users_subpage/ignored_user_row.ui"
     )]
@@ -92,7 +92,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an ignored user.
     pub struct IgnoredUserRow(ObjectSubclass<imp::IgnoredUserRow>)
-        @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Box,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl IgnoredUserRow {

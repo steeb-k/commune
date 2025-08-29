@@ -1,6 +1,5 @@
-use glib::subclass::Signal;
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
     prelude::*,
     subclass::prelude::*,
@@ -11,11 +10,11 @@ use crate::components::LoadingBin;
 mod imp {
     use std::{marker::PhantomData, sync::LazyLock};
 
-    use glib::subclass::InitializingObject;
+    use glib::subclass::{InitializingObject, Signal};
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/loading_row.ui")]
     #[properties(wrapper_type = super::LoadingRow)]
     pub struct LoadingRow {
@@ -103,7 +102,8 @@ glib::wrapper! {
     ///
     /// It's also possible to set an error once the loading fails, including a retry button.
     pub struct LoadingRow(ObjectSubclass<imp::LoadingRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl LoadingRow {

@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use crate::{
     Window,
@@ -19,7 +19,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/public_room_row.ui")]
     #[properties(wrapper_type = super::PublicRoomRow)]
     pub struct PublicRoomRow {
@@ -257,7 +257,8 @@ mod imp {
 glib::wrapper! {
     /// A row representing a room in a homeserver's public directory.
     pub struct PublicRoomRow(ObjectSubclass<imp::PublicRoomRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PublicRoomRow {

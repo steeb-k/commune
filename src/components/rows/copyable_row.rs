@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::toast;
 
@@ -25,7 +25,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/copyable_row.ui")]
     #[properties(wrapper_type = super::CopyableRow)]
     pub struct CopyableRow {
@@ -157,7 +157,7 @@ glib::wrapper! {
     /// An `AdwActionRow` with a button to copy the title or subtitle.
     pub struct CopyableRow(ObjectSubclass<imp::CopyableRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
-        @implements gtk::Actionable, gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl CopyableRow {

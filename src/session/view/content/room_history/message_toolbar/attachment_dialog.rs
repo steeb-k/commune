@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone};
+use gtk::{gdk, gio, glib, glib::clone};
 use tracing::error;
 
 use crate::{components::MediaContentViewer, spawn};
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/attachment_dialog.ui"
     )]
@@ -128,7 +128,8 @@ mod imp {
 glib::wrapper! {
     /// A dialog to preview an attachment before sending it.
     pub struct AttachmentDialog(ObjectSubclass<imp::AttachmentDialog>)
-        @extends gtk::Widget, adw::Dialog;
+        @extends gtk::Widget, adw::Dialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl AttachmentDialog {

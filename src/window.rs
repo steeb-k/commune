@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone};
+use gtk::{gdk, gio, glib, glib::clone};
 use tracing::{error, warn};
 
 use crate::{
@@ -44,7 +44,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate, Default, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/window.ui")]
     #[properties(wrapper_type = super::Window)]
     pub struct Window {
@@ -483,8 +483,9 @@ mod imp {
 glib::wrapper! {
     /// The main window.
     pub struct Window(ObjectSubclass<imp::Window>)
-        @extends gtk::Widget, gtk::Window, gtk::Root, gtk::ApplicationWindow, adw::ApplicationWindow,
-        @implements gtk::Accessible, gio::ActionMap, gio::ActionGroup;
+        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Root, gtk::Native,
+                    gtk::ShortcutManager, gio::ActionMap, gio::ActionGroup;
 }
 
 impl Window {

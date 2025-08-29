@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use matrix_sdk::{
     Error,
     authentication::oauth::{OAuthAuthorizationData, UrlOrQuery},
@@ -20,7 +20,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/in_browser_page.ui")]
     #[properties(wrapper_type = super::LoginInBrowserPage)]
     pub struct LoginInBrowserPage {
@@ -242,7 +242,8 @@ mod imp {
 glib::wrapper! {
     /// A page to log the user in via the browser.
     pub struct LoginInBrowserPage(ObjectSubclass<imp::LoginInBrowserPage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LoginInBrowserPage {

@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -9,7 +9,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/advanced_dialog.ui")]
     #[properties(wrapper_type = super::LoginAdvancedDialog)]
     pub struct LoginAdvancedDialog {
@@ -67,7 +67,7 @@ glib::wrapper! {
     /// A dialog with advanced settings for the login flow.
     pub struct LoginAdvancedDialog(ObjectSubclass<imp::LoginAdvancedDialog>)
         @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog,
-        @implements gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl LoginAdvancedDialog {

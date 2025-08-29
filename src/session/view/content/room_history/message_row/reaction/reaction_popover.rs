@@ -1,8 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{
-    CompositeTemplate, gio,
-    glib::{self, clone},
-};
+use gtk::{gio, glib, glib::clone};
 
 use crate::{
     components::UserProfileDialog,
@@ -16,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reaction/reaction_popover.ui"
     )]
@@ -88,7 +85,8 @@ mod imp {
 glib::wrapper! {
     /// A popover to display the senders of a reaction.
     pub struct ReactionPopover(ObjectSubclass<imp::ReactionPopover>)
-        @extends gtk::Widget, gtk::Popover;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl ReactionPopover {

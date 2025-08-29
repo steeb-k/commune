@@ -176,7 +176,8 @@ mod imp {
 glib::wrapper! {
     /// A camera viewfinder widget for Linux.
     pub struct LinuxCameraViewfinder(ObjectSubclass<imp::LinuxCameraViewfinder>)
-        @extends gtk::Widget, CameraViewfinder;
+        @extends gtk::Widget, CameraViewfinder,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LinuxCameraViewfinder {

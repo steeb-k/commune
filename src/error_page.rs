@@ -99,7 +99,8 @@ mod imp {
 glib::wrapper! {
     /// A view displaying an error.
     pub struct ErrorPage(ObjectSubclass<imp::ErrorPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ErrorPage {

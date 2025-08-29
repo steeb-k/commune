@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use matrix_sdk::encryption::verification::QrVerificationData;
 use tracing::error;
 
@@ -20,7 +20,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/scan_qr_code_page.ui")]
     #[properties(wrapper_type = super::ScanQrCodePage)]
     pub struct ScanQrCodePage {
@@ -133,7 +133,8 @@ mod imp {
 glib::wrapper! {
     /// A page to scan a QR code.
     pub struct ScanQrCodePage(ObjectSubclass<imp::ScanQrCodePage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

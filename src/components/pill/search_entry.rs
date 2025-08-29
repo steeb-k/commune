@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
 };
 
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/pill/search_entry.ui")]
     #[properties(wrapper_type = super::PillSearchEntry)]
     pub struct PillSearchEntry {
@@ -229,7 +229,8 @@ mod imp {
 glib::wrapper! {
     /// Search entry where selected results can be added as [`Pill`]s.
     pub struct PillSearchEntry(ObjectSubclass<imp::PillSearchEntry>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PillSearchEntry {

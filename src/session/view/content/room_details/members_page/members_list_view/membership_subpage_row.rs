@@ -1,5 +1,5 @@
 use gettextrs::npgettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::session::{
     model::MembershipListKind,
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui"
     )]
@@ -133,7 +133,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a `MembershipSubpageItem`.
     pub struct MembershipSubpageRow(ObjectSubclass<imp::MembershipSubpageRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl MembershipSubpageRow {

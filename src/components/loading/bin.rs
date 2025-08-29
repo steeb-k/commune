@@ -1,5 +1,5 @@
 use adw::prelude::*;
-use gtk::{CompositeTemplate, glib, subclass::prelude::*};
+use gtk::{glib, subclass::prelude::*};
 
 use crate::utils::ChildPropertyExt;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/loading/bin.ui")]
     #[properties(wrapper_type = super::LoadingBin)]
     pub struct LoadingBin {
@@ -106,7 +106,8 @@ mod imp {
 glib::wrapper! {
     /// A Bin that shows either its child or a loading spinner.
     pub struct LoadingBin(ObjectSubclass<imp::LoadingBin>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LoadingBin {

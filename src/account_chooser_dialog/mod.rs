@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use tracing::error;
 
 mod account_row;
@@ -15,7 +15,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_chooser_dialog/mod.ui")]
     #[properties(wrapper_type = super::AccountChooserDialog)]
     pub struct AccountChooserDialog {
@@ -78,7 +78,8 @@ glib::wrapper! {
     ///
     /// Should be used by calling [`Self::choose_account()`].
     pub struct AccountChooserDialog(ObjectSubclass<imp::AccountChooserDialog>)
-        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 #[gtk::template_callbacks]

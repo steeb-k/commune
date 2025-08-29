@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 use tracing::error;
 
 mod audio;
@@ -38,7 +38,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/mod.ui"
     )]
@@ -290,7 +290,8 @@ mod imp {
 glib::wrapper! {
     /// A row displaying a message in the timeline.
     pub struct MessageRow(ObjectSubclass<imp::MessageRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageRow {

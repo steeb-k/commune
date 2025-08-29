@@ -1,9 +1,5 @@
 use adw::prelude::*;
-use gtk::{
-    CompositeTemplate, gio,
-    glib::{self, clone},
-    subclass::prelude::*,
-};
+use gtk::{gio, glib, glib::clone, subclass::prelude::*};
 
 use crate::{
     components::UserProfileDialog,
@@ -17,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/read_receipts_list/read_receipts_popover.ui"
     )]
@@ -91,7 +87,8 @@ mod imp {
 glib::wrapper! {
     /// A popover to display the read receipts on an event.
     pub struct ReadReceiptsPopover(ObjectSubclass<imp::ReadReceiptsPopover>)
-        @extends gtk::Widget, gtk::Popover;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl ReadReceiptsPopover {

@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
-use adw::{prelude::BinExt, subclass::prelude::*};
-use gtk::{glib, glib::clone, pango, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, pango};
 use matrix_sdk::ruma::events::room::message::FormattedBody;
 use ruma::{
     events::room::message::MessageFormat,
@@ -394,7 +394,8 @@ glib::wrapper! {
     // FIXME: We have to be able to allow text selection and override popover
     // menu. See https://gitlab.gnome.org/GNOME/gtk/-/issues/4606
     pub struct MessageText(ObjectSubclass<imp::MessageText>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageText {

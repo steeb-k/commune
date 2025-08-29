@@ -126,7 +126,8 @@ glib::wrapper! {
     /// }
     /// ```
     pub struct QRCode(ObjectSubclass<imp::QRCode>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl QRCode {

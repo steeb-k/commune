@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 mod imp {
     use std::marker::PhantomData;
@@ -8,7 +8,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/button_count_row.ui")]
     #[properties(wrapper_type = super::ButtonCountRow)]
     pub struct ButtonCountRow {
@@ -64,7 +64,7 @@ glib::wrapper! {
     /// An `AdwPreferencesRow` usable as a button, that optionally displays a count.
     pub struct ButtonCountRow(ObjectSubclass<imp::ButtonCountRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
-        @implements gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl ButtonCountRow {

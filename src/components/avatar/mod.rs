@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone};
 
 mod crop_circle;
 mod data;
@@ -53,7 +53,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/avatar/mod.ui")]
     #[properties(wrapper_type = super::Avatar)]
     pub struct Avatar {
@@ -425,7 +425,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying an `Avatar` for a `Room` or `User`.
     pub struct Avatar(ObjectSubclass<imp::Avatar>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Avatar {

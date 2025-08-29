@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
     pango,
 };
@@ -18,7 +18,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/substring_entry_row.ui")]
     #[properties(wrapper_type = super::SubstringEntryRow)]
     pub struct SubstringEntryRow {
@@ -454,7 +454,7 @@ glib::wrapper! {
     /// It also has a built-in "Add" button, making it an almost drop-in replacement to `EntryAddRow`.
     pub struct SubstringEntryRow(ObjectSubclass<imp::SubstringEntryRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow,
-        @implements gtk::Editable, gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable, gtk::Editable;
 }
 
 impl SubstringEntryRow {

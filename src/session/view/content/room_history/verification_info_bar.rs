@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone};
 
 use crate::{
     Window,
@@ -19,7 +19,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/verification_info_bar.ui"
     )]
@@ -185,7 +185,8 @@ mod imp {
 glib::wrapper! {
     /// An info bar presenting an ongoing identity verification.
     pub struct VerificationInfoBar(ObjectSubclass<imp::VerificationInfoBar>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl VerificationInfoBar {

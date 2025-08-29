@@ -1,8 +1,7 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
-    prelude::*,
 };
 
 use crate::components::LoadingBin;
@@ -14,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/loading_button_row.ui")]
     #[properties(wrapper_type = super::LoadingButtonRow)]
     pub struct LoadingButtonRow {
@@ -97,7 +96,8 @@ mod imp {
 glib::wrapper! {
     /// An `AdwPreferencesRow` usable as a button with a loading state.
     pub struct LoadingButtonRow(ObjectSubclass<imp::LoadingButtonRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl LoadingButtonRow {

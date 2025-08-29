@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
@@ -42,7 +42,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/visual_media_item.ui"
     )]
@@ -235,7 +235,8 @@ mod imp {
 glib::wrapper! {
     /// An item presenting a visual media (image or video) event.
     pub struct VisualMediaItem(ObjectSubclass<imp::VisualMediaItem>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl VisualMediaItem {

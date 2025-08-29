@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    CompositeTemplate, gdk, gio, glib,
+    gdk, gio, glib,
     glib::{clone, closure, closure_local},
-    prelude::*,
 };
 use tracing::{debug, error};
 
@@ -48,7 +47,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/avatar/editable.ui")]
     #[properties(wrapper_type = super::EditableAvatar)]
     pub struct EditableAvatar {
@@ -464,7 +463,8 @@ mod imp {
 glib::wrapper! {
     /// An `Avatar` that can be edited.
     pub struct EditableAvatar(ObjectSubclass<imp::EditableAvatar>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl EditableAvatar {

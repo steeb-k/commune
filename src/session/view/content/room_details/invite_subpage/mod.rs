@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::ngettext;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 use tracing::error;
 
 mod item;
@@ -26,7 +26,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/mod.ui"
     )]
@@ -252,7 +252,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to invite new members to a room.
     pub struct InviteSubpage(ObjectSubclass<imp::InviteSubpage>)
-        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl InviteSubpage {

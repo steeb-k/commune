@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gdk, gio, glib};
+use gtk::{gdk, gio, glib};
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
@@ -56,7 +56,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/media/content_viewer.ui")]
     #[properties(wrapper_type = super::MediaContentViewer)]
     pub struct MediaContentViewer {
@@ -275,7 +275,8 @@ mod imp {
 glib::wrapper! {
     /// Widget to view any media file.
     pub struct MediaContentViewer(ObjectSubclass<imp::MediaContentViewer>)
-        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MediaContentViewer {

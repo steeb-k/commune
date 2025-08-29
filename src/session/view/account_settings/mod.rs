@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure_local},
 };
 use matrix_sdk::authentication::oauth::{
@@ -58,7 +58,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/mod.ui")]
     #[properties(wrapper_type = super::AccountSettings)]
     pub struct AccountSettings {
@@ -244,7 +244,8 @@ mod imp {
 glib::wrapper! {
     /// Preference window to display and update account settings.
     pub struct AccountSettings(ObjectSubclass<imp::AccountSettings>)
-        @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl AccountSettings {

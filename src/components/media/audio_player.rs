@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, gio, glib, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gio, glib};
 
 use crate::utils::BoundObject;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/media/audio_player.ui")]
     #[properties(wrapper_type = super::AudioPlayer)]
     pub struct AudioPlayer {
@@ -85,7 +85,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a video media file.
     pub struct AudioPlayer(ObjectSubclass<imp::AudioPlayer>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AudioPlayer {

@@ -149,7 +149,8 @@ glib::wrapper! {
     /// Use the `content-label` and `content-icon-name` properties instead of `label` and
     /// `icon-name` respectively, otherwise the spinner will not appear.
     pub struct LoadingButton(ObjectSubclass<imp::LoadingButton>)
-        @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
+        @extends gtk::Widget, gtk::Button,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl LoadingButton {

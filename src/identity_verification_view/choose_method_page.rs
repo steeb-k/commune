@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone};
 
 use crate::{
     components::LoadingButton,
@@ -19,7 +19,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/choose_method_page.ui")]
     #[properties(wrapper_type = super::ChooseMethodPage)]
     pub struct ChooseMethodPage {
@@ -136,7 +136,8 @@ mod imp {
 glib::wrapper! {
     /// A page that shows a QR code or allows to choose between different flows.
     pub struct ChooseMethodPage(ObjectSubclass<imp::ChooseMethodPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

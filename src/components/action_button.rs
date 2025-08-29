@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::closure_local};
+use gtk::{glib, glib::closure_local};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -40,7 +40,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/action_button.ui")]
     #[properties(wrapper_type = super::ActionButton)]
     pub struct ActionButton {
@@ -180,7 +180,8 @@ mod imp {
 glib::wrapper! {
     /// A button to emit an action and handle its different states.
     pub struct ActionButton(ObjectSubclass<imp::ActionButton>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Actionable, gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 #[gtk::template_callbacks]

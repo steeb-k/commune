@@ -1,4 +1,4 @@
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::avatar_with_selection::AvatarWithSelection;
 use crate::{
@@ -15,7 +15,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/session_item.ui")]
     #[properties(wrapper_type = super::SessionItemRow)]
     pub struct SessionItemRow {
@@ -169,7 +169,8 @@ mod imp {
 glib::wrapper! {
     /// A `GtkListBoxRow` representing a logged-in session.
     pub struct SessionItemRow(ObjectSubclass<imp::SessionItemRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl SessionItemRow {

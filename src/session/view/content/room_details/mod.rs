@@ -4,7 +4,7 @@
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use ruma::UserId;
 
 mod addresses_subpage;
@@ -88,7 +88,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_details/mod.ui")]
     #[properties(wrapper_type = super::RoomDetails)]
     pub struct RoomDetails {
@@ -291,8 +291,9 @@ mod imp {
 glib::wrapper! {
     /// Preference Window to display and update room details.
     pub struct RoomDetails(ObjectSubclass<imp::RoomDetails>)
-        @extends gtk::Widget, gtk::Window, adw::Window, gtk::Root, adw::PreferencesWindow,
-        @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Root, gtk::Native,
+                    gtk::ShortcutManager;
 }
 
 impl RoomDetails {

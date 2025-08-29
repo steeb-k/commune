@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure, closure_local},
 };
 use ruma::{Int, OwnedUserId, events::room::power_levels::UserPowerLevel};
@@ -24,7 +24,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/add_members_subpage.ui"
     )]
@@ -405,7 +405,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to add members with custom permissions.
     pub struct PermissionsAddMembersSubpage(ObjectSubclass<imp::PermissionsAddMembersSubpage>)
-        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PermissionsAddMembersSubpage {

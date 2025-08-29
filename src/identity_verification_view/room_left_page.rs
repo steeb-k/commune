@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::glib;
 
 use crate::session::model::IdentityVerification;
 
@@ -8,7 +8,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/room_left_page.ui")]
     #[properties(wrapper_type = super::RoomLeftPage)]
     pub struct RoomLeftPage {
@@ -50,7 +50,8 @@ mod imp {
 glib::wrapper! {
     /// A page to show when a verification request was cancelled because the room where it happened was left.
     pub struct RoomLeftPage(ObjectSubclass<imp::RoomLeftPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

@@ -1,6 +1,6 @@
 use std::slice;
 
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::{Int, events::room::power_levels::UserPowerLevel};
 
 use super::MemberPowerLevel;
@@ -21,7 +21,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/member_row.ui"
     )]
@@ -267,7 +267,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a room member's permission and allowing optionally to edit it.
     pub struct PermissionsMemberRow(ObjectSubclass<imp::PermissionsMemberRow>)
-        @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Box,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl PermissionsMemberRow {

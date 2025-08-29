@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone, graphene};
+use gtk::{gdk, glib, glib::clone, graphene};
 use ruma::OwnedEventId;
 use tracing::warn;
 
@@ -26,7 +26,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/media_viewer.ui")]
     #[properties(wrapper_type = super::MediaViewer)]
     pub struct MediaViewer {
@@ -506,7 +506,8 @@ glib::wrapper! {
     ///
     /// Swiping to the top or bottom closes this viewer.
     pub struct MediaViewer(ObjectSubclass<imp::MediaViewer>)
-        @extends gtk::Widget, @implements gtk::Accessible, adw::Swipeable;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, adw::Swipeable;
 }
 
 impl MediaViewer {

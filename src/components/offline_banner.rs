@@ -125,7 +125,8 @@ glib::wrapper! {
     /// If a session is set, it watches the offline status of the session, otherwise it watches the
     /// network connection with [`gio::NetworkMonitor`].
     pub struct OfflineBanner(ObjectSubclass<imp::OfflineBanner>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl OfflineBanner {

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, graphene::Point};
+use gtk::{gdk, gio, glib, glib::clone, graphene};
 use matrix_sdk::ruma::EventId;
 use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{
@@ -65,7 +65,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/mod.ui")]
     #[properties(wrapper_type = super::RoomHistory)]
     pub struct RoomHistory {
@@ -969,12 +969,12 @@ mod imp {
             while let Some(item) = child {
                 // Vertical position of the top of the item.
                 let top_pos = item
-                    .compute_point(listview, &Point::new(0.0, 0.0))
+                    .compute_point(listview, &graphene::Point::new(0.0, 0.0))
                     .unwrap()
                     .y();
                 // Vertical position of the bottom of the item.
                 let bottom_pos = item
-                    .compute_point(listview, &Point::new(0.0, item.height() as f32))
+                    .compute_point(listview, &graphene::Point::new(0.0, item.height() as f32))
                     .unwrap()
                     .y();
 
@@ -1144,7 +1144,8 @@ mod imp {
 glib::wrapper! {
     /// A view that displays the timeline of a room and ways to send new messages.
     pub struct RoomHistory(ObjectSubclass<imp::RoomHistory>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl RoomHistory {

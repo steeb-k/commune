@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 
@@ -27,7 +27,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/completion/completion_popover.ui"
     )]
@@ -694,7 +694,8 @@ mod imp {
 glib::wrapper! {
     /// A popover to autocomplete Matrix IDs for its parent `gtk::TextView`.
     pub struct CompletionPopover(ObjectSubclass<imp::CompletionPopover>)
-        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl CompletionPopover {

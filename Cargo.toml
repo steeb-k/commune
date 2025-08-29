@@ -60,16 +60,16 @@ wtinylfu = "0.2"
 zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
-adw = { package = "libadwaita", version = "0.7", features = ["v1_7"] }
-glycin = { version = "=3.0.0-beta.1", default-features = false, features = ["tokio", "gdk4"] }
-gst = { version = "0.23", package = "gstreamer" }
-gst_app = { version = "0.23", package = "gstreamer-app" }
-gst_pbutils = { version = "0.23", package = "gstreamer-pbutils" }
-gst_play = { version = "0.23", package = "gstreamer-play" }
-gst_video = { version = "0.23", package = "gstreamer-video" }
-gtk = { package = "gtk4", version = "0.9", features = ["gnome_47"] }
-shumate = { package = "libshumate", version = "0.6", features = ["v1_1"] }
-sourceview = { package = "sourceview5", version = "0.9" }
+adw = { package = "libadwaita", version = "0.8", features = ["v1_7"] }
+glycin = { git = "https://gitlab.gnome.org/GNOME/glycin.git", rev = "113b70766a8612b1896fb3b78e0d98f5069d1885", default-features = false, features = ["tokio", "gdk4"] }
+gst = { version = "0.24", package = "gstreamer" }
+gst_app = { version = "0.24", package = "gstreamer-app" }
+gst_pbutils = { version = "0.24", package = "gstreamer-pbutils" }
+gst_play = { version = "0.24", package = "gstreamer-play" }
+gst_video = { version = "0.24", package = "gstreamer-video" }
+gtk = { package = "gtk4", version = "0.10", features = ["gnome_47"] }
+shumate = { package = "libshumate", version = "0.7", features = ["v1_1"] }
+sourceview = { package = "sourceview5", version = "0.10" }
 
 [dependencies.matrix-sdk]
 version = "0.14"
@@ -117,12 +117,12 @@ features = [
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]
-aperture = "0.9"
-ashpd = { version = "0.11", default-features = false, features = [
+aperture = "0.11"
+ashpd = { version = "0.12", default-features = false, features = [
     "tracing",
     "tokio",
 ] }
-oo7 = { version = "0.4", default-features = false, features = [
+oo7 = { version = "0.5", default-features = false, features = [
     "openssl_crypto",
     "tokio",
     "tracing",

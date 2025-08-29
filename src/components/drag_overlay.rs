@@ -126,7 +126,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying an overlay when something is dragged onto it.
     pub struct DragOverlay(ObjectSubclass<imp::DragOverlay>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl DragOverlay {

@@ -17,11 +17,10 @@ mod imp {
     use std::sync::LazyLock;
 
     use glib::subclass::{InitializingObject, Signal};
-    use gtk::CompositeTemplate;
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate, Default, glib::Properties)]
+    #[derive(Debug, gtk::CompositeTemplate, Default, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/camera/qrcode_scanner.ui")]
     #[properties(wrapper_type = super::QrCodeScanner)]
     pub struct QrCodeScanner {
@@ -113,7 +112,8 @@ mod imp {
 glib::wrapper! {
     /// A widget to show the output of the camera and detect QR codes with it.
     pub struct QrCodeScanner(ObjectSubclass<imp::QrCodeScanner>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl QrCodeScanner {

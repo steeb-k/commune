@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
-use gtk::{CompositeTemplate, gio, glib};
+use gtk::{gio, glib};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
@@ -25,7 +25,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/encryption_page/import_export_keys_subpage.ui"
     )]
@@ -373,7 +373,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to import or export room encryption keys for backup.
     pub struct ImportExportKeysSubpage(ObjectSubclass<imp::ImportExportKeysSubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ImportExportKeysSubpage {

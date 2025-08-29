@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{StreamExt, future, lock::Mutex, pin_mut};
 use gettextrs::{gettext, pgettext};
-use gtk::{
-    CompositeTemplate, gdk, gio,
-    glib::{self, clone},
-};
+use gtk::{gdk, gio, glib, glib::clone};
 use matrix_sdk::{
     attachment::{AttachmentInfo, BaseFileInfo, Thumbnail},
     room::edit::EditedContent,
@@ -78,7 +75,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/mod.ui"
     )]
@@ -1253,7 +1250,8 @@ mod imp {
 glib::wrapper! {
     /// A toolbar with different actions to send messages.
     pub struct MessageToolbar(ObjectSubclass<imp::MessageToolbar>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageToolbar {

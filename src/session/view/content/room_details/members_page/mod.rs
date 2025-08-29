@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 mod members_list_view;
 
@@ -11,7 +11,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/mod.ui"
     )]
@@ -94,7 +94,8 @@ mod imp {
 glib::wrapper! {
     /// A page showing the members of a room.
     pub struct MembersPage(ObjectSubclass<imp::MembersPage>)
-        @extends gtk::Widget, adw::NavigationPage;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MembersPage {

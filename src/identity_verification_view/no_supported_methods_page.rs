@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone};
 
 use crate::{
     components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/identity_verification_view/no_supported_methods_page.ui"
     )]
@@ -116,7 +116,8 @@ mod imp {
 glib::wrapper! {
     /// A page to show when a verification request was received with no methods that Fractal supports.
     pub struct NoSupportedMethodsPage(ObjectSubclass<imp::NoSupportedMethodsPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

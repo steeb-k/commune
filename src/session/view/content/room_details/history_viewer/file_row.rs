@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib};
+use gtk::{gio, glib};
 use tracing::error;
 
 use super::HistoryViewerEvent;
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/file_row.ui"
     )]
@@ -168,7 +168,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a file event.
     pub struct FileRow(ObjectSubclass<imp::FileRow>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl FileRow {

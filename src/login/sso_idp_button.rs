@@ -1,4 +1,4 @@
-use gtk::{self, CompositeTemplate, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::api::client::session::get_login_types::v3::{
     IdentityProvider, IdentityProviderBrand,
 };
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/sso_idp_button.ui")]
     #[properties(wrapper_type = super::SsoIdpButton)]
     pub struct SsoIdpButton {
@@ -151,7 +151,7 @@ glib::wrapper! {
     /// A button to represent an SSO identity provider.
     pub struct SsoIdpButton(ObjectSubclass<imp::SsoIdpButton>)
         @extends gtk::Widget, gtk::Button,
-        @implements gtk::Accessible, gtk::Actionable;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl SsoIdpButton {

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use crate::utils::bool_to_accessible_tristate;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/switch_loading_row.ui")]
     #[properties(wrapper_type = super::SwitchLoadingRow)]
     pub struct SwitchLoadingRow {
@@ -123,7 +123,7 @@ glib::wrapper! {
     /// An `AdwActionRow` with a switch and a loading state.
     pub struct SwitchLoadingRow(ObjectSubclass<imp::SwitchLoadingRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
-        @implements gtk::Actionable, gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl SwitchLoadingRow {

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use tracing::error;
 
 use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, VisualMediaItem};
@@ -23,7 +23,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/visual_media.ui"
     )]
@@ -253,7 +253,8 @@ mod imp {
 glib::wrapper! {
     /// A view presenting the list of visual media (image or video) events in a room.
     pub struct VisualMediaHistoryViewer(ObjectSubclass<imp::VisualMediaHistoryViewer>)
-        @extends gtk::Widget, adw::NavigationPage;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl VisualMediaHistoryViewer {

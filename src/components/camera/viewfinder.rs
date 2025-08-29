@@ -97,7 +97,8 @@ glib::wrapper! {
     ///
     /// To construct this, use `Camera::viewfinder()`.
     pub struct CameraViewfinder(ObjectSubclass<imp::CameraViewfinder>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 /// Trait implemented by types that subclass [`CameraViewfinder`].

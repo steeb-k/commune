@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone, prelude::*};
 
 use crate::{components::LoadingBin, utils::bool_to_accessible_tristate};
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/check_loading_row.ui")]
     #[properties(wrapper_type = super::CheckLoadingRow)]
     pub struct CheckLoadingRow {
@@ -116,7 +116,8 @@ mod imp {
 glib::wrapper! {
     /// An `AdwActionRow` with a check button and a loading state.
     pub struct CheckLoadingRow(ObjectSubclass<imp::CheckLoadingRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow, @implements gtk::Actionable, gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl CheckLoadingRow {

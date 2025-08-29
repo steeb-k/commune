@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 use crate::{prelude::*, session::model::Room, utils::BoundObjectWeakRef};
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/title.ui")]
     #[properties(wrapper_type = super::RoomHistoryTitle)]
     pub struct RoomHistoryTitle {
@@ -152,7 +152,8 @@ mod imp {
 glib::wrapper! {
     /// A widget to show a room's title and topic in a header bar.
     pub struct RoomHistoryTitle(ObjectSubclass<imp::RoomHistoryTitle>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl RoomHistoryTitle {

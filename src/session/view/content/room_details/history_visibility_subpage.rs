@@ -230,7 +230,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage to select the history visibility of a room.
     pub struct HistoryVisibilitySubpage(ObjectSubclass<imp::HistoryVisibilitySubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl HistoryVisibilitySubpage {

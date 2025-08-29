@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::session::model::User;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reply.ui"
     )]
@@ -95,7 +95,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a reply to a message.
     pub struct MessageReply(ObjectSubclass<imp::MessageReply>)
-        @extends gtk::Widget, gtk::Grid, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Grid,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Orientable;
 }
 
 impl MessageReply {

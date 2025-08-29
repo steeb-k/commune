@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 use ruma::{OwnedEventId, OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
@@ -23,7 +23,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/session_view.ui")]
     #[properties(wrapper_type = super::SessionView)]
     pub struct SessionView {
@@ -583,7 +583,8 @@ mod imp {
 glib::wrapper! {
     /// A view for a Matrix user session.
     pub struct SessionView(ObjectSubclass<imp::SessionView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl SessionView {

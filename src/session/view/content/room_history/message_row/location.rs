@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use tracing::warn;
 
 use super::ContentFormat;
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/location.ui"
     )]
@@ -109,7 +109,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a location message in the timeline.
     pub struct MessageLocation(ObjectSubclass<imp::MessageLocation>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageLocation {

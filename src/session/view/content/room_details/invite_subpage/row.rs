@@ -1,5 +1,5 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::glib;
 
 use super::InviteItem;
 
@@ -11,7 +11,7 @@ mod imp {
     use super::*;
     use crate::utils::TemplateCallbacks;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/row.ui"
     )]
@@ -78,7 +78,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an item of the result of a search in the user directory.
     pub struct InviteRow(ObjectSubclass<imp::InviteRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl InviteRow {

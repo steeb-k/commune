@@ -29,7 +29,8 @@ glib::wrapper! {
     /// Wrap your custom widgets with CustomEntry to get stock entry styling and
     /// behavior for free.
     pub struct CustomEntry(ObjectSubclass<imp::CustomEntry>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl CustomEntry {

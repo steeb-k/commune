@@ -317,7 +317,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a state event that is part of a group.
     pub struct StateGroupItemRow(ObjectSubclass<imp::StateGroupItemRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::ListBoxRow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
 impl StateGroupItemRow {

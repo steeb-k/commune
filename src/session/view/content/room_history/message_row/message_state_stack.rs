@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone, prelude::*};
 
 use crate::session::model::MessageState;
 
@@ -14,7 +14,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/message_state_stack.ui"
     )]
@@ -123,7 +123,8 @@ mod imp {
 glib::wrapper! {
     /// A stack to display the different message states.
     pub struct MessageStateStack(ObjectSubclass<imp::MessageStateStack>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageStateStack {

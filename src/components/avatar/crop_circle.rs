@@ -167,7 +167,8 @@ mod imp {
 glib::wrapper! {
     /// A widget that crops its child with a circle.
     pub struct CropCircle(ObjectSubclass<imp::CropCircle>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl CropCircle {

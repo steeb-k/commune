@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::closure_local};
+use gtk::{glib, glib::closure_local};
 use matrix_sdk::encryption::{
     recovery::{RecoveryError, RecoveryState as SdkRecoveryState},
     secret_storage::SecretStorageError,
@@ -50,7 +50,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/crypto/recovery_setup_view.ui")]
     #[properties(wrapper_type = super::CryptoRecoverySetupView)]
     pub struct CryptoRecoverySetupView {
@@ -539,7 +539,8 @@ mod imp {
 glib::wrapper! {
     /// A view with the different flows to use or set up account recovery.
     pub struct CryptoRecoverySetupView(ObjectSubclass<imp::CryptoRecoverySetupView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl CryptoRecoverySetupView {

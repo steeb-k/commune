@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 
 mod import_export_keys_subpage;
 
@@ -18,7 +18,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/encryption_page/mod.ui"
     )]
@@ -284,7 +284,8 @@ mod imp {
 glib::wrapper! {
     /// Encryption settings page.
     pub struct EncryptionPage(ObjectSubclass<imp::EncryptionPage>)
-        @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::PreferencesPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl EncryptionPage {

@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use ruma::OwnedUserId;
 
 use super::ToastableDialog;
@@ -17,7 +17,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/user_profile.ui")]
     pub struct UserProfileDialog {
         #[template_child]
@@ -112,7 +112,8 @@ mod imp {
 glib::wrapper! {
     /// Dialog to view a user's profile.
     pub struct UserProfileDialog(ObjectSubclass<imp::UserProfileDialog>)
-        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl UserProfileDialog {

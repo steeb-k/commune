@@ -2,7 +2,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use matrix_sdk::{
     Client,
     authentication::oauth::{
@@ -63,7 +63,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/mod.ui")]
     #[properties(wrapper_type = super::Login)]
     pub struct Login {
@@ -501,7 +501,8 @@ mod imp {
 glib::wrapper! {
     /// A widget managing the login flows.
     pub struct Login(ObjectSubclass<imp::Login>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Login {

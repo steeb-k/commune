@@ -400,7 +400,8 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a state event.
     pub struct StateContent(ObjectSubclass<imp::StateContent>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl StateContent {

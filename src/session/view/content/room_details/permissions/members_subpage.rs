@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    CompositeTemplate, glib,
+    glib,
     glib::{clone, closure},
 };
 use tracing::error;
@@ -16,7 +16,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/members_subpage.ui"
     )]
@@ -206,7 +206,8 @@ mod imp {
 glib::wrapper! {
     /// A subpage to see and possibly edit the room members with custom power levels.
     pub struct PermissionsMembersSubpage(ObjectSubclass<imp::PermissionsMembersSubpage>)
-        @extends gtk::Widget, adw::NavigationPage;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PermissionsMembersSubpage {

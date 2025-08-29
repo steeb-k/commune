@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone};
+use gtk::{glib, glib::clone};
 use matrix_sdk::{
     Client, ClientBuildError, ClientBuilder, config::RequestConfig, sanitize_server_name,
 };
@@ -21,7 +21,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/homeserver_page.ui")]
     #[properties(wrapper_type = super::LoginHomeserverPage)]
     pub struct LoginHomeserverPage {
@@ -277,7 +277,8 @@ mod imp {
 glib::wrapper! {
     /// The login page to provide the homeserver and login settings.
     pub struct LoginHomeserverPage(ObjectSubclass<imp::LoginHomeserverPage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LoginHomeserverPage {

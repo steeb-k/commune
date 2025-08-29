@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::components::LoadingButton;
 
@@ -10,7 +10,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/auth/password_page.ui")]
     pub struct AuthDialogPasswordPage {
         #[template_child]
@@ -74,7 +74,8 @@ mod imp {
 glib::wrapper! {
     /// Page to pass the password stage for the [`AuthDialog`].
     pub struct AuthDialogPasswordPage(ObjectSubclass<imp::AuthDialogPasswordPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AuthDialogPasswordPage {

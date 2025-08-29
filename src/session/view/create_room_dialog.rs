@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use matrix_sdk::{
     Error,
     ruma::{
@@ -30,7 +30,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/create_room_dialog.ui")]
     #[properties(wrapper_type = super::CreateRoomDialog)]
     pub struct CreateRoomDialog {
@@ -252,7 +252,8 @@ mod imp {
 glib::wrapper! {
     /// Dialog to create a new room.
     pub struct CreateRoomDialog(ObjectSubclass<imp::CreateRoomDialog>)
-        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl CreateRoomDialog {

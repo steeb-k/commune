@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use tracing::error;
 
 use super::UserSessionRow;
@@ -15,7 +15,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_session/user_session_list_subpage.ui"
     )]
@@ -235,7 +235,7 @@ glib::wrapper! {
     /// Subpage to present the sessions of a user.
     pub struct UserSessionListSubpage(ObjectSubclass<imp::UserSessionListSubpage>)
         @extends gtk::Widget, adw::NavigationPage,
-        @implements gtk::Accessible;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl UserSessionListSubpage {

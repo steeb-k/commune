@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use sourceview::prelude::*;
 
 use crate::{
@@ -18,7 +18,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/event_actions/properties_dialog.ui"
     )]
@@ -143,7 +143,8 @@ mod imp {
 glib::wrapper! {
     /// A dialog showing the properties of an event.
     pub struct EventPropertiesDialog(ObjectSubclass<imp::EventPropertiesDialog>)
-        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 impl EventPropertiesDialog {

@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 use ruma::api::client::error::ErrorKind;
 use tracing::error;
 
@@ -16,7 +16,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/change_password_subpage.ui"
     )]
@@ -222,7 +222,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage allowing the user to change the account's password.
     pub struct ChangePasswordSubpage(ObjectSubclass<imp::ChangePasswordSubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ChangePasswordSubpage {

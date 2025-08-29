@@ -1,6 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib, glib::clone, prelude::*};
+use gtk::{glib, glib::clone, prelude::*};
 
 use crate::{
     components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
@@ -13,7 +13,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/identity_verification_view/accept_request_page.ui"
     )]
@@ -108,7 +108,8 @@ mod imp {
 glib::wrapper! {
     /// A page to accept or decline a new identity verification request.
     pub struct AcceptRequestPage(ObjectSubclass<imp::AcceptRequestPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 #[gtk::template_callbacks]

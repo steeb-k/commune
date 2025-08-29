@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, CompositeTemplate, glib};
+use gtk::glib;
 use ruma::{OwnedServerName, api::client::session::get_login_types::v3::LoginType};
 use tracing::warn;
 use url::Url;
@@ -15,7 +15,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/method_page.ui")]
     #[properties(wrapper_type = super::LoginMethodPage)]
     pub struct LoginMethodPage {
@@ -225,7 +225,8 @@ mod imp {
 glib::wrapper! {
     /// The login page allowing to login via password or to choose a SSO provider.
     pub struct LoginMethodPage(ObjectSubclass<imp::LoginMethodPage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LoginMethodPage {

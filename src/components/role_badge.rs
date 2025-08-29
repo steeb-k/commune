@@ -107,7 +107,8 @@ mod imp {
 glib::wrapper! {
     /// Inline widget displaying a badge with the role of a room member.
     pub struct RoleBadge(ObjectSubclass<imp::RoleBadge>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl RoleBadge {

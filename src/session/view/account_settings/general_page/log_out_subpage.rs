@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 use crate::{
     components::LoadingButtonRow,
@@ -16,7 +16,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/log_out_subpage.ui"
     )]
@@ -170,7 +170,8 @@ mod imp {
 glib::wrapper! {
     /// Subpage allowing a user to log out from their account.
     pub struct LogOutSubpage(ObjectSubclass<imp::LogOutSubpage>)
-        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl LogOutSubpage {

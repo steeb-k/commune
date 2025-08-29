@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
 use ruma::{OwnedMxcUri, api::client::discovery::get_capabilities::v3::Capabilities};
 use tracing::error;
@@ -29,7 +29,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/mod.ui"
     )]
@@ -536,7 +536,8 @@ mod imp {
 glib::wrapper! {
     /// Account settings page about the user and the session.
     pub struct GeneralPage(ObjectSubclass<imp::GeneralPage>)
-        @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::PreferencesPage,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl GeneralPage {

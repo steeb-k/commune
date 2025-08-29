@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, glib};
+use gtk::glib;
 
 mod imp {
     use std::marker::PhantomData;
@@ -8,7 +8,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/toastable.ui")]
     #[properties(wrapper_type = super::ToastableDialog)]
     pub struct ToastableDialog {
@@ -62,7 +62,8 @@ mod imp {
 glib::wrapper! {
     /// A dialog that can display toasts.
     pub struct ToastableDialog(ObjectSubclass<imp::ToastableDialog>)
-        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::ShortcutManager;
 }
 
 pub trait ToastableDialogExt: 'static {

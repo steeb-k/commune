@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gio, glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use tracing::{error, warn};
 
 use super::video_player_renderer::VideoPlayerRenderer;
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/media/video_player.ui")]
     #[properties(wrapper_type = super::VideoPlayer)]
     pub struct VideoPlayer {
@@ -69,7 +69,7 @@ mod imp {
                     glib::ControlFlow::Break,
                     move |_, message| {
                         if let Ok(message) = gst_play::PlayMessage::parse(message) {
-                            imp.handle_message(message);
+                            imp.handle_message(&message);
                         }
 
                         glib::ControlFlow::Continue
@@ -147,24 +147,25 @@ mod imp {
         }
 
         /// Handle a message from the player.
-        fn handle_message(&self, message: gst_play::PlayMessage) {
+        fn handle_message(&self, message: &gst_play::PlayMessage) {
             match message {
-                gst_play::PlayMessage::StateChanged { state } => {
+                gst_play::PlayMessage::StateChanged(change) => {
                     if matches!(
-                        state,
+                        change.state(),
                         gst_play::PlayState::Playing | gst_play::PlayState::Paused
                     ) {
                         // Files that fail to play go from `Buffering` to `Stopped`.
                         self.set_state(LoadingState::Ready);
                     }
                 }
-                gst_play::PlayMessage::DurationChanged { duration } => {
-                    self.set_duration(duration);
+                gst_play::PlayMessage::DurationChanged(change) => {
+                    self.set_duration(change.duration());
                 }
-                gst_play::PlayMessage::Warning { error, .. } => {
-                    warn!("Warning playing video: {error}");
+                gst_play::PlayMessage::Warning(warning) => {
+                    warn!("Warning playing video: {}", warning.error());
                 }
-                gst_play::PlayMessage::Error { error, .. } => {
+                gst_play::PlayMessage::Error(error) => {
+                    let error = error.error().clone();
                     error!("Error playing video: {error}");
                     self.error.replace(Some(error));
                     self.set_state(LoadingState::Error);
@@ -219,7 +220,8 @@ mod imp {
 glib::wrapper! {
     /// A widget to preview a video file without controls or sound.
     pub struct VideoPlayer(ObjectSubclass<imp::VideoPlayer>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl VideoPlayer {

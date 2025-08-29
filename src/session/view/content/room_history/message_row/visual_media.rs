@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
@@ -48,7 +48,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/visual_media.ui"
     )]
@@ -845,7 +845,8 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying a visual media (image or video) message in the timeline.
     pub struct MessageVisualMedia(ObjectSubclass<imp::MessageVisualMedia>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl MessageVisualMedia {

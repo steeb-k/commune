@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{CompositeTemplate, gdk, gio, glib, glib::clone, pango};
+use gtk::{gdk, gio, glib, glib::clone, pango};
 use tracing::error;
 
 use crate::utils::BoundObjectWeakRef;
@@ -11,7 +11,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/addresses_subpage/completion_popover.ui"
     )]
@@ -370,7 +370,8 @@ mod imp {
 glib::wrapper! {
     /// A popover to auto-complete strings for a `gtk::Editable`.
     pub struct CompletionPopover(ObjectSubclass<imp::CompletionPopover>)
-        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Popover,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::ShortcutManager;
 }
 
 impl CompletionPopover {

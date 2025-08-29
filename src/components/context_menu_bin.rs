@@ -1,5 +1,4 @@
-use adw::subclass::prelude::*;
-use gtk::{CompositeTemplate, gdk, glib, glib::clone, prelude::*};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::utils::{BoundObject, key_bindings};
 
@@ -12,7 +11,7 @@ mod imp {
 
     #[repr(C)]
     pub struct ContextMenuBinClass {
-        parent_class: glib::object::Class<adw::Bin>,
+        parent_class: glib::object::Class<gtk::Widget>,
         pub(super) menu_opened: fn(&super::ContextMenuBin),
     }
 
@@ -25,7 +24,7 @@ mod imp {
         (klass.as_ref().menu_opened)(this);
     }
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/context_menu_bin.ui")]
     #[properties(wrapper_type = super::ContextMenuBin)]
     pub struct ContextMenuBin {
@@ -203,7 +202,8 @@ mod imp {
 glib::wrapper! {
     /// A Bin widget that can have a context menu.
     pub struct ContextMenuBin(ObjectSubclass<imp::ContextMenuBin>)
-        @extends gtk::Widget, @implements gtk::Accessible;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl ContextMenuBin {
