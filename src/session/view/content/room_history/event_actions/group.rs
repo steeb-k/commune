@@ -383,19 +383,20 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
             _ => {}
         }
 
-        if let Some(media_message) = event.media_message() {
-            if media_message.caption().is_some() {
-                // Copy caption.
-                action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                    .activate(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |_, _, _| {
-                            imp.copy_text();
-                        }
-                    ))
-                    .build()]);
-            }
+        if event
+            .media_message()
+            .is_some_and(|media_message| media_message.caption().is_some())
+        {
+            // Copy caption.
+            action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        imp.copy_text();
+                    }
+                ))
+                .build()]);
         }
     }
 

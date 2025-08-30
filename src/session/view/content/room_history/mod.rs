@@ -305,10 +305,10 @@ mod imp {
         fn dispose(&self) {
             self.disconnect_all();
 
-            if let Some(handler) = self.window_active_handler.take() {
-                if let Some(window) = self.parent_window() {
-                    window.disconnect(handler);
-                }
+            if let Some(handler) = self.window_active_handler.take()
+                && let Some(window) = self.parent_window()
+            {
+                window.disconnect(handler);
             }
         }
     }
@@ -446,12 +446,12 @@ mod imp {
                 }
             }
 
-            if let Some(members) = self.room_members.take() {
-                if let Some(handler) = self.knock_items_changed_handler.take() {
-                    members
-                        .membership_list(MembershipListKind::Knock)
-                        .disconnect(handler);
-                }
+            if let Some(members) = self.room_members.take()
+                && let Some(handler) = self.knock_items_changed_handler.take()
+            {
+                members
+                    .membership_list(MembershipListKind::Knock)
+                    .disconnect(handler);
             }
 
             self.timeline.disconnect_signals();
@@ -635,10 +635,8 @@ mod imp {
                 self.update_scroll_btn();
 
                 // Remove the typing row if the user scrolls up.
-                if !is_at_bottom {
-                    if let Some(timeline) = self.timeline.obj() {
-                        timeline.remove_empty_typing_row();
-                    }
+                if !is_at_bottom && let Some(timeline) = self.timeline.obj() {
+                    timeline.remove_empty_typing_row();
                 }
 
                 self.trigger_read_receipts_update();
@@ -984,15 +982,14 @@ mod imp {
                 let bottom_in_view = bottom_pos > 0.0 && bottom_pos <= max;
                 // If a message is too big and takes more space than the current view.
                 let content_in_view = top_pos <= max && bottom_pos > 0.0;
-                if top_in_view || bottom_in_view || content_in_view {
-                    if let Some(event_id) = item
+                if (top_in_view || bottom_in_view || content_in_view)
+                    && let Some(event_id) = item
                         .first_child()
                         .and_downcast::<EventRow>()
                         .and_then(|row| row.event())
                         .and_then(|event| event.event_id())
-                    {
-                        return Some(event_id);
-                    }
+                {
+                    return Some(event_id);
                 }
 
                 child = item.prev_sibling();

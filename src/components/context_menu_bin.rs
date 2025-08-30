@@ -149,10 +149,10 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(popover) = prev_popover {
-                if popover.parent().is_some_and(|w| w == *obj) {
-                    popover.unparent();
-                }
+            if let Some(popover) = prev_popover
+                && popover.parent().is_some_and(|w| w == *obj)
+            {
+                popover.unparent();
             }
             self.popover.disconnect_signals();
 

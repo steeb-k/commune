@@ -126,10 +126,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.obj() {
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
+            if let Some(room) = self.room.obj()
+                && let Some(handler) = self.permissions_handler.take()
+            {
+                room.permissions().disconnect(handler);
             }
         }
     }
@@ -143,10 +143,10 @@ mod imp {
                 return;
             }
 
-            if let Some(room) = prev_room {
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
+            if let Some(room) = prev_room
+                && let Some(handler) = self.permissions_handler.take()
+            {
+                room.permissions().disconnect(handler);
             }
             self.room.disconnect_signals();
 

@@ -396,10 +396,10 @@ mod imp {
                 Ok(room_id) => {
                     let obj = self.obj();
 
-                    if let Some(local_room) = room_list.get_wait(&room_id, None).await {
-                        if let Some(window) = obj.root().and_downcast_ref::<Window>() {
-                            window.session_view().select_room(local_room);
-                        }
+                    if let Some(local_room) = room_list.get_wait(&room_id, None).await
+                        && let Some(window) = obj.root().and_downcast_ref::<Window>()
+                    {
+                        window.session_view().select_room(local_room);
                     }
 
                     obj.close();

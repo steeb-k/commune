@@ -76,10 +76,12 @@ mod imp {
 
         /// Sent the given response.
         fn send_response(&self, response: gtk::ResponseType) {
-            if let Some(sender) = self.sender.take() {
-                if sender.send(response).is_err() {
-                    error!("Could not send attachment dialog response {response:?}");
-                }
+            if self
+                .sender
+                .take()
+                .is_some_and(|sender| sender.send(response).is_err())
+            {
+                error!("Could not send attachment dialog response {response:?}");
             }
         }
 

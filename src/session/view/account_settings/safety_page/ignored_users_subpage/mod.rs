@@ -100,10 +100,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(session) = self.session.upgrade() {
-                if let Some(handler) = self.items_changed_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
+            if let Some(session) = self.session.upgrade()
+                && let Some(handler) = self.items_changed_handler.take()
+            {
+                session.ignored_users().disconnect(handler);
             }
         }
     }
@@ -120,10 +120,10 @@ mod imp {
                 return;
             }
 
-            if let Some(session) = prev_session {
-                if let Some(handler) = self.items_changed_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
+            if let Some(session) = prev_session
+                && let Some(handler) = self.items_changed_handler.take()
+            {
+                session.ignored_users().disconnect(handler);
             }
 
             let ignored_users = session.map(Session::ignored_users);

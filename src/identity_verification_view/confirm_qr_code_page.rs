@@ -50,10 +50,10 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for ConfirmQrCodePage {
         fn dispose(&self) {
-            if let Some(verification) = self.verification.upgrade() {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
-                }
+            if let Some(verification) = self.verification.upgrade()
+                && let Some(handler) = self.display_name_handler.take()
+            {
+                verification.user().disconnect(handler);
             }
         }
     }
@@ -78,10 +78,10 @@ mod imp {
 
             obj.reset();
 
-            if let Some(verification) = prev_verification {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
-                }
+            if let Some(verification) = prev_verification
+                && let Some(handler) = self.display_name_handler.take()
+            {
+                verification.user().disconnect(handler);
             }
 
             if let Some(verification) = verification {

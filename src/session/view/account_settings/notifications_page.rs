@@ -410,13 +410,12 @@ mod imp {
                     break;
                 };
 
-                if let Some(keyword) = keyword_obj
+                if keyword_obj
                     .downcast_ref::<gtk::StringObject>()
                     .map(gtk::StringObject::string)
+                    .is_some_and(|keyword| keyword.to_lowercase() == text)
                 {
-                    if keyword.to_lowercase() == text {
-                        return false;
-                    }
+                    return false;
                 }
             }
 

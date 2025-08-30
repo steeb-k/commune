@@ -240,10 +240,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(handler_id) = self.window_active_handler_id.take() {
-                if let Some(window) = self.parent_window() {
-                    window.disconnect(handler_id);
-                }
+            if let Some(handler_id) = self.window_active_handler_id.take()
+                && let Some(window) = self.parent_window()
+            {
+                window.disconnect(handler_id);
             }
         }
     }
@@ -413,11 +413,11 @@ mod imp {
                     return;
                 };
 
-                if let Ok(room) = item.downcast::<Room>() {
-                    if read_state == ReadState::Any || !room.is_read() {
-                        self.select_room(room);
-                        return;
-                    }
+                if let Ok(room) = item.downcast::<Room>()
+                    && (read_state == ReadState::Any || !room.is_read())
+                {
+                    self.select_room(room);
+                    return;
                 }
             }
         }
@@ -509,10 +509,11 @@ mod imp {
                 return;
             };
 
-            if let Some(room_uri) = &room_uri {
-                if self.select_room_if_exists(&room_uri.id) {
-                    return;
-                }
+            if room_uri
+                .as_ref()
+                .is_some_and(|room_uri| self.select_room_if_exists(&room_uri.id))
+            {
+                return;
             }
 
             let dialog = RoomPreviewDialog::new(&session);

@@ -165,29 +165,29 @@ mod imp {
 
             // Use the size measured by the media child when we can, it is the natural size
             // of the media.
-            if self.stack.visible_child_name().as_deref() == Some(MEDIA_PAGE) {
-                if let Some(child) = self.media_child::<gtk::Widget>() {
-                    // Get the intrinsic size of the media to avoid upscaling it. It is the size
-                    // returned by GtkPicture when for_size is -1.
-                    let other_orientation = if orientation == gtk::Orientation::Vertical {
-                        gtk::Orientation::Horizontal
-                    } else {
-                        gtk::Orientation::Vertical
-                    };
-                    let (_, intrinsic_for_size, ..) = child.measure(other_orientation, -1);
+            if self.stack.visible_child_name().as_deref() == Some(MEDIA_PAGE)
+                && let Some(child) = self.media_child::<gtk::Widget>()
+            {
+                // Get the intrinsic size of the media to avoid upscaling it. It is the size
+                // returned by GtkPicture when for_size is -1.
+                let other_orientation = if orientation == gtk::Orientation::Vertical {
+                    gtk::Orientation::Horizontal
+                } else {
+                    gtk::Orientation::Vertical
+                };
+                let (_, intrinsic_for_size, ..) = child.measure(other_orientation, -1);
 
-                    let (child_min, child_nat, ..) =
-                        child.measure(orientation, for_size.min(intrinsic_for_size));
+                let (child_min, child_nat, ..) =
+                    child.measure(orientation, for_size.min(intrinsic_for_size));
 
-                    if child_nat != 0 {
-                        // Limit the returned size to the max.
-                        let max = max.try_into().unwrap_or(i32::MAX);
+                if child_nat != 0 {
+                    // Limit the returned size to the max.
+                    let max = max.try_into().unwrap_or(i32::MAX);
 
-                        let min = child_min.max(overlay_min).min(max);
-                        let nat = child_nat.max(overlay_min).min(max);
+                    let min = child_min.max(overlay_min).min(max);
+                    let nat = child_nat.max(overlay_min).min(max);
 
-                        return (min, nat, -1, -1);
-                    }
+                    return (min, nat, -1, -1);
                 }
             }
 
@@ -801,10 +801,10 @@ mod imp {
                     room.join_rule().disconnect(handler);
                 }
 
-                if let Some(handler) = self.global_account_data_handler.take() {
-                    if let Some(session) = room.session() {
-                        session.global_account_data().disconnect(handler);
-                    }
+                if let Some(handler) = self.global_account_data_handler.take()
+                    && let Some(session) = room.session()
+                {
+                    session.global_account_data().disconnect(handler);
                 }
             }
         }

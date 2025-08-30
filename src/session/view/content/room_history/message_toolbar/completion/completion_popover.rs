@@ -330,10 +330,10 @@ mod imp {
             let term = self.view().buffer().text(&term_start, &word_end, true);
 
             // If the cursor jumped to another word, abort the completion.
-            if let Some((_, _, prev_term)) = self.current_word() {
-                if !term.contains(&prev_term.term) && !prev_term.term.contains(term.as_str()) {
-                    return None;
-                }
+            if self.current_word().is_some_and(|(_, _, prev_term)| {
+                !term.contains(&prev_term.term) && !prev_term.term.contains(term.as_str())
+            }) {
+                return None;
             }
 
             let target = if is_room {

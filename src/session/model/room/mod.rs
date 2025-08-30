@@ -637,12 +637,12 @@ mod imp {
             self.update_successor();
 
             // If the successor was not found, watch for it in the room list.
-            if self.successor.upgrade().is_none() {
-                if let Some(session) = self.session.upgrade() {
-                    session
-                        .room_list()
-                        .add_tombstoned_room(self.room_id().to_owned());
-                }
+            if self.successor.upgrade().is_none()
+                && let Some(session) = self.session.upgrade()
+            {
+                session
+                    .room_list()
+                    .add_tombstoned_room(self.room_id().to_owned());
             }
 
             if !self.is_tombstoned.get() {
@@ -670,11 +670,12 @@ mod imp {
                 // The Matrix spec says that we should use the "predecessor" field of the
                 // m.room.create event of the successor, not the "successor" field of the
                 // m.room.tombstone event, so check it just to be sure.
-                if let Some(predecessor_id) = successor.predecessor_id() {
-                    if predecessor_id == self.room_id() {
-                        self.set_successor(&successor);
-                        return;
-                    }
+                if successor
+                    .predecessor_id()
+                    .is_some_and(|predecessor_id| predecessor_id == self.room_id())
+                {
+                    self.set_successor(&successor);
+                    return;
                 }
             }
 
@@ -685,11 +686,12 @@ mod imp {
                     break;
                 };
 
-                if let Some(predecessor_id) = room.predecessor_id() {
-                    if predecessor_id == self.room_id() {
-                        self.set_successor(&room);
-                        return;
-                    }
+                if room
+                    .predecessor_id()
+                    .is_some_and(|predecessor_id| predecessor_id == self.room_id())
+                {
+                    self.set_successor(&room);
+                    return;
                 }
             }
         }
@@ -759,15 +761,13 @@ mod imp {
                 members.update_member(user_id.clone());
             } else if user_id == self.own_member().user_id() {
                 self.own_member().update();
-            } else if self
+            } else if let Some(member) = self
                 .direct_member
                 .borrow()
                 .as_ref()
-                .is_some_and(|member| member.user_id() == user_id)
+                .filter(|member| member.user_id() == user_id)
             {
-                if let Some(member) = self.direct_member.borrow().as_ref() {
-                    member.update();
-                }
+                member.update();
             }
 
             // It might change the direct member if the number of members changed.

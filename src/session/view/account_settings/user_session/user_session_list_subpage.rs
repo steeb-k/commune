@@ -63,10 +63,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(user_sessions) = self.user_sessions.obj() {
-                if let Some(handler) = self.other_sessions_handler.take() {
-                    user_sessions.other_sessions().disconnect(handler);
-                }
+            if let Some(user_sessions) = self.user_sessions.obj()
+                && let Some(handler) = self.other_sessions_handler.take()
+            {
+                user_sessions.other_sessions().disconnect(handler);
             }
 
             // AdwPreferencesPage doesn't handle children other than AdwPreferencesGroup.
@@ -87,10 +87,10 @@ mod imp {
                 return;
             }
 
-            if let Some(user_sessions) = prev_user_sessions {
-                if let Some(handler) = self.other_sessions_handler.take() {
-                    user_sessions.other_sessions().disconnect(handler);
-                }
+            if let Some(user_sessions) = prev_user_sessions
+                && let Some(handler) = self.other_sessions_handler.take()
+            {
+                user_sessions.other_sessions().disconnect(handler);
             }
             self.user_sessions.disconnect_signals();
 

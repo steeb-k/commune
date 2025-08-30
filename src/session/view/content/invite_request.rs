@@ -125,12 +125,12 @@ mod imp {
                                 return;
                             };
                             let selection = session.sidebar_list_model().selection_model();
-                            if let Some(selected_room) =
-                                selection.selected_item().and_downcast::<Room>()
+                            if selection
+                                .selected_item()
+                                .and_downcast::<Room>()
+                                .is_some_and(|selected_room| selected_room == *room)
                             {
-                                if selected_room == *room {
-                                    selection.set_selected_item(None::<glib::Object>);
-                                }
+                                selection.set_selected_item(None::<glib::Object>);
                             }
                         }
 
@@ -173,10 +173,10 @@ mod imp {
 
         /// Disconnect the signal handlers of this view.
         fn disconnect_signals(&self) {
-            if let Some(room) = self.room.take() {
-                if let Some(handler) = self.category_handler.take() {
-                    room.disconnect(handler);
-                }
+            if let Some(room) = self.room.take()
+                && let Some(handler) = self.category_handler.take()
+            {
+                room.disconnect(handler);
             }
         }
     }

@@ -3,7 +3,7 @@ name = "fractal"
 version = "12.1.0"
 authors = ["Julian Sparber <julian@sparber.net>"]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 publish = false
 
 [package.metadata.cargo-machete]

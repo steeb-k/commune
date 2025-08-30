@@ -82,23 +82,21 @@ impl AvatarData {
         };
         let scale_factor = window.scale_factor();
 
-        if !inhibit_image {
-            if let Some(image) = self.image() {
-                match image.load_small_paintable().await {
-                    Ok(Some(paintable)) => {
-                        let texture = paintable_as_notification_icon(
-                            paintable.upcast_ref(),
-                            scale_factor,
-                            &renderer,
-                        );
-                        return Some(texture);
-                    }
-                    // No paintable, we will try to generate the fallback.
-                    Ok(None) => {}
-                    // Could not get the paintable, we will try to generate the fallback.
-                    Err(error) => {
-                        warn!("Could not generate icon for notification: {error}");
-                    }
+        if !inhibit_image && let Some(image) = self.image() {
+            match image.load_small_paintable().await {
+                Ok(Some(paintable)) => {
+                    let texture = paintable_as_notification_icon(
+                        paintable.upcast_ref(),
+                        scale_factor,
+                        &renderer,
+                    );
+                    return Some(texture);
+                }
+                // No paintable, we will try to generate the fallback.
+                Ok(None) => {}
+                // Could not get the paintable, we will try to generate the fallback.
+                Err(error) => {
+                    warn!("Could not generate icon for notification: {error}");
                 }
             }
         }

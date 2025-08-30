@@ -152,14 +152,13 @@ impl<'a> InlineHtmlBuilder<'a> {
             }
             MatrixElement::A(anchor) => {
                 // First, check if it's a mention, if we detect mentions.
-                if let Some(uri) = &anchor.href {
-                    if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
-                        if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
-                            pills.push(pill);
+                if let Some(uri) = &anchor.href
+                    && let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions
+                    && let Some(pill) = self.inner.maybe_append_mention(uri, room)
+                {
+                    pills.push(pill);
 
-                            return;
-                        }
-                    }
+                    return;
                 }
 
                 // It's not a mention, render the link, if it has a URI.
@@ -345,15 +344,15 @@ impl<'a> InlineHtmlBuilder<'a> {
                     let borrowed_t = t.borrow();
                     let t = borrowed_t.as_ref();
 
-                    if self.single_line {
-                        if let Some(newline) = t.find('\n') {
-                            self.truncated = true;
+                    if self.single_line
+                        && let Some(newline_pos) = t.find('\n')
+                    {
+                        self.truncated = true;
 
-                            self.inner.push_str(&t[..newline]);
-                            self.inner.append_ellipsis();
+                        self.inner.push_str(&t[..newline_pos]);
+                        self.inner.append_ellipsis();
 
-                            break;
-                        }
+                        break;
                     }
 
                     self.inner.push_str(t);

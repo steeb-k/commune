@@ -129,10 +129,10 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                             error!("Could not remove session database: {error}");
                         }
 
-                        if version >= 6 {
-                            if let Err(error) = fs::remove_dir_all(session.cache_path()).await {
-                                error!("Could not remove session cache: {error}");
-                            }
+                        if version >= 6
+                            && let Err(error) = fs::remove_dir_all(session.cache_path()).await
+                        {
+                            error!("Could not remove session cache: {error}");
                         }
                     })
                     .await

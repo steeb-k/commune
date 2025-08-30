@@ -185,10 +185,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.upgrade() {
-                if let Some(handler) = self.aliases_changed_handler.take() {
-                    room.aliases().disconnect(handler);
-                }
+            if let Some(room) = self.room.upgrade()
+                && let Some(handler) = self.aliases_changed_handler.take()
+            {
+                room.aliases().disconnect(handler);
             }
 
             self.public_addresses_completion.unparent();

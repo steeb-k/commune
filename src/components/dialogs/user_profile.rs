@@ -76,11 +76,10 @@ mod imp {
                         if !matches!(
                             user.loading_state(),
                             LoadingState::Initial | LoadingState::Loading
-                        ) {
-                            if let Some(handler) = imp.user_loading_handler.take() {
-                                user.disconnect(handler);
-                                imp.show_details();
-                            }
+                        ) && let Some(handler) = imp.user_loading_handler.take()
+                        {
+                            user.disconnect(handler);
+                            imp.show_details();
                         }
                     }
                 ));
@@ -101,10 +100,10 @@ mod imp {
 
         /// Reset this dialog.
         fn reset(&self) {
-            if let Some(handler) = self.user_loading_handler.take() {
-                if let Some(user) = self.user_page.user() {
-                    user.disconnect(handler);
-                }
+            if let Some(handler) = self.user_loading_handler.take()
+                && let Some(user) = self.user_page.user()
+            {
+                user.disconnect(handler);
             }
         }
     }

@@ -468,19 +468,18 @@ fn widget_for_details_summary(
     }
 
     // Only inline elements or a single header element are allowed in summary.
-    if children.len() == 1 {
-        if let Some(node) = children.first().filter(|node| {
+    if children.len() == 1
+        && let Some(node) = children.first().filter(|node| {
             node.as_element().is_some_and(|element| {
                 matches!(
                     element.name.local.as_ref(),
                     "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
                 )
             })
-        }) {
-            if let Some(widget) = widget_for_html_block(node, config, add_ellipsis, &mut None) {
-                return Some(widget);
-            }
-        }
+        })
+        && let Some(widget) = widget_for_html_block(node, config, add_ellipsis, &mut None)
+    {
+        return Some(widget);
     }
 
     label_for_inline_html(children, config, add_ellipsis, &mut None)

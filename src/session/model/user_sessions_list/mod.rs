@@ -261,10 +261,10 @@ mod imp {
 
         /// Find the user session with the given device ID, if any.
         pub(super) fn get(&self, device_id: &OwnedDeviceId) -> Option<UserSession> {
-            if let Some(current_session) = self.current_session.borrow().as_ref() {
-                if current_session.device_id() == device_id {
-                    return Some(current_session.clone());
-                }
+            if let Some(current_session) = self.current_session.borrow().as_ref()
+                && current_session.device_id() == device_id
+            {
+                return Some(current_session.clone());
             }
 
             self.other_sessions.get(device_id)

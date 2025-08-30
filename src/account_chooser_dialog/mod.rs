@@ -50,10 +50,12 @@ mod imp {
 
     impl AdwDialogImpl for AccountChooserDialog {
         fn closed(&self) {
-            if let Some(sender) = self.sender.take() {
-                if sender.send(None).is_err() {
-                    error!("Could not send selected session");
-                }
+            if self
+                .sender
+                .take()
+                .is_some_and(|sender| sender.send(None).is_err())
+            {
+                error!("Could not send selected session");
             }
         }
     }

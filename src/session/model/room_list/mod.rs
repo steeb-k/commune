@@ -168,13 +168,12 @@ mod imp {
                     ));
 
                     // Check if the new room is the successor to a tombstoned room.
-                    if let Some(predecessor_id) = room.predecessor_id() {
-                        if self.tombstoned_rooms.borrow().contains(predecessor_id) {
-                            if let Some(room) = self.get(predecessor_id) {
-                                room.update_successor();
-                                tombstoned_rooms_to_remove.push(predecessor_id.clone());
-                            }
-                        }
+                    if let Some(predecessor_id) = room.predecessor_id()
+                        && self.tombstoned_rooms.borrow().contains(predecessor_id)
+                        && let Some(room) = self.get(predecessor_id)
+                    {
+                        room.update_successor();
+                        tombstoned_rooms_to_remove.push(predecessor_id.clone());
                     }
                 }
 
@@ -482,10 +481,10 @@ impl RoomList {
             #[strong]
             sender_cell,
             move |obj, _, _, _| {
-                if let Some(room) = obj.get(&room_id) {
-                    if let Some(sender) = sender_cell.take() {
-                        let _ = sender.send(Some(room));
-                    }
+                if let Some(room) = obj.get(&room_id)
+                    && let Some(sender) = sender_cell.take()
+                {
+                    let _ = sender.send(Some(room));
                 }
             }
         ));

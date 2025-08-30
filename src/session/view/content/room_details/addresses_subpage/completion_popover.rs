@@ -88,10 +88,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(entry) = self.entry.obj() {
-                if let Some(controller) = self.entry_controller.take() {
-                    entry.remove_controller(&controller);
-                }
+            if let Some(entry) = self.entry.obj()
+                && let Some(controller) = self.entry_controller.take()
+            {
+                entry.remove_controller(&controller);
             }
 
             if let Some(binding) = self.entry_binding.take() {
@@ -201,20 +201,18 @@ mod imp {
 
             // Always hide the popover if it has a single item that is exactly the text of
             // the entry.
-            if n_items == 1 {
-                if let Some(item) = self
+            if n_items == 1
+                && let Some(item) = self
                     .filtered_list
                     .item(0)
                     .and_downcast::<gtk::StringObject>()
-                {
-                    if item.string() == entry.text() {
-                        if obj.is_visible() {
-                            obj.popdown();
-                        }
-
-                        return;
-                    }
+                && item.string() == entry.text()
+            {
+                if obj.is_visible() {
+                    obj.popdown();
                 }
+
+                return;
             }
 
             // Only show the popover if the entry is focused.

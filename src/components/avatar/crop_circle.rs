@@ -74,7 +74,7 @@ mod imp {
             let (_, child_size) = child.preferred_size();
 
             // The x position at the right edge of the child.
-            let mut x = (width + child_size.width()) / 2;
+            let mut x = width.midpoint(child_size.width());
 
             if self.is_cropped.get() {
                 let cropped_width = self

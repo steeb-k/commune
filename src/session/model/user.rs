@@ -70,10 +70,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(session) = self.session.get() {
-                if let Some(handler) = self.ignored_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
+            if let Some(session) = self.session.get()
+                && let Some(handler) = self.ignored_handler.take()
+            {
+                session.ignored_users().disconnect(handler);
             }
         }
     }
@@ -248,10 +248,8 @@ impl User {
         };
 
         // Try to get the local crypto identity.
-        if should_have_local {
-            if let Some(identity) = self.imp().local_crypto_identity().await {
-                return Some(identity);
-            }
+        if should_have_local && let Some(identity) = self.imp().local_crypto_identity().await {
+            return Some(identity);
         }
 
         // Now, try to request the crypto identity from the homeserver.

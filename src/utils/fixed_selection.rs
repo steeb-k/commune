@@ -205,14 +205,14 @@ mod imp {
             let prev_selected = self.selected.get();
             let mut selected = gtk::INVALID_LIST_POSITION;
 
-            if item.is_some() {
-                if let Some(model) = self.model.obj() {
-                    for i in 0..model.n_items() {
-                        let current_item = model.item(i);
-                        if current_item == item {
-                            selected = i;
-                            break;
-                        }
+            if item.is_some()
+                && let Some(model) = self.model.obj()
+            {
+                for i in 0..model.n_items() {
+                    let current_item = model.item(i);
+                    if current_item == item {
+                        selected = i;
+                        break;
                     }
                 }
             }

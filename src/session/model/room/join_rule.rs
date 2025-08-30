@@ -115,10 +115,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.upgrade() {
-                if let Some(handler) = self.own_membership_handler.take() {
-                    room.own_member().disconnect(handler);
-                }
+            if let Some(room) = self.room.upgrade()
+                && let Some(handler) = self.own_membership_handler.take()
+            {
+                room.own_member().disconnect(handler);
             }
         }
     }

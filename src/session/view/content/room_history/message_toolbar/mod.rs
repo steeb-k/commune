@@ -1092,17 +1092,16 @@ mod imp {
         /// Scrolls to the corresponding event.
         #[template_callback]
         fn handle_related_event_click(&self) {
-            if let Some(related_to) = self.current_composer_state().related_to() {
-                if self
+            if let Some(related_to) = self.current_composer_state().related_to()
+                && self
                     .obj()
                     .activate_action(
                         "room-history.scroll-to-event",
                         Some(&TimelineEventItemId::EventId(related_to.event_id()).to_variant()),
                     )
                     .is_err()
-                {
-                    error!("Could not activate `room-history.scroll-to-event` action");
-                }
+            {
+                error!("Could not activate `room-history.scroll-to-event` action");
             }
         }
 

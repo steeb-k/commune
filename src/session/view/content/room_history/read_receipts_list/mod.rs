@@ -230,26 +230,25 @@ mod imp {
             self.receipt_member.disconnect_signals();
             let n_items = self.list.n_items();
 
-            if n_items == 1 {
-                if let Some(member) = self
+            if n_items == 1
+                && let Some(member) = self
                     .list
                     .item(0)
                     .and_downcast::<MemberTimestamp>()
                     .and_then(|r| r.member())
-                {
-                    // Listen to changes of the display name.
-                    let handler_id = member.connect_display_name_notify(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |member| {
-                            imp.update_member_tooltip(member);
-                        }
-                    ));
+            {
+                // Listen to changes of the display name.
+                let handler_id = member.connect_display_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |member| {
+                        imp.update_member_tooltip(member);
+                    }
+                ));
 
-                    self.receipt_member.set(&member, vec![handler_id]);
-                    self.update_member_tooltip(&member);
-                    return;
-                }
+                self.receipt_member.set(&member, vec![handler_id]);
+                self.update_member_tooltip(&member);
+                return;
             }
 
             let text = (n_items > 0).then(|| {

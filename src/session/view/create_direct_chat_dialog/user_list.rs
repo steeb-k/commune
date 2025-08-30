@@ -161,21 +161,21 @@ mod imp {
 
             // If the search term looks like a UserId and is not already in the response,
             // insert it.
-            if let Ok(user_id) = UserId::parse(&search_term) {
-                if !response.results.iter().any(|item| item.user_id == user_id) {
-                    let user = DirectChatUser::new(&session, user_id, None, None);
+            if let Ok(user_id) = UserId::parse(&search_term)
+                && !response.results.iter().any(|item| item.user_id == user_id)
+            {
+                let user = DirectChatUser::new(&session, user_id, None, None);
 
-                    // Fetch the avatar and display name.
-                    spawn!(clone!(
-                        #[weak]
-                        user,
-                        async move {
-                            let _ = user.load_profile().await;
-                        }
-                    ));
+                // Fetch the avatar and display name.
+                spawn!(clone!(
+                    #[weak]
+                    user,
+                    async move {
+                        let _ = user.load_profile().await;
+                    }
+                ));
 
-                    list.push(user);
-                }
+                list.push(user);
             }
 
             list.extend(response.results.into_iter().map(|user| {

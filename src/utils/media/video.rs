@@ -237,10 +237,10 @@ fn send_video_thumbnail_result(
         }
     };
 
-    if let Some(sender) = sender.take() {
-        if sender.send(result).is_err() {
-            warn!("Failed to send video thumbnail result through channel");
-        }
+    if let Some(sender) = sender.take()
+        && sender.send(result).is_err()
+    {
+        warn!("Failed to send video thumbnail result through channel");
     }
 }
 

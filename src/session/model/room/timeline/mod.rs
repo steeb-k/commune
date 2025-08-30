@@ -789,11 +789,11 @@ mod imp {
                     .insert(event.identifier(), event.clone());
 
                 // Keep track of the activity of the sender.
-                if event.counts_as_unread() {
-                    if let Some(members) = self.room().members() {
-                        let member = members.get_or_create(event.sender_id());
-                        member.set_latest_activity(u64::from(event.origin_server_ts().get()));
-                    }
+                if event.counts_as_unread()
+                    && let Some(members) = self.room().members()
+                {
+                    let member = members.get_or_create(event.sender_id());
+                    member.set_latest_activity(u64::from(event.origin_server_ts().get()));
                 }
 
                 if event.is_room_create() {
@@ -1064,10 +1064,10 @@ impl Timeline {
                 continue;
             }
 
-            if event.can_be_redacted() {
-                if let Some(event_id) = event.event_id() {
-                    events.push(event_id);
-                }
+            if event.can_be_redacted()
+                && let Some(event_id) = event.event_id()
+            {
+                events.push(event_id);
             }
         }
 

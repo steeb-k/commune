@@ -503,12 +503,11 @@ pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io
     RUNTIME
         .spawn_blocking(move || {
             let dir = TMP_DIR.as_ref();
-            if !dir.exists() {
-                if let Err(error) = fs::create_dir(dir) {
-                    if !matches!(error.kind(), io::ErrorKind::AlreadyExists) {
-                        return Err(error);
-                    }
-                }
+            if !dir.exists()
+                && let Err(error) = fs::create_dir(dir)
+                && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
+            {
+                return Err(error);
             }
 
             let mut file = NamedTempFile::new_in(dir)?;

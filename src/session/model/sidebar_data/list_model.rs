@@ -49,18 +49,17 @@ mod imp {
                 move |selection_model| {
                     imp.selected_item.disconnect_signals();
 
-                    if let Some(item) = &selection_model.selected_item() {
-                        if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                            let verification_handler = verification.connect_replaced(clone!(
-                                #[weak]
-                                selection_model,
-                                move |_, new_verification| {
-                                    selection_model
-                                        .set_selected_item(Some(new_verification.clone()));
-                                }
-                            ));
-                            imp.selected_item.set(item, vec![verification_handler]);
-                        }
+                    if let Some(item) = &selection_model.selected_item()
+                        && let Some(verification) = item.downcast_ref::<IdentityVerification>()
+                    {
+                        let verification_handler = verification.connect_replaced(clone!(
+                            #[weak]
+                            selection_model,
+                            move |_, new_verification| {
+                                selection_model.set_selected_item(Some(new_verification.clone()));
+                            }
+                        ));
+                        imp.selected_item.set(item, vec![verification_handler]);
                     }
                 }
             ));

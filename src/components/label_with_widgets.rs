@@ -238,31 +238,30 @@ mod imp {
             let mut run_iter = self.child.layout().iter();
             let mut i = 0;
             loop {
-                if let Some(run) = run_iter.run_readonly() {
-                    if run
+                if let Some(run) = run_iter.run_readonly()
+                    && run
                         .item()
                         .analysis()
                         .extra_attrs()
                         .iter()
                         .any(|attr| attr.type_() == pango::AttrType::Shape)
-                    {
-                        if let Some(widget) = widgets.get(i) {
-                            let (width, height) = widgets_sizes[i];
-                            let (_, mut extents) = run_iter.run_extents();
-                            pango::extents_to_pixels(Some(&mut extents), None);
+                {
+                    if let Some(widget) = widgets.get(i) {
+                        let (width, height) = widgets_sizes[i];
+                        let (_, mut extents) = run_iter.run_extents();
+                        pango::extents_to_pixels(Some(&mut extents), None);
 
-                            let (offset_x, offset_y) = self.child.layout_offsets();
-                            let allocation = gtk::Allocation::new(
-                                extents.x() + offset_x,
-                                extents.y() + offset_y,
-                                width,
-                                height,
-                            );
-                            widget.size_allocate(&allocation, -1);
-                            i += 1;
-                        } else {
-                            break;
-                        }
+                        let (offset_x, offset_y) = self.child.layout_offsets();
+                        let allocation = gtk::Allocation::new(
+                            extents.x() + offset_x,
+                            extents.y() + offset_y,
+                            width,
+                            height,
+                        );
+                        widget.size_allocate(&allocation, -1);
+                        i += 1;
+                    } else {
+                        break;
                     }
                 }
 

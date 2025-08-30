@@ -62,10 +62,10 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for ChooseMethodPage {
         fn dispose(&self) {
-            if let Some(verification) = self.verification.obj() {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
-                }
+            if let Some(verification) = self.verification.obj()
+                && let Some(handler) = self.display_name_handler.take()
+            {
+                verification.user().disconnect(handler);
             }
         }
     }
@@ -96,10 +96,10 @@ mod imp {
 
             obj.reset();
 
-            if let Some(verification) = prev_verification {
-                if let Some(handler) = self.display_name_handler.take() {
-                    verification.user().disconnect(handler);
-                }
+            if let Some(verification) = prev_verification
+                && let Some(handler) = self.display_name_handler.take()
+            {
+                verification.user().disconnect(handler);
             }
             self.verification.disconnect_signals();
 

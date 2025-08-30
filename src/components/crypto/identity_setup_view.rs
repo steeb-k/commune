@@ -125,10 +125,10 @@ mod imp {
                 ));
             }
 
-            if let Some(session) = self.session.upgrade() {
-                if let Some(handler) = self.verification_list_handler.take() {
-                    session.verification_list().disconnect(handler);
-                }
+            if let Some(session) = self.session.upgrade()
+                && let Some(handler) = self.verification_list_handler.take()
+            {
+                session.verification_list().disconnect(handler);
             }
         }
     }

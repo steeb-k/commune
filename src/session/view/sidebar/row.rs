@@ -627,16 +627,17 @@ mod imp {
                         sidebar.set_drop_active_target_category(Some(target_category));
                         return true;
                     }
-                } else if let Some(item_type) = self.item_type() {
-                    if room.category() == RoomCategory::Left
-                        && item_type == SidebarIconItemType::Forget
-                    {
-                        self.obj().add_css_class("drop-active");
-                        sidebar.set_drop_active_target_category(None);
-                        return true;
-                    }
+                } else if self
+                    .item_type()
+                    .is_some_and(|item_type| item_type == SidebarIconItemType::Forget)
+                    && room.category() == RoomCategory::Left
+                {
+                    self.obj().add_css_class("drop-active");
+                    sidebar.set_drop_active_target_category(None);
+                    return true;
                 }
             }
+
             false
         }
 
@@ -663,19 +664,19 @@ mod imp {
                         ));
                         ret = true;
                     }
-                } else if let Some(item_type) = self.item_type() {
-                    if room.category() == RoomCategory::Left
-                        && item_type == SidebarIconItemType::Forget
-                    {
-                        spawn!(clone!(
-                            #[weak(rename_to = imp)]
-                            self,
-                            async move {
-                                imp.forget_room(&room).await;
-                            }
-                        ));
-                        ret = true;
-                    }
+                } else if self
+                    .item_type()
+                    .is_some_and(|item_type| item_type == SidebarIconItemType::Forget)
+                    && room.category() == RoomCategory::Left
+                {
+                    spawn!(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        async move {
+                            imp.forget_room(&room).await;
+                        }
+                    ));
+                    ret = true;
                 }
             }
             if let Some(sidebar) = self.sidebar.obj() {
@@ -761,10 +762,10 @@ mod imp {
                 }
             }
 
-            if let Some(inviter) = ignored_inviter {
-                if inviter.upcast::<User>().ignore().await.is_err() {
-                    toast!(obj, gettext("Could not ignore user"));
-                }
+            if let Some(inviter) = ignored_inviter
+                && inviter.upcast::<User>().ignore().await.is_err()
+            {
+                toast!(obj, gettext("Could not ignore user"));
             }
         }
 

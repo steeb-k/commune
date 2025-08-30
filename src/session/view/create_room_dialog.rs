@@ -232,15 +232,16 @@ mod imp {
             self.content.set_sensitive(true);
 
             // Handle the room address already taken error.
-            if let Some(kind) = error.client_api_error_kind() {
-                if *kind == ErrorKind::RoomInUse {
-                    self.room_address.add_css_class("error");
-                    self.room_address_error
-                        .set_text(&gettext("The address is already taken."));
-                    self.room_address_error_revealer.set_reveal_child(true);
+            if error
+                .client_api_error_kind()
+                .is_some_and(|kind| *kind == ErrorKind::RoomInUse)
+            {
+                self.room_address.add_css_class("error");
+                self.room_address_error
+                    .set_text(&gettext("The address is already taken."));
+                self.room_address_error_revealer.set_reveal_child(true);
 
-                    return;
-                }
+                return;
             }
 
             toast!(self.obj(), error.to_user_facing());

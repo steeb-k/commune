@@ -218,10 +218,10 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(popover) = prev_popover {
-                if popover.parent().is_some_and(|w| w == *obj) {
-                    popover.unparent();
-                }
+            if let Some(popover) = prev_popover
+                && popover.parent().is_some_and(|w| w == *obj)
+            {
+                popover.unparent();
             }
             self.popover.disconnect_signals();
 
@@ -304,10 +304,10 @@ mod imp {
                     event.room().permissions().disconnect(handler);
                 }
 
-                if let Some(handler) = self.target_user_handler.take() {
-                    if let Some(target_user) = event.target_user() {
-                        target_user.disconnect(handler);
-                    }
+                if let Some(handler) = self.target_user_handler.take()
+                    && let Some(target_user) = event.target_user()
+                {
+                    target_user.disconnect(handler);
                 }
             }
         }

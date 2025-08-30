@@ -216,10 +216,10 @@ mod imp {
 
         /// Disconnect all the signal handlers.
         fn disconnect_signals(&self) {
-            if let Some(room) = self.room.obj() {
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
+            if let Some(room) = self.room.obj()
+                && let Some(handler) = self.permissions_handler.take()
+            {
+                room.permissions().disconnect(handler);
             }
 
             self.room.disconnect_signals();

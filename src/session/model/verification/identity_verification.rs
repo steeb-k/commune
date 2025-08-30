@@ -197,10 +197,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(handler) = self.membership_handler.take() {
-                if let Some(room) = self.room.upgrade() {
-                    room.own_member().disconnect(handler);
-                }
+            if let Some(handler) = self.membership_handler.take()
+                && let Some(room) = self.room.upgrade()
+            {
+                room.own_member().disconnect(handler);
             }
             if let Some(handle) = self.request_changes_abort_handle.take() {
                 handle.abort();
@@ -425,10 +425,10 @@ mod imp {
         async fn handle_request_state(&self, state: VerificationRequestState) {
             let request = self.request();
 
-            if !matches!(state, VerificationRequestState::Requested { .. }) {
-                if let Some(source) = self.received_timeout_source.take() {
-                    source.remove();
-                }
+            if !matches!(state, VerificationRequestState::Requested { .. })
+                && let Some(source) = self.received_timeout_source.take()
+            {
+                source.remove();
             }
             if !matches!(
                 state,
@@ -471,10 +471,10 @@ mod imp {
                     let show_qr_idx = supported_methods.iter().enumerate().find_map(|(idx, m)| {
                         (*m == VerificationMethod::QrCodeShowV1).then_some(idx)
                     });
-                    if let Some(idx) = show_qr_idx {
-                        if !self.load_qr_code().await {
-                            supported_methods.remove(idx);
-                        }
+                    if let Some(idx) = show_qr_idx
+                        && !self.load_qr_code().await
+                    {
+                        supported_methods.remove(idx);
                     }
 
                     if supported_methods.is_empty() {

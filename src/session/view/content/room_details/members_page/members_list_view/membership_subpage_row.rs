@@ -51,10 +51,10 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for MembershipSubpageRow {
         fn dispose(&self) {
-            if let Some(item) = &*self.item.borrow() {
-                if let Some(handler) = self.items_changed_handler.take() {
-                    item.model().disconnect(handler);
-                }
+            if let Some(item) = &*self.item.borrow()
+                && let Some(handler) = self.items_changed_handler.take()
+            {
+                item.model().disconnect(handler);
             }
         }
     }
@@ -70,10 +70,10 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(item) = &*self.item.borrow() {
-                if let Some(handler) = self.items_changed_handler.take() {
-                    item.model().disconnect(handler);
-                }
+            if let Some(item) = &*self.item.borrow()
+                && let Some(handler) = self.items_changed_handler.take()
+            {
+                item.model().disconnect(handler);
             }
 
             if let Some(item) = &item {

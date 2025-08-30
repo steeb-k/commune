@@ -157,71 +157,70 @@ impl MessageContent {
         let detect_at_room = event.can_contain_at_room() && event.sender().can_notify_room();
 
         let format = self.format();
-        if format == ContentFormat::Natural {
-            if let Some(related_content) = event.reply_to_event_content() {
-                match related_content {
-                    TimelineDetails::Unavailable => {
-                        spawn!(
-                            glib::Priority::HIGH,
-                            clone!(
-                                #[weak]
-                                event,
-                                async move {
-                                    if let Err(error) = event.fetch_missing_details().await {
-                                        error!("Could not fetch event details: {error}");
-                                    }
+        if format == ContentFormat::Natural
+            && let Some(related_content) = event.reply_to_event_content()
+        {
+            match related_content {
+                TimelineDetails::Unavailable => {
+                    spawn!(
+                        glib::Priority::HIGH,
+                        clone!(
+                            #[weak]
+                            event,
+                            async move {
+                                if let Err(error) = event.fetch_missing_details().await {
+                                    error!("Could not fetch event details: {error}");
                                 }
-                            )
-                        );
-                    }
-                    TimelineDetails::Error(error) => {
-                        error!(
-                            "Could not fetch replied to event '{}': {error}",
-                            event
-                                .reply_to_id()
-                                .expect("reply event should have replied-to event ID")
-                        );
-                    }
-                    TimelineDetails::Ready(replied_to_event) => {
-                        // We should have a strong reference to the list in the RoomHistory so we
-                        // can use `get_or_create_members()`.
-                        let replied_to_sender = event
-                            .room()
-                            .get_or_create_members()
-                            .get_or_create(replied_to_event.sender);
-                        let replied_to_detect_at_room =
-                            replied_to_event.content.can_contain_at_room()
-                                && replied_to_sender.can_notify_room();
-
-                        let reply = MessageReply::new();
-                        reply.set_show_related_content_header(
-                            replied_to_event.content.can_show_header(),
-                        );
-                        reply.set_related_content_sender(replied_to_sender.upcast_ref());
-                        reply.related_content().build_content(
-                            replied_to_event.content,
-                            ContentFormat::Compact,
-                            &replied_to_sender,
-                            replied_to_detect_at_room,
-                            None,
-                            event.reply_to_id(),
-                        );
-                        reply.content().build_content(
-                            event.content(),
-                            ContentFormat::Natural,
-                            &event.sender(),
-                            detect_at_room,
-                            event.transaction_id(),
-                            event.event_id(),
-                        );
-                        self.set_child(Some(&reply));
-
-                        self.imp().update_visual_media_widget();
-
-                        return;
-                    }
-                    TimelineDetails::Pending => {}
+                            }
+                        )
+                    );
                 }
+                TimelineDetails::Error(error) => {
+                    error!(
+                        "Could not fetch replied to event '{}': {error}",
+                        event
+                            .reply_to_id()
+                            .expect("reply event should have replied-to event ID")
+                    );
+                }
+                TimelineDetails::Ready(replied_to_event) => {
+                    // We should have a strong reference to the list in the RoomHistory so we
+                    // can use `get_or_create_members()`.
+                    let replied_to_sender = event
+                        .room()
+                        .get_or_create_members()
+                        .get_or_create(replied_to_event.sender);
+                    let replied_to_detect_at_room = replied_to_event.content.can_contain_at_room()
+                        && replied_to_sender.can_notify_room();
+
+                    let reply = MessageReply::new();
+                    reply.set_show_related_content_header(
+                        replied_to_event.content.can_show_header(),
+                    );
+                    reply.set_related_content_sender(replied_to_sender.upcast_ref());
+                    reply.related_content().build_content(
+                        replied_to_event.content,
+                        ContentFormat::Compact,
+                        &replied_to_sender,
+                        replied_to_detect_at_room,
+                        None,
+                        event.reply_to_id(),
+                    );
+                    reply.content().build_content(
+                        event.content(),
+                        ContentFormat::Natural,
+                        &event.sender(),
+                        detect_at_room,
+                        event.transaction_id(),
+                        event.event_id(),
+                    );
+                    self.set_child(Some(&reply));
+
+                    self.imp().update_visual_media_widget();
+
+                    return;
+                }
+                TimelineDetails::Pending => {}
             }
         }
 

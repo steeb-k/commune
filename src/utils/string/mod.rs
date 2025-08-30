@@ -341,12 +341,12 @@ impl<'a> Linkifier<'a> {
 
     /// Append the given URI with the given link content.
     fn append_uri(&mut self, uri: &str, content: &str) {
-        if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
-            if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
-                pills.push(pill);
+        if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions
+            && let Some(pill) = self.inner.maybe_append_mention(uri, room)
+        {
+            pills.push(pill);
 
-                return;
-            }
+            return;
         }
 
         self.inner.append_link_opening_tag(uri);

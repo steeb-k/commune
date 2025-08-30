@@ -387,17 +387,18 @@ mod imp {
 
             // Try to detect `@room` mentions.
             let can_contain_at_room = message.mentions().is_none_or(|m| m.room);
-            if room.permissions().can_notify_room() && can_contain_at_room {
-                if let Some(start) = find_at_room(&text) {
-                    // We do not need to watch safety settings for at-room mentions, our own member
-                    // is in the room.
-                    let pill = Pill::new(&room.at_room(), AvatarImageSafetySetting::None, None);
-                    let end = start + AT_ROOM.len();
-                    mentions.push(DetectedMention { pill, start, end });
+            if room.permissions().can_notify_room()
+                && can_contain_at_room
+                && let Some(start) = find_at_room(&text)
+            {
+                // We do not need to watch safety settings for at-room mentions, our own member
+                // is in the room.
+                let pill = Pill::new(&room.at_room(), AvatarImageSafetySetting::None, None);
+                let end = start + AT_ROOM.len();
+                mentions.push(DetectedMention { pill, start, end });
 
-                    // Make sure the list is sorted.
-                    mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
-                }
+                // Make sure the list is sorted.
+                mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
             }
 
             if mentions.is_empty() {

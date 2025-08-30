@@ -158,10 +158,8 @@ mod imp {
                 return;
             }
 
-            if !enabled {
-                if let Some(session) = self.session.upgrade() {
-                    session.notifications().clear();
-                }
+            if !enabled && let Some(session) = self.session.upgrade() {
+                session.notifications().clear();
             }
 
             self.session_enabled.set(enabled);
