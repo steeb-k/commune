@@ -262,12 +262,7 @@ impl Member {
             return;
         }
 
-        self.set_name(
-            member
-                .display_name()
-                .map(ToOwned::to_owned)
-                .into_clean_string(),
-        );
+        self.set_name(member.display_name().map(ToOwned::to_owned));
         self.set_is_name_ambiguous(member.name_ambiguous());
         self.avatar_data()
             .image()

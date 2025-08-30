@@ -299,20 +299,26 @@ impl Mention {
     /// Construct a `Mention` from the given pill source.
     async fn from_source(source: &PillSource) -> Self {
         if let Some(user) = source.downcast_ref::<Member>() {
+            let name = if user.has_display_name() {
+                user.display_name()
+            } else {
+                user.user_id().to_string()
+            };
+
             Self::Rich {
-                name: user.display_name(),
+                name,
                 uri: user.matrix_to_uri().to_string(),
                 user_id: Some(user.user_id().clone()),
             }
         } else if let Some(room) = source.downcast_ref::<Room>() {
             let matrix_to_uri = room.matrix_to_uri().await;
-            let string_repr = room
+            let name = room
                 .aliases()
                 .alias_string()
                 .unwrap_or_else(|| room.room_id_string());
 
             Self::Rich {
-                name: string_repr,
+                name,
                 uri: matrix_to_uri.to_string(),
                 user_id: None,
             }

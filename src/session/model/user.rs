@@ -43,6 +43,12 @@ mod imp {
         /// Whether this user is the same as the session's user.
         #[property(get)]
         is_own_user: Cell<bool>,
+        /// Whether this user has a display name set.
+        ///
+        /// If the display name is not set, the `display-name` property returns
+        /// the localpart of the user ID.
+        #[property(get)]
+        pub(super) has_display_name: Cell<bool>,
         /// Whether this user has been verified.
         #[property(get)]
         is_verified: Cell<bool>,
@@ -137,6 +143,16 @@ mod imp {
                     imp.init_is_verified().await;
                 }
             ));
+        }
+
+        /// Set whether this user has a display name set.
+        pub(super) fn set_has_display_name(&self, has_display_name: bool) {
+            if self.has_display_name.get() == has_display_name {
+                return;
+            }
+
+            self.has_display_name.set(has_display_name);
+            self.obj().notify_has_display_name();
         }
 
         /// Get the local cryptographic identity (aka cross-signing identity) of
@@ -327,14 +343,20 @@ pub trait UserExt: IsA<User> {
     /// Set the name of this user.
     fn set_name(&self, name: Option<String>) {
         let user = self.upcast_ref();
+        let name = name.into_clean_string();
 
-        let display_name = if let Some(name) = name.filter(|n| !n.is_empty()) {
-            name
-        } else {
-            user.user_id().localpart().to_owned()
-        };
+        user.imp().set_has_display_name(name.is_some());
 
+        let display_name = name.unwrap_or_else(|| user.user_id().localpart().to_owned());
         user.set_display_name(display_name);
+    }
+
+    /// Whether this user has a display name set.
+    ///
+    /// If the display name is not set, the `display-name` property returns the
+    /// localpart of the user ID.
+    fn has_display_name(&self) -> bool {
+        self.upcast_ref().imp().has_display_name.get()
     }
 
     /// Set the avatar URL of this user.
@@ -369,7 +391,7 @@ pub trait UserExt: IsA<User> {
             Ok(response) => {
                 let user = self.upcast_ref::<User>();
 
-                user.set_name(response.displayname.into_clean_string());
+                user.set_name(response.displayname);
                 user.set_avatar_url(response.avatar_url);
                 Ok(())
             }
