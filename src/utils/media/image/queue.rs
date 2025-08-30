@@ -457,10 +457,12 @@ impl Drop for ImageRequest {
 
             // Broadcast that the request was aborted.
             let request_id = self.inner.source.request_id();
+            debug!("Image request {request_id} was aborted");
+
             let result_sender = self.result_sender.clone();
             spawn_tokio!(async move {
                 if let Err(error) = result_sender.send(Err(ImageError::Aborted)) {
-                    warn!("Could not abort image request {request_id}: {error}");
+                    warn!("Could not send aborted error for image request {request_id}: {error}");
                 }
             });
         }
@@ -518,10 +520,7 @@ impl IntoFuture for ImageLoaderRequest {
             let source = self.source.try_into_decoder_source().await?;
 
             // Decode the image from the data.
-            source
-                .decode_image(self.dimensions)
-                .await
-                .inspect_err(|error| warn!("Could not decode image: {error}"))
+            source.decode_image(self.dimensions).await
         })
     }
 }

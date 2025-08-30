@@ -920,6 +920,13 @@ pub(crate) enum ImageError {
     Aborted,
 }
 
+impl ImageError {
+    /// Log the given image error.
+    fn log_error(error: impl fmt::Display) {
+        warn!("Could not decode image: {error}");
+    }
+}
+
 impl Error for ImageError {}
 
 impl fmt::Display for ImageError {
@@ -938,6 +945,8 @@ impl fmt::Display for ImageError {
 
 impl From<MediaFileError> for ImageError {
     fn from(value: MediaFileError) -> Self {
+        Self::log_error(&value);
+
         match value {
             MediaFileError::Sdk(_) => Self::Download,
             MediaFileError::File(_) => Self::File,
@@ -947,6 +956,8 @@ impl From<MediaFileError> for ImageError {
 
 impl From<glycin::ErrorCtx> for ImageError {
     fn from(value: glycin::ErrorCtx) -> Self {
+        Self::log_error(value.error());
+
         if value.unsupported_format().is_some() {
             Self::UnsupportedFormat
         } else if matches!(value.error(), glycin::Error::StdIoError { .. }) {
