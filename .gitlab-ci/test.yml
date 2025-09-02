@@ -53,7 +53,7 @@ build-docs:
     - flatpak
   interruptible: true
   variables:
-    FREEDESKTOP_RUNTIME_BRANCH: "25.08beta"
+    FREEDESKTOP_RUNTIME_BRANCH: "25.08"
   script:
     - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//${FREEDESKTOP_RUNTIME_BRANCH}
     # We want to use the nightly toolchain inside the build terminal.
