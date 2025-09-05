@@ -37,7 +37,7 @@ dependency('gstreamer-video-1.0', version: '>= 1.20')
 dependency('gtksourceview-5', version: '>= 5.0.0')
 dependency('libwebp', version: '>= 1.0.0')
 dependency('openssl', version: '>= 3.0.0')
-dependency('shumate-1.0', version: '>= 1.0.0')
+dependency('shumate-1.0', version: '>= 1.1.0')
 dependency('sqlite3', version: '>= 3.24.0')
 
 # Required by glycin crate

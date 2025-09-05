@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
-use gtk::{CompositeTemplate, gdk_pixbuf, gio, glib};
+use gtk::{gdk, gio, glib};
 use shumate::prelude::*;
 
 use crate::i18n::gettext_f;
@@ -12,7 +12,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/media/location_viewer.ui")]
     #[properties(wrapper_type = super::LocationViewer)]
     pub struct LocationViewer {
@@ -52,27 +52,49 @@ mod imp {
                 "/org/gnome/Fractal/mapstyle/osm-liberty/style.json",
                 gio::ResourceLookupFlags::NONE,
             )
-            .expect("Could not load map style");
-            let source =
+            .expect("should be able to load map style");
+            let renderer =
                 shumate::VectorRenderer::new("vector-tiles", &String::from_utf8_lossy(&style))
-                    .expect("Could not read map style");
-            source.set_license("© OpenMapTiles © OpenStreetMap contributors");
-            source.set_license_uri("https://www.openstreetmap.org/copyright");
+                    .expect("should be able to read map style");
+            renderer.set_license("© OpenMapTiles © OpenStreetMap contributors");
+            renderer.set_license_uri("https://www.openstreetmap.org/copyright");
 
-            let spritepixbuf = gdk_pixbuf::Pixbuf::from_resource(
-                "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.png",
-            )
-            .expect("Could not load map sprites");
-            let spritejson = gio::resources_lookup_data(
+            let sprite_sheet = renderer
+                .sprite_sheet()
+                .expect("renderer should have sprite sheet");
+
+            let sprites_texture =
+                gdk::Texture::from_resource("/org/gnome/Fractal/mapstyle/osm-liberty/sprites.png");
+            let sprites_json = gio::resources_lookup_data(
                 "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.json",
                 gio::ResourceLookupFlags::NONE,
             )
-            .expect("Could not load map sprite sheet");
-            source
-                .set_sprite_sheet_data(&spritepixbuf, &String::from_utf8_lossy(&spritejson))
-                .expect("Could not set map sprite sheet");
+            .expect("should be able to load map sprite sheet");
+            sprite_sheet
+                .add_page(
+                    &sprites_texture,
+                    &String::from_utf8_lossy(&sprites_json),
+                    1.0,
+                )
+                .expect("should be able to add map sprite sheet page");
 
-            self.map.set_map_source(Some(&source));
+            let sprites_2x_texture = gdk::Texture::from_resource(
+                "/org/gnome/Fractal/mapstyle/osm-liberty/sprites@2x.png",
+            );
+            let sprites_2x_json = gio::resources_lookup_data(
+                "/org/gnome/Fractal/mapstyle/osm-liberty/sprites@2x.json",
+                gio::ResourceLookupFlags::NONE,
+            )
+            .expect("should be able to load map 2x sprite sheet");
+            sprite_sheet
+                .add_page(
+                    &sprites_2x_texture,
+                    &String::from_utf8_lossy(&sprites_2x_json),
+                    2.0,
+                )
+                .expect("should be able to add map 2x sprite sheet page");
+
+            self.map.set_map_source(Some(&renderer));
 
             let viewport = self.map.viewport().expect("map has a viewport");
             viewport.set_zoom_level(12.0);
