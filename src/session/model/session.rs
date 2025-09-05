@@ -9,6 +9,7 @@ use matrix_sdk::{
 use ruma::{
     api::client::{
         filter::{FilterDefinition, RoomFilter},
+        profile::{AvatarUrl, DisplayName},
         search::search_events::v3::UserProfile,
     },
     assign,
@@ -586,14 +587,17 @@ mod imp {
             let handle =
                 spawn_tokio!(async move { client_clone.account().fetch_user_profile().await });
 
-            let profile = match handle.await.expect("task was not aborted") {
-                Ok(res) => {
+            let profile = match handle
+                .await
+                .expect("task was not aborted")
+                .and_then(|response| {
                     let mut profile = UserProfile::new();
-                    profile.displayname = res.displayname;
-                    profile.avatar_url = res.avatar_url;
+                    profile.displayname = response.get_static::<DisplayName>()?;
+                    profile.avatar_url = response.get_static::<AvatarUrl>()?;
 
-                    profile
-                }
+                    Ok(profile)
+                }) {
+                Ok(profile) => profile,
                 Err(error) => {
                     error!(
                         session = self.obj().session_id(),

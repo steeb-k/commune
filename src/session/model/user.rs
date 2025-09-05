@@ -1,6 +1,9 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::UserIdentity;
-use ruma::{MatrixToUri, OwnedMxcUri, OwnedUserId};
+use ruma::{
+    MatrixToUri, OwnedMxcUri, OwnedUserId,
+    api::client::profile::{AvatarUrl, DisplayName},
+};
 use tracing::{debug, error};
 
 use super::{IdentityVerification, Room, Session};
@@ -391,12 +394,24 @@ pub trait UserExt: IsA<User> {
             Ok(response) => {
                 let user = self.upcast_ref::<User>();
 
-                user.set_name(response.displayname);
-                user.set_avatar_url(response.avatar_url);
+                match response.get_static::<DisplayName>() {
+                    Ok(display_name) => user.set_name(display_name),
+                    Err(error) => {
+                        error!(%user_id, "Could not deserialize user display name: {error}");
+                    }
+                }
+
+                match response.get_static::<AvatarUrl>() {
+                    Ok(avatar_url) => user.set_avatar_url(avatar_url),
+                    Err(error) => {
+                        error!(%user_id, "Could not deserialize user avatar URL: {error}");
+                    }
+                }
+
                 Ok(())
             }
             Err(error) => {
-                error!("Could not load user profile for `{user_id}`: {error}");
+                error!(%user_id, "Could not load user profile: {error}");
                 Err(())
             }
         }

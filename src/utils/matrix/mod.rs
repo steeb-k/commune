@@ -127,7 +127,7 @@ impl AnySyncOrStrippedTimelineEvent {
         let ev = match raw {
             RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?.into()),
             RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => {
-                Self::Stripped(Box::new(ev.deserialize_as()?))
+                Self::Stripped(Box::new(ev.deserialize()?))
             }
         };
 
