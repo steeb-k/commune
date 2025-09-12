@@ -61,7 +61,7 @@ zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { package = "libadwaita", version = "0.8", features = ["v1_7"] }
-glycin = { git = "https://gitlab.gnome.org/GNOME/glycin.git", rev = "113b70766a8612b1896fb3b78e0d98f5069d1885", default-features = false, features = ["tokio", "gdk4"] }
+glycin = { version = "3", default-features = false, features = ["tokio", "gdk4"] }
 gst = { version = "0.24", package = "gstreamer" }
 gst_app = { version = "0.24", package = "gstreamer-app" }
 gst_pbutils = { version = "0.24", package = "gstreamer-pbutils" }
