@@ -23,11 +23,10 @@
         "append-ld-library-path": "/usr/lib/sdk/llvm20/lib",
         "append-path": "/usr/lib/sdk/llvm20/bin:/usr/lib/sdk/rust-stable/bin",
         "env": {
-            "RUSTFLAGS": "-C force-frame-pointers=yes",
             "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER": "clang",
-            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS": "-C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage=\"Arc\"",
+            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS": "-C force-frame-pointers=yes -C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage=\"Arc\"",
             "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER": "clang",
-            "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS": "-C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage=\"Arc\""
+            "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS": "-C force-frame-pointers=yes -C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage=\"Arc\""
         },
         "build-args": [
             "--share=network"
