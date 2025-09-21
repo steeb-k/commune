@@ -74,14 +74,16 @@ config = configure_file(
 )
 run_command(
     'cp',
-    meson.project_build_root() / 'src' / 'config.rs',
+    config,
     meson.project_source_root() / 'src' / 'config.rs',
     check: true,
 )
 
 # Cargo settings
 cargo_options = ['--manifest-path', meson.project_source_root() / 'Cargo.toml']
-cargo_options += ['--target-dir', meson.project_build_root() / 'src']
+
+target_dir = meson.project_build_root() / 'cargo-target'
+cargo_options += ['--target-dir', target_dir]
 
 if profile == 'Devel'
     rust_target = 'debug'
@@ -113,7 +115,7 @@ if not build_env_only
             cargo_options,
             '&&',
             'cp',
-            'src' / rust_target / meson.project_name(),
+            target_dir / rust_target / meson.project_name(),
             '@OUTPUT@',
         ],
     )
