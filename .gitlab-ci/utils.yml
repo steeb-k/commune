@@ -23,8 +23,8 @@
 .stable_runtime:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-${GNOME_STABLE_VERSION}'
   variables:
-    GNOME_STABLE_VERSION: "48"
-    FREEDESKTOP_RUNTIME_BRANCH: "24.08"
+    GNOME_STABLE_VERSION: "49"
+    FREEDESKTOP_RUNTIME_BRANCH: "25.08"
     LLVM_NIGHTLY_VERSION: "20"
     LLVM_STABLE_VERSION: "20"
   before_script:
