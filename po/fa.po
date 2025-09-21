@@ -1,13 +1,14 @@
 #
 # میر سبحان <me@mirsobhan.ir>, 2025.
+# Danial Behzadi <dani.behzi@ubuntu.com>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
 "POT-Creation-Date: 2025-09-20 10:23+0000\n"
-"PO-Revision-Date: 2025-09-20 22:46+0330\n"
-"Last-Translator: میر سبحان <me@mirsobhan.ir>\n"
+"PO-Revision-Date: 2025-09-21 18:10+0330\n"
+"Last-Translator: Danial Behzadi <dani.behzi@ubuntu.com>\n"
 "Language-Team: Persian\n"
 "Language: fa\n"
 "MIME-Version: 1.0\n"
@@ -43,9 +44,7 @@ msgstr "پیام‌رسانی گروهی برخال"
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: data/org.gnome.Fractal.desktop.in.in:13
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;element;"
-msgstr ""
-"Matrix;matrix.org;chat;irc;communications;talk;riot;element;fractal;ماتریکس;"
-"ماتریس;گفت‌وگو;گفتگو;المنت;گپ;پیام‌رسان;پیامرسان;"
+msgstr "Matrix;matrix.org;chat;irc;communications;talk;riot;element;fractal;ماتریکس;ماتریس;گفت‌وگو;گفتگو;المنت;گپ;پیام‌رسان;پیامرسان;"
 
 #: data/org.gnome.Fractal.gschema.xml.in:6
 msgid "Window width"
@@ -164,10 +163,8 @@ msgid "The Fractal Team"
 msgstr "گروه فراکتال"
 
 #: src/application.rs:250
-#, fuzzy
-#| msgid "The Fractal Team"
 msgid "© The Fractal Team"
-msgstr "گروه فراکتال"
+msgstr "© گروه فراکتال"
 
 #: src/application.rs:264
 msgid "translator-credits"
@@ -268,10 +265,8 @@ msgid "Camera"
 msgstr "دوربین"
 
 #: src/components/camera/qrcode_scanner.blp:6
-#, fuzzy
-#| msgid "QR Code"
 msgid "QR Code Scanner"
-msgstr "کد پاس"
+msgstr "پویشگر کد پاس"
 
 #: src/components/camera/qrcode_scanner.blp:21
 #: src/components/camera/qrcode_scanner.blp:33
@@ -332,7 +327,7 @@ msgstr "اعتبارسنجی هویت"
 #: src/components/crypto/identity_setup_view.blp:116
 #: src/components/crypto/identity_setup_view.blp:141
 msgid "Set Up Crypto Identity"
-msgstr "برپاسازی شناسه رمزینه‌ای"
+msgstr "برپاسازی شناسهٔ رمزینه‌ای"
 
 #: src/components/crypto/identity_setup_view.blp:152
 #: src/components/crypto/identity_setup_view.blp:227
@@ -355,7 +350,7 @@ msgstr "برپایی"
 #: src/components/crypto/recovery_setup_view.blp:163
 #: src/session/view/account_settings/encryption_page/mod.rs:187
 msgid "Reset Crypto Identity"
-msgstr "بازنشانی شناسه رمزینه‌ای"
+msgstr "بازنشانی شناسهٔ رمزینه‌ای"
 
 #: src/components/crypto/identity_setup_view.blp:238
 msgid ""
@@ -556,10 +551,8 @@ msgstr "لطفاً فرایند را با مرورگر احراز هویت کن�
 
 #: src/components/dialogs/auth/in_browser_page.blp:74
 #: src/login/in_browser_page.blp:77
-#, fuzzy
-#| msgid "Continue"
 msgid "Contin_ue"
-msgstr "ادامه"
+msgstr "_ادامه"
 
 #: src/components/dialogs/auth/in_browser_page.blp:103
 #: src/components/dialogs/auth/password_page.blp:81
@@ -574,10 +567,8 @@ msgid "C_onfirm"
 msgstr "_تأیید"
 
 #: src/components/dialogs/auth/mod.rs:308
-#, fuzzy
-#| msgid "The provided username or password is invalid."
 msgid "The password is invalid."
-msgstr "نام کاربری یا گذرواژهٔ فراهم شده نامعتبر است."
+msgstr "گذرواژه نامعتبر است."
 
 #: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
@@ -801,12 +792,10 @@ msgstr[1] "برداشتن آخرین {n} پیام فرستاده از سوی ک�
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. The count cannot be zero.
 #: src/components/dialogs/message_dialogs.rs:377
-#, fuzzy
-#| msgid "Mute {user}?"
 msgid "Mute {user}?"
 msgid_plural "Mute Members?"
 msgstr[0] "خموشی {user}؟"
-msgstr[1] "خموشی {user}؟"
+msgstr[1] "خموشی اعضا؟"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. The count cannot be zero.
@@ -828,12 +817,10 @@ msgstr "خموش"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. The count cannot be zero.
 #: src/components/dialogs/message_dialogs.rs:426
-#, fuzzy
-#| msgid "Promote {user}?"
 msgid "Promote {user}?"
 msgid_plural "Promote Members?"
 msgstr[0] "ارتقای {user}؟"
-msgstr[1] "ارتقای {user}؟"
+msgstr[1] "ارتقای اعضا؟"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. The count cannot be zero.
@@ -853,7 +840,7 @@ msgstr "ارتقا"
 
 #: src/components/dialogs/message_dialogs.rs:457
 msgid "Demote Yourself?"
-msgstr ""
+msgstr "عزل خودتان؟"
 
 #: src/components/dialogs/message_dialogs.rs:459
 msgid ""
@@ -862,10 +849,8 @@ msgid ""
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:470
-#, fuzzy
-#| msgid "Promote"
 msgid "Demote"
-msgstr "ارتقا"
+msgstr "اعانه"
 
 #: src/components/dialogs/message_dialogs.rs:481
 msgid "Save Changes?"
@@ -922,10 +907,8 @@ msgstr[1] "{n} عضو"
 
 #: src/components/dialogs/room_preview.rs:349
 #: src/session/view/content/explore/public_room_row.rs:187
-#, fuzzy
-#| msgid "Reject Invite"
 msgid "Request an Invite"
-msgstr "رد کردن دعوت"
+msgstr "درخواست دعوت"
 
 #: src/components/dialogs/room_preview.rs:351
 #: src/session/view/content/explore/public_room_row.rs:195
@@ -949,14 +932,12 @@ msgid "Back"
 msgstr "بازگشت"
 
 #: src/components/dialogs/room_preview.blp:70
-#, fuzzy
-#| msgid "Enter a room ID, room alias, or link to look up a room"
 msgid "Enter an address or link to look up a room"
-msgstr "ورود شناسه، لقب یا پیوند اتاق برای گشتن"
+msgstr "ورود نشانی یا پیوند برای گشتن به دنبال اتاق"
 
 #: src/components/dialogs/user_profile.blp:5
 msgid "User Profile"
-msgstr "نمایهٔ کاربری"
+msgstr "نماگر کاربری"
 
 #: src/components/offline_banner.rs:102
 msgid "Offline"
@@ -1006,10 +987,8 @@ msgid "Confirm Custom Role"
 msgstr "تآیید نقش سفارشی"
 
 #: src/components/power_level_selection/row.blp:99
-#, fuzzy
-#| msgid "Advanced Information"
 msgid "More Information"
-msgstr "اطّلاعات پیشرفته"
+msgstr "اطّلاعات بیش‌تر"
 
 #: src/components/power_level_selection/row.blp:117
 msgid ""
@@ -1056,11 +1035,9 @@ msgstr "محروم"
 
 #. Translators: As in, 'The room member requested an invite'.
 #: src/components/user_page.rs:355
-#, fuzzy
-#| msgid "Reject Invite"
 msgctxt "member"
 msgid "Requested an Invite"
-msgstr "رد کردن دعوت"
+msgstr "درخواست دعوت شده"
 
 #. Translators: As in, 'The room member has an unknown role'.
 #: src/components/user_page.rs:359
@@ -1069,10 +1046,8 @@ msgid "Unknown"
 msgstr "ناشناخته"
 
 #: src/components/user_page.rs:391
-#, fuzzy
-#| msgid "Send New Request"
 msgid "Deny Request"
-msgstr "فرستادن درخواست جدید"
+msgstr "رد کردن درخواست"
 
 #: src/components/user_page.rs:499
 msgid "Could not change the role"
@@ -1688,10 +1663,8 @@ msgstr "نشانی کارساز خانگی ماتریکستان. برای نمو
 
 #: src/login/homeserver_page.rs:254 src/login/mod.rs:297 src/login/mod.rs:321
 #: src/login/mod.rs:367 src/login/mod.rs:384
-#, fuzzy
-#| msgid "Could not send location"
 msgid "Could not set up login"
-msgstr "نتوانست مکان را بفرستد"
+msgstr "نتوانست ورود را برپا کند"
 
 #: src/login/homeserver_page.blp:6 src/login/homeserver_page.blp:44
 #: src/session/view/account_settings/general_page/mod.blp:104
@@ -1708,16 +1681,12 @@ msgid "Advanced…"
 msgstr "پیش‌رفته…"
 
 #: src/login/in_browser_page.rs:100
-#, fuzzy
-#| msgid "Could not open file"
 msgid "Could not open URL"
-msgstr "نتوانست پرونده را بگشاید"
+msgstr "نتوانست نشانی را بگشاید"
 
 #: src/login/in_browser_page.blp:55
-#, fuzzy
-#| msgid "Please follow the steps in the browser"
 msgid "Click on the button below and follow the steps in the browser"
-msgstr "لطفاً مراحل را در مرورگر دنبال کنید"
+msgstr "زدن روی دکمهٔ زیر و دنبال کردن گام‌ها در مرورگر"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1758,8 +1727,6 @@ msgid "Could not store session"
 msgstr "نتوانست نشست را ذخیره کند"
 
 #: src/login/mod.rs:583
-#, fuzzy
-#| msgid "Verification Complete"
 msgid "Authorization Completed"
 msgstr "هویت‌سنجی کامل شد"
 
@@ -1925,10 +1892,8 @@ msgid "{user} invited you"
 msgstr "{user} شما را دعوت کرده است"
 
 #: src/session/model/room/join_rule.rs:259
-#, fuzzy
-#| msgid "Only invited users, and users can knock"
 msgid "Only invited users, and users can request an invite"
-msgstr "اعضای دعوت شده. کاربران می‌توانند در بزنند"
+msgstr "تنها اعضای دعوت شده. کاربران می‌توانند درخواست دعوت کنند."
 
 #: src/session/model/room/join_rule.rs:261
 msgid "Only invited users"
@@ -1937,10 +1902,8 @@ msgstr "فقط کاربران دعوت شده"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/model/room/join_rule.rs:275
-#, fuzzy
-#| msgid "Members of {room}, and users can knock"
 msgid "Members of {room}, and users can request an invite"
-msgstr "اعضای {room}. کاربران می‌توانند در بزنند"
+msgstr "اعضای {room}. کاربران می‌توانند در خواست دعوت کنند"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -1988,10 +1951,8 @@ msgid "Admin"
 msgstr "مدیر"
 
 #: src/session/model/room/permissions.rs:69
-#, fuzzy
-#| msgid "C_reate"
 msgid "Creator"
-msgstr "_ایجاد"
+msgstr "ایجاد کننده"
 
 #. Translators: As in 'Muted room member', a member that cannot send messages.
 #: src/session/model/room/permissions.rs:71
@@ -2007,20 +1968,16 @@ msgstr "نتوانست به اتاق {room_name} بپیوندد."
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:361
-#, fuzzy
-#| msgid "Could not join room {room_name}"
 msgid "Could not request an invite to room {room_name}"
-msgstr "نتوانست به اتاق {room_name} بپیوندد."
+msgstr "نتوانست درخواست دعوت به اتاق {room_name} کند"
 
 #: src/session/model/sidebar_data/section/name.rs:82
 msgid "Verifications"
 msgstr "اعتبارسنجی‌ها"
 
 #: src/session/model/sidebar_data/section/name.rs:83
-#, fuzzy
-#| msgid "Send New Request"
 msgid "Invite Requests"
-msgstr "فرستادن درخواست جدید"
+msgstr "درخواست دعوت"
 
 #: src/session/model/sidebar_data/section/name.rs:84
 #: src/session/view/content/room_details/invite_subpage/list.rs:262
@@ -2244,7 +2201,7 @@ msgstr "گزینش…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:155
 msgid "No Crypto Identity"
-msgstr "بدون شناسه رمزینه‌ای"
+msgstr "بدون شناسهٔ رمزینه‌ای"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:157
 msgid "Verifying your own devices or other users is not possible"
@@ -2252,18 +2209,16 @@ msgstr ""
 
 #: src/session/view/account_settings/encryption_page/mod.rs:160
 #: src/session/view/account_settings/encryption_page/mod.rs:233
-#, fuzzy
-#| msgid "Enable"
 msgid "Enable…"
-msgstr "به کار انداختن"
+msgstr "به کار انداختن…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:163
 msgid "Enable Crypto Identity"
-msgstr "به کار انداختن شناسه رمزینه‌ای"
+msgstr "به کار انداختن شناسهٔ رمزینه‌ای"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:179
 msgid "Crypto Identity Enabled"
-msgstr "شناسه رمزینه‌ای به کار افتاد"
+msgstr "شناسهٔ رمزینه‌ای به کار افتاد"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:181
 msgid "The crypto identity exists and this device is verified"
@@ -2271,24 +2226,20 @@ msgstr ""
 
 #: src/session/view/account_settings/encryption_page/mod.rs:184
 #: src/session/view/account_settings/encryption_page/mod.rs:252
-#, fuzzy
-#| msgid "Reset"
 msgid "Reset…"
-msgstr "بازنشانی"
+msgstr "بازنشانی…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:199
 msgid "Crypto Identity Incomplete"
-msgstr "شناسه رمزینه‌ای "
+msgstr "شناسهٔ رمزینه‌ای ناقص"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:201
 msgid "The crypto identity exists but this device is not verified"
 msgstr ""
 
 #: src/session/view/account_settings/encryption_page/mod.rs:204
-#, fuzzy
-#| msgid "Verify"
 msgid "Verify…"
-msgstr "تأیید اعتبار"
+msgstr "تأیید…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:207
 msgid "Verify This Session"
@@ -2324,24 +2275,20 @@ msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr ""
 
 #: src/session/view/account_settings/encryption_page/mod.rs:272
-#, fuzzy
-#| msgid "Recover"
 msgid "Recover…"
-msgstr "بازیابی"
+msgstr "بازیابی…"
 
 #: src/session/view/account_settings/encryption_page/mod.rs:275
 msgid "Recover Account Data"
 msgstr "بازیابی داده‌های حساب"
 
 #: src/session/view/account_settings/encryption_page/mod.blp:6
-#, fuzzy
-#| msgid "Enable Encryption"
 msgid "Encryption"
-msgstr "به کار انداختن رمزنگاری"
+msgstr "رمزنگاری"
 
 #: src/session/view/account_settings/encryption_page/mod.blp:10
 msgid "Crypto Identity"
-msgstr "شناسه رمزینه‌ای"
+msgstr "شناسهٔ رمزینه‌ای"
 
 #: src/session/view/account_settings/encryption_page/mod.blp:11
 msgid ""
@@ -2598,24 +2545,18 @@ msgstr "نشانی کارساز خانگی در تخته‌گیره رونوشت
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.blp:112
-#, fuzzy
-#| msgid "Copy Session ID"
 msgid "Local Session ID"
-msgstr "رونوشت از شناسهٔ نشست"
+msgstr "شناسهٔ نشست محلی"
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.blp:115
-#, fuzzy
-#| msgid "Copy Session ID"
 msgid "Copy Local Session ID"
-msgstr "رونوشت از شناسهٔ نشست"
+msgstr "رونوشت از شناسهٔ نشست محلی"
 
 #. Translators: local refers to the ID, not the session.
 #: src/session/view/account_settings/general_page/mod.blp:117
-#, fuzzy
-#| msgid "Session ID copied to clipboard"
 msgid "Local session ID copied to clipboard"
-msgstr "شناسهٔ نشست در تخته‌گیره رونوشت شد"
+msgstr "شناسهٔ نشست محلی در تخته‌گیره رونوشت شد"
 
 #: src/session/view/account_settings/notifications_page.rs:198
 msgid "Could not enable account notifications"
@@ -2715,26 +2656,20 @@ msgid "You can add users to this list from their room member profile"
 msgstr ""
 
 #: src/session/view/account_settings/safety_page/mod.rs:232
-#, fuzzy
-#| msgid "Could not change notifications setting"
 msgid "Could not change media previews setting"
-msgstr "نتوانست تنظیمات آگاهی‌ها را عوض کند"
+msgstr "نتوانست پیش‌نمایش‌های رسانه را عوض کند"
 
 #: src/session/view/account_settings/safety_page/mod.rs:289
-#, fuzzy
-#| msgid "Could not open avatar file"
 msgid "Could not enable avatars for invites"
-msgstr "نتوانست پروندهٔ چهرک را بگشاید"
+msgstr "نتوانست چهرک‌ها را برای دعوت‌ها به کار بیندازد"
 
 #: src/session/view/account_settings/safety_page/mod.rs:291
-#, fuzzy
-#| msgid "Could not open avatar file"
 msgid "Could not disable avatars for invites"
-msgstr "نتوانست پروندهٔ چهرک را بگشاید"
+msgstr "نتوانست چهرک‌ها را برای دعوت‌ها از کار بیندازد"
 
 #: src/session/view/account_settings/safety_page/mod.blp:6
 msgid "Safety"
-msgstr ""
+msgstr "ایمنی"
 
 #: src/session/view/account_settings/safety_page/mod.blp:12
 msgid ""
@@ -2779,20 +2714,16 @@ msgid ""
 msgstr ""
 
 #: src/session/view/account_settings/safety_page/mod.blp:39
-#, fuzzy
-#| msgid "Join a Room"
 msgid "Show in all rooms"
-msgstr "پیوستن به اتاق"
+msgstr "نمایش در همهٔ اتاق"
 
 #: src/session/view/account_settings/safety_page/mod.blp:45
 msgid "Show only in private rooms"
 msgstr "نمایش فقط در اتاق‌های شخصی"
 
 #: src/session/view/account_settings/safety_page/mod.blp:51
-#, fuzzy
-#| msgid "All messages in all rooms"
 msgid "Hide in all rooms"
-msgstr "همهٔ پیام‌ها در همهٔ اتاق‌ها"
+msgstr "نهفتن در همهٔ اتاق"
 
 #: src/session/view/account_settings/safety_page/mod.blp:59
 msgid "Show Avatars for Invites"
@@ -2827,71 +2758,49 @@ msgstr "تأیید شده"
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_session/user_session_row.blp:51
 #: src/session/view/account_settings/user_session/user_session_subpage.rs:119
-#, fuzzy
-#| msgid "Verified"
 msgid "Not verified"
-msgstr "تأیید شده"
+msgstr "تأیید نشده"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.rs:210
-#, fuzzy
-#| msgid "Session settings"
 msgid "Session renamed"
-msgstr "تنظیمات نشست"
+msgstr "نام نشست تغییر کرد"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.rs:214
-#, fuzzy
-#| msgid "Could not store session"
 msgid "Could not rename session"
-msgstr "نتوانست نشست را ذخیره کند"
+msgstr "نتوانست نام نشست را تغییر دهد"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.rs:244
-#, fuzzy
-#| msgid "Could not disconnect device “{device_name}”"
 msgid "Could not disconnect session “{device_name}”"
-msgstr "نتوانست افزارهٔ «{device_name}» را قطع کند"
+msgstr "نتوانست نشست «{device_name}» را قطع کند"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:14
-#, fuzzy
-#| msgid "Session ID"
 msgid "Matrix Session ID"
-msgstr "شناسهٔ نشست"
+msgstr "شناسهٔ نشست ماتریکس"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:16
-#, fuzzy
-#| msgid "Copy Session ID"
 msgid "Copy Matrix Session ID"
-msgstr "رونوشت از شناسهٔ نشست"
+msgstr "رونوشت از شناسهٔ نشست ماتریکس"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:17
-#, fuzzy
-#| msgid "Matrix user ID copied to clipboard"
 msgid "Matrix session ID copied to clipboard"
-msgstr "شناسهٔ کاربری ماتریکس در تخته‌گیره رونوشت شد"
+msgstr "شناسهٔ نشست ماتریکس در تخته‌گیره رونوشت شد"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:22
-#, fuzzy
-#| msgid "Public"
 msgid "Public Name"
-msgstr "همگانی"
+msgstr "نام همگانی"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:38
-#, fuzzy
-#| msgid "Last edited %c"
 msgid "Last Seen"
-msgstr "آخرین ویرایش %c"
+msgstr "آخرین حضور"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:48
-#, fuzzy
-#| msgid "User Location"
 msgid "Last Location"
-msgstr "مکان کاربر"
+msgstr "آخرین مکان"
 
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:71
 #: src/session/view/account_settings/user_session/user_session_subpage.blp:81
-#, fuzzy
-#| msgid "Disconnect Session"
 msgid "Disconnect"
-msgstr "قطع نشست"
+msgstr "قطع کردن"
 
 #: src/session/view/content/explore/mod.blp:26
 msgid "Public Rooms Search"
@@ -2928,10 +2837,8 @@ msgid "View {room_name}"
 msgstr "دیدن {room_name}"
 
 #: src/session/view/content/explore/public_room_row.rs:189
-#, fuzzy
-#| msgid "You’ve been invited to join <b>{room_name}</b>"
 msgid "Request an invite to {room_name}"
-msgstr "شما برای عضویت به <b>{room_name}</b> دعوت شده‌اید"
+msgstr "برای دعوت به {room_name} درخواست کرد"
 
 #: src/session/view/content/explore/public_room_row.rs:196
 msgid "Join {room_name}"
@@ -2977,32 +2884,26 @@ msgid "_Accept"
 msgstr "_پذیرش"
 
 #: src/session/view/content/invite_request.rs:168
-#, fuzzy
-#| msgid "Could not accept verification request"
 msgid "Could not retract invite request"
-msgstr "نتوانست درخواست اعتبارسنجی را بپذیرد"
+msgstr "نتوانست درخواست دعوت را پس بگیرد"
 
 #: src/session/view/content/invite_request.blp:13
 #: src/session/view/content/invite_request.blp:37
 #: src/session/view/content/mod.blp:45
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:367
-#, fuzzy
-#| msgid "Send New Request"
 msgid "Invite Request"
 msgid_plural "Invite Requests"
-msgstr[0] "فرستادن درخواست جدید"
-msgstr[1] "فرستادن درخواست جدید"
+msgstr[0] "درخواست دعوت"
+msgstr[1] "درخواست‌های دعوت"
 
 #: src/session/view/content/invite_request.blp:88
-#, fuzzy
-#| msgid "{user} requested to be invited to this room."
 msgid "You requested an invite to this room"
-msgstr "{user} برای دعوت به این اتاق درخواست کردو."
+msgstr "برای دعوت به این اتاق درخواست کردید"
 
 #: src/session/view/content/invite_request.blp:101
 #: src/session/view/sidebar/mod.blp:50
 msgid "_Retract"
-msgstr ""
+msgstr "_پس گرفتن"
 
 #: src/session/view/content/mod.blp:5
 msgid "Main Content"
@@ -3418,10 +3319,8 @@ msgstr "نگارش اتاق"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
 #: src/session/view/content/room_details/general_page.blp:263
-#, fuzzy
-#| msgid "Upgrade"
 msgid "Upgrade…"
-msgstr "ارتقا"
+msgstr "ارتقا…"
 
 #: src/session/view/content/room_details/general_page.blp:275
 msgid "Federation"
@@ -3611,10 +3510,8 @@ msgid "Any Registered User"
 msgstr "هر کاربر ثبت‌نام کرده‌ای"
 
 #: src/session/view/content/room_details/join_rule_subpage.blp:99
-#, fuzzy
-#| msgid "Allow Guests"
 msgid "Allow Invite Requests"
-msgstr "اجازه به مهمانان"
+msgstr "اجازه به درخواست‌های دعوت"
 
 #: src/session/view/content/room_details/member_row.blp:38
 msgid "Identity Verified"
@@ -3637,13 +3534,11 @@ msgstr[0] "محروم"
 msgstr[1] "محروم"
 
 #: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:120
-#, fuzzy
-#| msgid "Send New Request"
 msgctxt "members"
 msgid "Invite Request"
 msgid_plural "Invite Requests"
-msgstr[0] "فرستادن درخواست جدید"
-msgstr[1] "فرستادن درخواست جدید"
+msgstr[0] "درخواست دعوت"
+msgstr[1] "درخواست‌های دعوت"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:341
 #: src/session/view/content/room_details/members_page/members_list_view/mod.blp:73
@@ -3690,16 +3585,12 @@ msgid "There are no banned members in this room"
 msgstr "هیچ عضو مسدودی در این اتاق نیست"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:419
-#, fuzzy
-#| msgid "No Invited Room Members"
 msgid "No Invite Requests"
-msgstr "بدون عضو دعوت شده"
+msgstr "بدون درخواست دعوت"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:420
-#, fuzzy
-#| msgid "There are no invited members in this room"
 msgid "There are no invite requests in this room"
-msgstr "هیچ عضو دعوت شده‌ای در این اتاق نیست"
+msgstr "هیچ درخواست دعوتی در این اتاق نیست"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.blp:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.blp:14
@@ -3746,10 +3637,8 @@ msgid "No room members matching the search were found"
 msgstr "هیچ عضو اتاقی مطابق با جست‌وجو پیدا نشد"
 
 #: src/session/view/content/room_details/permissions/members_subpage.rs:195
-#, fuzzy
-#| msgid "There are no members in this room"
 msgid "There are no room members with assigned power levels in this room"
-msgstr "هیچ عضوی در این اتاق نیست"
+msgstr "هیچ عضوی با قدرت اختصاص یافته در این اتاق نیست"
 
 #: src/session/view/content/room_details/permissions/members_subpage.rs:197
 msgid ""
@@ -3994,7 +3883,7 @@ msgstr "رونوشت از _پیوند پیام"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:82
 msgid "_Properties"
-msgstr ""
+msgstr "_ویژگی‌ها"
 
 #: src/session/view/content/room_history/event_actions/context_menu.blp:90
 msgid "_Discard"
@@ -4083,10 +3972,8 @@ msgstr "منبع در تخته‌گیره رونوشت شد"
 
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:6
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:12
-#, fuzzy
-#| msgid "Event Details"
 msgid "Event Properties"
-msgstr "جزییات رویداد"
+msgstr "ویژگی‌های رویداد"
 
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:40
 msgid "Original Event"
@@ -4124,10 +4011,8 @@ msgid "Sender ID"
 msgstr "شناسهٔ فرستنده"
 
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:81
-#, fuzzy
-#| msgid "User Profile"
 msgid "Show Profile"
-msgstr "نمایهٔ کاربری"
+msgstr "نمایش نماگر"
 
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:92
 #: src/session/view/content/room_history/event_actions/properties_dialog.blp:138
@@ -4232,10 +4117,8 @@ msgid "Sent at {time}"
 msgstr "فرستاده در {time}"
 
 #: src/session/view/content/room_history/message_row/mod.blp:13
-#, fuzzy
-#| msgid "User Profile"
 msgid "Show Sender Profile"
-msgstr "نمایهٔ کاربری"
+msgstr "نمایش نماگر فرستنده"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4259,10 +4142,8 @@ msgstr "در پاسخ به"
 
 #. Translators: This is a verb, as in 'Mention user'.
 #: src/session/view/content/room_history/message_row/sender_name.rs:188
-#, fuzzy
-#| msgid "_Mention"
 msgid "Mention"
-msgstr "_نام‌بری"
+msgstr "نام‌بری"
 
 #. Translators: this is the fallback title for an expander.
 #: src/session/view/content/room_history/message_row/text/widgets.rs:444
@@ -4305,11 +4186,11 @@ msgstr "خطایی غیرمنتظره رخ داد"
 
 #: src/session/view/content/room_history/message_row/visual_media.blp:49
 msgid "Click to show preview"
-msgstr "بزنید تا پیش‌نمایش نشان داده شود"
+msgstr "زدن برای  پیش‌نمایش"
 
 #: src/session/view/content/room_history/message_row/visual_media.blp:77
 msgid "Hide media preview"
-msgstr "پنهان کردن پیش‌نمایش رسانه"
+msgstr "نهفتن پیش‌نمایش رسانه"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.blp:22
 msgid "_Send"
@@ -4325,11 +4206,11 @@ msgstr "تکمیل خودکار نام‌بری عضو اتاق"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:350
 msgid "The conversation continues in a new room"
-msgstr "این گفت‌وگو در یک اتاق جدید ادامه دارد."
+msgstr "گفت‌وگو در اتاق جدیدی ادامه دارد"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:352
 msgid "The conversation has ended"
-msgstr "این گفت‌وگو پایان یافت."
+msgstr "گفت‌وگو پایان یافت"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
@@ -4534,21 +4415,21 @@ msgstr "لغزش به پایین"
 
 #: src/session/view/content/room_history/mod.blp:145
 msgid "Drop Here to Send"
-msgstr "برای ارسال، این‌جا بیندازید"
+msgstr "این‌جا انداختن برای فرستادن"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:257
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
-msgstr[0] "دیده شده از سوی ۱ عضو"
-msgstr[1] "دیده شده از سوی {n} عضو"
+msgstr[0] "۱ عضو دیده"
+msgstr[1] "‫‏{0}عضو دیده‌اند"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:271
 msgid "Seen by {name}"
-msgstr "دیده به دست {name}"
+msgstr "‫‏{name} دید"
 
 #: src/session/view/content/room_history/state/content.rs:100
 msgid "This room is encrypted from this point on."
@@ -4560,10 +4441,8 @@ msgstr "اتاق از این نقطه به بعد رمزنگاری شده."
 #. variable names.
 #: src/session/view/content/room_history/state/content.rs:115
 #: src/session/view/content/room_history/state/content.rs:203
-#, fuzzy
-#| msgid "{user} invited you"
 msgid "{sender} invited {user}."
-msgstr "{user} شما را دعوت کرده است"
+msgstr "‫‏{sender} ‏{user} را دعوت کرد."
 
 #: src/session/view/content/room_history/state/content.rs:127
 msgid "An unsupported state event was received."
@@ -4572,63 +4451,55 @@ msgstr "وضعیتی پشتیبانی نشده دریافت شد."
 #: src/session/view/content/room_history/state/content.rs:164
 #: src/session/view/content/room_history/state/content.rs:389
 msgid "{user} joined this room."
-msgstr "{user} به اتاق پیوست."
+msgstr "‫‏{user} به اتاق پیوست."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:171
 msgid "{user} left the room."
-msgstr "{user} از اتاق رفت."
+msgstr "‫‏{user} از اتاق رفت."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:176
-#, fuzzy
-#| msgid "{user} was banned."
 msgid "{sender} banned {user}."
-msgstr "{user} مسدود شد."
+msgstr "‫‏{sender} ‏{user} را مسدود کرد."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:185
-#, fuzzy
-#| msgid "{user} was unbanned."
 msgid "{sender} unbanned {user}."
-msgstr "مسدودیت {user} رفع شد."
+msgstr "‫‏{sender} مسدودی {user} را رفع کرد."
 
 #. Translators: Do NOT translate the content between '{' and
 #. '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:194
 msgid "{sender} kicked {user} out."
-msgstr "‏{user} توسط {sender} اخراج شد."
+msgstr "‫‏{sender} ‏{user} را اخراج کرد."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:212
 msgid "{user} accepted the invite."
-msgstr "{user} دعوت را پذیرفت."
+msgstr "‫‏{user} دعوت را پذیرفت."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:218
-#, fuzzy
-#| msgid "{user} rejected the invite."
 msgid "{user} declined the invite."
-msgstr "{user} دعوت را رد کرد."
+msgstr "‫‏{user} دعوت را رد کرد."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:227
-#, fuzzy
-#| msgid "{user} rejected the invite."
 msgid "{sender} revoked the invitation for {user}."
-msgstr "{user} دعوت را رد کرد."
+msgstr "‫‏{sender} دعوت {user} را باطل کرد."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
 #: src/session/view/content/room_history/state/content.rs:239
 msgid "{user} requested to be invited to this room."
-msgstr "{user} برای دعوت به این اتاق درخواست کردو."
+msgstr "‫‏{user} خواست به این اتاق دعوت شود."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
@@ -4639,10 +4510,8 @@ msgstr "{user} درخواست دعوتش به این اتاق را پس گرفت
 #. Translators: Do NOT translate the content between
 #. '{' and '}', these are variable names.
 #: src/session/view/content/room_history/state/content.rs:252
-#, fuzzy
-#| msgid "{user} retracted their request to be invited to this room."
 msgid "{sender} denied {user}’s request to be invited to this room."
-msgstr "{user} درخواست دعوتش به این اتاق را پس گرفت."
+msgstr "‫{sender} درخواست دعوت {user} به این اتاق را رد کرد."
 
 #: src/session/view/content/room_history/state/content.rs:263
 msgid "An unsupported room member event was received."
@@ -4670,27 +4539,27 @@ msgstr "نام نمایشی {user_id} به {new_user_name} تنظیم شد."
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:366
 msgid "{user} set their avatar."
-msgstr "{user} چهرکش را تنظیم کرد."
+msgstr "‫‏{user} چهرکش را تنظیم کرد."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:373
 msgid "{user} removed their avatar."
-msgstr "{user} چهرکش را برداشت."
+msgstr "‫‏{user} چهرکش را برداشت."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state/content.rs:380
 msgid "{user} changed their avatar."
-msgstr "{user} چهرکش را عوض کرد."
+msgstr "‫‏{user} چهرکش را عوض کرد."
 
 #: src/session/view/content/room_history/state/creation.rs:57
 msgid "This conversation started in another room."
-msgstr "این گفت‌وگو در اتاق دیگری شروع شده."
+msgstr "این گفت‌وگو در اتاق دیگری آغاز شده."
 
 #: src/session/view/content/room_history/state/creation.rs:62
 msgid "The conversation starts here."
-msgstr "گفت‌وگو اینجا شروع می‌شود."
+msgstr "گفت‌وگو این‌جا آغاز می‌شود."
 
 #. Translators: This is a change in the room, not a change between
 #. rooms. Do NOT translate the content between '{' and '}', this
@@ -4698,8 +4567,8 @@ msgstr "گفت‌وگو اینجا شروع می‌شود."
 #: src/session/view/content/room_history/state/group_row.rs:228
 msgid "1 room change"
 msgid_plural "{n} room changes"
-msgstr[0] "تغییر ۱ اتاق"
-msgstr[1] "تغییر {n} اتاق"
+msgstr[0] "۱ تغییر اتاق"
+msgstr[1] "‫‏{n} تغییر اتاق"
 
 #: src/session/view/content/room_history/title.blp:7
 msgid "Open Room Details"
@@ -4716,8 +4585,8 @@ msgstr "{user} دارد می‌نویسد…"
 #: src/session/view/content/room_history/typing_row.rs:142
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
-msgstr[0] "{n} عضو دارد می‌نویسد…"
-msgstr[1] "{n} عضو دارند می‌نویسند…"
+msgstr[0] "‫‏{n} عضو دارد می‌نویسد…"
+msgstr[1] "‫‏{n} عضو دارند می‌نویسند…"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:67
 msgid "Could not accept verification"
@@ -4731,7 +4600,7 @@ msgstr "نتوانست اعتبارسنجی را لغو کند"
 #. variable name.
 #: src/session/view/content/room_history/verification_info_bar.rs:166
 msgid "{user_name} wants to be verified"
-msgstr "{user_name} می‌خواهد تأیید شود"
+msgstr "‫‏{user_name} می‌خواهد تأیید شود"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:175
 msgid "Verification in progress"
@@ -4878,10 +4747,8 @@ msgid "_Mark as Read"
 msgstr "_علامت به خوانده"
 
 #: src/session/view/sidebar/mod.blp:64
-#, fuzzy
-#| msgid "_Mark as Read"
 msgid "_Mark as Unread"
-msgstr "_علامت به خوانده"
+msgstr "_علامت به نخوانده"
 
 #: src/session/view/sidebar/mod.blp:72
 msgid "Move to _Favorites"
@@ -5035,41 +4902,29 @@ msgid "General"
 msgstr "عمومی"
 
 #: src/shortcuts-dialog.blp:9
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Search Room List"
 msgctxt "shortcut window"
 msgid "Search Room by Address or Link"
-msgstr "جست‌وجوی سیاههٔ اتاق‌ها"
+msgstr "جست‌وجوی اتاق با نشانی یا پیوند"
 
 #: src/shortcuts-dialog.blp:14
-#, fuzzy
-#| msgid "Account Settings"
 msgctxt "shortcut window"
 msgid "Account Settings"
 msgstr "تنظیمات حساب"
 
 #: src/shortcuts-dialog.blp:19
-#, fuzzy
-#| msgid "Main Menu"
 msgctxt "shortcut window"
 msgid "Open Menu"
-msgstr "فهرست اصلی"
+msgstr "گشودن فهرست"
 
 #: src/shortcuts-dialog.blp:24
-#, fuzzy
-#| msgid "_Keyboard Shortcuts"
 msgctxt "shortcut window"
 msgid "Keyboard Shortcuts"
-msgstr "_میان‌برهای صفحه‌کلید"
+msgstr "میان‌برهای صفحه‌کلید"
 
 #: src/shortcuts-dialog.blp:29
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Close Room"
 msgctxt "shortcut window"
 msgid "Close Window"
-msgstr "بستن اتاق"
+msgstr "بستن پنجره"
 
 #: src/shortcuts-dialog.blp:34
 msgctxt "shortcut window"
@@ -5077,8 +4932,6 @@ msgid "Quit"
 msgstr "خروج"
 
 #: src/shortcuts-dialog.blp:40
-#, fuzzy
-#| msgid "Room List"
 msgctxt "shortcut window"
 msgid "Room List"
 msgstr "سیاههٔ اتاق‌ها"
@@ -5089,56 +4942,39 @@ msgid "Search Room List"
 msgstr "جست‌وجوی سیاههٔ اتاق‌ها"
 
 #: src/shortcuts-dialog.blp:48
-#, fuzzy
-#| msgid "New Room"
 msgctxt "shortcut window"
 msgid "Next Room"
-msgstr "اتاق جدید"
+msgstr "اتاق بعدی"
 
 #: src/shortcuts-dialog.blp:53
-#, fuzzy
-#| msgid "Previous room"
 msgctxt "shortcut window"
 msgid "Previous Room"
-msgstr "اتاق قبلی"
+msgstr "اتاق پیشین"
 
 #: src/shortcuts-dialog.blp:60
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "First Room With Unread Messages"
-msgstr "گشودن اتاق با پیام‌های ناخوانده"
+msgstr "نخستین اتاق با پیام‌های ناخوانده"
 
 #: src/shortcuts-dialog.blp:65
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "Next Room With Unread Messages"
-msgstr "گشودن اتاق با پیام‌های ناخوانده"
+msgstr "اتاق بعدی با پیام‌های ناخوانده"
 
 #: src/shortcuts-dialog.blp:70
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Open Room With Unread Messages"
 msgctxt "shortcut window"
 msgid "Previous Room With Unread Messages"
-msgstr "گشودن اتاق با پیام‌های ناخوانده"
+msgstr "اتاق پیشین با پیام‌های ناخوانده"
 
 #: src/shortcuts-dialog.blp:76
-#, fuzzy
-#| msgid "Room History"
 msgctxt "shortcut window"
 msgid "Room History"
 msgstr "تاریخچهٔ اتاق"
 
 #: src/shortcuts-dialog.blp:79
-#, fuzzy
-#| msgid "Event Details"
 msgctxt "shortcut window"
 msgid "Event Properties"
-msgstr "جزییات رویداد"
+msgstr "ویژگی‌های رویداد"
 
 #: src/shortcuts-dialog.blp:84
 msgctxt "shortcut window"
@@ -5146,10 +4982,8 @@ msgid "Close Room"
 msgstr "بستن اتاق"
 
 #: src/user_facing_error.rs:18
-#, fuzzy
-#| msgid "The connection timed out. Try again later."
 msgid "Connection timed out."
-msgstr "زمان وصل شدن به سر رسید. تلاش دوباره."
+msgstr "زمان وصل شدن به سر رسید."
 
 #: src/user_facing_error.rs:20
 msgid "Could not connect to the homeserver."
@@ -5160,8 +4994,6 @@ msgid "Invalid credentials."
 msgstr "اعتبارنامهٔ نامعتبر."
 
 #: src/user_facing_error.rs:27
-#, fuzzy
-#| msgid "The account is deactivated."
 msgid "Account deactivated."
 msgstr "حساب از کار افتاده است."
 
@@ -5170,40 +5002,32 @@ msgstr "حساب از کار افتاده است."
 #: src/user_facing_error.rs:43
 msgid "Rate limit exceeded, retry in 1 second."
 msgid_plural "Rate limit exceeded, retry in {n} seconds."
-msgstr[0] "محدودیت نرخ به سقف رسید، یک ثانیه دیگر تلاش کنید."
-msgstr[1] "محدودیت نرخ به سقف رسید، {n} ثانیه دیگر تلاش کنید."
+msgstr[0] "به کران نرخ رسید. تلاش دوباره در ۱ ثانیه‌."
+msgstr[1] "به کران نرخ رسید. تلاش دوباره در {n} ثانیه‌."
 
 #: src/user_facing_error.rs:49
 msgid "Rate limit exceeded, try again later."
-msgstr "محدودیت نرخ به سقف رسید، بعدا مجدد بکوشید."
+msgstr "به کران نرخ رسید. دوباره تلاش کنید."
 
 #: src/user_facing_error.rs:59
-#, fuzzy
-#| msgid "An unexpected connection error occurred."
 msgid "Unexpected connection error."
-msgstr "خطای اتّصال غیرمنتظره‌ای رخ داد."
+msgstr "خطای اتّصال غیرمنتظره."
 
 #: src/user_facing_error.rs:67
 msgid "Could not decrypt the event."
 msgstr "نتوانست رویداد را رمزگشایی کند."
 
 #: src/user_facing_error.rs:69 src/user_facing_error.rs:81
-#, fuzzy
-#| msgid "An unexpected error occurred."
 msgid "Unexpected error."
-msgstr "خطایی غیرمنتظره رخ داد."
+msgstr "خطای غیرمنتظره."
 
 #: src/user_facing_error.rs:77
-#, fuzzy
-#| msgid "This is not a valid URL."
 msgid "Invalid URL."
-msgstr "این یک نشانی معتبر نیست."
+msgstr "نشانی نامعتبر."
 
 #: src/user_facing_error.rs:78
-#, fuzzy
-#| msgid "Could not connect to the homeserver."
 msgid "Could not discover homeserver."
-msgstr "نتوانست به کارساز خانگی وصل شود."
+msgstr "نتوانست کارساز خانگی را کشف کند."
 
 #: src/user_facing_error.rs:80
 msgid "Could not open the store."
@@ -5214,10 +5038,8 @@ msgid "Could not generate unique session ID"
 msgstr "نتوانست شناسهٔ نشست یکتا را ایجاد کند"
 
 #: src/utils/matrix/mod.rs:177
-#, fuzzy
-#| msgid "Could not log the session out"
 msgid "Could not access the session tokens"
-msgstr "نتوانست از نشست خارج شود"
+msgstr "نتوانست به ژتون‌های نشست دسترسی پیدا کند."
 
 #: src/utils/media/image/mod.rs:936
 msgid "Image format not supported"
@@ -5246,740 +5068,3 @@ msgstr "پرونده"
 #: src/window.blp:80
 msgid "Session"
 msgstr "نشست"
-
-#~ msgid "© 2017-2024 The Fractal Team"
-#~ msgstr "© ۲۰۱۷ - ۲۰۲۴ گروه فراکتال"
-
-#~ msgid "Authenticate"
-#~ msgstr "هویت‌سنجی"
-
-#~ msgctxt "member"
-#~ msgid "Knocked"
-#~ msgstr "در زده"
-
-#~ msgid "Allow Access"
-#~ msgstr "اجازهٔ دسترسی"
-
-#~ msgid "Single Sign-On"
-#~ msgstr "ورود یکپارچه"
-
-#~ msgid "Discard Unsaved Changes?"
-#~ msgstr "دور ریختن تغییرات ذخیره نشده؟"
-
-#~ msgctxt "room details"
-#~ msgid "Edit"
-#~ msgstr "ویرایش"
-
-#~ msgid "_View Details"
-#~ msgstr "_دیدن جزییات"
-
-#~ msgid "There is a newer version of this room"
-#~ msgstr "نگارشی جدیدتر از این اتاق موجود است"
-
-#~ msgid "This room was closed"
-#~ msgstr "این اتاق بسته شده"
-
-#~ msgid "Sender Context Menu"
-#~ msgstr "فهرست بافتاری فرستنده"
-
-#~ msgid "_Open Direct Chat"
-#~ msgstr "_گشودن گپ مستقیم"
-
-#~ msgid "Copy _Link"
-#~ msgstr "رونوشت از _پویند"
-
-#~ msgid "_Invite"
-#~ msgstr "_دعوت"
-
-#~ msgid "M_ute"
-#~ msgstr "_خموش"
-
-#~ msgid "_Unmute"
-#~ msgstr "_ناخموش"
-
-#~ msgid "_Kick"
-#~ msgstr "_اخراج"
-
-#~ msgid "_Deny Access"
-#~ msgstr "_رد کردن دسترسی"
-
-#~ msgid "_Ban"
-#~ msgstr "_مسدود"
-
-#~ msgid "Un_ban"
-#~ msgstr "نامسدو_د"
-
-#~ msgid "_Remove Messages"
-#~ msgstr "_برداشتن پیام‌ها"
-
-#~ msgid "I_gnore"
-#~ msgstr "_چشم‌پوشی"
-
-#~ msgid "Stop I_gnoring"
-#~ msgstr "توقّف _چشم‌پوشی"
-
-#~ msgid "Link copied to clipboard"
-#~ msgstr "پیوند در تخته‌گیره رونوشت شد"
-
-#~ msgid "{user}’s avatar"
-#~ msgstr "چهرک {user}"
-
-#~ msgid "Creating a new Direct Chat…"
-#~ msgstr "ایجاد گپ مستقیم جدید…"
-
-#~ msgid "Inviting user…"
-#~ msgstr "دعوت کردن کاربر…"
-
-#~ msgid "Denying access…"
-#~ msgstr "رد کردن دسترسی…"
-
-#~ msgid "Kicking user…"
-#~ msgstr "اخراج کاربر…"
-
-#~ msgid "Muting member…"
-#~ msgstr "خموش کردن عضو…"
-
-#~ msgid "Unmuting member…"
-#~ msgstr "ناخموش کردن عضو…"
-
-#~ msgid "Member muted"
-#~ msgstr "عضو خموش شد"
-
-#~ msgid "Member unmuted"
-#~ msgstr "عضو ناخموش شد"
-
-#~ msgid "Could not mute member"
-#~ msgstr "نتوانست کاربر را بخموشد"
-
-#~ msgid "Could not unmute member"
-#~ msgstr "نتوانست کاربر را نخموشد"
-
-#~ msgid "Banning user…"
-#~ msgstr "تحریم کاربر…"
-
-#~ msgid "Unbanning user…"
-#~ msgstr "نامحروم کردن عضو…"
-
-#~ msgid "Removing 1 message sent by the user…"
-#~ msgid_plural "Removing {n} messages sent by the user…"
-#~ msgstr[0] "برداشتن ۱ پیام فرستاده شده به دست کاربر…"
-#~ msgstr[1] "برداشتن {n} پیام فرستاده شده به دست کاربر…"
-
-#~ msgid "Stop ignoring user…"
-#~ msgstr "توقّف چشم‌پوشی از کاربر…"
-
-#~ msgid "Ignoring user…"
-#~ msgstr "چشم پوشیدن از کاربر…"
-
-#~ msgid "Open Sender Context Menu"
-#~ msgstr "گشودن فهرست بافتاری فرستنده"
-
-#~ msgid "This is the continuation of an upgraded room."
-#~ msgstr "این اتاق ادامهٔ اتاقی ارتقا یافته است."
-
-#~ msgid "This is the beginning of this room."
-#~ msgstr "این‌جا آغاز اتاق است."
-
-#~ msgid "{user} was invited to this room."
-#~ msgstr "{user} به این اتاق دعوت شد."
-
-#~ msgid "{user} was kicked out of the room."
-#~ msgstr "{user} از اتاق اخراج شد."
-
-#~ msgid "{user} was kicked out of the room and banned."
-#~ msgstr "{user} از این اتاق اخراج و مسدود شد."
-
-#~ msgid "The invitation for {user} has been revoked."
-#~ msgstr "دعوتی برای {user} برداشته شد."
-
-#~ msgid "{user}’s request to be invited to this room was denied."
-#~ msgstr "درخواست {user} برای دعوت به اتاق رد شد."
-
-#~ msgid "Copy Sender ID"
-#~ msgstr "رونوشت از شناسهٔ فرستنده"
-
-#~ msgid "Sender ID copied to clipboard"
-#~ msgstr "شناسهٔ فرستنده در تخته‌گیره رونوشت شد"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Show Shortcuts"
-#~ msgstr "نمایش میان‌برها"
-
-#~ msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
-#~ msgid_plural ""
-#~ "You exceeded the homeserver’s rate limit, retry in {n} seconds."
-#~ msgstr[0] "رد شدن از محدودیت نرخ کارساز خانگی. تلاش دوباره در ۱ ثانیه."
-#~ msgstr[1] "رد شدن از محدودیت نرخ کارساز خانگی. تلاش دوباره در {n} ثانیه."
-
-#~ msgid "You exceeded the homeserver’s rate limit, try again later."
-#~ msgstr "رد شدن از محدودیت نرخ کارساز خانگی. تلاش دوباره در آینده."
-
-#~ msgid ""
-#~ "Homeserver auto-discovery failed. Try entering the full URL manually."
-#~ msgstr ""
-#~ "کشف خودکار کارساز خانگی شکست خورد. نشانی کامل را به صورت دستی وارد کنید."
-
-#~ msgid "OK"
-#~ msgstr "باشه"
-
-#~ msgid "Dismiss"
-#~ msgstr "رد کردن"
-
-#~ msgid "_Copy Thumbnail"
-#~ msgstr "_رونوشت از بندانگشتی"
-
-#~ msgid "Rep_ort"
-#~ msgstr "_گزارش"
-
-#~ msgid "Authenticate via Browser"
-#~ msgstr "احراز هویت با مرورگر"
-
-#~ msgid "_Reject"
-#~ msgstr "_رد کردن"
-
-#~ msgid "Copy Matrix User ID to Clipboard"
-#~ msgstr "رونوشت از شناسهٔ کاربری ماتریکس در تخته‌گیره"
-
-#~ msgid "Copy Session ID to Clipboard"
-#~ msgstr "رونوشت شناسهٔ نشست در تخته‌گیره"
-
-#~ msgid "Save Details"
-#~ msgstr "ذخیرهٔ جزییات"
-
-#~ msgid "Copy Matrix Room ID to Clipboard"
-#~ msgstr "رونوشت از شناسهٔ اتاق ماتریکس در تخته‌گیره"
-
-#~ msgid "Change Room Topic"
-#~ msgstr "تغییر موضوع اتاق"
-
-#~ msgid "_Permalink"
-#~ msgstr "_پایاپیوند"
-
-#~ msgid "_Try Again"
-#~ msgstr "_تلاش دوباره"
-
-#~ msgid "Could not retry to send message"
-#~ msgstr "نتوانست دوباره برای فرستادن پیام تلاش کند"
-
-#~ msgid "An error occurred with the sending queue"
-#~ msgstr "خطایی هنگام فرستادن صف رخ داد"
-
-#~ msgid "Room _Permalink"
-#~ msgstr "_پایاپیوند اتاق"
-
-#~ msgid "Copy Event ID to Clipboard"
-#~ msgstr "رونوشت از شناسهٔ رویداد در تخته‌گیره"
-
-#~ msgid "Copy Room ID to Clipboard"
-#~ msgstr "رونوشت از شناسهٔ اتاق در تخته‌گیره"
-
-#~ msgid "Copy Sender ID to Clipboard"
-#~ msgstr "رونوشت از شناسهٔ فرستنده در تخته‌گیره"
-
-#~ msgid "Copy Timestamp to Clipboard"
-#~ msgstr "رونوشت از برچسب زمانی در تخته‌گیره"
-
-#~ msgid "Copy Source to Clipboard"
-#~ msgstr "رونوشت از منبع در تخته‌گیره"
-
-#~ msgid "Topic (Optional)"
-#~ msgstr "موضوع (اختیاری)"
-
-#~ msgid "Matrix group messaging app"
-#~ msgstr "کارهٔ پیام‌رسانی گروهی برای ماتریکس"
-
-#~ msgid "Try again"
-#~ msgstr "تلاش دوباره"
-
-#~ msgid "Normal user"
-#~ msgstr "کاربر عادی"
-
-#~ msgid "Backup Encryption Keys"
-#~ msgstr "پشتیبان از کلیدهای رمزنگاری"
-
-#~ msgid "Add Keyword…"
-#~ msgstr "افزودن کلیدواژه…"
-
-#~ msgid "Available"
-#~ msgstr "در دسترس"
-
-#~ msgid "Not available"
-#~ msgstr "خارج از دسترس"
-
-#~ msgid "Cross-Signing"
-#~ msgstr "امضای متقابل"
-
-#~ msgid "Master key"
-#~ msgstr "کلید اصلی"
-
-#~ msgid "Self-signing key"
-#~ msgstr "کلید امضای خود"
-
-#~ msgid "User-signing key"
-#~ msgstr "کلید امضای کاربر"
-
-#~ msgid "Add server…"
-#~ msgstr "افزودن کارساز…"
-
-#~ msgid "An error occurred while searching for matches."
-#~ msgstr "خطایی هنگام جست‌وجوی موارد مطابق رخ داد"
-
-#~ msgid "Failed to remove message"
-#~ msgstr "شکست در برداشتن پیام"
-
-#~ msgid "Failed to remove reaction"
-#~ msgstr "شکست در برداشتن واکنش"
-
-#~ msgid "Unable to load room"
-#~ msgstr "ناتوانی در بار کردن اتاق"
-
-#~ msgid "Scroll to bottom"
-#~ msgstr "لغزش به پایین"
-
-#~ msgid "Failed to access camera"
-#~ msgstr "شکست در دسترسی به دوربین"
-
-#~ msgid "Failed to copy the permalink"
-#~ msgstr "شکست در رونوشت پایاپیوند"
-
-#, fuzzy
-#~| msgid "Verifications"
-#~ msgid "Restart verification"
-#~ msgstr "اعتبارسنجی‌ها"
-
-#~ msgid "_View"
-#~ msgstr "_دیدن"
-
-#~ msgid "_Join"
-#~ msgstr "_پیوستن"
-
-#~ msgid "_Log in"
-#~ msgstr "_ورود"
-
-#~ msgid "_Forgot Password?"
-#~ msgstr "گذرواژه را _فراموش کرده‌اید؟"
-
-#, fuzzy
-#~| msgid "Join"
-#~ msgid "Joined"
-#~ msgstr "پیوستن"
-
-#~ msgid "Outdated"
-#~ msgstr "تاریخ‌گذشته"
-
-#~ msgid "Spaces"
-#~ msgstr "فضاها"
-
-#~ msgid "People"
-#~ msgstr "افراد"
-
-#~ msgid "_Verify"
-#~ msgstr "_تأیید اعتبار"
-
-#~ msgid "Make _Mod"
-#~ msgstr "_ناظر کردن"
-
-#~ msgid "Make _Admin"
-#~ msgstr "_مدیر کردن"
-
-#, fuzzy
-#~| msgid "Search for room members"
-#~ msgid "Search for Room Members"
-#~ msgstr "جست‌وجو برای اعضای اتاق"
-
-#~ msgid "Invite new Members"
-#~ msgstr "دعوت اعضای جدید"
-
-#, fuzzy
-#~| msgid "_Attachment"
-#~ msgid "Browse Attachment"
-#~ msgstr "_پیوست"
-
-#~ msgid "Open Emoji Picker"
-#~ msgstr "گشودن گزینشگر ایموجی"
-
-#, fuzzy
-#~| msgid "<b>{}</b> is typing…"
-#~| msgid_plural "<b>{}</b> and <b>{}</b> are typing…"
-#~ msgid "<b>{user1}</b> and <b>{user2}</b> are typing…"
-#~ msgstr "<b>{}</b> در حال نوشتن…"
-
-#~ msgid "Join Room as People"
-#~ msgstr "پیوستن به اتاق به عنوان افراد"
-
-#~ msgid "Move to People"
-#~ msgstr "انتقال به افراد"
-
-#~ msgid "Rejoin Room as People"
-#~ msgstr "پیوستن دوباره به اتاق به عنوان افراد"
-
-#, fuzzy
-#~| msgid "Account Settings"
-#~ msgid "App Settings Menu"
-#~ msgstr "تنظیمات حساب"
-
-#~ msgid "Julian Sparber"
-#~ msgstr "Julian Sparber"
-
-#~ msgid "> quote"
-#~ msgstr "> نقل قول"
-
-#~ msgid "**bold**"
-#~ msgstr "**ضخیم**"
-
-#~ msgid "`code`"
-#~ msgstr "`کد`"
-
-#~ msgid "*italic*"
-#~ msgstr "*کج*"
-
-#~ msgid "Invite new member"
-#~ msgstr "دعوت عضو جدید"
-
-#~ msgid "Open"
-#~ msgstr "گشودن"
-
-#~ msgid "Toggle Room History Search"
-#~ msgstr "تعویض حالت جست‌وجوی تاریخچهٔ اتاق"
-
-#~ msgid "Room History Search"
-#~ msgstr "جست‌وجوی تاریخچهٔ اتاق"
-
-#~ msgid "Enable Markdown Formatting"
-#~ msgstr "به کار انداختن قالب‌بندی مارک‌دون"
-
-#~ msgid "Go there"
-#~ msgstr "رفتن به آن‌جا"
-
-#~ msgid "_Next"
-#~ msgstr "_بعدی"
-
-#~ msgid "Learn more about Fractal"
-#~ msgstr "درباره فرکتال بیشتر بدانید"
-
-#, fuzzy
-#~| msgid "A Matrix.org client for GNOME"
-#~ msgid "A Matrix client for GNOME"
-#~ msgstr "کارخواه ماتریکس برای گنوم"
-
-#~ msgid "1 Invited"
-#~ msgid_plural "{n} Invited"
-#~ msgstr[0] "۱ دعوت شده"
-#~ msgstr[1] "{n} دعوت شده"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Close the active room"
-#~ msgstr "بستن اتاق فعّال"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open / close the room sidebar search"
-#~ msgstr "گشودن / بستن نوار جست‌وجو"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the previous room in the list"
-#~ msgstr "گشودن اتاق قبلی در فهرست"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the next room in the list"
-#~ msgstr "گشودن اتاق بعدی در فهرست"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the previous room with unread messages in the list"
-#~ msgstr "گشودن اتاق قبلی با پیام‌های خوانده نشده در فهرست"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the first room of the list"
-#~ msgstr "گشودن اولین اتاق در فهرست"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the last room of the list"
-#~ msgstr "گشودن آخرین اتاق در فهرست"
-
-#~ msgctxt "shortcut window"
-#~ msgid "View older messages"
-#~ msgstr "مشاهده پیام‌های قدیمی‌تر"
-
-#~ msgctxt "shortcut window"
-#~ msgid "View newer messages"
-#~ msgstr "مشاهده پیام‌های جدیدتر"
-
-#~ msgctxt "shortcut message"
-#~ msgid "Composing a new message"
-#~ msgstr "نوشتن پیام جدید"
-
-#~ msgctxt "shortcut message"
-#~ msgid "Write on a new line"
-#~ msgstr "نوشتن روی یک خط جدید"
-
-#~ msgid "Type of password and token storage"
-#~ msgstr "گذرواژه و توکن ذخیره شده را بنویسید"
-
-#~ msgid "Type of password and token storage, default value is: Secret Service"
-#~ msgstr ""
-#~ "گذرواژه و توکن ذخیره شده را بنویسید، به طور پیش‌گزیده این است: Secret "
-#~ "Service"
-
-#~ msgid "If markdown sending is active"
-#~ msgstr "اگر ارسال با مارک‌دون(زبان نشانه گذاری) فعّال است"
-
-#~ msgid "Whether support for sending markdown messages is on"
-#~ msgstr ""
-#~ "مشخص می‌کند که آیا پشتیبانی برای ارسال پیام‌های مارک‌دون روشن است یا خیر"
-
-#~ msgid "X position of the main window on startup"
-#~ msgstr "موقعیت X پنجرهٔ اصلی هنگام راه‌اندازی"
-
-#~ msgid "Y position of the main window on startup"
-#~ msgstr "موقعیت Y پنجرهٔ اصلی هنگام راه‌اندازی"
-
-#~ msgid "Width of the main window on startup"
-#~ msgstr "عرض پنجرهٔ اصلی هنگام راه‌اندازی"
-
-#~ msgid "Height of the main window on startup"
-#~ msgstr "ارتفاع پنجرهٔ اصلی هنگام راه‌اندازی"
-
-#~ msgid "Daniel García Moreno"
-#~ msgstr "دانیل گارسیا مورنو"
-
-#~ msgid "Other people can find you by searching for any of these identifiers."
-#~ msgstr "دیگران می‌توانند با جست‌وجوی هر یک از این شناسه ها شما را پیدا کنند."
-
-#~ msgid "Type in your name"
-#~ msgstr "نام خود را بنویسید"
-
-#~ msgid "Email"
-#~ msgstr "رایانامه"
-
-#~ msgid "Phone"
-#~ msgstr "تلفن"
-
-#~ msgid "Device ID"
-#~ msgstr "شناسه دستگاه"
-
-#~ msgid "Also erase all messages"
-#~ msgstr "همچنین تمام پیام‌ها را پاک می‌کند"
-
-#~ msgid "Check your email"
-#~ msgstr "رایانامهٔ خود را چک کنید"
-
-#~ msgid "Apply"
-#~ msgstr "اعمال"
-
-#~ msgid "New direct chat"
-#~ msgstr "گفت‌وگوی مستقیم جدید"
-
-#~ msgid "Invitation"
-#~ msgstr "دعوت"
-
-#~ msgid "ID or Alias"
-#~ msgstr "شناسه یا نام مستعار"
-
-#~ msgid "Join room"
-#~ msgstr "عضویت به اتاق"
-
-#~ msgid "Close"
-#~ msgstr "بستن"
-
-#~ msgid ""
-#~ "Once you leave, you won’t be able to interact with people in the room "
-#~ "anymore."
-#~ msgstr "پس از خروج دیگر نمی‌توانید با افراد حاضر در اتاق تعامل داشته باشید."
-
-#~ msgid "What is your Provider?"
-#~ msgstr "کارساز(ارائه دهنده) شما چیست؟"
-
-#~ msgid "Matrix provider domain, e.g. myserver.co"
-#~ msgstr "نشانی کارساز ماتریکس، برای مثال myserver.co"
-
-#~ msgid "The domain may not be empty."
-#~ msgstr "دامنه ممکن است خالی نباشد."
-
-#~ msgid "_User ID"
-#~ msgstr "_شناسهٔ کاربر"
-
-#~ msgid "_Password"
-#~ msgstr "_گذرواژه"
-
-#~ msgid "User name, email, or phone number"
-#~ msgstr "نام کاربری، رایانامه یا شماره تلفن"
-
-#~ msgid "Keyboard _Shortcuts"
-#~ msgstr "_میان‌برهای صفحه‌کلید"
-
-#~ msgid "User"
-#~ msgstr "کاربر"
-
-#~ msgid "No room"
-#~ msgstr "اتاقی نیست"
-
-#~ msgid "Loading more media"
-#~ msgstr "بارگذاری رسانه بیشتر"
-
-#~ msgid "Open With…"
-#~ msgstr "گشودن با…"
-
-#~ msgid "Copy Selection"
-#~ msgstr "رونوشت قسمتی که انتخاب شده"
-
-#~ msgid "Ch_ange"
-#~ msgstr "_تغییر"
-
-#~ msgid "Add name"
-#~ msgstr "افزودن نام"
-
-#~ msgid "Add topic"
-#~ msgstr "افزودن موضوع"
-
-#~ msgid "Type in your room topic"
-#~ msgstr "نام موضوع اتاق خود را بنویسید"
-
-#~ msgid "Shared Media"
-#~ msgstr "رسانهٔ هم‌رسانی شده"
-
-#~ msgid "photos"
-#~ msgstr "تصویر‌ها"
-
-#~ msgid "documents"
-#~ msgstr "اسناد"
-
-#~ msgid "New members can see"
-#~ msgstr "اعضای جدید می‌توانند ببینند"
-
-#~ msgid "All room history"
-#~ msgstr "تمام تاریخچهٔ اتاق"
-
-#~ msgid "Allow joining without invite"
-#~ msgstr "اجازه به عضویت بدون دعوت"
-
-#~ msgid "Show rooms from:"
-#~ msgstr "نمایش اتاق‌ها از:"
-
-#~ msgid "Your homeserver"
-#~ msgstr "کارساز خانگی شما"
-
-#~ msgid "Other Protocol"
-#~ msgstr "شیوه‌نامه‌ای دیگر"
-
-#~ msgid "Enter the code received via SMS"
-#~ msgstr "کدی که از طریق پیامک ارسال شده است را وارد کنید"
-
-#~ msgid ""
-#~ "In order to add this email address, go to your inbox and follow the link "
-#~ "you received. Once you’ve done that, click Continue."
-#~ msgstr ""
-#~ "برای افزودن این رایانامه، به صندوق پستی خود بروید و روی پیوندی که دریافت "
-#~ "کرده‌اید کلیک کنید. پس از انجام این کار، روی ادامه کلیک کنید."
-
-#~ msgid "Fractal [{}]"
-#~ msgstr "فرکتال [{}]"
-
-#~ msgid "An audio file has been added to the conversation."
-#~ msgstr "یک پرونده صوتی به گفت‌وگو اضافه شد."
-
-#~ msgid "A video has been added to the conversation."
-#~ msgstr "یک ویدیو به گفت‌وگو اضافه شد."
-
-#~ msgid "A file has been added to the conversation."
-#~ msgstr "یک پرونده به گفت‌وگو اضافه شد."
-
-#~ msgid " (direct message)"
-#~ msgstr " (پیام مستقیم)"
-
-#~ msgid "EMPTY ROOM"
-#~ msgstr "اتاق خالی"
-
-#~ msgid "{m1} and {m2}"
-#~ msgstr "{m1} و {m2}"
-
-#~ msgid "{m1} and Others"
-#~ msgstr "{m1} و دیگران"
-
-#~ msgid "Several users are typing…"
-#~ msgstr "چند کاربر در حال نوشتن هستند…"
-
-#~ msgid "Syncing, this could take a while"
-#~ msgstr "در حال همگام‌سازی، ممکن است کمی طول بکشد"
-
-#~ msgid "Can’t login, try again"
-#~ msgstr "نمی‌توان وارد شد، دوباره امتحان کنید"
-
-#~ msgid "Can’t join the room, try again."
-#~ msgstr "نمی‌توان عضو اتاق شد، دوباره امتحان کنید."
-
-#~ msgid "Can’t create the room, try again"
-#~ msgstr "نمی‌توان اتاق ساخت، دوباره امتحان کنید"
-
-#~ msgid "Sorry, account settings can’t be loaded."
-#~ msgstr "متأسفیم، تنظیمات حساب نمی‌تواند بارگذاری شود."
-
-#~ msgid "Email is already in use"
-#~ msgstr "رایانامه هم‌اکنون استفاده شده است"
-
-#~ msgid "Please enter a valid email address."
-#~ msgstr "لطفاً یک رایانامه معتبر وارد کنید."
-
-#~ msgid "Phone number is already in use"
-#~ msgstr "شماره تلفن هم‌اکنون استفاده شده است"
-
-#~ msgid ""
-#~ "Please enter your phone number in the format: \n"
-#~ " + your country code and your phone number."
-#~ msgstr ""
-#~ "لطفاً شماره تلفن خود را با این صورت وارد کنید: \n"
-#~ " + کد کشور و شماره تلفن."
-
-#~ msgid "Couldn’t add the phone number."
-#~ msgstr "شماره تلفن اضافه نشد."
-
-#~ msgid "© 2017–2020 Daniel García Moreno, et al."
-#~ msgstr "© ۲۰۱۷–۲۰۲۰ دانیل گارسیا مورنو، و همکاران."
-
-#~ msgid ""
-#~ "You’ve been invited to join <b>{room_name}</b> room by <b>{sender_name}</"
-#~ "b>"
-#~ msgstr ""
-#~ "شما برای پیوستن به اتاق <b>{room_name}</b> توسط <b>{sender_name}</b> دعوت "
-#~ "شده‌اید"
-
-#~ msgid "Room · {} member"
-#~ msgid_plural "Room · {} members"
-#~ msgstr[0] "اتاق · {} عضو"
-#~ msgstr[1] "اتاق · {} عضو"
-
-#~ msgid "Save media as"
-#~ msgstr "ذخیرهٔ رسانه به عنوان"
-
-#~ msgid "You have been kicked from {}"
-#~ msgstr "شما از {} اخراج شدید"
-
-#~ msgid ""
-#~ "Kicked by: {}\n"
-#~ " “{}”"
-#~ msgstr ""
-#~ "حذف شده توسط: {}\n"
-#~ " «{}»"
-
-#~ msgid "Malformed server URL"
-#~ msgstr "نشانی کارساز نادرست است"
-
-#~ msgid "Error while loading previous media"
-#~ msgstr "خطا هنگام بارگیری رسانهٔ قبلی"
-
-#~ msgid "Privileged"
-#~ msgstr "ممتاز"
-
-#~ msgid "%R"
-#~ msgstr "%OH∶%OM"
-
-#~ msgid "Invites"
-#~ msgstr "دعوت‌ها"
-
-#~ msgid "You don’t have any invitations"
-#~ msgstr "شما هیچ دعوتنامه‌ای ندارید"
-
-#~ msgid "Drag and drop rooms here to add them to your favorites"
-#~ msgstr ""
-#~ "اتاق‌ها را به اینجا بکشید و رها کنید تا به موارد دلخواه شما اضافه شوند"
-
-#~ msgid "You don’t have any rooms yet"
-#~ msgstr "شما هنوز اتاق ندارید"
