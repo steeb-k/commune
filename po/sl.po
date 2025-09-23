@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-08-28 07:16+0000\n"
-"PO-Revision-Date: 2025-08-28 16:31+0200\n"
+"POT-Creation-Date: 2025-09-23 16:49+0000\n"
+"PO-Revision-Date: 2025-09-23 19:02+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -247,7 +247,7 @@ msgstr "Odstrani podobo"
 msgid "Select New Avatar"
 msgstr "Izberite novo sliko podobe"
 
-#: src/components/camera/qrcode_scanner.rs:92
+#: src/components/camera/qrcode_scanner.rs:91
 msgid "Camera"
 msgstr "Kamera"
 
@@ -263,7 +263,7 @@ msgstr "Povezave s kamero ni mogoče vzpostaviti"
 msgid "Viewfinder"
 msgstr "Iskalo"
 
-#: src/components/crypto/identity_setup_view.rs:384 src/identity_verification_view/cancelled_page.rs:195
+#: src/components/crypto/identity_setup_view.rs:384 src/identity_verification_view/cancelled_page.rs:196
 msgid "Could not send a new verification request"
 msgstr "Nove zahteve za preverjanje ni bilo mogoče poslati"
 
@@ -601,8 +601,8 @@ msgstr "Zapusti"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:581
-#: src/session/view/content/room_history/event_actions/group.rs:645
+#: src/session/view/content/room_history/event_actions/group.rs:582
+#: src/session/view/content/room_history/event_actions/group.rs:646
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -741,7 +741,7 @@ msgstr[3] ""
 
 #: src/components/dialogs/message_dialogs.rs:232 src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:582
+#: src/session/view/content/room_history/event_actions/group.rs:583
 msgid "Remove"
 msgstr "Odstrani"
 
@@ -762,7 +762,7 @@ msgstr ""
 "tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:627
+#: src/session/view/content/room_history/event_actions/group.rs:628
 msgid "Reason (optional)"
 msgstr "Razlog (neobvezno)"
 
@@ -863,14 +863,14 @@ msgstr "Zavrzi"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.blp:98
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:175
+#: src/utils/matrix/media_message.rs:176
 msgid "Save"
 msgstr "Shrani"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/room_preview.rs:239 src/components/dialogs/room_preview.rs:347
 #: src/session/view/content/explore/public_room_row.rs:182
-#: src/session/view/content/room_history/message_toolbar/mod.rs:363
+#: src/session/view/content/room_history/message_toolbar/mod.rs:360
 #: src/session/view/content/room_history/mod.blp:77
 #: src/session/view/content/room_history/state/creation.blp:20
 msgid "View"
@@ -904,7 +904,7 @@ msgid "Request an Invite"
 msgstr "Prosi za povabilo"
 
 #: src/components/dialogs/room_preview.rs:351 src/session/view/content/explore/public_room_row.rs:195
-#: src/session/view/content/room_history/message_toolbar/mod.rs:365
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgid "Join"
 msgstr "Pridruži se"
 
@@ -941,6 +941,24 @@ msgstr "Brez omrežne povezave"
 msgid "No Internet connection"
 msgstr "Brez internetne povezave"
 
+#: src/components/media/audio_player/mod.rs:194
+msgid "Error reading audio file"
+msgstr "Napaka pri branju zvočne datoteke"
+
+#: src/components/media/audio_player/mod.rs:404
+msgid "Pause"
+msgstr "Premor"
+
+#. Translators: As in "Play audio file".
+#: src/components/media/audio_player/mod.rs:406
+#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
+msgid "Play"
+msgstr "Predvajaj"
+
+#: src/components/media/audio_player/mod.rs:456
+msgid "Could not retrieve audio file"
+msgstr "Ni mogoče pridobiti zvočne datoteke"
+
 #: src/components/media/content_viewer.rs:118
 msgid "Image not Viewable"
 msgstr "Slike ni mogoče pokazati"
@@ -957,7 +975,7 @@ msgstr "Videoposnetka ni mogoče predvajati"
 msgid "File not Viewable"
 msgstr "Datoteka ni mogoče pokazati"
 
-#: src/components/media/location_viewer.rs:124
+#: src/components/media/location_viewer.rs:146
 msgid "Location at latitude {latitude} and longitude {longitude}"
 msgstr "Lokacija na zemljepisni širini {latitude} in dolžini {longitude}"
 
@@ -1047,7 +1065,7 @@ msgstr "Vloge ni bilo mogoče spremeniti"
 msgid "Could not invite user"
 msgstr "Uporabnika ni bilo mogoče povabiti"
 
-#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:719
+#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:720
 msgid "Could not revoke invite of user"
 msgstr "Ni bilo mogoče preklicati povabila uporabnika"
 
@@ -1112,7 +1130,7 @@ msgid "Could not stop ignoring user"
 msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
 #: src/components/user_page.rs:770 src/session/view/content/invite.rs:290
-#: src/session/view/sidebar/row.rs:766
+#: src/session/view/sidebar/row.rs:770
 msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
@@ -1213,70 +1231,70 @@ msgstr "Seje ni bilo mogoče inicializirati"
 msgid "Command copied to clipboard"
 msgstr "Ukaz je kopiran na odložišče"
 
-#: src/identity_verification_view/accept_request_page.rs:129 src/session/model/notifications/mod.rs:388
+#: src/identity_verification_view/accept_request_page.rs:130 src/session/model/notifications/mod.rs:388
 msgid "Login Request From Another Session"
 msgstr "Zahteva za prijavo iz druge seje"
 
-#: src/identity_verification_view/accept_request_page.rs:131
+#: src/identity_verification_view/accept_request_page.rs:132
 msgid "Verify the new session from the current session."
 msgstr "Preverite novo sejo iz trenutne seje."
 
-#: src/identity_verification_view/accept_request_page.rs:134
-#: src/identity_verification_view/choose_method_page.rs:183 src/identity_verification_view/sas_page.rs:159
-#: src/identity_verification_view/scan_qr_code_page.rs:158 src/session/model/notifications/mod.rs:326
+#: src/identity_verification_view/accept_request_page.rs:135
+#: src/identity_verification_view/choose_method_page.rs:184 src/identity_verification_view/sas_page.rs:160
+#: src/identity_verification_view/scan_qr_code_page.rs:159 src/session/model/notifications/mod.rs:326
 msgid "Verification Request"
 msgstr "Zahtevek za preverjanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/accept_request_page.rs:138
+#: src/identity_verification_view/accept_request_page.rs:139
 msgid "{user} asked to be verified. Verifying a user increases the security of the conversation."
 msgstr "Uporabnik {user} je zahteval preverjanje. Preverjanje uporabnika poveča varnost pogovora."
 
-#: src/identity_verification_view/accept_request_page.rs:161
+#: src/identity_verification_view/accept_request_page.rs:162
 msgid "Could not decline verification request"
 msgstr "Zahteve za preverjanje ni bilo mogoče zavrniti"
 
-#: src/identity_verification_view/accept_request_page.rs:177
+#: src/identity_verification_view/accept_request_page.rs:178
 msgid "Could not accept verification request"
 msgstr "Zahteve za preverjanje ni bilo mogoče sprejeti"
 
-#: src/identity_verification_view/cancelled_page.rs:139
+#: src/identity_verification_view/cancelled_page.rs:140
 msgid "The verification was cancelled from the other session."
 msgstr "Preverjanje je bilo preklicano iz druge seje."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/cancelled_page.rs:145
+#: src/identity_verification_view/cancelled_page.rs:146
 msgid "The verification was cancelled by {user}."
 msgstr "Preverjanje je preklical {user}."
 
-#: src/identity_verification_view/cancelled_page.rs:151
+#: src/identity_verification_view/cancelled_page.rs:152
 msgid "The verification process failed because it reached a timeout."
 msgstr "Postopek preverjanja ni uspel, ker je dosegel časovno omejitev."
 
-#: src/identity_verification_view/cancelled_page.rs:153
+#: src/identity_verification_view/cancelled_page.rs:154
 msgid "You accepted the request from another session."
 msgstr "Zahtevo ste sprejeli z druge seje."
 
-#: src/identity_verification_view/cancelled_page.rs:156
+#: src/identity_verification_view/cancelled_page.rs:157
 msgid "The emoji did not match."
 msgstr "Emoji se ni ujemal."
 
-#: src/identity_verification_view/cancelled_page.rs:158
+#: src/identity_verification_view/cancelled_page.rs:159
 msgid "The numbers did not match."
 msgstr "Številke se niso ujemale."
 
-#: src/identity_verification_view/cancelled_page.rs:161
+#: src/identity_verification_view/cancelled_page.rs:162
 msgid "An unexpected error happened during the verification process."
 msgstr "Med postopkom preverjanja je prišlo do nepričakovane napake."
 
-#: src/identity_verification_view/cancelled_page.rs:166 src/identity_verification_view/mod.blp:88
+#: src/identity_verification_view/cancelled_page.rs:167 src/identity_verification_view/mod.blp:88
 #: src/identity_verification_view/mod.blp:97 src/identity_verification_view/room_left_page.blp:22
 msgid "Verification Cancelled"
 msgstr "Preverjanje preklicano"
 
-#: src/identity_verification_view/cancelled_page.rs:168
+#: src/identity_verification_view/cancelled_page.rs:169
 msgid "Verification Error"
 msgstr "Napaka pri preverjanju"
 
@@ -1284,43 +1302,43 @@ msgstr "Napaka pri preverjanju"
 msgid "Send New Request"
 msgstr "Pošlji novo zahtevo"
 
-#: src/identity_verification_view/choose_method_page.rs:175 src/identity_verification_view/sas_page.rs:147
-#: src/identity_verification_view/scan_qr_code_page.rs:153
+#: src/identity_verification_view/choose_method_page.rs:176 src/identity_verification_view/sas_page.rs:148
+#: src/identity_verification_view/scan_qr_code_page.rs:154
 msgid "Verify Session"
 msgstr "Preveri sejo"
 
-#: src/identity_verification_view/choose_method_page.rs:179
+#: src/identity_verification_view/choose_method_page.rs:180
 msgid "Scan this QR code from the other session."
 msgstr "Optično preberite to kodo QR iz druge seje."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/choose_method_page.rs:189
+#: src/identity_verification_view/choose_method_page.rs:190
 msgid "Ask {user} to scan this QR code from their session."
 msgstr "Prosite {user}, da optično prebere to kodo QR iz seje."
 
-#: src/identity_verification_view/choose_method_page.rs:198
+#: src/identity_verification_view/choose_method_page.rs:199
 msgid "Select a verification method to proceed."
 msgstr "Izberite način preverjanja za nadaljevanje."
 
-#: src/identity_verification_view/choose_method_page.rs:201
+#: src/identity_verification_view/choose_method_page.rs:202
 msgid "Click on the verification method to proceed."
 msgstr "Za nadaljevanje kliknite način preverjanja."
 
-#: src/identity_verification_view/choose_method_page.rs:233
+#: src/identity_verification_view/choose_method_page.rs:234
 msgid "Could not access camera"
 msgstr "Dostop do kamere ni mogoč"
 
-#: src/identity_verification_view/choose_method_page.rs:250
-#: src/identity_verification_view/scan_qr_code_page.rs:221
+#: src/identity_verification_view/choose_method_page.rs:251
+#: src/identity_verification_view/scan_qr_code_page.rs:222
 msgid "Could not start emoji verification"
 msgstr "Preverjanja čustvenih simbolov ni bilo mogoče začeti"
 
-#: src/identity_verification_view/choose_method_page.rs:266
-#: src/identity_verification_view/confirm_qr_code_page.rs:176
-#: src/identity_verification_view/qr_code_scanned_page.rs:144
-#: src/identity_verification_view/scan_qr_code_page.rs:233
-#: src/identity_verification_view/wait_for_other_page.rs:163
+#: src/identity_verification_view/choose_method_page.rs:267
+#: src/identity_verification_view/confirm_qr_code_page.rs:177
+#: src/identity_verification_view/qr_code_scanned_page.rs:145
+#: src/identity_verification_view/scan_qr_code_page.rs:234
+#: src/identity_verification_view/wait_for_other_page.rs:164
 msgid "Could not cancel the verification"
 msgstr "Preverjanja ni bilo mogoče preklicati"
 
@@ -1339,41 +1357,41 @@ msgid "Compare Emoji"
 msgstr "Primerjava čustvenih simbolov"
 
 #: src/identity_verification_view/choose_method_page.blp:83
-#: src/identity_verification_view/no_supported_methods_page.rs:167
+#: src/identity_verification_view/no_supported_methods_page.rs:168
 #: src/identity_verification_view/qr_code_scanned_page.blp:51
 #: src/identity_verification_view/scan_qr_code_page.blp:84
 msgid "Cancel Verification"
 msgstr "Prekliči preverjanje"
 
-#: src/identity_verification_view/completed_page.rs:121
+#: src/identity_verification_view/completed_page.rs:122
 msgid "Request Complete"
 msgstr "Zahteva dokončana"
 
-#: src/identity_verification_view/completed_page.rs:123
+#: src/identity_verification_view/completed_page.rs:124
 msgid "The new session is now ready to send and receive secure messages."
 msgstr "Nova seja je zdaj pripravljena za pošiljanje in prejemanje varnih sporočil."
 
-#: src/identity_verification_view/completed_page.rs:127
+#: src/identity_verification_view/completed_page.rs:128
 msgid "Verification Complete"
 msgstr "Preverjanje je končano"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/completed_page.rs:130
+#: src/identity_verification_view/completed_page.rs:131
 msgid "{user} is verified and you can now be sure that your communication will be private."
 msgstr "{user} je preverjen in zdaj ste lahko prepričani, da bo vaša komunikacija zasebna."
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:128
+#: src/identity_verification_view/confirm_qr_code_page.rs:129
 msgid "Does the other session show a confirmation?"
 msgstr "Ali druga seja prikazuje potrditev?"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/confirm_qr_code_page.rs:134
+#: src/identity_verification_view/confirm_qr_code_page.rs:135
 msgid "Does {user} see a confirmation on their session?"
 msgstr "Ali {user} vidi potrditev svoje seje?"
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:160
+#: src/identity_verification_view/confirm_qr_code_page.rs:161
 msgid "Could not confirm the scan of the QR Code"
 msgstr "Skeniranja QR kode ni bilo mogoče potrditi"
 
@@ -1385,7 +1403,7 @@ msgstr "Potrdi optično branje"
 msgid "Confirm"
 msgstr "Potrdi"
 
-#: src/identity_verification_view/mod.rs:199
+#: src/identity_verification_view/mod.rs:200
 msgid "Scan QR Code"
 msgstr "Preberi kodo QR"
 
@@ -1422,11 +1440,11 @@ msgstr "Preverjanje s kratkim nizom za preverjanje pristnosti"
 msgid "Verification Successful"
 msgstr "Preverjanje uspešno"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:138
+#: src/identity_verification_view/no_supported_methods_page.rs:139
 msgid "None of the methods offered by the other client are supported by Fractal."
 msgstr "Fraktal ne podpira nobene od metod, ki jih ponuja drugi odjemalec."
 
-#: src/identity_verification_view/no_supported_methods_page.rs:141
+#: src/identity_verification_view/no_supported_methods_page.rs:142
 msgid ""
 "A login request was received, but none of the methods offered by the other client are supported by "
 "Fractal."
@@ -1436,13 +1454,13 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:150
+#: src/identity_verification_view/no_supported_methods_page.rs:151
 msgid "None of the methods offered by {user}’s client are supported by Fractal."
 msgstr "Fraktal ne podpira nobene metode, ki jo ponuja odjemalec uporabnika {user}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:157
+#: src/identity_verification_view/no_supported_methods_page.rs:158
 msgid ""
 "{user} sent a verification request, but none of the methods offered by the other client are supported "
 "by Fractal."
@@ -1450,11 +1468,11 @@ msgstr ""
 "{user} je poslal zahtevo za preverjanje, vendar Fraktal ne podpira nobene metode, ki jo ponuja drugi "
 "odjemalec."
 
-#: src/identity_verification_view/no_supported_methods_page.rs:169
+#: src/identity_verification_view/no_supported_methods_page.rs:170
 msgid "Decline Verification"
 msgstr "Zavrni preverjanje"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:191
+#: src/identity_verification_view/no_supported_methods_page.rs:192
 msgid "Could not decline the verification"
 msgstr "Preverjanja ni bilo mogoče zavrniti"
 
@@ -1462,14 +1480,14 @@ msgstr "Preverjanja ni bilo mogoče zavrniti"
 msgid "You can accept this verification from another session or decline it for all your sessions"
 msgstr "To preverjanje lahko sprejmete iz druge seje ali ga zavrnete za vse seje"
 
-#: src/identity_verification_view/qr_code_scanned_page.rs:118
+#: src/identity_verification_view/qr_code_scanned_page.rs:119
 msgid ""
 "You scanned the QR code successfully. You may need to confirm the verification from the other session."
 msgstr "Kodo QR ste uspešno optično prebrali. Morda boste morali potrditi preverjanje iz druge seje."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/qr_code_scanned_page.rs:123
+#: src/identity_verification_view/qr_code_scanned_page.rs:124
 msgid "You scanned the QR code successfully. {user} may need to confirm the verification."
 msgstr "Kodo QR ste uspešno optično prebrali. {user} bo morda moral potrditi preverjanje."
 
@@ -1477,31 +1495,31 @@ msgstr "Kodo QR ste uspešno optično prebrali. {user} bo morda moral potrditi p
 msgid "You are no longer in the room where the verification was taking place"
 msgstr "Niste več v sobi, kjer je potekalo preverjanje"
 
-#: src/identity_verification_view/sas_page.rs:150
+#: src/identity_verification_view/sas_page.rs:151
 msgid "Check if the same emoji appear in the same order on the other client."
 msgstr "Preverite, ali so isti čustveni simboli prikazani v istem vrstnem redu v drugem odjemalcu."
 
-#: src/identity_verification_view/sas_page.rs:154
+#: src/identity_verification_view/sas_page.rs:155
 msgid "Check if the same numbers appear in the same order on the other client."
 msgstr "Preverite, ali so iste številke v drugem odjemalcu prikazane v istem vrstnem redu."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:164
+#: src/identity_verification_view/sas_page.rs:165
 msgid "Ask {user} if they see the following emoji appear in the same order on their screen."
 msgstr "Vprašajte {user}, če so na zaslonu prikazani naslednji čustveni simboli v enakem vrstnem redu."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:171
+#: src/identity_verification_view/sas_page.rs:172
 msgid "Ask {user} if they see the following numbers appear in the same order on their screen."
 msgstr "Vprašajte {user}, če so na zaslonu prikazane naslednje številke v enakem vrstnem redu."
 
-#: src/identity_verification_view/sas_page.rs:252
+#: src/identity_verification_view/sas_page.rs:253
 msgid "Could not send that the data does not match"
 msgstr "Ni bilo mogoče poslati, da se podatki ne ujemajo"
 
-#: src/identity_verification_view/sas_page.rs:269
+#: src/identity_verification_view/sas_page.rs:270
 msgid "Could not send confirmation that the data matches"
 msgstr "Ni bilo mogoče poslati potrditve, da se podatki ujemajo"
 
@@ -1517,17 +1535,17 @@ msgstr "Ne ujema se"
 msgid "Match"
 msgstr "Se ujema"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:155
+#: src/identity_verification_view/scan_qr_code_page.rs:156
 msgid "Scan the QR code displayed by the other session."
 msgstr "Optično preberite kodo QR, prikazano v drugi seji."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:162
+#: src/identity_verification_view/scan_qr_code_page.rs:163
 msgid "Scan the QR code shown on the device of {user}."
 msgstr "Optično preberite kodo QR, prikazano na napravi uporabnika {user}."
 
-#: src/identity_verification_view/scan_qr_code_page.rs:200
+#: src/identity_verification_view/scan_qr_code_page.rs:201
 msgid "Could not validate scanned QR Code"
 msgstr "Optično prebrane kode QR ni bilo mogoče preveriti"
 
@@ -1535,23 +1553,23 @@ msgstr "Optično prebrane kode QR ni bilo mogoče preveriti"
 msgid "Show a QR code to scan with another device"
 msgstr "Prikaz kode QR za optično branje z drugo napravo"
 
-#: src/identity_verification_view/wait_for_other_page.rs:123
+#: src/identity_verification_view/wait_for_other_page.rs:124
 msgid "Get Another Device"
 msgstr "Pridobi drugo napravo"
 
-#: src/identity_verification_view/wait_for_other_page.rs:125
+#: src/identity_verification_view/wait_for_other_page.rs:126
 msgid "Accept the verification request from another session or device."
 msgstr "Sprejmite zahtevo za preverjanje iz druge seje ali naprave."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:133
+#: src/identity_verification_view/wait_for_other_page.rs:134
 msgid "Waiting for {user}"
 msgstr "Čakanje na {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:139
+#: src/identity_verification_view/wait_for_other_page.rs:140
 msgid "Ask {user} to accept the verification request."
 msgstr "Prosite {user}, da sprejme zahtevo za preverjanje."
 
@@ -1682,11 +1700,11 @@ msgstr "Ponudniki enotne prijave"
 msgid "Could not store session"
 msgstr "Seje ni mogoče shraniti"
 
-#: src/login/mod.rs:582
+#: src/login/mod.rs:583
 msgid "Authorization Completed"
 msgstr "Overitev je končana"
 
-#: src/login/mod.rs:584
+#: src/login/mod.rs:585
 msgid "The authorization step is complete. You can close this page and go back to Fractal."
 msgstr "Korak avtorizacije je končan. To stran lahko zaprete in se vrnete k Fraktalu."
 
@@ -1797,7 +1815,7 @@ msgstr ""
 "Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka ključev ustvarjena in "
 "nastavljena kot privzeta."
 
-#: src/session/model/session.rs:819
+#: src/session/model/session.rs:823
 msgid "Could not log the session out"
 msgstr "Seje ni bilo mogoče odjaviti"
 
@@ -1916,13 +1934,13 @@ msgstr "Utišan"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:330
+#: src/session/model/room_list/mod.rs:329
 msgid "Could not join room {room_name}"
 msgstr "Ni se možno pridružiti klepetalnici {room_name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:362
+#: src/session/model/room_list/mod.rs:361
 msgid "Could not request an invite to room {room_name}"
 msgstr "Ni se možno prositi za povabilo v klepetalnico {room_name}"
 
@@ -2111,7 +2129,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Uvozi šifrirne ključe iz ..."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:200
+#: src/utils/matrix/media_message.rs:201
 msgid "Could not access file"
 msgstr "Ni mogoče dostopati do datoteke"
 
@@ -2536,7 +2554,7 @@ msgstr "Odstrani ključno besedo »{keyword}«"
 msgid "Could not remove notification keyword"
 msgstr "Ključne besede za obvestila ni bilo mogoče odstraniti"
 
-#: src/session/view/account_settings/notifications_page.rs:442
+#: src/session/view/account_settings/notifications_page.rs:441
 msgid "Could not add notification keyword"
 msgstr "Ključne besede za obvestila ni bilo mogoče dodati"
 
@@ -2820,13 +2838,13 @@ msgstr "{user_name} ({user_id}) vas je povabil/a"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:721
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:724
 msgid "Could not accept invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče sprejeti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:711
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:714
 msgid "Could not decline invitation for {room}"
 msgstr "Povabila za {room} ni bilo mogoče zavrniti"
 
@@ -3182,7 +3200,7 @@ msgstr "Datoteke"
 #. Translators: As in 'Audio file'.
 #: src/session/view/content/room_details/general_page.blp:104
 #: src/session/view/content/room_details/history_viewer/audio.blp:6
-#: src/session/view/content/room_history/message_row/audio.rs:90
+#: src/session/view/content/room_history/message_row/audio.rs:65
 msgid "Audio"
 msgstr "Zvok"
 
@@ -3293,11 +3311,6 @@ msgstr "Predvajaj {filename}"
 msgid "Unknown duration"
 msgstr "Neznano trajanje"
 
-#. Translators: As in "Play audio file".
-#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
-msgid "Play"
-msgstr "Predvajaj"
-
 #: src/session/view/content/room_details/history_viewer/audio.blp:24
 #: src/session/view/content/room_details/history_viewer/audio.blp:31
 msgid "No Audio"
@@ -3341,12 +3354,12 @@ msgstr "Odpri datoteko"
 #: src/session/view/content/room_details/history_viewer/file_row.rs:143
 #: src/session/view/content/room_details/history_viewer/file_row.blp:12
 #: src/session/view/content/room_history/message_row/file.blp:24
-#: src/session/view/content/room_history/message_row/file.blp:28 src/utils/matrix/media_message.rs:173
+#: src/session/view/content/room_history/message_row/file.blp:28 src/utils/matrix/media_message.rs:174
 msgid "Save File"
 msgstr "Shrani datoteko"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:192
+#: src/utils/matrix/media_message.rs:193
 msgid "Could not save file"
 msgstr "Datoteke ni mogoče shraniti"
 
@@ -3448,7 +3461,7 @@ msgstr "Ni članov, skladnih z iskalnim nizom"
 msgid "Searching for Users"
 msgstr "Iskanje članov"
 
-#: src/session/view/content/room_details/join_rule_subpage.rs:112
+#: src/session/view/content/room_details/join_rule_subpage.rs:114
 msgid ""
 "The version of this room does not support all possibilities. Upgrade this room to the latest version to "
 "see more options."
@@ -3456,7 +3469,7 @@ msgstr ""
 "Različica te klepetalnice ne podpira vseh možnosti. Nadgradite to klepetalnico na najnovejšo različico, "
 "da si ogledate več možnosti."
 
-#: src/session/view/content/room_details/join_rule_subpage.rs:230
+#: src/session/view/content/room_details/join_rule_subpage.rs:232
 msgid "Could not change who can join"
 msgstr "Ni bilo mogoče spremeniti, kdo se lahko pridruži"
 
@@ -3625,7 +3638,7 @@ msgstr "Člani z dodeljenimi ravnmi moči"
 msgid "Add"
 msgstr "Dodaj"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:585
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:584
 msgid "Could not save permissions"
 msgstr "Dovoljenj ni bilo mogoče shraniti"
 
@@ -3890,31 +3903,31 @@ msgstr "Povezava sporočila kopirana v odložišče"
 msgid "Thumbnail copied to clipboard"
 msgstr "Sličica je kopirana v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:510
+#: src/session/view/content/room_history/event_actions/group.rs:511
 msgid "Text copied to clipboard"
 msgstr "Besedilo je kopirano v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:575
+#: src/session/view/content/room_history/event_actions/group.rs:576
 msgid "Remove Message?"
 msgstr "Želite odstraniti sporočilo?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:577
+#: src/session/view/content/room_history/event_actions/group.rs:578
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Ali res želite odstraniti to sporočilo? Tega ni mogoče razveljaviti."
 
-#: src/session/view/content/room_history/event_actions/group.rs:591
+#: src/session/view/content/room_history/event_actions/group.rs:592
 msgid "Could not remove message"
 msgstr "Sporočila ni bilo mogoče odstraniti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:606
+#: src/session/view/content/room_history/event_actions/group.rs:607
 msgid "Could not toggle reaction"
 msgstr "Odziva ni bilo mogoče preklopiti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:638
+#: src/session/view/content/room_history/event_actions/group.rs:639
 msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:640
+#: src/session/view/content/room_history/event_actions/group.rs:641
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator "
 "will not be able to see the content of the event if it is encrypted or redacted."
@@ -3923,19 +3936,19 @@ msgstr ""
 "videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:647
+#: src/session/view/content/room_history/event_actions/group.rs:648
 msgid "Report"
 msgstr "Poročilo"
 
-#: src/session/view/content/room_history/event_actions/group.rs:665
+#: src/session/view/content/room_history/event_actions/group.rs:666
 msgid "Could not report event"
 msgstr "Dogodka ni bilo mogoče prijaviti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:685
+#: src/session/view/content/room_history/event_actions/group.rs:686
 msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
-#: src/session/view/content/room_history/event_actions/group.rs:714
+#: src/session/view/content/room_history/event_actions/group.rs:715
 msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
 
@@ -4035,30 +4048,22 @@ msgstr "Pošlji odziv"
 msgid "More Reactions"
 msgstr "Več odzivov"
 
-#: src/session/view/content/room_history/message_row/audio.rs:88
+#: src/session/view/content/room_history/message_row/audio.rs:67
 msgid "Audio: {filename}"
 msgstr "Zvok: {filename}"
 
-#: src/session/view/content/room_history/message_row/audio.rs:195
-msgid "Could not retrieve audio file"
-msgstr "Ni mogoče pridobiti zvočne datoteke"
-
-#: src/session/view/content/room_history/message_row/audio.rs:212
-msgid "Error reading audio file"
-msgstr "Napaka pri branju zvočne datoteke"
-
-#: src/session/view/content/room_history/message_row/content.rs:310
+#: src/session/view/content/room_history/message_row/content.rs:311
 msgid "Could not decrypt this message, decryption will be retried once the keys are available."
 msgstr ""
 "Tega sporočila ni bilo mogoče dešifrirati, zato bo poskus dešifriranja znova izveden, ko bodo ključi na "
 "voljo."
 
-#: src/session/view/content/room_history/message_row/content.rs:314
+#: src/session/view/content/room_history/message_row/content.rs:315
 msgid "This message was removed."
 msgstr "Sporočilo je bilo odstranjeno."
 
-#: src/session/view/content/room_history/message_row/content.rs:331
-#: src/session/view/content/room_history/message_row/content.rs:399
+#: src/session/view/content/room_history/message_row/content.rs:332
+#: src/session/view/content/room_history/message_row/content.rs:400
 msgid "Unsupported event"
 msgstr "Dogodek ni podprt"
 
@@ -4107,7 +4112,7 @@ msgstr "Pokaži profil pošiljatelja"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:204
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:202
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] "{n} članov se je odzvalo s/z {reaction_key}"
@@ -4115,7 +4120,7 @@ msgstr[1] "{n} član se je odzval s/z {reaction_key}"
 msgstr[2] "{n} člana sta se odzvala s/z {reaction_key}"
 msgstr[3] "{n} člani so se odzvali s/z {reaction_key}"
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:224
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:222
 msgid "{user} reacted with {reaction_key}"
 msgstr "{user} se je odzval/a s/z {reaction_key}"
 
@@ -4161,11 +4166,11 @@ msgstr "Nalepka: {filename}"
 msgid "Video: {filename}"
 msgstr "Videoposnetek: {imedatoteke }"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:740 src/utils/media/image/mod.rs:928
+#: src/session/view/content/room_history/message_row/visual_media.rs:740 src/utils/media/image/mod.rs:935
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:789 src/utils/media/image/mod.rs:931
+#: src/session/view/content/room_history/message_row/visual_media.rs:789 src/utils/media/image/mod.rs:938
 msgid "An unexpected error occurred"
 msgstr "Prišlo je do nepričakovane napake"
 
@@ -4189,90 +4194,90 @@ msgstr "Samodokončanje omembe javne klepetalnice"
 msgid "Room Member Mention Auto-completion"
 msgstr "Samodokončanje omemba člana klepetalnice"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:353
+#: src/session/view/content/room_history/message_toolbar/mod.rs:350
 msgid "The conversation continues in a new room"
 msgstr "Pogovor se nadaljuje v novi klepetalnici"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:355
+#: src/session/view/content/room_history/message_toolbar/mod.rs:352
 msgid "The conversation has ended"
 msgstr "Pogovor se je končal"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:517
+#: src/session/view/content/room_history/message_toolbar/mod.rs:514
 msgid "Reply to {user}"
 msgstr "Odgovori {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:535
+#: src/session/view/content/room_history/message_toolbar/mod.rs:532
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Uredi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:704
+#: src/session/view/content/room_history/message_toolbar/mod.rs:701
 msgid "Could not send reply"
 msgstr "Odgovora ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:720
+#: src/session/view/content/room_history/message_toolbar/mod.rs:717
 msgid "Could not send edit"
 msgstr "Urejanja ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:731
+#: src/session/view/content/room_history/message_toolbar/mod.rs:728
 msgid "Could not send message"
 msgstr "Ni mogoče poslati sporočila."
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:777
+#: src/session/view/content/room_history/message_toolbar/mod.rs:774
 msgid "Your Location"
 msgstr "Vaša lokacija"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:837
+#: src/session/view/content/room_history/message_toolbar/mod.rs:834
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Lokacija uporabnika {geo_uri} ob {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:859
+#: src/session/view/content/room_history/message_toolbar/mod.rs:856
 msgid "Could not send location"
 msgstr "Lokacije ni bilo mogoče poslati"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:866
+#: src/session/view/content/room_history/message_toolbar/mod.rs:863
 msgid "The location request has been cancelled"
 msgstr "Zahteva za lokacijo je preklicana"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:867
+#: src/session/view/content/room_history/message_toolbar/mod.rs:864
 msgid "The location services are disabled"
 msgstr "Lokacijske storitve so onemogočene"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:868
+#: src/session/view/content/room_history/message_toolbar/mod.rs:865
 msgid "Could not retrieve current location"
 msgstr "Ni mogoče pridobiti trenutne lokacije"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:903
+#: src/session/view/content/room_history/message_toolbar/mod.rs:900
 msgid "Could not send file"
 msgstr "Ni mogoče poslati datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:957
+#: src/session/view/content/room_history/message_toolbar/mod.rs:954
 msgid "Select File"
 msgstr "Izbor datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:959
+#: src/session/view/content/room_history/message_toolbar/mod.rs:956
 msgid "Select"
 msgstr "Izberi"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:974
+#: src/session/view/content/room_history/message_toolbar/mod.rs:971
 msgid "Could not open file"
 msgstr "Datoteke ni mogoče odpreti"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1000
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1008
+#: src/session/view/content/room_history/message_toolbar/mod.rs:997
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1005
 msgid "Error reading file"
 msgstr "Napaka pri branju datoteke"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1069
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1066
 msgid "Error getting image from clipboard"
 msgstr "Napaka pri pridobivanju slike iz odložišča"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1086
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1083
 msgid "Error getting file from clipboard"
 msgstr "Napaka pri pridobivanju datoteke iz odložišča"
 
@@ -4332,24 +4337,24 @@ msgid "Error getting file from drop"
 msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1026 src/session/view/sidebar/row.rs:744
+#: src/session/view/content/room_history/mod.rs:1023 src/session/view/sidebar/row.rs:747
 msgid "Could not leave {room}"
 msgstr "Ni možno zapustiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/mod.rs:1049 src/session/view/sidebar/row.rs:733
+#: src/session/view/content/room_history/mod.rs:1046 src/session/view/sidebar/row.rs:736
 msgid "Could not join {room}"
 msgstr "Ni se možno pridružiti {room_name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1066 src/session/view/sidebar/row.rs:777
+#: src/session/view/content/room_history/mod.rs:1063 src/session/view/sidebar/row.rs:780
 msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/mod.rs:1110
+#: src/session/view/content/room_history/mod.rs:1107
 msgid "There is a pending invite request"
 msgid_plural "There are {n} pending invite requests"
 msgstr[0] "Na čakanju je {n} zahtev za povabilo"
@@ -4395,7 +4400,7 @@ msgstr "Spustite tukaj za pošiljanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:259
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:257
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Videlo {n} članov"
@@ -4405,7 +4410,7 @@ msgstr[3] "Videli {n} člani"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:273
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:271
 msgid "Seen by {name}"
 msgstr "Videl/a: {name}"
 
@@ -4620,7 +4625,7 @@ msgstr "Ne sme vsebovati znaka »#«"
 msgid "Too long. Use a shorter address."
 msgstr "Predolgo. Uporabite krajši naslov."
 
-#: src/session/view/create_room_dialog.rs:239
+#: src/session/view/create_room_dialog.rs:241
 msgid "The address is already taken."
 msgstr "Naslov je že zaseden."
 
@@ -4799,19 +4804,19 @@ msgstr[2] "{count} obvestili"
 msgstr[3] "{count} obvestila"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:753
+#: src/session/view/sidebar/row.rs:756
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:795
+#: src/session/view/sidebar/row.rs:798
 msgid "Could not mark {room} as direct chat"
 msgstr "Ni mogoče označiti {room} kot neposrednega klepeta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:800
+#: src/session/view/sidebar/row.rs:803
 msgid "Could not unmark {room} as direct chat"
 msgstr "Ni mogoče umakniti oznake {room} kot neposrednega klepeta"
 
@@ -5023,7 +5028,7 @@ msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
 msgid "Could not access the session tokens"
 msgstr "Ni bilo mogoče dostopati do žetonov seje"
 
-#: src/utils/media/image/mod.rs:929
+#: src/utils/media/image/mod.rs:936
 msgid "Image format not supported"
 msgstr "Vrsta slikovnih datotek ni podprta"
 
