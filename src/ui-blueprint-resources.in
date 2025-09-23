@@ -20,7 +20,7 @@ components/dialogs/room_preview.blp
 components/dialogs/toastable.blp
 components/dialogs/user_profile.blp
 components/loading/bin.blp
-components/media/audio_player.blp
+components/media/audio_player/mod.blp
 components/media/content_viewer.blp
 components/media/location_viewer.blp
 components/media/video_player.blp

@@ -1,13 +1,13 @@
 //! Collection of methods for media.
 
-use std::{cell::Cell, str::FromStr, sync::Mutex};
+use std::{cell::Cell, str::FromStr, sync::Mutex, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
-use matrix_sdk::attachment::BaseAudioInfo;
 use mime::Mime;
 use ruma::UInt;
 
+pub(crate) mod audio;
 pub(crate) mod image;
 pub(crate) mod video;
 
@@ -117,18 +117,6 @@ async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disc
     Some(media_info)
 }
 
-/// Load information for the audio in the given file.
-pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
-    let mut info = BaseAudioInfo::default();
-
-    let Some(media_info) = load_gstreamer_media_info(file).await else {
-        return info;
-    };
-
-    info.duration = media_info.duration().map(Into::into);
-    info
-}
-
 /// All errors that can occur when downloading a media to a file.
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
@@ -137,6 +125,11 @@ pub(crate) enum MediaFileError {
     Sdk(#[from] matrix_sdk::Error),
     /// An error occurred when writing the media to a file.
     File(#[from] std::io::Error),
+    /// We could not access the Matrix client via the [`Session`].
+    ///
+    /// [`Session`]: crate::session::model::Session
+    #[error("Could not access session")]
+    NoSession,
 }
 
 /// The dimensions of a frame.
@@ -232,5 +225,27 @@ impl FrameDimensions {
         };
 
         Self { width, height }
+    }
+}
+
+/// Get the string representation of the given elapsed time to present it in a
+/// media player.
+pub(crate) fn time_to_label(time: &Duration) -> String {
+    let mut time = time.as_secs();
+
+    let sec = time % 60;
+    time -= sec;
+    let min = (time % (60 * 60)) / 60;
+    time -= min * 60;
+    let hour = time / (60 * 60);
+
+    if hour > 0 {
+        // FIXME: Find how to localize this.
+        // hour:minutes:seconds
+        format!("{hour}:{min:02}:{sec:02}")
+    } else {
+        // FIXME: Find how to localize this.
+        // minutes:seconds
+        format!("{min:02}:{sec:02}")
     }
 }

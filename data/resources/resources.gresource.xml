@@ -35,6 +35,8 @@
     <file preprocess="xml-stripblanks">icons/scalable/actions/menu-primary-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/menu-secondary-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/more-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/pause-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/play-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/refresh-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/remove-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/restore-symbolic.svg</file>

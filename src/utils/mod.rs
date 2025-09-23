@@ -699,3 +699,54 @@ impl Drop for AbortableHandle {
         self.abort();
     }
 }
+
+/// Resample the given slice to the given length, using linear interpolation.
+///
+/// Returns the slice as-is if it is of the correct length. Returns a `Vec` of
+/// zeroes if the slice is empty.
+pub(crate) fn resample_slice(slice: &[f32], new_len: usize) -> Cow<'_, [f32]> {
+    let len = slice.len();
+
+    if len == new_len {
+        // The slice has the correct length, return it.
+        return Cow::Borrowed(slice);
+    }
+
+    if new_len == 0 {
+        // We do not need values, return an empty slice.
+        return Cow::Borrowed(&[]);
+    }
+
+    if len <= 1
+        || slice
+            .iter()
+            .all(|value| (*value - slice[0]).abs() > 0.000_001)
+    {
+        // There is a single value so we do not need to interpolate, return a `Vec`
+        // containing that value.
+        let value = slice.first().copied().unwrap_or_default();
+        return Cow::Owned(std::iter::repeat_n(value, new_len).collect());
+    }
+
+    // We need to interpolate the values.
+    let mut result = Vec::with_capacity(new_len);
+    let ratio = (len - 1) as f32 / (new_len - 1) as f32;
+
+    for i in 0..new_len {
+        let position_abs = i as f32 * ratio;
+        let position_before = position_abs.floor();
+        let position_after = position_abs.ceil();
+        let position_rel = position_abs % 1.0;
+
+        // We are sure that the positions are positive.
+        #[allow(clippy::cast_sign_loss)]
+        let value_before = slice[position_before as usize];
+        #[allow(clippy::cast_sign_loss)]
+        let value_after = slice[(position_after as usize).min(slice.len().saturating_sub(1))];
+
+        let value = (1.0 - position_rel) * value_before + position_rel * value_after;
+        result.push(value);
+    }
+
+    Cow::Owned(result)
+}

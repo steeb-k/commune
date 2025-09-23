@@ -28,6 +28,7 @@ src/components/dialogs/room_preview.rs
 src/components/dialogs/room_preview.blp
 src/components/dialogs/user_profile.blp
 src/components/offline_banner.rs
+src/components/media/audio_player/mod.rs
 src/components/media/content_viewer.rs
 src/components/media/location_viewer.rs
 src/components/pill/at_room.rs

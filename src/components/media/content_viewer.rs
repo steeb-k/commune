@@ -3,7 +3,7 @@ use geo_uri::GeoUri;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
-use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
+use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource, LocationViewer};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
@@ -189,16 +189,15 @@ mod imp {
                         audio
                     } else {
                         let audio = AudioPlayer::new();
-                        audio.add_css_class("toolbar");
-                        audio.add_css_class("osd");
-                        audio.set_autoplay(self.autoplay.get());
+                        audio.set_standalone(true);
+                        audio.set_margin_start(12);
+                        audio.set_margin_end(12);
                         audio.set_valign(gtk::Align::Center);
-                        audio.set_halign(gtk::Align::Center);
                         self.viewer.set_child(Some(&audio));
                         audio
                     };
 
-                    audio.set_file(Some(&file.as_gfile()));
+                    audio.set_source(Some(AudioPlayerSource::File(file.as_gfile())));
                     self.update_animated_paintable_state();
                     self.set_visible_child("viewer");
                     return;

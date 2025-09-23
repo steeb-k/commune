@@ -3,7 +3,7 @@ use gtk::{gio, glib, glib::clone};
 use tracing::{error, warn};
 
 use super::video_player_renderer::VideoPlayerRenderer;
-use crate::utils::LoadingState;
+use crate::utils::{LoadingState, media};
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -191,24 +191,7 @@ mod imp {
             let is_visible = visible_duration.is_some();
 
             if let Some(duration) = visible_duration {
-                let mut time = duration.seconds();
-
-                let sec = time % 60;
-                time -= sec;
-                let min = (time % (60 * 60)) / 60;
-                time -= min * 60;
-                let hour = time / (60 * 60);
-
-                let label = if hour > 0 {
-                    // FIXME: Find how to localize this.
-                    // hour:minutes:seconds
-                    format!("{hour}:{min:02}:{sec:02}")
-                } else {
-                    // FIXME: Find how to localize this.
-                    // minutes:seconds
-                    format!("{min:02}:{sec:02}")
-                };
-
+                let label = media::time_to_label(&duration.into());
                 self.timestamp.set_label(&label);
             }
 

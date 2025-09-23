@@ -18,6 +18,7 @@ use crate::{
         File,
         media::{
             FrameDimensions, MediaFileError,
+            audio::normalize_waveform,
             image::{
                 Blurhash, Image, ImageError, ImageRequestPriority, ImageSource,
                 ThumbnailDownloader, ThumbnailSettings,
@@ -421,4 +422,30 @@ pub(crate) enum VisualMediaType {
     Video,
     /// A sticker.
     Sticker,
+}
+
+/// Extension trait for audio messages.
+pub(crate) trait AudioMessageExt {
+    /// Get the normalized waveform in this audio message, if any.
+    ///
+    /// A normalized waveform is a waveform containing only values between 0 and
+    /// 1.
+    fn normalized_waveform(&self) -> Option<Vec<f32>>;
+}
+
+impl AudioMessageExt for AudioMessageEventContent {
+    fn normalized_waveform(&self) -> Option<Vec<f32>> {
+        let waveform = &self.audio.as_ref()?.waveform;
+
+        if waveform.is_empty() {
+            return None;
+        }
+
+        Some(normalize_waveform(
+            waveform
+                .iter()
+                .map(|amplitude| u64::from(amplitude.get()) as f64)
+                .collect(),
+        ))
+    }
 }

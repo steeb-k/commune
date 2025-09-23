@@ -166,3 +166,9 @@ user-page scrolledwindow > viewport > clamp > box {
   margin: 12px;
   border-spacing: 24px;
 }
+
+audio-player waveform {
+  &:focus {
+    color: var(--accent-color);
+  }
+}

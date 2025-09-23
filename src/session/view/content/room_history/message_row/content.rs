@@ -10,13 +10,14 @@ use super::{
     reply::MessageReply, text::MessageText, visual_media::MessageVisualMedia,
 };
 use crate::{
+    components::AudioPlayerMessage,
     prelude::*,
     session::{
         model::{Event, Member, Room},
         view::content::room_history::message_toolbar::MessageEventSource,
     },
     spawn,
-    utils::matrix::MediaMessage,
+    utils::matrix::{MediaMessage, MessageCacheKey},
 };
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -439,7 +440,10 @@ trait MessageContentContainer: ChildPropertyExt {
                     return;
                 };
                 let widget = self.child_or_default::<MessageAudio>();
-                widget.audio(audio.into(), &session, format, cache_key);
+                widget.set_audio_message(
+                    AudioPlayerMessage::new(audio.into(), &session, cache_key),
+                    format,
+                );
             }
             MediaMessage::File(file) => {
                 let widget = self.child_or_default::<MessageFile>();
@@ -467,46 +471,3 @@ trait MessageContentContainer: ChildPropertyExt {
 impl<W> MessageContentContainer for W where W: IsABin {}
 
 impl MessageContentContainer for MessageCaption {}
-
-/// The data used as a cache key for messages.
-///
-/// This is used when there is no reliable way to detect if the content of a
-/// message changed. For example, the URI of a media file might change between a
-/// local echo and a remote echo, but we do not need to reload the media in this
-/// case, and we have no other way to know that both URIs point to the same
-/// file.
-#[derive(Debug, Clone, Default)]
-pub(crate) struct MessageCacheKey {
-    /// The transaction ID of the event.
-    ///
-    /// Local echo should keep its transaction ID after the message is sent, so
-    /// we do not need to reload the message if it did not change.
-    transaction_id: Option<OwnedTransactionId>,
-    /// The global ID of the event.
-    ///
-    /// Local echo that was sent and remote echo should have the same event ID,
-    /// so we do not need to reload the message if it did not change.
-    pub(crate) event_id: Option<OwnedEventId>,
-    /// Whether the message is edited.
-    ///
-    /// The message must be reloaded when it was edited.
-    is_edited: bool,
-}
-
-impl MessageCacheKey {
-    /// Whether the given new `MessageCacheKey` should trigger a reload of the
-    /// message compared to this one.
-    pub(super) fn should_reload(&self, new: &MessageCacheKey) -> bool {
-        if new.is_edited {
-            return true;
-        }
-
-        let transaction_id_invalidated = self.transaction_id.is_none()
-            || new.transaction_id.is_none()
-            || self.transaction_id != new.transaction_id;
-        let event_id_invalidated =
-            self.event_id.is_none() || new.event_id.is_none() || self.event_id != new.event_id;
-
-        transaction_id_invalidated && event_id_invalidated
-    }
-}

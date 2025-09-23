@@ -950,6 +950,7 @@ impl From<MediaFileError> for ImageError {
         match value {
             MediaFileError::Sdk(_) => Self::Download,
             MediaFileError::File(_) => Self::File,
+            MediaFileError::NoSession => Self::Unknown,
         }
     }
 }

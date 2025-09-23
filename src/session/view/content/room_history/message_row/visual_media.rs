@@ -4,7 +4,7 @@ use gtk::{gdk, glib, glib::clone};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
-use super::{ContentFormat, content::MessageCacheKey};
+use super::ContentFormat;
 use crate::{
     Window,
     components::{AnimatedImagePaintable, VideoPlayer},
@@ -13,7 +13,7 @@ use crate::{
     spawn,
     utils::{
         CountedRef, File, LoadingState, TemplateCallbacks, key_bindings,
-        matrix::{VisualMediaMessage, VisualMediaType},
+        matrix::{MessageCacheKey, VisualMediaMessage, VisualMediaType},
         media::{
             FrameDimensions,
             image::{ImageRequestPriority, THUMBNAIL_MAX_DIMENSIONS, ThumbnailSettings},
