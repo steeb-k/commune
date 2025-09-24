@@ -8,14 +8,17 @@ use std::{
     ops::Deref,
     path::{Path, PathBuf},
     rc::{Rc, Weak},
-    sync::{Arc, LazyLock},
+    sync::{Arc, LazyLock, Mutex},
 };
 
 use adw::prelude::*;
+use futures_channel::oneshot;
+use futures_util::future::BoxFuture;
 use gtk::{gio, glib};
 use regex::Regex;
 use tempfile::NamedTempFile;
 use tokio::task::{AbortHandle, JoinHandle};
+use tracing::error;
 
 pub(crate) mod expression;
 mod expression_list_model;
@@ -749,4 +752,104 @@ pub(crate) fn resample_slice(slice: &[f32], new_len: usize) -> Cow<'_, [f32]> {
     }
 
     Cow::Owned(result)
+}
+
+/// A helper type to wait for a notification that can occur only one time.
+///
+/// [`OneshotNotifier::listen()`] must be called to initialize it and get a
+/// receiver. The receiver must then be `.await`ed and the future will resolve
+/// when it is notified.
+///
+/// The receiver will receive a signal the first time that
+/// [`OneshotNotifier::notify_value()`] is called. Further calls to this
+/// function will be noops until a new receiver is created.The value to return
+/// must implement `Default`, as this is the value that will be sent to the
+/// receiver when the notifier is dropped before a value is notified.
+///
+/// This notifier can be cloned freely and moved between threads.
+///
+/// It is also possible to share this notifier between tasks to make sure that a
+/// single task is running at a time. If [`OneshotNotifier::listen()`] is called
+/// while there is already a receiver waiting, it will be notified as if the
+/// notifier was dropped.
+#[derive(Debug, Clone)]
+pub(crate) struct OneshotNotifier<T = ()> {
+    /// The context used to identify the notifier in logs.
+    context: &'static str,
+    /// The sender for the notification signal.
+    sender: Arc<Mutex<Option<oneshot::Sender<T>>>>,
+}
+
+impl<T> OneshotNotifier<T> {
+    /// Get a new `OneshotNotifier` for the given context.
+    pub(crate) fn new(context: &'static str) -> Self {
+        Self {
+            sender: Default::default(),
+            context,
+        }
+    }
+}
+
+impl<T> OneshotNotifier<T>
+where
+    T: Default + Send + 'static,
+{
+    /// Initialize this `OneshotNotifier` and get a receiver.
+    pub(crate) fn listen(&self) -> OneshotNotifierReceiver<T> {
+        let (sender, receiver) = oneshot::channel();
+
+        match self.sender.lock() {
+            Ok(mut guard) => *guard = Some(sender),
+            Err(error) => {
+                error!(
+                    context = self.context,
+                    "Failed to lock oneshot notifier: {error}"
+                );
+            }
+        }
+
+        OneshotNotifierReceiver(receiver)
+    }
+
+    /// Notify the receiver with the given value, if any receiver is still
+    /// listening.
+    pub(crate) fn notify_value(&self, value: T) {
+        match self.sender.lock() {
+            Ok(mut guard) => {
+                if let Some(sender) = guard.take() {
+                    let _ = sender.send(value);
+                }
+            }
+            Err(error) => {
+                error!(
+                    context = self.context,
+                    "Failed to lock oneshot notifier: {error}"
+                );
+            }
+        }
+    }
+
+    /// Notify the receiver with the default value, if any receiver is still
+    /// listening.
+    pub(crate) fn notify(&self) {
+        self.notify_value(T::default());
+    }
+}
+
+/// A notification receiver associated to a [`OneshotNotifier`].
+///
+/// This should be `.await`ed to wait for a notification.
+#[derive(Debug)]
+pub(crate) struct OneshotNotifierReceiver<T = ()>(oneshot::Receiver<T>);
+
+impl<T> IntoFuture for OneshotNotifierReceiver<T>
+where
+    T: Default + Send + 'static,
+{
+    type Output = T;
+    type IntoFuture = BoxFuture<'static, Self::Output>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async move { self.0.await.unwrap_or_default() })
+    }
 }

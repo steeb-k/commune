@@ -1,15 +1,16 @@
 use adw::{prelude::*, subclass::prelude::*};
-use futures_channel::oneshot;
 use gtk::glib;
-use tracing::error;
 
 mod account_row;
 
 use self::account_row::AccountRow;
-use crate::session_list::{SessionInfo, SessionList};
+use crate::{
+    session_list::{SessionInfo, SessionList},
+    utils::OneshotNotifier,
+};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::OnceCell;
 
     use glib::subclass::InitializingObject;
 
@@ -24,7 +25,7 @@ mod imp {
         /// The list of logged-in sessions.
         #[property(get, set = Self::set_session_list, construct)]
         pub session_list: glib::WeakRef<SessionList>,
-        pub sender: RefCell<Option<oneshot::Sender<Option<String>>>>,
+        notifier: OnceCell<OneshotNotifier<Option<String>>>,
     }
 
     #[glib::object_subclass]
@@ -50,17 +51,19 @@ mod imp {
 
     impl AdwDialogImpl for AccountChooserDialog {
         fn closed(&self) {
-            if self
-                .sender
-                .take()
-                .is_some_and(|sender| sender.send(None).is_err())
-            {
-                error!("Could not send selected session");
+            if let Some(notifier) = self.notifier.get() {
+                notifier.notify();
             }
         }
     }
 
     impl AccountChooserDialog {
+        /// The notifier for sending the response.
+        pub(super) fn notifier(&self) -> &OneshotNotifier<Option<String>> {
+            self.notifier
+                .get_or_init(|| OneshotNotifier::new("AccountChooserDialog"))
+        }
+
         /// Set the list of logged-in sessions.
         fn set_session_list(&self, session_list: &SessionList) {
             self.accounts.bind_model(Some(session_list), |session| {
@@ -92,34 +95,28 @@ impl AccountChooserDialog {
 
     /// Open this dialog to choose an account.
     pub async fn choose_account(&self, parent: &impl IsA<gtk::Widget>) -> Option<String> {
-        let (sender, receiver) = oneshot::channel();
-        self.imp().sender.replace(Some(sender));
+        let receiver = self.imp().notifier().listen();
 
         self.present(Some(parent));
 
-        receiver.await.ok().flatten()
+        receiver.await
     }
 
     /// Select the given row in the session list.
     #[template_callback]
     fn select_row(&self, row: &gtk::ListBoxRow) {
-        if let Some(sender) = self.imp().sender.take() {
-            let index = row
-                .index()
-                .try_into()
-                .expect("selected row should have an index");
+        let index = row
+            .index()
+            .try_into()
+            .expect("selected row should have an index");
 
-            let session_id = self
-                .session_list()
-                .and_then(|l| l.item(index))
-                .and_downcast::<SessionInfo>()
-                .map(|s| s.session_id());
+        let session_id = self
+            .session_list()
+            .and_then(|l| l.item(index))
+            .and_downcast::<SessionInfo>()
+            .map(|s| s.session_id());
 
-            if sender.send(session_id).is_err() {
-                error!("Could not send selected session");
-            }
-        }
-
+        self.imp().notifier().notify_value(session_id);
         self.close();
     }
 }

@@ -1,7 +1,6 @@
 use std::{fmt::Debug, future::Future};
 
 use adw::{prelude::*, subclass::prelude::*};
-use futures_channel::oneshot;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
@@ -22,11 +21,14 @@ mod in_browser_page;
 mod password_page;
 
 use self::{in_browser_page::AuthDialogInBrowserPage, password_page::AuthDialogPasswordPage};
-use crate::{components::ToastableDialog, prelude::*, session::model::Session, spawn_tokio, toast};
+use crate::{
+    components::ToastableDialog, prelude::*, session::model::Session, spawn_tokio, toast,
+    utils::OneshotNotifier,
+};
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         rc::Rc,
         sync::Arc,
     };
@@ -53,8 +55,8 @@ mod imp {
         state: RefCell<Option<AuthState>>,
         /// The page for the current stage.
         current_page: RefCell<Option<gtk::Widget>>,
-        /// The sender to get the signal to perform the current stage.
-        sender: RefCell<Option<oneshot::Sender<()>>>,
+        /// The notifier to signal to perform the current stage.
+        notifier: OnceCell<OneshotNotifier<Option<()>>>,
         /// The handle to abort the current future.
         abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
     }
@@ -69,9 +71,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.install_action("auth-dialog.continue", None, |obj, _, _| {
-                if let Some(sender) = obj.imp().sender.take() {
-                    let _ = sender.send(());
-                }
+                obj.imp().notifier().notify_value(Some(()));
             });
 
             klass.install_action("auth-dialog.close", None, |obj, _, _| {
@@ -98,6 +98,12 @@ mod imp {
     impl ToastableDialogImpl for AuthDialog {}
 
     impl AuthDialog {
+        /// The notifier to signal to perform the current stage.
+        fn notifier(&self) -> &OneshotNotifier<Option<()>> {
+            self.notifier
+                .get_or_init(|| OneshotNotifier::new("AuthDialog"))
+        }
+
         /// Authenticate the user to the server via an interactive
         /// authentication flow.
         ///
@@ -270,8 +276,7 @@ mod imp {
                 return self.current_stage_auth_data();
             }
 
-            let (sender, receiver) = futures_channel::oneshot::channel();
-            self.sender.replace(Some(sender));
+            let receiver = self.notifier().listen();
 
             // If the stage didn't succeed, we get the same state again.
             let is_same_state = self
@@ -288,12 +293,10 @@ mod imp {
                 self.state.replace(Some(next_state));
             }
 
-            if receiver.await.is_err() {
+            if receiver.await.is_none() {
                 // The sender was dropped, which means that the user closed the dialog.
                 return Err(AuthError::UserCancelled);
             }
-
-            self.sender.take();
 
             self.current_stage_auth_data()
         }
@@ -483,7 +486,7 @@ mod imp {
                 abort_handle.abort();
             }
 
-            self.sender.take();
+            self.notifier().notify();
         }
     }
 }

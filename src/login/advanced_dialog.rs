@@ -1,9 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
-use futures_channel::oneshot;
 use gtk::glib;
 
+use crate::utils::OneshotNotifier;
+
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::{Cell, OnceCell};
 
     use glib::subclass::InitializingObject;
 
@@ -16,7 +17,7 @@ mod imp {
         /// Whether auto-discovery is enabled.
         #[property(get, set, default = true)]
         autodiscovery: Cell<bool>,
-        sender: RefCell<Option<oneshot::Sender<()>>>,
+        notifier: OnceCell<OneshotNotifier>,
     }
 
     #[glib::object_subclass]
@@ -41,8 +42,8 @@ mod imp {
 
     impl AdwDialogImpl for LoginAdvancedDialog {
         fn closed(&self) {
-            if let Some(sender) = self.sender.take() {
-                sender.send(()).expect("receiver was not dropped");
+            if let Some(notifier) = self.notifier.get() {
+                notifier.notify();
             }
         }
     }
@@ -50,15 +51,20 @@ mod imp {
     impl PreferencesDialogImpl for LoginAdvancedDialog {}
 
     impl LoginAdvancedDialog {
+        /// Get the notifier for the close signal.
+        fn notifier(&self) -> &OneshotNotifier {
+            self.notifier
+                .get_or_init(|| OneshotNotifier::new("LoginAdvancedDialog"))
+        }
+
         /// Present this dialog.
         ///
         /// Returns when the dialog is closed.
         pub(super) async fn run_future(&self, parent: &gtk::Widget) {
-            let (sender, receiver) = oneshot::channel();
-            self.sender.replace(Some(sender));
+            let receiver = self.notifier().listen();
 
             self.obj().present(Some(parent));
-            receiver.await.expect("sender was not dropped");
+            receiver.await;
         }
     }
 }

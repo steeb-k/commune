@@ -1,12 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
-use futures_channel::oneshot;
 use gtk::{gdk, gio, glib, glib::clone};
-use tracing::error;
 
-use crate::{components::MediaContentViewer, spawn};
+use crate::{components::MediaContentViewer, spawn, utils::OneshotNotifier};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::OnceCell;
 
     use super::*;
 
@@ -21,7 +19,7 @@ mod imp {
         send_button: TemplateChild<gtk::Button>,
         #[template_child]
         media: TemplateChild<MediaContentViewer>,
-        sender: RefCell<Option<oneshot::Sender<gtk::ResponseType>>>,
+        notifier: OnceCell<OneshotNotifier<Option<()>>>,
     }
 
     #[glib::object_subclass]
@@ -62,7 +60,7 @@ mod imp {
 
     impl AdwDialogImpl for AttachmentDialog {
         fn closed(&self) {
-            self.send_response(gtk::ResponseType::Cancel);
+            self.notifier().notify();
         }
     }
 
@@ -74,15 +72,10 @@ mod imp {
             self.grab_focus();
         }
 
-        /// Sent the given response.
-        fn send_response(&self, response: gtk::ResponseType) {
-            if self
-                .sender
-                .take()
-                .is_some_and(|sender| sender.send(response).is_err())
-            {
-                error!("Could not send attachment dialog response {response:?}");
-            }
+        /// The notifier to send the response.
+        fn notifier(&self) -> &OneshotNotifier<Option<()>> {
+            self.notifier
+                .get_or_init(|| OneshotNotifier::new("AttachmentDialog"))
         }
 
         /// Set the image to preview.
@@ -106,7 +99,7 @@ mod imp {
         /// Emit the signal that the user wants to send the attachment.
         #[template_callback]
         fn send(&self) {
-            self.send_response(gtk::ResponseType::Ok);
+            self.notifier().notify_value(Some(()));
             self.obj().close();
         }
 
@@ -115,12 +108,15 @@ mod imp {
         /// The response is [`gtk::ResponseType::Ok`] if the user clicked on
         /// send, otherwise it is [`gtk::ResponseType::Cancel`].
         pub(super) async fn response_future(&self, parent: &gtk::Widget) -> gtk::ResponseType {
-            let (sender, receiver) = oneshot::channel();
-            self.sender.replace(Some(sender));
+            let receiver = self.notifier().listen();
 
             self.obj().present(Some(parent));
 
-            receiver.await.unwrap_or(gtk::ResponseType::Cancel)
+            if receiver.await.is_some() {
+                gtk::ResponseType::Ok
+            } else {
+                gtk::ResponseType::Cancel
+            }
         }
     }
 }

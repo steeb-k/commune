@@ -1,8 +1,5 @@
 //! Collection of methods for videos.
 
-use std::sync::{Arc, Mutex};
-
-use futures_channel::oneshot;
 use gst::prelude::*;
 use gst_video::prelude::*;
 use gtk::{gdk, gio, glib, glib::clone, prelude::*};
@@ -13,9 +10,7 @@ use super::{
     image::{Blurhash, TextureThumbnailer},
     load_gstreamer_media_info,
 };
-
-/// A channel sender to send the result of a video thumbnail.
-type ThumbnailResultSender = oneshot::Sender<Result<gdk::Texture, ()>>;
+use crate::utils::OneshotNotifier;
 
 /// Load information and try to generate a thumbnail for the video in the given
 /// file.
@@ -63,10 +58,10 @@ async fn generate_video_thumbnail_and_blurhash(
         return None;
     };
 
-    let (sender, receiver) = oneshot::channel();
-    let sender = Arc::new(Mutex::new(Some(sender)));
+    let notifier = OneshotNotifier::new("generate_video_thumbnail_and_blurhash");
+    let receiver = notifier.listen();
 
-    let pipeline = match create_thumbnailer_pipeline(&file.uri(), sender.clone()) {
+    let pipeline = match create_thumbnailer_pipeline(&file.uri(), notifier.clone()) {
         Ok(pipeline) => pipeline,
         Err(error) => {
             warn!("Could not create pipeline for video thumbnail: {error}");
@@ -95,7 +90,7 @@ async fn generate_video_thumbnail_and_blurhash(
                             // AsyncDone means that the pipeline has started now.
                             if pipeline.set_state(gst::State::Playing).is_err() {
                                 warn!("Could not start pipeline for video thumbnail");
-                                send_video_thumbnail_result(&sender, Err(()));
+                                notifier.notify();
 
                                 return glib::ControlFlow::Break;
                             }
@@ -111,7 +106,7 @@ async fn generate_video_thumbnail_and_blurhash(
                     }
                     gst::MessageView::Error(error) => {
                         warn!("Could not generate video thumbnail: {error}");
-                        send_video_thumbnail_result(&sender, Err(()));
+                        notifier.notify();
 
                         glib::ControlFlow::Break
                     }
@@ -127,7 +122,7 @@ async fn generate_video_thumbnail_and_blurhash(
     let _ = pipeline.set_state(gst::State::Null);
     bus.set_flushing(true);
 
-    let texture = texture.ok()?.ok()?;
+    let texture = texture?;
     let thumbnail_blurhash = TextureThumbnailer(texture)
         .generate_thumbnail_and_blurhash(widget.scale_factor(), &renderer);
 
@@ -141,7 +136,7 @@ async fn generate_video_thumbnail_and_blurhash(
 /// Create a pipeline to get a thumbnail of the first frame.
 fn create_thumbnailer_pipeline(
     uri: &str,
-    sender: Arc<Mutex<Option<ThumbnailResultSender>>>,
+    notifier: OneshotNotifier<Option<gdk::Texture>>,
 ) -> Result<gst::Pipeline, glib::Error> {
     // Create our pipeline from a pipeline description string.
     let pipeline = gst::parse::launch(&format!(
@@ -177,7 +172,7 @@ fn create_thumbnailer_pipeline(
                 let sample = appsink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
                 let Some(buffer) = sample.buffer() else {
                     warn!("Could not get buffer from appsink");
-                    send_video_thumbnail_result(&sender, Err(()));
+                    notifier.notify();
 
                     return Err(gst::FlowError::Error);
                 };
@@ -190,13 +185,13 @@ fn create_thumbnailer_pipeline(
 
                 let Some(caps) = sample.caps() else {
                     warn!("Got video sample without caps");
-                    send_video_thumbnail_result(&sender, Err(()));
+                    notifier.notify();
 
                     return Err(gst::FlowError::Error);
                 };
                 let Ok(info) = gst_video::VideoInfo::from_caps(caps) else {
                     warn!("Could not parse video caps");
-                    send_video_thumbnail_result(&sender, Err(()));
+                    notifier.notify();
 
                     return Err(gst::FlowError::Error);
                 };
@@ -204,17 +199,17 @@ fn create_thumbnailer_pipeline(
                 let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &info)
                     .map_err(|_| {
                         warn!("Could not map video buffer readable");
-                        send_video_thumbnail_result(&sender, Err(()));
+                        notifier.notify();
 
                         gst::FlowError::Error
                     })?;
 
                 if let Some(texture) = video_frame_to_texture(&frame) {
-                    send_video_thumbnail_result(&sender, Ok(texture));
+                    notifier.notify_value(Some(texture));
                     Err(gst::FlowError::Eos)
                 } else {
                     warn!("Could not convert video frame to GdkTexture");
-                    send_video_thumbnail_result(&sender, Err(()));
+                    notifier.notify();
                     Err(gst::FlowError::Error)
                 }
             })
@@ -222,26 +217,6 @@ fn create_thumbnailer_pipeline(
     );
 
     Ok(pipeline)
-}
-
-/// Try to send the given video thumbnail result through the given sender.
-fn send_video_thumbnail_result(
-    sender: &Mutex<Option<ThumbnailResultSender>>,
-    result: Result<gdk::Texture, ()>,
-) {
-    let mut sender = match sender.lock() {
-        Ok(sender) => sender,
-        Err(error) => {
-            warn!("Failed to lock video thumbnail mutex: {error}");
-            return;
-        }
-    };
-
-    if let Some(sender) = sender.take()
-        && sender.send(result).is_err()
-    {
-        warn!("Failed to send video thumbnail result through channel");
-    }
 }
 
 /// Convert the given video frame to a `GdkTexture`.

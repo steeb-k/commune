@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::Cell, time::Duration};
+use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
@@ -26,8 +26,9 @@ use crate::{
     intent::SessionIntent,
     prelude::*,
     spawn_tokio,
-    utils::matrix::{
-        AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri,
+    utils::{
+        OneshotNotifier,
+        matrix::{AnySyncOrStrippedTimelineEvent, MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri},
     },
 };
 
@@ -193,16 +194,14 @@ impl Notifications {
         if !room.is_room_info_initialized() {
             // Wait for the room to finish initializing, otherwise we will not have the
             // display name or the avatar.
-            let (sender, receiver) = futures_channel::oneshot::channel();
+            let notifier = OneshotNotifier::<()>::new("Notifications::show_push");
+            let receiver = notifier.listen();
 
-            let sender_cell = Cell::new(Some(sender));
             let handler_id = room.connect_is_room_info_initialized_notify(move |_| {
-                if let Some(sender) = sender_cell.take() {
-                    let _ = sender.send(());
-                }
+                notifier.notify();
             });
 
-            let _ = receiver.await;
+            receiver.await;
             room.disconnect(handler_id);
         }
 

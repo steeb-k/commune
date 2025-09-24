@@ -5,14 +5,13 @@ use std::{
     time::Duration,
 };
 
-use futures_channel::oneshot;
 use gst::prelude::*;
-use gtk::{gio, glib, prelude::*};
+use gtk::{gdk, gio, glib, prelude::*};
 use matrix_sdk::attachment::BaseAudioInfo;
 use tracing::warn;
 
 use super::load_gstreamer_media_info;
-use crate::utils::resample_slice;
+use crate::utils::{OneshotNotifier, resample_slice};
 
 /// Load information for the audio in the given file.
 pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
@@ -63,8 +62,8 @@ pub(crate) async fn generate_waveform(
         }
     };
 
-    let (sender, receiver) = oneshot::channel();
-    let sender = Arc::new(Mutex::new(Some(sender)));
+    let notifier = OneshotNotifier::<Option<gdk::Texture>>::new("generate_waveform");
+    let receiver = notifier.listen();
     let samples = Arc::new(Mutex::new(vec![]));
     let bus = pipeline.bus().expect("GstPipeline should have a GstBus");
 
@@ -74,12 +73,12 @@ pub(crate) async fn generate_waveform(
             match message.view() {
                 gst::MessageView::Eos(_) => {
                     // We are done collecting the samples.
-                    send_empty_signal(&sender);
+                    notifier.notify();
                     glib::ControlFlow::Break
                 }
                 gst::MessageView::Error(error) => {
                     warn!("Could not generate audio waveform: {error}");
-                    send_empty_signal(&sender);
+                    notifier.notify();
                     glib::ControlFlow::Break
                 }
                 gst::MessageView::Element(element) => {
@@ -116,7 +115,7 @@ pub(crate) async fn generate_waveform(
 
     match pipeline.set_state(gst::State::Playing) {
         Ok(_) => {
-            let _ = receiver.await;
+            receiver.await;
         }
         Err(error) => {
             warn!("Could not start GstPipeline for audio waveform: {error}");
@@ -136,23 +135,6 @@ pub(crate) async fn generate_waveform(
     };
 
     Some(normalize_waveform(waveform)).filter(|waveform| !waveform.is_empty())
-}
-
-/// Try to send an empty signal through the given sender.
-fn send_empty_signal(sender: &Mutex<Option<oneshot::Sender<()>>>) {
-    let mut sender = match sender.lock() {
-        Ok(sender) => sender,
-        Err(error) => {
-            warn!("Failed to lock audio waveform signal mutex: {error}");
-            return;
-        }
-    };
-
-    if let Some(sender) = sender.take()
-        && sender.send(()).is_err()
-    {
-        warn!("Failed to send audio waveform end through channel");
-    }
 }
 
 /// Normalize the given waveform to have between 30 and 120 samples with a value

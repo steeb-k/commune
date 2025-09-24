@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
 use adw::{prelude::*, subclass::prelude::*};
-use futures_channel::oneshot;
 use gettextrs::{gettext, ngettext};
 use gtk::{gio, glib, pango};
 use ruma::{
@@ -13,10 +12,10 @@ use tracing::error;
 mod room_version;
 
 use self::room_version::RoomVersion;
-use crate::session::model::JoinRuleValue;
+use crate::{session::model::JoinRuleValue, utils::OneshotNotifier};
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::cell::OnceCell;
 
     use glib::subclass::InitializingObject;
 
@@ -34,8 +33,8 @@ mod imp {
         #[template_child]
         creators_warning_label: TemplateChild<gtk::Label>,
         header_factory: OnceCell<gtk::SignalListItemFactory>,
-        /// The sender for the response of the user.
-        sender: RefCell<Option<oneshot::Sender<Option<RoomVersionId>>>>,
+        /// The notifier for the response of the user.
+        notifier: OnceCell<OneshotNotifier<Option<RoomVersionId>>>,
     }
 
     #[glib::object_subclass]
@@ -67,18 +66,20 @@ mod imp {
 
     impl AdwDialogImpl for UpgradeDialog {
         fn closed(&self) {
-            let Some(sender) = self.sender.take() else {
-                return;
-            };
-
-            if sender.send(None).is_err() {
-                error!("Could not cancel upgrade: receiver was dropped");
+            if let Some(notifier) = self.notifier.get() {
+                notifier.notify();
             }
         }
     }
 
     #[gtk::template_callbacks]
     impl UpgradeDialog {
+        /// The notifier for the response of the user.
+        fn notifier(&self) -> &OneshotNotifier<Option<RoomVersionId>> {
+            self.notifier
+                .get_or_init(|| OneshotNotifier::new("UpgradeDialog"))
+        }
+
         /// The header factory to separate stable from experimental versions.
         fn header_factory(&self) -> &gtk::SignalListItemFactory {
             self.header_factory.get_or_init(|| {
@@ -140,13 +141,11 @@ mod imp {
             self.update_invite_only_warning(info);
             self.update_creators_warning(info);
 
-            let (sender, receiver) = oneshot::channel();
-            self.sender.replace(Some(sender));
+            let receiver = self.notifier().listen();
 
             self.obj().present(Some(parent));
-            receiver
-                .await
-                .expect("sender should not have been dropped prematurely")
+
+            receiver.await
         }
 
         /// Update the room versions combo row with the given details.
@@ -222,21 +221,13 @@ mod imp {
         /// Confirm the upgrade.
         #[template_callback]
         fn upgrade(&self) {
-            let Some(sender) = self.sender.take() else {
-                error!("Could not confirm upgrade: response was already sent");
-                return;
-            };
-
             let room_version = self
                 .version_combo
                 .selected_item()
                 .and_downcast::<RoomVersion>()
                 .map(|v| v.id().clone());
 
-            if sender.send(room_version).is_err() {
-                error!("Could not confirm upgrade: receiver was dropped");
-            }
-
+            self.notifier().notify_value(room_version);
             self.obj().close();
         }
 

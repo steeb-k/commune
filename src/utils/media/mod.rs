@@ -1,11 +1,13 @@
 //! Collection of methods for media.
 
-use std::{cell::Cell, str::FromStr, sync::Mutex, time::Duration};
+use std::{str::FromStr, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
 use mime::Mime;
 use ruma::UInt;
+
+use crate::utils::OneshotNotifier;
 
 pub(crate) mod audio;
 pub(crate) mod image;
@@ -100,21 +102,20 @@ async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disc
     let timeout = gst::ClockTime::from_seconds(15);
     let discoverer = gst_pbutils::Discoverer::new(timeout).ok()?;
 
-    let (sender, receiver) = futures_channel::oneshot::channel();
-    let sender = Mutex::new(Cell::new(Some(sender)));
+    let notifier = OneshotNotifier::new("load_gstreamer_media_info");
+    let receiver = notifier.listen();
+
     discoverer.connect_discovered(move |_, info, _| {
-        if let Some(sender) = sender.lock().unwrap().take() {
-            sender.send(info.clone()).unwrap();
-        }
+        notifier.notify_value(Some(info.clone()));
     });
 
     discoverer.start();
     discoverer.discover_uri_async(&file.uri()).ok()?;
 
-    let media_info = receiver.await.unwrap();
+    let media_info = receiver.await;
     discoverer.stop();
 
-    Some(media_info)
+    media_info
 }
 
 /// All errors that can occur when downloading a media to a file.
