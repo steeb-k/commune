@@ -202,7 +202,7 @@ mod imp {
                 snapshot.append_color(&color, &rect);
             }
 
-            if (hover_end - end).abs() > F32_ERROR_MARGIN {
+            if (end - hover_end).abs() > F32_ERROR_MARGIN {
                 let color = color.with_alpha(if is_high_contrast { 0.4 } else { 0.2 });
 
                 let rect = graphene::Rect::new(hover_end, 0.0, end - hover_end, WAVEFORM_HEIGHT);
@@ -228,7 +228,7 @@ mod imp {
 
         /// Set the current position in the audio stream.
         pub(super) fn set_position(&self, position: f32) {
-            if (self.position.get() - position).abs() > F32_ERROR_MARGIN {
+            if (self.position.get() - position).abs() < F32_ERROR_MARGIN {
                 return;
             }
 

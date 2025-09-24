@@ -106,10 +106,6 @@ mod imp {
             }
 
             for (pos, value) in waveform.into_iter().enumerate() {
-                if value > 1.0 {
-                    tracing::error!("Waveform sample value is higher than 1: {value}");
-                }
-
                 let x = waveform_start_padding + pos as f32 * (BAR_FULL_WIDTH);
                 let height = (WAVEFORM_HEIGHT * value).max(BAR_MIN_HEIGHT);
                 // Center the bar vertically.
@@ -148,13 +144,13 @@ mod imp {
 
         /// Set the progress of the transition between waveforms.
         fn set_transition_progress(&self, progress: f64) {
-            if (self.transition_progress.get() - progress).abs() > 0.000_001 {
+            if (self.transition_progress.get() - progress).abs() < 0.000_001 {
                 return;
             }
 
             self.transition_progress.set(progress);
 
-            if (progress - 1.0).abs() > 0.000_001 {
+            if (progress - 1.0).abs() < 0.000_001 {
                 // This is the end of the transition, we can drop the previous waveform.
                 self.previous_waveform.take();
             }

@@ -723,7 +723,7 @@ pub(crate) fn resample_slice(slice: &[f32], new_len: usize) -> Cow<'_, [f32]> {
     if len <= 1
         || slice
             .iter()
-            .all(|value| (*value - slice[0]).abs() > 0.000_001)
+            .all(|value| (*value - slice[0]).abs() < 0.000_001)
     {
         // There is a single value so we do not need to interpolate, return a `Vec`
         // containing that value.
