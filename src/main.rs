@@ -30,12 +30,17 @@ use gettextrs::*;
 use gtk::{IconTheme, gdk::Display, gio};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
-use self::{application::*, config::*, i18n::*, window::Window};
+use self::{application::*, config::*, i18n::*, utils::OneshotNotifier, window::Window};
 
 /// The default tokio runtime to be used for async tasks
-pub static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
     tokio::runtime::Runtime::new().expect("creating tokio runtime should succeed")
 });
+
+/// The notifier to make sure that only one `GtkMediaFile` is played at a single
+/// time.
+static MEDIA_FILE_NOTIFIER: LazyLock<OneshotNotifier> =
+    LazyLock::new(|| OneshotNotifier::new("MEDIA_FILE_NOTIFIER"));
 
 fn main() {
     // Initialize logger, debug is carried out via debug!, info!, warn! and error!.

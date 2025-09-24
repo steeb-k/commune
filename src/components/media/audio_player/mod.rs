@@ -10,10 +10,11 @@ mod waveform_paintable;
 
 use self::waveform::Waveform;
 use crate::{
+    MEDIA_FILE_NOTIFIER,
     session::model::Session,
     spawn,
     utils::{
-        File, LoadingState,
+        File, LoadingState, OneshotNotifier,
         matrix::{AudioMessageExt, MediaMessage, MessageCacheKey},
         media::{
             self, MediaFileError,
@@ -54,8 +55,7 @@ mod imp {
         /// The source to play.
         source: RefCell<Option<AudioPlayerSource>>,
         /// The API used to play the audio file.
-        #[property(get)]
-        media_file: gtk::MediaFile,
+        media_file: RefCell<Option<gtk::MediaFile>>,
         /// The audio file that is currently loaded.
         ///
         /// This is used to keep a strong reference to the temporary file.
@@ -72,6 +72,8 @@ mod imp {
         state: Cell<LoadingState>,
         /// The duration of the audio stream, in microseconds.
         duration: Cell<Duration>,
+        /// The notifier for the media file, if any.
+        media_notifier: RefCell<Option<OneshotNotifier>>,
     }
 
     #[glib::object_subclass]
@@ -118,84 +120,6 @@ mod imp {
             ));
             self.obj().add_breakpoint(breakpoint);
 
-            self.media_file.connect_duration_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |media_file| {
-                    if !imp.use_media_file_data() {
-                        return;
-                    }
-
-                    let duration = Duration::from_micros(media_file.duration().cast_unsigned());
-                    imp.set_duration(duration);
-                }
-            ));
-
-            self.media_file.connect_timestamp_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |media_file| {
-                    if !imp.use_media_file_data() {
-                        return;
-                    }
-
-                    let mut duration = media_file.duration();
-                    let timestamp = media_file.timestamp();
-
-                    // The duration should always be bigger than the timestamp, but let's be safe.
-                    if duration != 0 && timestamp > duration {
-                        duration = timestamp;
-                    }
-
-                    let position = if duration == 0 {
-                        0.0
-                    } else {
-                        (timestamp as f64 / duration as f64) as f32
-                    };
-
-                    imp.waveform.set_position(position);
-                }
-            ));
-
-            self.media_file.connect_playing_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_| {
-                    imp.update_play_button();
-                }
-            ));
-
-            self.media_file.connect_prepared_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |media_file| {
-                    if media_file.is_prepared() {
-                        // The media file should only become prepared after the user clicked play,
-                        // so start playing it.
-                        media_file.set_playing(true);
-
-                        // If the user selected a position while we didn't have a media file, seek
-                        // to it.
-                        let position = imp.waveform.position();
-                        if position > 0.0 {
-                            media_file
-                                .seek((media_file.duration() as f64 * f64::from(position)) as i64);
-                        }
-                    }
-                }
-            ));
-
-            self.media_file.connect_error_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |media_file| {
-                    if let Some(error) = media_file.error() {
-                        warn!("Could not read audio file: {error}");
-                        imp.set_error(&gettext("Error reading audio file"));
-                    }
-                }
-            ));
-
             self.waveform.connect_position_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -208,7 +132,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            self.media_file.clear();
+            self.clear();
         }
     }
 
@@ -227,9 +151,7 @@ mod imp {
             });
 
             if should_reload {
-                self.set_state(LoadingState::Initial);
-                self.media_file.clear();
-                self.file.take();
+                self.clear();
             }
 
             self.source.replace(source);
@@ -319,15 +241,6 @@ mod imp {
             self.error_img.set_tooltip_text(Some(error));
         }
 
-        /// Whether we should use the source data rather than the `GtkMediaFile`
-        /// data.
-        ///
-        /// We cannot use the `GtkMediaFile` data if it doesn't have a `GFile`
-        /// set.
-        fn use_media_file_data(&self) -> bool {
-            self.state.get() != LoadingState::Initial
-        }
-
         /// Set the duration of the audio stream.
         fn set_duration(&self, duration: Duration) {
             if self.duration.get() == duration {
@@ -398,7 +311,11 @@ mod imp {
 
         /// Update the play button.
         fn update_play_button(&self) {
-            let is_playing = self.media_file.is_playing();
+            let is_playing = self
+                .media_file
+                .borrow()
+                .as_ref()
+                .is_some_and(MediaStreamExt::is_playing);
 
             let (icon_name, tooltip) = if is_playing {
                 ("pause-symbolic", gettext("Pause"))
@@ -416,9 +333,102 @@ mod imp {
 
         /// Set the media file to play.
         async fn set_file(&self, file: File) {
+            let notifier = MEDIA_FILE_NOTIFIER.clone();
+            // Send a notification to make sure that other media files are dropped before
+            // playing this one.
+            notifier.notify();
+
+            let media_file = gtk::MediaFile::new();
+
+            media_file.connect_duration_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_file| {
+                    let duration = Duration::from_micros(media_file.duration().cast_unsigned());
+                    imp.set_duration(duration);
+                }
+            ));
+            media_file.connect_timestamp_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_file| {
+                    let mut duration = media_file.duration();
+                    let timestamp = media_file.timestamp();
+
+                    // The duration should always be bigger than the timestamp, but let's be safe.
+                    if duration != 0 && timestamp > duration {
+                        duration = timestamp;
+                    }
+
+                    let position = if duration == 0 {
+                        0.0
+                    } else {
+                        (timestamp as f64 / duration as f64) as f32
+                    };
+
+                    imp.waveform.set_position(position);
+                }
+            ));
+            media_file.connect_playing_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_play_button();
+                }
+            ));
+            media_file.connect_prepared_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_file| {
+                    if media_file.is_prepared() {
+                        // The media file should only become prepared after the user clicked play,
+                        // so start playing it.
+                        media_file.set_playing(true);
+
+                        // If the user selected a position while we didn't have a media file, seek
+                        // to it.
+                        let position = imp.waveform.position();
+                        if position > 0.0 {
+                            media_file
+                                .seek((media_file.duration() as f64 * f64::from(position)) as i64);
+                        }
+                    }
+                }
+            ));
+            media_file.connect_error_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_file| {
+                    if let Some(error) = media_file.error() {
+                        warn!("Could not read audio file: {error}");
+                        imp.set_error(&gettext("Error reading audio file"));
+                    }
+                }
+            ));
+
             let gfile = file.as_gfile();
-            self.media_file.set_file(Some(&gfile));
+            media_file.set_file(Some(&gfile));
+            self.media_file.replace(Some(media_file));
             self.file.replace(Some(file));
+
+            // We use a shared notifier to make sure that only a single media file can be
+            // loaded at a time.
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let receiver = notifier.listen();
+                    imp.media_notifier.replace(Some(notifier));
+
+                    receiver.await;
+
+                    // If we still have a copy of the notifier now, it means that this was called
+                    // from outside this instance, so we need to clear it.
+                    if imp.media_notifier.take().is_some() {
+                        imp.clear();
+                    }
+                }
+            ));
 
             // Reload the waveform if we got it from a message, because we cannot trust the
             // sender.
@@ -433,11 +443,31 @@ mod imp {
             }
         }
 
+        /// Clear the media file, if any.
+        fn clear(&self) {
+            self.set_state(LoadingState::Initial);
+
+            if let Some(media_file) = self.media_file.take() {
+                if media_file.is_playing() {
+                    media_file.set_playing(false);
+                }
+
+                media_file.clear();
+            }
+
+            self.file.take();
+
+            // Send a notification to drop the spawned task that owns a copy of this widget.
+            if let Some(notifier) = self.media_notifier.take() {
+                notifier.notify();
+            }
+        }
+
         /// Play or pause the media.
         #[template_callback]
         async fn toggle_playing(&self) {
-            if self.use_media_file_data() {
-                self.media_file.set_playing(!self.media_file.is_playing());
+            if let Some(media_file) = self.media_file.borrow().clone() {
+                media_file.set_playing(!media_file.is_playing());
                 return;
             }
 
@@ -463,12 +493,12 @@ mod imp {
         /// The position must be a value between 0 and 1.
         #[template_callback]
         fn seek(&self, new_position: f32) {
-            if self.use_media_file_data() {
+            if let Some(media_file) = self.media_file.borrow().clone() {
                 let duration = self.duration.get();
 
                 if !duration.is_zero() {
                     let timestamp = duration.as_micros() as f64 * f64::from(new_position);
-                    self.media_file.seek(timestamp as i64);
+                    media_file.seek(timestamp as i64);
                 }
             } else {
                 self.waveform.set_position(new_position);

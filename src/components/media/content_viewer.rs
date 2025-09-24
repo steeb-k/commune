@@ -5,6 +5,7 @@ use gtk::{gdk, gio, glib};
 
 use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource, LocationViewer};
 use crate::{
+    MEDIA_FILE_NOTIFIER,
     components::ContextMenuBin,
     prelude::*,
     utils::{CountedRef, File, media::image::IMAGE_QUEUE},
@@ -214,6 +215,11 @@ mod imp {
                         self.viewer.set_child(Some(&video));
                         video
                     };
+
+                    // Make sure that no other media file is playing. We do not need to listen for
+                    // this one because it should not be possible to play another media when this is
+                    // opened.
+                    MEDIA_FILE_NOTIFIER.notify();
 
                     video.set_file(Some(&file.as_gfile()));
                     self.update_animated_paintable_state();
