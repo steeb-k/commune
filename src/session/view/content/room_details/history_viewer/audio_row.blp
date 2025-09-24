@@ -2,44 +2,5 @@ using Gtk 4.0;
 using Adw 1;
 
 template $ContentAudioHistoryViewerRow: Adw.Bin {
-  Gtk.Box {
-    spacing: 12;
-
-    Gtk.Button play_button {
-      clicked => $toggle_play() swapped;
-      icon-name: "media-playback-start-symbolic";
-      valign: center;
-      // Translators: As in "Play audio file".
-      tooltip-text: _("Play");
-
-      styles [
-        "circular",
-        "suggested-action",
-      ]
-    }
-
-    Gtk.Box {
-      orientation: vertical;
-      homogeneous: true;
-
-      Gtk.Label title_label {
-        ellipsize: end;
-        xalign: 0;
-
-        styles [
-          "heading",
-        ]
-      }
-
-      Gtk.Label duration_label {
-        ellipsize: end;
-        xalign: 0;
-
-        styles [
-          "dimmed",
-          "numeric",
-        ]
-      }
-    }
-  }
+  child: $AudioPlayer player {};
 }

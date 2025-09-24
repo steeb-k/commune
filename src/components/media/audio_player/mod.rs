@@ -496,6 +496,12 @@ impl AudioPlayer {
     }
 }
 
+impl Default for AudioPlayer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// The possible sources accepted by the audio player.
 #[derive(Debug, Clone)]
 pub(crate) enum AudioPlayerSource {

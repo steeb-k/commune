@@ -125,8 +125,6 @@ src/session/view/content/room_details/edit_details_subpage.rs
 src/session/view/content/room_details/edit_details_subpage.blp
 src/session/view/content/room_details/general_page.rs
 src/session/view/content/room_details/general_page.blp
-src/session/view/content/room_details/history_viewer/audio_row.rs
-src/session/view/content/room_details/history_viewer/audio_row.blp
 src/session/view/content/room_details/history_viewer/audio.blp
 src/session/view/content/room_details/history_viewer/file_row.rs
 src/session/view/content/room_details/history_viewer/file_row.blp
