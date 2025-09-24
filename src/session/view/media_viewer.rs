@@ -270,7 +270,21 @@ mod imp {
                         imp.obj().queue_draw();
                     }
                 ));
-                adw::TimedAnimation::new(&*self.obj(), 0.0, 1.0, ANIMATION_DURATION, target)
+                let animation =
+                    adw::TimedAnimation::new(&*self.obj(), 0.0, 1.0, ANIMATION_DURATION, target);
+
+                animation.connect_done(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        // Clear the media viewer when it is closed and the transition is done.
+                        if !imp.revealer.reveal_child() {
+                            imp.media.clear();
+                        }
+                    }
+                ));
+
+                animation
             })
         }
 
@@ -389,8 +403,6 @@ mod imp {
                 // Deactivate the fullscreen.
                 let _ = self.obj().activate_action("win.toggle-fullscreen", None);
             }
-
-            self.media.stop_playback();
 
             // Trigger the revealer animation.
             self.revealer.set_reveal_child(false);

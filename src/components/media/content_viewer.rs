@@ -94,7 +94,11 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MediaContentViewer {}
+    impl ObjectImpl for MediaContentViewer {
+        fn dispose(&self) {
+            self.clear();
+        }
+    }
 
     impl WidgetImpl for MediaContentViewer {}
     impl ContextMenuBinImpl for MediaContentViewer {}
@@ -113,8 +117,6 @@ mod imp {
 
         /// Show the fallback message for the given content type.
         pub(super) fn show_fallback(&self, content_type: ContentType) {
-            self.file.take();
-
             let title = match content_type {
                 ContentType::Image => gettext("Image not Viewable"),
                 ContentType::Audio => gettext("Audio Clip not Playable"),
@@ -125,6 +127,7 @@ mod imp {
             self.fallback.set_icon_name(Some(content_type.icon_name()));
 
             self.set_visible_child("fallback");
+            self.clear();
         }
 
         /// View the given image as bytes.
@@ -133,7 +136,7 @@ mod imp {
         /// [`MediaContentViewer::view_file()`].
         pub(super) fn view_image(&self, image: &gdk::Paintable) {
             self.set_visible_child("loading");
-            self.file.take();
+            self.clear();
 
             let picture = if let Some(picture) = self.media_child::<gtk::Picture>() {
                 picture
@@ -154,6 +157,7 @@ mod imp {
         /// View the given file.
         pub(super) async fn view_file(&self, file: File, content_type: Option<ContentType>) {
             self.set_visible_child("loading");
+            self.clear();
             self.file.replace(Some(file.clone()));
 
             let content_type = if let Some(content_type) = content_type {
@@ -182,6 +186,7 @@ mod imp {
                     let handle = IMAGE_QUEUE.add_file_request(file, None).await;
                     if let Ok(image) = handle.await {
                         self.view_image(&gdk::Paintable::from(image));
+
                         return;
                     }
                 }
@@ -199,8 +204,8 @@ mod imp {
                     };
 
                     audio.set_source(Some(AudioPlayerSource::File(file.as_gfile())));
-                    self.update_animated_paintable_state();
                     self.set_visible_child("viewer");
+
                     return;
                 }
                 ContentType::Video => {
@@ -222,8 +227,8 @@ mod imp {
                     MEDIA_FILE_NOTIFIER.notify();
 
                     video.set_file(Some(&file.as_gfile()));
-                    self.update_animated_paintable_state();
                     self.set_visible_child("viewer");
+
                     return;
                 }
                 // Other types are not supported.
@@ -238,8 +243,8 @@ mod imp {
             let location = self.viewer.child_or_default::<LocationViewer>();
 
             location.set_location(geo_uri);
-            self.update_animated_paintable_state();
             self.set_visible_child("viewer");
+            self.clear();
         }
 
         /// Update the state of the animated paintable, if any.
@@ -248,9 +253,7 @@ mod imp {
             self.paintable_animation_ref.take();
 
             let Some(paintable) = self
-                .viewer
-                .child()
-                .and_downcast::<gtk::Picture>()
+                .media_child::<gtk::Picture>()
                 .and_then(|p| p.paintable())
                 .and_downcast::<AnimatedImagePaintable>()
             else {
@@ -263,16 +266,14 @@ mod imp {
             }
         }
 
-        /// Stop the playback, if the media is a video.
-        pub(super) fn stop_playback(&self) {
-            if let Some(stream) = self
-                .media_child::<gtk::Video>()
-                .and_then(|v| v.media_stream())
-                && stream.is_playing()
-            {
-                stream.pause();
-                stream.seek(0);
+        /// Clear the viewer.
+        pub(super) fn clear(&self) {
+            if let Some(video) = self.media_child::<gtk::Video>() {
+                video.set_file(None::<&gio::File>);
             }
+
+            self.paintable_animation_ref.take();
+            self.file.take();
         }
     }
 }
@@ -291,9 +292,11 @@ impl MediaContentViewer {
             .build()
     }
 
-    /// Stop the playback, if the media is a video.
-    pub(crate) fn stop_playback(&self) {
-        self.imp().stop_playback();
+    /// Clear the viewer.
+    ///
+    /// Should be called when the viewer is closed to drop the current file.
+    pub(crate) fn clear(&self) {
+        self.imp().clear();
     }
 
     /// Show the loading screen.
