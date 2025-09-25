@@ -53,7 +53,7 @@ You can get the official Fractal Flatpak from Flathub.
 
 ### Beta version
 
-The current beta version is 12.1 (same as stable).
+The current beta version is 13.beta (released September 25th 2025).
 
 It is available as a Flatpak on Flathub Beta.
 
@@ -158,8 +158,8 @@ following dependencies at runtime:
   * gst-plugin-gtk4 (gstgtk4): required to preview videos in the timeline and to present the output
     of the camera.
   * libgstpipewire with the `pipewiredeviceprovider`: used to list and access the cameras.
-* glycin: all images are loaded with this library so loaders for the different image formats need to
-  be installed.
+* glycin: all images are loaded with version 2 of this library so compatible loaders for the
+  different image formats need to be installed.
 
 #### Storing secrets
 

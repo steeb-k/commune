@@ -71,6 +71,43 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="13~beta" type="development" date="2025-09-25">
+      <description>
+        <p>
+          What is better for celebrating the season change than to test what is going to be in the
+          next version of Fractal? Fractal 13.beta was released just for that, and it brings:
+        </p>
+        <ul>
+          <li>
+            A brand new audio player that loads files lazily and displays the audio stream as a
+            seekable waveform.
+          </li>
+          <li>
+            Only a single file with an audio stream can be played at a time, which means that
+            clicking on a "Play" button stops the previous media player that was playing.
+          </li>
+          <li>
+            Clicking on the avatar of the sender of a message now opens directly the user profile
+            instead of a context menu. The actions that were in the context menu could already be
+            performed from that dialog, so UX is more straightforward now.
+          </li>
+          <li>
+            The GNOME document and monospace fonts are used for messages.
+          </li>
+          <li>
+            Most of our UI definitions got ported to Blueprint.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, there might be a slight risk of regressions, but it should be
+          mostly stable. If all goes well the next step is the release candidate!
+        </p>
+      </description>
+    </release>
     <release version="12.1" type="stable" date="2025-08-26">
       <description>
         <p>
