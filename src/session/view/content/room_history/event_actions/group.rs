@@ -553,7 +553,9 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         };
 
         let client = session.client();
-        media_message.save_to_file(&client, &*self.obj()).await;
+        media_message
+            .save_to_file(&event.timestamp(), &client, &*self.obj())
+            .await;
     }
 
     /// Redact the event of this row.

@@ -64,7 +64,7 @@ mod imp {
             if let Some(event) = &event {
                 let media_message = event.media_message();
                 if let MediaMessage::File(file) = &media_message {
-                    let filename = media_message.filename();
+                    let filename = media_message.filename(&event.timestamp());
 
                     self.title_label.set_label(&filename);
                     self.button
@@ -136,7 +136,7 @@ mod imp {
                     return;
                 }
             };
-            let filename = event.media_message().filename();
+            let filename = event.media_message().filename(&event.timestamp());
 
             let parent_window = obj.root().and_downcast::<gtk::Window>();
             let dialog = gtk::FileDialog::builder()

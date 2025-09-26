@@ -10,7 +10,7 @@ use ruma::{
 
 use crate::{
     session::model::Room,
-    utils::matrix::{MediaMessage, VisualMediaMessage},
+    utils::matrix::{MediaMessage, VisualMediaMessage, timestamp_to_date},
 };
 
 /// The types of events that can be displayed in the history viewers.
@@ -139,6 +139,11 @@ impl HistoryViewerEvent {
     /// The event ID of the inner event.
     pub(crate) fn event_id(&self) -> OwnedEventId {
         self.matrix_event().event_id.clone()
+    }
+
+    /// The timestamp of this event, as a `GDateTime`.
+    pub(crate) fn timestamp(&self) -> glib::DateTime {
+        timestamp_to_date(self.matrix_event().origin_server_ts)
     }
 
     /// The media message content of this event.

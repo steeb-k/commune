@@ -491,7 +491,14 @@ mod imp {
             };
             let client = session.client();
 
-            media_message.save_to_file(&client, &*self.obj()).await;
+            media_message
+                .save_to_file(
+                    // The timestamp should be unused for visual media messages.
+                    &glib::DateTime::now_local().expect("Getting local time should work"),
+                    &client,
+                    &*self.obj(),
+                )
+                .await;
         }
 
         /// Copy the permalink of the event of the media message to the

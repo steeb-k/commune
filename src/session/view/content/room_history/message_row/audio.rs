@@ -22,9 +22,9 @@ mod imp {
     pub struct MessageAudio {
         #[template_child]
         player: TemplateChild<AudioPlayer>,
-        /// The filename of the audio file.
+        /// The name of the audio file.
         #[property(get)]
-        filename: RefCell<String>,
+        name: RefCell<String>,
         /// Whether to display this audio message in a compact format.
         #[property(get)]
         compact: Cell<bool>,
@@ -52,24 +52,24 @@ mod imp {
     impl BoxImpl for MessageAudio {}
 
     impl MessageAudio {
-        /// Set the filename of the audio file.
-        fn set_filename(&self, filename: Option<String>) {
-            let filename = filename.unwrap_or_default();
+        /// Set the name of the audio file.
+        fn set_name(&self, name: Option<String>) {
+            let name = name.unwrap_or_default();
 
-            if *self.filename.borrow() == filename {
+            if *self.name.borrow() == name {
                 return;
             }
             let obj = self.obj();
 
-            let accessible_label = if filename.is_empty() {
+            let accessible_label = if name.is_empty() {
                 gettext("Audio")
             } else {
-                gettext_f("Audio: {filename}", &[("filename", &filename)])
+                gettext_f("Audio: {filename}", &[("filename", &name)])
             };
             obj.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
 
-            self.filename.replace(filename);
-            obj.notify_filename();
+            self.name.replace(name);
+            obj.notify_name();
         }
 
         /// Set the compact format of this audio message.
@@ -82,7 +82,7 @@ mod imp {
 
         /// Display the given `audio` message.
         pub(super) fn set_audio_message(&self, message: AudioPlayerMessage, format: ContentFormat) {
-            self.set_filename(Some(message.message.filename()));
+            self.set_name(Some(message.message.display_name()));
 
             let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
             self.set_compact(compact);

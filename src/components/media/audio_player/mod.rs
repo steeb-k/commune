@@ -49,7 +49,7 @@ mod imp {
         #[template_child]
         play_button: TemplateChild<gtk::Button>,
         #[template_child]
-        filename_label: TemplateChild<gtk::Label>,
+        name_label: TemplateChild<gtk::Label>,
         #[template_child]
         position_label_narrow: TemplateChild<gtk::Label>,
         /// The source to play.
@@ -172,7 +172,7 @@ mod imp {
                     }
                 ));
 
-                self.update_source_filename();
+                self.update_source_name();
             }
 
             self.update_play_button();
@@ -206,7 +206,7 @@ mod imp {
 
             self.position_label.set_visible(!narrow);
             self.remaining_label.set_visible(!narrow);
-            self.filename_label.set_visible(!standalone);
+            self.name_label.set_visible(!standalone);
             self.position_label_narrow
                 .set_visible(narrow && !standalone);
 
@@ -284,15 +284,15 @@ mod imp {
         }
 
         /// Update the name of the source.
-        fn update_source_filename(&self) {
-            let filename = self
+        fn update_source_name(&self) {
+            let name = self
                 .source
                 .borrow()
                 .as_ref()
-                .map(AudioPlayerSource::filename)
+                .map(AudioPlayerSource::name)
                 .unwrap_or_default();
 
-            self.filename_label.set_label(&filename);
+            self.name_label.set_label(&name);
         }
 
         /// Update the labels displaying the position in the audio stream.
@@ -542,14 +542,14 @@ pub(crate) enum AudioPlayerSource {
 }
 
 impl AudioPlayerSource {
-    /// Get the filename of the source.
-    fn filename(&self) -> String {
+    /// Get the name of the source.
+    fn name(&self) -> String {
         match self {
             Self::File(file) => file
                 .path()
                 .and_then(|path| path.file_name().map(|s| s.to_string_lossy().into_owned()))
                 .unwrap_or_default(),
-            Self::Message(message) => message.message.filename(),
+            Self::Message(message) => message.message.display_name(),
         }
     }
 

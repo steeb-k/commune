@@ -449,7 +449,7 @@ trait MessageContentContainer: ChildPropertyExt {
                 let widget = self.child_or_default::<MessageFile>();
 
                 let media_message = MediaMessage::from(file);
-                widget.set_filename(Some(media_message.filename()));
+                widget.set_filename(Some(media_message.display_name()));
                 widget.set_format(format);
             }
             MediaMessage::Image(image) => {

@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{gio, prelude::*};
+use gtk::{gio, glib, prelude::*};
 use matrix_sdk::Client;
 use ruma::events::{
     room::message::{
@@ -12,6 +12,7 @@ use tracing::{debug, error};
 
 use crate::{
     components::ContentType,
+    gettext_f,
     prelude::*,
     toast,
     utils::{
@@ -74,12 +75,63 @@ impl MediaMessage {
         }
     }
 
-    /// The filename of the media.
+    /// The name of the media, as displayed in the interface.
     ///
-    /// For a sticker, this returns the description of the sticker.
-    pub(crate) fn filename(&self) -> String {
+    /// This is usually the filename in the message, except:
+    ///
+    /// - For a voice message, it's a placeholder string because file names are
+    ///   usually generated randomly.
+    /// - For a sticker, this returns the description of the sticker, because
+    ///   they do not have a filename.
+    pub(crate) fn display_name(&self) -> String {
         match self {
-            Self::Audio(c) => filename!(c, Some(mime::AUDIO)),
+            Self::Audio(c) => {
+                if c.voice.is_some() {
+                    gettext("Voice Message")
+                } else {
+                    filename!(c, Some(mime::AUDIO))
+                }
+            }
+            Self::File(c) => filename!(c, None),
+            Self::Image(c) => filename!(c, Some(mime::IMAGE)),
+            Self::Video(c) => filename!(c, Some(mime::VIDEO)),
+            Self::Sticker(c) => c.body.clone(),
+        }
+    }
+
+    /// The filename of the media, used when saving the file.
+    ///
+    /// This is usually the filename in the message, except:
+    ///
+    /// - For a voice message, it's a generated name that uses the timestamp of
+    ///   the message.
+    /// - For a sticker, this returns the description of the sticker, because
+    ///   they do not have a filename.
+    pub(crate) fn filename(&self, timestamp: &glib::DateTime) -> String {
+        match self {
+            Self::Audio(c) => {
+                let mut filename = filename!(c, Some(mime::AUDIO));
+
+                if c.voice.is_some() {
+                    let datetime = timestamp
+                        .to_local()
+                        .and_then(|local_timestamp| local_timestamp.format("%Y-%m-%d %H-%M-%S"))
+                        // Fallback to the timestamp in seconds.
+                        .map_or_else(|_| timestamp.second().to_string(), String::from);
+                    // Translators: this is the name of the file that the voice message is saved as.
+                    // Do NOT translate the content between '{' and '}', this is a variable name
+                    // corresponding to a date and time, e.g. "2017-05-21 12-24-03".
+                    let name =
+                        gettext_f("Voice Message From {datetime}", &[("datetime", &datetime)]);
+
+                    filename = filename
+                        .rsplit_once('.')
+                        .map(|(_, extension)| format!("{name}.{extension}"))
+                        .unwrap_or(name);
+                }
+
+                filename
+            }
             Self::File(c) => filename!(c, None),
             Self::Image(c) => filename!(c, Some(mime::IMAGE)),
             Self::Video(c) => filename!(c, Some(mime::VIDEO)),
@@ -157,8 +209,13 @@ impl MediaMessage {
     /// Save the content of the media to a file selected by the user.
     ///
     /// Shows a dialog to the user to select a file on the system.
-    pub(crate) async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
-        let filename = self.filename();
+    pub(crate) async fn save_to_file(
+        self,
+        timestamp: &glib::DateTime,
+        client: &Client,
+        parent: &impl IsA<gtk::Widget>,
+    ) {
+        let filename = self.filename(timestamp);
 
         let data = match self.into_content(client).await {
             Ok(data) => data,
@@ -374,8 +431,15 @@ impl VisualMediaMessage {
     /// Save the content of the media to a file selected by the user.
     ///
     /// Shows a dialog to the user to select a file on the system.
-    pub(crate) async fn save_to_file(self, client: &Client, parent: &impl IsA<gtk::Widget>) {
-        MediaMessage::from(self).save_to_file(client, parent).await;
+    pub(crate) async fn save_to_file(
+        self,
+        timestamp: &glib::DateTime,
+        client: &Client,
+        parent: &impl IsA<gtk::Widget>,
+    ) {
+        MediaMessage::from(self)
+            .save_to_file(timestamp, client, parent)
+            .await;
     }
 }
 
