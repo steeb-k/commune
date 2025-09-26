@@ -437,7 +437,7 @@ mod imp {
                 .borrow()
                 .as_ref()
                 .is_some_and(|source| matches!(source, AudioPlayerSource::Message(_)))
-                && let Some(waveform) = generate_waveform(&gfile, None).await
+                && let Some(waveform) = generate_waveform(&gfile).await
             {
                 self.waveform.set_waveform(waveform);
             }
@@ -581,7 +581,7 @@ impl AudioPlayerSource {
     /// Get the waveform representation of this source, if any.
     async fn waveform(&self) -> Option<Vec<f32>> {
         match self {
-            Self::File(file) => generate_waveform(file, None).await,
+            Self::File(file) => generate_waveform(file).await,
             Self::Message(message) => {
                 if let MediaMessage::Audio(content) = &message.message {
                     content.normalized_waveform()

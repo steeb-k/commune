@@ -6,7 +6,7 @@ use std::{
 };
 
 use gst::prelude::*;
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{gio, glib, prelude::*};
 use matrix_sdk::attachment::BaseAudioInfo;
 use tracing::warn;
 
@@ -29,27 +29,22 @@ pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
 ///
 /// The returned waveform should contain between 30 and 110 samples with a value
 /// between 0 and 1.
-pub(crate) async fn generate_waveform(
-    file: &gio::File,
-    duration: Option<Duration>,
-) -> Option<Vec<f32>> {
-    // According to MSC3246, we want at least 30 values and at most 120 values. It
-    // should also allow us to have enough samples for drawing our waveform.
-    let interval = duration
-        .and_then(|duration| {
-            // Try to get around 1 sample per second, except if the duration is too short or
-            // too long.
-            match duration.as_secs() {
-                0..30 => duration.checked_div(30),
-                30..110 => Some(Duration::from_secs(1)),
-                _ => duration.checked_div(110),
-            }
-        })
-        .unwrap_or_else(|| Duration::from_secs(1));
+pub(crate) async fn generate_waveform(file: &gio::File) -> Option<Vec<f32>> {
+    // We first need to get the duration, to compute the interval required to
+    // collect just enough samples. We use a separate pipeline for simplicity,
+    // but we could use the same pipeline and ignore the first run while we
+    // collect the duration.
+    let interval = load_gstreamer_media_info(file)
+        .await
+        .and_then(|media_info| media_info.duration())
+        // Take 110 samples, it should more or less match the maximum number of samples we present.
+        .and_then(|duration| Duration::from(duration).checked_div(110))
+        // Default to 10 samples per second.
+        .unwrap_or_else(|| Duration::from_millis(100));
 
     // Create our pipeline from a pipeline description string.
     let pipeline = match gst::parse::launch(&format!(
-        "uridecodebin uri={} ! audioconvert ! audio/x-raw,channels=1 ! level name=level interval={} ! fakesink qos=false sync=false",
+        "uridecodebin3 uri={} ! audioconvert ! audio/x-raw,channels=1 ! level name=level interval={} ! fakesink qos=false sync=false",
         file.uri(),
         interval.as_nanos()
     )) {
@@ -62,7 +57,7 @@ pub(crate) async fn generate_waveform(
         }
     };
 
-    let notifier = OneshotNotifier::<Option<gdk::Texture>>::new("generate_waveform");
+    let notifier = OneshotNotifier::<()>::new("generate_waveform");
     let receiver = notifier.listen();
     let samples = Arc::new(Mutex::new(vec![]));
     let bus = pipeline.bus().expect("GstPipeline should have a GstBus");
@@ -85,16 +80,16 @@ pub(crate) async fn generate_waveform(
                     if let Some(structure) = element.structure()
                         && structure.has_name("level")
                     {
-                        let peaks_array = structure
-                            .get::<&glib::ValueArray>("peak")
-                            .expect("peak value should be a GValueArray");
-                        let peak = peaks_array[0]
+                        let rms_array = structure
+                            .get::<&glib::ValueArray>("rms")
+                            .expect("rms value should be a GValueArray");
+                        let rms = rms_array[0]
                             .get::<f64>()
                             .expect("GValueArray value should be a double");
 
                         match samples_clone.lock() {
                             Ok(mut samples) => {
-                                let value_db = if peak.is_nan() { 0.0 } else { peak };
+                                let value_db = if rms.is_nan() { 0.0 } else { rms };
                                 // Convert the decibels to a relative amplitude, to get a value
                                 // between 0 and 1.
                                 let value = 10.0_f64.powf(value_db / 20.0);
@@ -113,18 +108,25 @@ pub(crate) async fn generate_waveform(
         })
         .expect("Adding GstBus watch should succeed");
 
-    match pipeline.set_state(gst::State::Playing) {
+    // Collect the samples.
+    let has_error = match pipeline.set_state(gst::State::Playing) {
         Ok(_) => {
             receiver.await;
+            false
         }
         Err(error) => {
             warn!("Could not start GstPipeline for audio waveform: {error}");
+            true
         }
-    }
+    };
 
     // Clean up pipeline.
     let _ = pipeline.set_state(gst::State::Null);
     bus.set_flushing(true);
+
+    if has_error {
+        return None;
+    }
 
     let waveform = match samples.lock() {
         Ok(mut samples) => std::mem::take(&mut *samples),
@@ -145,6 +147,8 @@ pub(crate) async fn generate_waveform(
 /// the sample.
 ///
 /// If the waveform was empty, returns an empty vec.
+///
+/// Note that the number of required samples comes from MSC3246.
 pub(crate) fn normalize_waveform(waveform: Vec<f64>) -> Vec<f32> {
     if waveform.is_empty() {
         return vec![];
