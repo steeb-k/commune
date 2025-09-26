@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-09-23 17:03+0000\n"
-"PO-Revision-Date: 2025-09-23 21:50+0300\n"
+"POT-Creation-Date: 2025-09-26 16:10+0000\n"
+"PO-Revision-Date: 2025-09-26 20:41+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -620,11 +620,11 @@ msgstr "_Скасувати"
 msgid "C_onfirm"
 msgstr "_Підтвердити"
 
-#: src/components/dialogs/auth/mod.rs:308
+#: src/components/dialogs/auth/mod.rs:311
 msgid "The password is invalid."
 msgstr "Пароль є некоректним."
 
-#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
+#: src/components/dialogs/auth/mod.rs:313 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
 msgstr "Сталася неочікувана помилка."
 
@@ -692,8 +692,8 @@ msgstr "Полишити"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:582
-#: src/session/view/content/room_history/event_actions/group.rs:646
+#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:648
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -845,7 +845,7 @@ msgstr[3] ""
 #: src/components/dialogs/message_dialogs.rs:232
 #: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:583
+#: src/session/view/content/room_history/event_actions/group.rs:585
 msgid "Remove"
 msgstr "Вилучити"
 
@@ -867,7 +867,7 @@ msgstr ""
 "журналі кімнати."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:628
+#: src/session/view/content/room_history/event_actions/group.rs:630
 msgid "Reason (optional)"
 msgstr "Причина (необов'язкова)"
 
@@ -993,7 +993,7 @@ msgstr "Відкинути"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.blp:98
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:176
+#: src/utils/matrix/media_message.rs:233
 msgid "Save"
 msgstr "Зберегти"
 
@@ -1080,37 +1080,35 @@ msgstr "Немає з'єднання з мережею"
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
-#: src/components/media/audio_player/mod.rs:194
-msgid "Error reading audio file"
-msgstr "Помилка під час читання звукового файла"
-
-#: src/components/media/audio_player/mod.rs:404
+#: src/components/media/audio_player/mod.rs:321
 msgid "Pause"
 msgstr "Призупинити"
 
-#. Translators: As in "Play audio file".
-#: src/components/media/audio_player/mod.rs:406
-#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
+#: src/components/media/audio_player/mod.rs:323
 msgid "Play"
 msgstr "Відтворити"
 
-#: src/components/media/audio_player/mod.rs:456
+#: src/components/media/audio_player/mod.rs:404
+msgid "Error reading audio file"
+msgstr "Помилка під час читання звукового файла"
+
+#: src/components/media/audio_player/mod.rs:486
 msgid "Could not retrieve audio file"
 msgstr "Не вдалося отримати звуковий файл"
 
-#: src/components/media/content_viewer.rs:118
+#: src/components/media/content_viewer.rs:121
 msgid "Image not Viewable"
 msgstr "Зображення не придатне до перегляду"
 
-#: src/components/media/content_viewer.rs:119
+#: src/components/media/content_viewer.rs:122
 msgid "Audio Clip not Playable"
 msgstr "Звуковий кліп не придатний до відтворення"
 
-#: src/components/media/content_viewer.rs:120
+#: src/components/media/content_viewer.rs:123
 msgid "Video not Playable"
 msgstr "Відео не придатне до відтворення"
 
-#: src/components/media/content_viewer.rs:121
+#: src/components/media/content_viewer.rs:124
 msgid "File not Viewable"
 msgstr "Файл не придатний до перегляду"
 
@@ -1210,7 +1208,7 @@ msgid "Could not invite user"
 msgstr "Не вдалося запросити користувача"
 
 #: src/components/user_page.rs:554
-#: src/session/view/content/room_history/event_actions/group.rs:720
+#: src/session/view/content/room_history/event_actions/group.rs:722
 msgid "Could not revoke invite of user"
 msgstr "Не вдалося відкликати запрошення користувача"
 
@@ -1394,7 +1392,7 @@ msgid "Command copied to clipboard"
 msgstr "Команду скопійовано до буфера обміну"
 
 #: src/identity_verification_view/accept_request_page.rs:130
-#: src/session/model/notifications/mod.rs:388
+#: src/session/model/notifications/mod.rs:387
 msgid "Login Request From Another Session"
 msgstr "Запит щодо входу з іншого сеансу"
 
@@ -1406,7 +1404,7 @@ msgstr "Перевірити новий сеанс з поточного сеа�
 #: src/identity_verification_view/choose_method_page.rs:184
 #: src/identity_verification_view/sas_page.rs:160
 #: src/identity_verification_view/scan_qr_code_page.rs:159
-#: src/session/model/notifications/mod.rs:326
+#: src/session/model/notifications/mod.rs:325
 msgid "Verification Request"
 msgstr "Запит щодо перевірки"
 
@@ -2058,47 +2056,47 @@ msgstr "Не вдалося вийти з сеансу"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:330
+#: src/session/model/notifications/mod.rs:329
 msgid "{user} sent a verification request"
 msgstr "Користувачем {user} надіслано запит щодо перевірки"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:392
+#: src/session/model/notifications/mod.rs:391
 msgid "Verify your new session “{name}”"
 msgstr "Перевірка вашого нового сеансу «{name}»"
 
-#: src/session/model/notifications/mod.rs:484
+#: src/session/model/notifications/mod.rs:483
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/session/model/notifications/mod.rs:487
+#: src/session/model/notifications/mod.rs:486
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/session/model/notifications/mod.rs:489
+#: src/session/model/notifications/mod.rs:488
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/session/model/notifications/mod.rs:492
+#: src/session/model/notifications/mod.rs:491
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/session/model/notifications/mod.rs:504
+#: src/session/model/notifications/mod.rs:503
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/session/model/notifications/mod.rs:511
+#: src/session/model/notifications/mod.rs:510
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
-#: src/session/model/notifications/mod.rs:521
+#: src/session/model/notifications/mod.rs:520
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:571
+#: src/session/model/notifications/mod.rs:570
 msgid "{user} invited you"
 msgstr "{user} запросив/запросила вас"
 
@@ -2373,7 +2371,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Імпортувати ключі шифрування з…"
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:201
+#: src/utils/matrix/media_message.rs:258
 msgid "Could not access file"
 msgstr "Не вдалося отримати доступ до файла"
 
@@ -3590,17 +3588,6 @@ msgstr "Оновити…"
 msgid "Federation"
 msgstr "Федерація"
 
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name. In this case, the file to play is an
-#. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:81
-msgid "Play {filename}"
-msgstr "Відтворити {filename}"
-
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:99
-msgid "Unknown duration"
-msgstr "Невідома тривалість"
-
 #: src/session/view/content/room_details/history_viewer/audio.blp:24
 #: src/session/view/content/room_details/history_viewer/audio.blp:31
 msgid "No Audio"
@@ -3645,12 +3632,12 @@ msgstr "Відкрити файл"
 #: src/session/view/content/room_details/history_viewer/file_row.blp:12
 #: src/session/view/content/room_history/message_row/file.blp:24
 #: src/session/view/content/room_history/message_row/file.blp:28
-#: src/utils/matrix/media_message.rs:174
+#: src/utils/matrix/media_message.rs:231
 msgid "Save File"
 msgstr "Зберегти файл"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:193
+#: src/utils/matrix/media_message.rs:250
 msgid "Could not save file"
 msgstr "Не вдалося зберегти файл"
 
@@ -4027,16 +4014,16 @@ msgid "Default Power Level"
 msgstr "Типовий рівень повноважень"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:118
 msgid "Stable"
 msgstr "Стабільна"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:120
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:121
 msgid "Experimental"
 msgstr "Експериментальна"
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:206
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:205
 msgid ""
 "After the upgrade, you will be the only creator in the room. The other "
 "creator will be demoted to the default power level."
@@ -4056,7 +4043,7 @@ msgstr[3] ""
 "Після оновлення ви станете єдиним автором у кімнаті. Іншого автора буде "
 "звужено у правах до типового рівня доступу."
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:212
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:211
 msgid ""
 "After the upgrade, you will be the only creator in the room. The current "
 "creator will be demoted to the default power level."
@@ -4202,7 +4189,7 @@ msgid "Re_move"
 msgstr "В_илучити"
 
 #: src/session/view/content/room_history/event_actions/group.rs:63
-#: src/session/view/media_viewer.rs:499
+#: src/session/view/media_viewer.rs:518
 msgid "Message link copied to clipboard"
 msgstr "Посилання на повідомлення скопійовано до буфера обміну"
 
@@ -4214,29 +4201,29 @@ msgstr "Мініатюру скопійовано до буфера обміну
 msgid "Text copied to clipboard"
 msgstr "Текст скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/event_actions/group.rs:576
+#: src/session/view/content/room_history/event_actions/group.rs:578
 msgid "Remove Message?"
 msgstr "Вилучити повідомлення?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:578
+#: src/session/view/content/room_history/event_actions/group.rs:580
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути "
 "скасовано."
 
-#: src/session/view/content/room_history/event_actions/group.rs:592
+#: src/session/view/content/room_history/event_actions/group.rs:594
 msgid "Could not remove message"
 msgstr "Не вдалося вилучити повідомлення"
 
-#: src/session/view/content/room_history/event_actions/group.rs:607
+#: src/session/view/content/room_history/event_actions/group.rs:609
 msgid "Could not toggle reaction"
 msgstr "Не вдалося перемкнути реакцію"
 
-#: src/session/view/content/room_history/event_actions/group.rs:639
+#: src/session/view/content/room_history/event_actions/group.rs:641
 msgid "Report Event?"
 msgstr "Поскаржитися на подію?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:641
+#: src/session/view/content/room_history/event_actions/group.rs:643
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -4247,19 +4234,19 @@ msgstr ""
 "вміст події, якщо його було зашифровано або змінено внаслідок редагування."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:648
+#: src/session/view/content/room_history/event_actions/group.rs:650
 msgid "Report"
 msgstr "Поскаржитися"
 
-#: src/session/view/content/room_history/event_actions/group.rs:666
+#: src/session/view/content/room_history/event_actions/group.rs:668
 msgid "Could not report event"
 msgstr "Не вдалося поскаржитися на подію"
 
-#: src/session/view/content/room_history/event_actions/group.rs:686
+#: src/session/view/content/room_history/event_actions/group.rs:688
 msgid "Could not discard message"
 msgstr "Не вдалося відкинути повідомлення"
 
-#: src/session/view/content/room_history/event_actions/group.rs:715
+#: src/session/view/content/room_history/event_actions/group.rs:717
 msgid "Revoking invite…"
 msgstr "Відкликаємо запрошення…"
 
@@ -4991,7 +4978,7 @@ msgstr "Не можна вимикати пізніше"
 msgid "_Create Room"
 msgstr "С_творити кімнату"
 
-#: src/session/view/media_viewer.rs:466
+#: src/session/view/media_viewer.rs:478
 msgid "Image copied to clipboard"
 msgstr "Зображення скопійовано до буфера обміну"
 
@@ -5348,6 +5335,15 @@ msgstr "Не вдалося виявити домашній сервер."
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
+#: src/utils/matrix/media_message.rs:90
+#| msgid "New Messages"
+msgid "Voice Message"
+msgstr "Голосове повідомлення"
+
+#: src/utils/matrix/media_message.rs:125
+msgid "Voice Message From {datetime}"
+msgstr "Голосове повідомлення від {datetime}"
+
 #: src/utils/matrix/mod.rs:176
 msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
@@ -5361,28 +5357,34 @@ msgid "Image format not supported"
 msgstr "Підтримки формату зображення не передбачено"
 
 #. Translators: Default name for image files.
-#: src/utils/media/mod.rs:34
+#: src/utils/media/mod.rs:36
 msgid "image"
 msgstr "зображення"
 
 #. Translators: Default name for video files.
-#: src/utils/media/mod.rs:36
+#: src/utils/media/mod.rs:38
 msgid "video"
 msgstr "відео"
 
 #. Translators: Default name for audio files.
-#: src/utils/media/mod.rs:38
+#: src/utils/media/mod.rs:40
 msgid "audio"
 msgstr "звук"
 
 #. Translators: Default name for files.
-#: src/utils/media/mod.rs:40
+#: src/utils/media/mod.rs:42
 msgid "file"
 msgstr "файл"
 
 #: src/window.blp:80
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Play {filename}"
+#~ msgstr "Відтворити {filename}"
+
+#~ msgid "Unknown duration"
+#~ msgstr "Невідома тривалість"
 
 #~ msgid "_View Details"
 #~ msgstr "_Переглянути подробиці"
