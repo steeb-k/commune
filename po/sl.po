@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-09-23 16:49+0000\n"
-"PO-Revision-Date: 2025-09-23 19:02+0200\n"
+"POT-Creation-Date: 2025-09-26 23:49+0000\n"
+"PO-Revision-Date: 2025-09-27 09:33+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -546,11 +546,11 @@ msgstr "_Prekliči"
 msgid "C_onfirm"
 msgstr "P_otrdi"
 
-#: src/components/dialogs/auth/mod.rs:308
+#: src/components/dialogs/auth/mod.rs:311
 msgid "The password is invalid."
 msgstr "Geslo je neveljavno."
 
-#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
+#: src/components/dialogs/auth/mod.rs:313 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
 msgstr "Prišlo je do nepričakovane napake."
 
@@ -601,8 +601,8 @@ msgstr "Zapusti"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:582
-#: src/session/view/content/room_history/event_actions/group.rs:646
+#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:648
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -741,7 +741,7 @@ msgstr[3] ""
 
 #: src/components/dialogs/message_dialogs.rs:232 src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:583
+#: src/session/view/content/room_history/event_actions/group.rs:585
 msgid "Remove"
 msgstr "Odstrani"
 
@@ -762,7 +762,7 @@ msgstr ""
 "tako, da se vrnete nazaj v zgodovino klepetalnice."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:628
+#: src/session/view/content/room_history/event_actions/group.rs:630
 msgid "Reason (optional)"
 msgstr "Razlog (neobvezno)"
 
@@ -863,7 +863,7 @@ msgstr "Zavrzi"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.blp:98
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:176
+#: src/utils/matrix/media_message.rs:233
 msgid "Save"
 msgstr "Shrani"
 
@@ -941,37 +941,35 @@ msgstr "Brez omrežne povezave"
 msgid "No Internet connection"
 msgstr "Brez internetne povezave"
 
-#: src/components/media/audio_player/mod.rs:194
-msgid "Error reading audio file"
-msgstr "Napaka pri branju zvočne datoteke"
-
-#: src/components/media/audio_player/mod.rs:404
+#: src/components/media/audio_player/mod.rs:321
 msgid "Pause"
 msgstr "Premor"
 
-#. Translators: As in "Play audio file".
-#: src/components/media/audio_player/mod.rs:406
-#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
+#: src/components/media/audio_player/mod.rs:323
 msgid "Play"
 msgstr "Predvajaj"
 
-#: src/components/media/audio_player/mod.rs:456
+#: src/components/media/audio_player/mod.rs:404
+msgid "Error reading audio file"
+msgstr "Napaka pri branju zvočne datoteke"
+
+#: src/components/media/audio_player/mod.rs:486
 msgid "Could not retrieve audio file"
 msgstr "Ni mogoče pridobiti zvočne datoteke"
 
-#: src/components/media/content_viewer.rs:118
+#: src/components/media/content_viewer.rs:121
 msgid "Image not Viewable"
 msgstr "Slike ni mogoče pokazati"
 
-#: src/components/media/content_viewer.rs:119
+#: src/components/media/content_viewer.rs:122
 msgid "Audio Clip not Playable"
 msgstr "Zvočnega posnetka ni mogoče predvajati"
 
-#: src/components/media/content_viewer.rs:120
+#: src/components/media/content_viewer.rs:123
 msgid "Video not Playable"
 msgstr "Videoposnetka ni mogoče predvajati"
 
-#: src/components/media/content_viewer.rs:121
+#: src/components/media/content_viewer.rs:124
 msgid "File not Viewable"
 msgstr "Datoteka ni mogoče pokazati"
 
@@ -1065,7 +1063,7 @@ msgstr "Vloge ni bilo mogoče spremeniti"
 msgid "Could not invite user"
 msgstr "Uporabnika ni bilo mogoče povabiti"
 
-#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:720
+#: src/components/user_page.rs:554 src/session/view/content/room_history/event_actions/group.rs:722
 msgid "Could not revoke invite of user"
 msgstr "Ni bilo mogoče preklicati povabila uporabnika"
 
@@ -1231,7 +1229,7 @@ msgstr "Seje ni bilo mogoče inicializirati"
 msgid "Command copied to clipboard"
 msgstr "Ukaz je kopiran na odložišče"
 
-#: src/identity_verification_view/accept_request_page.rs:130 src/session/model/notifications/mod.rs:388
+#: src/identity_verification_view/accept_request_page.rs:130 src/session/model/notifications/mod.rs:387
 msgid "Login Request From Another Session"
 msgstr "Zahteva za prijavo iz druge seje"
 
@@ -1241,7 +1239,7 @@ msgstr "Preverite novo sejo iz trenutne seje."
 
 #: src/identity_verification_view/accept_request_page.rs:135
 #: src/identity_verification_view/choose_method_page.rs:184 src/identity_verification_view/sas_page.rs:160
-#: src/identity_verification_view/scan_qr_code_page.rs:159 src/session/model/notifications/mod.rs:326
+#: src/identity_verification_view/scan_qr_code_page.rs:159 src/session/model/notifications/mod.rs:325
 msgid "Verification Request"
 msgstr "Zahtevek za preverjanje"
 
@@ -1821,47 +1819,47 @@ msgstr "Seje ni bilo mogoče odjaviti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:330
+#: src/session/model/notifications/mod.rs:329
 msgid "{user} sent a verification request"
 msgstr "{uporabnik} je poslal/a zahtevo za preverjanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:392
+#: src/session/model/notifications/mod.rs:391
 msgid "Verify your new session “{name}”"
 msgstr "Overite novo sejo »{name}«"
 
-#: src/session/model/notifications/mod.rs:484
+#: src/session/model/notifications/mod.rs:483
 msgid "{user} sent an audio file."
 msgstr "{user} je poslal/a zvočno datoteko."
 
-#: src/session/model/notifications/mod.rs:487
+#: src/session/model/notifications/mod.rs:486
 msgid "{user} sent a file."
 msgstr "Uporabnik {user} je poslal datoteko."
 
-#: src/session/model/notifications/mod.rs:489
+#: src/session/model/notifications/mod.rs:488
 msgid "{user} sent an image."
 msgstr "{user} je poslal/a sliko."
 
-#: src/session/model/notifications/mod.rs:492
+#: src/session/model/notifications/mod.rs:491
 msgid "{user} sent their location."
 msgstr "{user} je poslal/a svojo lokacijo."
 
-#: src/session/model/notifications/mod.rs:504
+#: src/session/model/notifications/mod.rs:503
 msgid "{user} sent a video."
 msgstr "{user} je poslal/a video."
 
-#: src/session/model/notifications/mod.rs:511
+#: src/session/model/notifications/mod.rs:510
 msgid "{user} sent a sticker."
 msgstr "{user} je poslal/a nalepko."
 
-#: src/session/model/notifications/mod.rs:521
+#: src/session/model/notifications/mod.rs:520
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:571
+#: src/session/model/notifications/mod.rs:570
 msgid "{user} invited you"
 msgstr "{user} vas je povabil/a"
 
@@ -2129,7 +2127,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Uvozi šifrirne ključe iz ..."
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:201
+#: src/utils/matrix/media_message.rs:258
 msgid "Could not access file"
 msgstr "Ni mogoče dostopati do datoteke"
 
@@ -3300,17 +3298,6 @@ msgstr "Nadgradi …"
 msgid "Federation"
 msgstr "Združba (federacija)"
 
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name. In this case, the file to play is an
-#. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:81
-msgid "Play {filename}"
-msgstr "Predvajaj {filename}"
-
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:99
-msgid "Unknown duration"
-msgstr "Neznano trajanje"
-
 #: src/session/view/content/room_details/history_viewer/audio.blp:24
 #: src/session/view/content/room_details/history_viewer/audio.blp:31
 msgid "No Audio"
@@ -3354,12 +3341,12 @@ msgstr "Odpri datoteko"
 #: src/session/view/content/room_details/history_viewer/file_row.rs:143
 #: src/session/view/content/room_details/history_viewer/file_row.blp:12
 #: src/session/view/content/room_history/message_row/file.blp:24
-#: src/session/view/content/room_history/message_row/file.blp:28 src/utils/matrix/media_message.rs:174
+#: src/session/view/content/room_history/message_row/file.blp:28 src/utils/matrix/media_message.rs:231
 msgid "Save File"
 msgstr "Shrani datoteko"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:193
+#: src/utils/matrix/media_message.rs:250
 msgid "Could not save file"
 msgstr "Datoteke ni mogoče shraniti"
 
@@ -3731,16 +3718,16 @@ msgid "Default Power Level"
 msgstr "Privzeta raven moči"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:118
 msgid "Stable"
 msgstr "Stabilno"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:120
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:121
 msgid "Experimental"
 msgstr "Poskusno"
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:206
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:205
 msgid ""
 "After the upgrade, you will be the only creator in the room. The other creator will be demoted to the "
 "default power level."
@@ -3756,7 +3743,7 @@ msgstr[2] ""
 msgstr[3] ""
 "Po nadgradnji boste edini avtor v klepetalnici. Drugi avtorji bodo degradirani na privzeto raven moči."
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:212
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:211
 msgid ""
 "After the upgrade, you will be the only creator in the room. The current creator will be demoted to the "
 "default power level."
@@ -3895,7 +3882,7 @@ msgstr "P_oročaj ..."
 msgid "Re_move"
 msgstr "_Odstrani"
 
-#: src/session/view/content/room_history/event_actions/group.rs:63 src/session/view/media_viewer.rs:499
+#: src/session/view/content/room_history/event_actions/group.rs:63 src/session/view/media_viewer.rs:518
 msgid "Message link copied to clipboard"
 msgstr "Povezava sporočila kopirana v odložišče"
 
@@ -3907,27 +3894,27 @@ msgstr "Sličica je kopirana v odložišče"
 msgid "Text copied to clipboard"
 msgstr "Besedilo je kopirano v odložišče"
 
-#: src/session/view/content/room_history/event_actions/group.rs:576
+#: src/session/view/content/room_history/event_actions/group.rs:578
 msgid "Remove Message?"
 msgstr "Želite odstraniti sporočilo?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:578
+#: src/session/view/content/room_history/event_actions/group.rs:580
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Ali res želite odstraniti to sporočilo? Tega ni mogoče razveljaviti."
 
-#: src/session/view/content/room_history/event_actions/group.rs:592
+#: src/session/view/content/room_history/event_actions/group.rs:594
 msgid "Could not remove message"
 msgstr "Sporočila ni bilo mogoče odstraniti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:607
+#: src/session/view/content/room_history/event_actions/group.rs:609
 msgid "Could not toggle reaction"
 msgstr "Odziva ni bilo mogoče preklopiti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:639
+#: src/session/view/content/room_history/event_actions/group.rs:641
 msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:641
+#: src/session/view/content/room_history/event_actions/group.rs:643
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator "
 "will not be able to see the content of the event if it is encrypted or redacted."
@@ -3936,19 +3923,19 @@ msgstr ""
 "videti vsebine dogodka, če je šifriran ali redigiran."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:648
+#: src/session/view/content/room_history/event_actions/group.rs:650
 msgid "Report"
 msgstr "Poročilo"
 
-#: src/session/view/content/room_history/event_actions/group.rs:666
+#: src/session/view/content/room_history/event_actions/group.rs:668
 msgid "Could not report event"
 msgstr "Dogodka ni bilo mogoče prijaviti"
 
-#: src/session/view/content/room_history/event_actions/group.rs:686
+#: src/session/view/content/room_history/event_actions/group.rs:688
 msgid "Could not discard message"
 msgstr "Sporočila ni bilo mogoče zavreči"
 
-#: src/session/view/content/room_history/event_actions/group.rs:715
+#: src/session/view/content/room_history/event_actions/group.rs:717
 msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
 
@@ -4669,7 +4656,7 @@ msgstr "Pozneje ni mogoče onemogočiti"
 msgid "_Create Room"
 msgstr "_Ustvari klepetalnico"
 
-#: src/session/view/media_viewer.rs:466
+#: src/session/view/media_viewer.rs:478
 msgid "Image copied to clipboard"
 msgstr "Slika, kopirana na odložišče"
 
@@ -5020,6 +5007,14 @@ msgstr "Domačega strežnika ni bilo mogoče odkriti."
 msgid "Could not open the store."
 msgstr "Trgovine ni bilo mogoče odpreti."
 
+#: src/utils/matrix/media_message.rs:90
+msgid "Voice Message"
+msgstr "Glasovno sporočilo"
+
+#: src/utils/matrix/media_message.rs:125
+msgid "Voice Message From {datetime}"
+msgstr "Glasovno sporočilo, {datetime}"
+
 #: src/utils/matrix/mod.rs:176
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
@@ -5033,22 +5028,22 @@ msgid "Image format not supported"
 msgstr "Vrsta slikovnih datotek ni podprta"
 
 #. Translators: Default name for image files.
-#: src/utils/media/mod.rs:34
+#: src/utils/media/mod.rs:36
 msgid "image"
 msgstr "slika"
 
 #. Translators: Default name for video files.
-#: src/utils/media/mod.rs:36
+#: src/utils/media/mod.rs:38
 msgid "video"
 msgstr "video"
 
 #. Translators: Default name for audio files.
-#: src/utils/media/mod.rs:38
+#: src/utils/media/mod.rs:40
 msgid "audio"
 msgstr "avdio"
 
 #. Translators: Default name for files.
-#: src/utils/media/mod.rs:40
+#: src/utils/media/mod.rs:42
 msgid "file"
 msgstr "datoteka"
 
