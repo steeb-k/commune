@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-09-04 00:44+0000\n"
-"PO-Revision-Date: 2025-09-04 09:25+0200\n"
+"POT-Creation-Date: 2025-09-28 12:47+0000\n"
+"PO-Revision-Date: 2025-09-29 16:57+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <ka@li.org>\n"
 "Language: ka\n"
@@ -246,7 +246,7 @@ msgstr "ავატარის წაშლა"
 msgid "Select New Avatar"
 msgstr "აირჩიეთ ახალი ავატარი"
 
-#: src/components/camera/qrcode_scanner.rs:92
+#: src/components/camera/qrcode_scanner.rs:91
 msgid "Camera"
 msgstr "კამერა"
 
@@ -264,7 +264,7 @@ msgid "Viewfinder"
 msgstr ""
 
 #: src/components/crypto/identity_setup_view.rs:384
-#: src/identity_verification_view/cancelled_page.rs:195
+#: src/identity_verification_view/cancelled_page.rs:196
 msgid "Could not send a new verification request"
 msgstr "ახალი გადამოწმების მოთხოვნის გაგზავნა შეუძლებელია"
 
@@ -552,11 +552,11 @@ msgstr "_გაუქმება"
 msgid "C_onfirm"
 msgstr "_დასტური"
 
-#: src/components/dialogs/auth/mod.rs:308
+#: src/components/dialogs/auth/mod.rs:311
 msgid "The password is invalid."
 msgstr "პაროლი არასწორია."
 
-#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
+#: src/components/dialogs/auth/mod.rs:313 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
 msgstr "აღმოჩენილია მოულოდნელი შეცდომა."
 
@@ -617,8 +617,8 @@ msgstr "გასვლა"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:582
-#: src/session/view/content/room_history/event_actions/group.rs:646
+#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:648
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -743,7 +743,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:232
 #: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:583
+#: src/session/view/content/room_history/event_actions/group.rs:585
 msgid "Remove"
 msgstr "წაშლა"
 
@@ -762,7 +762,7 @@ msgid ""
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:628
+#: src/session/view/content/room_history/event_actions/group.rs:630
 msgid "Reason (optional)"
 msgstr ""
 
@@ -848,7 +848,7 @@ msgstr "გაუქმება"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.blp:98
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:175
+#: src/utils/matrix/media_message.rs:233
 msgid "Save"
 msgstr "შენახვა"
 
@@ -856,7 +856,7 @@ msgstr "შენახვა"
 #: src/components/dialogs/room_preview.rs:239
 #: src/components/dialogs/room_preview.rs:347
 #: src/session/view/content/explore/public_room_row.rs:182
-#: src/session/view/content/room_history/message_toolbar/mod.rs:363
+#: src/session/view/content/room_history/message_toolbar/mod.rs:360
 #: src/session/view/content/room_history/mod.blp:77
 #: src/session/view/content/room_history/state/creation.blp:20
 msgid "View"
@@ -890,7 +890,7 @@ msgstr "მოსაწვევის მოთხოვნა"
 
 #: src/components/dialogs/room_preview.rs:351
 #: src/session/view/content/explore/public_room_row.rs:195
-#: src/session/view/content/room_history/message_toolbar/mod.rs:365
+#: src/session/view/content/room_history/message_toolbar/mod.rs:362
 msgid "Join"
 msgstr "შეერთება"
 
@@ -929,23 +929,39 @@ msgstr "ქსელური შეერთების გარეშე"
 msgid "No Internet connection"
 msgstr "საჭიროა ინტერნეტთან კავშირი"
 
-#: src/components/media/content_viewer.rs:118
-msgid "Image not Viewable"
+#: src/components/media/audio_player/mod.rs:321
+msgid "Pause"
+msgstr "შეჩერება"
+
+#: src/components/media/audio_player/mod.rs:323
+msgid "Play"
+msgstr "თამაში"
+
+#: src/components/media/audio_player/mod.rs:404
+msgid "Error reading audio file"
 msgstr ""
 
-#: src/components/media/content_viewer.rs:119
-msgid "Audio Clip not Playable"
-msgstr ""
-
-#: src/components/media/content_viewer.rs:120
-msgid "Video not Playable"
+#: src/components/media/audio_player/mod.rs:486
+msgid "Could not retrieve audio file"
 msgstr ""
 
 #: src/components/media/content_viewer.rs:121
+msgid "Image not Viewable"
+msgstr ""
+
+#: src/components/media/content_viewer.rs:122
+msgid "Audio Clip not Playable"
+msgstr ""
+
+#: src/components/media/content_viewer.rs:123
+msgid "Video not Playable"
+msgstr ""
+
+#: src/components/media/content_viewer.rs:124
 msgid "File not Viewable"
 msgstr ""
 
-#: src/components/media/location_viewer.rs:124
+#: src/components/media/location_viewer.rs:146
 msgid "Location at latitude {latitude} and longitude {longitude}"
 msgstr ""
 
@@ -1036,7 +1052,7 @@ msgid "Could not invite user"
 msgstr "მომხმარებლის მოწვევა შეუძლებელია"
 
 #: src/components/user_page.rs:554
-#: src/session/view/content/room_history/event_actions/group.rs:720
+#: src/session/view/content/room_history/event_actions/group.rs:722
 msgid "Could not revoke invite of user"
 msgstr "მომხმარებლის მოწვევის გაუქმება შეუძლებელია"
 
@@ -1098,7 +1114,7 @@ msgid "Could not stop ignoring user"
 msgstr ""
 
 #: src/components/user_page.rs:770 src/session/view/content/invite.rs:290
-#: src/session/view/sidebar/row.rs:768
+#: src/session/view/sidebar/row.rs:770
 msgid "Could not ignore user"
 msgstr ""
 
@@ -1210,77 +1226,77 @@ msgstr ""
 msgid "Command copied to clipboard"
 msgstr "ბრძანება დაკოპირდა ბუფერში"
 
-#: src/identity_verification_view/accept_request_page.rs:129
-#: src/session/model/notifications/mod.rs:388
+#: src/identity_verification_view/accept_request_page.rs:130
+#: src/session/model/notifications/mod.rs:387
 msgid "Login Request From Another Session"
 msgstr ""
 
-#: src/identity_verification_view/accept_request_page.rs:131
+#: src/identity_verification_view/accept_request_page.rs:132
 msgid "Verify the new session from the current session."
 msgstr ""
 
-#: src/identity_verification_view/accept_request_page.rs:134
-#: src/identity_verification_view/choose_method_page.rs:183
-#: src/identity_verification_view/sas_page.rs:159
-#: src/identity_verification_view/scan_qr_code_page.rs:158
-#: src/session/model/notifications/mod.rs:326
+#: src/identity_verification_view/accept_request_page.rs:135
+#: src/identity_verification_view/choose_method_page.rs:184
+#: src/identity_verification_view/sas_page.rs:160
+#: src/identity_verification_view/scan_qr_code_page.rs:159
+#: src/session/model/notifications/mod.rs:325
 msgid "Verification Request"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/accept_request_page.rs:138
+#: src/identity_verification_view/accept_request_page.rs:139
 msgid ""
 "{user} asked to be verified. Verifying a user increases the security of the "
 "conversation."
 msgstr ""
 
-#: src/identity_verification_view/accept_request_page.rs:161
+#: src/identity_verification_view/accept_request_page.rs:162
 msgid "Could not decline verification request"
 msgstr ""
 
-#: src/identity_verification_view/accept_request_page.rs:177
+#: src/identity_verification_view/accept_request_page.rs:178
 msgid "Could not accept verification request"
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:139
+#: src/identity_verification_view/cancelled_page.rs:140
 msgid "The verification was cancelled from the other session."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/cancelled_page.rs:145
+#: src/identity_verification_view/cancelled_page.rs:146
 msgid "The verification was cancelled by {user}."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:151
+#: src/identity_verification_view/cancelled_page.rs:152
 msgid "The verification process failed because it reached a timeout."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:153
+#: src/identity_verification_view/cancelled_page.rs:154
 msgid "You accepted the request from another session."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:156
+#: src/identity_verification_view/cancelled_page.rs:157
 msgid "The emoji did not match."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:158
+#: src/identity_verification_view/cancelled_page.rs:159
 msgid "The numbers did not match."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:161
+#: src/identity_verification_view/cancelled_page.rs:162
 msgid "An unexpected error happened during the verification process."
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:166
+#: src/identity_verification_view/cancelled_page.rs:167
 #: src/identity_verification_view/mod.blp:88
 #: src/identity_verification_view/mod.blp:97
 #: src/identity_verification_view/room_left_page.blp:22
 msgid "Verification Cancelled"
 msgstr ""
 
-#: src/identity_verification_view/cancelled_page.rs:168
+#: src/identity_verification_view/cancelled_page.rs:169
 msgid "Verification Error"
 msgstr "გადამოწმების შეცდომა"
 
@@ -1288,44 +1304,44 @@ msgstr "გადამოწმების შეცდომა"
 msgid "Send New Request"
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:175
-#: src/identity_verification_view/sas_page.rs:147
-#: src/identity_verification_view/scan_qr_code_page.rs:153
+#: src/identity_verification_view/choose_method_page.rs:176
+#: src/identity_verification_view/sas_page.rs:148
+#: src/identity_verification_view/scan_qr_code_page.rs:154
 msgid "Verify Session"
 msgstr "სესიის გადამოწმება"
 
-#: src/identity_verification_view/choose_method_page.rs:179
+#: src/identity_verification_view/choose_method_page.rs:180
 msgid "Scan this QR code from the other session."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/choose_method_page.rs:189
+#: src/identity_verification_view/choose_method_page.rs:190
 msgid "Ask {user} to scan this QR code from their session."
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:198
+#: src/identity_verification_view/choose_method_page.rs:199
 msgid "Select a verification method to proceed."
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:201
+#: src/identity_verification_view/choose_method_page.rs:202
 msgid "Click on the verification method to proceed."
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:233
+#: src/identity_verification_view/choose_method_page.rs:234
 msgid "Could not access camera"
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:250
-#: src/identity_verification_view/scan_qr_code_page.rs:221
+#: src/identity_verification_view/choose_method_page.rs:251
+#: src/identity_verification_view/scan_qr_code_page.rs:222
 msgid "Could not start emoji verification"
 msgstr ""
 
-#: src/identity_verification_view/choose_method_page.rs:266
-#: src/identity_verification_view/confirm_qr_code_page.rs:176
-#: src/identity_verification_view/qr_code_scanned_page.rs:144
-#: src/identity_verification_view/scan_qr_code_page.rs:233
-#: src/identity_verification_view/wait_for_other_page.rs:163
+#: src/identity_verification_view/choose_method_page.rs:267
+#: src/identity_verification_view/confirm_qr_code_page.rs:177
+#: src/identity_verification_view/qr_code_scanned_page.rs:145
+#: src/identity_verification_view/scan_qr_code_page.rs:234
+#: src/identity_verification_view/wait_for_other_page.rs:164
 msgid "Could not cancel the verification"
 msgstr ""
 
@@ -1344,43 +1360,43 @@ msgid "Compare Emoji"
 msgstr ""
 
 #: src/identity_verification_view/choose_method_page.blp:83
-#: src/identity_verification_view/no_supported_methods_page.rs:167
+#: src/identity_verification_view/no_supported_methods_page.rs:168
 #: src/identity_verification_view/qr_code_scanned_page.blp:51
 #: src/identity_verification_view/scan_qr_code_page.blp:84
 msgid "Cancel Verification"
 msgstr "შემოწმების გაუქმება"
 
-#: src/identity_verification_view/completed_page.rs:121
+#: src/identity_verification_view/completed_page.rs:122
 msgid "Request Complete"
 msgstr ""
 
-#: src/identity_verification_view/completed_page.rs:123
+#: src/identity_verification_view/completed_page.rs:124
 msgid "The new session is now ready to send and receive secure messages."
 msgstr ""
 
-#: src/identity_verification_view/completed_page.rs:127
+#: src/identity_verification_view/completed_page.rs:128
 msgid "Verification Complete"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/completed_page.rs:130
+#: src/identity_verification_view/completed_page.rs:131
 msgid ""
 "{user} is verified and you can now be sure that your communication will be "
 "private."
 msgstr ""
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:128
+#: src/identity_verification_view/confirm_qr_code_page.rs:129
 msgid "Does the other session show a confirmation?"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/confirm_qr_code_page.rs:134
+#: src/identity_verification_view/confirm_qr_code_page.rs:135
 msgid "Does {user} see a confirmation on their session?"
 msgstr ""
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:160
+#: src/identity_verification_view/confirm_qr_code_page.rs:161
 msgid "Could not confirm the scan of the QR Code"
 msgstr ""
 
@@ -1392,7 +1408,7 @@ msgstr "სკანირების დადასტურება"
 msgid "Confirm"
 msgstr "დადასტურება"
 
-#: src/identity_verification_view/mod.rs:199
+#: src/identity_verification_view/mod.rs:200
 msgid "Scan QR Code"
 msgstr "QR კოდის სკანირება"
 
@@ -1430,12 +1446,12 @@ msgstr ""
 msgid "Verification Successful"
 msgstr ""
 
-#: src/identity_verification_view/no_supported_methods_page.rs:138
+#: src/identity_verification_view/no_supported_methods_page.rs:139
 msgid ""
 "None of the methods offered by the other client are supported by Fractal."
 msgstr ""
 
-#: src/identity_verification_view/no_supported_methods_page.rs:141
+#: src/identity_verification_view/no_supported_methods_page.rs:142
 msgid ""
 "A login request was received, but none of the methods offered by the other "
 "client are supported by Fractal."
@@ -1443,24 +1459,24 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:150
+#: src/identity_verification_view/no_supported_methods_page.rs:151
 msgid ""
 "None of the methods offered by {user}’s client are supported by Fractal."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:157
+#: src/identity_verification_view/no_supported_methods_page.rs:158
 msgid ""
 "{user} sent a verification request, but none of the methods offered by the "
 "other client are supported by Fractal."
 msgstr ""
 
-#: src/identity_verification_view/no_supported_methods_page.rs:169
+#: src/identity_verification_view/no_supported_methods_page.rs:170
 msgid "Decline Verification"
 msgstr ""
 
-#: src/identity_verification_view/no_supported_methods_page.rs:191
+#: src/identity_verification_view/no_supported_methods_page.rs:192
 msgid "Could not decline the verification"
 msgstr ""
 
@@ -1470,7 +1486,7 @@ msgid ""
 "your sessions"
 msgstr ""
 
-#: src/identity_verification_view/qr_code_scanned_page.rs:118
+#: src/identity_verification_view/qr_code_scanned_page.rs:119
 msgid ""
 "You scanned the QR code successfully. You may need to confirm the "
 "verification from the other session."
@@ -1478,7 +1494,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/qr_code_scanned_page.rs:123
+#: src/identity_verification_view/qr_code_scanned_page.rs:124
 msgid ""
 "You scanned the QR code successfully. {user} may need to confirm the "
 "verification."
@@ -1488,17 +1504,17 @@ msgstr ""
 msgid "You are no longer in the room where the verification was taking place"
 msgstr ""
 
-#: src/identity_verification_view/sas_page.rs:150
+#: src/identity_verification_view/sas_page.rs:151
 msgid "Check if the same emoji appear in the same order on the other client."
 msgstr ""
 
-#: src/identity_verification_view/sas_page.rs:154
+#: src/identity_verification_view/sas_page.rs:155
 msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:164
+#: src/identity_verification_view/sas_page.rs:165
 msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
@@ -1506,17 +1522,17 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:171
+#: src/identity_verification_view/sas_page.rs:172
 msgid ""
 "Ask {user} if they see the following numbers appear in the same order on "
 "their screen."
 msgstr ""
 
-#: src/identity_verification_view/sas_page.rs:252
+#: src/identity_verification_view/sas_page.rs:253
 msgid "Could not send that the data does not match"
 msgstr ""
 
-#: src/identity_verification_view/sas_page.rs:269
+#: src/identity_verification_view/sas_page.rs:270
 msgid "Could not send confirmation that the data matches"
 msgstr ""
 
@@ -1532,17 +1548,17 @@ msgstr "არ ემთხვევა"
 msgid "Match"
 msgstr "დამთხვევა"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:155
+#: src/identity_verification_view/scan_qr_code_page.rs:156
 msgid "Scan the QR code displayed by the other session."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:162
+#: src/identity_verification_view/scan_qr_code_page.rs:163
 msgid "Scan the QR code shown on the device of {user}."
 msgstr ""
 
-#: src/identity_verification_view/scan_qr_code_page.rs:200
+#: src/identity_verification_view/scan_qr_code_page.rs:201
 msgid "Could not validate scanned QR Code"
 msgstr ""
 
@@ -1550,23 +1566,23 @@ msgstr ""
 msgid "Show a QR code to scan with another device"
 msgstr ""
 
-#: src/identity_verification_view/wait_for_other_page.rs:123
+#: src/identity_verification_view/wait_for_other_page.rs:124
 msgid "Get Another Device"
 msgstr "სხვა მოწყობილობის მიღება"
 
-#: src/identity_verification_view/wait_for_other_page.rs:125
+#: src/identity_verification_view/wait_for_other_page.rs:126
 msgid "Accept the verification request from another session or device."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:133
+#: src/identity_verification_view/wait_for_other_page.rs:134
 msgid "Waiting for {user}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:139
+#: src/identity_verification_view/wait_for_other_page.rs:140
 msgid "Ask {user} to accept the verification request."
 msgstr ""
 
@@ -1696,11 +1712,11 @@ msgstr ""
 msgid "Could not store session"
 msgstr ""
 
-#: src/login/mod.rs:582
+#: src/login/mod.rs:583
 msgid "Authorization Completed"
 msgstr "ავტორიზაცია დასრულდა"
 
-#: src/login/mod.rs:584
+#: src/login/mod.rs:585
 msgid ""
 "The authorization step is complete. You can close this page and go back to "
 "Fractal."
@@ -1811,53 +1827,53 @@ msgid ""
 "set as default."
 msgstr ""
 
-#: src/session/model/session.rs:819
+#: src/session/model/session.rs:823
 msgid "Could not log the session out"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:330
+#: src/session/model/notifications/mod.rs:329
 msgid "{user} sent a verification request"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:392
+#: src/session/model/notifications/mod.rs:391
 msgid "Verify your new session “{name}”"
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:484
+#: src/session/model/notifications/mod.rs:483
 msgid "{user} sent an audio file."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:487
+#: src/session/model/notifications/mod.rs:486
 msgid "{user} sent a file."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:489
+#: src/session/model/notifications/mod.rs:488
 msgid "{user} sent an image."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:492
+#: src/session/model/notifications/mod.rs:491
 msgid "{user} sent their location."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:504
+#: src/session/model/notifications/mod.rs:503
 msgid "{user} sent a video."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:511
+#: src/session/model/notifications/mod.rs:510
 msgid "{user} sent a sticker."
 msgstr ""
 
-#: src/session/model/notifications/mod.rs:521
+#: src/session/model/notifications/mod.rs:520
 msgid "{user}: {message}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:571
+#: src/session/model/notifications/mod.rs:570
 msgid "{user} invited you"
 msgstr ""
 
@@ -2121,7 +2137,7 @@ msgid "Import Encryption Keys From…"
 msgstr ""
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:200
+#: src/utils/matrix/media_message.rs:258
 msgid "Could not access file"
 msgstr ""
 
@@ -2826,13 +2842,13 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:722
+#: src/session/view/content/invite.rs:239 src/session/view/sidebar/row.rs:724
 msgid "Could not accept invitation for {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:712
+#: src/session/view/content/invite.rs:278 src/session/view/sidebar/row.rs:714
 msgid "Could not decline invitation for {room}"
 msgstr ""
 
@@ -3180,7 +3196,7 @@ msgstr "ფაილი"
 #. Translators: As in 'Audio file'.
 #: src/session/view/content/room_details/general_page.blp:104
 #: src/session/view/content/room_details/history_viewer/audio.blp:6
-#: src/session/view/content/room_history/message_row/audio.rs:90
+#: src/session/view/content/room_history/message_row/audio.rs:65
 msgid "Audio"
 msgstr "აუდიო"
 
@@ -3280,22 +3296,6 @@ msgstr "გაუმჯობესება…"
 msgid "Federation"
 msgstr "ფედერაცია"
 
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name. In this case, the file to play is an
-#. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:81
-msgid "Play {filename}"
-msgstr ""
-
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:99
-msgid "Unknown duration"
-msgstr ""
-
-#. Translators: As in "Play audio file".
-#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
-msgid "Play"
-msgstr "თამაში"
-
 #: src/session/view/content/room_details/history_viewer/audio.blp:24
 #: src/session/view/content/room_details/history_viewer/audio.blp:31
 msgid "No Audio"
@@ -3340,12 +3340,12 @@ msgstr "ფაილის გახსნა"
 #: src/session/view/content/room_details/history_viewer/file_row.blp:12
 #: src/session/view/content/room_history/message_row/file.blp:24
 #: src/session/view/content/room_history/message_row/file.blp:28
-#: src/utils/matrix/media_message.rs:173
+#: src/utils/matrix/media_message.rs:231
 msgid "Save File"
 msgstr "ფაილის შენახვა"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:192
+#: src/utils/matrix/media_message.rs:250
 msgid "Could not save file"
 msgstr "ფაილის შენახვა შეუძლებელია"
 
@@ -3444,13 +3444,13 @@ msgstr ""
 msgid "Searching for Users"
 msgstr "მომხმარებლების ძებნა"
 
-#: src/session/view/content/room_details/join_rule_subpage.rs:112
+#: src/session/view/content/room_details/join_rule_subpage.rs:114
 msgid ""
 "The version of this room does not support all possibilities. Upgrade this "
 "room to the latest version to see more options."
 msgstr ""
 
-#: src/session/view/content/room_details/join_rule_subpage.rs:230
+#: src/session/view/content/room_details/join_rule_subpage.rs:232
 msgid "Could not change who can join"
 msgstr ""
 
@@ -3602,7 +3602,7 @@ msgstr ""
 msgid "Add"
 msgstr "დამატება"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:585
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:584
 msgid "Could not save permissions"
 msgstr ""
 
@@ -3695,16 +3695,16 @@ msgid "Default Power Level"
 msgstr ""
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:118
 msgid "Stable"
 msgstr "სტაბილური"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:120
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:121
 msgid "Experimental"
 msgstr "ექსპერიმენტული"
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:206
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:205
 msgid ""
 "After the upgrade, you will be the only creator in the room. The other "
 "creator will be demoted to the default power level."
@@ -3713,7 +3713,7 @@ msgid_plural ""
 "creators will be demoted to the default power level."
 msgstr[0] ""
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:212
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:211
 msgid ""
 "After the upgrade, you will be the only creator in the room. The current "
 "creator will be demoted to the default power level."
@@ -3839,7 +3839,7 @@ msgid "Re_move"
 msgstr "_წაშლა"
 
 #: src/session/view/content/room_history/event_actions/group.rs:63
-#: src/session/view/media_viewer.rs:499
+#: src/session/view/media_viewer.rs:518
 msgid "Message link copied to clipboard"
 msgstr "შეტყობინების ბმული დაკოპირდა ბუფერში"
 
@@ -3851,27 +3851,27 @@ msgstr ""
 msgid "Text copied to clipboard"
 msgstr "ტექსტი დაკოპირდა ბუფერში"
 
-#: src/session/view/content/room_history/event_actions/group.rs:576
+#: src/session/view/content/room_history/event_actions/group.rs:578
 msgid "Remove Message?"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:578
+#: src/session/view/content/room_history/event_actions/group.rs:580
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:592
+#: src/session/view/content/room_history/event_actions/group.rs:594
 msgid "Could not remove message"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:607
+#: src/session/view/content/room_history/event_actions/group.rs:609
 msgid "Could not toggle reaction"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:639
+#: src/session/view/content/room_history/event_actions/group.rs:641
 msgid "Report Event?"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:641
+#: src/session/view/content/room_history/event_actions/group.rs:643
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3879,19 +3879,19 @@ msgid ""
 msgstr ""
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:648
+#: src/session/view/content/room_history/event_actions/group.rs:650
 msgid "Report"
 msgstr "ანგარიში"
 
-#: src/session/view/content/room_history/event_actions/group.rs:666
+#: src/session/view/content/room_history/event_actions/group.rs:668
 msgid "Could not report event"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:686
+#: src/session/view/content/room_history/event_actions/group.rs:688
 msgid "Could not discard message"
 msgstr ""
 
-#: src/session/view/content/room_history/event_actions/group.rs:715
+#: src/session/view/content/room_history/event_actions/group.rs:717
 msgid "Revoking invite…"
 msgstr ""
 
@@ -3991,30 +3991,22 @@ msgstr ""
 msgid "More Reactions"
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/audio.rs:88
+#: src/session/view/content/room_history/message_row/audio.rs:67
 msgid "Audio: {filename}"
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/audio.rs:195
-msgid "Could not retrieve audio file"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/audio.rs:212
-msgid "Error reading audio file"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/content.rs:309
+#: src/session/view/content/room_history/message_row/content.rs:311
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/content.rs:313
+#: src/session/view/content/room_history/message_row/content.rs:315
 msgid "This message was removed."
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/content.rs:330
-#: src/session/view/content/room_history/message_row/content.rs:398
+#: src/session/view/content/room_history/message_row/content.rs:332
+#: src/session/view/content/room_history/message_row/content.rs:400
 msgid "Unsupported event"
 msgstr ""
 
@@ -4063,12 +4055,12 @@ msgstr "გამგზავნის პროფილის ჩვენე�
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:203
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:202
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] ""
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:223
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:222
 msgid "{user} reacted with {reaction_key}"
 msgstr ""
 
@@ -4144,90 +4136,90 @@ msgstr ""
 msgid "Room Member Mention Auto-completion"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:353
+#: src/session/view/content/room_history/message_toolbar/mod.rs:350
 msgid "The conversation continues in a new room"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:355
+#: src/session/view/content/room_history/message_toolbar/mod.rs:352
 msgid "The conversation has ended"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:517
+#: src/session/view/content/room_history/message_toolbar/mod.rs:514
 msgid "Reply to {user}"
 msgstr ""
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:535
+#: src/session/view/content/room_history/message_toolbar/mod.rs:532
 msgctxt "room-history"
 msgid "Edit"
 msgstr "ჩასწორება"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:704
+#: src/session/view/content/room_history/message_toolbar/mod.rs:701
 msgid "Could not send reply"
 msgstr "პასუხის გაგზავნა შეუძლებელია"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:720
+#: src/session/view/content/room_history/message_toolbar/mod.rs:717
 msgid "Could not send edit"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:731
+#: src/session/view/content/room_history/message_toolbar/mod.rs:728
 msgid "Could not send message"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:777
+#: src/session/view/content/room_history/message_toolbar/mod.rs:774
 msgid "Your Location"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:837
+#: src/session/view/content/room_history/message_toolbar/mod.rs:834
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:859
+#: src/session/view/content/room_history/message_toolbar/mod.rs:856
 msgid "Could not send location"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:866
+#: src/session/view/content/room_history/message_toolbar/mod.rs:863
 msgid "The location request has been cancelled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:867
+#: src/session/view/content/room_history/message_toolbar/mod.rs:864
 msgid "The location services are disabled"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:868
+#: src/session/view/content/room_history/message_toolbar/mod.rs:865
 msgid "Could not retrieve current location"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:903
+#: src/session/view/content/room_history/message_toolbar/mod.rs:900
 msgid "Could not send file"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:957
+#: src/session/view/content/room_history/message_toolbar/mod.rs:954
 msgid "Select File"
 msgstr "აირჩიეთ ფაილი"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:959
+#: src/session/view/content/room_history/message_toolbar/mod.rs:956
 msgid "Select"
 msgstr "არჩევა"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:974
+#: src/session/view/content/room_history/message_toolbar/mod.rs:971
 msgid "Could not open file"
 msgstr "ფაილის გახსნა შეუძლებელია"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1000
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1008
+#: src/session/view/content/room_history/message_toolbar/mod.rs:997
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1005
 msgid "Error reading file"
 msgstr "ფაილის წაკითხვის შეცდომა"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1069
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1066
 msgid "Error getting image from clipboard"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1086
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1083
 msgid "Error getting file from clipboard"
 msgstr ""
 
@@ -4288,20 +4280,20 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:1023
-#: src/session/view/sidebar/row.rs:745
+#: src/session/view/sidebar/row.rs:747
 msgid "Could not leave {room}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/mod.rs:1046
-#: src/session/view/sidebar/row.rs:734
+#: src/session/view/sidebar/row.rs:736
 msgid "Could not join {room}"
 msgstr "{room}-ში შესვლა შეუძლებელია"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:1063
-#: src/session/view/sidebar/row.rs:778
+#: src/session/view/sidebar/row.rs:780
 msgid "Could not forget {room}"
 msgstr ""
 
@@ -4354,14 +4346,14 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:258
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:257
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:272
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:271
 msgid "Seen by {name}"
 msgstr ""
 
@@ -4614,7 +4606,7 @@ msgstr ""
 msgid "_Create Room"
 msgstr "_ოთახის შექმნა"
 
-#: src/session/view/media_viewer.rs:466
+#: src/session/view/media_viewer.rs:478
 msgid "Image copied to clipboard"
 msgstr "სურათი ბუფერში დაკოპირდა"
 
@@ -4746,19 +4738,19 @@ msgid_plural "{count} notifications"
 msgstr[0] "1 notification"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:754
+#: src/session/view/sidebar/row.rs:756
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:796
+#: src/session/view/sidebar/row.rs:798
 msgid "Could not mark {room} as direct chat"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:801
+#: src/session/view/sidebar/row.rs:803
 msgid "Could not unmark {room} as direct chat"
 msgstr ""
 
@@ -4963,6 +4955,14 @@ msgstr "სახლის სერვერის აღმოჩენა შ
 msgid "Could not open the store."
 msgstr ""
 
+#: src/utils/matrix/media_message.rs:90
+msgid "Voice Message"
+msgstr "ხმოვანი შეტყობინება"
+
+#: src/utils/matrix/media_message.rs:125
+msgid "Voice Message From {datetime}"
+msgstr ""
+
 #: src/utils/matrix/mod.rs:176
 msgid "Could not generate unique session ID"
 msgstr ""
@@ -4976,22 +4976,22 @@ msgid "Image format not supported"
 msgstr ""
 
 #. Translators: Default name for image files.
-#: src/utils/media/mod.rs:34
+#: src/utils/media/mod.rs:36
 msgid "image"
 msgstr "გამოსახულება"
 
 #. Translators: Default name for video files.
-#: src/utils/media/mod.rs:36
+#: src/utils/media/mod.rs:38
 msgid "video"
 msgstr "ვიდეო"
 
 #. Translators: Default name for audio files.
-#: src/utils/media/mod.rs:38
+#: src/utils/media/mod.rs:40
 msgid "audio"
 msgstr "აუდიო"
 
 #. Translators: Default name for files.
-#: src/utils/media/mod.rs:40
+#: src/utils/media/mod.rs:42
 msgid "file"
 msgstr "ფაილი"
 
