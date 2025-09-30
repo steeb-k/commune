@@ -296,10 +296,15 @@ mod imp {
         /// Takes into account the text direction.
         ///
         /// Returns a value between 0 and 1.
-        fn x_coord_to_position(&self, x: f64) -> f32 {
+        fn x_coord_to_position(&self, mut x: f64) -> f32 {
             let obj = self.obj();
+            let width = f64::from(obj.width());
 
-            let mut position = (x / f64::from(obj.width())) as f32;
+            // Clamp the value, because it is possible for the user to go outside of the
+            // widget with drag gestures.
+            x = x.clamp(0.0, width);
+
+            let mut position = (x / width) as f32;
 
             if obj.direction() == gtk::TextDirection::Rtl {
                 position = 1.0 - position;
@@ -308,9 +313,12 @@ mod imp {
             position
         }
 
-        /// Emit the `seek` signal with the given new position.
+        /// Emit the `seek` signal with the given new position, if it is
+        /// different from the current position.
         fn emit_seek(&self, new_position: f32) {
-            self.obj().emit_by_name::<()>("seek", &[&new_position]);
+            if (self.position.get() - new_position).abs() > 0.000_001 {
+                self.obj().emit_by_name::<()>("seek", &[&new_position]);
+            }
         }
 
         /// Initialize the event controllers on the waveform.
@@ -341,10 +349,7 @@ mod imp {
 
             // Handle dragging to seek. This also handles clicks because a click triggers a
             // drag begin.
-            let drag = gtk::GestureDrag::builder()
-                .name("waveform-drag")
-                .button(0)
-                .build();
+            let drag = gtk::GestureDrag::builder().name("waveform-drag").build();
             drag.connect_drag_begin(clone!(
                 #[weak]
                 obj,
@@ -400,11 +405,9 @@ mod imp {
                     }
 
                     let imp = obj.imp();
-                    let new_position = imp.position.get() + delta;
+                    let new_position = (imp.position.get() + delta).clamp(0.0, 1.0);
 
-                    if (0.0..=1.0).contains(&new_position) {
-                        imp.emit_seek(new_position);
-                    }
+                    imp.emit_seek(new_position);
                 }
             ));
             obj.add_controller(key);
