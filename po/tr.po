@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-09-09 09:41+0000\n"
+"POT-Creation-Date: 2025-09-30 09:25+0000\n"
 "PO-Revision-Date: 2025-09-14 08:00+0300\n"
 "Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
@@ -602,11 +602,11 @@ msgstr "İ_ptal"
 msgid "C_onfirm"
 msgstr "_Onayla"
 
-#: src/components/dialogs/auth/mod.rs:308
+#: src/components/dialogs/auth/mod.rs:311
 msgid "The password is invalid."
 msgstr "Parola geçersiz."
 
-#: src/components/dialogs/auth/mod.rs:310 src/login/in_browser_page.rs:127
+#: src/components/dialogs/auth/mod.rs:313 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
 msgstr "Beklenmedik hata oluştu."
 
@@ -673,8 +673,8 @@ msgstr "Terk Et"
 #: src/session/view/content/room_details/edit_details_subpage.rs:267
 #: src/session/view/content/room_details/general_page.rs:990
 #: src/session/view/content/room_details/upgrade_dialog/mod.blp:130
-#: src/session/view/content/room_history/event_actions/group.rs:582
-#: src/session/view/content/room_history/event_actions/group.rs:646
+#: src/session/view/content/room_history/event_actions/group.rs:584
+#: src/session/view/content/room_history/event_actions/group.rs:648
 #: src/session/view/content/room_history/message_toolbar/mod.blp:71
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
@@ -812,7 +812,7 @@ msgstr[0] ""
 #: src/components/dialogs/message_dialogs.rs:232
 #: src/session/view/account_settings/general_page/mod.rs:392
 #: src/session/view/content/room_details/edit_details_subpage.rs:268
-#: src/session/view/content/room_history/event_actions/group.rs:583
+#: src/session/view/content/room_history/event_actions/group.rs:585
 msgid "Remove"
 msgstr "Kaldır"
 
@@ -833,7 +833,7 @@ msgstr ""
 "geçmişinde geriye giderek daha çoğunu yüklemeyi deneyebilirsiniz."
 
 #: src/components/dialogs/message_dialogs.rs:272
-#: src/session/view/content/room_history/event_actions/group.rs:628
+#: src/session/view/content/room_history/event_actions/group.rs:630
 msgid "Reason (optional)"
 msgstr "Neden (isteğe bağlı)"
 
@@ -903,8 +903,7 @@ msgid ""
 "another member with a higher power level to undo this."
 msgstr ""
 "Güç düzeyinizi düşürmek istediğinizden emin misiniz? Bunu geri almak için "
-"daha yüksek güç düzeyindeki başka bir üyeden yardım almanız "
-"gerekecektir."
+"daha yüksek güç düzeyindeki başka bir üyeden yardım almanız gerekecektir."
 
 #: src/components/dialogs/message_dialogs.rs:470
 msgid "Demote"
@@ -928,7 +927,7 @@ msgstr "Gözden Çıkar"
 #: src/components/dialogs/message_dialogs.rs:493
 #: src/session/view/content/room_details/edit_details_subpage.blp:98
 #: src/session/view/content/room_details/history_viewer/file_row.rs:144
-#: src/utils/matrix/media_message.rs:175
+#: src/utils/matrix/media_message.rs:233
 msgid "Save"
 msgstr "Kaydet"
 
@@ -1012,19 +1011,35 @@ msgstr "Ağ bağlantısı yok"
 msgid "No Internet connection"
 msgstr "İnternet bağlantısı yok"
 
-#: src/components/media/content_viewer.rs:118
+#: src/components/media/audio_player/mod.rs:321
+msgid "Pause"
+msgstr "Duraklat"
+
+#: src/components/media/audio_player/mod.rs:323
+msgid "Play"
+msgstr "Oynat"
+
+#: src/components/media/audio_player/mod.rs:404
+msgid "Error reading audio file"
+msgstr "Ses dosyası okunamadı"
+
+#: src/components/media/audio_player/mod.rs:486
+msgid "Could not retrieve audio file"
+msgstr "Ses dosyası alınamadı"
+
+#: src/components/media/content_viewer.rs:121
 msgid "Image not Viewable"
 msgstr "Görüntü Görüntülenemiyor"
 
-#: src/components/media/content_viewer.rs:119
+#: src/components/media/content_viewer.rs:122
 msgid "Audio Clip not Playable"
 msgstr "Ses Klibi Oynatılamaz"
 
-#: src/components/media/content_viewer.rs:120
+#: src/components/media/content_viewer.rs:123
 msgid "Video not Playable"
 msgstr "Video Oynatılamaz"
 
-#: src/components/media/content_viewer.rs:121
+#: src/components/media/content_viewer.rs:124
 msgid "File not Viewable"
 msgstr "Dosya Görüntülenemiyor"
 
@@ -1061,9 +1076,9 @@ msgid ""
 msgstr ""
 "Kurucu, oda oluştururken birkaç kullanıcıya yüklenebilen değişmez bir "
 "roldür. Kurucular, diğer kurucular dışında, her zaman diğer oda üyelerinden "
-"daha yüksek güç düzeyindedir ve odada her şeyi yapma iznini bulundurur. "
-"Bir kurucunun rütbesini düşürmenin tek yolu, örneğin odayı yükselterek "
-"var olan odayı başka kurucusu olan başka bir odayla değiştirmektir."
+"daha yüksek güç düzeyindedir ve odada her şeyi yapma iznini bulundurur. Bir "
+"kurucunun rütbesini düşürmenin tek yolu, örneğin odayı yükselterek var olan "
+"odayı başka kurucusu olan başka bir odayla değiştirmektir."
 
 #: src/components/user_page.rs:256
 #: src/session/view/account_settings/general_page/mod.blp:43
@@ -1124,7 +1139,7 @@ msgid "Could not invite user"
 msgstr "Kullanıcı davet edilemedi"
 
 #: src/components/user_page.rs:554
-#: src/session/view/content/room_history/event_actions/group.rs:720
+#: src/session/view/content/room_history/event_actions/group.rs:722
 msgid "Could not revoke invite of user"
 msgstr "Kullanıcı davetiyesi geri alınamadı"
 
@@ -1306,7 +1321,7 @@ msgid "Command copied to clipboard"
 msgstr "Komut panoya kopyalandı"
 
 #: src/identity_verification_view/accept_request_page.rs:130
-#: src/session/model/notifications/mod.rs:388
+#: src/session/model/notifications/mod.rs:387
 msgid "Login Request From Another Session"
 msgstr "Başka Oturumdan Giriş İsteği"
 
@@ -1318,7 +1333,7 @@ msgstr "Geçerli oturumdan yeni oturumu doğrula."
 #: src/identity_verification_view/choose_method_page.rs:184
 #: src/identity_verification_view/sas_page.rs:160
 #: src/identity_verification_view/scan_qr_code_page.rs:159
-#: src/session/model/notifications/mod.rs:326
+#: src/session/model/notifications/mod.rs:325
 msgid "Verification Request"
 msgstr "Doğrulama İsteği"
 
@@ -1954,47 +1969,47 @@ msgstr "Oturum kapatılamadı"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:330
+#: src/session/model/notifications/mod.rs:329
 msgid "{user} sent a verification request"
 msgstr "{user} doğrulama isteği gönderdi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:392
+#: src/session/model/notifications/mod.rs:391
 msgid "Verify your new session “{name}”"
 msgstr "“{name}” yeni oturumunuzu doğrulayın"
 
-#: src/session/model/notifications/mod.rs:484
+#: src/session/model/notifications/mod.rs:483
 msgid "{user} sent an audio file."
 msgstr "{user} ses dosyası gönderdi."
 
-#: src/session/model/notifications/mod.rs:487
+#: src/session/model/notifications/mod.rs:486
 msgid "{user} sent a file."
 msgstr "{user} dosya gönderdi."
 
-#: src/session/model/notifications/mod.rs:489
+#: src/session/model/notifications/mod.rs:488
 msgid "{user} sent an image."
 msgstr "{user} görüntü gönderdi."
 
-#: src/session/model/notifications/mod.rs:492
+#: src/session/model/notifications/mod.rs:491
 msgid "{user} sent their location."
 msgstr "{user} kendi konumunu gönderdi."
 
-#: src/session/model/notifications/mod.rs:504
+#: src/session/model/notifications/mod.rs:503
 msgid "{user} sent a video."
 msgstr "{user} video gönderdi."
 
-#: src/session/model/notifications/mod.rs:511
+#: src/session/model/notifications/mod.rs:510
 msgid "{user} sent a sticker."
 msgstr "{user} yapışkan gönderdi."
 
-#: src/session/model/notifications/mod.rs:521
+#: src/session/model/notifications/mod.rs:520
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/notifications/mod.rs:571
+#: src/session/model/notifications/mod.rs:570
 msgid "{user} invited you"
 msgstr "{user} sizi davet etti"
 
@@ -2266,7 +2281,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Şifreleme Anahtarlarını Şuradan İçe Aktar…"
 
 #: src/session/view/account_settings/encryption_page/import_export_keys_subpage.rs:215
-#: src/utils/matrix/media_message.rs:200
+#: src/utils/matrix/media_message.rs:258
 msgid "Could not access file"
 msgstr "Dosyaya erişilemedi"
 
@@ -3366,7 +3381,7 @@ msgstr "Dosyalar"
 #. Translators: As in 'Audio file'.
 #: src/session/view/content/room_details/general_page.blp:104
 #: src/session/view/content/room_details/history_viewer/audio.blp:6
-#: src/session/view/content/room_history/message_row/audio.rs:87
+#: src/session/view/content/room_history/message_row/audio.rs:65
 msgid "Audio"
 msgstr "Ses"
 
@@ -3466,22 +3481,6 @@ msgstr "Yükselt…"
 msgid "Federation"
 msgstr "Federasyon"
 
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name. In this case, the file to play is an
-#. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:81
-msgid "Play {filename}"
-msgstr "{filename} çal"
-
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:99
-msgid "Unknown duration"
-msgstr "Bilinmeyen süre"
-
-#. Translators: As in "Play audio file".
-#: src/session/view/content/room_details/history_viewer/audio_row.blp:13
-msgid "Play"
-msgstr "Oynat"
-
 #: src/session/view/content/room_details/history_viewer/audio.blp:24
 #: src/session/view/content/room_details/history_viewer/audio.blp:31
 msgid "No Audio"
@@ -3526,12 +3525,12 @@ msgstr "Dosya Aç"
 #: src/session/view/content/room_details/history_viewer/file_row.blp:12
 #: src/session/view/content/room_history/message_row/file.blp:24
 #: src/session/view/content/room_history/message_row/file.blp:28
-#: src/utils/matrix/media_message.rs:173
+#: src/utils/matrix/media_message.rs:231
 msgid "Save File"
 msgstr "Dosyayı Kaydet"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:157
-#: src/utils/matrix/media_message.rs:192
+#: src/utils/matrix/media_message.rs:250
 msgid "Could not save file"
 msgstr "Dosya kaydedilemedi"
 
@@ -3883,16 +3882,16 @@ msgid "Default Power Level"
 msgstr "Öntanımlı Güç Düzeyi"
 
 #. Translators: As in 'Stable version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:117
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:118
 msgid "Stable"
 msgstr "Kararlı"
 
 #. Translators: As in 'Experimental version'.
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:120
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:121
 msgid "Experimental"
 msgstr "Deneysel"
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:206
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:205
 msgid ""
 "After the upgrade, you will be the only creator in the room. The other "
 "creator will be demoted to the default power level."
@@ -3903,7 +3902,7 @@ msgstr[0] ""
 "Yükseltmeden sonra, odadaki tek kurucu siz olacaksınız. Diğer kurucular "
 "öntanımlı güç düzeyine indirilecek."
 
-#: src/session/view/content/room_details/upgrade_dialog/mod.rs:212
+#: src/session/view/content/room_details/upgrade_dialog/mod.rs:211
 msgid ""
 "After the upgrade, you will be the only creator in the room. The current "
 "creator will be demoted to the default power level."
@@ -4040,7 +4039,7 @@ msgid "Re_move"
 msgstr "_Kaldır"
 
 #: src/session/view/content/room_history/event_actions/group.rs:63
-#: src/session/view/media_viewer.rs:499
+#: src/session/view/media_viewer.rs:518
 msgid "Message link copied to clipboard"
 msgstr "İleti bağlantısı panoya kopyalandı"
 
@@ -4052,28 +4051,28 @@ msgstr "Küçük resim panoya kopyalandı"
 msgid "Text copied to clipboard"
 msgstr "Metin panoya kopyalandı"
 
-#: src/session/view/content/room_history/event_actions/group.rs:576
+#: src/session/view/content/room_history/event_actions/group.rs:578
 msgid "Remove Message?"
 msgstr "İleti Kaldırılsın Mı?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:578
+#: src/session/view/content/room_history/event_actions/group.rs:580
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Bu iletiyi gerçekten kaldırmak istiyor musunuz? Bu işlem geri alınamaz."
 
-#: src/session/view/content/room_history/event_actions/group.rs:592
+#: src/session/view/content/room_history/event_actions/group.rs:594
 msgid "Could not remove message"
 msgstr "İleti kaldırılamadı"
 
-#: src/session/view/content/room_history/event_actions/group.rs:607
+#: src/session/view/content/room_history/event_actions/group.rs:609
 msgid "Could not toggle reaction"
 msgstr "Karşılık açılıp kapatılamadı"
 
-#: src/session/view/content/room_history/event_actions/group.rs:639
+#: src/session/view/content/room_history/event_actions/group.rs:641
 msgid "Report Event?"
 msgstr "Olay Bildirilsin Mi?"
 
-#: src/session/view/content/room_history/event_actions/group.rs:641
+#: src/session/view/content/room_history/event_actions/group.rs:643
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -4084,19 +4083,19 @@ msgstr ""
 "göremez."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/event_actions/group.rs:648
+#: src/session/view/content/room_history/event_actions/group.rs:650
 msgid "Report"
 msgstr "Bildir"
 
-#: src/session/view/content/room_history/event_actions/group.rs:666
+#: src/session/view/content/room_history/event_actions/group.rs:668
 msgid "Could not report event"
 msgstr "Olay bildirilemedi"
 
-#: src/session/view/content/room_history/event_actions/group.rs:686
+#: src/session/view/content/room_history/event_actions/group.rs:688
 msgid "Could not discard message"
 msgstr "İleti gözden çıkarılamadı"
 
-#: src/session/view/content/room_history/event_actions/group.rs:715
+#: src/session/view/content/room_history/event_actions/group.rs:717
 msgid "Revoking invite…"
 msgstr "Davet geri alınıyor…"
 
@@ -4196,19 +4195,11 @@ msgstr "Karşılık Gönder"
 msgid "More Reactions"
 msgstr "Daha Çok Karşılık"
 
-#: src/session/view/content/room_history/message_row/audio.rs:85
+#: src/session/view/content/room_history/message_row/audio.rs:67
 msgid "Audio: {filename}"
 msgstr "Ses: {filename}"
 
-#: src/session/view/content/room_history/message_row/audio.rs:192
-msgid "Could not retrieve audio file"
-msgstr "Ses dosyası alınamadı"
-
-#: src/session/view/content/room_history/message_row/audio.rs:209
-msgid "Error reading audio file"
-msgstr "Ses dosyası okunamadı"
-
-#: src/session/view/content/room_history/message_row/content.rs:310
+#: src/session/view/content/room_history/message_row/content.rs:311
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -4216,12 +4207,12 @@ msgstr ""
 "Bu iletinin şifresi çözülemedi, anahtarlar kullanılabildiğinde şifre çözme "
 "yeniden denenecek."
 
-#: src/session/view/content/room_history/message_row/content.rs:314
+#: src/session/view/content/room_history/message_row/content.rs:315
 msgid "This message was removed."
 msgstr "Bu ileti kaldırıldı."
 
-#: src/session/view/content/room_history/message_row/content.rs:331
-#: src/session/view/content/room_history/message_row/content.rs:399
+#: src/session/view/content/room_history/message_row/content.rs:332
+#: src/session/view/content/room_history/message_row/content.rs:400
 msgid "Unsupported event"
 msgstr "Desteklenmeyen olay"
 
@@ -4824,7 +4815,7 @@ msgstr "Sonra devre dışı bırakılamaz"
 msgid "_Create Room"
 msgstr "Oda _Oluştur"
 
-#: src/session/view/media_viewer.rs:466
+#: src/session/view/media_viewer.rs:478
 msgid "Image copied to clipboard"
 msgstr "Görüntü panoya kopyalandı"
 
@@ -5175,6 +5166,14 @@ msgstr "Ev sunucusu keşfedilemedi."
 msgid "Could not open the store."
 msgstr "Depo açılamadı."
 
+#: src/utils/matrix/media_message.rs:90
+msgid "Voice Message"
+msgstr "Sesli İleti"
+
+#: src/utils/matrix/media_message.rs:125
+msgid "Voice Message From {datetime}"
+msgstr "{datetime} Tarihli Sesli İleti"
+
 #: src/utils/matrix/mod.rs:176
 msgid "Could not generate unique session ID"
 msgstr "Benzersiz oturum kimliği oluşturulamadı"
@@ -5188,25 +5187,31 @@ msgid "Image format not supported"
 msgstr "Görüntü biçimi desteklenmiyor"
 
 #. Translators: Default name for image files.
-#: src/utils/media/mod.rs:34
+#: src/utils/media/mod.rs:36
 msgid "image"
 msgstr "görüntü"
 
 #. Translators: Default name for video files.
-#: src/utils/media/mod.rs:36
+#: src/utils/media/mod.rs:38
 msgid "video"
 msgstr "video"
 
 #. Translators: Default name for audio files.
-#: src/utils/media/mod.rs:38
+#: src/utils/media/mod.rs:40
 msgid "audio"
 msgstr "ses"
 
 #. Translators: Default name for files.
-#: src/utils/media/mod.rs:40
+#: src/utils/media/mod.rs:42
 msgid "file"
 msgstr "dosya"
 
 #: src/window.blp:80
 msgid "Session"
 msgstr "Oturum"
+
+#~ msgid "Play {filename}"
+#~ msgstr "{filename} çal"
+
+#~ msgid "Unknown duration"
+#~ msgstr "Bilinmeyen süre"
