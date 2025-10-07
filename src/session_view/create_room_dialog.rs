@@ -188,7 +188,7 @@ mod imp {
                 request.visibility = Visibility::Private;
 
                 if self.encryption.is_active() {
-                    let event = InitialStateEvent::new(
+                    let event = InitialStateEvent::with_empty_state_key(
                         RoomEncryptionEventContent::with_recommended_defaults(),
                     );
                     request.initial_state = vec![event.to_raw_any()];
