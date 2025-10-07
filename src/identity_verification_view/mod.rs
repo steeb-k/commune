@@ -23,7 +23,7 @@ use self::{
     scan_qr_code_page::ScanQrCodePage, wait_for_other_page::WaitForOtherPage,
 };
 use crate::{
-    session::model::{IdentityVerification, VerificationState},
+    session::{IdentityVerification, VerificationState},
     utils::BoundObject,
 };
 

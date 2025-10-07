@@ -8,7 +8,7 @@ use ruma::events::{
 
 use crate::{
     components::{CheckLoadingRow, LoadingButton, UnsavedChangesResponse, unsaved_changes_dialog},
-    session::model::{JoinRuleValue, Room},
+    session::{JoinRuleValue, Room},
     toast,
 };
 

@@ -6,7 +6,7 @@ use tracing::warn;
 
 use crate::{
     components::{MediaContentViewer, ScaleRevealer},
-    session::model::Room,
+    session::Room,
     spawn, toast,
     utils::matrix::VisualMediaMessage,
 };

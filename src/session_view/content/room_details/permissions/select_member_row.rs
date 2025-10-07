@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
-use crate::{session::model::Member, utils::bool_to_accessible_tristate};
+use crate::{session::Member, utils::bool_to_accessible_tristate};
 
 mod imp {
     use std::cell::{Cell, RefCell};

@@ -7,7 +7,7 @@ use crate::{
     components::{Avatar, LoadingButton},
     gettext_f, ngettext_f,
     prelude::*,
-    session::model::RemoteRoom,
+    session::RemoteRoom,
     toast,
     utils::{matrix::MatrixIdUri, string::linkify},
 };

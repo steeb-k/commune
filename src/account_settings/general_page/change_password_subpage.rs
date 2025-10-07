@@ -6,7 +6,7 @@ use tracing::error;
 
 use crate::{
     components::{AuthDialog, AuthError, LoadingButtonRow},
-    session::model::Session,
+    session::Session,
     toast,
     utils::matrix::validate_password,
 };

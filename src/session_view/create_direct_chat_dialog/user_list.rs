@@ -3,7 +3,7 @@ use ruma::UserId;
 use tracing::error;
 
 use super::DirectChatUser;
-use crate::{prelude::*, session::model::Session, spawn, spawn_tokio, utils::LoadingState};
+use crate::{prelude::*, session::Session, spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::cell::{Cell, RefCell};

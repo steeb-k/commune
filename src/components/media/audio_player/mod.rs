@@ -11,7 +11,7 @@ mod waveform_paintable;
 use self::waveform::Waveform;
 use crate::{
     MEDIA_FILE_NOTIFIER,
-    session::model::Session,
+    session::Session,
     spawn,
     utils::{
         File, LoadingState, OneshotNotifier,

@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone};
 
 use crate::{
     components::{Avatar, LoadingButton},
-    session::model::{Room, RoomCategory, TargetRoomCategory},
+    session::{Room, RoomCategory, TargetRoomCategory},
     toast,
     utils::matrix::MatrixIdUri,
 };

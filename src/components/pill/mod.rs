@@ -15,7 +15,7 @@ pub use self::{
 use super::{Avatar, AvatarImageSafetySetting, RoomPreviewDialog, UserProfileDialog};
 use crate::{
     prelude::*,
-    session::model::{Member, RemoteRoom, Room},
+    session::{Member, RemoteRoom, Room},
     session_view::SessionView,
     utils::{BoundObject, key_bindings},
 };

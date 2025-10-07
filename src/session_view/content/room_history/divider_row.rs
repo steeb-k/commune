@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 
 use crate::{
-    session::model::{VirtualItem, VirtualItemKind},
+    session::{VirtualItem, VirtualItemKind},
     utils::BoundObject,
 };
 

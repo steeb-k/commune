@@ -13,7 +13,7 @@ use tracing::error;
 use super::InviteItem;
 use crate::{
     prelude::*,
-    session::model::{Member, Membership, Room, User},
+    session::{Member, Membership, Room, User},
     spawn, spawn_tokio,
 };
 

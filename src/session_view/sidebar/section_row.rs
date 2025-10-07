@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 
 use crate::{
-    session::model::{HighlightFlags, RoomCategory, SidebarSection, SidebarSectionName},
+    session::{HighlightFlags, RoomCategory, SidebarSection, SidebarSectionName},
     utils::{BoundObject, TemplateCallbacks},
 };
 

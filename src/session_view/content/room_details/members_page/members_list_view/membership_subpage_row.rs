@@ -2,7 +2,7 @@ use gettextrs::npgettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::{
-    session::model::MembershipListKind,
+    session::MembershipListKind,
     session_view::content::room_details::membership_subpage_item::MembershipSubpageItem,
 };
 

@@ -14,7 +14,7 @@ use super::matrix::{AT_ROOM, MatrixIdUri, find_at_room};
 use crate::{
     components::{AvatarImageSafetySetting, LabelWithWidgets, Pill},
     prelude::*,
-    session::model::Room,
+    session::Room,
 };
 
 /// The prefix for an email URI.

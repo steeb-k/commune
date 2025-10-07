@@ -15,7 +15,7 @@ use super::StateCreation;
 use crate::{
     gettext_f,
     prelude::*,
-    session::model::{Event, Member},
+    session::{Event, Member},
     utils::BoundObjectWeakRef,
 };
 

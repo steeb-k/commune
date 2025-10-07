@@ -20,7 +20,7 @@ use super::{
 use crate::{
     components::{AtRoom, Pill, PillSource},
     prelude::*,
-    session::model::{Member, Room},
+    session::{Member, Room},
     utils::matrix::AT_ROOM,
 };
 

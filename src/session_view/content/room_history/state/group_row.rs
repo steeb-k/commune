@@ -5,7 +5,7 @@ use super::StateGroupItemRow;
 use crate::{
     ngettext_f,
     prelude::*,
-    session::model::{Event, Room},
+    session::{Event, Room},
     session_view::content::room_history::ReadReceiptsList,
     utils::{BoundObject, GroupingListGroup, key_bindings},
 };

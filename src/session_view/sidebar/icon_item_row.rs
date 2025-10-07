@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
-use crate::session::model::{SidebarIconItem, SidebarIconItemType};
+use crate::session::{SidebarIconItem, SidebarIconItemType};
 
 mod imp {
     use std::cell::RefCell;

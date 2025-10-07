@@ -4,7 +4,7 @@ use gtk::{gio, glib};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
-use crate::{components::LoadingButtonRow, session::model::Session, spawn_tokio, toast};
+use crate::{components::LoadingButtonRow, session::Session, spawn_tokio, toast};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]

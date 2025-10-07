@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone};
 
 use super::reaction::MessageReaction;
-use crate::session::model::{MemberList, ReactionList};
+use crate::session::{MemberList, ReactionList};
 
 mod imp {
     use glib::subclass::InitializingObject;

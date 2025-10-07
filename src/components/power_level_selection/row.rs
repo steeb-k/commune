@@ -5,7 +5,7 @@ use ruma::{Int, events::room::power_levels::UserPowerLevel, int};
 use super::PowerLevelSelectionPopover;
 use crate::{
     components::{LoadingBin, RoleBadge},
-    session::model::Permissions,
+    session::Permissions,
 };
 
 mod imp {

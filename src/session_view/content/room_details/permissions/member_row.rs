@@ -10,7 +10,7 @@ use crate::{
         confirm_own_demotion_dialog, confirm_set_room_member_power_level_same_as_own_dialog,
     },
     prelude::*,
-    session::model::Permissions,
+    session::Permissions,
     utils::{BoundObject, key_bindings},
 };
 

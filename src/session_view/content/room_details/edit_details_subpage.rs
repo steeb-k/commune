@@ -11,7 +11,7 @@ use crate::{
         UnsavedChangesResponse, unsaved_changes_dialog,
     },
     prelude::*,
-    session::model::Room,
+    session::Room,
     spawn_tokio, toast,
     utils::{
         BoundObjectWeakRef, OngoingAsyncAction, TemplateCallbacks,

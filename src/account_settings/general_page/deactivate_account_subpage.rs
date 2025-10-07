@@ -8,7 +8,7 @@ use super::AccountSettings;
 use crate::{
     components::{AuthDialog, LoadingButtonRow},
     prelude::*,
-    session::model::Session,
+    session::Session,
     toast,
 };
 

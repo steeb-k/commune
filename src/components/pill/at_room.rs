@@ -2,7 +2,7 @@ use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::RoomId;
 
-use crate::{components::PillSource, prelude::*, session::model::Room};
+use crate::{components::PillSource, prelude::*, session::Room};
 
 mod imp {
     use std::cell::OnceCell;

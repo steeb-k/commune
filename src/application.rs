@@ -9,7 +9,7 @@ use crate::{
     GETTEXT_PACKAGE, Window, config,
     intent::SessionIntent,
     prelude::*,
-    session::model::{Session, SessionState},
+    session::{Session, SessionState},
     session_list::{FailedSession, SessionInfo, SessionList},
     spawn,
     system_settings::SystemSettings,

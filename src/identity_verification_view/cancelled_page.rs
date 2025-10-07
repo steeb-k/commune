@@ -5,7 +5,7 @@ use matrix_sdk::crypto::CancelInfo;
 use ruma::events::key::verification::cancel::CancelCode;
 
 use crate::{
-    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::IdentityVerification, toast,
     utils::BoundObjectWeakRef,
 };
 

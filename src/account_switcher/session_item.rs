@@ -4,7 +4,7 @@ use super::avatar_with_selection::AvatarWithSelection;
 use crate::{
     components::AvatarData,
     prelude::*,
-    session::model::Session,
+    session::Session,
     session_list::{FailedSession, SessionInfo},
 };
 

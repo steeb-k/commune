@@ -39,7 +39,7 @@ use crate::{
     components::{AvatarImageSafetySetting, CustomEntry, LabelWithWidgets, LoadingButton},
     gettext_f,
     prelude::*,
-    session::model::{Event, Member, Room, RoomListRoomInfo, Timeline},
+    session::{Event, Member, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
         Location, LocationError, TemplateCallbacks, TokioDrop,

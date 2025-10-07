@@ -22,7 +22,7 @@ mod password_page;
 
 use self::{in_browser_page::AuthDialogInBrowserPage, password_page::AuthDialogPasswordPage};
 use crate::{
-    components::ToastableDialog, prelude::*, session::model::Session, spawn_tokio, toast,
+    components::ToastableDialog, prelude::*, session::Session, spawn_tokio, toast,
     utils::OneshotNotifier,
 };
 

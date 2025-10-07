@@ -5,7 +5,7 @@ use tracing::error;
 use crate::{
     Application,
     secret::SESSION_ID_LENGTH,
-    session::model::{SessionSettings, StoredSessionSettings},
+    session::{SessionSettings, StoredSessionSettings},
 };
 
 mod imp {

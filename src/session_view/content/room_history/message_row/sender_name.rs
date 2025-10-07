@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone};
 
 use crate::{
     prelude::*,
-    session::model::{Member, Membership},
+    session::{Member, Membership},
     session_view::content::RoomHistory,
     utils::{BoundObject, key_bindings},
 };

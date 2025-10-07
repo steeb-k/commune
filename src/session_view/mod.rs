@@ -18,7 +18,7 @@ use crate::{
     components::{RoomPreviewDialog, UserProfileDialog},
     intent::SessionIntent,
     prelude::*,
-    session::model::{
+    session::{
         IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
     },

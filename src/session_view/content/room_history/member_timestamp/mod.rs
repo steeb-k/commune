@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*};
 
 pub mod row;
 
-use crate::session::model::Member;
+use crate::session::Member;
 
 mod imp {
     use std::cell::Cell;

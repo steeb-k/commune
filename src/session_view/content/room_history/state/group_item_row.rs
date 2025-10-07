@@ -4,7 +4,7 @@ use tracing::error;
 use super::StateContent;
 use crate::{
     prelude::*,
-    session::model::Event,
+    session::Event,
     session_view::content::room_history::{EventActionsGroup, RoomHistory},
     utils::{BoundObject, BoundObjectWeakRef, key_bindings},
 };

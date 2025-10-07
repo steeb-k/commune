@@ -7,9 +7,7 @@ mod import_export_keys_subpage;
 pub(super) use self::import_export_keys_subpage::{
     ImportExportKeysSubpage, ImportExportKeysSubpageMode,
 };
-use crate::session::model::{
-    CryptoIdentityState, RecoveryState, Session, SessionVerificationState,
-};
+use crate::session::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState};
 
 mod imp {
     use std::cell::RefCell;

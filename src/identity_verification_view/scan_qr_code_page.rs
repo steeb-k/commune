@@ -8,7 +8,7 @@ use crate::{
     components::{LoadingButton, QrCodeScanner},
     gettext_f,
     prelude::*,
-    session::model::{IdentityVerification, VerificationSupportedMethods},
+    session::{IdentityVerification, VerificationSupportedMethods},
     spawn, toast,
     utils::BoundConstructOnlyObject,
 };

@@ -38,7 +38,7 @@ use self::{
 };
 use crate::{
     components::UserPage,
-    session::model::{MemberList, MembershipListKind, Room},
+    session::{MemberList, MembershipListKind, Room},
     toast,
 };
 

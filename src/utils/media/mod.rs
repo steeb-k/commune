@@ -128,7 +128,7 @@ pub(crate) enum MediaFileError {
     File(#[from] std::io::Error),
     /// We could not access the Matrix client via the [`Session`].
     ///
-    /// [`Session`]: crate::session::model::Session
+    /// [`Session`]: crate::session::Session
     #[error("Could not access session")]
     NoSession,
 }

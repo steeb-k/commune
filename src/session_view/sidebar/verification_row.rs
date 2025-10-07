@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
-use crate::session::model::IdentityVerification;
+use crate::session::IdentityVerification;
 
 mod imp {
     use std::cell::RefCell;

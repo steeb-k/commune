@@ -9,7 +9,7 @@ use ruma::{
 };
 
 use crate::{
-    session::model::Room,
+    session::Room,
     utils::matrix::{MediaMessage, VisualMediaMessage, timestamp_to_date},
 };
 

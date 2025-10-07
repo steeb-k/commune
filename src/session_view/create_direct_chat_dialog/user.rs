@@ -4,7 +4,7 @@ use matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
 use crate::{
     components::PillSource,
     prelude::*,
-    session::model::{Room, Session, User},
+    session::{Room, Session, User},
 };
 
 mod imp {

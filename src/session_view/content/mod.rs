@@ -13,7 +13,7 @@ use self::{
 };
 use crate::{
     identity_verification_view::IdentityVerificationView,
-    session::model::{
+    session::{
         IdentityVerification, Room, RoomCategory, Session, SidebarIconItem, SidebarIconItemType,
     },
     utils::BoundObject,

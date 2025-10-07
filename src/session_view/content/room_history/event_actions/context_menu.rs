@@ -2,11 +2,11 @@ use gettextrs::gettext;
 use gtk::{gio, prelude::*};
 
 use super::QuickReactionChooser;
-use crate::session::model::ReactionList;
+use crate::session::ReactionList;
 
 /// Helper struct for the context menu of a row presenting an [`Event`].
 ///
-/// [`Event`]: crate::session::model::Event
+/// [`Event`]: crate::session::Event
 #[derive(Debug)]
 pub(crate) struct EventActionsContextMenu {
     /// The popover of the context menu.

@@ -16,7 +16,7 @@ pub use self::{
 };
 use crate::{
     components::AnimatedImagePaintable,
-    session::model::Room,
+    session::Room,
     utils::{BoundObject, BoundObjectWeakRef, CountedRef},
 };
 

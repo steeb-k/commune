@@ -7,7 +7,7 @@ use crate::{
     contrib::QRCode,
     gettext_f,
     prelude::*,
-    session::model::{IdentityVerification, VerificationSupportedMethods},
+    session::{IdentityVerification, VerificationSupportedMethods},
     toast,
     utils::BoundObjectWeakRef,
 };

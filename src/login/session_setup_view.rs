@@ -8,7 +8,7 @@ use crate::{
     components::crypto::{
         CryptoIdentitySetupNextStep, CryptoIdentitySetupView, CryptoRecoverySetupView,
     },
-    session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
+    session::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
     spawn, spawn_tokio,
 };
 

@@ -13,7 +13,7 @@ use super::{SUPPORTED_BLOCK_ELEMENTS, inline_html::InlineHtmlBuilder};
 use crate::{
     components::{AtRoom, LabelWithWidgets},
     prelude::*,
-    session::model::Room,
+    session::Room,
 };
 
 /// The immutable config fields to build a HTML widget tree.

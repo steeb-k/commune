@@ -10,7 +10,7 @@ use tracing::error;
 
 use super::ExploreServer;
 use crate::{
-    session::model::{RemoteRoom, Session},
+    session::{RemoteRoom, Session},
     spawn, spawn_tokio,
     utils::{LoadingState, matrix::MatrixRoomIdUri},
 };

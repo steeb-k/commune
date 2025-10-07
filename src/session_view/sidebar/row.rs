@@ -10,7 +10,7 @@ use super::{
 use crate::{
     components::{ContextMenuBin, confirm_leave_room_dialog},
     prelude::*,
-    session::model::{
+    session::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
         SidebarIconItemType, SidebarSection, TargetRoomCategory, User,
     },

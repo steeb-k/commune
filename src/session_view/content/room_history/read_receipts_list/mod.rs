@@ -8,7 +8,7 @@ use crate::{
     components::OverlappingAvatars,
     i18n::{gettext_f, ngettext_f},
     prelude::*,
-    session::model::{Member, MemberList, UserReadReceipt},
+    session::{Member, MemberList, UserReadReceipt},
     utils::{BoundObjectWeakRef, key_bindings},
 };
 

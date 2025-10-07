@@ -26,7 +26,7 @@ use crate::{
     components::UserProfileDialog,
     gettext_f,
     prelude::*,
-    session::model::{Event, EventHeaderState, Member},
+    session::{Event, EventHeaderState, Member},
     system_settings::ClockFormat,
     utils::BoundObject,
 };

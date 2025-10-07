@@ -12,7 +12,7 @@ use super::{
 use crate::{
     components::AudioPlayerMessage,
     prelude::*,
-    session::model::{Event, Member, Room},
+    session::{Event, Member, Room},
     session_view::content::room_history::message_toolbar::MessageEventSource,
     spawn,
     utils::matrix::{MediaMessage, MessageCacheKey},

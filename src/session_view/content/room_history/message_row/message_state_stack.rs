@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*};
 
-use crate::session::model::MessageState;
+use crate::session::MessageState;
 
 /// The number of seconds for which we show the icon acknowledging that the
 /// message was sent.

@@ -9,7 +9,7 @@ use crate::{
     Window,
     components::{AnimatedImagePaintable, VideoPlayer},
     gettext_f,
-    session::model::Room,
+    session::Room,
     spawn,
     utils::{
         CountedRef, File, LoadingState, TemplateCallbacks, key_bindings,

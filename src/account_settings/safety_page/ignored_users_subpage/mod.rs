@@ -5,7 +5,7 @@ use tracing::error;
 mod ignored_user_row;
 
 use self::ignored_user_row::IgnoredUserRow;
-use crate::session::model::Session;
+use crate::session::Session;
 
 mod imp {
     use std::cell::RefCell;

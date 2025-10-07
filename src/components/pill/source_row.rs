@@ -1,7 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::{AtRoom, Avatar, AvatarImageSafetySetting, PillSource};
-use crate::session::model::Room;
+use crate::session::Room;
 
 mod imp {
     use std::cell::RefCell;

@@ -29,7 +29,7 @@ use crate::{
     },
     gettext_f,
     prelude::*,
-    session::model::{
+    session::{
         HistoryVisibilityValue, Member, MemberList, MembershipListKind, NotificationsRoomSetting,
         Room, RoomCategory,
     },

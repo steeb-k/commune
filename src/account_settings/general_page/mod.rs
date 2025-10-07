@@ -17,7 +17,7 @@ use super::AccountSettings;
 use crate::{
     components::{ActionButton, ActionState, ButtonCountRow, CopyableRow, EditableAvatar},
     prelude::*,
-    session::model::Session,
+    session::Session,
     spawn, spawn_tokio, toast,
     utils::{OngoingAsyncAction, TemplateCallbacks, media::FileInfo},
 };

@@ -4,7 +4,7 @@ use gtk::glib;
 mod members_list_view;
 
 use self::members_list_view::MembersListView;
-use crate::session::model::{MemberList, MembershipListKind, Room};
+use crate::session::{MemberList, MembershipListKind, Room};
 
 mod imp {
     use glib::subclass::InitializingObject;

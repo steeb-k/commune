@@ -4,7 +4,7 @@ use ruma::ServerName;
 use tracing::error;
 
 use super::{ExploreServer, ExploreServerList, ExploreServerRow};
-use crate::session::model::Session;
+use crate::session::Session;
 
 mod imp {
     use std::marker::PhantomData;

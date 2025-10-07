@@ -4,7 +4,7 @@ use tracing::error;
 
 use super::UserSessionRow;
 use crate::{
-    session::model::{Session, UserSession, UserSessionsList},
+    session::{Session, UserSession, UserSessionsList},
     utils::{BoundObject, LoadingState},
 };
 

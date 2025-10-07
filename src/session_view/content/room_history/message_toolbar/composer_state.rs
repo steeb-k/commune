@@ -19,7 +19,7 @@ use tracing::{error, warn};
 use super::ComposerParser;
 use crate::{
     components::{AvatarImageSafetySetting, Pill, PillSource},
-    session::model::{Event, Member, Room, Timeline},
+    session::{Event, Member, Room, Timeline},
     spawn, spawn_tokio,
     utils::matrix::{AT_ROOM, find_at_room, find_html_mentions},
 };

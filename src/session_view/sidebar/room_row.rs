@@ -6,7 +6,7 @@ use crate::{
     components::Avatar,
     i18n::{gettext_f, ngettext_f},
     prelude::*,
-    session::model::{HighlightFlags, Room, RoomCategory},
+    session::{HighlightFlags, Room, RoomCategory},
     utils::BoundObject,
 };
 

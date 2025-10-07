@@ -2,7 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::events::room::message::FormattedBody;
 
 use super::{ContentFormat, text::MessageText};
-use crate::{prelude::*, session::model::Room};
+use crate::{prelude::*, session::Room};
 
 mod imp {
     use std::marker::PhantomData;

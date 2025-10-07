@@ -1,7 +1,7 @@
 use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
 
 use crate::{
-    session::model::{JoinRule, Member, Membership, Room, RoomAliases, RoomCategory, RoomList},
+    session::{JoinRule, Member, Membership, Room, RoomAliases, RoomCategory, RoomList},
     utils::{ExpressionListModel, expression},
 };
 

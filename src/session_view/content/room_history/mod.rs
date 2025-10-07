@@ -42,7 +42,7 @@ use crate::{
     components::{DragOverlay, confirm_leave_room_dialog},
     ngettext_f,
     prelude::*,
-    session::model::{
+    session::{
         Event, MemberList, Membership, MembershipListKind, ReceiptPosition, Room,
         TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
     },

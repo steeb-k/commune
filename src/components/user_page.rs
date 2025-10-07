@@ -21,7 +21,7 @@ use crate::{
     },
     gettext_f,
     prelude::*,
-    session::model::{Member, Membership, Permissions, Room, User},
+    session::{Member, Membership, Permissions, Room, User},
     toast,
     utils::BoundObject,
 };

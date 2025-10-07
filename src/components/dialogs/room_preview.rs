@@ -8,7 +8,7 @@ use crate::{
     components::{Avatar, LoadingButton},
     i18n::ngettext_f,
     prelude::*,
-    session::model::{RemoteRoom, Session},
+    session::{RemoteRoom, Session},
     toast,
     utils::{
         LoadingState,

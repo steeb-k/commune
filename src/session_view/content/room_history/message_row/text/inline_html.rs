@@ -11,7 +11,7 @@ use tracing::debug;
 use crate::{
     components::Pill,
     prelude::*,
-    session::model::Room,
+    session::Room,
     utils::string::{Linkifier, PangoStrMutExt},
 };
 

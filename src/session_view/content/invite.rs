@@ -9,7 +9,7 @@ use crate::{
     },
     gettext_f,
     prelude::*,
-    session::model::{MemberList, Room, RoomCategory, TargetRoomCategory, User},
+    session::{MemberList, Room, RoomCategory, TargetRoomCategory, User},
     toast,
     utils::matrix::MatrixIdUri,
 };

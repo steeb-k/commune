@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 
-use crate::{gettext_f, prelude::*, session::model::IdentityVerification};
+use crate::{gettext_f, prelude::*, session::IdentityVerification};
 
 mod imp {
     use std::cell::RefCell;

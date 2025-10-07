@@ -18,7 +18,7 @@ use super::ContentFormat;
 use crate::{
     components::{AtRoom, LabelWithWidgets},
     prelude::*,
-    session::model::{Member, Room},
+    session::{Member, Room},
     utils::{
         BoundObjectWeakRef, EMOJI_REGEX,
         string::{Linkifier, PangoStrMutExt},

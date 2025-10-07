@@ -3,7 +3,7 @@ use gtk::{
     glib::{prelude::*, subclass::prelude::*},
 };
 
-use crate::session::model::MembershipListKind;
+use crate::session::MembershipListKind;
 
 mod imp {
     use std::cell::{Cell, OnceCell};

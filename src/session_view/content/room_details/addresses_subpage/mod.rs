@@ -12,7 +12,7 @@ use crate::{
     components::{EntryAddRow, LoadingButton, RemovableRow, SubstringEntryRow},
     gettext_f,
     prelude::*,
-    session::model::{AddAltAliasError, RegisterLocalAliasError, Room},
+    session::{AddAltAliasError, RegisterLocalAliasError, Room},
     spawn, toast,
     utils::{PlaceholderObject, SingleItemListModel},
 };

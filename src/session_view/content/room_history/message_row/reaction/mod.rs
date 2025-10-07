@@ -6,7 +6,7 @@ use self::reaction_popover::ReactionPopover;
 use crate::{
     gettext_f, ngettext_f,
     prelude::*,
-    session::model::{Member, MemberList, ReactionData, ReactionGroup},
+    session::{Member, MemberList, ReactionData, ReactionGroup},
     session_view::content::room_history::member_timestamp::MemberTimestamp,
     utils::{BoundObjectWeakRef, EMOJI_REGEX, key_bindings},
 };

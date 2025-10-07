@@ -9,7 +9,7 @@ mod ignored_users_subpage;
 pub(super) use self::ignored_users_subpage::IgnoredUsersSubpage;
 use crate::{
     components::{ButtonCountRow, CheckLoadingRow, SwitchLoadingRow},
-    session::model::Session,
+    session::Session,
     spawn, toast,
 };
 

@@ -3,7 +3,7 @@ use gtk::{gdk, glib};
 use ruma::{Int, events::room::power_levels::UserPowerLevel};
 
 use super::PowerLevelSelectionPopover;
-use crate::{components::RoleBadge, session::model::Permissions};
+use crate::{components::RoleBadge, session::Permissions};
 
 mod imp {
     use std::cell::{Cell, RefCell};

@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
 use super::StateContent;
-use crate::{session::model::Event, session_view::content::room_history::ReadReceiptsList};
+use crate::{session::Event, session_view::content::room_history::ReadReceiptsList};
 
 mod imp {
     use std::cell::RefCell;

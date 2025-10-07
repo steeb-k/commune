@@ -3,7 +3,7 @@ use ruma::api::client::media::get_content_thumbnail::v3::Method;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
-    session::model::Session,
+    session::Session,
     spawn,
     utils::{
         key_bindings,

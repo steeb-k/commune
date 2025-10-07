@@ -9,7 +9,7 @@ use tracing::error;
 
 use crate::{
     components::{CheckLoadingRow, LoadingButton, UnsavedChangesResponse, unsaved_changes_dialog},
-    session::model::{HistoryVisibilityValue, Room},
+    session::{HistoryVisibilityValue, Room},
     spawn_tokio, toast,
     utils::BoundObjectWeakRef,
 };

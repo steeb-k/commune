@@ -5,7 +5,7 @@ use crate::{
     components::OverlappingAvatars,
     i18n::{gettext_f, ngettext_f},
     prelude::*,
-    session::model::{Member, TypingList},
+    session::{Member, TypingList},
     utils::BoundObjectWeakRef,
 };
 

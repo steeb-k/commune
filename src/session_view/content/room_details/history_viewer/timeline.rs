@@ -15,7 +15,7 @@ use tracing::error;
 use super::HistoryViewerEvent;
 use crate::{
     components::LoadingRow,
-    session::model::Room,
+    session::Room,
     spawn_tokio,
     utils::{LoadingState, SingleItemListModel},
 };

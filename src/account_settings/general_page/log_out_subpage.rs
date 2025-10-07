@@ -5,7 +5,7 @@ use gtk::glib;
 use crate::{
     account_settings::AccountSettings,
     components::LoadingButtonRow,
-    session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
+    session::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
     toast,
 };
 

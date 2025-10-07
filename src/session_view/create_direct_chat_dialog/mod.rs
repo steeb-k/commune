@@ -9,7 +9,7 @@ use crate::{
     Window,
     components::{PillSource, PillSourceRow},
     gettext,
-    session::model::{Session, User},
+    session::{Session, User},
 };
 
 /// A page of the [`CreateDirectChatDialog`].

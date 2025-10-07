@@ -3,7 +3,7 @@ use ruma::{OwnedServerName, ServerName, api::client::thirdparty::get_protocols};
 use tracing::error;
 
 use super::ExploreServer;
-use crate::{prelude::*, session::model::Session, spawn, spawn_tokio};
+use crate::{prelude::*, session::Session, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::RefCell;

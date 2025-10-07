@@ -4,7 +4,7 @@ use gtk::{
     glib::{clone, closure_local},
 };
 
-use crate::{session::model::ReactionList, utils::BoundObject};
+use crate::{session::ReactionList, utils::BoundObject};
 
 /// A quick reaction.
 #[derive(Debug, Clone, Copy)]

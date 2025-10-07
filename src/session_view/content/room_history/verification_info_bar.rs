@@ -7,7 +7,7 @@ use crate::{
     components::LoadingButton,
     gettext_f,
     prelude::*,
-    session::model::{IdentityVerification, VerificationState},
+    session::{IdentityVerification, VerificationState},
     toast,
     utils::BoundObjectWeakRef,
 };

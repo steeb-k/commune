@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use crate::{
     components::{Avatar, AvatarData},
     prelude::*,
-    session::model::Session,
+    session::Session,
     session_list::{FailedSession, SessionInfo},
 };
 

@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 
 use crate::{
-    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::IdentityVerification, toast,
     utils::BoundObjectWeakRef,
 };
 

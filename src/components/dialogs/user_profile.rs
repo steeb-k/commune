@@ -6,7 +6,7 @@ use super::ToastableDialog;
 use crate::{
     components::UserPage,
     prelude::*,
-    session::model::{Member, Session, User},
+    session::{Member, Session, User},
     utils::LoadingState,
 };
 

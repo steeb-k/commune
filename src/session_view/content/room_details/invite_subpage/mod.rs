@@ -15,7 +15,7 @@ use self::{
 use crate::{
     components::{LoadingButton, PillSearchEntry, PillSource},
     prelude::*,
-    session::model::{Room, User},
+    session::{Room, User},
     toast,
 };
 

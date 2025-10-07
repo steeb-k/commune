@@ -7,7 +7,7 @@ use gtk::{
 use tracing::error;
 
 use super::{MemberPowerLevel, PermissionsMemberRow, PrivilegedMembers};
-use crate::{session::model::User, utils::expression};
+use crate::{session::User, utils::expression};
 
 mod imp {
     use std::{cell::Cell, marker::PhantomData};

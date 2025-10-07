@@ -9,7 +9,7 @@ use crate::{
     components::{ActionButton, ActionState, AuthError, LoadingButtonRow},
     gettext_f,
     prelude::*,
-    session::model::UserSession,
+    session::UserSession,
     toast,
     utils::{BoundConstructOnlyObject, BoundObject, TemplateCallbacks},
 };

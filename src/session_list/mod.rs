@@ -16,7 +16,7 @@ pub(crate) use self::{
 use crate::{
     prelude::*,
     secret::{Secret, StoredSession},
-    session::model::{Session, SessionState},
+    session::{Session, SessionState},
     spawn, spawn_tokio,
     utils::{DataType, LoadingState},
 };

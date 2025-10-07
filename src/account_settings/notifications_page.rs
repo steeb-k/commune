@@ -6,7 +6,7 @@ use tracing::error;
 use crate::{
     components::{CheckLoadingRow, EntryAddRow, RemovableRow, SwitchLoadingRow},
     i18n::gettext_f,
-    session::model::{NotificationsGlobalSetting, NotificationsSettings},
+    session::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
     utils::{BoundObjectWeakRef, PlaceholderObject, SingleItemListModel},
 };

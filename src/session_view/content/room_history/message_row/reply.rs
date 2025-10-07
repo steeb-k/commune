@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::glib;
 
-use crate::session::model::User;
+use crate::session::User;
 
 mod imp {
     use std::cell::{Cell, RefCell};

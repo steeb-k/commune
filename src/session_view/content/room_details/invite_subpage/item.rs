@@ -1,6 +1,6 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use crate::session::model::User;
+use crate::session::User;
 
 mod imp {
     use std::{

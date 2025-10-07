@@ -6,7 +6,7 @@ use gtk::{gio, glib, glib::clone};
 
 use super::sas_emoji::SasEmoji;
 use crate::{
-    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::IdentityVerification, toast,
     utils::BoundObjectWeakRef,
 };
 

@@ -6,7 +6,7 @@ use super::{EventActionsGroup, MessageRow, RoomHistory, StateRow};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
-    session::model::Event,
+    session::Event,
     session_view::content::room_history::message_toolbar::ComposerState,
     utils::{BoundObject, BoundObjectWeakRef},
 };

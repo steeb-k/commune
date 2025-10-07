@@ -37,7 +37,7 @@ use crate::{
     components::{AvatarImageSafetySetting, Pill},
     prelude::*,
     secret::StoredSession,
-    session::model::Room,
+    session::Room,
 };
 
 /// The result of a password validation.

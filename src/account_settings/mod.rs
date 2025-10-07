@@ -23,7 +23,7 @@ use self::{
 };
 use crate::{
     components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
-    session::model::Session,
+    session::Session,
     spawn, spawn_tokio,
     utils::BoundObjectWeakRef,
 };

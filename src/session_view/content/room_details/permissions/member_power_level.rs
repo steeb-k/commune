@@ -13,7 +13,7 @@ use tracing::error;
 
 use crate::{
     prelude::*,
-    session::model::{MemberRole, Permissions, User},
+    session::{MemberRole, Permissions, User},
     utils::BoundObjectWeakRef,
 };
 

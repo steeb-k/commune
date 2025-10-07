@@ -7,7 +7,7 @@ use crate::{
     i18n::gettext_f,
     ngettext_f,
     prelude::*,
-    session::model::{Member, Membership, Room, RoomCategory, User},
+    session::{Member, Membership, Room, RoomCategory, User},
 };
 
 /// Show a dialog to confirm leaving a room.

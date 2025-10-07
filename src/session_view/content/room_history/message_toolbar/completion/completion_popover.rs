@@ -6,7 +6,7 @@ use secular::normalized_lower_lay_string;
 use super::{CompletionMemberList, CompletionRoomList};
 use crate::{
     components::{AvatarImageSafetySetting, Pill, PillSource, PillSourceRow},
-    session::model::Room,
+    session::Room,
     session_view::content::room_history::message_toolbar::MessageToolbar,
     utils::BoundObject,
 };

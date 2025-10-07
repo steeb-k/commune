@@ -2,7 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     components::{Avatar, RoleBadge},
-    session::model::Member,
+    session::Member,
     utils::expression,
 };
 

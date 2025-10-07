@@ -20,7 +20,7 @@ use crate::{
     account_settings::{AccountSettings, AccountSettingsSubpage},
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
-    session::model::{
+    session::{
         CryptoIdentityState, RecoveryState, RoomCategory, Session, SessionVerificationState,
         SidebarListModel, SidebarSection, TargetRoomCategory, User,
     },

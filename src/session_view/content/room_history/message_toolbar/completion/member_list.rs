@@ -7,7 +7,7 @@ use gtk::{
 
 use crate::{
     components::PillSource,
-    session::model::{Member, MembershipListKind, Room},
+    session::{Member, MembershipListKind, Room},
     utils::{BoundObjectWeakRef, ExpressionListModel, SingleItemListModel, expression},
 };
 

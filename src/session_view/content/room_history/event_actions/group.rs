@@ -11,7 +11,7 @@ use super::EventPropertiesDialog;
 use crate::{
     components::{RoomMemberDestructiveAction, confirm_room_member_destructive_action_dialog},
     prelude::*,
-    session::model::{Event, Membership, MessageState, Room},
+    session::{Event, Membership, MessageState, Room},
     spawn, spawn_tokio, toast,
 };
 

@@ -9,7 +9,7 @@ use tracing::{debug, error, warn};
 
 use crate::{
     components::{AuthDialog, AuthError, LoadingButton, SwitchLoadingRow},
-    session::model::{RecoveryState, Session},
+    session::{RecoveryState, Session},
     spawn_tokio, toast,
 };
 

@@ -50,7 +50,7 @@ use crate::{
 /// ```no_run
 /// use gettextts::gettext;
 /// use crate::toast;
-/// use crate::session::model::{Room, User};
+/// use crate::session::{Room, User};
 ///
 /// # let session = unimplemented!();
 /// # let room_id = unimplemented!();

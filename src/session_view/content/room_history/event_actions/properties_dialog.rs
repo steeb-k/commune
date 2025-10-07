@@ -6,7 +6,7 @@ use sourceview::prelude::*;
 use crate::{
     components::{CopyableRow, ToastableDialog, UserProfileDialog},
     prelude::*,
-    session::model::Event,
+    session::Event,
     toast, utils,
     utils::TemplateCallbacks,
 };

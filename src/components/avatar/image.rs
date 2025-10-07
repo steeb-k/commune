@@ -10,7 +10,7 @@ use ruma::{
 };
 
 use crate::{
-    session::model::Session,
+    session::Session,
     spawn,
     utils::{
         CountedRef,

@@ -12,7 +12,7 @@ use tracing::error;
 mod room_version;
 
 use self::room_version::RoomVersion;
-use crate::{session::model::JoinRuleValue, utils::OneshotNotifier};
+use crate::{session::JoinRuleValue, utils::OneshotNotifier};
 
 mod imp {
     use std::cell::OnceCell;

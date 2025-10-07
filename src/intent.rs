@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
 
-use crate::{session::model::VerificationKey, utils::matrix::MatrixIdUri};
+use crate::{session::VerificationKey, utils::matrix::MatrixIdUri};
 
 /// Intents that can be handled by a session.
 ///

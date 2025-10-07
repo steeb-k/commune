@@ -7,7 +7,7 @@ use ruma::{Int, OwnedUserId};
 
 use super::MemberPowerLevel;
 use crate::{
-    session::model::{Permissions, User},
+    session::{Permissions, User},
     utils::BoundObjectWeakRef,
 };
 

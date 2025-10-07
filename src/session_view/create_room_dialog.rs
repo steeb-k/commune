@@ -18,7 +18,7 @@ use crate::{
     Window,
     components::{LoadingButton, SubstringEntryRow, ToastableDialog},
     prelude::*,
-    session::model::Session,
+    session::Session,
     spawn_tokio, toast,
 };
 

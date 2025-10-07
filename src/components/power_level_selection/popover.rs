@@ -3,7 +3,7 @@ use gtk::{glib, glib::clone};
 use ruma::events::room::power_levels::UserPowerLevel;
 
 use crate::{
-    session::model::{POWER_LEVEL_ADMIN, POWER_LEVEL_MAX, POWER_LEVEL_MOD, Permissions},
+    session::{POWER_LEVEL_ADMIN, POWER_LEVEL_MAX, POWER_LEVEL_MOD, Permissions},
     utils::BoundObject,
 };
 

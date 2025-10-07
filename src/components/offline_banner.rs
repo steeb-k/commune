@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::clone};
 
-use crate::{session::model::Session, utils::BoundObjectWeakRef};
+use crate::{session::Session, utils::BoundObjectWeakRef};
 
 mod imp {
     use std::cell::RefCell;

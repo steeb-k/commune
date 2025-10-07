@@ -15,7 +15,7 @@ use crate::{
     login::Login,
     prelude::*,
     secret::SESSION_ID_LENGTH,
-    session::model::{Session, SessionState},
+    session::{Session, SessionState},
     session_list::{FailedSession, SessionInfo},
     session_view::SessionView,
     toast,

@@ -16,7 +16,7 @@ use crate::{
         ButtonCountRow, LoadingButton, PowerLevelSelectionRow, UnsavedChangesResponse,
         unsaved_changes_dialog,
     },
-    session::model::{POWER_LEVEL_MAX, Permissions},
+    session::{POWER_LEVEL_MAX, Permissions},
     toast,
     utils::BoundObjectWeakRef,
 };

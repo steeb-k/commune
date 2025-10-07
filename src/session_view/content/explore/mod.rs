@@ -17,7 +17,7 @@ use self::{
 use crate::{
     components::LoadingRow,
     prelude::*,
-    session::model::{RemoteRoom, Session},
+    session::{RemoteRoom, Session},
     utils::{LoadingState, SingleItemListModel},
 };
 

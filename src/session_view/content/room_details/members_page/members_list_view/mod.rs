@@ -12,7 +12,7 @@ use self::{item_row::ItemRow, membership_subpage_row::MembershipSubpageRow};
 use crate::{
     components::LoadingRow,
     prelude::*,
-    session::model::{Member, MemberList, MembershipListKind, Room},
+    session::{Member, MemberList, MembershipListKind, Room},
     session_view::content::room_details::MembershipSubpageItem,
     utils::{BoundObjectWeakRef, ExpressionListModel, LoadingState, expression},
 };

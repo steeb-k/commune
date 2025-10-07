@@ -10,7 +10,7 @@ use super::{CryptoRecoverySetupInitialPage, CryptoRecoverySetupView};
 use crate::{
     components::{AuthDialog, AuthError, LoadingButton},
     identity_verification_view::IdentityVerificationView,
-    session::model::{
+    session::{
         CryptoIdentityState, IdentityVerification, RecoveryState, Session, SessionVerificationState,
     },
     spawn, toast,

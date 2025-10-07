@@ -4,7 +4,7 @@ use gtk::glib;
 use super::MembershipSubpageRow;
 use crate::{
     prelude::*,
-    session::model::Member,
+    session::Member,
     session_view::content::room_details::{MemberRow, MembershipSubpageItem},
 };
 

@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use super::Pill;
 use crate::{
     components::{AvatarData, AvatarImageSafetySetting},
-    session::model::Room,
+    session::Room,
 };
 
 mod imp {

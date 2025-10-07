@@ -13,7 +13,7 @@ use crate::{
         confirm_set_room_member_power_level_same_as_own_dialog,
     },
     prelude::*,
-    session::model::{Member, Permissions},
+    session::{Member, Permissions},
     utils::expression,
 };
 

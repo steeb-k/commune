@@ -34,8 +34,8 @@ use self::{
 };
 use crate::{
     APP_HOMEPAGE_URL, APP_NAME, Application, RUNTIME, SETTINGS_KEY_CURRENT_SESSION, Window,
-    components::OfflineBanner, prelude::*, secret::Secret, session::model::Session, spawn,
-    spawn_tokio, toast,
+    components::OfflineBanner, prelude::*, secret::Secret, session::Session, spawn, spawn_tokio,
+    toast,
 };
 
 /// A page of the login stack.
