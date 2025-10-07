@@ -20,6 +20,7 @@ mod prelude;
 mod secret;
 mod session;
 mod session_list;
+mod session_view;
 mod system_settings;
 mod user_facing_error;
 mod utils;
