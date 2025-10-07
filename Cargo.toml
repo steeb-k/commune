@@ -2,6 +2,7 @@
 name = "fractal"
 version = "13.0.0-beta"
 authors = ["Julian Sparber <julian@sparber.net>"]
+license = "GPL-3.0-or-later"
 edition = "2024"
 rust-version = "1.88"
 publish = false
