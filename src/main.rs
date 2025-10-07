@@ -9,6 +9,7 @@ mod application;
 mod components;
 #[rustfmt::skip]
 mod config;
+mod account_settings;
 mod contrib;
 mod error_page;
 mod i18n;

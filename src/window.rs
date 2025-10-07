@@ -7,6 +7,7 @@ use tracing::{error, warn};
 use crate::{
     APP_ID, Application, PROFILE, SETTINGS_KEY_CURRENT_SESSION,
     account_chooser_dialog::AccountChooserDialog,
+    account_settings::AccountSettings,
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
     components::OfflineBanner,
     error_page::ErrorPage,
@@ -16,7 +17,7 @@ use crate::{
     secret::SESSION_ID_LENGTH,
     session::{
         model::{Session, SessionState},
-        view::{AccountSettings, SessionView},
+        view::SessionView,
     },
     session_list::{FailedSession, SessionInfo},
     toast,

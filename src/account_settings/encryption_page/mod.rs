@@ -19,9 +19,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/encryption_page/mod.ui"
-    )]
+    #[template(resource = "/org/gnome/Fractal/ui/account_settings/encryption_page/mod.ui")]
     #[properties(wrapper_type = super::EncryptionPage)]
     pub struct EncryptionPage {
         #[template_child]

@@ -16,8 +16,8 @@ use self::{
     icon_item_row::SidebarIconItemRow, room_row::SidebarRoomRow, row::SidebarRow,
     section_row::SidebarSectionRow, verification_row::SidebarVerificationRow,
 };
-use super::{AccountSettings, account_settings::AccountSettingsSubpage};
 use crate::{
+    account_settings::{AccountSettings, AccountSettingsSubpage},
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{

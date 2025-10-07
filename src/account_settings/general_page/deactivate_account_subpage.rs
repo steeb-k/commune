@@ -19,7 +19,7 @@ mod imp {
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/deactivate_account_subpage.ui"
+        resource = "/org/gnome/Fractal/ui/account_settings/general_page/deactivate_account_subpage.ui"
     )]
     #[properties(wrapper_type = super::DeactivateAccountSubpage)]
     pub struct DeactivateAccountSubpage {

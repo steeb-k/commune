@@ -3,11 +3,9 @@ use gettextrs::gettext;
 use gtk::glib;
 
 use crate::{
+    account_settings::AccountSettings,
     components::LoadingButtonRow,
-    session::{
-        model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
-        view::AccountSettings,
-    },
+    session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
     toast,
 };
 
@@ -17,9 +15,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/log_out_subpage.ui"
-    )]
+    #[template(resource = "/org/gnome/Fractal/ui/account_settings/general_page/log_out_subpage.ui")]
     #[properties(wrapper_type = super::LogOutSubpage)]
     pub struct LogOutSubpage {
         #[template_child]
