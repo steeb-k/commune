@@ -6,7 +6,7 @@ use crate::{session::VerificationKey, utils::matrix::MatrixIdUri};
 
 /// Intents that can be handled by a session.
 ///
-/// It cannot be cloned intentionnally, so it is handled only once.
+/// It cannot be cloned intentionally, so it is handled only once.
 #[derive(Debug)]
 pub(crate) enum SessionIntent {
     /// Show the target of a Matrix ID URI.
