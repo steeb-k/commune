@@ -396,22 +396,28 @@ mod imp {
 
             // We use a shared notifier to make sure that only a single media file can be
             // loaded at a time.
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
+            // We cannot keep a strong reference while `.await`ing, or it will prevent from
+            // destroying the player.
+            let weak_imp = self.downgrade();
+            spawn!(async move {
+                let receiver = if let Some(imp) = weak_imp.upgrade() {
                     let receiver = notifier.listen();
                     imp.media_notifier.replace(Some(notifier));
+                    receiver
+                } else {
+                    return;
+                };
 
-                    receiver.await;
+                receiver.await;
 
+                if let Some(imp) = weak_imp.upgrade() {
                     // If we still have a copy of the notifier now, it means that this was called
                     // from outside this instance, so we need to clear it.
                     if imp.media_notifier.take().is_some() {
                         imp.clear();
                     }
                 }
-            ));
+            });
 
             // Reload the waveform if we got it from a message, because we cannot trust the
             // sender.
@@ -440,7 +446,7 @@ mod imp {
 
             self.file.take();
 
-            // Send a notification to drop the spawned task that owns a copy of this widget.
+            // Send a notification to drop the spawned task.
             if let Some(notifier) = self.media_notifier.take() {
                 notifier.notify();
             }
