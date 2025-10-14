@@ -2,7 +2,16 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
 use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountManagementUrlBuilder};
-use ruma::{OwnedMxcUri, api::client::discovery::get_capabilities::v3::Capabilities};
+use ruma::{
+    OwnedMxcUri,
+    api::{
+        OutgoingRequest, SupportedVersions,
+        client::{
+            discovery::get_capabilities::v3::Capabilities,
+            profile::{ProfileFieldName, delete_profile_field},
+        },
+    },
+};
 use tracing::error;
 
 mod change_password_subpage;
@@ -59,8 +68,7 @@ mod imp {
         /// The ancestor [`AccountSettings`].
         #[property(get, set = Self::set_account_settings, nullable)]
         account_settings: glib::WeakRef<AccountSettings>,
-        /// The possible changes on the homeserver.
-        capabilities: RefCell<Capabilities>,
+        capabilities_data: RefCell<CapabilitiesData>,
         changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
         changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -208,18 +216,34 @@ mod imp {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
-            let client = session.client();
 
-            let handle = spawn_tokio!(async move { client.get_capabilities().await });
-            let capabilities = match handle.await.expect("task was not aborted") {
-                Ok(capabilities) => capabilities,
+            let mut capabilities_data = CapabilitiesData::default();
+
+            let client = session.client();
+            let handle = spawn_tokio!(async move {
+                (
+                    client.get_capabilities().await,
+                    client.supported_versions().await,
+                )
+            });
+            let (capabilities_result, supported_versions_result) =
+                handle.await.expect("task was not aborted");
+
+            match capabilities_result {
+                Ok(capabilities) => capabilities_data.capabilities = capabilities,
                 Err(error) => {
                     error!("Could not get server capabilities: {error}");
-                    Capabilities::default()
                 }
-            };
+            }
 
-            self.capabilities.replace(capabilities);
+            match supported_versions_result {
+                Ok(supported_versions) => capabilities_data.supported_versions = supported_versions,
+                Err(error) => {
+                    error!("Could not get server supported versions: {error}");
+                }
+            }
+
+            self.capabilities_data.replace(capabilities_data);
             self.update_capabilities();
         }
 
@@ -232,14 +256,17 @@ mod imp {
 
             let uses_oauth_api = session.uses_oauth_api();
             let has_account_management_url = self.account_management_url_builder().is_some();
-            let capabilities = self.capabilities.borrow();
+            let capabilities_data = self.capabilities_data.borrow();
 
-            self.avatar
-                .set_editable(capabilities.set_avatar_url.enabled);
-            self.display_name
-                .set_editable(capabilities.set_displayname.enabled);
-            self.change_password_row
-                .set_visible(!has_account_management_url && capabilities.change_password.enabled);
+            self.avatar.set_editable(
+                capabilities_data.can_set_profile_field(&ProfileFieldName::AvatarUrl),
+            );
+            self.display_name.set_editable(
+                capabilities_data.can_set_profile_field(&ProfileFieldName::DisplayName),
+            );
+            self.change_password_row.set_visible(
+                !has_account_management_url && capabilities_data.can_change_password(),
+            );
             self.manage_account_row
                 .set_visible(has_account_management_url);
             self.deactivate_account_button
@@ -541,5 +568,57 @@ glib::wrapper! {
 impl GeneralPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
+    }
+}
+
+/// The data necessary to compute the capabilities of the server.
+#[derive(Debug, Clone)]
+struct CapabilitiesData {
+    /// The capabilities advertised by the homeserver.
+    capabilities: Capabilities,
+    /// The Matrix versions supported by the homeserver.
+    supported_versions: SupportedVersions,
+}
+
+impl CapabilitiesData {
+    /// Whether the user can set the given profile field according to these
+    /// capabilities.
+    fn can_set_profile_field(&self, field: &ProfileFieldName) -> bool {
+        // According to the Matrix spec about the `m.profile_fields` capability:
+        // > When this capability is not listed, clients SHOULD assume the user is able
+        // > to change profile fields without any restrictions, provided the homeserver
+        // > advertises a specification version that includes the m.profile_fields
+        // > capability in the /versions response.
+        if let Some(profile_fields) = &self.capabilities.profile_fields {
+            profile_fields.can_set_field(field)
+        } else if delete_profile_field::v3::Request::is_supported(&self.supported_versions) {
+            true
+        } else {
+            #[allow(deprecated)]
+            match field {
+                ProfileFieldName::AvatarUrl => self.capabilities.set_avatar_url.enabled,
+                ProfileFieldName::DisplayName => self.capabilities.set_displayname.enabled,
+                // Extended profile fields are not supported by the homeserver.
+                _ => false,
+            }
+        }
+    }
+
+    /// Whether the user can change their account password according to these
+    /// capabilities.
+    fn can_change_password(&self) -> bool {
+        self.capabilities.change_password.enabled
+    }
+}
+
+impl Default for CapabilitiesData {
+    fn default() -> Self {
+        Self {
+            capabilities: Default::default(),
+            supported_versions: SupportedVersions {
+                versions: Default::default(),
+                features: Default::default(),
+            },
+        }
     }
 }
