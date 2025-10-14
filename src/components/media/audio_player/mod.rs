@@ -3,6 +3,7 @@ use std::time::Duration;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
+use matrix_sdk::attachment::BaseAudioInfo;
 use tracing::warn;
 
 mod waveform;
@@ -16,10 +17,7 @@ use crate::{
     utils::{
         File, LoadingState, OneshotNotifier,
         matrix::{AudioMessageExt, MediaMessage, MessageCacheKey},
-        media::{
-            self, MediaFileError,
-            audio::{generate_waveform, load_audio_info},
-        },
+        media::{self, MediaFileError, audio::load_audio_info},
     },
 };
 
@@ -161,14 +159,7 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_source_duration().await;
-                    }
-                ));
-                spawn!(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load_source_waveform().await;
+                        imp.load_source_info().await;
                     }
                 ));
 
@@ -261,26 +252,18 @@ mod imp {
             self.remaining_label.set_width_chars(time_width + 1);
         }
 
-        /// Load the duration of the current source.
-        async fn load_source_duration(&self) {
+        /// Load the information of the current source.
+        async fn load_source_info(&self) {
             let Some(source) = self.source.borrow().clone() else {
                 self.set_duration(Duration::default());
-                return;
-            };
-
-            let duration = source.duration().await;
-            self.set_duration(duration.unwrap_or_default());
-        }
-
-        /// Load the waveform of the current source.
-        async fn load_source_waveform(&self) {
-            let Some(source) = self.source.borrow().clone() else {
                 self.waveform.set_waveform(vec![]);
                 return;
             };
 
-            let waveform = source.waveform().await;
-            self.waveform.set_waveform(waveform.unwrap_or_default());
+            let info = source.info().await;
+            self.set_duration(info.duration.unwrap_or_default());
+            self.waveform
+                .set_waveform(info.waveform.unwrap_or_default());
         }
 
         /// Update the name of the source.
@@ -437,7 +420,7 @@ mod imp {
                 .borrow()
                 .as_ref()
                 .is_some_and(|source| matches!(source, AudioPlayerSource::Message(_)))
-                && let Some(waveform) = generate_waveform(&gfile).await
+                && let Some(waveform) = load_audio_info(&gfile).await.waveform
             {
                 self.waveform.set_waveform(waveform);
             }
@@ -564,30 +547,19 @@ impl AudioPlayerSource {
         }
     }
 
-    /// Get the duration of this source, if any.
-    async fn duration(&self) -> Option<Duration> {
+    /// Get the information of this source.
+    async fn info(&self) -> BaseAudioInfo {
         match self {
-            Self::File(file) => load_audio_info(file).await.duration,
+            Self::File(file) => load_audio_info(file).await,
             Self::Message(message) => {
-                if let MediaMessage::Audio(content) = &message.message {
-                    content.info.as_deref().and_then(|info| info.duration)
-                } else {
-                    None
-                }
-            }
-        }
-    }
+                let mut info = BaseAudioInfo::default();
 
-    /// Get the waveform representation of this source, if any.
-    async fn waveform(&self) -> Option<Vec<f32>> {
-        match self {
-            Self::File(file) => generate_waveform(file).await,
-            Self::Message(message) => {
                 if let MediaMessage::Audio(content) = &message.message {
-                    content.normalized_waveform()
-                } else {
-                    None
+                    info.duration = content.info.as_deref().and_then(|info| info.duration);
+                    info.waveform = content.normalized_waveform();
                 }
+
+                info
             }
         }
     }

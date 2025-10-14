@@ -17,11 +17,12 @@ use crate::utils::{OneshotNotifier, resample_slice};
 pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     let mut info = BaseAudioInfo::default();
 
-    let Some(media_info) = load_gstreamer_media_info(file).await else {
-        return info;
-    };
+    if let Some(media_info) = load_gstreamer_media_info(file).await {
+        info.duration = media_info.duration().map(Into::into);
+    }
 
-    info.duration = media_info.duration().map(Into::into);
+    info.waveform = generate_waveform(file, info.duration).await;
+
     info
 }
 
@@ -29,18 +30,15 @@ pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
 ///
 /// The returned waveform should contain between 30 and 110 samples with a value
 /// between 0 and 1.
-pub(crate) async fn generate_waveform(file: &gio::File) -> Option<Vec<f32>> {
+async fn generate_waveform(file: &gio::File, duration: Option<Duration>) -> Option<Vec<f32>> {
     // We first need to get the duration, to compute the interval required to
     // collect just enough samples. We use a separate pipeline for simplicity,
     // but we could use the same pipeline and ignore the first run while we
     // collect the duration.
-    let interval = load_gstreamer_media_info(file)
-        .await
-        .and_then(|media_info| media_info.duration())
+    let interval = duration
         // Take 110 samples, it should more or less match the maximum number of samples we present.
-        .and_then(|duration| Duration::from(duration).checked_div(110))
         // Default to 10 samples per second.
-        .unwrap_or_else(|| Duration::from_millis(100));
+        .map_or_else(|| Duration::from_millis(100), |duration| duration / 110);
 
     // Create our pipeline from a pipeline description string.
     let pipeline = match gst::parse::launch(&format!(
