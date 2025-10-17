@@ -71,6 +71,26 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="13~rc" type="development" date="2025-10-17">
+      <description>
+        <p>
+          Ah, Autumn… The trees are wearing their warmest colors, the wine harvest is ending,
+          developers are preparing to hibernate… and Fractal 13.rc is here!
+        </p>
+        <p>
+          Our repository has been relatively quiet since the beta release, with mostly work on bug
+          fixes for our new audio player, and a bit of code refactoring.
+        </p>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, it should be mostly stable and we expect to only include minor
+          improvements until the release of Fractal 13.
+        </p>
+      </description>
+    </release>
     <release version="13~beta" type="development" date="2025-09-25">
       <description>
         <p>
