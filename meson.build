@@ -24,8 +24,8 @@ full_version = version
 
 dependency('glib-2.0', version: '>= 2.82')  # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
-dependency('gtk4', version: '>= 4.19.3')
-dependency('libadwaita-1', version: '>= 1.8.beta')
+dependency('gtk4', version: '>= 4.20.2')
+dependency('libadwaita-1', version: '>= 1.8.0')
 
 # Please keep these dependencies sorted.
 dependency('gstreamer-1.0', version: '>= 1.20')

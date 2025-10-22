@@ -16,8 +16,8 @@ mod imp {
         /// The rooms used for completion.
         #[property(get = Self::rooms, set = Self::set_rooms, explicit_notify, nullable)]
         rooms: PhantomData<Option<RoomList>>,
-        /// The room list with expression watches.
-        rooms_expr: ExpressionListModel,
+        /// The filtered room list.
+        filtered_rooms: gtk::FilterListModel,
         /// The search filter.
         search_filter: gtk::StringFilter,
         /// The list of sorted and filtered rooms.
@@ -41,55 +41,58 @@ mod imp {
             // - joined
             // - anyone can join
 
-            let category_expr = Room::this_expression("category").chain_closure::<bool>(closure!(
-                |_obj: Option<glib::Object>, category: RoomCategory| {
-                    !matches!(category, RoomCategory::Space | RoomCategory::Outdated)
-                }
-            ));
-            let category_filter = gtk::BoolFilter::new(Some(&category_expr));
-
-            let joined_expr = Room::this_expression("own-member")
-                .chain_property::<Member>("membership")
-                .chain_closure::<bool>(closure!(
-                    |_obj: Option<glib::Object>, membership: Membership| {
-                        membership == Membership::Join
+            let category_filter = gtk::BoolFilter::new(Some(
+                Room::this_expression("category").chain_closure::<bool>(closure!(
+                    |_obj: Option<glib::Object>, category: RoomCategory| {
+                        !matches!(category, RoomCategory::Space | RoomCategory::Outdated)
                     }
-                ));
-            let joined_filter = gtk::BoolFilter::new(Some(&joined_expr));
+                )),
+            ));
 
-            let anyone_can_join_expr =
-                Room::this_expression("join-rule").chain_property::<JoinRule>("anyone-can-join");
-            let anyone_can_join_filter = gtk::BoolFilter::builder()
-                .expression(&anyone_can_join_expr)
-                .build();
+            let joined_filter = gtk::BoolFilter::new(Some(
+                Room::this_expression("own-member")
+                    .chain_property::<Member>("membership")
+                    .chain_closure::<bool>(closure!(
+                        |_obj: Option<glib::Object>, membership: Membership| {
+                            membership == Membership::Join
+                        }
+                    )),
+            ));
+
+            let anyone_can_join_filter = gtk::BoolFilter::new(Some(
+                Room::this_expression("join-rule").chain_property::<JoinRule>("anyone-can-join"),
+            ));
 
             let filter = gtk::EveryFilter::new();
             filter.append(category_filter);
             filter.append(joined_filter);
             filter.append(anyone_can_join_filter);
 
-            let first_model = gtk::FilterListModel::builder()
-                .filter(&filter)
-                .model(&self.rooms_expr)
-                .build();
+            self.filtered_rooms.set_filter(Some(&filter));
+
+            // Watch display name to update the sorter.
+            let display_name_expr = Room::this_expression("display-name");
+
+            let expr_model = ExpressionListModel::new();
+            expr_model.set_expressions(vec![display_name_expr.clone().upcast()]);
+            expr_model.set_model(Some(self.filtered_rooms.clone()));
 
             // Sort list by display name.
-            let display_name_expr = Room::this_expression("display-name");
             let display_name_sorter = gtk::StringSorter::builder()
                 .ignore_case(true)
                 .expression(&display_name_expr)
                 .build();
 
-            let second_model = gtk::SortListModel::builder()
+            let sorted_model = gtk::SortListModel::builder()
                 .sorter(&display_name_sorter)
-                .model(&first_model)
+                .model(&expr_model)
                 .build();
 
-            // Setup the search filter.
+            // Set up the search filter.
             let alias_expr =
                 Room::this_expression("aliases").chain_property::<RoomAliases>("alias-string");
             let room_search_string_expr = gtk::ClosureExpression::new::<String>(
-                &[alias_expr.clone(), display_name_expr.clone()],
+                &[alias_expr, display_name_expr],
                 closure!(
                     |_: Option<glib::Object>, alias: Option<&str>, display_name: &str| {
                         if let Some(alias) = alias {
@@ -107,31 +110,25 @@ mod imp {
                 .set_expression(Some(expression::normalize_string(room_search_string_expr)));
 
             self.list.set_filter(Some(&self.search_filter));
-            self.list.set_model(Some(&second_model));
-
-            self.rooms_expr.set_expressions(vec![
-                category_expr.upcast(),
-                joined_expr.upcast(),
-                anyone_can_join_expr.upcast(),
-                alias_expr.upcast(),
-                display_name_expr.upcast(),
-            ]);
+            self.list.set_watch_items(true);
+            self.list.set_model(Some(&sorted_model));
         }
     }
 
     impl CompletionRoomList {
         /// The rooms used for completion.
         fn rooms(&self) -> Option<RoomList> {
-            self.rooms_expr.model().and_downcast()
+            self.filtered_rooms.model().and_downcast()
         }
 
         /// Set the rooms used for completion.
+        #[allow(clippy::needless_pass_by_value)]
         fn set_rooms(&self, rooms: Option<RoomList>) {
             if self.rooms() == rooms {
                 return;
             }
 
-            self.rooms_expr.set_model(rooms);
+            self.filtered_rooms.set_model(rooms.as_ref());
             self.obj().notify_rooms();
         }
 

@@ -105,19 +105,16 @@ mod imp {
 
             // Special-case room lists so that they are sorted and in the right section.
             let inner_model = if model.is::<RoomList>() {
-                let room_category = Room::this_expression("category");
+                // Filter the list to only show rooms for the proper category.
                 self.filter
-                    .set_expression(Some(room_category.clone().upcast()));
+                    .set_expression(Some(Room::this_expression("category").upcast()));
+                let filter_model = gtk::FilterListModel::builder()
+                    .model(&model)
+                    .filter(&self.filter)
+                    .watch_items(true)
+                    .build();
 
-                let section_name_expr_model = ExpressionListModel::new();
-                section_name_expr_model.set_expressions(vec![room_category.upcast()]);
-                section_name_expr_model.set_model(Some(model));
-
-                let filter_model = gtk::FilterListModel::new(
-                    Some(section_name_expr_model),
-                    Some(self.filter.clone()),
-                );
-
+                // Sort the list by activity.
                 let room_latest_activity = Room::this_expression("latest-activity");
                 let sorter = gtk::NumericSorter::builder()
                     .expression(&room_latest_activity)
@@ -131,6 +128,7 @@ mod imp {
                 let sort_model =
                     gtk::SortListModel::new(Some(latest_activity_expr_model), Some(sorter));
 
+                // Watch for notification count and highlight changes in the filtered room list.
                 let room_notification_count = Room::this_expression("notification-count");
                 let room_highlight = Room::this_expression("highlight");
                 let notification_and_highlight_expr_model = ExpressionListModel::new();

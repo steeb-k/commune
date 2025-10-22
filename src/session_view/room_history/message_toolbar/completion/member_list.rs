@@ -25,8 +25,8 @@ mod imp {
         /// The list of room members used for completion.
         #[property(get)]
         joined_members: glib::WeakRef<gio::ListModel>,
-        /// The members list with expression watches.
-        members_expr: ExpressionListModel,
+        /// The filtered members list.
+        filtered_members: gtk::FilterListModel,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The list model for the `@room` item.
         at_room_model: SingleItemListModel,
@@ -52,12 +52,12 @@ mod imp {
             // - not our user
             // - not ignored
             let not_own_user = gtk::BoolFilter::builder()
-                .expression(expression::not(Member::this_expression("is-own-user")))
+                .expression(Member::this_expression("is-own-user"))
+                .invert(true)
                 .build();
 
-            let ignored_expr = Member::this_expression("is-ignored");
             let not_ignored = gtk::BoolFilter::builder()
-                .expression(&ignored_expr)
+                .expression(Member::this_expression("is-ignored"))
                 .invert(true)
                 .build();
 
@@ -65,22 +65,29 @@ mod imp {
             filter.append(not_own_user);
             filter.append(not_ignored);
 
-            let first_model = gtk::FilterListModel::builder()
-                .filter(&filter)
-                .model(&self.members_expr)
-                .build();
+            self.filtered_members.set_filter(Some(&filter));
+            self.filtered_members.set_watch_items(true);
+
+            // Watch the activity and display name of members.
+            let latest_activity_expr = Member::this_expression("latest-activity");
+            let display_name_expr = Member::this_expression("display-name");
+
+            let expr_model = ExpressionListModel::new();
+            expr_model.set_expressions(vec![
+                latest_activity_expr.clone().upcast(),
+                display_name_expr.clone().upcast(),
+            ]);
+            expr_model.set_model(Some(self.filtered_members.clone()));
 
             // Sort the members list by activity, then display name.
-            let latest_activity_expr = Member::this_expression("latest-activity");
             let activity = gtk::NumericSorter::builder()
                 .sort_order(gtk::SortType::Descending)
-                .expression(&latest_activity_expr)
+                .expression(latest_activity_expr)
                 .build();
 
-            let display_name_expr = Member::this_expression("display-name");
             let display_name = gtk::StringSorter::builder()
                 .ignore_case(true)
-                .expression(&display_name_expr)
+                .expression(display_name_expr)
                 .build();
 
             let sorter = gtk::MultiSorter::new();
@@ -88,7 +95,7 @@ mod imp {
             sorter.append(display_name);
             let sorted_members_model = gtk::SortListModel::builder()
                 .sorter(&sorter)
-                .model(&first_model)
+                .model(&expr_model)
                 .build();
 
             // Add `@room` model.
@@ -117,12 +124,6 @@ mod imp {
 
             self.list.set_filter(Some(&self.search_filter));
             self.list.set_model(Some(&flatten_model));
-
-            self.members_expr.set_expressions(vec![
-                ignored_expr.upcast(),
-                latest_activity_expr.upcast(),
-                display_name_expr.upcast(),
-            ]);
         }
 
         fn dispose(&self) {
@@ -175,7 +176,7 @@ mod imp {
             let joined_members = room
                 .map(Room::get_or_create_members)
                 .map(|members| members.membership_list(MembershipListKind::Join));
-            self.members_expr.set_model(joined_members);
+            self.filtered_members.set_model(joined_members.as_ref());
 
             self.update_at_room_model();
             self.obj().notify_joined_members();

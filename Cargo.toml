@@ -61,14 +61,14 @@ wtinylfu = "0.2"
 zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
-adw = { package = "libadwaita", version = "0.8", features = ["v1_7"] }
+adw = { package = "libadwaita", version = "0.8", features = ["v1_8"] }
 glycin = { version = "3", default-features = false, features = ["tokio", "gdk4"] }
 gst = { version = "0.24", package = "gstreamer" }
 gst_app = { version = "0.24", package = "gstreamer-app" }
 gst_pbutils = { version = "0.24", package = "gstreamer-pbutils" }
 gst_play = { version = "0.24", package = "gstreamer-play" }
 gst_video = { version = "0.24", package = "gstreamer-video" }
-gtk = { package = "gtk4", version = "0.10", features = ["gnome_47"] }
+gtk = { package = "gtk4", version = "0.10", features = ["gnome_48", "v4_20"] } # FIXME: Should be gnome_49 feature
 shumate = { package = "libshumate", version = "0.7", features = ["v1_1"] }
 sourceview = { package = "sourceview5", version = "0.10" }
 

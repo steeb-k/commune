@@ -12,11 +12,7 @@ use ruma::{OwnedUserId, UserId, events::room::power_levels::RoomPowerLevels};
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
-use crate::{
-    prelude::*,
-    spawn, spawn_tokio,
-    utils::{ExpressionListModel, LoadingState},
-};
+use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -100,7 +96,7 @@ mod imp {
             }
 
             // Construct the list if it doesn't exist.
-            let list = kind.filtered_list_model(self.obj().upcast_ref::<gio::ListModel>().clone());
+            let list = kind.filtered_list_model(self.obj().upcast_ref());
             self.membership_lists
                 .borrow_mut()
                 .insert(kind, list.clone());
@@ -346,27 +342,20 @@ pub enum MembershipListKind {
 impl MembershipListKind {
     /// Build a `GListModel` that filters the given list model containing
     /// [`Member`]s with this kind, and add it to the given map.
-    fn filtered_list_model(self, members: gio::ListModel) -> gio::ListModel {
-        let membership_expr = Member::this_expression("membership");
-
-        // We need to notify when the membership changes so the filter can update the
-        // list.
-        let expr_members = ExpressionListModel::new();
-        expr_members.set_expressions(vec![membership_expr.clone().upcast()]);
-        expr_members.set_model(Some(members));
-
+    fn filtered_list_model(self, members: &gio::ListModel) -> gio::ListModel {
         let membership = Membership::from(self);
-        let membership_eq_expr = membership_expr.chain_closure::<bool>(closure!(
-            |_: Option<glib::Object>, this_membership: Membership| {
+        let membership_eq_expr = Member::this_expression("membership").chain_closure::<bool>(
+            closure!(|_: Option<glib::Object>, this_membership: Membership| {
                 this_membership == membership
-            }
-        ));
+            }),
+        );
 
-        gtk::FilterListModel::new(
-            Some(expr_members),
-            Some(gtk::BoolFilter::new(Some(&membership_eq_expr))),
-        )
-        .upcast()
+        gtk::FilterListModel::builder()
+            .model(members)
+            .filter(&gtk::BoolFilter::new(Some(&membership_eq_expr)))
+            .watch_items(true)
+            .build()
+            .upcast()
     }
 
     /// The name of the icon that represents this kind.

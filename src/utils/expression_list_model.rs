@@ -77,7 +77,7 @@ mod imp {
                 let added = model.n_items();
                 self.model.set(model, vec![items_changed_handler]);
 
-                self.watch_items(0, 0, added);
+                self.watch_items(0, removed, added);
                 added
             } else {
                 0
@@ -95,7 +95,9 @@ mod imp {
             }
 
             self.expressions.replace(expressions);
-            self.watch_items(0, 0, self.n_items());
+
+            let n_items = self.n_items();
+            self.watch_items(0, n_items, n_items);
         }
 
         /// Watch and unwatch items according to changes in the underlying
