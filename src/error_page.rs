@@ -67,8 +67,8 @@ mod imp {
             {
                 self.linux_secret_instructions.set_visible(true);
 
-                self.secret_service_override_command.set_markup(&format!(
-                    "<tt>flatpak --user override --talk-name=org.freedesktop.secrets {APP_ID}</tt>",
+                self.secret_service_override_command.set_label(&format!(
+                    "flatpak --user override --talk-name=org.freedesktop.secrets {APP_ID}",
                 ));
             }
 
@@ -89,8 +89,7 @@ mod imp {
         fn copy_secret_service_override_command(&self) {
             let obj = self.obj();
             let command = self.secret_service_override_command.label();
-            obj.clipboard()
-                .set_text(command.trim_start_matches("<tt>").trim_end_matches("</tt>"));
+            obj.clipboard().set_text(&command);
             toast!(obj, gettext("Command copied to clipboard"));
         }
     }
