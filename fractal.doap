@@ -21,7 +21,7 @@
 
   <homepage rdf:resource="https://gitlab.gnome.org/World/fractal" />
   <support-forum rdf:resource="https://discourse.gnome.org/tag/fractal" />
-  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/fractal/issues" />
+  <bug-database rdf:resource="https://gitlab.gnome.org/World/fractal/issues" />
 
   <programming-language>Rust</programming-language>
   <platform>GTK 4</platform>
