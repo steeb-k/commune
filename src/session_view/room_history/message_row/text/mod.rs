@@ -322,6 +322,7 @@ mod imp {
                     room,
                     detect_at_room,
                     ellipsize,
+                    is_preformatted: false,
                 },
                 false,
                 &mut sender_name,

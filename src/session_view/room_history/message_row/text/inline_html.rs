@@ -23,6 +23,8 @@ pub(super) struct InlineHtmlBuilder<'a> {
     single_line: bool,
     /// Whether to append an ellipsis at the end of the string.
     ellipsis: bool,
+    /// Whether whitespace should be preserved.
+    preserve_whitespace: bool,
     /// The mentions detection setting and results.
     mentions: MentionsMode<'a>,
     /// The inner string.
@@ -39,12 +41,16 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// If `single_line` is set to `true`, the string will be ellipsized at the
     /// first line break.
     ///
-    /// If `ellipsis` is set to `true`, and ellipsis will be added at the end of
+    /// If `ellipsis` is set to `true`, an ellipsis will be added at the end of
     /// the string.
-    pub(super) fn new(single_line: bool, ellipsis: bool) -> Self {
+    ///
+    /// If `preserve_whitespace` is set to `true`, all whitespace will be
+    /// preserved, otherwise it will be collapsed according to the HTML spec.
+    pub(super) fn new(single_line: bool, ellipsis: bool, preserve_whitespace: bool) -> Self {
         Self {
             single_line,
             ellipsis,
+            preserve_whitespace,
             mentions: MentionsMode::default(),
             inner: String::new(),
             truncated: false,
@@ -82,7 +88,7 @@ impl<'a> InlineHtmlBuilder<'a> {
 
         if ellipsis {
             inner.append_ellipsis();
-        } else {
+        } else if !self.preserve_whitespace {
             inner.truncate_end_whitespaces();
         }
 
@@ -207,8 +213,11 @@ impl<'a> InlineHtmlBuilder<'a> {
                 if self.single_line {
                     self.truncated = true;
                 } else {
-                    // Remove whitespaces before the newline.
-                    self.inner.truncate_end_whitespaces();
+                    if !self.preserve_whitespace {
+                        // Remove whitespaces before the newline.
+                        self.inner.truncate_end_whitespaces();
+                    }
+
                     self.inner.push('\n');
                 }
             }
@@ -226,10 +235,14 @@ impl<'a> InlineHtmlBuilder<'a> {
     fn append_text_node(&mut self, text: &str, context: NodeContext) {
         // Collapse whitespaces and remove them at the beginning and end of an HTML
         // element, and after a newline.
-        let text = text.collapse_whitespaces(
-            context.is_first_child || self.inner.ends_with('\n'),
-            context.is_last_child,
-        );
+        let text = if self.preserve_whitespace {
+            text.to_owned()
+        } else {
+            text.collapse_whitespaces(
+                context.is_first_child || self.inner.ends_with('\n'),
+                context.is_last_child,
+            )
+        };
 
         if context.should_linkify {
             if let MentionsMode::WithMentions {

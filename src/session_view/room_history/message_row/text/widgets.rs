@@ -19,9 +19,19 @@ use crate::{
 /// The immutable config fields to build a HTML widget tree.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct HtmlWidgetConfig<'a> {
+    /// The room where the message constructed by this widget was sent.
+    ///
+    /// Used for generating mentions.
     pub(super) room: &'a Room,
+    /// Whether we should try to detect an `@room` mention in the HTML to
+    /// render.
     pub(super) detect_at_room: bool,
+    /// Whether to ellipsize the message.
     pub(super) ellipsize: bool,
+    /// Whether this is preformatted text.
+    ///
+    /// Whitespaces are untouched in preformatted text.
+    pub(super) is_preformatted: bool,
 }
 
 /// Construct a new label for displaying a message's content.
@@ -85,7 +95,7 @@ pub(super) fn widget_for_html_nodes(
                 // Include sender name before, if the child widget did not handle it.
                 if let Some(sender_name) = sender_name.take() {
                     let label = new_message_label();
-                    let (text, _) = InlineHtmlBuilder::new(false, false)
+                    let (text, _) = InlineHtmlBuilder::new(false, false, config.is_preformatted)
                         .append_emote_with_name(&mut Some(sender_name))
                         .build();
                     label.set_label(&text);
@@ -174,10 +184,11 @@ fn label_for_inline_html(
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
-    let (text, widgets) = InlineHtmlBuilder::new(config.ellipsize, add_ellipsis)
-        .detect_mentions(config.room, config.detect_at_room)
-        .append_emote_with_name(sender_name)
-        .build_with_nodes(nodes);
+    let (text, widgets) =
+        InlineHtmlBuilder::new(config.ellipsize, add_ellipsis, config.is_preformatted)
+            .detect_mentions(config.room, config.detect_at_room)
+            .append_emote_with_name(sender_name)
+            .build_with_nodes(nodes);
 
     if text.is_empty() {
         return None;
@@ -242,7 +253,7 @@ fn widget_for_html_block(
         }
         MatrixElement::Hr => gtk::Separator::new(gtk::Orientation::Horizontal).upcast(),
         MatrixElement::Pre => {
-            widget_for_preformatted_text(node.children(), config.ellipsize, add_ellipsis)?
+            widget_for_preformatted_text(node.children(), config, add_ellipsis, sender_name)?
         }
         MatrixElement::Details => widget_for_details(node.children(), config, add_ellipsis)?,
         element => {
@@ -350,8 +361,9 @@ impl From<OrderedListData> for ListType {
 /// Create a widget for preformatted text.
 fn widget_for_preformatted_text(
     children: Children,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
+    sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
     let children = children.collect::<Vec<_>>();
 
@@ -361,37 +373,45 @@ fn widget_for_preformatted_text(
 
     let unique_code_child = (children.len() == 1)
         .then_some(&children[0])
-        .and_then(|child| child.as_element())
-        .and_then(|element| match element.to_matrix().element {
-            MatrixElement::Code(code) => Some(code),
-            _ => None,
+        .and_then(|child| {
+            match child
+                .as_element()
+                .map(|element| element.to_matrix().element)
+            {
+                Some(MatrixElement::Code(code)) => Some((child, code)),
+                _ => None,
+            }
         });
 
-    let (children, code_language) = if let Some(code) = unique_code_child {
-        let children = children[0].children().collect::<Vec<_>>();
+    let Some((child, code)) = unique_code_child else {
+        // This is just preformatted text, we need to construct the children hierarchy.
+        let config = HtmlWidgetConfig {
+            is_preformatted: true,
+            ..config
+        };
+        let widget = widget_for_html_nodes(children, config, add_ellipsis, sender_name)?;
 
-        if children.is_empty() {
-            return None;
-        }
+        // We use the monospace font for preformatted text.
+        widget.add_css_class("monospace");
 
-        (children, code.language)
-    } else {
-        (children, None)
+        return Some(widget);
     };
 
-    let text = InlineHtmlBuilder::new(ellipsize, add_ellipsis).build_with_nodes_text(children);
+    let children = child.children().collect::<Vec<_>>();
 
-    if ellipsize {
+    if children.is_empty() {
+        return None;
+    }
+
+    let text = InlineHtmlBuilder::new(config.ellipsize, add_ellipsis, config.is_preformatted)
+        .build_with_nodes_text(children);
+
+    if config.ellipsize {
         // Present text as inline code.
-        let text = format!("<tt>{}</tt>", text.escape_markup());
-
         let label = new_message_label();
-        label.set_ellipsize(if ellipsize {
-            pango::EllipsizeMode::End
-        } else {
-            pango::EllipsizeMode::None
-        });
-        label.set_label(&text);
+        label.set_ellipsize(pango::EllipsizeMode::End);
+        label.add_css_class("monospace");
+        label.set_label(&text.escape_markup());
 
         return Some(label.upcast());
     }
@@ -402,7 +422,8 @@ fn widget_for_preformatted_text(
         .build();
     crate::utils::sourceview::setup_style_scheme(&buffer);
 
-    let language = code_language
+    let language = code
+        .language
         .and_then(|lang| sourceview::LanguageManager::default().language(lang.as_ref()));
     buffer.set_language(language.as_ref());
 
