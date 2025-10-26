@@ -220,7 +220,7 @@ mod imp {
             };
             self.entry_page.set_sensitive(true);
 
-            let Some(uri) = MatrixRoomIdUri::parse(&self.search_entry.text()) else {
+            let Some(uri) = MatrixRoomIdUri::parse(self.search_entry.text().trim()) else {
                 self.look_up_btn.set_sensitive(false);
                 self.uri.take();
                 return;
