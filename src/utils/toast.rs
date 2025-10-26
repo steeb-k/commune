@@ -236,6 +236,7 @@ pub(crate) fn add_toast_with_vars(
         swapped_label.push_str(&message[last_end..message.len()]);
 
         let widget = LabelWithWidgets::new();
+        widget.set_valign(gtk::Align::Center);
         widget.set_label_and_widgets(swapped_label, widgets);
 
         adw::Toast::builder().custom_title(&widget).build()
