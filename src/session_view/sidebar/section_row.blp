@@ -19,14 +19,14 @@ template $SidebarSectionRow: Adw.Bin {
     }
 
     [end]
-    Gtk.Stack notification_status {
+    Gtk.Stack {
       visible: bind $invert_boolean($logical_or(template.section as <$SidebarSection>.is-expanded, template.section as <$SidebarSection>.is-read) as <bool>) as <bool>;
-      visible-child-name: bind $ternary_string(template.section as <$SidebarSection>.has-notifications, "notification-count", "highlight-dot") as <string>;
+      visible-child-name: bind $ternary_string(template.section as <$SidebarSection>.has-notifications, "count", "dot") as <string>;
 
       Gtk.StackPage {
-        name: "highlight-dot";
+        name: "dot";
 
-        child: Gtk.Image highlight_dot {
+        child: Gtk.Image {
           halign: end;
           icon-name: "dot-symbolic";
 
@@ -41,7 +41,7 @@ template $SidebarSectionRow: Adw.Bin {
       }
 
       Gtk.StackPage {
-        name: "notification-count";
+        name: "count";
 
         child: Gtk.Label notification_count {
           hexpand: true;

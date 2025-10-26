@@ -24,17 +24,42 @@ template $SidebarRoomRow: Adw.Bin {
     }
 
     [end]
-    Gtk.Label notification_count {
-      hexpand: true;
-      halign: end;
-      valign: center;
-      yalign: 1.0;
-      visible: bind template.room as <$Room>.has-notifications;
-      label: bind template.room as <$Room>.notification-count;
+    Gtk.Stack {
+      visible: bind $logical_or(template.room as <$Room>.has-notifications, $invert_boolean(template.room as <$Room>.is-read) as <bool>) as <bool>;
+      visible-child-name: bind $ternary_string(template.room as <$Room>.has-notifications, "count", "dot") as <string>;
 
-      styles [
-        "notification-count",
-      ]
+      Gtk.StackPage {
+        name: "dot";
+
+        child: Gtk.Image {
+          halign: end;
+          icon-name: "dot-symbolic";
+
+          styles [
+            "dimmed",
+          ]
+
+          accessibility {
+            label: "Unread messages";
+          }
+        };
+      }
+
+      Gtk.StackPage {
+        name: "count";
+
+        child: Gtk.Label notification_count {
+          hexpand: true;
+          halign: end;
+          valign: center;
+          yalign: 1.0;
+          label: bind template.room as <$Room>.notification-count;
+
+          styles [
+            "notification-count",
+          ]
+        };
+      }
     }
   }
 }

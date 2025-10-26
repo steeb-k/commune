@@ -21,6 +21,10 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session_view/sidebar/section_row.ui")]
     #[properties(wrapper_type = super::SidebarSectionRow)]
     pub struct SidebarSectionRow {
+        #[template_child]
+        pub(super) display_name: TemplateChild<gtk::Label>,
+        #[template_child]
+        notification_count: TemplateChild<gtk::Label>,
         /// The section of this row.
         #[property(get, set = Self::set_section, explicit_notify, nullable)]
         section: BoundObject<SidebarSection>,
@@ -37,13 +41,6 @@ mod imp {
         /// This will change the label according to the action that can be
         /// performed when dropping a room with the given category.
         show_label_for_room_category: Cell<Option<RoomCategory>>,
-        /// The label showing the category name.
-        #[template_child]
-        pub(super) display_name: TemplateChild<gtk::Label>,
-        #[template_child]
-        notification_status: TemplateChild<gtk::Stack>,
-        #[template_child]
-        notification_count: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]

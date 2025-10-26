@@ -7,7 +7,7 @@ use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::{HighlightFlags, Room, RoomCategory},
-    utils::BoundObject,
+    utils::{BoundObject, TemplateCallbacks},
 };
 
 mod imp {
@@ -21,9 +21,6 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session_view/sidebar/room_row.ui")]
     #[properties(wrapper_type = super::SidebarRoomRow)]
     pub struct SidebarRoomRow {
-        /// The room represented by this row.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        room: BoundObject<Room>,
         #[template_child]
         avatar: TemplateChild<Avatar>,
         #[template_child]
@@ -33,6 +30,9 @@ mod imp {
         #[template_child]
         notification_count: TemplateChild<gtk::Label>,
         direct_icon: RefCell<Option<gtk::Image>>,
+        /// The room represented by this row.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        room: BoundObject<Room>,
     }
 
     #[glib::object_subclass]
@@ -43,6 +43,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_css_name("room");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
