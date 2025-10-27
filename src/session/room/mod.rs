@@ -227,6 +227,9 @@ mod imp {
         /// Used to silence logs during initialization.
         #[property(get)]
         is_room_info_initialized: Cell<bool>,
+        /// Whether we already attempted an auto-join.
+        #[property(get)]
+        attempted_auto_join: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -513,7 +516,7 @@ mod imp {
         }
 
         /// Set the category of this room.
-        pub(super) fn set_category(&self, category: RoomCategory) {
+        fn set_category(&self, category: RoomCategory) {
             let old_category = self.category.get();
 
             if old_category == RoomCategory::Outdated || old_category == category {
@@ -561,6 +564,11 @@ mod imp {
             let matrix_room = self.matrix_room();
             let state = matrix_room.state();
 
+            // The state changed, reset the attempted auto-join.
+            if state != RoomState::Invited {
+                self.attempted_auto_join.take();
+            }
+
             let category = match state {
                 RoomState::Joined => {
                     if matrix_room.is_space() {
@@ -574,6 +582,23 @@ mod imp {
                     }
                 }
                 RoomState::Invited => {
+                    // Automatically accept invite that was after a knock.
+                    if !self.attempted_auto_join.get()
+                        && self.was_membership(&MembershipState::Knock).await
+                    {
+                        self.attempted_auto_join.set(true);
+
+                        if self
+                            .change_category(TargetRoomCategory::Normal)
+                            .await
+                            .is_ok()
+                        {
+                            // Wait for the next change to move automatically from knocked to
+                            // joined.
+                            return;
+                        }
+                    }
+
                     if self
                         .inviter
                         .borrow()
@@ -822,7 +847,9 @@ mod imp {
 
             let is_invite = match matrix_room.state() {
                 RoomState::Invited => true,
-                RoomState::Left => self.was_invite().await,
+                RoomState::Left | RoomState::Banned => {
+                    self.was_membership(&MembershipState::Invite).await
+                }
                 _ => false,
             };
 
@@ -834,13 +861,10 @@ mod imp {
             self.obj().notify_is_invite();
         }
 
-        /// Check if this room was an invite that was declined or retracted.
-        async fn was_invite(&self) -> bool {
+        /// Check whether the previous membership of our user in this room
+        /// matches the one that is given.
+        async fn was_membership(&self, membership: &MembershipState) -> bool {
             let matrix_room = self.matrix_room();
-
-            if matrix_room.state() != RoomState::Left {
-                return false;
-            }
 
             // To know if this was an invite we need to check in the member event of our own
             // user if the current membership is `invite`, or if the current membership is
@@ -880,26 +904,20 @@ mod imp {
                 }
             };
 
-            // Check if the last membership was `invite`. This can happen if we do not get a
-            // timeline update when leaving the room.
-            let membership = member_event.content.membership;
-            if membership == MembershipState::Invite {
+            // Check the current membership event, in case we did not get a state update
+            // with the latest change.
+            if member_event.content.membership == *membership {
                 return true;
             }
 
-            // Check if the last membership mas `leave` or `ban`, and the previous
-            // membership was `invite`. This can happen if we do get a timeline update when
-            // leaving the room.
-            if !matches!(membership, MembershipState::Leave | MembershipState::Ban) {
-                return false;
-            }
-
+            // Check the previous membership, in case we did get a state update with the
+            // latest change.
             if let Some(prev_content) = member_event
                 .unsigned
                 .as_ref()
                 .and_then(|unsigned| unsigned.prev_content.as_ref())
             {
-                return prev_content.membership == MembershipState::Invite;
+                return prev_content.membership == *membership;
             }
 
             // If we do not have the `prev_content`, we need to fetch the previous state
@@ -929,9 +947,7 @@ mod imp {
                 .raw()
                 .deserialize_as_unchecked::<RoomMemberMembershipEvent>()
             {
-                Ok(prev_member_event) => {
-                    prev_member_event.content.membership == MembershipState::Invite
-                }
+                Ok(prev_member_event) => prev_member_event.content.membership == *membership,
                 Err(error) => {
                     warn!("Could not deserialize previous member event: {error}");
                     false
@@ -1582,6 +1598,99 @@ mod imp {
                     .await;
             });
         }
+
+        /// Change the category of this room.
+        ///
+        /// This makes the necessary to propagate the category to the
+        /// homeserver.
+        ///
+        /// This can be used to trigger actions like join or leave, as well as
+        /// changing the category in the sidebar.
+        ///
+        /// Note that rooms cannot change category once they are upgraded.
+        pub(super) async fn change_category(
+            &self,
+            category: TargetRoomCategory,
+        ) -> MatrixResult<()> {
+            let previous_category = self.category.get();
+
+            if previous_category == category {
+                return Ok(());
+            }
+
+            if previous_category == RoomCategory::Outdated {
+                warn!("Cannot change the category of an upgraded room");
+                return Ok(());
+            }
+
+            self.set_category(category.into());
+
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move {
+                let room_state = matrix_room.state();
+
+                match category {
+                    TargetRoomCategory::Favorite => {
+                        if !matrix_room.is_favourite() {
+                            // This method handles removing the low priority tag.
+                            matrix_room.set_is_favourite(true, None).await?;
+                        } else if matrix_room.is_low_priority() {
+                            matrix_room.set_is_low_priority(false, None).await?;
+                        }
+
+                        if matches!(room_state, RoomState::Invited | RoomState::Left) {
+                            matrix_room.join().await?;
+                        }
+                    }
+                    TargetRoomCategory::Normal => {
+                        if matrix_room.is_favourite() {
+                            matrix_room.set_is_favourite(false, None).await?;
+                        }
+                        if matrix_room.is_low_priority() {
+                            matrix_room.set_is_low_priority(false, None).await?;
+                        }
+
+                        if matches!(room_state, RoomState::Invited | RoomState::Left) {
+                            matrix_room.join().await?;
+                        }
+                    }
+                    TargetRoomCategory::LowPriority => {
+                        if !matrix_room.is_low_priority() {
+                            // This method handles removing the favourite tag.
+                            matrix_room.set_is_low_priority(true, None).await?;
+                        } else if matrix_room.is_favourite() {
+                            matrix_room.set_is_favourite(false, None).await?;
+                        }
+
+                        if matches!(room_state, RoomState::Invited | RoomState::Left) {
+                            matrix_room.join().await?;
+                        }
+                    }
+                    TargetRoomCategory::Left => {
+                        if matches!(
+                            room_state,
+                            RoomState::Knocked | RoomState::Invited | RoomState::Joined
+                        ) {
+                            matrix_room.leave().await?;
+                        }
+                    }
+                }
+
+                Result::<_, matrix_sdk::Error>::Ok(())
+            });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(()) => Ok(()),
+                Err(error) => {
+                    error!("Could not set the room category: {error}");
+
+                    // Reset the category
+                    Box::pin(self.update_category()).await;
+
+                    Err(error)
+                }
+            }
+        }
     }
 }
 
@@ -1711,84 +1820,7 @@ impl Room {
     ///
     /// Note that rooms cannot change category once they are upgraded.
     pub(crate) async fn change_category(&self, category: TargetRoomCategory) -> MatrixResult<()> {
-        let previous_category = self.category();
-
-        if previous_category == category {
-            return Ok(());
-        }
-
-        if previous_category == RoomCategory::Outdated {
-            warn!("Cannot change the category of an upgraded room");
-            return Ok(());
-        }
-
-        self.imp().set_category(category.into());
-
-        let matrix_room = self.matrix_room().clone();
-        let handle = spawn_tokio!(async move {
-            let room_state = matrix_room.state();
-
-            match category {
-                TargetRoomCategory::Favorite => {
-                    if !matrix_room.is_favourite() {
-                        // This method handles removing the low priority tag.
-                        matrix_room.set_is_favourite(true, None).await?;
-                    } else if matrix_room.is_low_priority() {
-                        matrix_room.set_is_low_priority(false, None).await?;
-                    }
-
-                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
-                        matrix_room.join().await?;
-                    }
-                }
-                TargetRoomCategory::Normal => {
-                    if matrix_room.is_favourite() {
-                        matrix_room.set_is_favourite(false, None).await?;
-                    }
-                    if matrix_room.is_low_priority() {
-                        matrix_room.set_is_low_priority(false, None).await?;
-                    }
-
-                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
-                        matrix_room.join().await?;
-                    }
-                }
-                TargetRoomCategory::LowPriority => {
-                    if !matrix_room.is_low_priority() {
-                        // This method handles removing the favourite tag.
-                        matrix_room.set_is_low_priority(true, None).await?;
-                    } else if matrix_room.is_favourite() {
-                        matrix_room.set_is_favourite(false, None).await?;
-                    }
-
-                    if matches!(room_state, RoomState::Invited | RoomState::Left) {
-                        matrix_room.join().await?;
-                    }
-                }
-                TargetRoomCategory::Left => {
-                    if matches!(
-                        room_state,
-                        RoomState::Knocked | RoomState::Invited | RoomState::Joined
-                    ) {
-                        matrix_room.leave().await?;
-                    }
-                }
-            }
-
-            Result::<_, matrix_sdk::Error>::Ok(())
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(error) => {
-                error!("Could not set the room category: {error}");
-
-                // Reset the category
-                self.imp().update_category().await;
-
-                Err(error)
-            }
-        }
+        self.imp().change_category(category).await
     }
 
     /// Toggle the `key` reaction on the given related event in this room.
