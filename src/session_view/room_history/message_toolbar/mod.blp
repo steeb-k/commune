@@ -21,6 +21,7 @@ menu message-menu-model {
 template $MessageToolbar: Adw.Bin {
   Gtk.Stack main_stack {
     transition-type: crossfade;
+    vhomogeneous: false;
 
     Gtk.StackPage {
       name: "composer";
