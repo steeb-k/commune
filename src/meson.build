@@ -1,43 +1,48 @@
 if not build_env_only
     # Compile Blueprint resources
     blp_files = []
-    foreach line : fs.read('ui-blueprint-resources.in').splitlines()
-        if not line.startswith('#') and line.strip() != ''
-            blp_files += line
+    ui_files = []
+    ui_files_xml = ''
+
+    # These files are already added manually in the resources file because they
+    # need custom handling.
+    blp_gresource_exceptions = [
+        'shortcuts-dialog.blp',  # Must use the root prefix for auto-detection, it must not be under `/ui`.
+    ]
+
+    foreach file : fs.read('ui-blueprint-resources.in').splitlines()
+        file = file.strip()
+
+        if file.startswith('#') or file == ''
+            continue
+        endif
+
+        blp_files += file
+
+        # We need to put all output files in the same directory
+        ui_alias = file.replace('.blp', '.ui')
+        ui_file = ui_alias.replace('/', '-')
+        ui_files += ui_file
+
+        if not blp_gresource_exceptions.contains(file)
+            ui_files_xml += '\n    <file compressed="true" preprocess="xml-stripblanks" alias="' + ui_alias + '">' + ui_file + '</file>'
         endif
     endforeach
 
     blueprints = custom_target(
         'blueprints',
         input: blp_files,
-        output: '.',
+        output: ui_files,
         command: [
-            blueprint_compiler,
-            'batch-compile',
-            '@OUTPUT@',
+            '../build-aux/compile-blueprints.sh',
+            blueprint_compiler.full_path(),
+            '@OUTDIR@',
             '@CURRENT_SOURCE_DIR@',
             '@INPUT@',
         ],
     )
 
-    # Populate the GResource file for the compiled Blueprint files dynamically,
-    # using the same file list.
-    # These files are already added manually in the resources file because they
-    # need custom handling.
-    blp_exceptions = [
-        'shortcuts-dialog.blp',  # Must use the root prefix for auto-detection, it must not be under `/ui`.
-    ]
-
-    ui_files_xml = ''
-    foreach file : blp_files
-        if not blp_exceptions.contains(file)
-            ui_files_xml += '\n    <file compressed="true" preprocess="xml-stripblanks">' + file.replace(
-                '.blp',
-                '.ui',
-            ) + '</file>'
-        endif
-    endforeach
-
+    # Populate the GResource file for the compiled Blueprint files dynamically.
     ui_resources_xml = configure_file(
         input: 'ui-resources.gresource.xml.in',
         output: 'ui-resources.gresource.xml',
