@@ -185,7 +185,7 @@ like gnome-keyring or KWallet (since version 6.2).
 
 Any version that is not sandboxed relies on software that implements the [Secret **Service** API](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
 to store those secrets. Therefore, you need to have software providing that service on your system,
-like gnome-keyring, KeepassXC ([setup guide](https://avaldes.co/2020/01/28/secret-service-keepassxc.html)),
+like gnome-keyring, pass with [pass_secret_service](https://github.com/mdellweg/pass_secret_service/),
 or KWallet. Once again, if you are using GNOME this should just work.
 
 If you prefer to use software that only implements the Secret Service API while using the Flatpaks,
