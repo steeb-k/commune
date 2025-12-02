@@ -6,7 +6,8 @@ use gtk::{glib, glib::clone};
 use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
 use ruma::{
     api::{
-        MatrixVersion, OutgoingRequest, SendAccessToken, SupportedVersions,
+        MatrixVersion, OutgoingRequest, SupportedVersions,
+        auth_scheme::SendAccessToken,
         client::uiaa::{
             AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
             get_uiaa_fallback_page,
@@ -28,6 +29,7 @@ use crate::{
 
 mod imp {
     use std::{
+        borrow::Cow,
         cell::{Cell, OnceCell, RefCell},
         rc::Rc,
         sync::Arc,
@@ -417,7 +419,7 @@ mod imp {
             let http_request = match request.try_into_http_request::<Vec<u8>>(
                 homeserver.as_ref(),
                 SendAccessToken::None,
-                &supported_versions,
+                Cow::Owned(supported_versions),
             ) {
                 Ok(http_request) => http_request,
                 Err(error) => {

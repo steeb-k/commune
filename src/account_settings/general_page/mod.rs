@@ -5,7 +5,7 @@ use matrix_sdk::authentication::oauth::{AccountManagementActionFull, AccountMana
 use ruma::{
     OwnedMxcUri,
     api::{
-        OutgoingRequest, SupportedVersions,
+        Metadata, SupportedVersions,
         client::{
             discovery::get_capabilities::v3::Capabilities,
             profile::{ProfileFieldName, delete_profile_field},
@@ -591,7 +591,9 @@ impl CapabilitiesData {
         // > capability in the /versions response.
         if let Some(profile_fields) = &self.capabilities.profile_fields {
             profile_fields.can_set_field(field)
-        } else if delete_profile_field::v3::Request::is_supported(&self.supported_versions) {
+        } else if delete_profile_field::v3::Request::PATH_BUILDER
+            .is_supported(&self.supported_versions)
+        {
             true
         } else {
             #[allow(deprecated)]

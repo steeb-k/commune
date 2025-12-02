@@ -2,7 +2,7 @@ use std::time::{Duration, SystemTime};
 
 use gettextrs::gettext;
 use matrix_sdk::{ClientBuildError, Error, HttpError};
-use ruma::api::client::error::{ErrorBody, ErrorKind, RetryAfter};
+use ruma::api::client::error::{ErrorBody, ErrorKind, RetryAfter, StandardErrorBody};
 
 use crate::ngettext_f;
 
@@ -19,7 +19,7 @@ impl UserFacingError for HttpError {
             } else {
                 gettext("Could not connect to the homeserver.")
             }
-        } else if let Some(ErrorBody::Standard { kind, message }) =
+        } else if let Some(ErrorBody::Standard(StandardErrorBody { kind, message, .. })) =
             self.as_client_api_error().map(|error| &error.body)
         {
             match kind {

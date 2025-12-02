@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone};
-use matrix_sdk::crypto::CancelInfo;
+use matrix_sdk::encryption::verification::CancelInfo;
 use ruma::events::key::verification::cancel::CancelCode;
 
 use crate::{

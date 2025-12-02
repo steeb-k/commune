@@ -267,6 +267,7 @@ impl<'a> ComposerParser<'a> {
                 plain_text,
                 html_text: None,
                 draft_type,
+                attachments: Vec::new(),
             })
         }
     }
