@@ -419,7 +419,7 @@ mod imp {
             confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
             let obj = self.obj();
-            if confirm_dialog.choose_future(&*obj).await != "remove" {
+            if confirm_dialog.choose_future(Some(&*obj)).await != "remove" {
                 return;
             }
 

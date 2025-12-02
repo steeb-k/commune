@@ -586,7 +586,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         ]);
         confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future(&*obj).await != "remove" {
+        if confirm_dialog.choose_future(Some(&*obj)).await != "remove" {
             return;
         }
 
@@ -651,7 +651,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         ]);
         confirm_dialog.set_response_appearance("report", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future(&*obj).await != "report" {
+        if confirm_dialog.choose_future(Some(&*obj)).await != "report" {
             return;
         }
 

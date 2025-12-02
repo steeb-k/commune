@@ -991,7 +991,7 @@ mod imp {
             dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
 
             let obj = self.obj();
-            if dialog.choose_future(&*obj).await != "enable" {
+            if dialog.choose_future(Some(&*obj)).await != "enable" {
                 self.update_encryption();
                 return;
             }

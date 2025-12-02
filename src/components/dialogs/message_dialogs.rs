@@ -85,7 +85,7 @@ pub(crate) async fn confirm_leave_room_dialog(
         None
     };
 
-    if confirm_dialog.choose_future(parent).await == "leave" {
+    if confirm_dialog.choose_future(Some(parent)).await == "leave" {
         let mut response = ConfirmLeaveRoomResponse::default();
 
         if let Some(switch) = ignore_inviter_switch {
@@ -327,7 +327,7 @@ pub(crate) async fn confirm_room_member_destructive_action_dialog(
         confirm_dialog.set_response_appearance("confirm", adw::ResponseAppearance::Destructive);
     }
 
-    if confirm_dialog.choose_future(parent).await != "confirm" {
+    if confirm_dialog.choose_future(Some(parent)).await != "confirm" {
         return None;
     }
 
@@ -401,7 +401,7 @@ pub(crate) async fn confirm_mute_room_member_dialog(
     ]);
     confirm_dialog.set_response_appearance("mute", adw::ResponseAppearance::Destructive);
 
-    confirm_dialog.choose_future(parent).await == "mute"
+    confirm_dialog.choose_future(Some(parent)).await == "mute"
 }
 
 /// Show a dialog to confirm setting the power level of one or several room
@@ -449,7 +449,7 @@ pub(crate) async fn confirm_set_room_member_power_level_same_as_own_dialog(
     ]);
     confirm_dialog.set_response_appearance("promote", adw::ResponseAppearance::Destructive);
 
-    confirm_dialog.choose_future(parent).await == "promote"
+    confirm_dialog.choose_future(Some(parent)).await == "promote"
 }
 
 /// Show a dialog to confirm the demotion of our own user.
@@ -471,7 +471,7 @@ pub(crate) async fn confirm_own_demotion_dialog(parent: &impl IsA<gtk::Widget>) 
     ]);
     confirm_dialog.set_response_appearance("demote", adw::ResponseAppearance::Destructive);
 
-    confirm_dialog.choose_future(parent).await == "demote"
+    confirm_dialog.choose_future(Some(parent)).await == "demote"
 }
 
 /// Show a dialog for the user to choose what to do about unsaved changes.
@@ -495,7 +495,7 @@ pub(crate) async fn unsaved_changes_dialog(
     dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
     dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
 
-    match dialog.choose_future(parent).await.as_str() {
+    match dialog.choose_future(Some(parent)).await.as_str() {
         "discard" => UnsavedChangesResponse::Discard,
         "save" => UnsavedChangesResponse::Save,
         _ => UnsavedChangesResponse::Cancel,

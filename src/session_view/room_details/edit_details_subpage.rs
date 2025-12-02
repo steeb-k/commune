@@ -269,7 +269,7 @@ mod imp {
             ]);
             confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
-            if confirm_dialog.choose_future(&*obj).await != "remove" {
+            if confirm_dialog.choose_future(Some(&*obj)).await != "remove" {
                 return;
             }
 
