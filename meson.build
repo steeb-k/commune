@@ -35,19 +35,12 @@ dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
 dependency('gtksourceview-5', version: '>= 5.0.0')
+dependency('glycin-2', version: '>= 2.0.0')
+dependency('glycin-gtk4-2', version: '>= 2.0.0')
 dependency('libwebp', version: '>= 1.0.0')
 dependency('openssl', version: '>= 3.0.0')
 dependency('shumate-1.0', version: '>= 1.1.0')
 dependency('sqlite3', version: '>= 3.24.0')
-
-# Required by glycin crate
-dependency('lcms2', version: '>=2.12.0')
-
-# Linux-only dependencies
-if build_machine.system() == 'linux'
-    # Required by glycin crate
-    dependency('libseccomp', version: '>= 2.5.0')
-endif
 
 # When the `build-env` profile is used, we only want to set up the build
 # environment for the sandbox, we will not try to compile the app, so we can

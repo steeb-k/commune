@@ -1,6 +1,6 @@
 //! Collection of methods for images.
 
-use std::{cmp::Ordering, error::Error, fmt, str::FromStr, sync::Arc};
+use std::{cmp::Ordering, error::Error, fmt, str::FromStr, time::Duration};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, graphene, gsk, prelude::*};
@@ -30,8 +30,7 @@ use super::{FrameDimensions, MediaFileError};
 use crate::{
     DISABLE_GLYCIN_SANDBOX, RUNTIME,
     components::AnimatedImagePaintable,
-    spawn_tokio,
-    utils::{File, TokioDrop, save_data_to_tmp_file},
+    utils::{File, save_data_to_tmp_file},
 };
 
 /// The maximum dimensions of a thumbnail in the timeline.
@@ -95,13 +94,16 @@ impl ImageDecoderSource {
     ///
     /// Returns the created loader, and the image file, if any.
     fn into_loader(self) -> (glycin::Loader, Option<File>) {
-        let (mut loader, file) = match self {
-            Self::Data(bytes) => (glycin::Loader::new_vec(bytes), None),
-            Self::File(file) => (glycin::Loader::new(file.as_gfile()), Some(file)),
+        let (loader, file) = match self {
+            Self::Data(bytes) => (
+                glycin::Loader::for_bytes(&glib::Bytes::from_owned(bytes)),
+                None,
+            ),
+            Self::File(file) => (glycin::Loader::new(&file.as_gfile()), Some(file)),
         };
 
         if DISABLE_GLYCIN_SANDBOX {
-            loader.sandbox_selector(glycin::SandboxSelector::NotSandboxed);
+            loader.set_sandbox_selector(glycin::SandboxSelector::NotSandboxed);
         }
 
         (loader, file)
@@ -116,37 +118,28 @@ impl ImageDecoderSource {
         request_dimensions: Option<FrameDimensions>,
     ) -> Result<Image, ImageError> {
         let (loader, file) = self.into_loader();
-
-        let decoder = spawn_tokio!(async move { loader.load().await })
-            .await
-            .expect("task was not aborted")?;
+        let decoder = loader.load_future().await?;
 
         let frame_request = request_dimensions.map(|request| {
-            let image_details = decoder.details();
-
             let original_dimensions = FrameDimensions {
-                width: image_details.width(),
-                height: image_details.height(),
+                width: decoder.width(),
+                height: decoder.height(),
             };
 
             original_dimensions.to_image_loader_request(request)
         });
 
-        spawn_tokio!(async move {
-            let first_frame = if let Some(frame_request) = frame_request {
-                decoder.specific_frame(frame_request).await?
-            } else {
-                decoder.next_frame().await?
-            };
+        let first_frame = if let Some(frame_request) = &frame_request {
+            decoder.specific_frame_future(frame_request).await?
+        } else {
+            decoder.next_frame_future().await?
+        };
 
-            Ok(Image {
-                file,
-                decoder: TokioDrop::new(decoder).into(),
-                first_frame: first_frame.into(),
-            })
+        Ok(Image {
+            file,
+            decoder,
+            first_frame,
         })
-        .await
-        .expect("task was not aborted")
     }
 }
 
@@ -171,9 +164,9 @@ pub(crate) struct Image {
     /// destroyed.
     file: Option<File>,
     /// The image decoder.
-    decoder: Arc<TokioDrop<glycin::Image>>,
+    decoder: glycin::Image,
     /// The first frame of the image.
-    first_frame: Arc<glycin::Frame>,
+    first_frame: glycin::Frame,
 }
 
 impl fmt::Debug for Image {
@@ -184,7 +177,7 @@ impl fmt::Debug for Image {
 
 impl From<Image> for gdk::Paintable {
     fn from(value: Image) -> Self {
-        if value.first_frame.delay().is_some() {
+        if value.first_frame.has_delay() {
             AnimatedImagePaintable::new(value.decoder, value.first_frame, value.file).upcast()
         } else {
             value.first_frame.texture().upcast()
@@ -209,10 +202,12 @@ impl ImageInfoLoader {
         match self {
             Self::File(file) => {
                 let (loader, _) = ImageDecoderSource::from(file).into_loader();
-
-                let frame = spawn_tokio!(async move { loader.load().await?.next_frame().await })
+                let frame = loader
+                    .load_future()
                     .await
-                    .expect("task was not aborted")
+                    .ok()?
+                    .next_frame_future()
+                    .await
                     .ok()?;
 
                 Some(Frame::Glycin(frame))
@@ -313,7 +308,7 @@ impl Frame {
     /// Whether the image that this frame belongs to is animated.
     fn is_animated(&self) -> bool {
         match self {
-            Self::Glycin(frame) => frame.delay().is_some(),
+            Self::Glycin(frame) => frame.has_delay(),
             Self::Texture(_) => false,
         }
     }
@@ -410,7 +405,10 @@ impl FrameDimensions {
     /// requested dimensions.
     fn to_image_loader_request(self, requested: Self) -> glycin::FrameRequest {
         let scaled = self.scale_to_fit(requested, gtk::ContentFit::Cover);
-        glycin::FrameRequest::new().scale(scaled.width, scaled.height)
+
+        let request = glycin::FrameRequest::new();
+        request.set_scale(scaled.width, scaled.height);
+        request
     }
 }
 
@@ -659,9 +657,12 @@ impl ThumbnailDownloader<'_> {
                 source: source.source.to_common_media_source(),
                 format: MediaFormat::Thumbnail(settings.into()),
             };
-            let handle = IMAGE_QUEUE
-                .add_download_request(client.clone(), request, Some(dimensions), priority)
-                .await;
+            let handle = IMAGE_QUEUE.add_download_request(
+                client.clone(),
+                request,
+                Some(dimensions),
+                priority,
+            );
 
             if let Ok(image) = handle.await {
                 return Ok(image);
@@ -673,9 +674,7 @@ impl ThumbnailDownloader<'_> {
             source: source.source.to_common_media_source(),
             format: MediaFormat::File,
         };
-        let handle = IMAGE_QUEUE
-            .add_download_request(client, request, Some(dimensions), priority)
-            .await;
+        let handle = IMAGE_QUEUE.add_download_request(client, request, Some(dimensions), priority);
 
         handle.await
     }
@@ -912,8 +911,6 @@ pub(crate) enum ImageError {
     File,
     /// The image uses an unsupported format.
     UnsupportedFormat,
-    /// An I/O error occurred when loading the image with glycin.
-    Io,
     /// An unexpected error occurred.
     Unknown,
     /// The request for the image was aborted.
@@ -934,9 +931,7 @@ impl fmt::Display for ImageError {
         let s = match self {
             Self::Download => gettext("Could not retrieve media"),
             Self::UnsupportedFormat => gettext("Image format not supported"),
-            Self::File | Self::Io | Self::Unknown | Self::Aborted => {
-                gettext("An unexpected error occurred")
-            }
+            Self::File | Self::Unknown | Self::Aborted => gettext("An unexpected error occurred"),
         };
 
         f.write_str(&s)
@@ -955,16 +950,46 @@ impl From<MediaFileError> for ImageError {
     }
 }
 
-impl From<glycin::ErrorCtx> for ImageError {
-    fn from(value: glycin::ErrorCtx) -> Self {
-        Self::log_error(value.error());
+impl From<glib::Error> for ImageError {
+    fn from(value: glib::Error) -> Self {
+        Self::log_error(&value);
 
-        if value.unsupported_format().is_some() {
+        if let Some(glycin::LoaderError::UnknownImageFormat) = value.kind() {
             Self::UnsupportedFormat
-        } else if matches!(value.error(), glycin::Error::StdIoError { .. }) {
-            Self::Io
         } else {
             Self::Unknown
         }
+    }
+}
+
+/// Extensions to [`glycin::Frame`].
+pub(crate) trait GlycinFrameExt {
+    /// Whether the frame has a delay, which means that the image is animated.
+    fn has_delay(&self) -> bool;
+
+    /// How long to show this frame for if the image is animated, as a
+    /// [`Duration`].
+    fn delay_duration(&self) -> Option<Duration>;
+
+    /// Convert this frame to a [`gdk::Texture`].
+    fn texture(&self) -> gdk::Texture;
+}
+
+impl GlycinFrameExt for glycin::Frame {
+    fn has_delay(&self) -> bool {
+        // glycin always computes a suitable delay if the image is animated but its
+        // delay is set to 0, so 0 should mean that the image is not animated.
+        self.delay() > 0
+    }
+
+    fn delay_duration(&self) -> Option<Duration> {
+        self.has_delay()
+            .then(|| u64::try_from(self.delay()).ok())
+            .flatten()
+            .map(Duration::from_millis)
+    }
+
+    fn texture(&self) -> gdk::Texture {
+        glycin_gtk4::frame_get_texture(self)
     }
 }

@@ -322,9 +322,7 @@ mod imp {
 
         /// Load the temporary paintable from the given file.
         pub(super) async fn set_temp_paintable_from_file(&self, file: gio::File) {
-            let handle = IMAGE_QUEUE
-                .add_file_request(file.into(), Some(self.avatar_dimensions()))
-                .await;
+            let handle = IMAGE_QUEUE.add_file_request(file.into(), Some(self.avatar_dimensions()));
             let paintable = handle.await.map(|image| Some(image.into()));
             self.set_temp_paintable(paintable);
         }

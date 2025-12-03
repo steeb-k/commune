@@ -10,6 +10,7 @@ pub(crate) use crate::{
     utils::{
         ChildPropertyExt, IsABin, LocationExt,
         matrix::ext_traits::*,
+        media::image::GlycinFrameExt,
         string::{OptionStringExt, StrExt, StrMutExt},
     },
 };

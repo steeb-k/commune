@@ -3,25 +3,22 @@ use std::{
     fmt,
     future::IntoFuture,
     path::PathBuf,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{Arc, LazyLock, Mutex, MutexGuard},
     time::Duration,
 };
 
-use futures_util::future::BoxFuture;
+use futures_util::future::{BoxFuture, LocalBoxFuture};
 use gtk::glib;
 use matrix_sdk::{
     Client,
     media::{MediaRequestParameters, UniqueKey},
 };
-use tokio::{
-    sync::{Mutex as AsyncMutex, broadcast},
-    task::AbortHandle,
-};
+use tokio::sync::broadcast;
 use tracing::{debug, warn};
 
 use super::{Image, ImageDecoderSource, ImageError};
 use crate::{
-    spawn_tokio,
+    spawn, spawn_tokio,
     utils::{
         File,
         media::{FrameDimensions, MediaFileError},
@@ -54,7 +51,7 @@ const STALLED_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 ///   - Log them,
 ///   - Ignore them in the count of ongoing requests.
 pub(crate) struct ImageRequestQueue {
-    inner: Arc<AsyncMutex<ImageRequestQueueInner>>,
+    inner: Arc<Mutex<ImageRequestQueueInner>>,
 }
 
 struct ImageRequestQueueInner {
@@ -78,7 +75,7 @@ impl ImageRequestQueue {
     /// Construct an empty `ImageRequestQueue` with the default settings.
     fn new() -> Self {
         Self {
-            inner: AsyncMutex::new(ImageRequestQueueInner {
+            inner: Mutex::new(ImageRequestQueueInner {
                 limit: DEFAULT_QUEUE_LIMIT,
                 requests: Default::default(),
                 ongoing: Default::default(),
@@ -90,61 +87,53 @@ impl ImageRequestQueue {
         }
     }
 
+    /// Get a mutable copy of the inner data.
+    fn inner(&self) -> MutexGuard<'_, ImageRequestQueueInner> {
+        self.inner.lock().expect("Mutex should not be poisoned")
+    }
+
     /// Add a request to download an image.
     ///
     /// If another request for the same image already exists, this will reuse
     /// the same request.
-    pub(crate) async fn add_download_request(
+    pub(crate) fn add_download_request(
         &self,
         client: Client,
         settings: MediaRequestParameters,
         dimensions: Option<FrameDimensions>,
         priority: ImageRequestPriority,
     ) -> ImageRequestHandle {
-        let inner = self.inner.clone();
-        spawn_tokio!(async move {
-            inner
-                .lock()
-                .await
-                .add_download_request(client, settings, dimensions, priority)
-        })
-        .await
-        .expect("task was not aborted")
+        self.inner()
+            .add_download_request(client, settings, dimensions, priority)
     }
 
     /// Add a request to load an image from a file.
     ///
     /// If another request for the same file already exists, this will reuse the
     /// same request.
-    pub(crate) async fn add_file_request(
+    pub(crate) fn add_file_request(
         &self,
         file: File,
         dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
-        let inner = self.inner.clone();
-        spawn_tokio!(async move { inner.lock().await.add_file_request(file, dimensions) })
-            .await
-            .expect("task was not aborted")
+        self.inner().add_file_request(file, dimensions)
     }
 
     /// Mark the request with the given ID as stalled.
-    async fn mark_as_stalled(&self, request_id: ImageRequestId) {
-        self.inner.lock().await.mark_as_stalled(request_id);
+    fn mark_as_stalled(&self, request_id: ImageRequestId) {
+        self.inner().mark_as_stalled(request_id);
     }
 
     /// Retry the request with the given ID.
     ///
     /// If `lower_limit` is `true`, we will also lower the limit of the queue.
-    async fn retry_request(&self, request_id: &ImageRequestId, lower_limit: bool) {
-        self.inner
-            .lock()
-            .await
-            .retry_request(request_id, lower_limit);
+    fn retry_request(&self, request_id: &ImageRequestId, lower_limit: bool) {
+        self.inner().retry_request(request_id, lower_limit);
     }
 
     /// Remove the request with the given ID.
-    async fn remove_request(&self, request_id: &ImageRequestId) {
-        self.inner.lock().await.remove_request(request_id);
+    fn remove_request(&self, request_id: &ImageRequestId) {
+        self.inner().remove_request(request_id);
     }
 }
 
@@ -349,7 +338,7 @@ struct ImageRequest {
     /// The number of retries for this request.
     retries_count: u8,
     /// The handle for aborting the current task of this request.
-    task_handle: Arc<Mutex<Option<AbortHandle>>>,
+    task_handle: Arc<Mutex<Option<glib::JoinHandle<()>>>>,
     /// The timeout source for marking this request as stalled.
     stalled_timeout_source: Arc<Mutex<Option<glib::SourceId>>>,
 }
@@ -390,60 +379,66 @@ impl ImageRequest {
         let task_handle = self.task_handle.clone();
         let stalled_timeout_source = self.stalled_timeout_source.clone();
 
-        let abort_handle = spawn_tokio!(async move {
-            let request_id = inner.source.request_id();
+        glib::MainContext::default().spawn(async move {
+            let task_handle_clone = task_handle.clone();
 
-            let stalled_timeout_source_clone = stalled_timeout_source.clone();
-            let request_id_clone = request_id.clone();
-            let source = glib::timeout_add_once(STALLED_REQUEST_TIMEOUT, move || {
-                spawn_tokio!(async move {
+            let abort_handle = spawn!(async move{
+                let request_id = inner.source.request_id();
+
+                let stalled_timeout_source_clone = stalled_timeout_source.clone();
+                let request_id_clone = request_id.clone();
+                let source = glib::timeout_add_once(STALLED_REQUEST_TIMEOUT, move || {
                     // Drop the timeout source.
                     let _ = stalled_timeout_source_clone.lock().map(|mut s| s.take());
 
-                    IMAGE_QUEUE.mark_as_stalled(request_id_clone.clone()).await;
-                    debug!("Request {request_id_clone} is taking longer than {} seconds, it is now marked as stalled", STALLED_REQUEST_TIMEOUT.as_secs());
+                    IMAGE_QUEUE.mark_as_stalled(request_id_clone.clone());
+                    debug!(
+                        "Request {request_id_clone} is taking longer than {} seconds, it is now marked as stalled",
+                        STALLED_REQUEST_TIMEOUT.as_secs()
+                    );
+                });
+                if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.replace(source)) {
+                    // This should not happen, but cancel the old timeout if we have one.
+                    source.remove();
+                }
+
+                let result = inner.await;
+
+                // Cancel the timeout.
+                if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.take()) {
+                    source.remove();
+                }
+
+                // Now that we have the result, do not offer to abort the task anymore.
+                let _ = task_handle_clone.lock().map(|mut s| s.take());
+
+                // If it is an error, maybe we can retry it.
+                if result
+                    .as_ref()
+                    .err()
+                    .is_some_and(|error| Self::can_retry(retries_count, *error))
+                {
+                    // Lower the limit of the queue, it is likely that glycin cannot spawn a sandbox.
+                    IMAGE_QUEUE.retry_request(&request_id, true);
+                    return;
+                }
+
+                // Send the result.
+                spawn_tokio!(async move {
+                    if let Err(error) = result_sender.send(result) {
+                        warn!("Could not send result of image request {request_id}: {error}");
+                    }
+
+                    IMAGE_QUEUE.remove_request(&request_id);
                 });
             });
-            if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.replace(source)) {
-                // This should not happen, but cancel the old timeout if we have one.
-                source.remove();
+
+
+            if let Ok(Some(handle)) = task_handle.lock().map(|mut s| s.replace(abort_handle)) {
+                // This should not happen, but cancel the old task if we have one.
+                handle.abort();
             }
-
-            let result = inner.await;
-
-            // Cancel the timeout.
-            if let Ok(Some(source)) = stalled_timeout_source.lock().map(|mut s| s.take()) {
-                source.remove();
-            }
-
-            // Now that we have the result, do not offer to abort the task anymore.
-            let _ = task_handle.lock().map(|mut s| s.take());
-
-            // If it is an error, maybe we can retry it.
-            if let Some(error) = result
-                .as_ref()
-                .err()
-                .filter(|error| Self::can_retry(retries_count, **error))
-            {
-                // Lower the limit of the queue if it is an I/O error, usually it means that glycin cannot spawn a sandbox.
-                let lower_limit = *error == ImageError::Io;
-                IMAGE_QUEUE
-                    .retry_request(&request_id, lower_limit)
-                    .await;
-                return;
-            }
-
-            // Send the result.
-            if let Err(error) = result_sender.send(result) {
-                warn!("Could not send result of image request {request_id}: {error}");
-            }
-            IMAGE_QUEUE.remove_request(&request_id).await;
-        }).abort_handle();
-
-        if let Ok(Some(handle)) = self.task_handle.lock().map(|mut s| s.replace(abort_handle)) {
-            // This should not happen, but cancel the old task if we have one.
-            handle.abort();
-        }
+        });
     }
 }
 
@@ -489,9 +484,9 @@ impl IntoFuture for DownloadRequest {
 
         Box::pin(async move {
             let media = client.media();
-            let data = media
-                .get_media_content(&settings, true)
+            let data = spawn_tokio!(async move { media.get_media_content(&settings, true).await })
                 .await
+                .expect("task should not be aborted")
                 .map_err(MediaFileError::from)?;
 
             let file = ImageDecoderSource::with_bytes(data).await?;
@@ -512,7 +507,7 @@ struct ImageLoaderRequest {
 
 impl IntoFuture for ImageLoaderRequest {
     type Output = Result<Image, ImageError>;
-    type IntoFuture = BoxFuture<'static, Self::Output>;
+    type IntoFuture = LocalBoxFuture<'static, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move {

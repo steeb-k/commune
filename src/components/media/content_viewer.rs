@@ -183,7 +183,7 @@ mod imp {
 
             match content_type {
                 ContentType::Image => {
-                    let handle = IMAGE_QUEUE.add_file_request(file, None).await;
+                    let handle = IMAGE_QUEUE.add_file_request(file, None);
                     if let Ok(image) = handle.await {
                         self.view_image(&gdk::Paintable::from(image));
 

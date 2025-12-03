@@ -1,35 +1,31 @@
-use std::sync::Arc;
-
 use glycin::{Frame, Image};
 use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
 use tracing::error;
 
 use crate::{
-    spawn, spawn_tokio,
-    utils::{CountedRef, File, TokioDrop},
+    prelude::*,
+    spawn,
+    utils::{CountedRef, File},
 };
 
 mod imp {
-    use std::{
-        cell::{OnceCell, RefCell},
-        sync::Arc,
-    };
+    use std::cell::{OnceCell, RefCell};
 
     use super::*;
 
     #[derive(Default)]
     pub struct AnimatedImagePaintable {
         /// The image decoder.
-        decoder: OnceCell<Arc<TokioDrop<Image>>>,
+        decoder: OnceCell<Image>,
         /// The file of the image.
         ///
         /// We need to keep a strong reference to the temporary file or it will
         /// be destroyed.
         file: OnceCell<File>,
         /// The current frame that is displayed.
-        pub(super) current_frame: RefCell<Option<Arc<Frame>>>,
+        pub(super) current_frame: RefCell<Option<Frame>>,
         /// The next frame of the animation, if any.
-        next_frame: RefCell<Option<Arc<Frame>>>,
+        next_frame: RefCell<Option<Frame>>,
         /// The source ID of the timeout to load the next frame, if any.
         timeout_source_id: RefCell<Option<glib::SourceId>>,
         /// The counted reference for the animation.
@@ -52,7 +48,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.decoder().details().height(), |f| f.height())
+                .map_or_else(|| self.decoder().height(), glycin::Frame::height)
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -61,7 +57,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.decoder().details().width(), |f| f.width())
+                .map_or_else(|| self.decoder().width(), glycin::Frame::width)
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -98,17 +94,12 @@ mod imp {
 
     impl AnimatedImagePaintable {
         /// The image decoder.
-        fn decoder(&self) -> &Arc<TokioDrop<Image>> {
+        fn decoder(&self) -> &Image {
             self.decoder.get().expect("decoder should be initialized")
         }
 
         /// Initialize the image.
-        pub(super) fn init(
-            &self,
-            decoder: Arc<TokioDrop<Image>>,
-            first_frame: Arc<Frame>,
-            file: Option<File>,
-        ) {
+        pub(super) fn init(&self, decoder: Image, first_frame: Frame, file: Option<File>) {
             self.decoder
                 .set(decoder)
                 .expect("decoder should be uninitialized");
@@ -175,7 +166,12 @@ mod imp {
                 return;
             }
 
-            let Some(delay) = self.current_frame.borrow().as_ref().and_then(|f| f.delay()) else {
+            let Some(delay) = self
+                .current_frame
+                .borrow()
+                .as_ref()
+                .and_then(GlycinFrameExt::delay_duration)
+            else {
                 return;
             };
 
@@ -202,15 +198,9 @@ mod imp {
         }
 
         async fn load_next_frame_inner(&self) {
-            let decoder = self.decoder().clone();
-
-            let result = spawn_tokio!(async move { decoder.next_frame().await })
-                .await
-                .unwrap();
-
-            match result {
+            match self.decoder().next_frame_future().await {
                 Ok(next_frame) => {
-                    self.next_frame.replace(Some(next_frame.into()));
+                    self.next_frame.replace(Some(next_frame));
 
                     // In case loading the frame took longer than the delay between frames.
                     if self.timeout_source_id.borrow().is_none() {
@@ -235,11 +225,7 @@ glib::wrapper! {
 impl AnimatedImagePaintable {
     /// Construct an `AnimatedImagePaintable` with the given  decoder, first
     /// frame, and the file containing the image, if any.
-    pub(crate) fn new(
-        decoder: Arc<TokioDrop<Image>>,
-        first_frame: Arc<Frame>,
-        file: Option<File>,
-    ) -> Self {
+    pub(crate) fn new(decoder: Image, first_frame: Frame, file: Option<File>) -> Self {
         let obj = glib::Object::new::<Self>();
 
         obj.imp().init(decoder, first_frame, file);
