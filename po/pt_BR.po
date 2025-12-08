@@ -12,9 +12,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2025-10-10 13:26+0000\n"
-"PO-Revision-Date: 2025-10-10 15:16-0300\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
+"POT-Creation-Date: 2025-12-03 11:43+0000\n"
+"PO-Revision-Date: 2025-12-08 17:02-0300\n"
 "Last-Translator: Juliano de Souza Camargo <julianosc@pm.me>\n"
 "Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao/>\n"
 "Language: pt_BR\n"
@@ -161,7 +161,7 @@ msgstr "Selecione a conta com a qual você deseja abrir o URI"
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:150
 #: src/account_settings/encryption_page/mod.blp:148
 msgid "Export Room Encryption Keys"
-msgstr "Exportar chaves de encriptação das salas"
+msgstr "Exportar chaves de criptografia das salas"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:153
@@ -190,7 +190,7 @@ msgstr "Exportar chaves"
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:162
 #: src/account_settings/encryption_page/mod.blp:157
 msgid "Import Room Encryption Keys"
-msgstr "Importar chaves de encriptação das salas"
+msgstr "Importar chaves de criptografia das salas"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:165
@@ -212,13 +212,13 @@ msgid "Import Keys"
 msgstr "Importar chaves"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:184
-#: src/components/avatar/editable.rs:515
+#: src/components/avatar/editable.rs:513
 msgid "Choose"
 msgstr "Escolher"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:193
 msgid "fractal-encryption-keys"
-msgstr "chaves-de-encriptação-fractal"
+msgstr "chaves-de-criptografia-fractal"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:199
 msgid "Save Encryption Keys To…"
@@ -226,7 +226,7 @@ msgstr "Salvar chaves de criptografia para…"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:202
 msgid "Import Encryption Keys From…"
-msgstr "Importar chaves de encriptação de…"
+msgstr "Importar chaves de criptografia de…"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:215
 #: src/utils/matrix/media_message.rs:258
@@ -239,13 +239,13 @@ msgstr "As senhas não conferem"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:321
 msgid "Room encryption keys exported successfully"
-msgstr "Chaves de encriptação da sala exportadas com sucesso"
+msgstr "Chaves de criptografia da sala exportadas com sucesso"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:327
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
-msgstr[0] "Importado 1 chave de encriptação da sala"
-msgstr[1] "Importado {n} chaves de encriptação da sala"
+msgstr[0] "Importado 1 chave de criptografia da sala"
+msgstr[1] "Importado {n} chaves de criptografia da sala"
 
 #: src/account_settings/encryption_page/import_export_keys_subpage.rs:341
 msgid "Could not export the keys"
@@ -376,7 +376,7 @@ msgstr "Recuperar dados da conta"
 
 #: src/account_settings/encryption_page/mod.blp:6
 msgid "Encryption"
-msgstr "Encriptação"
+msgstr "Criptografia"
 
 #: src/account_settings/encryption_page/mod.blp:10
 msgid "Crypto Identity"
@@ -571,43 +571,43 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Remover sessão"
 
-#: src/account_settings/general_page/mod.rs:288
+#: src/account_settings/general_page/mod.rs:315
 #: src/session_view/room_details/edit_details_subpage.rs:149
 msgid "Avatar removed successfully"
 msgstr "Avatar removido com sucesso"
 
-#: src/account_settings/general_page/mod.rs:290
+#: src/account_settings/general_page/mod.rs:317
 #: src/session_view/room_details/edit_details_subpage.rs:151
 msgid "Avatar changed successfully"
 msgstr "Avatar alterado com sucesso"
 
-#: src/account_settings/general_page/mod.rs:308
-#: src/account_settings/general_page/mod.rs:318
+#: src/account_settings/general_page/mod.rs:335
+#: src/account_settings/general_page/mod.rs:345
 #: src/session_view/room_details/edit_details_subpage.rs:176
 #: src/session_view/room_details/edit_details_subpage.rs:186
 msgid "Could not load file"
 msgstr "Falha ao carregar arquivo"
 
-#: src/account_settings/general_page/mod.rs:337
+#: src/account_settings/general_page/mod.rs:364
 #: src/session_view/room_details/edit_details_subpage.rs:213
 msgid "Could not upload avatar"
 msgstr "Falha ao carregar o avatar"
 
-#: src/account_settings/general_page/mod.rs:368
+#: src/account_settings/general_page/mod.rs:395
 #: src/session_view/room_details/edit_details_subpage.rs:236
 msgid "Could not change avatar"
 msgstr "Falha ao alterar o avatar"
 
-#: src/account_settings/general_page/mod.rs:385
+#: src/account_settings/general_page/mod.rs:412
 #: src/session_view/room_details/edit_details_subpage.rs:261
 msgid "Remove Avatar?"
 msgstr "Remover Avatar?"
 
-#: src/account_settings/general_page/mod.rs:386
+#: src/account_settings/general_page/mod.rs:413
 msgid "Do you really want to remove your avatar?"
 msgstr "Tem certeza que deseja remover seu avatar?"
 
-#: src/account_settings/general_page/mod.rs:389
+#: src/account_settings/general_page/mod.rs:416
 #: src/components/dialogs/message_dialogs.rs:58
 #: src/components/dialogs/message_dialogs.rs:323
 #: src/components/dialogs/message_dialogs.rs:398
@@ -620,28 +620,28 @@ msgstr "Tem certeza que deseja remover seu avatar?"
 #: src/session_view/room_details/upgrade_dialog/mod.blp:130
 #: src/session_view/room_history/event_actions/group.rs:584
 #: src/session_view/room_history/event_actions/group.rs:648
-#: src/session_view/room_history/message_toolbar/mod.blp:71
+#: src/session_view/room_history/message_toolbar/mod.blp:72
 #: src/session_view/room_history/verification_info_bar.rs:177
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: src/account_settings/general_page/mod.rs:390
+#: src/account_settings/general_page/mod.rs:417
 #: src/components/dialogs/message_dialogs.rs:232
 #: src/session_view/room_details/edit_details_subpage.rs:268
 #: src/session_view/room_history/event_actions/group.rs:585
 msgid "Remove"
 msgstr "Remover"
 
-#: src/account_settings/general_page/mod.rs:424
+#: src/account_settings/general_page/mod.rs:451
 #: src/session_view/room_details/edit_details_subpage.rs:293
 msgid "Could not remove avatar"
 msgstr "Falha ao remover o avatar"
 
-#: src/account_settings/general_page/mod.rs:473
+#: src/account_settings/general_page/mod.rs:500
 msgid "Name changed successfully"
 msgstr "Nome alterado com sucesso"
 
-#: src/account_settings/general_page/mod.rs:523
+#: src/account_settings/general_page/mod.rs:550
 msgid "Could not change display name"
 msgstr "Falha ao exibir o nome"
 
@@ -1055,23 +1055,23 @@ msgstr "Aviso"
 msgid "Error"
 msgstr "Erro"
 
-#: src/components/avatar/editable.rs:507
+#: src/components/avatar/editable.rs:505
 msgid "Images"
 msgstr "Imagens"
 
-#: src/components/avatar/editable.rs:513
+#: src/components/avatar/editable.rs:511
 msgid "Choose Avatar"
 msgstr "Escolha o provedor"
 
-#: src/components/avatar/editable.rs:529
+#: src/components/avatar/editable.rs:527
 msgid "Could not open avatar file"
 msgstr "Falha ao abrir o avatar"
 
-#: src/components/avatar/editable.rs:550
+#: src/components/avatar/editable.rs:548
 msgid "The chosen file is not an image"
 msgstr "O arquivo escolhido não é uma imagem"
 
-#: src/components/avatar/editable.rs:556
+#: src/components/avatar/editable.rs:554
 msgid "Could not determine the type of the chosen file"
 msgstr "Falha ao determinar o tipo do arquivo escolhido"
 
@@ -1420,11 +1420,11 @@ msgstr "_Cancelar"
 msgid "C_onfirm"
 msgstr "C_onfirmar"
 
-#: src/components/dialogs/auth/mod.rs:311
+#: src/components/dialogs/auth/mod.rs:313
 msgid "The password is invalid."
 msgstr "A senha é inválida."
 
-#: src/components/dialogs/auth/mod.rs:313 src/login/in_browser_page.rs:127
+#: src/components/dialogs/auth/mod.rs:315 src/login/in_browser_page.rs:127
 msgid "An unexpected error occurred."
 msgstr "Ocorreu um erro desconhecido."
 
@@ -1817,19 +1817,19 @@ msgstr "Sem conexão de rede"
 msgid "No Internet connection"
 msgstr "Sem conexão de internet"
 
-#: src/components/media/audio_player/mod.rs:321
+#: src/components/media/audio_player/mod.rs:304
 msgid "Pause"
 msgstr "Pausar"
 
-#: src/components/media/audio_player/mod.rs:323
+#: src/components/media/audio_player/mod.rs:306
 msgid "Play"
 msgstr "Executar"
 
-#: src/components/media/audio_player/mod.rs:404
+#: src/components/media/audio_player/mod.rs:387
 msgid "Error reading audio file"
 msgstr "Erro ao ler o arquivo de áudio"
 
-#: src/components/media/audio_player/mod.rs:486
+#: src/components/media/audio_player/mod.rs:475
 msgid "Could not retrieve audio file"
 msgstr "Falha ao recuperar o arquivo de áudio"
 
@@ -2085,15 +2085,15 @@ msgstr ""
 "Se você preferir usar um Provedor de Serviços de Segredo, você precisa "
 "permitir que o Fractal interaja com ele, tipo assim:"
 
-#: src/error_page.blp:144
+#: src/error_page.blp:148
 msgid "Copy Command"
 msgstr "Copiar comando"
 
-#: src/error_page.blp:170
+#: src/error_page.blp:174
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Verifique se você tem um chaveiro padrão e se ele está desbloqueado."
 
-#: src/error_page.blp:183
+#: src/error_page.blp:187
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -2101,11 +2101,11 @@ msgstr ""
 "Verifique os logs do aplicativo e a documentação da sua distribuição para "
 "obter mais detalhes."
 
-#: src/error_page.blp:198
+#: src/error_page.blp:202
 msgid "Could Not Initialize Session"
 msgstr "Falha ao Iniciar Sessão"
 
-#: src/error_page.rs:94
+#: src/error_page.rs:93
 msgid "Command copied to clipboard"
 msgstr "Comando copiado para a área de transferência"
 
@@ -2835,17 +2835,17 @@ msgstr "Regra sem suporte"
 #. Translators: This is the name of a room that is empty but had another
 #. user before. Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/room/mod.rs:386
+#: src/session/room/mod.rs:389
 msgid "Empty Room (was {user})"
 msgstr "Sala vazia (foi {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/room/mod.rs:389
+#: src/session/room/mod.rs:392
 msgid "Empty Room"
 msgstr "Sala vazia"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/room/mod.rs:399
+#: src/session/room/mod.rs:402
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -3123,7 +3123,7 @@ msgstr "Qualquer um pode achar e se juntar a esta sala"
 
 #: src/session_view/create_room_dialog.blp:118
 msgid "End-to-End Encryption"
-msgstr "Encriptação de ponta-a-ponta"
+msgstr "Criptografia de ponta-a-ponta"
 
 #: src/session_view/create_room_dialog.blp:119
 msgid "Cannot be disabled later"
@@ -3516,7 +3516,7 @@ msgstr "Habilitar"
 
 #: src/session_view/room_details/general_page.rs:1000
 msgid "Could not enable encryption"
-msgstr "Falha ao habilitar encriptação"
+msgstr "Falha ao habilitar criptografia"
 
 #. Translators: As in, 'Room federated'.
 #: src/session_view/room_details/general_page.rs:1060
@@ -3641,7 +3641,7 @@ msgstr "ID da sala Matrix copiado para a área de transferência"
 #: src/session_view/room_details/general_page.blp:240
 #: src/session_view/room_details/permissions/permissions_subpage.blp:159
 msgid "Enable Encryption"
-msgstr "Habilitar encriptação"
+msgstr "Habilitar criptografia"
 
 #: src/session_view/room_details/general_page.blp:246
 #: src/session_view/room_details/permissions/permissions_subpage.blp:5
@@ -4448,7 +4448,7 @@ msgid "Mention"
 msgstr "Menção"
 
 #. Translators: this is the fallback title for an expander.
-#: src/session_view/room_history/message_row/text/widgets.rs:444
+#: src/session_view/room_history/message_row/text/widgets.rs:465
 msgid "Details"
 msgstr "Detalhes"
 
@@ -4479,12 +4479,12 @@ msgid "Video: {filename}"
 msgstr "Vídeo: {filename}"
 
 #: src/session_view/room_history/message_row/visual_media.rs:740
-#: src/utils/media/image/mod.rs:935
+#: src/utils/media/image/mod.rs:932
 msgid "Could not retrieve media"
 msgstr "Falha ao recuperar a mídia"
 
 #: src/session_view/room_history/message_row/visual_media.rs:789
-#: src/utils/media/image/mod.rs:938
+#: src/utils/media/image/mod.rs:934
 msgid "An unexpected error occurred"
 msgstr "Ocorreu um erro desconhecido"
 
@@ -4604,30 +4604,30 @@ msgstr "_Local"
 msgid "_Markdown"
 msgstr "_Markdown"
 
-#: src/session_view/room_history/message_toolbar/mod.blp:88
+#: src/session_view/room_history/message_toolbar/mod.blp:89
 msgid "Send a File"
 msgstr "Enviar arquivo"
 
-#: src/session_view/room_history/message_toolbar/mod.blp:95
+#: src/session_view/room_history/message_toolbar/mod.blp:96
 msgid "Insert an Emoji"
 msgstr "Inserir um emoji"
 
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
-#: src/session_view/room_history/message_toolbar/mod.blp:120
+#: src/session_view/room_history/message_toolbar/mod.blp:121
 msgid "Message Composer"
 msgstr "Compositor de mensagens"
 
-#: src/session_view/room_history/message_toolbar/mod.blp:135
-#: src/session_view/room_history/message_toolbar/mod.blp:138
+#: src/session_view/room_history/message_toolbar/mod.blp:136
+#: src/session_view/room_history/message_toolbar/mod.blp:139
 msgid "More Options"
 msgstr "Mais opções"
 
-#: src/session_view/room_history/message_toolbar/mod.blp:146
+#: src/session_view/room_history/message_toolbar/mod.blp:147
 msgid "Send Message"
 msgstr "Enviar mensagem"
 
-#: src/session_view/room_history/message_toolbar/mod.blp:170
+#: src/session_view/room_history/message_toolbar/mod.blp:171
 msgid "You don’t have permission to send messages to this room"
 msgstr "Você não tem permissão para enviar mensagens para esta sala"
 
@@ -5008,14 +5008,14 @@ msgstr "Permite navegar entre salas"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session_view/sidebar/room_row.rs:285
+#: src/session_view/sidebar/room_row.rs:286
 msgid "Direct chat with {name}"
 msgstr "Conversa direta com {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a room has notifications
 #. for unread messages.
-#: src/session_view/sidebar/room_row.rs:297
+#: src/session_view/sidebar/room_row.rs:298
 msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "1 notificação"
@@ -5040,58 +5040,58 @@ msgstr "Falha ao desmarcar {room} como conversa direta"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
-#: src/session_view/sidebar/section_row.rs:127
+#: src/session_view/sidebar/section_row.rs:124
 msgid "Join Room as Favorite"
 msgstr "Entrar na sala como favorita"
 
-#: src/session_view/sidebar/section_row.rs:128
+#: src/session_view/sidebar/section_row.rs:125
 msgid "Join Room"
 msgstr "Entrar na sala"
 
 #. Translators: This is an action to join a room and put it in the "Low
 #. Priority" section.
-#: src/session_view/sidebar/section_row.rs:131
+#: src/session_view/sidebar/section_row.rs:128
 msgid "Join Room as Low Priority"
 msgstr "Entrar na sala como baixa prioridade"
 
-#: src/session_view/sidebar/section_row.rs:132
+#: src/session_view/sidebar/section_row.rs:129
 msgid "Reject Invite"
 msgstr "Rejeitar convite"
 
-#: src/session_view/sidebar/section_row.rs:136
-#: src/session_view/sidebar/section_row.rs:149
+#: src/session_view/sidebar/section_row.rs:133
+#: src/session_view/sidebar/section_row.rs:146
 msgid "Move to Rooms"
 msgstr "Mover para salas"
 
-#: src/session_view/sidebar/section_row.rs:137
-#: src/session_view/sidebar/section_row.rs:143
+#: src/session_view/sidebar/section_row.rs:134
+#: src/session_view/sidebar/section_row.rs:140
 msgid "Move to Low Priority"
 msgstr "Mover para baixa prioridade"
 
-#: src/session_view/sidebar/section_row.rs:138
-#: src/session_view/sidebar/section_row.rs:144
-#: src/session_view/sidebar/section_row.rs:150
+#: src/session_view/sidebar/section_row.rs:135
+#: src/session_view/sidebar/section_row.rs:141
+#: src/session_view/sidebar/section_row.rs:147
 msgid "Leave Room"
 msgstr "Sair da sala"
 
-#: src/session_view/sidebar/section_row.rs:142
-#: src/session_view/sidebar/section_row.rs:148
+#: src/session_view/sidebar/section_row.rs:139
+#: src/session_view/sidebar/section_row.rs:145
 msgid "Move to Favorites"
 msgstr "Mover para favoritos"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
-#: src/session_view/sidebar/section_row.rs:156
+#: src/session_view/sidebar/section_row.rs:153
 msgid "Rejoin Room as Favorite"
 msgstr "Entrar novamente na sala como favorita"
 
-#: src/session_view/sidebar/section_row.rs:157
+#: src/session_view/sidebar/section_row.rs:154
 msgid "Rejoin Room"
 msgstr "Entrar novamente na sala"
 
 #. Translators: This is an action to rejoin a room and put it in the "Low
 #. Priority" section.
-#: src/session_view/sidebar/section_row.rs:160
+#: src/session_view/sidebar/section_row.rs:157
 msgid "Rejoin Room as Low Priority"
 msgstr "Entrar novamente na sala como baixa prioridade"
 
@@ -5258,7 +5258,7 @@ msgstr "Não foi possível gerar um ID de sessão única"
 msgid "Could not access the session tokens"
 msgstr "Não foi possível acessar aos tokens da sessão"
 
-#: src/utils/media/image/mod.rs:936
+#: src/utils/media/image/mod.rs:933
 msgid "Image format not supported"
 msgstr "Arquivo de imagem não suportado"
 
