@@ -167,7 +167,7 @@ flatpak install --user gnome-nightly org.gnome.Fractal.Devel
 On top of the dependencies required at build time and checked by Meson, Fractal depends on the
 following dependencies at runtime:
 
-* xdg-desktop-portal and its backends: some functionalities are dependant on the following portals,
+* xdg-desktop-portal and its backends: some functionalities are dependent on the following portals,
   and a permission will be asked when necessary, but Fractal should work without them:
   * Secret: this portal or a Secret Service is required, see [storing secrets](#storing-secrets).
   * Camera: scan QR codes during verification.
