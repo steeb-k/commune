@@ -7,7 +7,6 @@ targets = [
 [advisories]
 yanked = "deny"
 ignore = [
-    { id = "RUSTSEC-2026-0173", reason = "proc-macro-error2 is unmaintained but used by dependencies of matrix-sdk" },
     { id = "RUSTSEC-2026-0247", reason = "bitmaps is unmaintained but used by dependencies of matrix-sdk" },
 ]
 
@@ -38,5 +37,6 @@ required-git-spec = "rev"
 allow-git = [
     "https://github.com/ruma/ruma",
     "https://github.com/matrix-org/matrix-rust-sdk",
+    "https://github.com/matrix-org/vodozemac",
 ]
 unused-allowed-source = "allow"
