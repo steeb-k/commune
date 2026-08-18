@@ -1,0 +1,155 @@
+use gettextrs::gettext;
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use ruma::OwnedMxcUri;
+
+use super::{
+    PackImage,
+    events::{PackContent, PackUsage},
+};
+use crate::{prelude::*, session::Room};
+
+/// Where an image pack comes from.
+#[derive(Debug, Clone)]
+pub(crate) enum ImagePackSource {
+    /// The personal image pack of the user, in the global account data.
+    User,
+    /// An image pack in the state of a room.
+    Room {
+        /// The room that defines the pack.
+        room: Room,
+        /// The state key that identifies the pack in that room.
+        state_key: String,
+    },
+}
+
+impl ImagePackSource {
+    /// The room that defines the pack, if it comes from one.
+    pub(crate) fn room(&self) -> Option<&Room> {
+        match self {
+            Self::User => None,
+            Self::Room { room, .. } => Some(room),
+        }
+    }
+}
+
+mod imp {
+    use std::{cell::OnceCell, marker::PhantomData};
+
+    use super::*;
+
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ImagePack)]
+    pub struct ImagePack {
+        /// Where this pack comes from.
+        pub(super) source: OnceCell<ImagePackSource>,
+        /// The content of this pack.
+        pub(super) content: OnceCell<PackContent>,
+        /// The images of this pack.
+        #[property(get = Self::images)]
+        images: OnceCell<gio::ListStore>,
+        /// The name of this pack, as shown to the user.
+        #[property(get = Self::display_name)]
+        display_name: PhantomData<String>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for ImagePack {
+        const NAME: &'static str = "ImagePack";
+        type Type = super::ImagePack;
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for ImagePack {}
+
+    impl ImagePack {
+        /// Where this pack comes from.
+        pub(super) fn source(&self) -> &ImagePackSource {
+            self.source.get().expect("source should be initialized")
+        }
+
+        /// The content of this pack.
+        pub(super) fn content(&self) -> &PackContent {
+            self.content.get().expect("content should be initialized")
+        }
+
+        /// The images of this pack.
+        ///
+        /// The specification does not define an order for the images of a
+        /// pack, so they are sorted by shortcode to at least be stable.
+        fn images(&self) -> gio::ListStore {
+            self.images
+                .get_or_init(|| {
+                    let images = gio::ListStore::new::<PackImage>();
+
+                    for (shortcode, data) in &self.content().images {
+                        images.append(&PackImage::new(shortcode.clone(), data.clone()));
+                    }
+
+                    images
+                })
+                .clone()
+        }
+
+        /// The name of this pack, as shown to the user.
+        fn display_name(&self) -> String {
+            if let Some(display_name) = &self.content().pack.display_name {
+                return display_name.clone();
+            }
+
+            match self.source() {
+                // Translators: This is the name of the image pack of the user,
+                // when they did not give it one.
+                ImagePackSource::User => gettext("Your Images"),
+                ImagePackSource::Room { room, .. } => room.display_name(),
+            }
+        }
+    }
+}
+
+glib::wrapper! {
+    /// An image pack.
+    pub struct ImagePack(ObjectSubclass<imp::ImagePack>);
+}
+
+impl ImagePack {
+    /// Create a new `ImagePack` with the given source and content.
+    pub(crate) fn new(source: ImagePackSource, content: PackContent) -> Self {
+        let obj = glib::Object::new::<Self>();
+
+        let imp = obj.imp();
+        imp.source.set(source).expect("source is not initialized");
+        imp.content
+            .set(content)
+            .expect("content is not initialized");
+
+        obj
+    }
+
+    /// Where this pack comes from.
+    pub(crate) fn source(&self) -> &ImagePackSource {
+        self.imp().source()
+    }
+
+    /// The `mxc://` URI of the avatar of this pack, if it has one.
+    ///
+    /// A pack defined in a room and without an avatar of its own uses the
+    /// avatar of the room, which is not handled here.
+    pub(crate) fn avatar_url(&self) -> Option<&OwnedMxcUri> {
+        self.imp().content().pack.avatar_url.as_ref()
+    }
+
+    /// Who to credit for this pack.
+    pub(crate) fn attribution(&self) -> Option<&str> {
+        self.imp().content().pack.attribution.as_deref()
+    }
+
+    /// Whether this pack can be used for the given usage.
+    pub(crate) fn has_usage(&self, usage: &PackUsage) -> bool {
+        self.imp().content().pack.has_usage(usage)
+    }
+
+    /// Whether this pack has no images.
+    pub(crate) fn is_empty(&self) -> bool {
+        self.imp().content().images.is_empty()
+    }
+}

@@ -20,6 +20,7 @@ use tracing::{debug, error, info};
 
 mod global_account_data;
 mod ignored_users;
+mod image_packs;
 mod notifications;
 mod remote;
 mod room;
@@ -32,9 +33,9 @@ mod user_sessions_list;
 mod verification;
 
 pub(crate) use self::{
-    global_account_data::*, ignored_users::*, notifications::*, remote::*, room::*, room_list::*,
-    security::*, session_settings::*, sidebar_data::*, user::*, user_sessions_list::*,
-    verification::*,
+    global_account_data::*, ignored_users::*, image_packs::*, notifications::*, remote::*, room::*,
+    room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
+    user_sessions_list::*, verification::*,
 };
 use crate::{
     Application,
@@ -104,6 +105,9 @@ mod imp {
         /// The settings in the global account data for this session.
         #[property(get = Self::global_account_data_owned)]
         global_account_data: OnceCell<GlobalAccountData>,
+        /// The image packs available to this session.
+        #[property(get = Self::image_packs_owned)]
+        image_packs: OnceCell<ImagePacks>,
         /// The notifications API for this session.
         #[property(get)]
         notifications: Notifications,
@@ -364,6 +368,17 @@ mod imp {
             self.global_account_data().clone()
         }
 
+        /// The image packs available to this session.
+        fn image_packs(&self) -> &ImagePacks {
+            self.image_packs
+                .get_or_init(|| ImagePacks::new(&self.obj()))
+        }
+
+        /// The owned image packs available to this session.
+        fn image_packs_owned(&self) -> ImagePacks {
+            self.image_packs().clone()
+        }
+
         /// The cache for remote data.
         pub(super) fn remote_cache(&self) -> &RemoteCache {
             self.remote_cache
@@ -387,6 +402,7 @@ mod imp {
             );
 
             self.global_account_data();
+            self.image_packs();
             self.watch_session_changes();
             self.update_homeserver_reachable().await;
 
