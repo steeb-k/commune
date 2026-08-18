@@ -767,8 +767,9 @@ impl Event {
     pub(crate) fn can_be_replied_to(&self) -> bool {
         let item = self.item();
 
-        // We only allow to reply to messages (but not stickers).
-        if !item.content().is_message() {
+        // We only allow to reply to messages and stickers.
+        let content = item.content();
+        if !content.is_message() && !content.is_sticker() {
             return false;
         }
 
@@ -783,8 +784,10 @@ impl Event {
 
     /// Whether this event can be reacted to.
     pub(crate) fn can_be_reacted_to(&self) -> bool {
-        // We only allow to react to messages (but not stickers).
-        if !self.item().content().is_message() {
+        // We only allow to react to messages and stickers.
+        let item = self.item();
+        let content = item.content();
+        if !content.is_message() && !content.is_sticker() {
             return false;
         }
 

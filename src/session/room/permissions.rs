@@ -118,6 +118,9 @@ mod imp {
         /// Whether our own member can send a message.
         #[property(get)]
         can_send_message: Cell<bool>,
+        /// Whether our own member can send a sticker.
+        #[property(get)]
+        can_send_sticker: Cell<bool>,
         /// Whether our own member can send a reaction.
         #[property(get)]
         can_send_reaction: Cell<bool>,
@@ -151,6 +154,7 @@ mod imp {
                 can_change_topic: Default::default(),
                 can_invite: Default::default(),
                 can_send_message: Default::default(),
+                can_send_sticker: Default::default(),
                 can_send_reaction: Default::default(),
                 can_redact_own: Default::default(),
                 can_redact_other: Default::default(),
@@ -289,6 +293,7 @@ mod imp {
             self.update_can_change_topic();
             self.update_can_invite();
             self.update_can_send_message();
+            self.update_can_send_sticker();
             self.update_can_send_reaction();
             self.update_can_redact_own();
             self.update_can_redact_other();
@@ -424,6 +429,19 @@ mod imp {
 
             self.can_send_message.set(can_send_message);
             self.obj().notify_can_send_message();
+        }
+
+        /// Update whether our own member can send a sticker.
+        fn update_can_send_sticker(&self) {
+            let can_send_sticker =
+                self.is_allowed_to(PowerLevelAction::SendMessage(MessageLikeEventType::Sticker));
+
+            if self.can_send_sticker.get() == can_send_sticker {
+                return;
+            }
+
+            self.can_send_sticker.set(can_send_sticker);
+            self.obj().notify_can_send_sticker();
         }
 
         /// Update whether our own member can send a reaction.
