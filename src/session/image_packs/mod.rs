@@ -20,40 +20,51 @@ mod pack_image;
 
 use self::events::{
     EmoteRoomsEvent, EmoteRoomsEventContent, EnabledPacks, ImagePackRoomsEvent,
-    ImagePackRoomsEventContent, PackContent, RoomEmotesEventContent, RoomImagePackEventContent,
-    UserEmotesEvent, UserEmotesEventContent,
+    ImagePackRoomsEventContent, RoomEmotesEventContent, RoomImagePackEventContent, UserEmotesEvent,
+    UserEmotesEventContent,
 };
 pub(crate) use self::{
     emoticon_source::EmoticonSource,
-    events::PackUsage,
-    image_pack::{ImagePack, ImagePackSource},
+    events::{
+        PackContent, PackImage as PackImageData, PackMeta, PackUsage, SHORTCODE_MAX_LEN,
+        is_valid_shortcode,
+    },
+    image_pack::{ImagePack, ImagePackSource, RoomPackKind},
     pack_image::PackImage,
 };
 use super::{Room, Session};
 use crate::{spawn, spawn_tokio};
 
+/// The event type of the room image packs that we create.
+///
+/// Exposed so that the permission to change them can be checked without
+/// repeating the string.
+pub(crate) const ROOM_IMAGE_PACK_EVENT_TYPE: &str = RoomEmotesEventContent::TYPE;
+
 /// The event types of a room image pack, in the order in which they are read.
 ///
 /// The unstable type comes last so that it wins over the stable one, since it
 /// is the one that we send.
-const ROOM_PACK_TYPES: &[&str] = &[
-    RoomImagePackEventContent::TYPE,
-    RoomEmotesEventContent::TYPE,
+const ROOM_PACK_TYPES: &[(RoomPackKind, &str)] = &[
+    (RoomPackKind::Stable, RoomImagePackEventContent::TYPE),
+    (RoomPackKind::Unstable, RoomEmotesEventContent::TYPE),
 ];
 
 /// Read the image packs defined in the state of the given room.
 ///
-/// Packs are keyed by their state key. A pack defined under both the stable
-/// and the unstable event type is only returned once.
-async fn room_state_packs(room: &Room) -> IndexMap<String, PackContent> {
+/// Packs are keyed by their state key, and carry the event type that they were
+/// read from, so that they can be written back under the same one. A pack
+/// defined under both the stable and the unstable event type is only returned
+/// once.
+async fn room_state_packs(room: &Room) -> IndexMap<String, (RoomPackKind, PackContent)> {
     let matrix_room = room.matrix_room().clone();
 
     let handle = spawn_tokio!(async move {
         let mut raw_events = Vec::new();
 
-        for event_type in ROOM_PACK_TYPES {
+        for (kind, event_type) in ROOM_PACK_TYPES {
             match matrix_room.get_state_events((*event_type).into()).await {
-                Ok(events) => raw_events.extend(events),
+                Ok(events) => raw_events.extend(events.into_iter().map(|event| (*kind, event))),
                 Err(error) => error!("Could not get the image packs of a room: {error}"),
             }
         }
@@ -64,7 +75,7 @@ async fn room_state_packs(room: &Room) -> IndexMap<String, PackContent> {
 
     let mut packs = IndexMap::new();
 
-    for raw_event in raw_events {
+    for (kind, raw_event) in raw_events {
         let RawAnySyncOrStrippedState::Sync(raw_event) = raw_event else {
             // A room that we are only invited to does not expose its packs.
             continue;
@@ -88,12 +99,12 @@ async fn room_state_packs(room: &Room) -> IndexMap<String, PackContent> {
             }
         };
 
-        // A redacted pack has no images.
+        // A redacted pack, or a pack that was deleted, has no images.
         if content.images.is_empty() {
             continue;
         }
 
-        packs.insert(state_key, content);
+        packs.insert(state_key, (kind, content));
     }
 
     packs
@@ -395,7 +406,7 @@ impl ImagePacks {
             let mut room_packs = room_state_packs(&source_room).await;
 
             for state_key in state_keys.into_keys() {
-                let Some(content) = room_packs.shift_remove(&state_key) else {
+                let Some((kind, content)) = room_packs.shift_remove(&state_key) else {
                     continue;
                 };
 
@@ -404,6 +415,7 @@ impl ImagePacks {
                     ImagePackSource::Room {
                         room: source_room.clone(),
                         state_key,
+                        kind,
                     },
                     content,
                 ));
@@ -411,7 +423,7 @@ impl ImagePacks {
         }
 
         let room_id = room.room_id().to_owned();
-        for (state_key, content) in room_state_packs(room).await {
+        for (state_key, (kind, content)) in room_state_packs(room).await {
             if seen.contains(&(room_id.clone(), state_key.clone())) {
                 continue;
             }
@@ -420,6 +432,7 @@ impl ImagePacks {
                 ImagePackSource::Room {
                     room: room.clone(),
                     state_key,
+                    kind,
                 },
                 content,
             ));
@@ -452,11 +465,12 @@ impl ImagePacks {
 
             for state_key in state_keys.into_keys() {
                 match (&room, room_packs.shift_remove(&state_key)) {
-                    (Some(room), Some(content)) => {
+                    (Some(room), Some((kind, content))) => {
                         packs.push(EnabledPack::Available(ImagePack::new(
                             ImagePackSource::Room {
                                 room: room.clone(),
                                 state_key,
+                                kind,
                             },
                             content,
                         )));
@@ -478,16 +492,23 @@ impl ImagePacks {
         room_state_packs(room)
             .await
             .into_iter()
-            .map(|(state_key, content)| {
+            .map(|(state_key, (kind, content))| {
                 ImagePack::new(
                     ImagePackSource::Room {
                         room: room.clone(),
                         state_key,
+                        kind,
                     },
                     content,
                 )
             })
             .collect()
+    }
+
+    /// The state keys of the image packs defined in the state of the given
+    /// room, whatever they are meant to be used for.
+    pub(crate) async fn room_pack_state_keys(room: &Room) -> Vec<String> {
+        room_state_packs(room).await.into_keys().collect()
     }
 
     /// Whether the pack with the given state key in the given room is enabled
@@ -589,6 +610,105 @@ impl ImagePacks {
         imp.enabled_packs_stable.replace(stable);
 
         self.emit_by_name::<()>("changed", &[]);
+
+        Ok(())
+    }
+
+    /// Save the given content as the image pack at the given source.
+    ///
+    /// A pack in the state of a room is written back under the event type that
+    /// it was read from, so that editing a pack that another client created
+    /// does not leave a second copy of it behind under the other name.
+    pub(crate) async fn save_pack(
+        &self,
+        source: &ImagePackSource,
+        content: PackContent,
+    ) -> Result<(), ()> {
+        match source {
+            ImagePackSource::User => {
+                let Some(session) = self.session() else {
+                    return Err(());
+                };
+
+                let client = session.client();
+                let content_clone = content.clone();
+                let handle = spawn_tokio!(async move {
+                    client
+                        .account()
+                        .set_account_data(UserEmotesEventContent {
+                            pack: content_clone,
+                        })
+                        .await
+                });
+
+                if let Err(error) = handle.await.expect("task was not aborted") {
+                    error!("Could not save the personal image pack: {error}");
+                    return Err(());
+                }
+
+                self.imp().user_pack.replace(Some(content));
+            }
+            ImagePackSource::Room {
+                room,
+                state_key,
+                kind,
+            } => {
+                let matrix_room = room.matrix_room().clone();
+                let state_key = state_key.clone();
+                let kind = *kind;
+
+                let handle = spawn_tokio!(async move {
+                    match kind {
+                        RoomPackKind::Unstable => {
+                            matrix_room
+                                .send_state_event_for_key(
+                                    &state_key,
+                                    RoomEmotesEventContent { pack: content },
+                                )
+                                .await
+                        }
+                        RoomPackKind::Stable => {
+                            matrix_room
+                                .send_state_event_for_key(
+                                    &state_key,
+                                    RoomImagePackEventContent { pack: content },
+                                )
+                                .await
+                        }
+                    }
+                });
+
+                if let Err(error) = handle.await.expect("task was not aborted") {
+                    error!("Could not save an image pack in a room: {error}");
+                    return Err(());
+                }
+            }
+        }
+
+        self.emit_by_name::<()>("changed", &[]);
+
+        Ok(())
+    }
+
+    /// Delete the image pack at the given source.
+    ///
+    /// A state event cannot be removed, so a deleted pack is one with no
+    /// images, which is also what a redacted pack looks like.
+    pub(crate) async fn delete_pack(&self, source: &ImagePackSource) -> Result<(), ()> {
+        self.save_pack(source, PackContent::default()).await?;
+
+        // A pack that does not exist anymore should not stay in the list of the
+        // packs that are used in every room. Failing to clean that up does not
+        // make the deletion fail: the pack is gone either way, and it is
+        // reported as unavailable in the account settings.
+        if let ImagePackSource::Room {
+            room, state_key, ..
+        } = source
+        {
+            let _ = self
+                .set_pack_enabled(room.room_id(), state_key, false)
+                .await;
+        }
 
         Ok(())
     }

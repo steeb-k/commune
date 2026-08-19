@@ -98,7 +98,10 @@ mod imp {
 
         /// Build the row for the given pack.
         fn build_row(&self, pack: &ImagePack) -> SwitchLoadingRow {
-            let ImagePackSource::Room { room, state_key } = pack.source() else {
+            let ImagePackSource::Room {
+                room, state_key, ..
+            } = pack.source()
+            else {
                 unreachable!("the packs of a room come from a room");
             };
             let Some(session) = room.session() else {
@@ -154,7 +157,10 @@ mod imp {
 
         /// Enable or disable the given pack globally, following its row.
         async fn toggle_pack(&self, pack: &ImagePack, row: &SwitchLoadingRow) {
-            let ImagePackSource::Room { room, state_key } = pack.source() else {
+            let ImagePackSource::Room {
+                room, state_key, ..
+            } = pack.source()
+            else {
                 return;
             };
             let Some(session) = room.session() else {

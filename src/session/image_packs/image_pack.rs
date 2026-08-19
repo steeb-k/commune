@@ -8,6 +8,19 @@ use super::{
 };
 use crate::{prelude::*, session::Room};
 
+/// The event type that an image pack in the state of a room is defined under.
+///
+/// A pack is written back under the type that it was read from, so that
+/// editing a pack that another client defined does not leave a second copy of
+/// it behind under the other name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RoomPackKind {
+    /// `im.ponies.room_emotes`, from MSC2545, which is the one we create.
+    Unstable,
+    /// `m.room.image_pack`, from the specification.
+    Stable,
+}
+
 /// Where an image pack comes from.
 #[derive(Debug, Clone)]
 pub(crate) enum ImagePackSource {
@@ -19,6 +32,8 @@ pub(crate) enum ImagePackSource {
         room: Room,
         /// The state key that identifies the pack in that room.
         state_key: String,
+        /// The event type that the pack is defined under.
+        kind: RoomPackKind,
     },
 }
 
@@ -128,6 +143,15 @@ impl ImagePack {
     /// Where this pack comes from.
     pub(crate) fn source(&self) -> &ImagePackSource {
         self.imp().source()
+    }
+
+    /// A copy of the content of this pack.
+    ///
+    /// The content of a pack is not changed in place: an editor works on a
+    /// copy and sends the result, and the pack is built again from what comes
+    /// back through sync.
+    pub(crate) fn content(&self) -> PackContent {
+        self.imp().content().clone()
     }
 
     /// The `mxc://` URI of the avatar of this pack, if it has one.
