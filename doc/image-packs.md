@@ -99,9 +99,16 @@ small and listed in the ledger below.
   globally. Template: `safety_page/` and its `ignored_users_subpage/`.
 - `src/session_view/room_details/image_packs_subpage/` — the packs of a room.
 
-Pack images from a room the user has not enabled respect
-`GlobalAccountData::should_room_show_media_previews`; the personal pack and
-the packs enabled globally always render.
+- `src/components/custom_emoticon.rs` — `CustomEmoticon`, an image sent
+  inline in a message. Sized from the font metrics rather than from the
+  `height` attribute, which the specification only requires for the clients
+  that do not support image packs.
+
+An emoticon in a received message is an arbitrary image from the homeserver,
+so it is only loaded when
+`GlobalAccountData::should_room_show_media_previews` allows it, and falls
+back to its description otherwise. Only an `mxc:` source is ever loaded,
+which ruma enforces by leaving `ImageData::src` unset for anything else.
 
 ## Phases
 
@@ -115,7 +122,7 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
    `AnyMessageLikeEventContent::Sticker` through `matrix_timeline.send()`.
    *(done)*
 4. **Emoticon rendering** — allow `img` in the sanitizer, inline widget via
-   `LabelWithWidgets`, larger emote-only messages, tests.
+   `LabelWithWidgets`, tests. *(done)*
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
    composer, serialization in `composer_parser.rs`.
 6. **Pack management** — account settings page, room details subpage,
@@ -140,6 +147,11 @@ Existing files touched. Keep this current — it is the rebase map.
 | `data/resources/resources.gresource.xml` | the icon |
 | `data/resources/stylesheet/_room_history.scss` | `.sticker-picker` |
 | `src/ui-blueprint-resources.in`, `po/POTFILES.in` | the new files |
+| `src/components/mod.rs` | declare and re-export `custom_emoticon` |
+| `src/session_view/room_history/message_row/text/mod.rs` | `img` in `SUPPORTED_INLINE_ELEMENTS`; allow the `data-mx-emoticon` attribute; `CUSTOM_EMOTICON_ATTRIBUTE` |
+| `src/session_view/room_history/message_row/text/inline_html.rs` | one ordered `widgets: Vec<gtk::Widget>` in place of the pills of `MentionsMode`; `append_image`; `append_element_node` takes the whole `MatrixElementData`, for the attributes |
+| `src/session_view/room_history/message_row/text/widgets.rs` | the inline widgets are no longer only pills |
+| `src/session_view/room_history/message_row/text/tests.rs` | the custom emoticon cases |
 
 Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 (phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),

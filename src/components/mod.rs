@@ -3,6 +3,7 @@ mod avatar;
 mod camera;
 mod context_menu_bin;
 pub mod crypto;
+mod custom_emoticon;
 mod custom_entry;
 mod dialogs;
 mod drag_overlay;
@@ -22,6 +23,7 @@ pub(crate) use self::{
     avatar::*,
     camera::{Camera, CameraExt, QrCodeScanner},
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    custom_emoticon::CustomEmoticon,
     custom_entry::CustomEntry,
     dialogs::*,
     drag_overlay::DragOverlay,

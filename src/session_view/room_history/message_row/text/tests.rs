@@ -1,6 +1,6 @@
 use ruma::html::Html;
 
-use super::inline_html::InlineHtmlBuilder;
+use super::{HTML_MESSAGE_SANITIZER_CONFIG, inline_html::InlineHtmlBuilder};
 
 #[test]
 fn text_with_no_markup() {
@@ -150,4 +150,78 @@ fn emote_name() {
 
     assert_eq!(s, "<b>Jun</b> sent a beautiful picture.");
     assert!(pills.is_none());
+}
+
+/// A custom emoticon survives the sanitizer.
+///
+/// Without a room, it cannot be loaded, so it falls back to its description.
+#[test]
+fn custom_emoticon() {
+    let html = Html::parse(
+        r#"Hello <img data-mx-emoticon src="mxc://example.org/abc" alt="a waving cat" title="cat_wave" height="32">"#,
+    );
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let (s, widgets) =
+        InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "Hello a waving cat");
+    assert!(widgets.is_none());
+}
+
+/// The description of a custom emoticon falls back to its shortcode.
+#[test]
+fn custom_emoticon_without_alt() {
+    let html = Html::parse(
+        r#"Hello <img data-mx-emoticon src="mxc://example.org/abc" title="cat_wave" height="32">"#,
+    );
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let (s, _) = InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "Hello cat_wave");
+}
+
+/// An image that is not served by the homeserver is never loaded, so that it
+/// cannot be used to know when a message is read.
+///
+/// Only an `mxc:` URI ends up in the source of the image, so it falls back to
+/// its description.
+#[test]
+fn custom_emoticon_with_remote_source() {
+    let html = Html::parse(
+        r#"Hello <img data-mx-emoticon src="https://example.org/abc" alt="a waving cat">"#,
+    );
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let (s, widgets) =
+        InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "Hello a waving cat");
+    assert!(widgets.is_none());
+}
+
+/// An image that is not a custom emoticon is replaced by its description.
+#[test]
+fn image_that_is_not_an_emoticon() {
+    let html = Html::parse(r#"Hello <img src="mxc://example.org/abc" alt="a waving cat">"#);
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let (s, widgets) =
+        InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "Hello a waving cat");
+    assert!(widgets.is_none());
+}
+
+/// The description of a custom emoticon is escaped like any other text.
+#[test]
+fn custom_emoticon_description_is_escaped() {
+    let html =
+        Html::parse(r#"<img data-mx-emoticon src="mxc://example.org/abc" alt="<b>bold</b>">"#);
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let (s, _) = InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
+
+    assert_eq!(s, "&lt;b&gt;bold&lt;/b&gt;");
 }

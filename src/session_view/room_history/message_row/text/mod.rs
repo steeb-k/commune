@@ -5,7 +5,7 @@ use gtk::{glib, glib::clone, pango};
 use matrix_sdk::ruma::events::room::message::FormattedBody;
 use ruma::{
     events::room::message::MessageFormat,
-    html::{Html, ListBehavior, SanitizerConfig},
+    html::{Html, ListBehavior, PropertiesNames, SanitizerConfig},
 };
 
 mod inline_html;
@@ -434,7 +434,7 @@ fn formatted_body_is_html(formatted: &FormattedBody) -> bool {
 
 /// All supported inline elements from the Matrix spec.
 const SUPPORTED_INLINE_ELEMENTS: &[&str] = &[
-    "del", "a", "sup", "sub", "b", "i", "u", "strong", "em", "s", "code", "br", "span",
+    "del", "a", "sup", "sub", "b", "i", "u", "strong", "em", "s", "code", "br", "span", "img",
 ];
 
 /// All supported block elements from the Matrix spec.
@@ -467,5 +467,19 @@ static HTML_MESSAGE_SANITIZER_CONFIG: LazyLock<SanitizerConfig> = LazyLock::new(
                 .copied(),
             ListBehavior::Override,
         )
+        // The attribute that marks an image as a custom emoticon is not part of
+        // the sanitizer's list, and it is the only way to tell one apart.
+        .allow_attributes(
+            [PropertiesNames {
+                parent: "img",
+                properties: &[CUSTOM_EMOTICON_ATTRIBUTE],
+            }],
+            ListBehavior::Add,
+        )
         .remove_reply_fallback()
 });
+
+/// The attribute that marks an `img` element as a custom emoticon.
+///
+/// Its value, if it has one, must be ignored.
+pub(super) const CUSTOM_EMOTICON_ATTRIBUTE: &str = "data-mx-emoticon";
