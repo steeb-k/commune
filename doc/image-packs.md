@@ -106,11 +106,19 @@ small and listed in the ledger below.
   `height` attribute, which the specification only requires for the clients
   that do not support image packs.
 
-An emoticon in a received message is an arbitrary image from the homeserver,
-so it is only loaded when
-`GlobalAccountData::should_room_show_media_previews` allows it, and falls
-back to its description otherwise. Only an `mxc:` source is ever loaded,
-which ruma enforces by leaving `ImageData::src` unset for anything else.
+Only an `mxc:` source is ever loaded, which ruma enforces by leaving
+`ImageData::src` unset for anything else, so a message cannot make us fetch
+anything from outside the homeserver.
+
+Emoticons are deliberately **not** gated behind
+`GlobalAccountData::should_room_show_media_previews`, which they were at
+first. The setting exists so that the media of a message is not fetched until
+it is clicked, and an emoticon has nothing to click: it is part of the text,
+so hiding it leaves a message that cannot be read, with no way to get it
+back. The residual difference from an ordinary image is that a sender can
+learn roughly when a message was read, through their homeserver being asked
+for the media. Restoring the gate is a two-line change in `append_image` if
+that trade is not wanted.
 
 ## Phases
 

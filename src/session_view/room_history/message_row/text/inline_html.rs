@@ -261,16 +261,17 @@ impl<'a> InlineHtmlBuilder<'a> {
             .any(|attr| attr.name.local.as_ref() == CUSTOM_EMOTICON_ATTRIBUTE);
 
         // `src` is only set when it is a valid `mxc:` URI, which is the only
-        // scheme that the specification allows.
+        // scheme that the specification allows, so a message cannot make us
+        // fetch anything from outside the homeserver.
+        //
+        // Unlike the media of a message, an emoticon is not gated behind the
+        // media previews setting: it is part of the text, there is nothing to
+        // click to reveal it, and hiding it leaves a message that cannot be
+        // read.
         if is_emoticon
             && let Some(uri) = &image.src
             && let Some(room) = self.mentions.room()
             && let Some(session) = room.session()
-            // An emoticon is an image loaded from the homeserver like any
-            // other, so it follows the same setting.
-            && session
-                .global_account_data()
-                .should_room_show_media_previews(room)
         {
             let emoticon = CustomEmoticon::new(&session, uri, &body);
 
@@ -278,6 +279,10 @@ impl<'a> InlineHtmlBuilder<'a> {
             self.inner.push_str(LabelWithWidgets::PLACEHOLDER);
 
             return;
+        }
+
+        if is_emoticon {
+            debug!("Could not present a custom emoticon, using its description instead");
         }
 
         if !body.is_empty() {
