@@ -156,6 +156,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             CustomEntry::ensure_type();
+            StickerPicker::ensure_type();
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);

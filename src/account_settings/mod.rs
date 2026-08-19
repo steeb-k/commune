@@ -17,6 +17,7 @@ mod user_session;
 use self::{
     encryption_page::{EncryptionPage, ImportExportKeysSubpage, ImportExportKeysSubpageMode},
     general_page::{ChangePasswordSubpage, DeactivateAccountSubpage, GeneralPage, LogOutSubpage},
+    image_packs_page::ImagePacksPage,
     notifications_page::NotificationsPage,
     safety_page::{IgnoredUsersSubpage, SafetyPage},
     user_session::{UserSessionListSubpage, UserSessionSubpage},
@@ -79,6 +80,7 @@ mod imp {
             GeneralPage::ensure_type();
             NotificationsPage::ensure_type();
             SafetyPage::ensure_type();
+            ImagePacksPage::ensure_type();
             EncryptionPage::ensure_type();
 
             Self::bind_template(klass);
