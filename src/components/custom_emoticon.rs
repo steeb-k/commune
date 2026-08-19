@@ -1,4 +1,4 @@
-use gtk::{gdk, glib, glib::clone, graphene, pango, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone, pango, prelude::*, subclass::prelude::*};
 use ruma::{OwnedMxcUri, api::client::media::get_content_thumbnail::v3::Method};
 use tracing::error;
 
@@ -19,6 +19,13 @@ use crate::{
 /// for the clients that do to override it with a height that suits the font of
 /// the user.
 const HEIGHT_FACTOR: f64 = 1.6;
+
+/// The height of a custom emoticon in a message that contains nothing else,
+/// as a multiple of the height of a line of text.
+///
+/// The specification allows a message made only of custom emoticons, or of
+/// emoji, to be presented larger.
+const LARGE_HEIGHT_FACTOR: f64 = 4.0;
 
 /// The height of a custom emoticon when the font metrics are unknown, in
 /// pixels.
@@ -44,6 +51,11 @@ mod imp {
         /// The description of the image.
         #[property(get, construct_only)]
         pub(super) body: OnceCell<String>,
+        /// Whether this emoticon is alone in its message.
+        ///
+        /// Such an emoticon is presented larger.
+        #[property(get, set = Self::set_large, explicit_notify)]
+        is_large: Cell<bool>,
         /// The image, once it is loaded.
         pub(super) paintable: RefCell<Option<gdk::Paintable>>,
         /// The height that the image was loaded at, in pixels.
@@ -69,6 +81,7 @@ mod imp {
             let body = self.body.get().expect("body should be initialized");
 
             obj.set_valign(gtk::Align::Center);
+            obj.set_overflow(gtk::Overflow::Hidden);
             obj.set_tooltip_text(Some(body));
             obj.set_accessible_role(gtk::AccessibleRole::Img);
             obj.update_property(&[gtk::accessible::Property::Label(body)]);
@@ -106,19 +119,11 @@ mod imp {
             };
 
             let obj = self.obj();
-            let width = f64::from(obj.width());
-            let height = f64::from(obj.height());
 
-            // Keep the aspect ratio of the image inside the room that we have,
-            // which matters when it is wider than we allow.
-            let (concrete_width, concrete_height) =
-                paintable.compute_concrete_size(0.0, 0.0, width, height);
-
-            let x = ((width - concrete_width) / 2.0) as f32;
-            let y = ((height - concrete_height) / 2.0) as f32;
-
-            snapshot.translate(&graphene::Point::new(x, y));
-            paintable.snapshot(snapshot, concrete_width, concrete_height);
+            // Draw in the room that we were given, which was measured from the
+            // aspect ratio of the image, and never at the size of the image
+            // itself.
+            paintable.snapshot(snapshot, f64::from(obj.width()), f64::from(obj.height()));
         }
     }
 
@@ -132,7 +137,13 @@ mod imp {
                 return FALLBACK_HEIGHT;
             }
 
-            (f64::from(line_height) * HEIGHT_FACTOR).round() as i32
+            let factor = if self.is_large.get() {
+                LARGE_HEIGHT_FACTOR
+            } else {
+                HEIGHT_FACTOR
+            };
+
+            (f64::from(line_height) * factor).round() as i32
         }
 
         /// The width that the image should be presented at, in pixels.
@@ -152,6 +163,21 @@ mod imp {
             // of the message out of the way.
             let width = f64::from(self.height()) * ratio.min(MAX_ASPECT_RATIO);
             width.round() as i32
+        }
+
+        /// Set whether this emoticon is alone in its message.
+        fn set_large(&self, large: bool) {
+            if self.is_large.get() == large {
+                return;
+            }
+
+            self.is_large.set(large);
+            // The image is loaded again, at the size it is now presented at.
+            self.update_size();
+
+            let obj = self.obj();
+            obj.queue_resize();
+            obj.notify_is_large();
         }
 
         /// Reload the image for the current font, if its size changed.
