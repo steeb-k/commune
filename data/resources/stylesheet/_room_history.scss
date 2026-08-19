@@ -418,6 +418,16 @@ message-reactions {
   }
 }
 
+.sticker-picker {
+  > contents {
+    padding: 6px;
+  }
+
+  button {
+    padding: 3px;
+  }
+}
+
 read-receipts-list {
   min-height: 20px;
   min-width: 20px;

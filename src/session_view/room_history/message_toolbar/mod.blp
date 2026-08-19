@@ -97,6 +97,19 @@ template $MessageToolbar: Adw.Bin {
             clicked => $open_emoji() swapped;
           }
 
+          Gtk.MenuButton sticker_button {
+            valign: end;
+            direction: up;
+            icon-name: "sticker-symbolic";
+            tooltip-text: _("Send a Sticker");
+
+            popover: $StickerPicker sticker_picker {};
+
+            accessibility {
+              label: _("Send a Sticker");
+            }
+          }
+
           $CustomEntry {
             Gtk.ScrolledWindow {
               vexpand: true;
