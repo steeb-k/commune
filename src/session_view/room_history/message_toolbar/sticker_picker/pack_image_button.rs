@@ -3,6 +3,7 @@ use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::error;
 
 use crate::{
+    gettext_f,
     session::{PackImage, Session},
     spawn,
     utils::media::{
@@ -69,6 +70,32 @@ mod imp {
     impl ButtonImpl for PackImageButton {}
 
     impl PackImageButton {
+        /// Present this image as unavailable.
+        ///
+        /// An image that we could not load is still presented, so that the
+        /// pack does not silently lose it, but it cannot be sent.
+        fn set_unavailable(&self) {
+            let obj = self.obj();
+            let image = self.image.get().expect("image should be initialized");
+
+            let icon = gtk::Image::from_icon_name("image-missing-symbolic");
+            icon.set_pixel_size(IMAGE_SIZE.cast_signed() / 2);
+            icon.set_width_request(IMAGE_SIZE.cast_signed());
+            icon.set_height_request(IMAGE_SIZE.cast_signed());
+
+            let label = gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "“{name}” could not be loaded",
+                &[("name", &image.body())],
+            );
+
+            obj.set_child(Some(&icon));
+            obj.set_sensitive(false);
+            obj.set_tooltip_text(Some(&label));
+            obj.update_property(&[gtk::accessible::Property::Label(&label)]);
+        }
+
         /// Load the image presented by this button.
         async fn load(&self) {
             let obj = self.obj();
@@ -111,7 +138,7 @@ mod imp {
                 }
                 Err(error) => {
                     error!("Could not load the image of a pack: {error}");
-                    self.picture.set_paintable(gdk::Paintable::NONE);
+                    self.set_unavailable();
                 }
             }
         }

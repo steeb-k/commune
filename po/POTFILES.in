@@ -188,6 +188,7 @@ src/session_view/room_history/message_toolbar/completion/completion_popover.rs
 src/session_view/room_history/message_toolbar/mod.blp
 src/session_view/room_history/message_toolbar/mod.rs
 src/session_view/room_history/message_toolbar/sticker_picker/mod.blp
+src/session_view/room_history/message_toolbar/sticker_picker/pack_image_button.rs
 src/session_view/room_history/mod.blp
 src/session_view/room_history/mod.rs
 src/session_view/room_history/read_receipts_list/mod.rs
