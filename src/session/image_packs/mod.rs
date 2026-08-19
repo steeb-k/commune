@@ -10,7 +10,7 @@ use gtk::{
 };
 use indexmap::IndexMap;
 use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
-use ruma::{RoomId, events::StaticEventContent};
+use ruma::{OwnedRoomId, RoomId, events::StaticEventContent};
 use tracing::{debug, error};
 
 mod events;
@@ -95,6 +95,21 @@ async fn room_state_packs(room: &Room) -> IndexMap<String, PackContent> {
     }
 
     packs
+}
+
+/// A room image pack that is enabled globally.
+#[derive(Debug, Clone)]
+pub(crate) enum EnabledPack {
+    /// A pack that we could load.
+    Available(ImagePack),
+    /// A pack that we could not load, because the user is not in the room
+    /// that defines it anymore.
+    Unavailable {
+        /// The room that defines the pack.
+        room_id: OwnedRoomId,
+        /// The state key that identifies the pack in that room.
+        state_key: String,
+    },
 }
 
 mod imp {
@@ -406,6 +421,50 @@ impl ImagePacks {
                 },
                 content,
             ));
+        }
+
+        packs
+    }
+
+    /// Every room image pack that is enabled globally.
+    ///
+    /// The specification expects clients to be aware that the user might not
+    /// be in the room that defines a pack anymore, so those are returned too,
+    /// to be able to remove them.
+    pub(crate) async fn enabled_packs(&self) -> Vec<EnabledPack> {
+        let Some(session) = self.session() else {
+            return Vec::new();
+        };
+        let room_list = session.room_list();
+        let enabled_packs = self.imp().enabled_packs();
+
+        let mut packs = Vec::new();
+
+        for (room_id, state_keys) in enabled_packs {
+            let room = room_list.get(&room_id);
+
+            let mut room_packs = match &room {
+                Some(room) => room_state_packs(room).await,
+                None => IndexMap::new(),
+            };
+
+            for state_key in state_keys.into_keys() {
+                match (&room, room_packs.shift_remove(&state_key)) {
+                    (Some(room), Some(content)) => {
+                        packs.push(EnabledPack::Available(ImagePack::new(
+                            ImagePackSource::Room {
+                                room: room.clone(),
+                                state_key,
+                            },
+                            content,
+                        )))
+                    }
+                    _ => packs.push(EnabledPack::Unavailable {
+                        room_id: room_id.clone(),
+                        state_key,
+                    }),
+                }
+            }
         }
 
         packs

@@ -17,6 +17,8 @@ src/account_settings/general_page/log_out_subpage.blp
 src/account_settings/general_page/log_out_subpage.rs
 src/account_settings/general_page/mod.blp
 src/account_settings/general_page/mod.rs
+src/account_settings/image_packs_page/mod.blp
+src/account_settings/image_packs_page/mod.rs
 src/account_settings/mod.blp
 src/account_settings/notifications_page.blp
 src/account_settings/notifications_page.rs

@@ -1,0 +1,34 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ImagePacksPage: Adw.PreferencesPage {
+  icon-name: "sticker-symbolic";
+  title: _("Image Packs");
+  name: "image-packs";
+
+  Adw.PreferencesGroup personal_group {
+    title: _("Your Pack");
+    description: _("The stickers and emoticons stored in your account, available in every room.");
+
+    Adw.ActionRow personal_row {
+      selectable: false;
+      activatable: false;
+    }
+  }
+
+  Adw.PreferencesGroup enabled_group {
+    title: _("Enabled Everywhere");
+    description: _("The packs from rooms that you chose to use in every room. Turn one off to stop using it.");
+
+    Adw.ActionRow enabled_placeholder_row {
+      selectable: false;
+      activatable: false;
+      title: _("No pack enabled");
+      subtitle: _("Open the details of a room to use one of its packs everywhere");
+
+      styles [
+        "dimmed",
+      ]
+    }
+  }
+}

@@ -9,6 +9,7 @@ use tracing::{error, warn};
 
 mod encryption_page;
 mod general_page;
+mod image_packs_page;
 mod notifications_page;
 mod safety_page;
 mod user_session;
