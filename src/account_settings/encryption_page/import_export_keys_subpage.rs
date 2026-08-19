@@ -187,10 +187,10 @@ mod imp {
             if let Some(file) = self.file_path.borrow().as_ref() {
                 dialog.set_initial_file(Some(file));
             } else if is_export {
-                // Translators: Do no translate "fractal" as it is the application
+                // Translators: Do not translate "commune" as it is the application
                 // name.
                 dialog
-                    .set_initial_name(Some(&format!("{}.txt", gettext("fractal-encryption-keys"))));
+                    .set_initial_name(Some(&format!("{}.txt", gettext("commune-encryption-keys"))));
             }
 
             let obj = self.obj();

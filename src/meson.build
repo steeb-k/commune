@@ -187,7 +187,7 @@ rustdoc_flags = ' '.join(
     '-Dwarnings',
 )
 cargo_doc_env = ['RUSTDOCFLAGS=' + rustdoc_flags]
-cargo_doc_options = ['--package=fractal', '--no-deps', '-Zrustdoc-map']
+cargo_doc_options = ['--package=commune', '--no-deps', '-Zrustdoc-map']
 
 custom_target(
     'cargo-doc',

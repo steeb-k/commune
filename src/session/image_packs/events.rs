@@ -200,14 +200,14 @@ pub struct RoomImagePackEventContent {
     pub pack: PackContent,
 }
 
-/// The content of an `org.gnome.Fractal.image_packs_room` event.
+/// The content of an `io.github.steeb_k.Commune.image_packs_room` event.
 ///
-/// The room that Fractal creates image packs in. No specification defines
+/// The room that Commune creates image packs in. No specification defines
 /// this: it is configuration for this client, which is what account data is
 /// for. Another client is unaffected by it, and removing it only means that
 /// the next pack goes to a new room.
 #[derive(Clone, Debug, Deserialize, Serialize, EventContent)]
-#[ruma_event(type = "org.gnome.Fractal.image_packs_room", kind = GlobalAccountData)]
+#[ruma_event(type = "io.github.steeb_k.Commune.image_packs_room", kind = GlobalAccountData)]
 pub struct ImagePacksRoomEventContent {
     /// The room that image packs are created in.
     pub room_id: OwnedRoomId,

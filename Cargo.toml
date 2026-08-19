@@ -1,5 +1,5 @@
 [package]
-name = "fractal"
+name = "commune"
 version = "14.1.0"
 authors = ["Julian Sparber <julian@sparber.net>"]
 license = "GPL-3.0-or-later"

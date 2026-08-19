@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Interlocking fingers chat bubble</title>
+
+  <defs>
+    <clipPath id="body">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+    <clipPath id="bodyAndTail">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+  </defs>
+
+  <g transform="translate(0 16)" clip-path="url(#body)">
+    <rect width="512" height="512" fill="#a2131a"/>
+    <rect x="-35" width="180" height="512" fill="#b08608"/>
+  </g>
+
+  <g clip-path="url(#bodyAndTail)">
+    <rect width="512" height="512" fill="#e01b24"/>
+    <g fill="#f5c211">
+      <rect x="-44" y="40" width="220" height="400"/>
+      <rect x="-38" y="72" width="446" height="82" rx="41"/>
+      <rect x="-38" y="236" width="446" height="82" rx="41"/>
+    </g>
+    <g fill="#e01b24">
+      <rect x="104" y="154" width="458" height="82" rx="41"/>
+      <rect x="104" y="318" width="458" height="82" rx="41"/>
+    </g>
+  </g>
+</svg>

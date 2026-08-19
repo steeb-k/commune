@@ -16,7 +16,7 @@ pub(crate) use self::{
 use crate::{
     prelude::*,
     secret::{Secret, StoredSession},
-    session::{Session, SessionState},
+    session::Session,
     spawn, spawn_tokio,
     utils::{DataType, LoadingState},
 };
@@ -297,16 +297,6 @@ impl SessionList {
     /// Create a new empty `SessionList`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Whether at least one session is ready.
-    pub(crate) fn has_session_ready(&self) -> bool {
-        self.imp()
-            .list
-            .borrow()
-            .values()
-            .filter_map(|s| s.downcast_ref::<Session>())
-            .any(|s| s.state() == SessionState::Ready)
     }
 
     /// The session with the given ID, if any.

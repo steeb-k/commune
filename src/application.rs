@@ -20,9 +20,9 @@ use crate::{
 /// The key for the current session setting.
 pub(crate) const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
 /// The name of the application.
-pub(crate) const APP_NAME: &str = "Fractal";
+pub(crate) const APP_NAME: &str = "Commune";
 /// The URL of the homepage of the application.
-pub(crate) const APP_HOMEPAGE_URL: &str = "https://gitlab.gnome.org/World/fractal/";
+pub(crate) const APP_HOMEPAGE_URL: &str = "https://github.com/steeb-k/commune";
 
 mod imp {
     use std::cell::Cell;
@@ -241,14 +241,22 @@ mod imp {
             let dialog = adw::AboutDialog::builder()
                 .application_name(APP_NAME)
                 .application_icon(config::APP_ID)
-                .developer_name(gettext("The Fractal Team"))
+                .developer_name("steeb-k")
                 .license_type(gtk::License::Gpl30)
                 .website(APP_HOMEPAGE_URL)
-                .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
-                .support_url("https://matrix.to/#/#fractal:gnome.org")
+                .issue_url("https://github.com/steeb-k/commune/issues")
                 .version(config::VERSION)
-                .copyright(gettext("© The Fractal Team"))
-                .developers([
+                .copyright(gettext("© The Fractal Team and the Commune contributors"))
+                .developers(["steeb-k"])
+                .translator_credits(gettext("translator-credits"))
+                .build();
+
+            // These can't be added via the builder.
+            // Commune is a fork of Fractal, and almost all of the code it runs was
+            // written by that project. Credit it explicitly.
+            dialog.add_credit_section(
+                Some(&gettext("Based on Fractal by")),
+                &[
                     "Alejandro Domínguez",
                     "Alexandre Franke",
                     "Bilal Elmoussaoui",
@@ -259,34 +267,10 @@ mod imp {
                     "Julian Sparber",
                     "Kévin Commaille",
                     "Saurav Sachidanand",
-                ])
-                .designers(["Tobias Bernard"])
-                .translator_credits(gettext("translator-credits"))
-                .build();
-
-            // This can't be added via the builder
-            dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
-
-            // If the user wants our support room, try to open it ourselves.
-            dialog.connect_activate_link(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                #[weak]
-                dialog,
-                #[upgrade_or]
-                false,
-                move |_, uri| {
-                    if uri == "https://matrix.to/#/#fractal:gnome.org"
-                        && imp.session_list.has_session_ready()
-                    {
-                        imp.process_uri(uri);
-                        dialog.close();
-                        return true;
-                    }
-
-                    false
-                }
-            ));
+                ],
+            );
+            dialog.add_credit_section(Some(&gettext("Fractal design by")), &["Tobias Bernard"]);
+            dialog.add_credit_section(Some(&gettext("Fractal name by")), &["Regina Bíró"]);
 
             dialog.present(Some(&self.present_main_window()));
         }
@@ -471,7 +455,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// The Fractal application.
+    /// The Commune application.
     pub struct Application(ObjectSubclass<imp::Application>)
         @extends gio::Application, gtk::Application, adw::Application,
         @implements gio::ActionMap, gio::ActionGroup;
@@ -501,9 +485,9 @@ impl Application {
         &self.imp().session_list
     }
 
-    /// Run Fractal.
+    /// Run Commune.
     pub(crate) fn run(&self) {
-        info!("Fractal ({})", config::APP_ID);
+        info!("Commune ({})", config::APP_ID);
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
         info!("Datadir: {}", config::PKGDATADIR);
 

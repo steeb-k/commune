@@ -143,7 +143,7 @@ mod imp {
                 client
                     .matrix_auth()
                     .login_username(&username, &password)
-                    .initial_device_display_name("Fractal")
+                    .initial_device_display_name("Commune")
                     .send()
                     .await
             });

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2019 Daniel Garcia Moreno <danigm@gnome.org> -->
+<!-- Copyright 2022 Julian Sparber <julian@sparber.net> -->
+<component type="desktop-application">
+  <id>@app-id@</id>
+  <launchable type="desktop-id">@app-id@.desktop</launchable>
+  <name>Commune</name>
+  <summary>Chat on Matrix</summary>
+  <description>
+    <p>
+      Commune is a Matrix messaging app written in Rust. Its interface is optimized for
+      collaboration in large groups, such as free software projects, and will fit all screens, big or small.
+    </p>
+    <p>Highlights:</p>
+    <ul>
+      <li>Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to end-to-end encryption</li>
+      <li>Send rich formatted messages, files, or your current location</li>
+      <li>Reply to specific messages, react with emoji, mention users or rooms, edit or remove messages</li>
+      <li>View images, and play audio and video directly in the conversation</li>
+      <li>Send and manage custom sticker and emoticon packs</li>
+      <li>See who has read messages, and who is typing</li>
+      <li>Log into multiple accounts at once (with Single-Sign On support)</li>
+    </ul>
+    <p>
+      Commune is a fork of Fractal, the Matrix client for GNOME, and is not affiliated with or
+      endorsed by the Fractal project or the GNOME project.
+    </p>
+  </description>
+  <branding>
+    <color type="primary" scheme_preference="light">#f9d5d7</color>
+    <color type="primary" scheme_preference="dark">#a2131a</color>
+  </branding>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <developer id="io.github.steeb_k">
+    <name>steeb-k</name>
+  </developer>
+  <translation type="gettext">commune</translation>
+
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://raw.githubusercontent.com/steeb-k/commune/main/screenshots/main.png</image>
+      <caption>Commune’s main window</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/steeb-k/commune/main/screenshots/media-history.png</image>
+      <caption>View the media history of a Matrix room</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/steeb-k/commune/main/screenshots/adaptive.png</image>
+      <caption>Commune’s interface adapts to small screens</caption>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/steeb-k/commune</url>
+  <url type="vcs-browser">https://github.com/steeb-k/commune</url>
+  <url type="bugtracker">https://github.com/steeb-k/commune/issues</url>
+  <url type="contribute">https://github.com/steeb-k/commune/blob/main/CONTRIBUTING.md</url>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+    <internet>always</internet>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+  </content_rating>
+
+  <releases>@development-release@
+    <release version="14.1" type="stable" date="2026-08-19">
+      <description>
+        <p>
+          The first Commune release. Commune forks Fractal 14.1 and carries its own name, icon and
+          settings, so it installs and runs alongside Fractal without either app disturbing the
+          other’s sessions or preferences.
+        </p>
+        <ul>
+          <li>
+            Custom sticker and emoticon packs can be browsed, added and removed from account
+            settings and from room details, and used from the composer.
+          </li>
+        </ul>
+        <p>
+          Everything else is Fractal 14.1, whose release notes remain the best description of the
+          features Commune inherits.
+        </p>
+      </description>
+    </release>
+  </releases>
+</component>

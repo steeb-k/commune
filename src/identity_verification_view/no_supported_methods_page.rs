@@ -114,7 +114,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A page to show when a verification request was received with no methods that Fractal supports.
+    /// A page to show when a verification request was received with no methods that Commune supports.
     pub struct NoSupportedMethodsPage(ObjectSubclass<imp::NoSupportedMethodsPage>)
         @extends gtk::Widget, adw::Bin,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
@@ -136,10 +136,10 @@ impl NoSupportedMethodsPage {
 
         let message = if verification.is_self_verification() {
             if was_accepted {
-                gettext("None of the methods offered by the other client are supported by Fractal.")
+                gettext("None of the methods offered by the other client are supported by Commune.")
             } else {
                 gettext(
-                    "A login request was received, but none of the methods offered by the other client are supported by Fractal.",
+                    "A login request was received, but none of the methods offered by the other client are supported by Commune.",
                 )
             }
         } else {
@@ -148,14 +148,14 @@ impl NoSupportedMethodsPage {
                 gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "None of the methods offered by {user}’s client are supported by Fractal.",
+                    "None of the methods offered by {user}’s client are supported by Commune.",
                     &[("user", &format!("<b>{name}</b>"))],
                 )
             } else {
                 gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "{user} sent a verification request, but none of the methods offered by the other client are supported by Fractal.",
+                    "{user} sent a verification request, but none of the methods offered by the other client are supported by Commune.",
                     &[("user", &format!("<b>{name}</b>"))],
                 )
             }

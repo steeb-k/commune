@@ -1,6 +1,6 @@
 #![doc(
-    html_logo_url = "https://gitlab.gnome.org/World/fractal/-/raw/main/data/icons/org.gnome.Fractal.svg?inline=false",
-    html_favicon_url = "https://gitlab.gnome.org/World/fractal/-/raw/main/data/icons/org.gnome.Fractal-symbolic.svg?inline=false"
+    html_logo_url = "https://raw.githubusercontent.com/steeb-k/commune/main/data/icons/io.github.steeb_k.Commune.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/steeb-k/commune/main/data/icons/io.github.steeb_k.Commune-symbolic.svg"
 )]
 #![recursion_limit = "256"]
 
@@ -50,7 +50,7 @@ fn main() {
     // Default to the INFO level for this crate and WARN for everything else.
     // It can be overridden with the RUST_LOG environment variable.
     let env_filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fractal=info,warn"));
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("commune=info,warn"));
 
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(env_filter))
@@ -62,7 +62,7 @@ fn main() {
     bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR).expect("Invalid argument passed to bindtextdomain");
     textdomain(GETTEXT_PACKAGE).expect("Invalid string passed to textdomain");
 
-    gtk::glib::set_application_name("Fractal");
+    gtk::glib::set_application_name("Commune");
 
     gtk::init().expect("Could not start GTK4");
     gst::init().expect("Could not initialize gst");

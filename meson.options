@@ -9,7 +9,7 @@ option(
     'build-env',
   ],
   value: 'default',
-  description: 'The build profile for Fractal. One of "default", "beta", "development" or "hack".'
+  description: 'The build profile for Commune. One of "default", "beta", "development" or "hack".'
 )
 option(
   'disable-glycin-sandbox',

@@ -1,5 +1,5 @@
 project(
-    'fractal',
+    'commune',
     'rust',
     version: '14.1',
     license: 'GPL-3.0-or-later',
@@ -10,7 +10,7 @@ fs = import('fs')
 gnome = import('gnome')
 i18n = import('i18n')
 
-base_id = 'org.gnome.Fractal'
+base_id = 'io.github.steeb_k.Commune'
 application_id = base_id
 
 major_version = '14.1'
