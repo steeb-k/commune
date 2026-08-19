@@ -5,10 +5,10 @@ use ruma::RoomId;
 use tracing::error;
 
 use crate::{
-    components::{ImagePackEditor, SwitchLoadingRow},
+    components::{ImagePackEditor, LoadingButton, SwitchLoadingRow},
     gettext_f, ngettext_f,
     prelude::*,
-    session::{EnabledPack, ImagePack, ImagePackSource, ImagePacks, Session},
+    session::{ImagePack, ImagePackSource, ImagePacks, RoomPackKind, Session},
     spawn, toast,
 };
 
@@ -24,16 +24,18 @@ mod imp {
     #[properties(wrapper_type = super::ImagePacksPage)]
     pub struct ImagePacksPage {
         #[template_child]
-        personal_row: TemplateChild<adw::ActionRow>,
+        packs_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        enabled_group: TemplateChild<adw::PreferencesGroup>,
+        placeholder_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        enabled_placeholder_row: TemplateChild<adw::ActionRow>,
+        create_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        unavailable_group: TemplateChild<adw::PreferencesGroup>,
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         session: glib::WeakRef<Session>,
-        /// The rows of the enabled packs, to be able to remove them.
-        rows: RefCell<Vec<SwitchLoadingRow>>,
+        /// The rows that are presented, to be able to remove them.
+        rows: RefCell<Vec<(adw::PreferencesGroup, SwitchLoadingRow)>>,
         image_packs_handler: RefCell<Option<(ImagePacks, glib::SignalHandlerId)>>,
     }
 
@@ -95,117 +97,138 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    imp.load_personal_pack();
-                    imp.load_enabled_packs().await;
+                    imp.load_packs().await;
                 }
             ));
         }
 
-        /// Present the personal pack of the user.
-        fn load_personal_pack(&self) {
+        /// Present every pack that the user has, and the ones that they cannot
+        /// reach anymore.
+        async fn load_packs(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
+            let image_packs = session.image_packs();
 
-            let Some(pack) = session.image_packs().user_pack() else {
-                self.personal_row.set_title(&gettext("No Personal Pack"));
-                self.personal_row
-                    .set_subtitle(&gettext("Create one to use your own images in every room"));
-                return;
-            };
-
-            self.personal_row
-                .set_title(&glib::markup_escape_text(&pack.display_name()));
-            self.personal_row
-                .set_subtitle(&glib::markup_escape_text(&image_count(&pack)));
-        }
-
-        /// Open the editor for the personal pack of the user.
-        #[template_callback]
-        fn edit_personal_pack(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let editor = match session.image_packs().user_pack() {
-                Some(pack) => ImagePackEditor::edit(&session, &pack),
-                None => ImagePackEditor::create(&session, ImagePackSource::User),
-            };
-
-            let Some(dialog) = self
-                .obj()
-                .ancestor(adw::PreferencesDialog::static_type())
-                .and_downcast::<adw::PreferencesDialog>()
-            else {
-                error!("Could not find the dialog of the image packs page");
-                return;
-            };
-
-            dialog.push_subpage(&editor);
-        }
-
-        /// Present the packs that are enabled globally.
-        async fn load_enabled_packs(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let packs = session.image_packs().enabled_packs().await;
-
-            for row in self.rows.take() {
-                self.enabled_group.remove(&row);
+            for (group, row) in self.rows.take() {
+                group.remove(&row);
             }
 
-            self.enabled_placeholder_row.set_visible(packs.is_empty());
+            let packs = image_packs.all_packs().await;
+            self.placeholder_row.set_visible(packs.is_empty());
 
-            let mut rows = Vec::with_capacity(packs.len());
-            for pack in packs {
-                let row = self.build_row(&pack);
-                self.enabled_group.add(&row);
-                rows.push(row);
+            let mut rows = Vec::new();
+            for pack in &packs {
+                let row = self.build_row(pack);
+                self.packs_group.add(&row);
+                rows.push((self.packs_group.clone(), row));
             }
+
+            // A pack that is used everywhere but whose room the user has left
+            // cannot be loaded. The specification asks clients to handle that,
+            // and the only thing left to do with it is to stop using it.
+            let unavailable = image_packs.unavailable_packs().await;
+            self.unavailable_group.set_visible(!unavailable.is_empty());
+
+            for pack in unavailable {
+                let (room_id, state_key) = (pack.room_id, pack.state_key);
+                let row = SwitchLoadingRow::new();
+                row.set_is_active(true);
+                row.set_title(&glib::markup_escape_text(&state_key));
+                row.set_subtitle(&glib::markup_escape_text(&gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    "You are not in {room} anymore, so this pack cannot be used",
+                    &[("room", room_id.as_str())],
+                )));
+
+                self.connect_switch(&row, room_id, state_key, None);
+
+                self.unavailable_group.add(&row);
+                rows.push((self.unavailable_group.clone(), row));
+            }
+
             self.rows.replace(rows);
         }
 
-        /// Build the row for the given enabled pack.
-        fn build_row(&self, pack: &EnabledPack) -> SwitchLoadingRow {
+        /// Build the row for the given pack.
+        fn build_row(&self, pack: &ImagePack) -> SwitchLoadingRow {
+            let source = pack.source();
+            let image_count = pack.images().n_items();
+
+            let mut subtitle = ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "{count} image",
+                "{count} images",
+                image_count,
+                &[("count", &image_count.to_string())],
+            );
+
+            subtitle.push_str(" · ");
+            subtitle.push_str(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "in {room}",
+                &[("room", &source.room.display_name())],
+            ));
+
+            if let Some(attribution) = pack.attribution() {
+                subtitle.push_str(" · ");
+                subtitle.push_str(attribution);
+            }
+
             let row = SwitchLoadingRow::new();
-            row.set_is_active(true);
+            row.set_title(&glib::markup_escape_text(&pack.display_name()));
+            row.set_subtitle(&glib::markup_escape_text(&subtitle));
 
-            let (room_id, state_key) = match pack {
-                EnabledPack::Available(pack) => {
-                    let ImagePackSource::Room {
-                        room, state_key, ..
-                    } = pack.source()
-                    else {
-                        unreachable!("an enabled pack comes from a room");
-                    };
+            if source.room.permissions().can_change_image_packs() {
+                let edit_button = gtk::Button::builder()
+                    .icon_name("document-edit-symbolic")
+                    .tooltip_text(gettext("Edit Pack"))
+                    .valign(gtk::Align::Center)
+                    .css_classes(["flat"])
+                    .build();
 
-                    row.set_title(&glib::markup_escape_text(&pack.display_name()));
-                    row.set_subtitle(&glib::markup_escape_text(&gettext_f(
-                        // Translators: Do NOT translate the content between '{' and '}',
-                        // this is a variable name.
-                        "{count}, from {room}",
-                        &[
-                            ("count", &image_count(pack)),
-                            ("room", &room.display_name()),
-                        ],
-                    )));
+                edit_button.connect_clicked(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[strong]
+                    pack,
+                    move |_| {
+                        imp.push_editor(&ImagePackEditor::edit(
+                            &imp.session.upgrade().expect("the page has a session"),
+                            &pack,
+                        ));
+                    }
+                ));
 
-                    (room.room_id().to_owned(), state_key.clone())
-                }
-                EnabledPack::Unavailable { room_id, state_key } => {
-                    row.set_title(&glib::markup_escape_text(state_key));
-                    row.set_subtitle(&glib::markup_escape_text(&gettext_f(
-                        // Translators: Do NOT translate the content between '{' and '}',
-                        // this is a variable name.
-                        "You are not in {room} anymore, so this pack cannot be used",
-                        &[("room", room_id.as_str())],
-                    )));
+                row.add_suffix(&edit_button);
+            }
 
-                    (room_id.clone(), state_key.clone())
-                }
+            self.connect_switch(
+                &row,
+                source.room.room_id().to_owned(),
+                source.state_key.clone(),
+                Some(pack.display_name()),
+            );
+
+            row
+        }
+
+        /// Make the switch of the given row use the given pack everywhere.
+        fn connect_switch(
+            &self,
+            row: &SwitchLoadingRow,
+            room_id: ruma::OwnedRoomId,
+            state_key: String,
+            name: Option<String>,
+        ) {
+            let Some(session) = self.session.upgrade() else {
+                return;
             };
+
+            row.set_is_active(session.image_packs().is_pack_enabled(&room_id, &state_key));
 
             row.connect_is_active_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -213,6 +236,7 @@ mod imp {
                 move |row| {
                     let room_id = room_id.clone();
                     let state_key = state_key.clone();
+                    let name = name.clone();
 
                     spawn!(clone!(
                         #[weak]
@@ -220,17 +244,22 @@ mod imp {
                         #[weak]
                         row,
                         async move {
-                            imp.toggle_pack(&room_id, &state_key, &row).await;
+                            imp.toggle_pack(&room_id, &state_key, name.as_deref(), &row)
+                                .await;
                         }
                     ));
                 }
             ));
-
-            row
         }
 
-        /// Enable or disable the given pack globally, following its row.
-        async fn toggle_pack(&self, room_id: &RoomId, state_key: &str, row: &SwitchLoadingRow) {
+        /// Enable or disable the given pack everywhere, following its row.
+        async fn toggle_pack(
+            &self,
+            room_id: &RoomId,
+            state_key: &str,
+            name: Option<&str>,
+            row: &SwitchLoadingRow,
+        ) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -249,31 +278,72 @@ mod imp {
             row.set_is_loading(false);
 
             if result.is_err() {
-                error!("Could not change whether an image pack is enabled");
-                toast!(
-                    self.obj(),
-                    gettext("Could not change whether the pack is used in every room")
-                );
+                error!("Could not change whether an image pack is used everywhere");
+
+                let message = match name {
+                    Some(name) => gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Could not change whether “{pack}” is used in every room",
+                        &[("pack", name)],
+                    ),
+                    None => gettext("Could not change whether the pack is used in every room"),
+                };
+                toast!(self.obj(), message);
 
                 // Put the switch back where it was.
                 row.set_is_active(!enabled);
             }
         }
+
+        /// Create a pack in the room that packs are created in.
+        #[template_callback]
+        async fn create_pack(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            self.create_button.set_is_loading(true);
+
+            // The room is created the first time a pack is, so this is where
+            // the user finds out that it exists.
+            let Ok(room) = session.image_packs().packs_room().await else {
+                self.create_button.set_is_loading(false);
+                toast!(
+                    self.obj(),
+                    gettext("Could not create the room to keep your packs in")
+                );
+                return;
+            };
+
+            let state_key = ImagePacks::unused_state_key(&room).await;
+            self.create_button.set_is_loading(false);
+
+            self.push_editor(&ImagePackEditor::create(
+                &session,
+                ImagePackSource {
+                    room,
+                    state_key,
+                    // A pack that we create uses the event type that we send.
+                    kind: RoomPackKind::Unstable,
+                },
+            ));
+        }
+
+        /// Present the given editor on top of this page.
+        fn push_editor(&self, editor: &ImagePackEditor) {
+            let Some(dialog) = self
+                .obj()
+                .ancestor(adw::PreferencesDialog::static_type())
+                .and_downcast::<adw::PreferencesDialog>()
+            else {
+                error!("Could not find the dialog of the image packs page");
+                return;
+            };
+
+            dialog.push_subpage(editor);
+        }
     }
-}
-
-/// The number of images of the given pack, as text.
-fn image_count(pack: &ImagePack) -> String {
-    let count = pack.images().n_items();
-
-    ngettext_f(
-        // Translators: Do NOT translate the content between '{' and '}', this
-        // is a variable name.
-        "{count} image",
-        "{count} images",
-        count,
-        &[("count", &count.to_string())],
-    )
 }
 
 glib::wrapper! {

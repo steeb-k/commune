@@ -14,10 +14,10 @@
 //! MSC2545 also defined a personal image pack in the global account data,
 //! `im.ponies.user_emotes`. It was not carried into the stable specification,
 //! which expects a personal pack to be a room pack enabled globally instead,
-//! so it only ever exists under the unstable name.
+//! and it is not supported here either.
 //!
-//! ruma has its own types for the two stable events, but they cover neither
-//! the unstable names nor the personal pack, and they drop the unknown
+//! ruma has its own types for the two stable events, but they do not cover the
+//! unstable names, and they drop the unknown
 //! properties that the specification requires clients to preserve. Only
 //! [`ImageInfo`] is reused, because `m.sticker` is defined in terms of it.
 //!
@@ -176,17 +176,6 @@ pub struct PackContent {
     pub pack: PackMeta,
 }
 
-/// The content of an `im.ponies.user_emotes` event.
-///
-/// The personal image pack of the user, stored in the global account data.
-#[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
-#[ruma_event(type = "im.ponies.user_emotes", kind = GlobalAccountData)]
-pub struct UserEmotesEventContent {
-    /// The pack.
-    #[serde(default, flatten)]
-    pub pack: PackContent,
-}
-
 /// The content of an `im.ponies.room_emotes` event.
 ///
 /// An image pack defined in the state of a room. The state key is the
@@ -209,6 +198,19 @@ pub struct RoomImagePackEventContent {
     /// The pack.
     #[serde(default, flatten)]
     pub pack: PackContent,
+}
+
+/// The content of an `org.gnome.Fractal.image_packs_room` event.
+///
+/// The room that Fractal creates image packs in. No specification defines
+/// this: it is configuration for this client, which is what account data is
+/// for. Another client is unaffected by it, and removing it only means that
+/// the next pack goes to a new room.
+#[derive(Clone, Debug, Deserialize, Serialize, EventContent)]
+#[ruma_event(type = "org.gnome.Fractal.image_packs_room", kind = GlobalAccountData)]
+pub struct ImagePacksRoomEventContent {
+    /// The room that image packs are created in.
+    pub room_id: OwnedRoomId,
 }
 
 /// Metadata about a room image pack that is enabled globally.
@@ -334,7 +336,7 @@ mod tests {
             PackImage::new("mxc://example.org/abc123".into()),
         );
 
-        let content = UserEmotesEventContent {
+        let content = RoomEmotesEventContent {
             pack: PackContent {
                 images,
                 pack: PackMeta::default(),
@@ -347,7 +349,7 @@ mod tests {
             json!({ "images": { "cat": { "url": "mxc://example.org/abc123" } } })
         );
 
-        let deserialized = from_value::<UserEmotesEventContent>(serialized).unwrap();
+        let deserialized = from_value::<RoomEmotesEventContent>(serialized).unwrap();
         assert!(deserialized.pack.pack.is_empty());
     }
 
@@ -416,10 +418,6 @@ mod tests {
         assert_eq!(
             EmoteRoomsEventContent::default().event_type().to_string(),
             "im.ponies.emote_rooms"
-        );
-        assert_eq!(
-            UserEmotesEventContent::default().event_type().to_string(),
-            "im.ponies.user_emotes"
         );
         assert_eq!(
             RoomEmotesEventContent::default().event_type().to_string(),

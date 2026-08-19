@@ -2,6 +2,7 @@
 //!
 //! [image packs]: https://spec.matrix.org/v1.19/client-server-api/#image-packs
 
+use gettextrs::gettext;
 use gtk::{
     glib,
     glib::{clone, closure_local},
@@ -9,9 +10,17 @@ use gtk::{
     subclass::prelude::*,
 };
 use indexmap::IndexMap;
-use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
-use ruma::{OwnedRoomId, RoomId, events::StaticEventContent};
-use tracing::{debug, error};
+use matrix_sdk::{RoomState, deserialized_responses::RawAnySyncOrStrippedState};
+use ruma::{
+    OwnedRoomId, RoomId,
+    api::client::room::{Visibility, create_room, create_room::v3::RoomPreset},
+    assign,
+    events::{
+        StaticEventContent,
+        tag::{TagInfo, TagName},
+    },
+};
+use tracing::{debug, error, warn};
 
 mod emoticon_source;
 mod events;
@@ -20,8 +29,8 @@ mod pack_image;
 
 use self::events::{
     EmoteRoomsEvent, EmoteRoomsEventContent, EnabledPacks, ImagePackRoomsEvent,
-    ImagePackRoomsEventContent, RoomEmotesEventContent, RoomImagePackEventContent,
-    SyncRoomEmotesEvent, SyncRoomImagePackEvent, UserEmotesEvent, UserEmotesEventContent,
+    ImagePackRoomsEventContent, ImagePacksRoomEventContent, RoomEmotesEventContent,
+    RoomImagePackEventContent, SyncRoomEmotesEvent, SyncRoomImagePackEvent,
 };
 pub(crate) use self::{
     emoticon_source::EmoticonSource,
@@ -39,6 +48,12 @@ use crate::{spawn, spawn_tokio};
 /// Exposed so that the permission to change them can be checked without
 /// repeating the string.
 pub(crate) const ROOM_IMAGE_PACK_EVENT_TYPE: &str = RoomEmotesEventContent::TYPE;
+
+/// The state key of the first image pack of a room.
+const FIRST_STATE_KEY: &str = "";
+
+/// The prefix of the state keys of the image packs after the first one.
+const STATE_KEY_PREFIX: &str = "pack";
 
 /// The event types of a room image pack, in the order in which they are read.
 ///
@@ -109,19 +124,14 @@ async fn room_state_packs(room: &Room) -> IndexMap<String, (RoomPackKind, PackCo
     packs
 }
 
-/// A room image pack that is enabled globally.
+/// An image pack that is used everywhere but cannot be loaded, because the
+/// user is not in the room that defines it anymore.
 #[derive(Debug, Clone)]
-pub(crate) enum EnabledPack {
-    /// A pack that we could load.
-    Available(ImagePack),
-    /// A pack that we could not load, because the user is not in the room
-    /// that defines it anymore.
-    Unavailable {
-        /// The room that defines the pack.
-        room_id: OwnedRoomId,
-        /// The state key that identifies the pack in that room.
-        state_key: String,
-    },
+pub(crate) struct UnavailablePack {
+    /// The room that defines the pack.
+    pub(crate) room_id: OwnedRoomId,
+    /// The state key that identifies the pack in that room.
+    pub(crate) state_key: String,
 }
 
 mod imp {
@@ -138,8 +148,6 @@ mod imp {
         /// The session that these image packs belong to.
         #[property(get, construct_only)]
         pub(super) session: glib::WeakRef<Session>,
-        /// The personal image pack of the user.
-        pub(super) user_pack: RefCell<Option<PackContent>>,
         /// The room image packs enabled globally, under the unstable name.
         ///
         /// This is the one we write to. The two are kept apart so that
@@ -185,24 +193,7 @@ mod imp {
             };
             let client = session.client();
 
-            self.load_user_pack().await;
             self.load_enabled_packs().await;
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let user_pack_handle = client.add_event_handler(move |_: UserEmotesEvent| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().load_user_pack().await;
-                                obj.emit_by_name::<()>("changed", &[]);
-                            }
-                        });
-                    });
-                }
-            });
 
             // The enabled packs are watched under both names, because an event
             // handler only matches the single type of the content that it
@@ -270,7 +261,6 @@ mod imp {
 
             self.drop_guards.replace(
                 [
-                    user_pack_handle,
                     unstable_handle,
                     stable_handle,
                     unstable_room_handle,
@@ -280,41 +270,6 @@ mod imp {
                 .map(|handle| client.event_handler_drop_guard(handle))
                 .collect(),
             );
-        }
-
-        /// Load the personal image pack of the user from the store.
-        pub(super) async fn load_user_pack(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let client = session.client();
-            let handle = spawn_tokio!(async move {
-                client
-                    .account()
-                    .account_data::<UserEmotesEventContent>()
-                    .await
-            });
-
-            let content = match handle.await.expect("task was not aborted") {
-                Ok(Some(raw)) => match raw.deserialize() {
-                    Ok(content) => Some(content.pack),
-                    Err(error) => {
-                        error!("Could not deserialize the personal image pack: {error}");
-                        return;
-                    }
-                },
-                Ok(None) => {
-                    debug!("Got no personal image pack");
-                    None
-                }
-                Err(error) => {
-                    error!("Could not get the personal image pack: {error}");
-                    return;
-                }
-            };
-
-            self.user_pack.replace(content);
         }
 
         /// Load the globally enabled room image packs from the store.
@@ -393,33 +348,26 @@ impl ImagePacks {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The personal image pack of the user, if they have one.
-    pub(crate) fn user_pack(&self) -> Option<ImagePack> {
-        let content = self.imp().user_pack.borrow().clone()?;
-        Some(ImagePack::new(ImagePackSource::User, content))
-    }
-
     /// The image packs that the user can use in the given room, for the given
-    /// usage.
+    /// usage, or for every usage when it is `None`.
     ///
-    /// They are in the order in which they should be presented: the personal
-    /// pack of the user, then the packs that they enabled globally, then the
-    /// packs of the room. A pack that is both enabled globally and defined in
-    /// the room is only returned once.
+    /// They are in the order the specification asks for: the packs that the
+    /// user enabled everywhere, then the packs of the room. A pack that is
+    /// both enabled everywhere and defined in the room is only returned once.
     ///
     /// The packs of the canonical space of the room are not included yet.
-    pub(crate) async fn packs_for_room(&self, room: &Room, usage: &PackUsage) -> Vec<ImagePack> {
+    pub(crate) async fn packs_for_room(
+        &self,
+        room: &Room,
+        usage: Option<&PackUsage>,
+    ) -> Vec<ImagePack> {
         let mut packs = Vec::new();
 
         let mut push = |pack: ImagePack| {
-            if !pack.is_empty() && pack.has_usage(usage) {
+            if !pack.is_empty() && usage.is_none_or(|usage| pack.has_usage(usage)) {
                 packs.push(pack);
             }
         };
-
-        if let Some(pack) = self.user_pack() {
-            push(pack);
-        }
 
         let Some(session) = self.session() else {
             return packs;
@@ -446,7 +394,7 @@ impl ImagePacks {
 
                 seen.push((room_id.clone(), state_key.clone()));
                 push(ImagePack::new(
-                    ImagePackSource::Room {
+                    ImagePackSource {
                         room: source_room.clone(),
                         state_key,
                         kind,
@@ -463,7 +411,7 @@ impl ImagePacks {
             }
 
             push(ImagePack::new(
-                ImagePackSource::Room {
+                ImagePackSource {
                     room: room.clone(),
                     state_key,
                     kind,
@@ -475,21 +423,20 @@ impl ImagePacks {
         packs
     }
 
-    /// Every room image pack that is enabled globally.
+    /// The image packs that are used everywhere but cannot be loaded.
     ///
     /// The specification expects clients to be aware that the user might not
-    /// be in the room that defines a pack anymore, so those are returned too,
-    /// to be able to remove them.
-    pub(crate) async fn enabled_packs(&self) -> Vec<EnabledPack> {
+    /// be in the room that defines a pack anymore, so that they can be told
+    /// about it and stop using it.
+    pub(crate) async fn unavailable_packs(&self) -> Vec<UnavailablePack> {
         let Some(session) = self.session() else {
             return Vec::new();
         };
         let room_list = session.room_list();
-        let enabled_packs = self.imp().enabled_packs();
 
         let mut packs = Vec::new();
 
-        for (room_id, state_keys) in enabled_packs {
+        for (room_id, state_keys) in self.imp().enabled_packs() {
             let room = room_list.get(&room_id);
 
             let mut room_packs = match &room {
@@ -498,22 +445,14 @@ impl ImagePacks {
             };
 
             for state_key in state_keys.into_keys() {
-                match (&room, room_packs.shift_remove(&state_key)) {
-                    (Some(room), Some((kind, content))) => {
-                        packs.push(EnabledPack::Available(ImagePack::new(
-                            ImagePackSource::Room {
-                                room: room.clone(),
-                                state_key,
-                                kind,
-                            },
-                            content,
-                        )));
-                    }
-                    _ => packs.push(EnabledPack::Unavailable {
-                        room_id: room_id.clone(),
-                        state_key,
-                    }),
+                if room_packs.shift_remove(&state_key).is_some() {
+                    continue;
                 }
+
+                packs.push(UnavailablePack {
+                    room_id: room_id.clone(),
+                    state_key,
+                });
             }
         }
 
@@ -528,7 +467,7 @@ impl ImagePacks {
             .into_iter()
             .map(|(state_key, (kind, content))| {
                 ImagePack::new(
-                    ImagePackSource::Room {
+                    ImagePackSource {
                         room: room.clone(),
                         state_key,
                         kind,
@@ -539,10 +478,143 @@ impl ImagePacks {
             .collect()
     }
 
-    /// The state keys of the image packs defined in the state of the given
-    /// room, whatever they are meant to be used for.
-    pub(crate) async fn room_pack_state_keys(room: &Room) -> Vec<String> {
-        room_state_packs(room).await.into_keys().collect()
+    /// Every image pack defined in a room that the user is in.
+    ///
+    /// This is what the pack management presents: a pack lives in a room, and
+    /// the room it lives in is not necessarily one the user has open.
+    pub(crate) async fn all_packs(&self) -> Vec<ImagePack> {
+        let Some(session) = self.session() else {
+            return Vec::new();
+        };
+
+        let mut packs = Vec::new();
+
+        for room in session.room_list().iter::<Room>().flatten() {
+            if room.matrix_room().state() != RoomState::Joined {
+                continue;
+            }
+
+            packs.extend(Self::room_packs(&room).await);
+        }
+
+        packs
+    }
+
+    /// A state key that no image pack of the given room uses yet.
+    ///
+    /// The specification does not reserve the empty state key, but the clients
+    /// in the wild use it for the pack of a room, so it is taken first.
+    pub(crate) async fn unused_state_key(room: &Room) -> String {
+        let taken = room_state_packs(room).await;
+
+        if !taken.contains_key(FIRST_STATE_KEY) {
+            return FIRST_STATE_KEY.to_owned();
+        }
+
+        // Among the state keys that are taken, at most all of them can
+        // collide, so one of this many is free.
+        (2..=taken.len() + 2)
+            .map(|index| format!("{STATE_KEY_PREFIX}-{index}"))
+            .find(|key| !taken.contains_key(key))
+            .expect("an unused state key should be found")
+    }
+
+    /// The room that image packs are created in, creating it if there is none.
+    ///
+    /// The specification has no personal pack: it expects one to be a pack in
+    /// a room, enabled everywhere. A room of one is therefore where a pack of
+    /// your own belongs, and sharing it is inviting someone to that room.
+    pub(crate) async fn packs_room(&self) -> Result<Room, ()> {
+        let Some(session) = self.session() else {
+            return Err(());
+        };
+
+        if let Some(room) = self.stored_packs_room().await {
+            return Ok(room);
+        }
+
+        let client = session.client();
+        let request = assign!(create_room::v3::Request::new(), {
+            name: Some(gettext("Sticker Packs")),
+            topic: Some(gettext("The sticker and emoticon packs that you created. Invite someone here to share them.")),
+            preset: Some(RoomPreset::PrivateChat),
+            visibility: Visibility::Private,
+        });
+
+        let handle = spawn_tokio!(async move {
+            let matrix_room = client.create_room(request).await?;
+
+            // The room is a container, not a conversation, so it is kept out
+            // of the way of the rooms that are.
+            if let Err(error) = matrix_room
+                .set_tag(TagName::LowPriority, TagInfo::new())
+                .await
+            {
+                warn!("Could not set the tag of the image packs room: {error}");
+            }
+
+            Ok::<_, matrix_sdk::Error>(matrix_room.room_id().to_owned())
+        });
+
+        let room_id = match handle.await.expect("task was not aborted") {
+            Ok(room_id) => room_id,
+            Err(error) => {
+                error!("Could not create the image packs room: {error}");
+                return Err(());
+            }
+        };
+
+        let Some(room) = session.room_list().get_wait(&room_id, None).await else {
+            error!("Could not find the image packs room that was just created");
+            return Err(());
+        };
+
+        let client = session.client();
+        let content = ImagePacksRoomEventContent {
+            room_id: room_id.clone(),
+        };
+        let handle = spawn_tokio!(async move { client.account().set_account_data(content).await });
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            // The room exists either way, it is only not found again next
+            // time, and another one is created.
+            warn!("Could not remember the image packs room: {error}");
+        }
+
+        Ok(room)
+    }
+
+    /// The room that image packs are created in, if it is known and joined.
+    async fn stored_packs_room(&self) -> Option<Room> {
+        let session = self.session()?;
+
+        let client = session.client();
+        let handle = spawn_tokio!(async move {
+            client
+                .account()
+                .account_data::<ImagePacksRoomEventContent>()
+                .await
+        });
+
+        let room_id = match handle.await.expect("task was not aborted") {
+            Ok(Some(raw)) => match raw.deserialize() {
+                Ok(content) => content.room_id,
+                Err(error) => {
+                    error!("Could not deserialize the image packs room: {error}");
+                    return None;
+                }
+            },
+            Ok(None) => return None,
+            Err(error) => {
+                error!("Could not get the image packs room: {error}");
+                return None;
+            }
+        };
+
+        session
+            .room_list()
+            .get(&room_id)
+            .filter(|room| room.matrix_room().state() == RoomState::Joined)
     }
 
     /// Whether the pack with the given state key in the given room is enabled
@@ -650,73 +722,42 @@ impl ImagePacks {
 
     /// Save the given content as the image pack at the given source.
     ///
-    /// A pack in the state of a room is written back under the event type that
-    /// it was read from, so that editing a pack that another client created
-    /// does not leave a second copy of it behind under the other name.
+    /// A pack is written back under the event type that it was read from, so
+    /// that editing a pack that another client created does not leave a second
+    /// copy of it behind under the other name.
     pub(crate) async fn save_pack(
         &self,
         source: &ImagePackSource,
         content: PackContent,
     ) -> Result<(), ()> {
-        match source {
-            ImagePackSource::User => {
-                let Some(session) = self.session() else {
-                    return Err(());
-                };
+        let matrix_room = source.room.matrix_room().clone();
+        let state_key = source.state_key.clone();
+        let kind = source.kind;
 
-                let client = session.client();
-                let content_clone = content.clone();
-                let handle = spawn_tokio!(async move {
-                    client
-                        .account()
-                        .set_account_data(UserEmotesEventContent {
-                            pack: content_clone,
-                        })
+        let handle = spawn_tokio!(async move {
+            match kind {
+                RoomPackKind::Unstable => {
+                    matrix_room
+                        .send_state_event_for_key(
+                            &state_key,
+                            RoomEmotesEventContent { pack: content },
+                        )
                         .await
-                });
-
-                if let Err(error) = handle.await.expect("task was not aborted") {
-                    error!("Could not save the personal image pack: {error}");
-                    return Err(());
                 }
-
-                self.imp().user_pack.replace(Some(content));
-            }
-            ImagePackSource::Room {
-                room,
-                state_key,
-                kind,
-            } => {
-                let matrix_room = room.matrix_room().clone();
-                let state_key = state_key.clone();
-                let kind = *kind;
-
-                let handle = spawn_tokio!(async move {
-                    match kind {
-                        RoomPackKind::Unstable => {
-                            matrix_room
-                                .send_state_event_for_key(
-                                    &state_key,
-                                    RoomEmotesEventContent { pack: content },
-                                )
-                                .await
-                        }
-                        RoomPackKind::Stable => {
-                            matrix_room
-                                .send_state_event_for_key(
-                                    &state_key,
-                                    RoomImagePackEventContent { pack: content },
-                                )
-                                .await
-                        }
-                    }
-                });
-
-                if let Err(error) = handle.await.expect("task was not aborted") {
-                    error!("Could not save an image pack in a room: {error}");
-                    return Err(());
+                RoomPackKind::Stable => {
+                    matrix_room
+                        .send_state_event_for_key(
+                            &state_key,
+                            RoomImagePackEventContent { pack: content },
+                        )
+                        .await
                 }
             }
+        });
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            error!("Could not save an image pack: {error}");
+            return Err(());
         }
 
         self.emit_by_name::<()>("changed", &[]);
@@ -732,17 +773,12 @@ impl ImagePacks {
         self.save_pack(source, PackContent::default()).await?;
 
         // A pack that does not exist anymore should not stay in the list of the
-        // packs that are used in every room. Failing to clean that up does not
+        // packs that are used everywhere. Failing to clean that up does not
         // make the deletion fail: the pack is gone either way, and it is
-        // reported as unavailable in the account settings.
-        if let ImagePackSource::Room {
-            room, state_key, ..
-        } = source
-        {
-            let _ = self
-                .set_pack_enabled(room.room_id(), state_key, false)
-                .await;
-        }
+        // reported as unavailable in the pack list.
+        let _ = self
+            .set_pack_enabled(source.room.room_id(), &source.state_key, false)
+            .await;
 
         Ok(())
     }

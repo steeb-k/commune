@@ -160,7 +160,7 @@ mod imp {
 
             let packs = session
                 .image_packs()
-                .packs_for_room(&room, &PackUsage::Sticker)
+                .packs_for_room(&room, Some(&PackUsage::Sticker))
                 .await;
 
             // The room might have changed while we were loading.

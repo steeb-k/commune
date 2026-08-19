@@ -119,7 +119,7 @@ mod imp {
 
             let packs = session
                 .image_packs()
-                .packs_for_room(&room, &PackUsage::Emoticon)
+                .packs_for_room(&room, Some(&PackUsage::Emoticon))
                 .await;
 
             // The room might have changed while we were loading.

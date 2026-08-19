@@ -1,4 +1,3 @@
-use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
 use super::{
@@ -21,19 +20,17 @@ pub(crate) enum RoomPackKind {
 }
 
 /// Where an image pack comes from.
+///
+/// Always the state of a room: the specification has no personal pack, and
+/// expects one to be a room pack enabled everywhere instead.
 #[derive(Debug, Clone)]
-pub(crate) enum ImagePackSource {
-    /// The personal image pack of the user, in the global account data.
-    User,
-    /// An image pack in the state of a room.
-    Room {
-        /// The room that defines the pack.
-        room: Room,
-        /// The state key that identifies the pack in that room.
-        state_key: String,
-        /// The event type that the pack is defined under.
-        kind: RoomPackKind,
-    },
+pub(crate) struct ImagePackSource {
+    /// The room that defines the pack.
+    pub(crate) room: Room,
+    /// The state key that identifies the pack in that room.
+    pub(crate) state_key: String,
+    /// The event type that the pack is defined under.
+    pub(crate) kind: RoomPackKind,
 }
 
 mod imp {
@@ -100,12 +97,7 @@ mod imp {
                 return display_name.clone();
             }
 
-            match self.source() {
-                // Translators: This is the name of the image pack of the user,
-                // when they did not give it one.
-                ImagePackSource::User => gettext("Your Images"),
-                ImagePackSource::Room { room, .. } => room.display_name(),
-            }
+            self.source().room.display_name()
         }
     }
 }
