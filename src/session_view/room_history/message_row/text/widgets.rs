@@ -189,6 +189,27 @@ fn is_emoticons_only(text: &str, widgets: &[gtk::Widget]) -> bool {
         .is_empty()
 }
 
+/// Build the presentation of a message that contains nothing but custom
+/// emoticons.
+fn emoticons_widget(widgets: Vec<gtk::Widget>) -> gtk::Widget {
+    let container = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(6)
+        .halign(gtk::Align::Start)
+        .accessible_role(gtk::AccessibleRole::Group)
+        .build();
+
+    for widget in widgets {
+        if let Some(emoticon) = widget.downcast_ref::<CustomEmoticon>() {
+            emoticon.set_is_large(true);
+        }
+
+        container.append(&widget);
+    }
+
+    container.upcast()
+}
+
 /// Construct a `GtkLabel` for the given inline nodes.
 ///
 /// Returns `None` if the label would have been empty.
@@ -219,15 +240,13 @@ fn label_for_inline_html(
             }
         }
 
-        // The specification allows a message that contains nothing but custom
-        // emoticons to present them larger, like the emoji-only messages.
+        // A message that contains nothing but custom emoticons is presented
+        // like a sticker, which the specification allows: as widgets of its
+        // own, and not as shapes reserved inside a line of text. That is the
+        // whole point of sending one on its own, and it avoids the placement
+        // of an inline widget, which is only worth it to sit among words.
         if !config.ellipsize && is_emoticons_only(&text, &widgets) {
-            for emoticon in widgets
-                .iter()
-                .filter_map(|widget| widget.downcast_ref::<CustomEmoticon>())
-            {
-                emoticon.set_is_large(true);
-            }
+            return Some(emoticons_widget(widgets));
         }
 
         let w = LabelWithWidgets::new();
