@@ -1,15 +1,10 @@
-use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
-use ruma::api::client::media::get_content_thumbnail::v3::Method;
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use tracing::error;
 
 use crate::{
     gettext_f,
     session::{PackImage, Session},
     spawn,
-    utils::media::{
-        FrameDimensions,
-        image::{ImageRequestPriority, ImageSource, ThumbnailDownloader, ThumbnailSettings},
-    },
 };
 
 /// The size at which an image of a pack is presented, in pixels.
@@ -100,42 +95,13 @@ mod imp {
         async fn load(&self) {
             let obj = self.obj();
             let image = self.image.get().expect("image should be initialized");
-            let client = self
-                .session
-                .get()
-                .expect("session should be initialized")
-                .client();
+            let session = self.session.get().expect("session should be initialized");
 
-            let dimensions = FrameDimensions {
-                width: IMAGE_SIZE,
-                height: IMAGE_SIZE,
-            }
-            .scale(u32::try_from(obj.scale_factor()).unwrap_or(1));
-
-            let downloader = ThumbnailDownloader {
-                main: ImageSource {
-                    source: image.uri().into(),
-                    info: image.info().map(Into::into),
-                },
-                // Images of a pack are never encrypted, so the original is
-                // always the best source.
-                alt: None,
-            };
-            let settings = ThumbnailSettings {
-                dimensions,
-                method: Method::Scale,
-                animated: true,
-                prefer_thumbnail: true,
-            };
-
-            match downloader
-                .download(client, settings, ImageRequestPriority::Low)
+            match image
+                .download_thumbnail(session, IMAGE_SIZE, obj.scale_factor())
                 .await
             {
-                Ok(loaded) => {
-                    let paintable: gdk::Paintable = loaded.into();
-                    self.picture.set_paintable(Some(&paintable));
-                }
+                Ok(paintable) => self.picture.set_paintable(Some(&paintable)),
                 Err(error) => {
                     error!("Could not load the image of a pack: {error}");
                     self.set_unavailable();

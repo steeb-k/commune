@@ -151,7 +151,10 @@ mod imp {
 
             let (room_id, state_key) = match pack {
                 EnabledPack::Available(pack) => {
-                    let ImagePackSource::Room { room, state_key } = pack.source() else {
+                    let ImagePackSource::Room {
+                        room, state_key, ..
+                    } = pack.source()
+                    else {
                         unreachable!("an enabled pack comes from a room");
                     };
 

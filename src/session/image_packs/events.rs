@@ -69,6 +69,13 @@ pub struct PackImage {
     /// Metadata about the image.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub info: Option<Box<ImageInfo>>,
+
+    /// The properties that we do not know about.
+    ///
+    /// Kept so that editing a pack that another client created does not drop
+    /// what it put there.
+    #[serde(flatten)]
+    unknown: BTreeMap<String, JsonValue>,
 }
 
 impl PackImage {
@@ -78,6 +85,7 @@ impl PackImage {
             url,
             body: None,
             info: None,
+            unknown: BTreeMap::new(),
         }
     }
 }
@@ -123,6 +131,13 @@ pub struct PackMeta {
     /// Who to credit for the pack.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attribution: Option<String>,
+
+    /// The properties that we do not know about.
+    ///
+    /// Kept so that editing a pack that another client created does not drop
+    /// what it put there.
+    #[serde(flatten)]
+    unknown: BTreeMap<String, JsonValue>,
 }
 
 impl PackMeta {
@@ -139,6 +154,7 @@ impl PackMeta {
             && self.avatar_url.is_none()
             && self.usage.is_empty()
             && self.attribution.is_none()
+            && self.unknown.is_empty()
     }
 }
 
@@ -355,6 +371,43 @@ mod tests {
         assert!(packs.contains_key("stickers"));
 
         assert_eq!(to_value(deserialized).unwrap(), content);
+    }
+
+    /// The properties of a pack that we do not know about survive an edit.
+    #[test]
+    fn pack_keeps_unknown_properties() {
+        let content = json!({
+            "images": {
+                "cat": {
+                    "url": "mxc://example.org/abc",
+                    "org.example.tag": "animals",
+                },
+            },
+            "pack": {
+                "display_name": "Cats",
+                "org.example.license": "CC0",
+            },
+        });
+
+        let mut deserialized = from_value::<RoomEmotesEventContent>(content.clone()).unwrap();
+
+        // Rename the shortcode, which is what an edit does.
+        let image = deserialized.pack.images.remove("cat").unwrap();
+        deserialized.pack.images.insert("kitten".to_owned(), image);
+
+        let expected = json!({
+            "images": {
+                "kitten": {
+                    "url": "mxc://example.org/abc",
+                    "org.example.tag": "animals",
+                },
+            },
+            "pack": {
+                "display_name": "Cats",
+                "org.example.license": "CC0",
+            },
+        });
+        assert_eq!(to_value(deserialized).unwrap(), expected);
     }
 
     /// The event types that we send are the unstable ones.

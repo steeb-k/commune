@@ -1,10 +1,20 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use ruma::{
     OwnedMxcUri,
+    api::client::media::get_content_thumbnail::v3::Method,
     events::{room::ImageInfo, sticker::StickerEventContent},
 };
 
 use super::events::PackImage as PackImageData;
+use crate::{
+    session::Session,
+    utils::media::{
+        FrameDimensions,
+        image::{
+            ImageError, ImageRequestPriority, ImageSource, ThumbnailDownloader, ThumbnailSettings,
+        },
+    },
+};
 
 mod imp {
     use std::{cell::OnceCell, marker::PhantomData};
@@ -83,6 +93,41 @@ impl PackImage {
     /// The metadata of this image.
     pub(crate) fn info(&self) -> Option<&ImageInfo> {
         self.imp().data().info.as_deref()
+    }
+
+    /// Load this image at the given size, in pixels.
+    pub(crate) async fn download_thumbnail(
+        &self,
+        session: &Session,
+        size: u32,
+        scale_factor: i32,
+    ) -> Result<gdk::Paintable, ImageError> {
+        let dimensions = FrameDimensions {
+            width: size,
+            height: size,
+        }
+        .scale(u32::try_from(scale_factor).unwrap_or(1));
+
+        let downloader = ThumbnailDownloader {
+            main: ImageSource {
+                source: self.uri().into(),
+                info: self.info().map(Into::into),
+            },
+            // Images of a pack are never encrypted, so the original is always
+            // the best source.
+            alt: None,
+        };
+        let settings = ThumbnailSettings {
+            dimensions,
+            method: Method::Scale,
+            animated: true,
+            prefer_thumbnail: true,
+        };
+
+        downloader
+            .download(session.client(), settings, ImageRequestPriority::Low)
+            .await
+            .map(Into::into)
     }
 
     /// The content to send this image as a sticker.
