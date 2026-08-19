@@ -11,7 +11,7 @@ use tracing::debug;
 
 use super::{SUPPORTED_BLOCK_ELEMENTS, inline_html::InlineHtmlBuilder};
 use crate::{
-    components::{AtRoom, LabelWithWidgets, Pill},
+    components::{AtRoom, CustomEmoticon, LabelWithWidgets, Pill},
     prelude::*,
     session::Room,
 };
@@ -175,6 +175,20 @@ fn group_inline_nodes(nodes: Vec<NodeRef>) -> Vec<NodeGroup> {
     result
 }
 
+/// Whether the given text and widgets contain nothing but custom emoticons.
+///
+/// Each widget is a placeholder in the text, so what is left once they are
+/// removed is what the message says besides them.
+fn is_emoticons_only(text: &str, widgets: &[gtk::Widget]) -> bool {
+    if widgets.is_empty() || !widgets.iter().all(ObjectExt::is::<CustomEmoticon>) {
+        return false;
+    }
+
+    text.replace(LabelWithWidgets::PLACEHOLDER, "")
+        .trim()
+        .is_empty()
+}
+
 /// Construct a `GtkLabel` for the given inline nodes.
 ///
 /// Returns `None` if the label would have been empty.
@@ -204,6 +218,18 @@ fn label_for_inline_html(
                 pill.set_activatable(true);
             }
         }
+
+        // The specification allows a message that contains nothing but custom
+        // emoticons to present them larger, like the emoji-only messages.
+        if !config.ellipsize && is_emoticons_only(&text, &widgets) {
+            for emoticon in widgets
+                .iter()
+                .filter_map(|widget| widget.downcast_ref::<CustomEmoticon>())
+            {
+                emoticon.set_is_large(true);
+            }
+        }
+
         let w = LabelWithWidgets::new();
         w.add_css_class("document");
         w.set_use_markup(true);
