@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create an image pack on a homeserver, for testing.
 
-Fractal cannot create packs yet, and there is no registry of packs to pull
+Commune cannot create packs yet, and there is no registry of packs to pull
 one from, so this builds one and uploads it.
 
 By default the images are emoji rendered from the system emoji font, which
@@ -252,7 +252,7 @@ def escape(text):
 def send_emoticons(client, room_id, images):
     """Send messages using the images inline, to test their rendering.
 
-    Fractal cannot send custom emoticons yet, so this stands in for a client
+    Commune cannot send custom emoticons yet, so this stands in for a client
     that can. The height attribute is the one the specification requires, for
     the clients that do not support image packs.
     """
@@ -400,7 +400,7 @@ def main():
             die("--send-emoticons needs --room")
         send_emoticons(client, args.room, images)
 
-    print("\nOpen the room in Fractal and click the sticker button in the composer.")
+    print("\nOpen the room in Commune and click the sticker button in the composer.")
     print("If a pack does not appear, leave the room and come back: the picker")
     print("only loads the packs once per room.")
 

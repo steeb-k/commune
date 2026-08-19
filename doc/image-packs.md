@@ -62,7 +62,7 @@ use read them. When Element, Cinny and FluffyChat read `m.room.image_pack` and
 `set_pack_enabled` send, and the non-standard part of this branch is gone.
 
 One event here is ours and no specification defines it:
-`org.gnome.Fractal.image_packs_room`, holding the room that new packs are
+`io.github.steeb_k.Commune.image_packs_room`, holding the room that new packs are
 created in. It is client configuration, which is what account data is for; no
 other client is affected by it, and losing it only means the next pack goes to
 a new room.
@@ -221,7 +221,7 @@ about.
 * **Space packs are not read.** The specification says clients SHOULD offer
   the packs of a room's canonical space hierarchy, recursively, with a cycle
   guard. Phase 8.
-* **`org.gnome.Fractal.image_packs_room` is ours.** Client configuration in
+* **`io.github.steeb_k.Commune.image_packs_room` is ours.** Client configuration in
   account data, which no other client reads or is affected by.
 
 Two things that look like departures and are not. Sizing an emoticon from the
@@ -309,7 +309,7 @@ keeping.
   pack is removed from the packs enabled everywhere at the same time.
 * **A pack is created in a room that exists for packs**, named Sticker Packs,
   made the first time one is needed and remembered in
-  `org.gnome.Fractal.image_packs_room`. The specification has no personal
+  `io.github.steeb_k.Commune.image_packs_room`. The specification has no personal
   pack and expects one to be a room pack enabled everywhere, so a room of one
   is where a pack of your own belongs, and sharing it is inviting someone to
   that room. The room is tagged low priority so it does not sit among the
@@ -436,7 +436,7 @@ their names. The placements to cover, one flag each:
 the default leaves `usage` unset, which means everywhere.
 
 There is an authoring UI now, so the tool is only needed to put a pack
-somewhere Fractal will not write to: under the stable event name
+somewhere Commune will not write to: under the stable event name
 (`--room --stable`), to check that both names are read.
 
 Two things that look like bugs but are not:
@@ -445,7 +445,7 @@ Two things that look like bugs but are not:
   lives in. Without it the pack has no button to edit it, which is not an
   error.
 * A pack is usable in the room it lives in and nowhere else until it is
-  turned on in Preferences. A pack created by Fractal is turned on for you,
+  turned on in Preferences. A pack created by Commune is turned on for you,
   because the room it goes in is not one you talk in.
 
 ## Rebase guide
