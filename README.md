@@ -1,30 +1,23 @@
-[![Our chat room](https://img.shields.io/matrix/fractal-gtk:matrix.org?color=blue&label=%23fractal%3Agnome.org&logo=matrix)](https://matrix.to/#/#fractal:gnome.org)
-[![Our Gitlab project](https://img.shields.io/badge/gitlab.gnome.org%2F-World%2FFractal-green?logo=gitlab)](https://gitlab.gnome.org/World/fractal/)
-[![Our documentation](https://img.shields.io/badge/%F0%9F%95%AE-Docs-B7410E?logo=rust)](https://world.pages.gitlab.gnome.org/fractal/)
-[![Official package](https://img.shields.io/flathub/downloads/org.gnome.Fractal?logo=flathub)](https://flathub.org/apps/org.gnome.Fractal)
-
 <div align="center">
 
 <img
-    src="https://gitlab.gnome.org/World/fractal/-/raw/main/data/icons/org.gnome.Fractal.svg"
+    src="assets/appicon.svg"
     alt=""
+    width="128"
+    height="128"
 />
 
-# Fractal
+# Commune
 
 </div>
 
-Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
-collaboration in large groups, such as free software projects, and will fit all screens, big or small.
+Commune is a Matrix messaging app written in Rust. Its interface is optimized for collaboration in
+large groups, such as free software projects, and will fit all screens, big or small.
 
-<div align="center">
-<img
-    src="https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png"
-    alt="Fractal’s main window"
-    width="882"
-    height="672"
-/>
-</div>
+Commune is a fork of [Fractal](https://gitlab.gnome.org/World/fractal), the Matrix client for GNOME.
+It is not affiliated with or endorsed by the Fractal project or the GNOME project, and issues with
+it should not be reported to either. See [`doc/fork.md`](doc/fork.md) for what that means in
+practice.
 
 Highlights:
 
@@ -33,142 +26,87 @@ Highlights:
 * Send rich formatted messages, files, or your current location
 * Reply to specific messages, react with emoji, edit or remove messages
 * View images, and play audio and video directly in the conversation
+* Send and manage custom sticker and emoticon packs
 * See who has read messages, and who is typing
 * Log into multiple accounts at once (with Single-Sign On support)
 
 ## Contents
 
 <!-- toc -->
-* [Installation instructions](#installation-instructions)
+* [Installing alongside Fractal](#installing-alongside-fractal)
+* [Building](#building)
+* [Runtime Dependencies](#runtime-dependencies)
 * [Security Best Practices](#security-best-practices)
 * [Contributing](#contributing)
-* [Frequently Asked Questions](#frequently-asked-questions)
-* [The origin of Fractal](#the-origin-of-fractal)
-* [Code of Conduct](#code-of-conduct)
+* [The origin of Commune](#the-origin-of-commune)
 <!-- /toc -->
 
-## Installation instructions
+## Installing alongside Fractal
 
-Flatpak is the recommended installation method. For installing any of our Flatpaks, you need to
-make sure your system is [set up with the Flathub remote](https://flathub.org/setup).
+Commune is built to coexist with Fractal rather than replace it. Nothing is shared between the two
+apps:
 
-All of our Flatpaks can be installed in parallel, offering you the opportunity to try out the
-development version while keeping the stable release around for daily use.
+| | Fractal | Commune |
+| --- | --- | --- |
+| Application ID | `org.gnome.Fractal` | `io.github.steeb_k.Commune` |
+| Binary | `fractal` | `commune` |
+| Settings (dconf) | `/org/gnome/Fractal/Stable/` | `/io/github/steeb_k/Commune/Stable/` |
+| Session data | `~/.local/share/fractal` | `~/.local/share/commune` |
+| Cache | `~/.cache/fractal` | `~/.cache/commune` |
+| Keyring items | `xdg:schema` = `org.gnome.Fractal` | `xdg:schema` = `io.github.steeb_k.Commune` |
 
-### Stable version
+Installing one has no effect on the other, and signing in to one does not sign you in to the other.
+The development builds (`.Devel`) of each are likewise separate from their stable counterparts.
 
-The current stable version is 14.1 (released July 19th 2026).
+## Building
 
-You can get the official Fractal Flatpak from Flathub.
+### Flatpak
 
-<a href="https://flathub.org/apps/details/org.gnome.Fractal">
-<img
-    src="https://flathub.org/assets/badges/flathub-badge-i-en.svg"
-    alt="Download Fractal on Flathub"
-    width="240px"
-    height="80px"
-/>
-</a>
-
-### Beta version
-
-The current beta version is 14.1 (same as stable).
-
-It is available as a Flatpak on Flathub Beta.
-
-To get it, first set up the Flathub Beta remote:
-
-<a href="https://flathub.org/beta-repo/flathub-beta.flatpakrepo">
-<img
-    src="https://gitlab.gnome.org/World/fractal/uploads/81944cf92504343a03121a58722345a2/flathub-beta-badge.svg"
-    alt="Add Flathub Beta repository"
-    width="240px"
-    height="80px"
-/>
-</a>
-
-Then install the application.
-
-<a href="https://flathub.org/beta-repo/appstream/org.gnome.Fractal.flatpakref">
-<img
-    src="https://gitlab.gnome.org/World/fractal/uploads/31a40da5d71a30c47f135e78ffef3df5/fractal-beta-badge.svg"
-    alt="Download Fractal Beta"
-    width="240px"
-    height="80px"
-/>
-</a>
-
-Or from the command line:
+Flatpak is the recommended way to build and install Commune. You need `flatpak` and
+`flatpak-builder`, and the GNOME 50 runtime:
 
 ```sh
-# Add the Flathub Beta repo
-flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
-
-# Install Fractal Beta
-flatpak install --user flathub-beta org.gnome.Fractal
+flatpak install --user flathub org.gnome.Platform//50 org.gnome.Sdk//50
 ```
 
-Finally, run the application:
+Then, from the repository root:
 
 ```sh
-flatpak run org.gnome.Fractal//beta
+# Stable build
+flatpak-builder --user --install --force-clean \
+    build-flatpak build-aux/io.github.steeb_k.Commune.json
+flatpak run io.github.steeb_k.Commune
+
+# Development build, installed and run side by side with the above
+flatpak-builder --user --install --force-clean \
+    build-flatpak-devel build-aux/io.github.steeb_k.Commune.Devel.json
+flatpak run io.github.steeb_k.Commune.Devel
 ```
 
-If you have both the stable and beta versions installed, your system will only show one icon in the
-apps list and launch the stable version by default. If you want to run the beta version by default,
-use this command:
+Both manifests build the working tree (`"type": "dir"`). Publishing to a repository requires
+swapping that source for a `git` source pinned to a tag — see [`doc/flatpak.md`](doc/flatpak.md).
+
+### Meson
+
+To build against the libraries on the host instead, you need the dependencies checked by
+`meson.build`, plus `blueprint-compiler`, `sass` and a Rust toolchain:
 
 ```sh
-flatpak make-current org.gnome.Fractal beta
+meson setup _build --prefix=~/.local -Dprofile=development
+meson install -C _build
+commune
 ```
 
-_Note that you can go back to using the stable version by default by using the same command and
-replacing `beta` with `stable`._
+Note that a host build installs into the same prefix as anything else you have installed there; the
+Flatpak builds are what keep Commune fully self-contained.
 
-### Development version
+## Runtime Dependencies
 
-If you want to try the upcoming version of Fractal without building it yourself, it is available as
-a nightly Flatpak in [the gnome-nightly repo](https://nightly.gnome.org/).
-
-First, set up the GNOME nightlies.
-
-<a href="https://nightly.gnome.org/gnome-nightly.flatpakrepo">
-<img
-    src="https://gitlab.gnome.org/World/fractal/uploads/c276f92660dcf50067714ac08e193fea/gnome-nightly-badge.svg"
-    alt="Add gnome-nightly repository"
-    width="240px"
-    height="80px"
-/>
-</a>
-
-Then install the application.
-
-<a href="https://nightly.gnome.org/repo/appstream/org.gnome.Fractal.Devel.flatpakref">
-<img
-    src="https://gitlab.gnome.org/World/fractal/uploads/5e42d322eaacc7da2a52bfda9f7a4e53/fractal-nightly-badge.svg"
-    alt="Download Fractal Nightly"
-    width="240px"
-    height="80px"
-/>
-</a>
-
-Or from the command line:
-
-```sh
-# Add the gnome-nightly repo
-flatpak remote-add --user --if-not-exists gnome-nightly https://nightly.gnome.org/gnome-nightly.flatpakrepo
-
-# Install the nightly build
-flatpak install --user gnome-nightly org.gnome.Fractal.Devel
-```
-
-### Runtime Dependencies
-
-On top of the dependencies required at build time and checked by Meson, Fractal depends on the
+On top of the dependencies required at build time and checked by Meson, Commune depends on the
 following dependencies at runtime:
 
 * xdg-desktop-portal and its backends: some functionalities are dependent on the following portals,
-  and a permission will be asked when necessary, but Fractal should work without them:
+  and a permission will be asked when necessary, but Commune should work without them:
   * Secret: this portal or a Secret Service is required, see [storing secrets](#storing-secrets).
   * Camera: scan QR codes during verification.
   * Location: send the user’s location in a conversation.
@@ -178,34 +116,34 @@ following dependencies at runtime:
     of the camera.
   * libgstpipewire with the `pipewiredeviceprovider`: used to list and access the cameras.
 
-#### Storing secrets
+### Storing secrets
 
-Fractal doesn’t store your **password**, but it stores your **access token** and the **passphrase**
+Commune doesn’t store your **password**, but it stores your **access token** and the **passphrase**
 used to encrypt the database and the local cache.
 
-The Fractal Flatpaks use the [Secret **Portal**](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Secret.html)
+The Commune Flatpaks use the [Secret **Portal**](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Secret.html)
 to store those secrets. If you are using GNOME this should just work. If you are using a different
 desktop environment or are facing issues, make sure `xdg-desktop-portal` is installed along with a
 service that provides the [Secret portal backend interface](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.impl.portal.Secret.html),
 like gnome-keyring or KWallet (since version 6.2).
 
-Any version that is not sandboxed relies on software that implements the [Secret **Service** API](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
+Any version that is not sandboxed relies on software that implements the [Secret Service API](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
 to store those secrets. Therefore, you need to have software providing that service on your system,
 like gnome-keyring, pass with [pass_secret_service](https://github.com/mdellweg/pass_secret_service/),
 or KWallet. Once again, if you are using GNOME this should just work.
 
 If you prefer to use software that only implements the Secret Service API while using the Flatpaks,
 you need to make sure that no service implementing the Secret portal backend interface is running,
-and you need to allow Fractal to access the D-Bus service with this command:
+and you need to allow Commune to access the D-Bus service with this command:
 
 ```sh
-flatpak override --user --talk-name=org.freedesktop.secrets org.gnome.Fractal
+flatpak override --user --talk-name=org.freedesktop.secrets io.github.steeb_k.Commune
 ```
 
-_For the nightly version, change the application name to `org.gnome.Fractal.Devel`._
+_For the development version, change the application ID to `io.github.steeb_k.Commune.Devel`._
 
 Or with [Flatseal](https://flathub.org/apps/details/com.github.tchx84.Flatseal), by adding
-`org.freedesktop.secrets` in the **Session Bus** > **Talk** list of Fractal.
+`org.freedesktop.secrets` in the **Session Bus** > **Talk** list of Commune.
 
 ## Security Best Practices
 
@@ -219,46 +157,22 @@ computer can allow other people to access your private communications and your s
 
 ## Contributing
 
-### Code
-
 Please follow our [contributing guidelines](CONTRIBUTING.md).
 
-### Translations
-
-Fractal is translated by the GNOME translation team on [Damned lies](https://l10n.gnome.org/).
-
-Find your language in the list on [the Fractal module page on Damned lies](https://l10n.gnome.org/module/fractal/).
+The translations under `po/` were written for Fractal by the GNOME translation team on
+[Damned Lies](https://l10n.gnome.org/). Strings that Commune has not changed are still translated by
+that work; strings that mention the application name are not, and show in English until they are
+translated again.
 
 The names of the emoji displayed during verification come from [the Matrix specification repository](https://github.com/matrix-org/matrix-spec/tree/main/data-definitions).
 They are translated on [Element’s translation platform](https://translate.element.io/projects/matrix-doc/sas-emoji-v1).
 
-## Frequently Asked Questions
+## The origin of Commune
 
-Does Fractal have encryption support?
+Commune is a fork of Fractal 14.1, taken in August 2026. Almost all of the code it runs was written
+by the Fractal contributors, and the About dialog credits them.
 
-: **Yes**, since Fractal 5, encryption is supported using Cross-Signing. See
-  <https://gitlab.gnome.org/World/fractal/-/issues/717> for more info on the state of encryption.
-
-Can I run Fractal with the window closed?
-
-: Currently Fractal does not support this. Fractal is a GNOME application, and accordingly adheres to
-  the GNOME guidelines and paradigms. This will be revisited [if or when GNOME gets a proper paradigm
-  to interact with apps running in the background](https://gitlab.gnome.org/World/fractal/-/issues/228#note_2054826).
-
-## The origin of Fractal
-
-The current version is a complete rewrite of Fractal built on top of the
-[matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) using [GTK4](https://gtk.org/).
-
-The previous version of Fractal was using GTK3 and its own backend to talk to a matrix homeserver,
-the code can be found in the [`legacy` branch](https://gitlab.gnome.org/World/fractal/-/tree/legacy).
-
-Initial versions were based on Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk.
-In the origins of the project it was called guillotine, based on French revolution, in relation with
-the Riot client name, but it's a negative name so we decide to change for a math one.
-
-The name Fractal was proposed by Regina Bíró.
-
-## Code of Conduct
-
-Fractal follows the official [GNOME Code of Conduct](https://conduct.gnome.org/).
+Fractal itself is a rewrite, built on the [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk)
+and [GTK4](https://gtk.org/), of an earlier GTK3 application of the same name. That one began as a
+fork of Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk, and before that was called
+guillotine. The name Fractal was proposed by Regina Bíró.

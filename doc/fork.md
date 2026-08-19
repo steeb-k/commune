@@ -20,6 +20,12 @@ resolving it the usual way — taking theirs — quietly reinstates instructions
 whose whole purpose is to make an agent useless or destructive. It is the one
 file in this tree where "take upstream" is the wrong answer by default.
 
+The app was renamed to Commune, with its own application ID, icon and
+settings, so that it installs and runs alongside Fractal instead of replacing
+it. `rebrand.md` is the ledger for that: what was renamed, what was
+deliberately left carrying Fractal's name, and how the renames resolve on a
+rebase.
+
 ## What is still worth taking from upstream
 
 Feature parity is not a goal, and the distance will grow. What matters is not

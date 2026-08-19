@@ -1,6 +1,6 @@
 # Contributing
 
-On this page you can learn how to contribute to [Fractal](https://gitlab.gnome.org/World/fractal/)
+On this page you can learn how to contribute to [Commune](https://github.com/steeb-k/commune)
 by working on the code.
 
 ## Getting Started
@@ -11,18 +11,17 @@ Here are a few links to help you get started with Rust and the GTK Rust bindings
 * [GUI development with Rust and GTK 4](https://gtk-rs.org/gtk4-rs/stable/latest/book)
 * [gtk-rs website](https://gtk-rs.org/)
 
-[The Rust docs of our application](https://gnome.pages.gitlab.gnome.org/fractal/) and the [GNOME Development Center](https://developer.gnome.org/)
-might also be useful.
+The [GNOME Development Center](https://developer.gnome.org/) might also be useful.
 
-Don't hesitate to join [our Matrix room](https://matrix.to/#/#fractal:gnome.org) to come talk to us
-and ask us any questions you might have. The [“Rust ❤️ GNOME” room](https://matrix.to/#/#rust:gnome.org)
-can also provide general help about using Rust in GNOME.
+The [“Rust ❤️ GNOME” room](https://matrix.to/#/#rust:gnome.org) can provide general help about
+using Rust in GNOME. Commune has no room of its own, and questions about it must not be taken to
+Fractal’s.
 
 ## Build Instructions
 
 ### Prerequisites
 
-Fractal is written in Rust, so you will need to have at least Rust (the minimum required version is
+Commune is written in Rust, so you will need to have at least Rust (the minimum required version is
 available in the `Cargo.toml` file as `package.rust-version`) and Cargo available on your system.
 You will also need to install the Rust nightly toolchain to be able to run our
 [pre-commit hook](#pre-commit), which can be done with:
@@ -31,19 +30,18 @@ You will also need to install the Rust nightly toolchain to be able to run our
 rustup toolchain install nightly
 ```
 
-If you are building Fractal with Flatpak (via GNOME Builder or the command line), you will need to
-manually add the necessary remotes and install the Rust freedesktop.org extension:
+If you are building Commune with Flatpak (via GNOME Builder or the command line), you will need to
+add the Flathub remote and install the runtime and the Rust freedesktop.org extension:
 
 ```sh
-# Add Flathub beta and the gnome-nightly repo
-flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
-flatpak remote-add --user --if-not-exists gnome-nightly https://nightly.gnome.org/gnome-nightly.flatpakrepo
+# Add the Flathub repo
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-# Install the gnome-nightly Sdk and Platform runtime
-flatpak install --user gnome-nightly org.gnome.Sdk//master org.gnome.Platform//master
+# Install the GNOME 50 Sdk and Platform runtime
+flatpak install --user flathub org.gnome.Sdk//50 org.gnome.Platform//50
 
-# Install the required rust-stable extension from Flathub
-flatpak install --user flathub-beta org.freedesktop.Sdk.Extension.rust-stable//26.08beta
+# Install the required rust-stable extension
+flatpak install --user flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
 ```
 
 If you are building the flatpak manually you will also need flatpak-builder on your system, or the
@@ -52,7 +50,7 @@ If you are building the flatpak manually you will also need flatpak-builder on y
 ### GNOME Builder
 
 Using [GNOME Builder](https://apps.gnome.org/Builder/) with [Flatpak](https://flatpak.org/) is
-the recommended way of building and installing Fractal.
+the recommended way of building and installing Commune.
 
 You can find help on cloning and building a project in the [docs of Builder](https://builder.readthedocs.io/).
 
@@ -106,7 +104,7 @@ After that, set up the project:
 
 ```sh
 # Set up the flatpak environment
-fenv gen build-aux/org.gnome.Fractal.Devel.json
+fenv gen build-aux/io.github.steeb_k.Commune.Devel.json
 ```
 
 Finally, build and run the application:
@@ -115,7 +113,7 @@ Finally, build and run the application:
 # Build the project
 fenv build
 
-# Launch Fractal
+# Launch Commune
 fenv run
 ```
 
@@ -138,16 +136,16 @@ notifications, command line arguments, etc.).
 
 GNOME Builder can export a flatpak of the app after it has been successfully built.
 
-Fractal can then be installed with:
+Commune can then be installed with:
 
 ```sh
-flatpak install --user --bundle path/to/org.gnome.Fractal.Devel.flatpak
+flatpak install --user --bundle path/to/io.github.steeb_k.Commune.Devel.flatpak
 ```
 
 Alternatively, it can be built and installed with flatpak-builder:
 
 ```sh
-flatpak-builder --user --install app build-aux/org.gnome.Fractal.Devel.json
+flatpak-builder --user --install app build-aux/io.github.steeb_k.Commune.Devel.json
 ```
 
 _Note that the `flatpak-builder` command can be replaced with `flatpak run org.flatpak.Builder`._
@@ -155,7 +153,7 @@ _Note that the `flatpak-builder` command can be replaced with `flatpak run org.f
 It can then be entirely removed from your system with:
 
 ```sh
-flatpak remove --delete-data org.gnome.Fractal.Devel
+flatpak remove --delete-data io.github.steeb_k.Commune.Devel
 ```
 
 ### GNU/Linux
@@ -179,7 +177,7 @@ otherwise CI will probably fail right away.
 
 You should also run [Clippy](https://doc.rust-lang.org/stable/clippy/index.html) as that will catch
 common errors and improve the quality of your submissions and is once again checked by our CI. To
-reuse the same cache as when building Fractal, you should run the following command in a build
+reuse the same cache as when building Commune, you should run the following command in a build
 environment:
 
 ```sh
@@ -222,26 +220,11 @@ previous commits that you can then [force push](https://git-scm.com/docs/git-pus
 
 ## LLM Contributions
 
-Contributions must not include content generated by large language models or other probabilistic
-tools like ChatGPT, Claude, and Copilot.
+Fractal's contributing guide bans contributions generated with large language models. Commune does
+not: this fork was written with an AI coding assistant, and pretending otherwise would be dishonest.
+That difference is the reason the fork exists and never sends anything upstream — see
+[`doc/fork.md`](doc/fork.md).
 
-This policy exists due to
-
-* ethical concerns about the data gathering for training these models
-* the disproportionate use of electricity and water of building / running them
-* the potential negative influence of LLM-generated content on quality
-* potential copyright violations
-
-This ban of LLM-generated content applies to all parts of the projects, including, but not limited
-to, code, documentation, issues, and artworks. Translating texts for issues and comments to
-English can be achieved with machine translation tools, without the use of generative AI (LLM),
-such as DeepL.
-
-### Project-related use of LLMs
-
-We heavily discourage the use of LLM chat bots as a replacement for reading Fractal's documentation
-and API reference.
-
-Support requests referencing misleading or false LLM output relating to the project may be ignored,
-since it is a waste of time for us to "debug" where things went wrong based on this output before
-human support was sought.
+That is not a licence to paste unreviewed output. Whatever wrote it, a change is yours: you are
+expected to have read it, understood what it does, and checked that it works. Code that its author
+cannot explain is not acceptable here either.
