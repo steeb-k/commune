@@ -111,11 +111,12 @@ small and listed in the ledger below.
   pack from every room the user is in, each with a switch to use it
   everywhere and a menu: edit and delete where the power level allows, and
   otherwise leave the room that provides it, which is the only way to be rid
-  of a pack you cannot delete; and a button to create one. The main menu of the session opens the dialog
-  straight on this page, because nobody looks for stickers in the account
-  settings; it is there because the state it needs is account data. A pack that is used everywhere but whose room the
-  user has left cannot be loaded, and is presented by its state key with a
-  warning, which is the case the specification asks clients to handle. The
+  of a pack you cannot delete; and a button to create one. The main menu of
+  the session opens the dialog straight on this page, because nobody looks for
+  stickers in the account settings; it is there because the state it needs is
+  account data. A pack that is used everywhere but whose room the user has
+  left cannot be loaded, and is presented by its state key with a warning,
+  which is the case the specification asks clients to handle. The
   page is in the account settings because the state it needs — the list of
   packs used everywhere, and the room packs are created in — is account data.
 * `src/session_view/room_details/image_packs_subpage/` — read-only: the packs
