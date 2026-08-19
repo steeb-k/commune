@@ -23,7 +23,7 @@ use ruma::{
 use tracing::error;
 
 use super::{Member, Membership, Room};
-use crate::{prelude::*, spawn, spawn_tokio};
+use crate::{prelude::*, session::ROOM_IMAGE_PACK_EVENT_TYPE, spawn, spawn_tokio};
 
 /// The maximum power level that can be set, according to the Matrix
 /// specification.
@@ -124,6 +124,9 @@ mod imp {
         /// Whether our own member can send a reaction.
         #[property(get)]
         can_send_reaction: Cell<bool>,
+        /// Whether our own member can change the image packs of the room.
+        #[property(get)]
+        can_change_image_packs: Cell<bool>,
         /// Whether our own member can redact their own event.
         #[property(get)]
         can_redact_own: Cell<bool>,
@@ -156,6 +159,7 @@ mod imp {
                 can_send_message: Default::default(),
                 can_send_sticker: Default::default(),
                 can_send_reaction: Default::default(),
+                can_change_image_packs: Default::default(),
                 can_redact_own: Default::default(),
                 can_redact_other: Default::default(),
                 can_notify_room: Default::default(),
@@ -295,6 +299,7 @@ mod imp {
             self.update_can_send_message();
             self.update_can_send_sticker();
             self.update_can_send_reaction();
+            self.update_can_change_image_packs();
             self.update_can_redact_own();
             self.update_can_redact_other();
             self.update_can_notify_room();
@@ -456,6 +461,26 @@ mod imp {
 
             self.can_send_reaction.set(can_send_reaction);
             self.obj().notify_can_send_reaction();
+        }
+
+        /// Update whether our own member can change the image packs of the
+        /// room.
+        fn update_can_change_image_packs(&self) {
+            // The packs that we create use the unstable event type. A pack that
+            // was created under the stable one is written back under that name,
+            // and a room that gives the two types different power levels would
+            // need this to be per pack, which is not worth the trouble: the
+            // request fails and the error is reported.
+            let can_change_image_packs = self.is_allowed_to(PowerLevelAction::SendState(
+                StateEventType::from(ROOM_IMAGE_PACK_EVENT_TYPE),
+            ));
+
+            if self.can_change_image_packs.get() == can_change_image_packs {
+                return;
+            }
+
+            self.can_change_image_packs.set(can_change_image_packs);
+            self.obj().notify_can_change_image_packs();
         }
 
         /// Update whether our own member can redact their own event.
