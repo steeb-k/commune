@@ -1,15 +1,17 @@
 //! Helpers for making Pango-compatible strings from inline HTML.
 
-use std::fmt::Write;
+use std::{collections::BTreeSet, fmt::Write};
 
+use gtk::glib::prelude::*;
 use ruma::html::{
-    Children, NodeData, NodeRef,
-    matrix::{AnchorUri, MatrixElement, SpanData},
+    Attribute, Children, NodeData, NodeRef, StrTendril,
+    matrix::{AnchorUri, ImageData, MatrixElement, MatrixElementData, SpanData},
 };
 use tracing::debug;
 
+use super::CUSTOM_EMOTICON_ATTRIBUTE;
 use crate::{
-    components::Pill,
+    components::{CustomEmoticon, LabelWithWidgets},
     prelude::*,
     session::Room,
     utils::string::{Linkifier, PangoStrMutExt},
@@ -25,8 +27,13 @@ pub(super) struct InlineHtmlBuilder<'a> {
     ellipsis: bool,
     /// Whether whitespace should be preserved.
     preserve_whitespace: bool,
-    /// The mentions detection setting and results.
+    /// The mentions detection setting.
     mentions: MentionsMode<'a>,
+    /// The widgets to place inline, in the order of their placeholders.
+    ///
+    /// Both the pills of the mentions and the custom emoticons end up here, so
+    /// they must share a single list to stay in order.
+    widgets: Vec<gtk::Widget>,
     /// The inner string.
     inner: String,
     /// Whether this string was truncated because at the first newline.
@@ -52,6 +59,7 @@ impl<'a> InlineHtmlBuilder<'a> {
             ellipsis,
             preserve_whitespace,
             mentions: MentionsMode::default(),
+            widgets: Vec::new(),
             inner: String::new(),
             truncated: false,
             ignore_truncated: false,
@@ -65,7 +73,6 @@ impl<'a> InlineHtmlBuilder<'a> {
     pub(super) fn detect_mentions(mut self, room: &'a Room, detect_at_room: bool) -> Self {
         self.mentions = MentionsMode::WithMentions {
             room,
-            pills: Vec::new(),
             detect_at_room,
         };
         self
@@ -77,9 +84,9 @@ impl<'a> InlineHtmlBuilder<'a> {
         self
     }
 
-    /// Export the Pango-compatible string and the [`Pill`]s that were
-    /// constructed, if any.
-    pub(super) fn build(self) -> (String, Option<Vec<Pill>>) {
+    /// Export the Pango-compatible string and the widgets that were
+    /// constructed for its placeholders, if any.
+    pub(super) fn build(self) -> (String, Option<Vec<gtk::Widget>>) {
         let mut inner = self.inner;
 
         // Do not add an ellipsis on an empty inline element, we just want to get rid of
@@ -92,24 +99,20 @@ impl<'a> InlineHtmlBuilder<'a> {
             inner.truncate_end_whitespaces();
         }
 
-        let pills = if let MentionsMode::WithMentions { pills, .. } = self.mentions {
-            (!pills.is_empty()).then_some(pills)
-        } else {
-            None
-        };
+        let widgets = (!self.widgets.is_empty()).then_some(self.widgets);
 
-        (inner, pills)
+        (inner, widgets)
     }
 
     /// Construct the string with the given inline nodes by converting them to
     /// Pango markup.
     ///
-    /// Returns the Pango-compatible string and the [`Pill`]s that were
-    /// constructed, if any.
+    /// Returns the Pango-compatible string and the widgets that were
+    /// constructed for its placeholders, if any.
     pub(super) fn build_with_nodes(
         mut self,
         nodes: impl IntoIterator<Item = NodeRef>,
-    ) -> (String, Option<Vec<Pill>>) {
+    ) -> (String, Option<Vec<gtk::Widget>>) {
         self.append_nodes(nodes, true);
         self.build()
     }
@@ -134,7 +137,7 @@ impl<'a> InlineHtmlBuilder<'a> {
         match node.data() {
             NodeData::Element(data) => {
                 let data = data.to_matrix();
-                self.append_element_node(node, data.element, context.should_linkify);
+                self.append_element_node(node, data, context.should_linkify);
             }
             NodeData::Text(text) => {
                 self.append_text_node(text.borrow().as_ref(), context);
@@ -149,9 +152,11 @@ impl<'a> InlineHtmlBuilder<'a> {
     fn append_element_node(
         &mut self,
         node: &NodeRef,
-        element: MatrixElement,
+        data: MatrixElementData,
         should_linkify: bool,
     ) {
+        let MatrixElementData { element, attrs } = data;
+
         match element {
             MatrixElement::Del | MatrixElement::S => {
                 self.append_tags_and_children("s", node.children(), should_linkify);
@@ -159,10 +164,10 @@ impl<'a> InlineHtmlBuilder<'a> {
             MatrixElement::A(anchor) => {
                 // First, check if it's a mention, if we detect mentions.
                 if let Some(uri) = &anchor.href
-                    && let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions
+                    && let MentionsMode::WithMentions { room, .. } = self.mentions
                     && let Some(pill) = self.inner.maybe_append_mention(uri, room)
                 {
-                    pills.push(pill);
+                    self.widgets.push(pill.upcast());
 
                     return;
                 }
@@ -224,10 +229,59 @@ impl<'a> InlineHtmlBuilder<'a> {
             MatrixElement::Span(span) => {
                 self.append_span(&span, node.children(), should_linkify);
             }
+            MatrixElement::Img(image) => {
+                self.append_image(&image, &attrs);
+            }
             element => {
                 debug!("Unexpected HTML inline element: {element:?}");
                 self.append_nodes(node.children(), should_linkify);
             }
+        }
+    }
+
+    /// Append the given image element.
+    ///
+    /// Only a custom emoticon is presented as an image. Any other image is
+    /// replaced by its description, because a message is not supposed to
+    /// contain one.
+    // The attributes are given to us in a set by the HTML parser, and we only
+    // read them.
+    #[allow(clippy::mutable_key_type)]
+    fn append_image(&mut self, image: &ImageData, attrs: &BTreeSet<Attribute>) {
+        let body = image
+            .alt
+            .as_ref()
+            .or(image.title.as_ref())
+            .map(StrTendril::to_string)
+            .unwrap_or_default();
+
+        // The value of the attribute, if it has one, must be ignored.
+        let is_emoticon = attrs
+            .iter()
+            .any(|attr| attr.name.local.as_ref() == CUSTOM_EMOTICON_ATTRIBUTE);
+
+        // `src` is only set when it is a valid `mxc:` URI, which is the only
+        // scheme that the specification allows.
+        if is_emoticon
+            && let Some(uri) = &image.src
+            && let Some(room) = self.mentions.room()
+            && let Some(session) = room.session()
+            // An emoticon is an image loaded from the homeserver like any
+            // other, so it follows the same setting.
+            && session
+                .global_account_data()
+                .should_room_show_media_previews(room)
+        {
+            let emoticon = CustomEmoticon::new(&session, uri, &body);
+
+            self.widgets.push(emoticon.upcast());
+            self.inner.push_str(LabelWithWidgets::PLACEHOLDER);
+
+            return;
+        }
+
+        if !body.is_empty() {
+            self.inner.push_str(&body.escape_markup());
         }
     }
 
@@ -246,14 +300,17 @@ impl<'a> InlineHtmlBuilder<'a> {
 
         if context.should_linkify {
             if let MentionsMode::WithMentions {
-                pills,
                 room,
                 detect_at_room,
-            } = &mut self.mentions
+            } = self.mentions
             {
+                // The linkifier collects its own pills, which are appended to
+                // the widgets right away to keep them in order.
+                let mut pills = Vec::new();
                 Linkifier::new(&mut self.inner)
-                    .detect_mentions(room, pills, *detect_at_room)
+                    .detect_mentions(room, &mut pills, detect_at_room)
                     .linkify(&text);
+                self.widgets.extend(pills.into_iter().map(Cast::upcast));
             } else {
                 Linkifier::new(&mut self.inner).linkify(&text);
             }
@@ -394,20 +451,28 @@ impl<'a> InlineHtmlBuilder<'a> {
 }
 
 /// The mentions mode of the [`InlineHtmlBuilder`].
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 enum MentionsMode<'a> {
     /// The builder will not detect mentions.
     #[default]
     NoMentions,
     /// The builder will detect mentions.
     WithMentions {
-        /// The pills for the detected mentions.
-        pills: Vec<Pill>,
         /// The room containing the mentions.
         room: &'a Room,
         /// Whether to detect `@room` mentions.
         detect_at_room: bool,
     },
+}
+
+impl<'a> MentionsMode<'a> {
+    /// The room that the message belongs to, if it is known.
+    fn room(self) -> Option<&'a Room> {
+        match self {
+            Self::NoMentions => None,
+            Self::WithMentions { room, .. } => Some(room),
+        }
+    }
 }
 
 /// Context for an HTML node.

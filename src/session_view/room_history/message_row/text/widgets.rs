@@ -11,7 +11,7 @@ use tracing::debug;
 
 use super::{SUPPORTED_BLOCK_ELEMENTS, inline_html::InlineHtmlBuilder};
 use crate::{
-    components::{AtRoom, LabelWithWidgets},
+    components::{AtRoom, LabelWithWidgets, Pill},
     prelude::*,
     session::Room,
 };
@@ -195,7 +195,10 @@ fn label_for_inline_html(
     }
 
     if let Some(widgets) = widgets {
-        for pill in &widgets {
+        for pill in widgets
+            .iter()
+            .filter_map(|widget| widget.downcast_ref::<Pill>())
+        {
             if !pill.source().is_some_and(|s| s.is::<AtRoom>()) {
                 // Show the profile on click.
                 pill.set_activatable(true);
