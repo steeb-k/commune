@@ -100,7 +100,13 @@ small and listed in the ledger below.
   user has left cannot be loaded, and is presented by its state key with a
   warning, which is the case the specification asks clients to handle.
 * `src/session_view/room_details/image_packs_subpage/` — the packs of a room,
-  each with a switch to use it in every room.
+  each with a switch to use it in every room, and, for a user whose power
+  level allows it, a button to edit one and a button to create one.
+* `src/components/image_pack_editor/` — the editor, shared by the room
+  subpage and the account settings page because a pack is the same thing in
+  both places. It is an `AdwNavigationPage`, which both an
+  `AdwPreferencesWindow` (room details) and an `AdwPreferencesDialog`
+  (account settings) can push, so each caller pushes it itself.
 * `src/components/custom_emoticon.rs` — `CustomEmoticon`, an image sent
   inline in a message. Among words it is sized from the font metrics, not
   from the `height` attribute, which the specification only requires for the
@@ -180,6 +186,8 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
    enabling and disabling packs globally. _(done)_
 7. **Pack authoring** — create and edit packs, upload images, edit
    shortcodes and usage; the packs of a room gated on the power level.
+   _(done)_ The avatar of a pack is not editable, only preserved; nothing
+   presents it yet.
 8. **Space packs** — canonical space hierarchy, recursive, with a depth
    limit and a cycle guard, slotted into the order in `packs_for_room`.
 
@@ -221,6 +229,41 @@ keeps the shortcode as text and the emoticon has to be picked again.
 The completion is always a choice and never a substitution, which is what the
 specification asks for when several packs define the same shortcode.
 
+## Authoring
+
+Writing a pack is the mirror of reading one, with three decisions worth
+keeping.
+
+* **A pack is written back under the event type it was read from.** The
+  source of a pack carries that type, so editing a pack that another client
+  created under `m.room.image_pack` does not leave a second copy of it behind
+  under `im.ponies.room_emotes`, shadowing the first. Only a new pack picks
+  the type, and it picks the unstable one.
+* **Deleting is saving a pack with no images**, which is what the reader
+  already treats as absent, and is also what a redacted pack looks like. The
+  pack is removed from the packs enabled everywhere at the same time.
+* **Images are uploaded when they are chosen, not when the pack is saved**,
+  so that the editor can present them. Leaving without saving therefore
+  leaves the media on the homeserver with nothing pointing at it. Saving on
+  the way out instead would mean either holding every file in memory or
+  presenting the images from disk and re-resolving them later, and neither is
+  worth avoiding an orphaned upload.
+
+The state key of a new room pack is the empty one when it is free, which is
+what the clients in the wild use for the pack of a room, and `pack-2`,
+`pack-3` … after that. `PackMeta` and the data of an image keep the
+properties we do not know about, so an edit does not drop what another client
+put there.
+
+Permission is one property, `Permissions::can_change_image_packs`, checked
+against the event type we create packs under. A room that gave the stable and
+the unstable type different power levels would need it to be per pack; there
+the request fails and the error is reported, which is enough.
+
+Room state is now watched under both names, so a pack saved from the editor —
+or by another client, in the room that is open — appears without switching
+rooms.
+
 ## Integration-point ledger
 
 Existing files touched. Keep this current — it is the rebase map.
@@ -248,6 +291,10 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_history/message_toolbar/composer_parser.rs` | `ComposerChunk::Emoticon`, its serialization, and the flag forcing HTML |
 | `src/session_view/room_history/message_toolbar/completion/mod.rs` | declare `emoticon_list` |
 | `src/session_view/room_history/message_toolbar/completion/completion_popover.rs` | the `:` sigil, `SearchTermTarget::Emoticon`, the shortcode boundary scan, the list and the accessible label |
+| `src/session/room/permissions.rs` | `can_change_image_packs`, from the event type of the packs we create |
+| `src/components/mod.rs` | declare and re-export `image_pack_editor` |
+| `src/session_view/room_details/image_packs_subpage/{mod.rs,mod.blp}` | the buttons to create and edit a pack, and a reload when the packs change |
+| `src/account_settings/image_packs_page/{mod.rs,mod.blp}` | the personal pack row opens the editor |
 
 Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 (phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
@@ -315,9 +362,9 @@ Two things that look like bugs but are not:
 * Custom emoticons follow the media previews setting, which defaults to
   private rooms only. In a public room they render as their description.
   Account settings, Safety, Media Previews.
-* The sticker picker reloads when the account data changes, but the packs in
-  the state of a room are not watched, so a pack edited from elsewhere in the
-  same room only appears after switching rooms.
+* Editing a pack in a room needs the power level to send its state event.
+  Without it the pack list has no buttons to create or edit, which is not an
+  error.
 
 ## Rebase guide
 
