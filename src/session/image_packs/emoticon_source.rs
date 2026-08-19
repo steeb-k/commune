@@ -55,11 +55,46 @@ glib::wrapper! {
     pub struct EmoticonSource(ObjectSubclass<imp::EmoticonSource>) @extends PillSource;
 }
 
+/// The given pack name, as it appears after a shortcode.
+///
+/// The specification suggests slugifying it, so that what is presented reads
+/// like a shortcode itself.
+fn slugify(pack_name: &str) -> String {
+    let mut slug = String::with_capacity(pack_name.len());
+    let mut separated = true;
+
+    for c in pack_name.chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.extend(c.to_lowercase());
+            separated = false;
+        } else if !separated {
+            slug.push('-');
+            separated = true;
+        }
+    }
+
+    if slug.ends_with('-') {
+        slug.pop();
+    }
+
+    slug
+}
+
 impl EmoticonSource {
     /// Create a new `EmoticonSource` for the given image.
-    pub(crate) fn new(session: &Session, image: &PackImage) -> Self {
+    ///
+    /// `pack_name` is the name of the pack that the image comes from, and is
+    /// only given when another pack defines the same shortcode. It is then
+    /// presented after it, as the specification suggests, so that the two can
+    /// be told apart.
+    pub(crate) fn new(session: &Session, image: &PackImage, pack_name: Option<&str>) -> Self {
+        let display_name = match pack_name.map(slugify).filter(|slug| !slug.is_empty()) {
+            Some(slug) => format!("{}/{slug}", image.shortcode()),
+            None => image.shortcode(),
+        };
+
         let obj = glib::Object::builder::<Self>()
-            .property("display-name", image.shortcode())
+            .property("display-name", display_name)
             .property("image", image)
             .build();
 
