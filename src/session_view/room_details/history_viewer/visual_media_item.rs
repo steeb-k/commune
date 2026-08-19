@@ -1,5 +1,6 @@
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
+use tracing::debug;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
@@ -59,6 +60,14 @@ mod imp {
         event: RefCell<Option<HistoryViewerEvent>>,
         /// Which preview is presented by the picture.
         preview: Cell<MediaPreview>,
+        /// The generation of the event that is currently presented.
+        ///
+        /// This is incremented every time the event changes, so that the tasks
+        /// that were spawned for a previous event can detect that their result
+        /// is stale and must be discarded.
+        generation: Cell<u64>,
+        /// The handles of the tasks loading the preview.
+        tasks: RefCell<Vec<glib::JoinHandle<()>>>,
     }
 
     #[glib::object_subclass]
@@ -88,6 +97,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for VisualMediaItem {
         fn dispose(&self) {
+            self.abort_tasks();
             self.overlay.unparent();
         }
     }
@@ -116,6 +126,12 @@ mod imp {
                 return;
             }
 
+            // Stop the tasks loading the preview of the previous event, and make sure
+            // that the ones that already got past their last await point cannot set
+            // their result on this item.
+            self.abort_tasks();
+            self.generation.set(self.generation.get().wrapping_add(1));
+
             // Reset the preview.
             self.preview.take();
             self.picture.set_paintable(None::<&gdk::Paintable>);
@@ -135,22 +151,25 @@ mod imp {
                 return;
             };
 
+            let generation = self.generation.get();
+
             let is_video = matches!(media_message, VisualMediaMessage::Video(_));
             self.play_icon.set_visible(is_video);
 
             self.obj().set_tooltip_text(Some(&media_message.filename()));
 
             if let Some(blurhash) = media_message.blurhash() {
-                spawn!(
+                let handle = spawn!(
                     glib::Priority::LOW,
                     clone!(
                         #[weak(rename_to = imp)]
                         self,
                         async move {
-                            imp.load_placeholder(blurhash).await;
+                            imp.load_placeholder(blurhash, generation).await;
                         }
                     )
                 );
+                self.tasks.borrow_mut().push(handle);
             }
 
             let Some(room) = event.room() else {
@@ -164,24 +183,48 @@ mod imp {
                 .global_account_data()
                 .should_room_show_media_previews(&room)
             {
-                spawn!(
+                let handle = spawn!(
                     glib::Priority::LOW,
                     clone!(
                         #[weak(rename_to = imp)]
                         self,
                         async move {
-                            imp.load_thumbnail(media_message, &session).await;
+                            imp.load_thumbnail(media_message, &session, generation)
+                                .await;
                         }
                     )
                 );
+                self.tasks.borrow_mut().push(handle);
             }
         }
 
+        /// Abort the tasks loading the preview, if there are any.
+        fn abort_tasks(&self) {
+            for handle in self.tasks.take() {
+                handle.abort();
+            }
+        }
+
+        /// Whether the given generation is still the one that is presented.
+        ///
+        /// The item widgets are recycled by the grid view, so a task that was
+        /// spawned for an event that is no longer presented must not set its
+        /// result on the picture.
+        fn is_current_generation(&self, generation: u64) -> bool {
+            self.generation.get() == generation
+        }
+
         /// Load the thumbnail for the given Blurhash.
-        async fn load_placeholder(&self, blurhash: Blurhash) {
+        async fn load_placeholder(&self, blurhash: Blurhash, generation: u64) {
             let Some(placeholder_texture) = blurhash.into_texture(PREVIEW_DIMENSIONS).await else {
                 return;
             };
+
+            if !self.is_current_generation(generation) {
+                // The event changed while the placeholder was loading, discard it.
+                debug!("Discarding the placeholder of a recycled media history item");
+                return;
+            }
 
             // Do not replace the thumbnail by the placeholder, in case the thumbnail is
             // loaded before.
@@ -192,7 +235,12 @@ mod imp {
         }
 
         /// Load the thumbnail for the given media message.
-        async fn load_thumbnail(&self, media_message: VisualMediaMessage, session: &Session) {
+        async fn load_thumbnail(
+            &self,
+            media_message: VisualMediaMessage,
+            session: &Session,
+            generation: u64,
+        ) {
             let client = session.client();
 
             let scale_factor = u32::try_from(self.obj().scale_factor()).unwrap_or(1);
@@ -202,13 +250,25 @@ mod imp {
                 dimensions,
                 method: Method::Scale,
                 animated: false,
-                prefer_thumbnail: false,
+                // The preview is much smaller than the original, so it is never worth
+                // downloading the full source when the media repo can scale it for us.
+                prefer_thumbnail: true,
             };
 
-            if let Ok(Some(image)) = media_message
+            let result = media_message
                 .thumbnail(client, settings, ImageRequestPriority::Default)
-                .await
-            {
+                .await;
+
+            if !self.is_current_generation(generation) {
+                // The event changed while the thumbnail was loading, discard it.
+                debug!(
+                    "Discarding the thumbnail of {}, the media history item was recycled",
+                    media_message.filename()
+                );
+                return;
+            }
+
+            if let Ok(Some(image)) = result {
                 self.picture
                     .set_paintable(Some(&gdk::Paintable::from(image)));
                 self.preview.set(MediaPreview::Thumbnail);
