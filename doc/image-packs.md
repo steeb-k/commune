@@ -109,8 +109,10 @@ small and listed in the ledger below.
   `src/components/avatar/image.rs`.
 * `src/account_settings/image_packs_page/` — where packs are managed. Every
   pack from every room the user is in, each with a switch to use it
-  everywhere and, where the power level allows, a button to edit it; and a
-  button to create one. A pack that is used everywhere but whose room the
+  everywhere and, where the power level allows, a menu to edit or delete it;
+  and a button to create one. The main menu of the session opens the dialog
+  straight on this page, because nobody looks for stickers in the account
+  settings; it is there because the state it needs is account data. A pack that is used everywhere but whose room the
   user has left cannot be loaded, and is presented by its state key with a
   warning, which is the case the specification asks clients to handle. The
   page is in the account settings because the state it needs — the list of
@@ -165,8 +167,16 @@ that trade is not wanted.
 
 ## Traps
 
-Three things cost a lot of time here and are easy to walk back into.
+Four things cost a lot of time here and are easy to walk back into.
 
+* **A type named in a template must be registered before the template is
+  built.** `ImagePacksPage` was named in `account_settings/mod.blp` and never
+  touched from Rust, so its `GType` did not exist, and the whole dialog failed
+  to build with `Invalid object type` on stderr — every page missing, not just
+  that one. `ensure_type()` in the `class_init` of whatever owns the template
+  is the convention here. Nothing catches this at build time: the blueprint
+  compiles, the Rust compiles, and the failure is a runtime `Gtk-CRITICAL` in
+  a dialog you have to open to see.
 * **A widget whose class sets a layout manager is never measured through its
   own `measure`.** `CustomEmoticon` was an `AdwBin`, which sets
   `GtkBinLayout`, so GTK asked the layout manager and every size it computed
