@@ -102,9 +102,16 @@ small and listed in the ledger below.
 * `src/session_view/room_details/image_packs_subpage/` — the packs of a room,
   each with a switch to use it in every room.
 * `src/components/custom_emoticon.rs` — `CustomEmoticon`, an image sent
-  inline in a message. Sized from the font metrics rather than from the
-  `height` attribute, which the specification only requires for the clients
-  that do not support image packs.
+  inline in a message. Among words it is sized from the font metrics, not
+  from the `height` attribute, which the specification only requires for the
+  clients that do not support image packs. Alone in a message it takes the
+  size the timeline gives a sticker, from `THUMBNAIL_MAX_DIMENSIONS`.
+
+A message that contains nothing but emoticons does not go through
+`LabelWithWidgets` at all: `widgets.rs` returns a plain box of widgets
+instead. Reserving a pango shape inside a line of text is only worth its
+trouble for an emoticon sitting among words, and a message of one emoticon is
+the same thing to the sender as a sticker, so it is presented the same way.
 
 Only an `mxc:` source is ever loaded, which ruma enforces by leaving
 `ImageData::src` unset for anything else, so a message cannot make us fetch
@@ -133,6 +140,25 @@ learn roughly when a message was read, through their homeserver being asked
 for the media. Restoring the gate is a two-line change in `append_image` if
 that trade is not wanted.
 
+## Traps
+
+Three things cost a lot of time here and are easy to walk back into.
+
+* **A widget whose class sets a layout manager is never measured through its
+  own `measure`.** `CustomEmoticon` was an `AdwBin`, which sets
+  `GtkBinLayout`, so GTK asked the layout manager and every size it computed
+  was discarded; the label was told the size of the image instead, which is
+  nothing before it loads and hundreds of pixels after. It subclasses
+  `GtkWidget` and draws the image itself for that reason. Do not give it a
+  child widget or a layout manager again.
+* **`compute_concrete_size` with a specified size of zero returns the
+  intrinsic size**, ignoring the allocation. Draw at the allocated size.
+* **The SDK sanitizes the HTML of every message before we see it**, so
+  `data-mx-emoticon` never arrives. See the wire format section.
+
+None of these are visible to the compiler or to the tests, which do not build
+widgets. A change to how something is drawn has to be looked at.
+
 ## Phases
 
 Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
@@ -148,6 +174,8 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
    `LabelWithWidgets`, tests. _(done)_
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
    composer, serialization in `composer_parser.rs`. _(done)_
+   Verified in the app: an emoticon sent on its own is the same size as the
+   same image sent as a sticker.
 6. **Pack management** — room details subpage and account settings page,
    enabling and disabling packs globally. _(done)_
 7. **Pack authoring** — create and edit packs, upload images, edit
@@ -213,6 +241,7 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_history/message_row/text/inline_html.rs` | one ordered `widgets: Vec<gtk::Widget>` in place of the pills of `MentionsMode`; `append_image`; `append_element_node` takes the whole `MatrixElementData`, for the attributes |
 | `src/session_view/room_history/message_row/text/widgets.rs` | the inline widgets are no longer only pills |
 | `src/session_view/room_history/message_row/text/tests.rs` | the custom emoticon cases |
+| `src/session_view/room_history/message_row/text/widgets.rs` | `is_emoticons_only` and `emoticons_widget`, so a message of only emoticons skips the label |
 | `src/session_view/room_details/mod.rs` | declare `image_packs_subpage`; the `ImagePacks` subpage name and its construction |
 | `src/session_view/room_details/general_page.blp` | the row that opens the subpage |
 | `src/account_settings/mod.rs`, `mod.blp` | declare and present `image_packs_page` |
