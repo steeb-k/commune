@@ -22,8 +22,10 @@ use ruma::{
 };
 use tracing::{error, warn};
 
+mod cache;
 mod queue;
 
+use cache::TextureCacheKey;
 pub(crate) use queue::{IMAGE_QUEUE, ImageRequestPriority};
 
 use super::{FrameDimensions, MediaFileError};
@@ -169,9 +171,57 @@ pub(crate) struct Image {
     first_frame: glycin::Frame,
 }
 
+impl Image {
+    /// Convert this image into a [`LoadedImage`], caching it under the given
+    /// key if it can be.
+    ///
+    /// An animated image is not cached: it is presented by an
+    /// [`AnimatedImagePaintable`] that keeps its glycin decoder alive, so
+    /// caching it would keep a sandbox subprocess alive with it. A still image
+    /// does not need its decoder once its texture is built, so this also lets
+    /// us release it right away.
+    fn into_loaded(self, key: TextureCacheKey) -> LoadedImage {
+        if self.first_frame.has_delay() {
+            return LoadedImage::Animated(self);
+        }
+
+        let texture = self.first_frame.texture();
+        cache::insert(key, texture.clone());
+
+        LoadedImage::Texture(texture)
+    }
+}
+
 impl fmt::Debug for Image {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Image").finish_non_exhaustive()
+    }
+}
+
+/// An image that is ready to be presented.
+#[derive(Clone)]
+pub(crate) enum LoadedImage {
+    /// A still image, as a texture.
+    ///
+    /// This might come from the cache. Its glycin decoder has been released.
+    Texture(gdk::Texture),
+    /// An animated image, which needs to keep its glycin decoder around to
+    /// produce the next frames.
+    Animated(Image),
+}
+
+impl fmt::Debug for LoadedImage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LoadedImage").finish_non_exhaustive()
+    }
+}
+
+impl From<LoadedImage> for gdk::Paintable {
+    fn from(value: LoadedImage) -> Self {
+        match value {
+            LoadedImage::Texture(texture) => texture.upcast(),
+            LoadedImage::Animated(image) => image.into(),
+        }
     }
 }
 
@@ -578,8 +628,14 @@ impl Blurhash {
     /// Try to convert this Blurhash to a `GdkTexture` with the given
     /// dimensions.
     pub(crate) async fn into_texture(self, dimensions: FrameDimensions) -> Option<gdk::Texture> {
+        let key = TextureCacheKey::with_blurhash(&self.0, dimensions);
+
+        if let Some(texture) = cache::get(&key) {
+            return Some(texture);
+        }
+
         // Because it can take some time, spawn on a separate thread.
-        RUNTIME
+        let texture: gdk::Texture = RUNTIME
             .spawn_blocking(move || {
                 let data = blurhash::decode(&self.0, dimensions.width, dimensions.height, 1.0)
                     .inspect_err(|error| {
@@ -599,7 +655,11 @@ impl Blurhash {
                 )
             })
             .await
-            .expect("task was not aborted")
+            .expect("task was not aborted")?;
+
+        cache::insert(key, texture.clone());
+
+        Some(texture)
     }
 }
 
@@ -626,7 +686,7 @@ impl ThumbnailDownloader<'_> {
         client: Client,
         settings: ThumbnailSettings,
         priority: ImageRequestPriority,
-    ) -> Result<Image, ImageError> {
+    ) -> Result<LoadedImage, ImageError> {
         let dimensions = settings.dimensions;
 
         // First, select which source we are going to download from.
@@ -657,6 +717,12 @@ impl ThumbnailDownloader<'_> {
                 source: source.source.to_common_media_source(),
                 format: MediaFormat::Thumbnail(settings.into()),
             };
+            let key = TextureCacheKey::with_request(&request, dimensions);
+
+            if let Some(texture) = cache::get(&key) {
+                return Ok(LoadedImage::Texture(texture));
+            }
+
             let handle = IMAGE_QUEUE.add_download_request(
                 client.clone(),
                 request,
@@ -665,7 +731,7 @@ impl ThumbnailDownloader<'_> {
             );
 
             if let Ok(image) = handle.await {
-                return Ok(image);
+                return Ok(image.into_loaded(key));
             }
         }
 
@@ -674,9 +740,15 @@ impl ThumbnailDownloader<'_> {
             source: source.source.to_common_media_source(),
             format: MediaFormat::File,
         };
+        let key = TextureCacheKey::with_request(&request, dimensions);
+
+        if let Some(texture) = cache::get(&key) {
+            return Ok(LoadedImage::Texture(texture));
+        }
+
         let handle = IMAGE_QUEUE.add_download_request(client, request, Some(dimensions), priority);
 
-        handle.await
+        Ok(handle.await?.into_loaded(key))
     }
 }
 

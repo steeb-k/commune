@@ -21,7 +21,7 @@ use crate::{
             FrameDimensions, MediaFileError,
             audio::normalize_waveform,
             image::{
-                Blurhash, Image, ImageError, ImageRequestPriority, ImageSource,
+                Blurhash, ImageError, ImageRequestPriority, ImageSource, LoadedImage,
                 ThumbnailDownloader, ThumbnailSettings,
             },
         },
@@ -365,7 +365,7 @@ impl VisualMediaMessage {
         client: Client,
         settings: ThumbnailSettings,
         priority: ImageRequestPriority,
-    ) -> Result<Option<Image>, ImageError> {
+    ) -> Result<Option<LoadedImage>, ImageError> {
         let downloader = match &self {
             Self::Image(c) => {
                 let image_info = c.info.as_deref();

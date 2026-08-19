@@ -134,7 +134,7 @@ pub(crate) enum MediaFileError {
 }
 
 /// The dimensions of a frame.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct FrameDimensions {
     /// The width of the frame.
     pub(crate) width: u32,
