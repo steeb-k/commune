@@ -459,7 +459,7 @@ impl ImagePacks {
                                 state_key,
                             },
                             content,
-                        )))
+                        )));
                     }
                     _ => packs.push(EnabledPack::Unavailable {
                         room_id: room_id.clone(),

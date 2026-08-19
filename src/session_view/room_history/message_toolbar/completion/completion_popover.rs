@@ -3,7 +3,7 @@ use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 
-use super::{CompletionMemberList, CompletionRoomList};
+use super::{CompletionEmoticonList, CompletionMemberList, CompletionRoomList};
 use crate::{
     components::{AvatarImageSafetySetting, Pill, PillSource, PillSourceRow},
     session::Room,
@@ -17,6 +17,13 @@ const MAX_ROWS: usize = 32;
 const USER_ID_SIGIL: char = '@';
 /// The sigil for a room alias.
 const ROOM_ALIAS_SIGIL: char = '#';
+/// The sigil that triggers the completion of an emoticon.
+///
+/// The specification suggests it, and it is also the separator of a Matrix
+/// ID, so it only counts at the beginning of a word.
+const EMOTICON_SIGIL: char = ':';
+/// The longest shortcode, in bytes.
+const SHORTCODE_MAX_LEN: usize = 100;
 
 mod imp {
     use std::{
@@ -45,6 +52,7 @@ mod imp {
         /// The sorted and filtered room members.
         #[property(get)]
         member_list: CompletionMemberList,
+        emoticon_list: CompletionEmoticonList,
         /// The sorted and filtered rooms.
         #[property(get)]
         room_list: CompletionRoomList,
@@ -142,6 +150,7 @@ mod imp {
         /// Set the current room.
         fn set_room(&self, room: Option<&Room>) {
             self.member_list.set_room(room);
+            self.emoticon_list.set_room(room.cloned());
 
             self.room_list
                 .set_rooms(room.and_then(Room::session).map(|s| s.room_list()));
@@ -321,10 +330,12 @@ mod imp {
 
             let mut term_start = word_start;
             let term_start_char = term_start.char();
-            let is_room = term_start_char == ROOM_ALIAS_SIGIL;
 
             // Remove the starting sigil for searching.
-            if matches!(term_start_char, USER_ID_SIGIL | ROOM_ALIAS_SIGIL) {
+            if matches!(
+                term_start_char,
+                USER_ID_SIGIL | ROOM_ALIAS_SIGIL | EMOTICON_SIGIL
+            ) {
                 term_start.forward_cursor_position();
             }
 
@@ -337,10 +348,10 @@ mod imp {
                 return None;
             }
 
-            let target = if is_room {
-                SearchTermTarget::Room
-            } else {
-                SearchTermTarget::Member
+            let target = match term_start_char {
+                ROOM_ALIAS_SIGIL => SearchTermTarget::Room,
+                EMOTICON_SIGIL => SearchTermTarget::Emoticon,
+                _ => SearchTermTarget::Member,
             };
             let term = SearchTerm {
                 target,
@@ -370,12 +381,20 @@ mod imp {
                 }
             }
 
-            if !matches!(word_start.char(), USER_ID_SIGIL | ROOM_ALIAS_SIGIL)
-                && !trigger
+            if !matches!(
+                word_start.char(),
+                USER_ID_SIGIL | ROOM_ALIAS_SIGIL | EMOTICON_SIGIL
+            ) && !trigger
                 && (cursor == word_start || self.current_word().is_none())
             {
                 // No trigger or not updating the word.
                 return None;
+            }
+
+            // A shortcode has its own grammar, which the parser for Matrix IDs
+            // below does not accept.
+            if word_start.char() == EMOTICON_SIGIL {
+                return self.shortcode_boundaries(word_start, cursor);
             }
 
             let mut ctx = SearchContext::default();
@@ -451,6 +470,48 @@ mod imp {
             }
 
             // If we are in markdown that would be escaped, there is no need for completion.
+            if self.in_escaped_markdown(&word_start, &word_end) {
+                return None;
+            }
+
+            Some((word_start, word_end))
+        }
+
+        /// Find the end of the shortcode starting at the given position.
+        ///
+        /// A shortcode is `[A-Za-z0-9_-]`, up to 100 bytes.
+        fn shortcode_boundaries(
+            &self,
+            word_start: gtk::TextIter,
+            cursor: gtk::TextIter,
+        ) -> Option<(gtk::TextIter, gtk::TextIter)> {
+            let mut word_end = word_start;
+            let mut len = 0;
+
+            while word_end.forward_cursor_position() {
+                let c = word_end.char();
+
+                if !c.is_ascii_alphanumeric() && !matches!(c, '-' | '_') {
+                    break;
+                }
+
+                len += c.len_utf8();
+                if len > SHORTCODE_MAX_LEN {
+                    return None;
+                }
+            }
+
+            // The sigil is also used in text, so wait for the beginning of a
+            // shortcode before proposing anything.
+            if len == 0 {
+                return None;
+            }
+
+            // It the cursor is not at the word, there is no need for completion.
+            if cursor != word_end && !cursor.in_range(&word_start, &word_end) {
+                return None;
+            }
+
             if self.in_escaped_markdown(&word_start, &word_end) {
                 return None;
             }
@@ -543,6 +604,10 @@ mod imp {
                 Some((SearchTermTarget::Room, term)) => {
                     self.room_list.set_search_term(term.as_deref());
                     self.room_list.list()
+                }
+                Some((SearchTermTarget::Emoticon, term)) => {
+                    self.emoticon_list.set_search_term(term.as_deref());
+                    self.emoticon_list.list()
                 }
                 term => {
                     self.member_list
@@ -681,10 +746,10 @@ mod imp {
                 return;
             };
 
-            let label = if matches!(term.target, SearchTermTarget::Room) {
-                gettext("Public Room Mention Auto-completion")
-            } else {
-                gettext("Room Member Mention Auto-completion")
+            let label = match term.target {
+                SearchTermTarget::Room => gettext("Public Room Mention Auto-completion"),
+                SearchTermTarget::Emoticon => gettext("Emoticon Auto-completion"),
+                SearchTermTarget::Member => gettext("Room Member Mention Auto-completion"),
             };
             self.obj()
                 .update_property(&[gtk::accessible::Property::Label(&label)]);
@@ -735,6 +800,8 @@ enum SearchTermTarget {
     Member,
     /// A room.
     Room,
+    /// An image of a pack, to send inline.
+    Emoticon,
 }
 
 /// The context for a search.

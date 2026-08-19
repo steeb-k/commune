@@ -126,8 +126,7 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
 4. **Emoticon rendering** — allow `img` in the sanitizer, inline widget via
    `LabelWithWidgets`, tests. _(done)_
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
-   composer, serialization in `composer_parser.rs`. See the note below, a
-   decision is needed first.
+   composer, serialization in `composer_parser.rs`. _(done)_
 6. **Pack management** — room details subpage and account settings page,
    enabling and disabling packs globally. _(done)_
 7. **Pack authoring** — create and edit packs, upload images, edit
@@ -135,7 +134,7 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
 8. **Space packs** — canonical space hierarchy, recursive, with a depth
    limit and a cycle guard, slotted into the order in `packs_for_room`.
 
-## Open decision: how to complete `:shortcode:`
+## How `:shortcode:` completion is done
 
 `CompletionPopover` is 769 lines built around one abstraction: its rows are
 `PillSourceRow`s bound to `PillSource`s, and activating one inserts a `Pill`
@@ -143,31 +142,35 @@ into the composer. It handles the buffer scanning, the word boundaries, the
 key navigation and the popover placement, none of which is specific to
 mentions.
 
-Two ways to get emoticon completion out of it, and they pull in opposite
-directions:
+Emoticons reuse it, by being `PillSource`s. `AtRoom` is the precedent: a
+pill source that is not a user or a room, presented like a mention while the
+message is composed without being one. A shortcode is the display name and
+the pack image is the avatar, so the rows, the keyboard handling, the popover
+placement and the insertion all work unchanged, and `row_activated` already
+downcasts to `PillSource` rather than to anything narrower.
 
-1. **Make an emoticon a `PillSource`.** A shortcode is the display name and
-   the image is the avatar, so the rows, the activation and the insertion all
-   work unchanged. Perhaps 350 new lines: the source, a list, a `:` sigil and
-   a `SearchTermTarget`. The composer then holds a `Pill`, which
-   `composer_parser.rs` tells apart by the type of its source and writes as
-   an `img` instead of an anchor. The cost is conceptual and practical: an
-   emoticon is not a mention, so this widens a shared abstraction and the
-   edits land in the middle of a file that is likely to move between
-   releases.
-2. **A separate popover for emoticons.** Self-contained, no risk of
-   regressing mention completion, rebases as a whole directory. The cost is
-   duplicating the buffer scanning and placement logic, which is the part
-   worth reusing.
+What that leaves is small: a `:` sigil, a `SearchTermTarget`, a list of
+sources, and a separate scan for the word boundaries. The scan is separate
+because `:` is also the separator of a Matrix ID, and the existing parser
+reads localparts, server names, IPv6 addresses and ports. A `:` only counts
+as the sigil at the beginning of a word, which is unambiguous: in
+`@user:server` the scan starts at `@`. At least one character has to follow
+it before anything is proposed, so that `:` in ordinary text is quiet.
 
-The composer side is the same either way, and is small: a
-`ComposerChunk::Emoticon`, `<img data-mx-emoticon src alt title height="32">`
-in the formatted body, `:shortcode:` in the plain body, and the flag that
-forces the message to be sent as HTML, next to `has_rich_mentions`.
+The alternative that was rejected, for the record:
 
-Note that the specification asks clients **not** to resolve a shortcode to an
-image on their own when several packs define it, and to present a picker
-instead, so the completion must always be a choice and never a substitution.
+a separate popover for emoticons, which would have rebased as a whole
+directory, but would have duplicated the buffer scanning and the placement,
+which is the part worth reusing.
+
+The composer side is a `ComposerChunk::Emoticon`, written as
+`<img data-mx-emoticon src alt title height="32">` in the formatted body and
+`:shortcode:` in the plain body, with a flag next to `has_rich_mentions` that
+forces the message to be sent as HTML. A draft cannot store the image, so it
+keeps the shortcode as text and the emoticon has to be picked again.
+
+The completion is always a choice and never a substitution, which is what the
+specification asks for when several packs define the same shortcode.
 
 ## Integration-point ledger
 
@@ -192,6 +195,9 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_details/mod.rs` | declare `image_packs_subpage`; the `ImagePacks` subpage name and its construction |
 | `src/session_view/room_details/general_page.blp` | the row that opens the subpage |
 | `src/account_settings/mod.rs`, `mod.blp` | declare and present `image_packs_page` |
+| `src/session_view/room_history/message_toolbar/composer_parser.rs` | `ComposerChunk::Emoticon`, its serialization, and the flag forcing HTML |
+| `src/session_view/room_history/message_toolbar/completion/mod.rs` | declare `emoticon_list` |
+| `src/session_view/room_history/message_toolbar/completion/completion_popover.rs` | the `:` sigil, `SearchTermTarget::Emoticon`, the shortcode boundary scan, the list and the accessible label |
 
 Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 (phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
