@@ -92,6 +92,22 @@ mod imp {
                 "session.open-account-settings",
             );
 
+            klass.install_action("session.open-image-packs", None, |obj, _, _| {
+                let Some(session) = obj.session() else {
+                    return;
+                };
+
+                if obj
+                    .activate_action(
+                        "win.open-image-packs",
+                        Some(&session.session_id().to_variant()),
+                    )
+                    .is_err()
+                {
+                    error!("Could not activate action `win.open-image-packs`");
+                }
+            });
+
             klass.install_action("session.close-room", None, |obj, _, _| {
                 obj.imp().select_item(None);
             });
