@@ -7,6 +7,7 @@ mod custom_emoticon;
 mod custom_entry;
 mod dialogs;
 mod drag_overlay;
+mod image_pack_editor;
 mod label_with_widgets;
 mod loading;
 mod media;
@@ -27,6 +28,7 @@ pub(crate) use self::{
     custom_entry::CustomEntry,
     dialogs::*,
     drag_overlay::DragOverlay,
+    image_pack_editor::ImagePackEditor,
     label_with_widgets::LabelWithWidgets,
     loading::*,
     media::*,

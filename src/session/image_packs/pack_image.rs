@@ -90,6 +90,11 @@ impl PackImage {
         &self.imp().data().url
     }
 
+    /// A copy of the data of this image.
+    pub(crate) fn data(&self) -> PackImageData {
+        self.imp().data().clone()
+    }
+
     /// The metadata of this image.
     pub(crate) fn info(&self) -> Option<&ImageInfo> {
         self.imp().data().info.as_deref()

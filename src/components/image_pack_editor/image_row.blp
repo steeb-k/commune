@@ -1,0 +1,26 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PackImageRow: Adw.EntryRow {
+  title: _("Shortcode");
+  activatable: false;
+  selectable: false;
+  changed => $update_validity() swapped;
+
+  [prefix]
+  Gtk.Image picture {
+    icon-name: "image-missing-symbolic";
+    valign: center;
+  }
+
+  Gtk.Button remove_button {
+    icon-name: "user-trash-symbolic";
+    tooltip-text: _("Remove Image");
+    valign: center;
+    clicked => $remove() swapped;
+
+    styles [
+      "flat",
+    ]
+  }
+}

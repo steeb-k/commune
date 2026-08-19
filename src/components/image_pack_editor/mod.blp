@@ -1,0 +1,83 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ImagePackEditor: Adw.NavigationPage {
+  title: _("Image Pack");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [end]
+      $LoadingButton save_button {
+        content-label: _("_Save");
+        clicked => $save() swapped;
+
+        styles [
+          "suggested-action",
+        ]
+      }
+    }
+
+    content: Adw.PreferencesPage {
+      Adw.PreferencesGroup {
+        Adw.EntryRow name_entry {
+          title: _("Name");
+        }
+
+        Adw.EntryRow attribution_entry {
+          title: _("Attribution");
+        }
+
+        Adw.ComboRow usage_row {
+          title: _("Used For");
+
+          model: Gtk.StringList {
+            strings [
+              _("Stickers and Emoticons"),
+              _("Stickers Only"),
+              _("Emoticons Only"),
+            ]
+          };
+        }
+      }
+
+      Adw.PreferencesGroup images_group {
+        title: _("Images");
+        description: _("A shortcode identifies an image in its pack. It can contain letters, digits, dashes and underscores.");
+
+        header-suffix: $LoadingButton add_button {
+          content-icon-name: "list-add-symbolic";
+          tooltip-text: _("Add Images");
+          valign: center;
+          clicked => $add_images() swapped;
+
+          styles [
+            "flat",
+          ]
+        };
+
+        Adw.ActionRow placeholder_row {
+          title: _("No Images");
+          subtitle: _("A pack needs at least one image");
+          selectable: false;
+          activatable: false;
+
+          styles [
+            "dimmed",
+          ]
+        }
+      }
+
+      Adw.PreferencesGroup delete_group {
+        Adw.ButtonRow delete_row {
+          title: _("Delete Pack");
+          activated => $delete() swapped;
+
+          styles [
+            "destructive-action",
+          ]
+        }
+      }
+    };
+  };
+}

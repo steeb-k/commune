@@ -12,7 +12,14 @@ template $ImagePacksPage: Adw.PreferencesPage {
 
     Adw.ActionRow personal_row {
       selectable: false;
-      activatable: false;
+      activatable: true;
+      activated => $edit_personal_pack() swapped;
+
+      [suffix]
+      Gtk.Image {
+        icon-name: "go-next-symbolic";
+        accessible-role: presentation;
+      }
     }
   }
 

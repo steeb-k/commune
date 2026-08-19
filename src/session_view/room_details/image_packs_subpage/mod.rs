@@ -1,13 +1,38 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{CompositeTemplate, glib, glib::clone};
 use tracing::error;
 
 use crate::{
-    components::SwitchLoadingRow,
+    components::{ImagePackEditor, SwitchLoadingRow},
     gettext_f, ngettext_f,
-    session::{ImagePack, ImagePackSource, ImagePacks, Room},
+    session::{ImagePack, ImagePackSource, ImagePacks, Room, RoomPackKind},
     spawn, toast,
 };
+
+/// The state key of the first pack of a room.
+///
+/// The specification does not reserve it, but the clients in the wild use the
+/// empty state key for the pack of a room, so a new pack takes it when it is
+/// free.
+const FIRST_STATE_KEY: &str = "";
+
+/// The prefix of the state keys of the packs after the first one.
+const STATE_KEY_PREFIX: &str = "pack";
+
+/// A state key that no pack of the room uses yet.
+fn unused_state_key(taken: &[String]) -> String {
+    if !taken.iter().any(|key| key == FIRST_STATE_KEY) {
+        return FIRST_STATE_KEY.to_owned();
+    }
+
+    // Among the state keys that are taken, at most all of them can collide, so
+    // one of this many is free.
+    (2..=taken.len() + 2)
+        .map(|index| format!("{STATE_KEY_PREFIX}-{index}"))
+        .find(|key| !taken.contains(key))
+        .expect("an unused state key should be found")
+}
 
 mod imp {
     use std::cell::RefCell;
@@ -24,6 +49,10 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         packs_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        create_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        empty_create_button: TemplateChild<gtk::Button>,
         /// The room that the packs are defined in.
         #[property(get, construct_only)]
         pub(super) room: glib::WeakRef<Room>,
@@ -39,6 +68,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -51,6 +81,58 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            room.permissions()
+                .connect_can_change_image_packs_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_create_buttons();
+                    }
+                ));
+            self.update_create_buttons();
+
+            // A pack that was saved from this page, or from the editor that it
+            // opens, should be presented without having to leave the room.
+            if let Some(session) = room.session() {
+                session.image_packs().connect_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.reload();
+                    }
+                ));
+            }
+
+            self.reload();
+        }
+    }
+
+    impl WidgetImpl for ImagePacksSubpage {}
+    impl NavigationPageImpl for ImagePacksSubpage {}
+
+    #[gtk::template_callbacks]
+    impl ImagePacksSubpage {
+        /// Whether the user can define a pack in the room.
+        fn can_change_packs(&self) -> bool {
+            self.room
+                .upgrade()
+                .is_some_and(|room| room.permissions().can_change_image_packs())
+        }
+
+        /// Update whether the buttons to create a pack are presented.
+        fn update_create_buttons(&self) {
+            let can_change_packs = self.can_change_packs();
+
+            self.create_button.set_visible(can_change_packs);
+            self.empty_create_button.set_visible(can_change_packs);
+        }
+
+        /// Load the packs defined in the room.
+        fn reload(&self) {
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -59,12 +141,7 @@ mod imp {
                 }
             ));
         }
-    }
 
-    impl WidgetImpl for ImagePacksSubpage {}
-    impl NavigationPageImpl for ImagePacksSubpage {}
-
-    impl ImagePacksSubpage {
         /// Load the packs defined in the room.
         async fn load(&self) {
             let Some(room) = self.room.upgrade() else {
@@ -132,6 +209,27 @@ mod imp {
                     .is_pack_enabled(room.room_id(), state_key),
             );
 
+            if self.can_change_packs() {
+                let edit_button = gtk::Button::builder()
+                    .icon_name("document-edit-symbolic")
+                    .tooltip_text(gettext("Edit Pack"))
+                    .valign(gtk::Align::Center)
+                    .css_classes(["flat"])
+                    .build();
+
+                edit_button.connect_clicked(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[strong]
+                    pack,
+                    move |_| {
+                        imp.edit_pack(&pack);
+                    }
+                ));
+
+                row.add_suffix(&edit_button);
+            }
+
             row.connect_is_active_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -153,6 +251,50 @@ mod imp {
             ));
 
             row
+        }
+
+        /// Open the editor for the given pack.
+        fn edit_pack(&self, pack: &ImagePack) {
+            let Some(session) = self.room.upgrade().and_then(|room| room.session()) else {
+                return;
+            };
+
+            self.push_subpage(&ImagePackEditor::edit(&session, pack));
+        }
+
+        /// Open the editor for a new pack in the room.
+        #[template_callback]
+        async fn create_pack(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            let taken = ImagePacks::room_pack_state_keys(&room).await;
+            let source = ImagePackSource::Room {
+                room,
+                state_key: unused_state_key(&taken),
+                // A pack that we create uses the event type that we send.
+                kind: RoomPackKind::Unstable,
+            };
+
+            self.push_subpage(&ImagePackEditor::create(&session, source));
+        }
+
+        /// Present the given page on top of this one.
+        fn push_subpage(&self, page: &impl IsA<adw::NavigationPage>) {
+            let Some(window) = self
+                .obj()
+                .ancestor(adw::PreferencesWindow::static_type())
+                .and_downcast::<adw::PreferencesWindow>()
+            else {
+                error!("Could not find the window of the image packs of a room");
+                return;
+            };
+
+            window.push_subpage(page);
         }
 
         /// Enable or disable the given pack globally, following its row.
