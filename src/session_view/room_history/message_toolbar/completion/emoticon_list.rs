@@ -7,7 +7,10 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::{
+        cell::{OnceCell, RefCell},
+        collections::HashMap,
+    };
 
     use super::*;
 
@@ -127,18 +130,34 @@ mod imp {
                 return;
             }
 
-            let mut emoticons = Vec::new();
+            let mut images = Vec::new();
             for pack in packs {
-                let images = pack.images();
+                let pack_images = pack.images();
 
-                for position in 0..images.n_items() {
-                    let Some(image) = images.item(position).and_downcast::<PackImage>() else {
+                for position in 0..pack_images.n_items() {
+                    let Some(image) = pack_images.item(position).and_downcast::<PackImage>() else {
                         continue;
                     };
 
-                    emoticons.push(EmoticonSource::new(&session, &image));
+                    images.push((pack.display_name(), image));
                 }
             }
+
+            // Several packs can define the same shortcode, and the
+            // specification asks for those to be told apart by the name of
+            // their pack rather than silently resolved.
+            let mut counts = HashMap::<String, usize>::new();
+            for (_, image) in &images {
+                *counts.entry(image.shortcode()).or_default() += 1;
+            }
+
+            let emoticons = images
+                .iter()
+                .map(|(pack_name, image)| {
+                    let is_ambiguous = counts.get(&image.shortcode()).is_some_and(|c| *c > 1);
+                    EmoticonSource::new(&session, image, is_ambiguous.then_some(pack_name.as_str()))
+                })
+                .collect::<Vec<_>>();
 
             self.emoticons()
                 .splice(0, self.emoticons().n_items(), &emoticons);
