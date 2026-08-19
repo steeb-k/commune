@@ -17,7 +17,7 @@ const MIN_N_ITEMS: u32 = 50;
 const SIZE_REQUEST: i32 = 150;
 
 mod imp {
-    use std::ops::ControlFlow;
+    use std::{cell::Cell, ops::ControlFlow};
 
     use glib::subclass::InitializingObject;
 
@@ -38,6 +38,11 @@ mod imp {
         /// The timeline containing the media events.
         #[property(get, set = Self::set_timeline, construct_only)]
         timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
+        /// Whether the initial load has settled.
+        ///
+        /// Until it has, the view is put back on the most recent media every
+        /// time items are added.
+        is_initialized: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -122,6 +127,10 @@ mod imp {
                 self,
                 move |_, _, _, _| {
                     imp.update_state();
+
+                    if !imp.is_initialized.get() {
+                        imp.scroll_to_start();
+                    }
                 }
             ));
             self.grid_view.set_model(Some(&model));
@@ -148,22 +157,30 @@ mod imp {
         /// Initialize the timeline
         async fn init_timeline(&self) {
             self.load_more_items().await;
+            self.scroll_to_start();
+            self.is_initialized.set(true);
 
             let adj = self
                 .grid_view
                 .vadjustment()
                 .expect("GtkGridView has a vadjustment");
-            adj.connect_value_notify(clone!(
+
+            let load_more = clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |_| {
+                move |_: &gtk::Adjustment| {
                     if imp.needs_more_items() {
                         spawn!(async move {
                             imp.load_more_items().await;
                         });
                     }
                 }
-            ));
+            );
+            // The upper bound is watched as well as the value: until the grid view has
+            // been allocated there is no way to tell whether the viewport is full, so
+            // its allocation is what makes the question answerable.
+            adj.connect_value_notify(load_more.clone());
+            adj.connect_upper_notify(load_more);
         }
 
         /// Load more items in this viewer.
@@ -187,6 +204,33 @@ mod imp {
                 .await;
         }
 
+        /// Scroll back to the most recent media.
+        ///
+        /// The grid view anchors its scroll position on one of its items, and
+        /// the loading item is the last one, so filling the timeline
+        /// for the first time drags the view down with it and the most
+        /// recent media ends up off-screen.
+        fn scroll_to_start(&self) {
+            let Some(model) = self.grid_view.model() else {
+                return;
+            };
+
+            if model.n_items() == 0 {
+                return;
+            }
+
+            // Wait until the next tick, to make sure that the GtkGridView has created
+            // the item before scrolling to it.
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    imp.grid_view
+                        .scroll_to(0, gtk::ListScrollFlags::FOCUS, None);
+                }
+            ));
+        }
+
         /// Whether this viewer needs more items.
         fn needs_more_items(&self) -> bool {
             let Some(model) = self.grid_view.model() else {
@@ -202,6 +246,14 @@ mod imp {
                 .grid_view
                 .vadjustment()
                 .expect("GtkGridView has a vadjustment");
+
+            if adj.upper() <= 0.0 {
+                // The grid view has not been allocated yet, so the viewport size and
+                // the content size are both unknown. Answering `true` here asks for
+                // the whole room to be paginated before anything is on screen.
+                return false;
+            }
+
             adj.value() + adj.page_size() * 2.0 >= adj.upper()
         }
 
