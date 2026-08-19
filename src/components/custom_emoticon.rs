@@ -7,7 +7,10 @@ use crate::{
     spawn,
     utils::media::{
         FrameDimensions,
-        image::{ImageRequestPriority, ImageSource, ThumbnailDownloader, ThumbnailSettings},
+        image::{
+            ImageRequestPriority, ImageSource, THUMBNAIL_MAX_DIMENSIONS, ThumbnailDownloader,
+            ThumbnailSettings,
+        },
     },
 };
 
@@ -19,13 +22,6 @@ use crate::{
 /// for the clients that do to override it with a height that suits the font of
 /// the user.
 const HEIGHT_FACTOR: f64 = 1.6;
-
-/// The height of a custom emoticon in a message that contains nothing else,
-/// as a multiple of the height of a line of text.
-///
-/// The specification allows a message made only of custom emoticons, or of
-/// emoji, to be presented larger.
-const LARGE_HEIGHT_FACTOR: f64 = 4.0;
 
 /// The height of a custom emoticon when the font metrics are unknown, in
 /// pixels.
@@ -102,10 +98,11 @@ mod imp {
         /// specification asks to be at least 512 pixels, so presenting one at
         /// its own size would take over the message.
         fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
+            let (width, height) = self.size();
             let size = if orientation == gtk::Orientation::Vertical {
-                self.height()
+                height
             } else {
-                self.width()
+                width
             };
 
             // The minimum and the natural size are the same, so that the
@@ -128,8 +125,25 @@ mod imp {
     }
 
     impl CustomEmoticon {
-        /// The height that the image should be presented at, in pixels.
-        fn height(&self) -> i32 {
+        /// The size that the image should be presented at, in pixels.
+        pub(super) fn size(&self) -> (i32, i32) {
+            if self.is_large.get() {
+                return self.sticker_size();
+            }
+
+            let height = self.line_size();
+            let ratio = self
+                .intrinsic_size()
+                .map_or(1.0, |(width, height)| f64::from(width) / f64::from(height))
+                // Among words, an image much wider than it is tall would push
+                // the rest of the message out of the way.
+                .min(MAX_ASPECT_RATIO);
+
+            ((f64::from(height) * ratio).round() as i32, height)
+        }
+
+        /// The size of a line of text, in pixels.
+        fn line_size(&self) -> i32 {
             let metrics = self.obj().pango_context().metrics(None, None);
             let line_height = (metrics.ascent() + metrics.descent()) / pango::SCALE;
 
@@ -137,32 +151,38 @@ mod imp {
                 return FALLBACK_HEIGHT;
             }
 
-            let factor = if self.is_large.get() {
-                LARGE_HEIGHT_FACTOR
-            } else {
-                HEIGHT_FACTOR
-            };
-
-            (f64::from(line_height) * factor).round() as i32
+            (f64::from(line_height) * HEIGHT_FACTOR).round() as i32
         }
 
-        /// The width that the image should be presented at, in pixels.
-        ///
-        /// The height is fixed by the font, and the aspect ratio of the image
-        /// is kept.
-        fn width(&self) -> i32 {
-            let ratio = self
-                .paintable
+        /// The size of the image itself, in pixels.
+        fn intrinsic_size(&self) -> Option<(i32, i32)> {
+            self.paintable
                 .borrow()
                 .as_ref()
-                .map(PaintableExt::intrinsic_aspect_ratio)
-                .filter(|ratio| *ratio > 0.0)
-                .unwrap_or(1.0);
+                .map(|paintable| (paintable.intrinsic_width(), paintable.intrinsic_height()))
+                .filter(|(width, height)| *width > 0 && *height > 0)
+        }
 
-            // An image that is much wider than it is tall would push the rest
-            // of the message out of the way.
-            let width = f64::from(self.height()) * ratio.min(MAX_ASPECT_RATIO);
-            width.round() as i32
+        /// The size to present the image at when it is alone in its message.
+        ///
+        /// This is what the timeline does with a sticker: the size of the
+        /// image, bounded, and never enlarged past it.
+        fn sticker_size(&self) -> (i32, i32) {
+            let max = THUMBNAIL_MAX_DIMENSIONS;
+            // Before the image is loaded, assume it is square, which the
+            // specification asks stickers to be.
+            let (width, height) = self
+                .intrinsic_size()
+                .unwrap_or((max.height.cast_signed(), max.height.cast_signed()));
+
+            let scale = (f64::from(max.width) / f64::from(width))
+                .min(f64::from(max.height) / f64::from(height))
+                .min(1.0);
+
+            (
+                ((f64::from(width) * scale).round() as i32).max(1),
+                ((f64::from(height) * scale).round() as i32).max(1),
+            )
         }
 
         /// Set whether this emoticon is alone in its message.
@@ -180,9 +200,9 @@ mod imp {
             obj.notify_is_large();
         }
 
-        /// Reload the image for the current font, if its size changed.
+        /// Reload the image if the size it is presented at changed.
         fn update_size(&self) {
-            let height = self.height();
+            let (width, height) = self.size();
             if self.loaded_height.get() == height {
                 return;
             }
@@ -192,7 +212,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    imp.load(height).await;
+                    imp.load(width, height).await;
                 }
             ));
         }
@@ -218,8 +238,8 @@ mod imp {
             obj.queue_resize();
         }
 
-        /// Load the image at the given height.
-        async fn load(&self, height: i32) {
+        /// Load the image at the given size.
+        async fn load(&self, width: i32, height: i32) {
             let obj = self.obj();
             let uri =
                 OwnedMxcUri::from(self.uri.get().expect("URI should be initialized").as_str());
@@ -230,12 +250,9 @@ mod imp {
                 .client();
 
             let height = u32::try_from(height).unwrap_or(FALLBACK_HEIGHT.cast_unsigned());
-            let dimensions = FrameDimensions {
-                // The image keeps its aspect ratio, so allow it to be wide.
-                width: height * 4,
-                height,
-            }
-            .scale(u32::try_from(obj.scale_factor()).unwrap_or(1));
+            let width = u32::try_from(width).unwrap_or(height);
+            let dimensions = FrameDimensions { width, height }
+                .scale(u32::try_from(obj.scale_factor()).unwrap_or(1));
 
             let downloader = ThumbnailDownloader {
                 main: ImageSource {
