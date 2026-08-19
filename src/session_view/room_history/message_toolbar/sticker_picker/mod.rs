@@ -137,31 +137,24 @@ mod imp {
                 return;
             }
 
-            // With a single pack, its name would only be noise.
-            let with_headers = packs.len() > 1;
             for pack in packs {
-                self.packs_box
-                    .append(&self.build_pack(&session, &pack, with_headers));
+                self.packs_box.append(&self.build_pack(&session, &pack));
             }
 
             self.stack.set_visible_child_name("packs");
             self.loaded.set(true);
         }
 
-        /// Build the presentation of the given pack.
-        fn build_pack(&self, session: &Session, pack: &ImagePack, with_header: bool) -> gtk::Box {
-            let container = gtk::Box::new(gtk::Orientation::Vertical, 6);
-
-            if with_header {
-                let label = gtk::Label::builder()
-                    .label(pack.display_name())
-                    .xalign(0.0)
-                    .ellipsize(pango::EllipsizeMode::End)
-                    .build();
-                label.add_css_class("heading");
-
-                container.append(&label);
-            }
+        /// Build the presentation of the given pack, as a card that can be
+        /// collapsed.
+        fn build_pack(&self, session: &Session, pack: &ImagePack) -> gtk::Widget {
+            let name = gtk::Label::builder()
+                .label(pack.display_name())
+                .xalign(0.0)
+                .hexpand(true)
+                .ellipsize(pango::EllipsizeMode::End)
+                .build();
+            name.add_css_class("heading");
 
             let images_box = gtk::FlowBox::builder()
                 .selection_mode(gtk::SelectionMode::None)
@@ -170,6 +163,8 @@ mod imp {
                 .max_children_per_line(10)
                 .row_spacing(6)
                 .column_spacing(6)
+                // Separate the images from the title of the pack.
+                .margin_top(6)
                 .build();
 
             let images = pack.images();
@@ -194,8 +189,18 @@ mod imp {
                 images_box.append(&button);
             }
 
-            container.append(&images_box);
-            container
+            let expander = gtk::Expander::builder()
+                .label_widget(&name)
+                .child(&images_box)
+                .expanded(true)
+                .build();
+
+            let card = gtk::Box::new(gtk::Orientation::Vertical, 0);
+            card.add_css_class("card");
+            card.add_css_class("sticker-pack");
+            card.append(&expander);
+
+            card.upcast()
         }
     }
 }
