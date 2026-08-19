@@ -7,10 +7,11 @@ use tracing::error;
 use crate::{
     components::{
         ImagePackEditor, LoadingButton, SwitchLoadingRow, confirm_delete_image_pack_dialog,
+        confirm_leave_image_pack_room_dialog,
     },
     gettext_f, ngettext_f,
     prelude::*,
-    session::{ImagePack, ImagePackSource, ImagePacks, RoomPackKind, Session},
+    session::{ImagePack, ImagePackSource, ImagePacks, RoomPackKind, Session, TargetRoomCategory},
     spawn, toast,
 };
 
@@ -18,10 +19,24 @@ use crate::{
 type PackId = (String, String);
 
 /// A menu item activating the given action on the given pack.
+///
+/// A label goes through the mnemonic parser, so an underscore in a name that
+/// we put in one has to be doubled to survive.
 fn menu_item(label: &str, action: &str, id: &PackId) -> gio::MenuItem {
     let item = gio::MenuItem::new(Some(label), None);
     item.set_action_and_target_value(Some(action), Some(&id.to_variant()));
     item
+}
+
+/// A button presenting the given menu of actions on a pack.
+fn pack_menu_button(menu: &gio::Menu) -> gtk::MenuButton {
+    gtk::MenuButton::builder()
+        .icon_name("view-more-symbolic")
+        .tooltip_text(gettext("Pack Options"))
+        .valign(gtk::Align::Center)
+        .menu_model(menu)
+        .css_classes(["flat"])
+        .build()
 }
 
 mod imp {
@@ -78,6 +93,15 @@ mod imp {
                 |obj, _, variant| {
                     if let Some(id) = variant.and_then(glib::Variant::get::<PackId>) {
                         obj.imp().edit_pack(&id);
+                    }
+                },
+            );
+            klass.install_action_async(
+                "image-packs.leave",
+                Some(&PackId::static_variant_type()),
+                |obj, _, variant: Option<glib::Variant>| async move {
+                    if let Some(id) = variant.and_then(|v| v.get::<PackId>()) {
+                        obj.imp().leave_pack_room(&id).await;
                     }
                 },
             );
@@ -265,15 +289,29 @@ mod imp {
                 menu.append_item(&menu_item(&gettext("_Edit…"), "image-packs.edit", &id));
                 menu.append_item(&menu_item(&gettext("_Delete…"), "image-packs.delete", &id));
 
-                let menu_button = gtk::MenuButton::builder()
-                    .icon_name("view-more-symbolic")
-                    .tooltip_text(gettext("Pack Options"))
-                    .valign(gtk::Align::Center)
-                    .menu_model(&menu)
-                    .css_classes(["flat"])
-                    .build();
+                row.add_suffix(&pack_menu_button(&menu));
+            } else {
+                // The pack cannot be changed or removed where it is, so the
+                // only way to be rid of it is to stop being in the room that
+                // provides it.
+                let id = (
+                    source.room.room_id().as_str().to_owned(),
+                    source.state_key.clone(),
+                );
 
-                row.add_suffix(&menu_button);
+                let menu = gio::Menu::new();
+                menu.append_item(&menu_item(
+                    &gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "_Leave {room}…",
+                        &[("room", &source.room.display_name().replace('_', "__"))],
+                    ),
+                    "image-packs.leave",
+                    &id,
+                ));
+
+                row.add_suffix(&pack_menu_button(&menu));
             }
 
             self.connect_switch(
@@ -418,6 +456,48 @@ mod imp {
                     )
                 );
             }
+        }
+
+        /// Leave the room that provides the pack that the given identifier
+        /// names, after asking for confirmation.
+        async fn leave_pack_room(&self, id: &PackId) {
+            let (Some(session), Some(pack)) = (self.session.upgrade(), self.pack(id)) else {
+                return;
+            };
+
+            let obj = self.obj();
+            let room = pack.source().room.clone();
+
+            if !confirm_leave_image_pack_room_dialog(&pack.display_name(), &room, &*obj).await {
+                return;
+            }
+
+            // Stop using the pack first, so that leaving does not turn it into
+            // one that is used everywhere and cannot be loaded.
+            let _ = session
+                .image_packs()
+                .set_pack_enabled(room.room_id(), &pack.source().state_key, false)
+                .await;
+
+            if room
+                .change_category(TargetRoomCategory::Left)
+                .await
+                .is_err()
+            {
+                error!("Could not leave the room of an image pack");
+                toast!(
+                    obj,
+                    gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Could not leave {room}",
+                        &[("room", &room.display_name())],
+                    )
+                );
+                return;
+            }
+
+            self.load();
         }
 
         /// Create a pack in the room that packs are created in.

@@ -523,6 +523,48 @@ pub(crate) async fn confirm_delete_image_pack_dialog(
     confirm_dialog.choose_future(Some(parent)).await == "delete"
 }
 
+/// Ask the user to confirm leaving the room that provides the image pack with
+/// the given name.
+///
+/// A pack lives in the state of a room, so a pack from a room the user cannot
+/// change can only be got rid of by leaving that room.
+pub(crate) async fn confirm_leave_image_pack_room_dialog(
+    pack_name: &str,
+    room: &Room,
+    parent: &impl IsA<gtk::Widget>,
+) -> bool {
+    let body = if room.join_rule().we_can_join() {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // these are variable names.
+            "“{pack}” is defined in {room}, and cannot be removed without leaving it. You can come back later.",
+            &[("pack", pack_name), ("room", &room.display_name())],
+        )
+    } else {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // these are variable names.
+            "“{pack}” is defined in {room}, and cannot be removed without leaving it. You will not be able to come back without an invitation.",
+            &[("pack", pack_name), ("room", &room.display_name())],
+        )
+    };
+
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "Leave {room}?",
+            &[("room", &room.display_name())],
+        ))
+        .body(body)
+        .build();
+    confirm_dialog.add_responses(&[("cancel", &gettext("Cancel")), ("leave", &gettext("Leave"))]);
+    confirm_dialog.set_response_appearance("leave", adw::ResponseAppearance::Destructive);
+
+    confirm_dialog.choose_future(Some(parent)).await == "leave"
+}
+
 /// Show a dialog for the user to choose what to do about unsaved changes.
 pub(crate) async fn unsaved_changes_dialog(
     parent: &impl IsA<gtk::Widget>,
