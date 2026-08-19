@@ -12,8 +12,8 @@ re-applying the branch to new Fractal releases.
 * Render `<img data-mx-emoticon>` custom emoticons inline in messages.
 * `:shortcode:` completion in the composer, sending emoticons in
   `formatted_body`.
-* Pack management UI: the personal pack, the packs enabled globally, and the
-  packs of a room.
+* Pack management UI: every pack you have, the packs enabled everywhere, and
+  the packs usable in a room.
 * Pack authoring (create/edit packs, upload images) — after consumption
   works end to end.
 * Space pack inheritance — last phase.
@@ -31,8 +31,9 @@ Points that shaped the code:
 
 * **There is no personal pack event.** MSC2545 had `im.ponies.user_emotes`;
   it was not carried into the specification, which expects a personal pack to
-  be a room pack enabled globally instead. Deployed clients still use it, so
-  we support it, under the unstable name only.
+  be a room pack enabled everywhere instead. We follow the specification and
+  do not read or write it: a pack always lives in the state of a room. See
+  the packs room, below.
 * **`usage` is a property of a pack, not of an image.** An image has only
   `url`, `body` and `info`. An absent or empty `usage` means every usage.
 * **The objects in `m.image_pack.rooms` are opaque.** Clients must preserve
@@ -51,14 +52,25 @@ and send `im.ponies.*`.
 
 | Purpose            | Send (unstable)         | Also read (stable)   |
 | ------------------ | ----------------------- | -------------------- |
-| Personal pack      | `im.ponies.user_emotes` | _(does not exist)_   |
 | Room pack          | `im.ponies.room_emotes` | `m.room.image_pack`  |
 | Enabled room packs | `im.ponies.emote_rooms` | `m.image_pack.rooms` |
 
+**Revisit this.** Writing the unstable names is the one deliberate departure
+from the specification, and it is only worth its cost while the clients people
+use read them. When Element, Cinny and FluffyChat read `m.room.image_pack` and
+`m.image_pack.rooms`, flip `ROOM_PACK_TYPES` and the type that `save_pack` and
+`set_pack_enabled` send, and the non-standard part of this branch is gone.
+
+One event here is ours and no specification defines it:
+`org.gnome.Fractal.image_packs_room`, holding the room that new packs are
+created in. It is client configuration, which is what account data is for; no
+other client is affected by it, and losing it only means the next pack goes to
+a new room.
+
 ruma ships the two stable events as ungated types (the MSC graduated, so
 there is no `unstable-msc2545` feature on the pinned revision). They are not
-used: they cover neither the unstable names nor the personal pack, and
-`RoomImagePackMeta` drops the unknown properties that we must preserve. Only
+used: they do not cover the unstable names, and `RoomImagePackMeta` drops the
+unknown properties that we must preserve. Only
 `ImageInfo` is reused, because `m.sticker` is defined in terms of it.
 
 `events.rs` therefore defines one content type per wire name, with
@@ -95,13 +107,18 @@ small and listed in the ledger below.
   popover. Images through the existing pipeline (`ThumbnailDownloader` /
   `IMAGE_QUEUE`); small-image widget modeled on
   `src/components/avatar/image.rs`.
-* `src/account_settings/image_packs_page/` — the personal pack, and every
-  pack enabled globally with a switch to stop using it. A pack whose room the
+* `src/account_settings/image_packs_page/` — where packs are managed. Every
+  pack from every room the user is in, each with a switch to use it
+  everywhere and, where the power level allows, a button to edit it; and a
+  button to create one. A pack that is used everywhere but whose room the
   user has left cannot be loaded, and is presented by its state key with a
-  warning, which is the case the specification asks clients to handle.
-* `src/session_view/room_details/image_packs_subpage/` — the packs of a room,
-  each with a switch to use it in every room, and, for a user whose power
-  level allows it, a button to edit one and a button to create one.
+  warning, which is the case the specification asks clients to handle. The
+  page is in the account settings because the state it needs — the list of
+  packs used everywhere, and the room packs are created in — is account data.
+* `src/session_view/room_details/image_packs_subpage/` — read-only: the packs
+  usable in that room, in specification order, saying of each whether it is
+  defined there or used everywhere. It answers a question about the room;
+  changing a pack is not one.
 * `src/components/image_pack_editor/` — the editor, shared by the room
   subpage and the account settings page because a pack is the same thing in
   both places. It is an `AdwNavigationPage`, which both an
@@ -165,6 +182,36 @@ Three things cost a lot of time here and are easy to walk back into.
 None of these are visible to the compiler or to the tests, which do not build
 widgets. A change to how something is drawn has to be looked at.
 
+## Where this differs from the specification
+
+Audited against MSC2545 and the Matrix 1.19 module. Everything not listed here
+follows it: the pack order, pack-level `usage` with an absent value meaning
+all, the shortcode grammar and its hundred-byte limit, the sent
+`<img data-mx-emoticon src alt title height="32">` with `alt` the body or the
+shortcode and `title` the shortcode, the `body` and `info` fallbacks of a
+sticker, `mxc:` sources only, and preserving the properties we do not know
+about.
+
+* **We write the unstable event names.** Deliberate, and the only departure we
+  chose. See the wire format section, which says what to change when it can go.
+* **`data-mx-emoticon` cannot be honoured on the way in.** The specification
+  says an inline image is an emoticon if and only if it carries that
+  attribute. The SDK sanitizes every message before we see it and its
+  allow-list drops it, with no way to opt out, so an inline image whose source
+  is on the homeserver is presented as an emoticon. A genuine inline image in
+  HTML is therefore drawn emoticon-sized. See the wire format section.
+* **Space packs are not read.** The specification says clients SHOULD offer
+  the packs of a room's canonical space hierarchy, recursively, with a cycle
+  guard. Phase 8.
+* **`org.gnome.Fractal.image_packs_room` is ours.** Client configuration in
+  account data, which no other client reads or is affected by.
+
+Two things that look like departures and are not. Sizing an emoticon from the
+font metrics rather than the `height` we send is what the specification asks
+supporting clients to do. Presenting a message of nothing but emoticons at the
+size of a sticker is a choice about presentation, which the specification does
+not speak to.
+
 ## Phases
 
 Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
@@ -183,7 +230,7 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
    Verified in the app: an emoticon sent on its own is the same size as the
    same image sent as a sticker.
 6. **Pack management** — room details subpage and account settings page,
-   enabling and disabling packs globally. _(done)_
+   enabling and disabling packs everywhere. _(done)_
 7. **Pack authoring** — create and edit packs, upload images, edit
    shortcodes and usage; the packs of a room gated on the power level.
    _(done)_ The avatar of a pack is not editable, only preserved; nothing
@@ -231,7 +278,7 @@ specification asks for when several packs define the same shortcode.
 
 ## Authoring
 
-Writing a pack is the mirror of reading one, with three decisions worth
+Writing a pack is the mirror of reading one, with four decisions worth
 keeping.
 
 * **A pack is written back under the event type it was read from.** The
@@ -242,6 +289,14 @@ keeping.
 * **Deleting is saving a pack with no images**, which is what the reader
   already treats as absent, and is also what a redacted pack looks like. The
   pack is removed from the packs enabled everywhere at the same time.
+* **A pack is created in a room that exists for packs**, named Sticker Packs,
+  made the first time one is needed and remembered in
+  `org.gnome.Fractal.image_packs_room`. The specification has no personal
+  pack and expects one to be a room pack enabled everywhere, so a room of one
+  is where a pack of your own belongs, and sharing it is inviting someone to
+  that room. The room is tagged low priority so it does not sit among the
+  conversations, and a pack created in it is enabled everywhere on the first
+  save, since otherwise it would be usable only in a room nobody talks in.
 * **Images are uploaded when they are chosen, not when the pack is saved**,
   so that the editor can present them. Leaving without saving therefore
   leaves the media on the homeserver with nothing pointing at it. Saving on
@@ -249,9 +304,9 @@ keeping.
   presenting the images from disk and re-resolving them later, and neither is
   worth avoiding an orphaned upload.
 
-The state key of a new room pack is the empty one when it is free, which is
-what the clients in the wild use for the pack of a room, and `pack-2`,
-`pack-3` … after that. `PackMeta` and the data of an image keep the
+The state key of a new pack is the empty one when it is free, which is what
+the clients in the wild use for the pack of a room, and `pack-2`, `pack-3` …
+after that. `PackMeta` and the data of an image keep the
 properties we do not know about, so an edit does not drop what another client
 put there.
 
@@ -293,8 +348,7 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_history/message_toolbar/completion/completion_popover.rs` | the `:` sigil, `SearchTermTarget::Emoticon`, the shortcode boundary scan, the list and the accessible label |
 | `src/session/room/permissions.rs` | `can_change_image_packs`, from the event type of the packs we create |
 | `src/components/mod.rs` | declare and re-export `image_pack_editor` |
-| `src/session_view/room_details/image_packs_subpage/{mod.rs,mod.blp}` | the buttons to create and edit a pack, and a reload when the packs change |
-| `src/account_settings/image_packs_page/{mod.rs,mod.blp}` | the personal pack row opens the editor |
+| `src/session_view/room_history/message_toolbar/completion/emoticon_list.rs` | the pack name after a shortcode that several packs define |
 
 Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 (phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
@@ -351,20 +405,24 @@ their names. The placements to cover, one flag each:
 | ---- | -------------- |
 | `--room` | `im.ponies.room_emotes` in the state of the room |
 | `--room --stable` | `m.room.image_pack`, to check that we read both names |
-| `--personal` | `im.ponies.user_emotes`, the pack with no stable name |
 | `--room --enable-globally` | also `im.ponies.emote_rooms`, so the pack appears in every room |
+| `--personal` | `im.ponies.user_emotes`, which we no longer read |
 
 `--usage sticker` or `--usage emoticon` restricts where the pack shows up;
 the default leaves `usage` unset, which means everywhere.
 
+There is an authoring UI now, so the tool is only needed to put a pack
+somewhere Fractal will not write to: under the stable event name
+(`--room --stable`), to check that both names are read.
+
 Two things that look like bugs but are not:
 
-* Custom emoticons follow the media previews setting, which defaults to
-  private rooms only. In a public room they render as their description.
-  Account settings, Safety, Media Previews.
-* Editing a pack in a room needs the power level to send its state event.
-  Without it the pack list has no buttons to create or edit, which is not an
+* Editing a pack needs the power level to send its state event in the room it
+  lives in. Without it the pack has no button to edit it, which is not an
   error.
+* A pack is usable in the room it lives in and nowhere else until it is
+  turned on in Preferences. A pack created by Fractal is turned on for you,
+  because the room it goes in is not one you talk in.
 
 ## Rebase guide
 
@@ -376,7 +434,6 @@ Two things that look like bugs but are not:
 4. Check for changes in: the `EventContent` derive, `Timeline::send`, the
    sanitizer configuration, `LabelWithWidgets`, and
    `Room::get_state_events`.
-5. If ruma gains the unstable names and a personal pack type, `events.rs`
-   can be replaced by them.
+5. If ruma gains the unstable names, `events.rs` can be replaced by them.
 6. Run the `events.rs` tests and `message_row/text/tests.rs` first; they
    catch wire and renderer drift cheapest.
