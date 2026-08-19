@@ -125,8 +125,9 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
    composer, serialization in `composer_parser.rs`. See the note below, a
    decision is needed first.
-6. **Pack management** — account settings page, room details subpage,
-   enabling and disabling packs globally.
+6. **Pack management** — room details subpage, enabling and disabling packs
+   globally _(done)_; account settings page listing every pack enabled
+   globally, to remove the ones from rooms that were left, still to do.
 7. **Pack authoring** — create and edit packs, upload images, edit
    shortcodes and usage; the packs of a room gated on the power level.
 8. **Space packs** — canonical space hierarchy, recursive, with a depth
@@ -186,6 +187,8 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_history/message_row/text/inline_html.rs` | one ordered `widgets: Vec<gtk::Widget>` in place of the pills of `MentionsMode`; `append_image`; `append_element_node` takes the whole `MatrixElementData`, for the attributes |
 | `src/session_view/room_history/message_row/text/widgets.rs` | the inline widgets are no longer only pills |
 | `src/session_view/room_history/message_row/text/tests.rs` | the custom emoticon cases |
+| `src/session_view/room_details/mod.rs` | declare `image_packs_subpage`; the `ImagePacks` subpage name and its construction |
+| `src/session_view/room_details/general_page.blp` | the row that opens the subpage |
 
 Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 (phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
@@ -253,11 +256,9 @@ Two things that look like bugs but are not:
 * Custom emoticons follow the media previews setting, which defaults to
   private rooms only. In a public room they render as their description.
   Account settings, Safety, Media Previews.
-* The sticker picker loads the packs the first time it is opened for a room
-  and keeps them until the room changes, so a pack edited from elsewhere only
-  appears after switching rooms. `ImagePacks` already emits `changed`, but
-  nothing listens to it yet, and the packs in the state of a room are not
-  watched at all.
+* The sticker picker reloads when the account data changes, but the packs in
+  the state of a room are not watched, so a pack edited from elsewhere in the
+  same room only appears after switching rooms.
 
 ## Rebase guide
 

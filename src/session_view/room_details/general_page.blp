@@ -223,6 +223,13 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
         "property",
       ]
     }
+
+    $ButtonCountRow {
+      title: _("Image Packs");
+      subtitle: _("Stickers and emoticons defined in this room");
+      action-name: "details.show-subpage";
+      action-target: "'image-packs'";
+    }
   }
 
   Adw.PreferencesGroup {

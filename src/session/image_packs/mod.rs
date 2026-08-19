@@ -10,7 +10,7 @@ use gtk::{
 };
 use indexmap::IndexMap;
 use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
-use ruma::events::StaticEventContent;
+use ruma::{RoomId, events::StaticEventContent};
 use tracing::{debug, error};
 
 mod events;
@@ -113,8 +113,13 @@ mod imp {
         pub(super) session: glib::WeakRef<Session>,
         /// The personal image pack of the user.
         pub(super) user_pack: RefCell<Option<PackContent>>,
-        /// The room image packs that are enabled globally.
-        pub(super) enabled_packs: RefCell<EnabledPacks>,
+        /// The room image packs enabled globally, under the unstable name.
+        ///
+        /// This is the one we write to. The two are kept apart so that
+        /// disabling a pack can remove it from whichever event holds it.
+        pub(super) enabled_packs_unstable: RefCell<EnabledPacks>,
+        /// The room image packs enabled globally, under the stable name.
+        pub(super) enabled_packs_stable: RefCell<EnabledPacks>,
         drop_guards: RefCell<Vec<EventHandlerDropGuard>>,
     }
 
@@ -265,37 +270,52 @@ mod imp {
             });
             let (stable, unstable) = handle.await.expect("task was not aborted");
 
-            let mut enabled_packs = EnabledPacks::new();
-
-            // The stable packs first, so that the unstable ones win, since
-            // those are the ones that we send.
-            match stable {
+            let stable = match stable {
                 Ok(Some(raw)) => match raw.deserialize() {
-                    Ok(content) => enabled_packs.extend(content.rooms),
+                    Ok(content) => content.rooms,
                     Err(error) => {
                         error!("Could not deserialize the enabled image packs: {error}");
+                        return;
                     }
                 },
-                Ok(None) => {}
-                Err(error) => error!("Could not get the enabled image packs: {error}"),
-            }
+                Ok(None) => EnabledPacks::new(),
+                Err(error) => {
+                    error!("Could not get the enabled image packs: {error}");
+                    return;
+                }
+            };
 
-            match unstable {
+            let unstable = match unstable {
                 Ok(Some(raw)) => match raw.deserialize() {
-                    Ok(content) => {
-                        for (room_id, packs) in content.rooms {
-                            enabled_packs.entry(room_id).or_default().extend(packs);
-                        }
-                    }
+                    Ok(content) => content.rooms,
                     Err(error) => {
                         error!("Could not deserialize the enabled image packs: {error}");
+                        return;
                     }
                 },
-                Ok(None) => {}
-                Err(error) => error!("Could not get the enabled image packs: {error}"),
+                Ok(None) => EnabledPacks::new(),
+                Err(error) => {
+                    error!("Could not get the enabled image packs: {error}");
+                    return;
+                }
+            };
+
+            self.enabled_packs_stable.replace(stable);
+            self.enabled_packs_unstable.replace(unstable);
+        }
+
+        /// The room image packs enabled globally, under both names.
+        pub(super) fn enabled_packs(&self) -> EnabledPacks {
+            let mut enabled_packs = self.enabled_packs_stable.borrow().clone();
+
+            for (room_id, packs) in &*self.enabled_packs_unstable.borrow() {
+                enabled_packs
+                    .entry(room_id.clone())
+                    .or_default()
+                    .extend(packs.iter().map(|(key, meta)| (key.clone(), meta.clone())));
             }
 
-            self.enabled_packs.replace(enabled_packs);
+            enabled_packs
         }
     }
 }
@@ -343,7 +363,7 @@ impl ImagePacks {
             return packs;
         };
         let room_list = session.room_list();
-        let enabled_packs = self.imp().enabled_packs.borrow().clone();
+        let enabled_packs = self.imp().enabled_packs();
 
         let mut seen = Vec::new();
 
@@ -389,6 +409,127 @@ impl ImagePacks {
         }
 
         packs
+    }
+
+    /// All the image packs defined in the state of the given room, whatever
+    /// they are meant to be used for.
+    pub(crate) async fn room_packs(room: &Room) -> Vec<ImagePack> {
+        room_state_packs(room)
+            .await
+            .into_iter()
+            .map(|(state_key, content)| {
+                ImagePack::new(
+                    ImagePackSource::Room {
+                        room: room.clone(),
+                        state_key,
+                    },
+                    content,
+                )
+            })
+            .collect()
+    }
+
+    /// Whether the pack with the given state key in the given room is enabled
+    /// globally.
+    pub(crate) fn is_pack_enabled(&self, room_id: &RoomId, state_key: &str) -> bool {
+        let imp = self.imp();
+
+        imp.enabled_packs_unstable
+            .borrow()
+            .get(room_id)
+            .is_some_and(|packs| packs.contains_key(state_key))
+            || imp
+                .enabled_packs_stable
+                .borrow()
+                .get(room_id)
+                .is_some_and(|packs| packs.contains_key(state_key))
+    }
+
+    /// Enable or disable the pack with the given state key in the given room,
+    /// globally.
+    ///
+    /// Enabling writes the unstable event, which is the one we send. Disabling
+    /// has to update whichever events hold the pack, so that it does not come
+    /// back on the next load.
+    pub(crate) async fn set_pack_enabled(
+        &self,
+        room_id: &RoomId,
+        state_key: &str,
+        enabled: bool,
+    ) -> Result<(), ()> {
+        if self.is_pack_enabled(room_id, state_key) == enabled {
+            return Ok(());
+        }
+
+        let Some(session) = self.session() else {
+            return Err(());
+        };
+        let imp = self.imp();
+
+        // Read, modify and write, so that the properties we do not know about
+        // are preserved, as the specification requires.
+        let mut unstable = imp.enabled_packs_unstable.borrow().clone();
+        let mut stable = imp.enabled_packs_stable.borrow().clone();
+
+        // The stable event only needs to be written when it is the one that
+        // holds the pack that is being disabled.
+        let write_stable = !enabled
+            && stable
+                .get(room_id)
+                .is_some_and(|packs| packs.contains_key(state_key));
+
+        if enabled {
+            unstable
+                .entry(room_id.to_owned())
+                .or_default()
+                .entry(state_key.to_owned())
+                .or_default();
+        } else {
+            for packs in [&mut unstable, &mut stable] {
+                if let Some(room_packs) = packs.get_mut(room_id) {
+                    room_packs.remove(state_key);
+
+                    if room_packs.is_empty() {
+                        packs.remove(room_id);
+                    }
+                }
+            }
+        }
+
+        let client = session.client();
+        let unstable_clone = unstable.clone();
+        let stable_clone = stable.clone();
+        let handle = spawn_tokio!(async move {
+            let account = client.account();
+
+            account
+                .set_account_data(EmoteRoomsEventContent {
+                    rooms: unstable_clone,
+                })
+                .await?;
+
+            if write_stable {
+                account
+                    .set_account_data(ImagePackRoomsEventContent {
+                        rooms: stable_clone,
+                    })
+                    .await?;
+            }
+
+            Ok::<_, matrix_sdk::Error>(())
+        });
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            error!("Could not change the enabled image packs: {error}");
+            return Err(());
+        }
+
+        imp.enabled_packs_unstable.replace(unstable);
+        imp.enabled_packs_stable.replace(stable);
+
+        self.emit_by_name::<()>("changed", &[]);
+
+        Ok(())
     }
 
     /// Connect to the signal emitted when the image packs changed.

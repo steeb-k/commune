@@ -10,12 +10,15 @@ mod pack_image_button;
 
 use self::pack_image_button::PackImageButton;
 use crate::{
-    session::{ImagePack, PackImage, PackUsage, Room, Session},
+    session::{ImagePack, ImagePacks, PackImage, PackUsage, Room, Session},
     spawn,
 };
 
 mod imp {
-    use std::{cell::Cell, sync::LazyLock};
+    use std::{
+        cell::{Cell, RefCell},
+        sync::LazyLock,
+    };
 
     use glib::subclass::Signal;
 
@@ -36,6 +39,8 @@ mod imp {
         room: glib::WeakRef<Room>,
         /// Whether the packs were loaded for the current room.
         loaded: Cell<bool>,
+        /// The handler watching the packs for changes.
+        image_packs_handler: RefCell<Option<(ImagePacks, glib::SignalHandlerId)>>,
     }
 
     #[glib::object_subclass]
@@ -92,11 +97,45 @@ mod imp {
                 return;
             }
 
+            if let Some((image_packs, handler)) = self.image_packs_handler.take() {
+                image_packs.disconnect(handler);
+            }
+
             self.room.set(room);
+            self.invalidate();
+
+            // The packs are loaded once per room, so watch for the changes
+            // that would make them stale.
+            if let Some(image_packs) = room.and_then(Room::session).map(|s| s.image_packs()) {
+                let handler = image_packs.connect_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.invalidate();
+                    }
+                ));
+                self.image_packs_handler
+                    .replace(Some((image_packs, handler)));
+            }
+
+            self.obj().notify_room();
+        }
+
+        /// Forget the packs that are presented, and load them again if we are
+        /// presented.
+        fn invalidate(&self) {
             self.loaded.set(false);
             self.clear();
 
-            self.obj().notify_room();
+            if self.obj().is_mapped() {
+                spawn!(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.load().await;
+                    }
+                ));
+            }
         }
 
         /// Remove the presented packs.

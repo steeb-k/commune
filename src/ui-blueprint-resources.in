@@ -96,6 +96,7 @@ session_view/room_details/history_viewer/file_row.blp
 session_view/room_details/history_viewer/visual_media.blp
 session_view/room_details/history_viewer/visual_media_item.blp
 session_view/room_details/history_visibility_subpage.blp
+session_view/room_details/image_packs_subpage/mod.blp
 session_view/room_details/invite_subpage/mod.blp
 session_view/room_details/invite_subpage/row.blp
 session_view/room_details/join_rule_subpage.blp

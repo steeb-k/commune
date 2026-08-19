@@ -12,6 +12,7 @@ mod edit_details_subpage;
 mod general_page;
 mod history_viewer;
 mod history_visibility_subpage;
+mod image_packs_subpage;
 mod invite_subpage;
 mod join_rule_subpage;
 mod member_row;
@@ -28,6 +29,7 @@ use self::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, VisualMediaHistoryViewer,
     },
     history_visibility_subpage::HistoryVisibilitySubpage,
+    image_packs_subpage::ImagePacksSubpage,
     invite_subpage::InviteSubpage,
     join_rule_subpage::JoinRuleSubpage,
     member_row::MemberRow,
@@ -65,6 +67,8 @@ pub(super) enum SubpageName {
     JoinRule,
     /// The page to edit the history visibility of the room.
     HistoryVisibility,
+    /// The page to manage the image packs of the room.
+    ImagePacks,
 }
 
 /// The view to present when opening the room details.
@@ -236,6 +240,7 @@ mod imp {
                     }
                     SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
                     SubpageName::HistoryVisibility => HistoryVisibilitySubpage::new(room).upcast(),
+                    SubpageName::ImagePacks => ImagePacksSubpage::new(room).upcast(),
                 })
                 .clone()
         }
