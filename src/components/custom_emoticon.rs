@@ -1,7 +1,6 @@
-use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, pango};
+use gtk::{gdk, glib, glib::clone, graphene, pango, prelude::*, subclass::prelude::*};
 use ruma::{OwnedMxcUri, api::client::media::get_content_thumbnail::v3::Method};
-use tracing::{debug, error};
+use tracing::error;
 
 use crate::{
     session::Session,
@@ -29,7 +28,7 @@ const FALLBACK_HEIGHT: i32 = 24;
 const MAX_ASPECT_RATIO: f64 = 3.0;
 
 mod imp {
-    use std::cell::{Cell, OnceCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
@@ -45,7 +44,8 @@ mod imp {
         /// The description of the image.
         #[property(get, construct_only)]
         pub(super) body: OnceCell<String>,
-        pub(super) picture: gtk::Picture,
+        /// The image, once it is loaded.
+        pub(super) paintable: RefCell<Option<gdk::Paintable>>,
         /// The height that the image was loaded at, in pixels.
         loaded_height: Cell<i32>,
     }
@@ -54,7 +54,10 @@ mod imp {
     impl ObjectSubclass for CustomEmoticon {
         const NAME: &'static str = "CustomEmoticon";
         type Type = super::CustomEmoticon;
-        type ParentType = adw::Bin;
+        // Not an `AdwBin`: a widget whose class sets a layout manager, which
+        // `AdwBin` does, is measured and allocated through that manager, and
+        // the methods below are never called.
+        type ParentType = gtk::Widget;
     }
 
     #[glib::derived_properties]
@@ -65,13 +68,7 @@ mod imp {
             let obj = self.obj();
             let body = self.body.get().expect("body should be initialized");
 
-            self.picture.set_can_shrink(true);
-            self.picture.set_content_fit(gtk::ContentFit::Contain);
-
-            obj.set_child(Some(&self.picture));
             obj.set_valign(gtk::Align::Center);
-            // The image must not be able to draw outside the room it is given.
-            obj.set_overflow(gtk::Overflow::Hidden);
             obj.set_tooltip_text(Some(body));
             obj.set_accessible_role(gtk::AccessibleRole::Img);
             obj.update_property(&[gtk::accessible::Property::Label(body)]);
@@ -88,9 +85,9 @@ mod imp {
 
         /// The size of an emoticon follows the font, not the image.
         ///
-        /// Without this, the natural size is the size of the image, which is
-        /// hundreds of pixels: the specification asks for stickers of at least
-        /// 512 pixels, and the same images are used for both.
+        /// The images of a pack are the size of a sticker, which the
+        /// specification asks to be at least 512 pixels, so presenting one at
+        /// its own size would take over the message.
         fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
             let size = if orientation == gtk::Orientation::Vertical {
                 self.height()
@@ -99,12 +96,31 @@ mod imp {
             };
 
             // The minimum and the natural size are the same, so that the
-            // emoticon takes exactly the room it is given.
+            // emoticon takes exactly the room that was computed for it.
             (size, size, -1, -1)
         }
-    }
 
-    impl BinImpl for CustomEmoticon {}
+        fn snapshot(&self, snapshot: &gtk::Snapshot) {
+            let Some(paintable) = self.paintable.borrow().clone() else {
+                return;
+            };
+
+            let obj = self.obj();
+            let width = f64::from(obj.width());
+            let height = f64::from(obj.height());
+
+            // Keep the aspect ratio of the image inside the room that we have,
+            // which matters when it is wider than we allow.
+            let (concrete_width, concrete_height) =
+                paintable.compute_concrete_size(0.0, 0.0, width, height);
+
+            let x = ((width - concrete_width) / 2.0) as f32;
+            let y = ((height - concrete_height) / 2.0) as f32;
+
+            snapshot.translate(&graphene::Point::new(x, y));
+            paintable.snapshot(snapshot, concrete_width, concrete_height);
+        }
+    }
 
     impl CustomEmoticon {
         /// The height that the image should be presented at, in pixels.
@@ -125,9 +141,10 @@ mod imp {
         /// is kept.
         fn width(&self) -> i32 {
             let ratio = self
-                .picture
-                .paintable()
-                .map(|paintable| paintable.intrinsic_aspect_ratio())
+                .paintable
+                .borrow()
+                .as_ref()
+                .map(PaintableExt::intrinsic_aspect_ratio)
                 .filter(|ratio| *ratio > 0.0)
                 .unwrap_or(1.0);
 
@@ -145,8 +162,6 @@ mod imp {
             }
             self.loaded_height.set(height);
 
-            debug!("Presenting a custom emoticon at {}x{height}", self.width());
-
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -154,6 +169,27 @@ mod imp {
                     imp.load(height).await;
                 }
             ));
+        }
+
+        /// Set the image to present.
+        fn set_paintable(&self, paintable: Option<gdk::Paintable>) {
+            let obj = self.obj();
+
+            if let Some(paintable) = &paintable {
+                // An animated image tells us when it must be drawn again.
+                paintable.connect_invalidate_contents(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.queue_draw();
+                    }
+                ));
+            }
+
+            self.paintable.replace(paintable);
+
+            // The width follows the aspect ratio, which is only known now.
+            obj.queue_resize();
         }
 
         /// Load the image at the given height.
@@ -194,17 +230,10 @@ mod imp {
                 .download(client, settings, ImageRequestPriority::Low)
                 .await
             {
-                Ok(image) => {
-                    let paintable: gdk::Paintable = image.into();
-                    self.picture.set_paintable(Some(&paintable));
-
-                    // The width follows the aspect ratio, which is only known
-                    // now.
-                    obj.queue_resize();
-                }
+                Ok(image) => self.set_paintable(Some(image.into())),
                 Err(error) => {
                     error!("Could not load a custom emoticon: {error}");
-                    self.picture.set_paintable(gdk::Paintable::NONE);
+                    self.set_paintable(None);
                 }
             }
         }
@@ -214,7 +243,7 @@ mod imp {
 glib::wrapper! {
     /// An image sent inline in a message, as defined by the image packs.
     pub struct CustomEmoticon(ObjectSubclass<imp::CustomEmoticon>)
-        @extends gtk::Widget, adw::Bin,
+        @extends gtk::Widget,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
