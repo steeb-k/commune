@@ -365,11 +365,17 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session_view/room_history/message_toolbar/completion/completion_popover.rs` | the `:` sigil, `SearchTermTarget::Emoticon`, the shortcode boundary scan, the list and the accessible label |
 | `src/session/room/permissions.rs` | `can_change_image_packs`, from the event type of the packs we create |
 | `src/components/mod.rs` | declare and re-export `image_pack_editor` |
-| `src/session_view/room_history/message_toolbar/completion/emoticon_list.rs` | the pack name after a shortcode that several packs define |
+| `src/components/dialogs/message_dialogs.rs` | the confirmations for deleting a pack and for leaving the room of one |
+| `src/session_view/sidebar/mod.blp` | the main menu entry |
+| `src/session_view/mod.rs` | `session.open-image-packs`, forwarding to the window |
+| `src/window.rs` | `win.open-image-packs`, which opens the dialog on that page |
 
-Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
-(phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
-`account_settings/mod.blp` and `room_details/mod.rs` (phase 6).
+Everything else this branch adds is a whole new file, listed under
+Architecture, and those do not conflict. The one modification worth reading
+before re-applying is `message_row/text/inline_html.rs`, which is the only
+place where existing code was reshaped rather than added to: the pills of
+`MentionsMode` became one ordered list of widgets. Every other entry above is
+additive, so a conflict there is a hunk that moved, not a decision to remake.
 
 ## Conventions
 
