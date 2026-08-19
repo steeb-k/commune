@@ -316,6 +316,20 @@ impl ImageRequestQueueInner {
                 continue;
             };
 
+            if request.result_sender.receiver_count() == 0 {
+                // Nobody is waiting for the result of this request anymore, so it is
+                // not worth spawning it. This happens a lot when scrolling quickly
+                // through a list of images: the rows that the requests were made for
+                // have been recycled long before their turn in the queue comes up.
+                //
+                // Requests that are already ongoing are left alone: they are paying
+                // the cost of the download anyway, and its result lands in the media
+                // cache of the SDK, so finishing them is not wasted work.
+                debug!("Dropping image request {request_id}, nothing is waiting for it");
+                self.requests.remove(&request_id);
+                continue;
+            }
+
             self.ongoing.insert(request_id.clone());
             request.spawn();
         }
@@ -596,6 +610,15 @@ pub(crate) enum ImageRequestPriority {
     Low,
 }
 
+/// A guard that aborts a tokio task when it is dropped.
+struct AbortTaskOnDrop<T>(tokio::task::JoinHandle<T>);
+
+impl<T> Drop for AbortTaskOnDrop<T> {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
+
 /// A handle for `await`ing an image request.
 pub(crate) struct ImageRequestHandle {
     receiver: broadcast::Receiver<Result<Image, ImageError>>,
@@ -615,8 +638,12 @@ impl IntoFuture for ImageRequestHandle {
     fn into_future(self) -> Self::IntoFuture {
         let mut receiver = self.receiver;
         Box::pin(async move {
-            let handle = spawn_tokio!(async move { receiver.recv().await });
-            match handle.await.expect("task was not aborted") {
+            // The receiver must be dropped as soon as this future is dropped, so that
+            // the queue can tell that nobody is waiting for the result anymore. That
+            // does not happen on its own: the task below owns the receiver and would
+            // outlive us, waiting on a result that nobody reads.
+            let mut handle = AbortTaskOnDrop(spawn_tokio!(async move { receiver.recv().await }));
+            match (&mut handle.0).await.expect("task was not aborted") {
                 Ok(Ok(image)) => Ok(image),
                 Ok(err) => err,
                 Err(error) => {
