@@ -25,7 +25,7 @@ fn menu_item(label: &str, action: &str, id: &PackId) -> gio::MenuItem {
 }
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -51,6 +51,10 @@ mod imp {
         /// The packs that are presented, to be able to act on one from its
         /// menu.
         packs: RefCell<Vec<ImagePack>>,
+        /// Whether the packs are being loaded.
+        is_loading: Cell<bool>,
+        /// Whether the packs changed while they were being loaded.
+        needs_reload: Cell<bool>,
         image_packs_handler: RefCell<Option<(ImagePacks, glib::SignalHandlerId)>>,
     }
 
@@ -130,12 +134,33 @@ mod imp {
         }
 
         /// Load the packs of the session.
+        ///
+        /// Reading every pack means reading the state of every room, so a
+        /// load takes a while, and the packs change often enough while one is
+        /// running for them to pile up. A load that is asked for while one is
+        /// running is remembered and done once, at the end.
         fn load(&self) {
+            if self.is_loading.get() {
+                self.needs_reload.set(true);
+                return;
+            }
+
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    imp.load_packs().await;
+                    imp.is_loading.set(true);
+
+                    loop {
+                        imp.needs_reload.set(false);
+                        imp.load_packs().await;
+
+                        if !imp.needs_reload.get() {
+                            break;
+                        }
+                    }
+
+                    imp.is_loading.set(false);
                 }
             ));
         }
@@ -148,11 +173,21 @@ mod imp {
             };
             let image_packs = session.image_packs();
 
+            // Everything that can wait happens before anything is presented,
+            // so that the rows are replaced without giving another load a
+            // chance to run in between. Removing them first and reading after
+            // means a second load finds nothing to remove and adds a second
+            // copy of the list under the first.
+            let packs = image_packs.all_packs().await;
+            // A pack that is used everywhere but whose room the user has left
+            // cannot be loaded. The specification asks clients to handle that,
+            // and the only thing left to do with it is to stop using it.
+            let unavailable = image_packs.unavailable_packs().await;
+
             for (group, row) in self.rows.take() {
                 group.remove(&row);
             }
 
-            let packs = image_packs.all_packs().await;
             self.placeholder_row.set_visible(packs.is_empty());
             self.packs.replace(packs.clone());
 
@@ -163,10 +198,6 @@ mod imp {
                 rows.push((self.packs_group.clone(), row));
             }
 
-            // A pack that is used everywhere but whose room the user has left
-            // cannot be loaded. The specification asks clients to handle that,
-            // and the only thing left to do with it is to stop using it.
-            let unavailable = image_packs.unavailable_packs().await;
             self.unavailable_group.set_visible(!unavailable.is_empty());
 
             for pack in unavailable {
