@@ -25,6 +25,9 @@ const HEIGHT_FACTOR: f64 = 1.6;
 /// pixels.
 const FALLBACK_HEIGHT: i32 = 24;
 
+/// The widest a custom emoticon can be, relative to its height.
+const MAX_ASPECT_RATIO: f64 = 3.0;
+
 mod imp {
     use std::cell::{Cell, OnceCell};
 
@@ -80,6 +83,23 @@ mod imp {
             // change while it is presented.
             self.update_size();
         }
+
+        /// The size of an emoticon follows the font, not the image.
+        ///
+        /// Without this, the natural size is the size of the image, which is
+        /// hundreds of pixels: the specification asks for stickers of at least
+        /// 512 pixels, and the same images are used for both.
+        fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
+            let size = if orientation == gtk::Orientation::Vertical {
+                self.height()
+            } else {
+                self.width()
+            };
+
+            // The minimum and the natural size are the same, so that the
+            // emoticon takes exactly the room it is given.
+            (size, size, -1, -1)
+        }
     }
 
     impl BinImpl for CustomEmoticon {}
@@ -97,20 +117,31 @@ mod imp {
             (f64::from(line_height) * HEIGHT_FACTOR).round() as i32
         }
 
-        /// Resize the image for the current font, and load it if its size
-        /// changed.
+        /// The width that the image should be presented at, in pixels.
+        ///
+        /// The height is fixed by the font, and the aspect ratio of the image
+        /// is kept.
+        fn width(&self) -> i32 {
+            let ratio = self
+                .picture
+                .paintable()
+                .map(|paintable| paintable.intrinsic_aspect_ratio())
+                .filter(|ratio| *ratio > 0.0)
+                .unwrap_or(1.0);
+
+            // An image that is much wider than it is tall would push the rest
+            // of the message out of the way.
+            let width = f64::from(self.height()) * ratio.min(MAX_ASPECT_RATIO);
+            width.round() as i32
+        }
+
+        /// Reload the image for the current font, if its size changed.
         fn update_size(&self) {
             let height = self.height();
             if self.loaded_height.get() == height {
                 return;
             }
             self.loaded_height.set(height);
-
-            self.picture.set_height_request(height);
-            // The image keeps its aspect ratio, but it should not be able to
-            // push the rest of the message out of the way.
-            self.picture.set_width_request(height);
-            self.picture.set_size_request(-1, height);
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
@@ -162,6 +193,10 @@ mod imp {
                 Ok(image) => {
                     let paintable: gdk::Paintable = image.into();
                     self.picture.set_paintable(Some(&paintable));
+
+                    // The width follows the aspect ratio, which is only known
+                    // now.
+                    obj.queue_resize();
                 }
                 Err(error) => {
                     error!("Could not load a custom emoticon: {error}");
