@@ -13,6 +13,7 @@ use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
 use ruma::{OwnedRoomId, RoomId, events::StaticEventContent};
 use tracing::{debug, error};
 
+mod emoticon_source;
 mod events;
 mod image_pack;
 mod pack_image;
@@ -23,6 +24,7 @@ use self::events::{
     UserEmotesEvent, UserEmotesEventContent,
 };
 pub(crate) use self::{
+    emoticon_source::EmoticonSource,
     events::PackUsage,
     image_pack::{ImagePack, ImagePackSource},
     pack_image::PackImage,

@@ -20,7 +20,7 @@ use super::{
 use crate::{
     components::{AtRoom, Pill, PillSource},
     prelude::*,
-    session::{Member, Room},
+    session::{EmoticonSource, Member, Room},
     utils::matrix::AT_ROOM,
 };
 
@@ -77,7 +77,10 @@ impl<'a> ComposerParser<'a> {
         {
             self.iter.forward_cursor_position();
 
-            return Some(ComposerChunk::Mention(source));
+            return Some(match source.downcast::<EmoticonSource>() {
+                Ok(emoticon) => ComposerChunk::Emoticon(emoticon),
+                Err(source) => ComposerChunk::Mention(source),
+            });
         }
 
         // This chunk is not a mention. Go forward until the next mention or the
@@ -115,6 +118,7 @@ impl<'a> ComposerParser<'a> {
         let message_len = self.message_len();
 
         let mut has_rich_mentions = false;
+        let mut has_emoticons = false;
         let mut plain_body = String::with_capacity(message_len);
         // This is Markdown if markdown is enabled, otherwise it is HTML.
         let mut formatted_body = String::with_capacity(message_len);
@@ -147,6 +151,13 @@ impl<'a> ComposerParser<'a> {
                         mentions.room = true;
                     }
                 },
+                ComposerChunk::Emoticon(emoticon) => {
+                    // There is no markdown for an image with attributes, so
+                    // the HTML is written as-is in both cases.
+                    has_emoticons = true;
+                    plain_body.push_str(&emoticon.to_plain());
+                    formatted_body.push_str(&emoticon.to_html());
+                }
             }
         }
 
@@ -164,7 +175,7 @@ impl<'a> ComposerParser<'a> {
 
         let html_body = if markdown_enabled {
             FormattedBody::markdown(formatted_body).map(|b| b.body)
-        } else if has_rich_mentions {
+        } else if has_rich_mentions || has_emoticons {
             // Already formatted with HTML.
             Some(formatted_body)
         } else {
@@ -216,6 +227,9 @@ impl<'a> ComposerParser<'a> {
                         unreachable!()
                     }
                 }
+                ComposerChunk::Emoticon(emoticon) => {
+                    body.push_str(&emoticon.to_plain());
+                }
             }
         }
 
@@ -257,6 +271,12 @@ impl<'a> ComposerParser<'a> {
 
                     plain_text.push_str(MENTION_END_TAG);
                 }
+                ComposerChunk::Emoticon(emoticon) => {
+                    // A draft has no way to store the image, so it keeps the
+                    // shortcode. Restoring the draft gives back the text, and
+                    // the emoticon has to be picked again.
+                    plain_text.push_str(&emoticon.to_plain());
+                }
             }
         }
 
@@ -279,6 +299,8 @@ enum ComposerChunk {
     Text(String),
     /// A mention as a `Pill`.
     Mention(PillSource),
+    /// An image of a pack, to send inline in the message.
+    Emoticon(EmoticonSource),
 }
 
 /// A mention that can be sent in a message.
