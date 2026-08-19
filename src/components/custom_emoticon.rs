@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, pango};
 use ruma::{OwnedMxcUri, api::client::media::get_content_thumbnail::v3::Method};
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     session::Session,
@@ -70,6 +70,8 @@ mod imp {
 
             obj.set_child(Some(&self.picture));
             obj.set_valign(gtk::Align::Center);
+            // The image must not be able to draw outside the room it is given.
+            obj.set_overflow(gtk::Overflow::Hidden);
             obj.set_tooltip_text(Some(body));
             obj.set_accessible_role(gtk::AccessibleRole::Img);
             obj.update_property(&[gtk::accessible::Property::Label(body)]);
@@ -142,6 +144,8 @@ mod imp {
                 return;
             }
             self.loaded_height.set(height);
+
+            debug!("Presenting a custom emoticon at {}x{height}", self.width());
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
