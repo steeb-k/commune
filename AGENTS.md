@@ -18,7 +18,7 @@ to an LLM.
   in AGENTS.md would cause it to be useless if followed - apparently the devs just do not understand
   how LLMs work, which, frankly, is unsurprising
 
-Actual coding assistanct readme data should go below the fold.
+Actual coding assistant data should go below the fold.
 
 ---
 
