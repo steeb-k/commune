@@ -113,6 +113,7 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
    gates. *(done)*
 3. **Sticker picker** — toolbar button, popover, send
    `AnyMessageLikeEventContent::Sticker` through `matrix_timeline.send()`.
+   *(done)*
 4. **Emoticon rendering** — allow `img` in the sanitizer, inline widget via
    `LabelWithWidgets`, larger emote-only messages, tests.
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
@@ -133,13 +134,16 @@ Existing files touched. Keep this current — it is the rebase map.
 | `src/session/mod.rs` | declare and re-export `image_packs`; `image_packs` property, built in `prepare()` |
 | `src/session/room/permissions.rs` | `can_send_sticker`, mirroring `can_send_message` with `MessageLikeEventType::Sticker` |
 | `src/session/room/timeline/event/mod.rs` | allow reply and react for stickers, in `can_be_replied_to` and `can_be_reacted_to` |
-| `po/POTFILES.in` | `src/session/image_packs/image_pack.rs` |
+| `src/session_view/room_history/message_toolbar/mod.blp` | the sticker button and its popover |
+| `src/session_view/room_history/message_toolbar/mod.rs` | declare `sticker_picker`; the two template children; send a sticker on selection; the room of the picker in `set_timeline`; `update_sticker_button` and its permission handler |
+| `data/resources/icons/scalable/actions/sticker-symbolic.svg` | new icon, there is none in Adwaita |
+| `data/resources/resources.gresource.xml` | the icon |
+| `data/resources/stylesheet/_room_history.scss` | `.sticker-picker` |
+| `src/ui-blueprint-resources.in`, `po/POTFILES.in` | the new files |
 
-Still to come, per phase: `message_toolbar/mod.blp` and `mod.rs` (phases 3
-and 5), `message_row/text/{mod,inline_html,widgets}.rs` (phase 4),
-`account_settings/mod.blp` and `room_details/mod.rs` (phase 6),
-`src/ui-blueprint-resources.in` and `data/resources/resources.gresource.xml`
-(any phase that adds a `.blp` or an icon).
+Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
+(phase 4), `message_toolbar/{composer_parser,completion}` (phase 5),
+`account_settings/mod.blp` and `room_details/mod.rs` (phase 6).
 
 ## Conventions
 
@@ -155,8 +159,20 @@ and 5), `message_row/text/{mod,inline_html,widgets}.rs` (phase 4),
 `meson setup _build` needs `sass` or `grass`, which is not installed. For
 type-checking only, `src/config.rs` can be written by hand from
 `src/config.rs.in` (it is gitignored) and then
-`CARGO_TARGET_DIR=… cargo check --all-targets` works. `/tmp` is small; point
-the target directory somewhere under `$HOME`.
+`CARGO_TARGET_DIR=… cargo check` works. `/tmp` is small; point the target
+directory somewhere under `$HOME`, and pass `-j 2` to `cargo test`, which
+otherwise gets the compiler killed for memory.
+
+Two consequences of not having a meson build:
+
+- `login::local_server::tests::generate_local_server_landing_page` fails,
+  because it loads the gresource file that meson would have built. Every
+  other test passes.
+- Blueprints are not compiled by the build, so check them by hand with
+  `blueprint-compiler compile <file>.blp` from `src/`.
+
+rustfmt is configured with nightly-only options. Stable rustfmt agrees with
+the tree on everything else, so `cargo fmt` is still worth running.
 
 ## Rebase guide
 
