@@ -47,17 +47,33 @@ manifest:
 journalctl -b | grep -iE 'Killed process|oom-kill'
 ```
 
-The fix is to cap cargo's parallelism. `cargo` is invoked without `-j` by
-`src/meson.build`, so it honours `CARGO_BUILD_JOBS` from the environment. Copy
-the manifest, add it to the `commune` module, and build from the copy:
+Capping cargo's parallelism helps but is not on its own enough. `cargo` is
+invoked without `-j` by `src/meson.build`, so it honours `CARGO_BUILD_JOBS`
+from the environment; copy the manifest, add the env to the `commune` module,
+and build from the copy:
 
 ```json
-"build-options": { "env": { "CARGO_BUILD_JOBS": "4" } }
+"build-options": { "env": { "CARGO_BUILD_JOBS": "3" } }
 ```
 
-This is deliberately not in the committed manifests. It is a property of the
+At three jobs the build still died here, and the journal showed a _single_
+`rustc` holding 3.7 GB when the kernel picked it. The heavy crates —
+`matrix-sdk-ui` and its neighbours — want around 4 GB each on their own, so no
+job count saves a machine that does not have that much free. Either build when
+the machine is otherwise idle, or drop the debug info, which is the largest
+part of it and costs nothing but a less useful backtrace:
+
+```json
+"build-options": { "env": {
+    "CARGO_BUILD_JOBS": "3",
+    "CARGO_PROFILE_RELEASE_DEBUG": "false"
+} }
+```
+
+None of this belongs in the committed manifests. It is a property of the
 machine doing the build, not of the app, and hard-coding it would throttle
-every other builder — including Flathub's.
+every other builder — including Flathub's — and strip the debug info from
+published builds.
 
 ## The runtime version
 
