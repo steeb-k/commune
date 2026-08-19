@@ -206,7 +206,7 @@ mod imp {
             // A pack that is used everywhere but whose room the user has left
             // cannot be loaded. The specification asks clients to handle that,
             // and the only thing left to do with it is to stop using it.
-            let unavailable = image_packs.unavailable_packs().await;
+            let unavailable = image_packs.unavailable_packs();
 
             for (group, row) in self.rows.take() {
                 group.remove(&row);

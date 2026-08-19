@@ -2,6 +2,8 @@
 //!
 //! [image packs]: https://spec.matrix.org/v1.19/client-server-api/#image-packs
 
+use std::collections::HashSet;
+
 use gettextrs::gettext;
 use gtk::{
     glib,
@@ -13,7 +15,10 @@ use indexmap::IndexMap;
 use matrix_sdk::{RoomState, deserialized_responses::RawAnySyncOrStrippedState};
 use ruma::{
     OwnedRoomId, RoomId,
-    api::client::room::{Visibility, create_room, create_room::v3::RoomPreset},
+    api::client::{
+        room::{Visibility, create_room, create_room::v3::RoomPreset},
+        state::get_state_event_for_key,
+    },
     assign,
     events::{
         StaticEventContent,
@@ -122,6 +127,54 @@ async fn room_state_packs(room: &Room) -> IndexMap<String, (RoomPackKind, PackCo
     }
 
     packs
+}
+
+/// Ask the homeserver for the image pack with the given state key in the
+/// given room.
+///
+/// Used for a pack that the state store does not have, which happens when the
+/// state of the room never reached this device.
+async fn fetch_room_pack(session: &Session, room: &Room, state_key: String) -> Option<ImagePack> {
+    let client = session.client();
+    let room_id = room.room_id().to_owned();
+    let key = state_key.clone();
+
+    let handle = spawn_tokio!(async move {
+        // The unstable type comes first, so that it wins over the stable one,
+        // as it does when the state store is what answers.
+        for (kind, event_type) in ROOM_PACK_TYPES.iter().rev() {
+            let request = get_state_event_for_key::v3::Request::new(
+                room_id.clone(),
+                (*event_type).into(),
+                key.clone(),
+            );
+
+            // Not having the event is the common answer, and not an error
+            // worth reporting: a pack is only defined under one of the names.
+            let Ok(response) = client.send(request).await else {
+                continue;
+            };
+
+            match serde_json::from_str::<PackContent>(response.event_or_content.get()) {
+                Ok(content) if !content.images.is_empty() => return Some((*kind, content)),
+                Ok(_) => {}
+                Err(error) => error!("Could not deserialize an image pack: {error}"),
+            }
+        }
+
+        None
+    });
+
+    let (kind, content) = handle.await.expect("task was not aborted")?;
+
+    Some(ImagePack::new(
+        ImagePackSource {
+            room: room.clone(),
+            state_key,
+            kind,
+        },
+        content,
+    ))
 }
 
 /// An image pack that is used everywhere but cannot be loaded, because the
@@ -428,7 +481,7 @@ impl ImagePacks {
     /// The specification expects clients to be aware that the user might not
     /// be in the room that defines a pack anymore, so that they can be told
     /// about it and stop using it.
-    pub(crate) async fn unavailable_packs(&self) -> Vec<UnavailablePack> {
+    pub(crate) fn unavailable_packs(&self) -> Vec<UnavailablePack> {
         let Some(session) = self.session() else {
             return Vec::new();
         };
@@ -437,18 +490,17 @@ impl ImagePacks {
         let mut packs = Vec::new();
 
         for (room_id, state_keys) in self.imp().enabled_packs() {
-            let room = room_list.get(&room_id);
-
-            let mut room_packs = match &room {
-                Some(room) => room_state_packs(room).await,
-                None => IndexMap::new(),
-            };
+            // A pack is unavailable when the user left the room that defines
+            // it, not when its state has yet to reach this device: that one is
+            // asked for instead, by `all_packs`.
+            if room_list
+                .get(&room_id)
+                .is_some_and(|room| room.matrix_room().state() == RoomState::Joined)
+            {
+                continue;
+            }
 
             for state_key in state_keys.into_keys() {
-                if room_packs.shift_remove(&state_key).is_some() {
-                    continue;
-                }
-
                 packs.push(UnavailablePack {
                     room_id: room_id.clone(),
                     state_key,
@@ -487,14 +539,43 @@ impl ImagePacks {
             return Vec::new();
         };
 
+        let room_list = session.room_list();
         let mut packs = Vec::new();
+        let mut seen = HashSet::new();
 
-        for room in session.room_list().iter::<Room>().flatten() {
+        for room in room_list.iter::<Room>().flatten() {
             if room.matrix_room().state() != RoomState::Joined {
                 continue;
             }
 
-            packs.extend(Self::room_packs(&room).await);
+            for pack in Self::room_packs(&room).await {
+                seen.insert((
+                    pack.source().room.room_id().to_owned(),
+                    pack.source().state_key.clone(),
+                ));
+                packs.push(pack);
+            }
+        }
+
+        // The loop above only sees what sync happened to bring to this device.
+        // The state of a quiet room can predate the store, and then a pack in
+        // it is invisible until the room is opened. The packs that are used
+        // everywhere are the ones the user acts on here, and where they are is
+        // known, so those are asked for rather than waited for.
+        for (room_id, state_keys) in self.imp().enabled_packs() {
+            let Some(room) = room_list.get(&room_id) else {
+                continue;
+            };
+
+            for state_key in state_keys.into_keys() {
+                if seen.contains(&(room_id.clone(), state_key.clone())) {
+                    continue;
+                }
+
+                if let Some(pack) = fetch_room_pack(&session, &room, state_key).await {
+                    packs.push(pack);
+                }
+            }
         }
 
         packs
