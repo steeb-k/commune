@@ -221,6 +221,42 @@ Two consequences of not having a meson build:
 rustfmt is configured with nightly-only options. Stable rustfmt agrees with
 the tree on everything else, so `cargo fmt` is still worth running.
 
+## Testing against a homeserver
+
+There is no authoring UI yet, so packs have to be created over the
+client-server API. Get an access token, then upload an image and put the pack
+in the state of a room:
+
+```sh
+curl -X POST "$HS/_matrix/media/v3/upload?filename=cat.png" \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: image/png' \
+    --data-binary @cat.png
+
+curl -X PUT "$HS/_matrix/client/v3/rooms/$ROOM/state/im.ponies.room_emotes/testpack" \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d '{"images":{"cat_wave":{"url":"mxc://…","body":"a waving cat"}}}'
+```
+
+`$ROOM` and `$USER` must be percent-encoded (`!` is `%21`, `@` is `%40`, `:`
+is `%3A`). A pack with no `usage` is presented everywhere, which is what to
+use for a first test.
+
+The other placements to cover: `m.room.image_pack` as the state event type,
+for the stable name; `im.ponies.user_emotes` in the account data, for the
+personal pack; and `im.ponies.emote_rooms`, listing the room and the state
+key, for a pack enabled globally.
+
+Two things that look like bugs but are not:
+
+- Custom emoticons follow the media previews setting, which defaults to
+  private rooms only. In a public room they render as their description.
+  Account settings, Safety, Media Previews.
+- The sticker picker loads the packs the first time it is opened for a room
+  and keeps them until the room changes, so a pack edited from elsewhere only
+  appears after switching rooms. `ImagePacks` already emits `changed`, but
+  nothing listens to it yet, and the packs in the state of a room are not
+  watched at all.
+
 ## Rebase guide
 
 1. Rebase the branch onto the new release tag.
