@@ -10,7 +10,7 @@ mod image_row;
 
 use self::image_row::PackImageRow;
 use crate::{
-    components::LoadingButton,
+    components::{LoadingButton, confirm_delete_image_pack_dialog},
     gettext_f,
     session::{
         ImagePack, ImagePackSource, PackContent, PackImage, PackImageData, PackUsage,
@@ -426,20 +426,14 @@ mod imp {
         async fn delete(&self) {
             let obj = self.obj();
 
-            let confirm_dialog = adw::AlertDialog::builder()
-                .default_response("cancel")
-                .heading(gettext("Delete Pack?"))
-                .body(gettext(
-                    "The pack will not be available in any room anymore. Its images are not removed from the server.",
-                ))
-                .build();
-            confirm_dialog.add_responses(&[
-                ("cancel", &gettext("Cancel")),
-                ("delete", &gettext("Delete")),
-            ]);
-            confirm_dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+            let name = self.name_entry.text();
+            let name = if name.trim().is_empty() {
+                gettext("this pack")
+            } else {
+                name.to_string()
+            };
 
-            if confirm_dialog.choose_future(Some(&*obj)).await != "delete" {
+            if !confirm_delete_image_pack_dialog(&name, &*obj).await {
                 return;
             }
 
