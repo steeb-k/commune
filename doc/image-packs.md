@@ -1,9 +1,9 @@
 # Image packs (MSC2545) — downstream implementation notes
 
-Downstream feature branch. Not intended for upstream (see CONTRIBUTING.md §
-"Generative AI"). This file is the ledger for the work: design decisions,
-every integration point into existing code, and the rebase guide for
-re-applying the branch to new Fractal releases.
+This file is the ledger for the work: design decisions, every integration
+point into existing code, and the rebase guide for re-applying it to new
+Fractal releases. See `fork.md` for why none of this goes upstream and what
+is still worth taking from it.
 
 ## Scope
 
@@ -450,7 +450,10 @@ Two things that look like bugs but are not:
 
 ## Rebase guide
 
-1. Rebase the branch onto the new release tag.
+`fork.md` says which upstream releases are worth the trouble, and which file
+must not be resolved in upstream's favour.
+
+1. Rebase onto the new release tag.
 2. Whole-directory additions (`image_packs/`, `sticker_picker/`,
    `image_packs_page/`, `image_packs_subpage/`) rarely conflict.
 3. Conflicts concentrate in the ledger files above; re-apply by intent, not
