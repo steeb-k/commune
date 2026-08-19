@@ -7,16 +7,16 @@ re-applying the branch to new Fractal releases.
 
 ## Scope
 
-- Send `m.sticker` from a picker in the message toolbar.
-- Unblock replying and reacting to stickers.
-- Render `<img data-mx-emoticon>` custom emoticons inline in messages.
-- `:shortcode:` completion in the composer, sending emoticons in
+* Send `m.sticker` from a picker in the message toolbar.
+* Unblock replying and reacting to stickers.
+* Render `<img data-mx-emoticon>` custom emoticons inline in messages.
+* `:shortcode:` completion in the composer, sending emoticons in
   `formatted_body`.
-- Pack management UI: the personal pack, the packs enabled globally, and the
+* Pack management UI: the personal pack, the packs enabled globally, and the
   packs of a room.
-- Pack authoring (create/edit packs, upload images) — after consumption
+* Pack authoring (create/edit packs, upload images) — after consumption
   works end to end.
-- Space pack inheritance — last phase.
+* Space pack inheritance — last phase.
 
 ## What the specification actually says
 
@@ -29,20 +29,20 @@ Image packs landed in Matrix 1.19. Two events, and only two:
 
 Points that shaped the code:
 
-- **There is no personal pack event.** MSC2545 had `im.ponies.user_emotes`;
+* **There is no personal pack event.** MSC2545 had `im.ponies.user_emotes`;
   it was not carried into the specification, which expects a personal pack to
   be a room pack enabled globally instead. Deployed clients still use it, so
   we support it, under the unstable name only.
-- **`usage` is a property of a pack, not of an image.** An image has only
+* **`usage` is a property of a pack, not of an image.** An image has only
   `url`, `body` and `info`. An absent or empty `usage` means every usage.
-- **The objects in `m.image_pack.rooms` are opaque.** Clients must preserve
+* **The objects in `m.image_pack.rooms` are opaque.** Clients must preserve
   the properties they do not know about, so they are round-tripped.
-- Shortcodes are `[A-Za-z0-9_-]{1,100}`, case-sensitive. Malformed ones are
+* Shortcodes are `[A-Za-z0-9_-]{1,100}`, case-sensitive. Malformed ones are
   still rendered, so that users can fix them; the grammar is only enforced
   when editing a pack.
-- Pack order: the packs enabled globally, then the packs of the room, then
+* Pack order: the packs enabled globally, then the packs of the room, then
   the packs of its canonical space hierarchy.
-- A pack absent from a room the user has left must be reported, not hidden.
+* A pack absent from a room the user has left must be reported, not hidden.
 
 ## Wire format
 
@@ -51,7 +51,7 @@ and send `im.ponies.*`.
 
 | Purpose            | Send (unstable)         | Also read (stable)   |
 | ------------------ | ----------------------- | -------------------- |
-| Personal pack      | `im.ponies.user_emotes` | *(does not exist)*   |
+| Personal pack      | `im.ponies.user_emotes` | _(does not exist)_   |
 | Room pack          | `im.ponies.room_emotes` | `m.room.image_pack`  |
 | Enabled room packs | `im.ponies.emote_rooms` | `m.image_pack.rooms` |
 
@@ -78,28 +78,27 @@ it works downstream; and a state event content cannot use a bare
 New code lives in dedicated directories; edits to existing files are kept
 small and listed in the ledger below.
 
-- `src/session/image_packs/` — model layer.
-  - `events.rs`: the five content types and the shared bodies, with the
+* `src/session/image_packs/` — model layer.
+  * `events.rs`: the five content types and the shared bodies, with the
     shortcode grammar and serde tests for both identifier sets.
-  - `pack_image.rs`: `PackImage`, one image of a pack. Builds the
+  * `pack_image.rs`: `PackImage`, one image of a pack. Builds the
     `m.sticker` content, applying the `body` → shortcode and `info` → `{}`
     fallbacks.
-  - `image_pack.rs`: `ImagePack`, a pack and where it came from
+  * `image_pack.rs`: `ImagePack`, a pack and where it came from
     (`ImagePackSource`), exposing its images as a `gio::ListStore` sorted by
     shortcode, and its name falling back to the name of its room.
-  - `mod.rs`: `ImagePacks`, one per session. Loads the account data, watches
+  * `mod.rs`: `ImagePacks`, one per session. Loads the account data, watches
     it under both names, and assembles the packs for a room in specification
     order, dropping duplicates between the packs enabled globally and the
     packs of the room.
-- `src/session_view/room_history/message_toolbar/sticker_picker/` — picker
+* `src/session_view/room_history/message_toolbar/sticker_picker/` — picker
   popover. Images through the existing pipeline (`ThumbnailDownloader` /
   `IMAGE_QUEUE`); small-image widget modeled on
   `src/components/avatar/image.rs`.
-- `src/account_settings/image_packs_page/` — personal pack and packs enabled
+* `src/account_settings/image_packs_page/` — personal pack and packs enabled
   globally. Template: `safety_page/` and its `ignored_users_subpage/`.
-- `src/session_view/room_details/image_packs_subpage/` — the packs of a room.
-
-- `src/components/custom_emoticon.rs` — `CustomEmoticon`, an image sent
+* `src/session_view/room_details/image_packs_subpage/` — the packs of a room.
+* `src/components/custom_emoticon.rs` — `CustomEmoticon`, an image sent
   inline in a message. Sized from the font metrics rather than from the
   `height` attribute, which the specification only requires for the clients
   that do not support image packs.
@@ -115,14 +114,14 @@ which ruma enforces by leaving `ImageData::src` unset for anything else.
 Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
 
 1. **Model** — content types, `ImagePacks`, `ImagePack`, `PackImage`,
-   account data watchers, serde tests. *(done)*
+   account data watchers, serde tests. _(done)_
 2. **Sticker basics** — `can_send_sticker`; unblock the reply and react
-   gates. *(done)*
+   gates. _(done)_
 3. **Sticker picker** — toolbar button, popover, send
    `AnyMessageLikeEventContent::Sticker` through `matrix_timeline.send()`.
-   *(done)*
+   _(done)_
 4. **Emoticon rendering** — allow `img` in the sanitizer, inline widget via
-   `LabelWithWidgets`, tests. *(done)*
+   `LabelWithWidgets`, tests. _(done)_
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
    composer, serialization in `composer_parser.rs`. See the note below, a
    decision is needed first.
@@ -194,11 +193,11 @@ Still to come, per phase: `message_row/text/{mod,inline_html,widgets}.rs`
 
 ## Conventions
 
-- Commit tags by area: `image-packs:`, `message-toolbar:`, `message-row:`,
+* Commit tags by area: `image-packs:`, `message-toolbar:`, `message-row:`,
   `room-details:`, `account-settings:`; GNOME commit-message style.
-- GObject module layout (`mod.rs` + `mod.blp`), `spawn!`/`spawn_tokio!`,
+* GObject module layout (`mod.rs` + `mod.blp`), `spawn!`/`spawn_tokio!`,
   `toast!` for user-facing errors, gettext for all strings.
-- Pre-commit checks: rustfmt, typos, rumdl, POTFILES and blueprint list
+* Pre-commit checks: rustfmt, typos, rumdl, POTFILES and blueprint list
   consistency (`hooks/checks`). Clippy pedantic is warn-level.
 
 ## Building here
@@ -212,10 +211,10 @@ otherwise gets the compiler killed for memory.
 
 Two consequences of not having a meson build:
 
-- `login::local_server::tests::generate_local_server_landing_page` fails,
+* `login::local_server::tests::generate_local_server_landing_page` fails,
   because it loads the gresource file that meson would have built. Every
   other test passes.
-- Blueprints are not compiled by the build, so check them by hand with
+* Blueprints are not compiled by the build, so check them by hand with
   `blueprint-compiler compile <file>.blp` from `src/`.
 
 rustfmt is configured with nightly-only options. Stable rustfmt agrees with
@@ -251,10 +250,10 @@ the default leaves `usage` unset, which means everywhere.
 
 Two things that look like bugs but are not:
 
-- Custom emoticons follow the media previews setting, which defaults to
+* Custom emoticons follow the media previews setting, which defaults to
   private rooms only. In a public room they render as their description.
   Account settings, Safety, Media Previews.
-- The sticker picker loads the packs the first time it is opened for a room
+* The sticker picker loads the packs the first time it is opened for a room
   and keeps them until the room changes, so a pack edited from elsewhere only
   appears after switching rooms. `ImagePacks` already emits `changed`, but
   nothing listens to it yet, and the packs in the state of a room are not
