@@ -223,28 +223,31 @@ the tree on everything else, so `cargo fmt` is still worth running.
 
 ## Testing against a homeserver
 
-There is no authoring UI yet, so packs have to be created over the
-client-server API. Get an access token, then upload an image and put the pack
-in the state of a room:
+Nothing here needs another server or another client: a pack is a state event
+and some account data on your own homeserver, and the images are in its own
+media repository.
+
+There is no authoring UI yet, so `image-pack-tool.py`, next to this file,
+creates one. By default it renders emoji from the system emoji font, so it
+needs no images and no network beyond the homeserver:
 
 ```sh
-curl -X POST "$HS/_matrix/media/v3/upload?filename=cat.png" \
-    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: image/png' \
-    --data-binary @cat.png
-
-curl -X PUT "$HS/_matrix/client/v3/rooms/$ROOM/state/im.ponies.room_emotes/testpack" \
-    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-    -d '{"images":{"cat_wave":{"url":"mxc://…","body":"a waving cat"}}}'
+./doc/image-pack-tool.py --homeserver https://matrix.example.org \
+    --user alice --password hunter2 --room '!abc:example.org'
 ```
 
-`$ROOM` and `$USER` must be percent-encoded (`!` is `%21`, `@` is `%40`, `:`
-is `%3A`). A pack with no `usage` is presented everywhere, which is what to
-use for a first test.
+`--images DIR` uses a directory of files instead, taking the shortcodes from
+their names. The placements to cover, one flag each:
 
-The other placements to cover: `m.room.image_pack` as the state event type,
-for the stable name; `im.ponies.user_emotes` in the account data, for the
-personal pack; and `im.ponies.emote_rooms`, listing the room and the state
-key, for a pack enabled globally.
+| Flag | What it writes |
+| ---- | -------------- |
+| `--room` | `im.ponies.room_emotes` in the state of the room |
+| `--room --stable` | `m.room.image_pack`, to check that we read both names |
+| `--personal` | `im.ponies.user_emotes`, the pack with no stable name |
+| `--room --enable-globally` | also `im.ponies.emote_rooms`, so the pack appears in every room |
+
+`--usage sticker` or `--usage emoticon` restricts where the pack shows up;
+the default leaves `usage` unset, which means everywhere.
 
 Two things that look like bugs but are not:
 
