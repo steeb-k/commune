@@ -1,16 +1,28 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone};
+use gtk::{gio, glib, glib::clone};
 use ruma::RoomId;
 use tracing::error;
 
 use crate::{
-    components::{ImagePackEditor, LoadingButton, SwitchLoadingRow},
+    components::{
+        ImagePackEditor, LoadingButton, SwitchLoadingRow, confirm_delete_image_pack_dialog,
+    },
     gettext_f, ngettext_f,
     prelude::*,
     session::{ImagePack, ImagePackSource, ImagePacks, RoomPackKind, Session},
     spawn, toast,
 };
+
+/// What a menu item names: the room a pack lives in, and its state key there.
+type PackId = (String, String);
+
+/// A menu item activating the given action on the given pack.
+fn menu_item(label: &str, action: &str, id: &PackId) -> gio::MenuItem {
+    let item = gio::MenuItem::new(Some(label), None);
+    item.set_action_and_target_value(Some(action), Some(&id.to_variant()));
+    item
+}
 
 mod imp {
     use std::cell::RefCell;
@@ -36,6 +48,9 @@ mod imp {
         session: glib::WeakRef<Session>,
         /// The rows that are presented, to be able to remove them.
         rows: RefCell<Vec<(adw::PreferencesGroup, SwitchLoadingRow)>>,
+        /// The packs that are presented, to be able to act on one from its
+        /// menu.
+        packs: RefCell<Vec<ImagePack>>,
         image_packs_handler: RefCell<Option<(ImagePacks, glib::SignalHandlerId)>>,
     }
 
@@ -50,6 +65,27 @@ mod imp {
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+
+            // The menu of a row names its pack by where it is, which is what
+            // identifies it, rather than by its position in the list.
+            klass.install_action(
+                "image-packs.edit",
+                Some(&PackId::static_variant_type()),
+                |obj, _, variant| {
+                    if let Some(id) = variant.and_then(glib::Variant::get::<PackId>) {
+                        obj.imp().edit_pack(&id);
+                    }
+                },
+            );
+            klass.install_action_async(
+                "image-packs.delete",
+                Some(&PackId::static_variant_type()),
+                |obj, _, variant: Option<glib::Variant>| async move {
+                    if let Some(id) = variant.and_then(|v| v.get::<PackId>()) {
+                        obj.imp().delete_pack(&id).await;
+                    }
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -118,6 +154,7 @@ mod imp {
 
             let packs = image_packs.all_packs().await;
             self.placeholder_row.set_visible(packs.is_empty());
+            self.packs.replace(packs.clone());
 
             let mut rows = Vec::new();
             for pack in &packs {
@@ -184,28 +221,28 @@ mod imp {
             row.set_title(&glib::markup_escape_text(&pack.display_name()));
             row.set_subtitle(&glib::markup_escape_text(&subtitle));
 
+            // A pack lives in the state of a room, so changing or removing
+            // one needs the power level to send that state there. Without it
+            // the only thing left is to stop using it, which is the switch.
             if source.room.permissions().can_change_image_packs() {
-                let edit_button = gtk::Button::builder()
-                    .icon_name("document-edit-symbolic")
-                    .tooltip_text(gettext("Edit Pack"))
+                let id = (
+                    source.room.room_id().as_str().to_owned(),
+                    source.state_key.clone(),
+                );
+
+                let menu = gio::Menu::new();
+                menu.append_item(&menu_item(&gettext("_Edit…"), "image-packs.edit", &id));
+                menu.append_item(&menu_item(&gettext("_Delete…"), "image-packs.delete", &id));
+
+                let menu_button = gtk::MenuButton::builder()
+                    .icon_name("view-more-symbolic")
+                    .tooltip_text(gettext("Pack Options"))
                     .valign(gtk::Align::Center)
+                    .menu_model(&menu)
                     .css_classes(["flat"])
                     .build();
 
-                edit_button.connect_clicked(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    #[strong]
-                    pack,
-                    move |_| {
-                        imp.push_editor(&ImagePackEditor::edit(
-                            &imp.session.upgrade().expect("the page has a session"),
-                            &pack,
-                        ));
-                    }
-                ));
-
-                row.add_suffix(&edit_button);
+                row.add_suffix(&menu_button);
             }
 
             self.connect_switch(
@@ -295,6 +332,60 @@ mod imp {
 
                 // Put the switch back where it was.
                 row.set_is_active(!enabled);
+            }
+        }
+
+        /// The pack that the given identifier names.
+        fn pack(&self, id: &PackId) -> Option<ImagePack> {
+            let (room_id, state_key) = id;
+
+            self.packs
+                .borrow()
+                .iter()
+                .find(|pack| {
+                    let source = pack.source();
+                    source.room.room_id().as_str() == room_id && &source.state_key == state_key
+                })
+                .cloned()
+        }
+
+        /// Open the editor for the pack that the given identifier names.
+        fn edit_pack(&self, id: &PackId) {
+            let (Some(session), Some(pack)) = (self.session.upgrade(), self.pack(id)) else {
+                return;
+            };
+
+            self.push_editor(&ImagePackEditor::edit(&session, &pack));
+        }
+
+        /// Delete the pack that the given identifier names, after asking for
+        /// confirmation.
+        async fn delete_pack(&self, id: &PackId) {
+            let (Some(session), Some(pack)) = (self.session.upgrade(), self.pack(id)) else {
+                return;
+            };
+
+            let obj = self.obj();
+            if !confirm_delete_image_pack_dialog(&pack.display_name(), &*obj).await {
+                return;
+            }
+
+            if session
+                .image_packs()
+                .delete_pack(pack.source())
+                .await
+                .is_err()
+            {
+                error!("Could not delete an image pack");
+                toast!(
+                    obj,
+                    gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Could not delete “{pack}”",
+                        &[("pack", &pack.display_name())],
+                    )
+                );
             }
         }
 

@@ -496,6 +496,33 @@ pub(crate) async fn confirm_own_demotion_dialog(parent: &impl IsA<gtk::Widget>) 
     confirm_dialog.choose_future(Some(parent)).await == "demote"
 }
 
+/// Ask the user to confirm the deletion of the image pack with the given
+/// name.
+pub(crate) async fn confirm_delete_image_pack_dialog(
+    name: &str,
+    parent: &impl IsA<gtk::Widget>,
+) -> bool {
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "Delete “{pack}”?",
+            &[("pack", name)],
+        ))
+        .body(gettext(
+            "The pack will not be available in any room anymore. Its images are not removed from the server.",
+        ))
+        .build();
+    confirm_dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        ("delete", &gettext("Delete")),
+    ]);
+    confirm_dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+
+    confirm_dialog.choose_future(Some(parent)).await == "delete"
+}
+
 /// Show a dialog for the user to choose what to do about unsaved changes.
 pub(crate) async fn unsaved_changes_dialog(
     parent: &impl IsA<gtk::Widget>,
