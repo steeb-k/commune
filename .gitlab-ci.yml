@@ -6,11 +6,11 @@ stages:
 
 variables:
   # The name of the Flatpak module of our app.
-  FLATPAK_MODULE: "fractal"
+  FLATPAK_MODULE: "commune"
   # The path to the Flatpak manifest.
-  MANIFEST_PATH: "build-aux/org.gnome.Fractal.Devel.json"
+  MANIFEST_PATH: "build-aux/io.github.steeb_k.Commune.Devel.json"
   # The ID of our Flatpak app.
-  APP_ID: "org.gnome.Fractal.Devel"
+  APP_ID: "io.github.steeb_k.Commune.Devel"
   # The latest GNOME stable Flatpak runtime.
   GNOME_STABLE_VERSION: "50"
   # The version of the Freedesktop.org Flatpak runtime used by the stable GNOME runtime.

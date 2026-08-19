@@ -1,12 +1,12 @@
 {
-    "id": "org.gnome.Fractal.Devel",
+    "id": "io.github.steeb_k.Commune.Devel",
     "runtime": "org.gnome.Platform",
-    "runtime-version": "master",
+    "runtime-version": "50",
     "sdk": "org.gnome.Sdk",
     "sdk-extensions": [
         "org.freedesktop.Sdk.Extension.rust-stable"
     ],
-    "command": "fractal",
+    "command": "commune",
     "finish-args": [
         "--socket=fallback-x11",
         "--socket=wayland",
@@ -14,7 +14,7 @@
         "--share=network",
         "--share=ipc",
         "--device=dri",
-        "--env=RUST_LOG=fractal=debug,warn",
+        "--env=RUST_LOG=commune=debug,warn",
         "--env=G_MESSAGES_DEBUG=none",
         "--env=RUST_BACKTRACE=1"
     ],
@@ -45,7 +45,9 @@
                 "mkdir -p /app/bin",
                 "install -D ./target/release/grass /app/bin/"
             ],
-            "cleanup": ["*"],
+            "cleanup": [
+                "*"
+            ],
             "sources": [
                 {
                     "type": "git",
@@ -89,7 +91,7 @@
             ]
         },
         {
-            "name": "fractal",
+            "name": "commune",
             "buildsystem": "meson",
             "run-tests": true,
             "config-opts": [

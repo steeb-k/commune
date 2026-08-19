@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Interlocking fingers chat bubble (development version)</title>
+
+  <defs>
+    <clipPath id="body">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+    <clipPath id="bodyAndTail">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+
+    <!-- Union of the top face and the extruded wall, so the tape covers the bevel too. -->
+    <clipPath id="silhouette">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+      <path transform="translate(0 16)" d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+
+    <linearGradient id="tape" gradientUnits="userSpaceOnUse" x1="0" y1="322.56" x2="0" y2="512">
+      <stop offset="0" stop-color="#f9f06b"/>
+      <stop offset="1" stop-color="#f5c211"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Extruded side wall -->
+  <g transform="translate(0 16)" clip-path="url(#body)">
+    <rect width="512" height="512" fill="#a2131a"/>
+    <rect x="-35" width="180" height="512" fill="#b08608"/>
+  </g>
+
+  <!-- Top face -->
+  <g clip-path="url(#bodyAndTail)">
+    <rect width="512" height="512" fill="#e01b24"/>
+    <g fill="#f5c211">
+      <rect x="-44" y="40" width="220" height="400"/>
+      <rect x="-38" y="72" width="446" height="82" rx="41"/>
+      <rect x="-38" y="236" width="446" height="82" rx="41"/>
+    </g>
+    <g fill="#e01b24">
+      <rect x="104" y="154" width="458" height="82" rx="41"/>
+      <rect x="104" y="318" width="458" height="82" rx="41"/>
+    </g>
+  </g>
+
+  <!-- Development hazard tape: 45 deg stripes, 60 wide on a 120 repeat -->
+  <g clip-path="url(#silhouette)" opacity="0.8">
+    <rect y="322.56" width="512" height="189.44" fill="url(#tape)"/>
+    <path d="M-455.88 322.56L-266.44 512H-181.58L-371.02 322.56ZM-286.17 322.56L-96.73 512H-11.88L-201.32 322.56ZM-116.47 322.56L72.97 512H157.83L-31.61 322.56ZM53.24 322.56L242.68 512H327.53L138.09 322.56ZM222.95 322.56L412.39 512H497.24L307.80 322.56ZM392.65 322.56L582.09 512H666.94L477.50 322.56Z"/>
+  </g>
+</svg>
