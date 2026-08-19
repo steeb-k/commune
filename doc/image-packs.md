@@ -124,13 +124,48 @@ Each phase compiles, passes clippy/fmt/nextest, and is usable on its own.
 4. **Emoticon rendering** — allow `img` in the sanitizer, inline widget via
    `LabelWithWidgets`, tests. *(done)*
 5. **Emoticon sending** — `:shortcode:` completion, inline widget in the
-   composer, serialization in `composer_parser.rs`.
+   composer, serialization in `composer_parser.rs`. See the note below, a
+   decision is needed first.
 6. **Pack management** — account settings page, room details subpage,
    enabling and disabling packs globally.
 7. **Pack authoring** — create and edit packs, upload images, edit
    shortcodes and usage; the packs of a room gated on the power level.
 8. **Space packs** — canonical space hierarchy, recursive, with a depth
    limit and a cycle guard, slotted into the order in `packs_for_room`.
+
+## Open decision: how to complete `:shortcode:`
+
+`CompletionPopover` is 769 lines built around one abstraction: its rows are
+`PillSourceRow`s bound to `PillSource`s, and activating one inserts a `Pill`
+into the composer. It handles the buffer scanning, the word boundaries, the
+key navigation and the popover placement, none of which is specific to
+mentions.
+
+Two ways to get emoticon completion out of it, and they pull in opposite
+directions:
+
+1. **Make an emoticon a `PillSource`.** A shortcode is the display name and
+   the image is the avatar, so the rows, the activation and the insertion all
+   work unchanged. Perhaps 350 new lines: the source, a list, a `:` sigil and
+   a `SearchTermTarget`. The composer then holds a `Pill`, which
+   `composer_parser.rs` tells apart by the type of its source and writes as
+   an `img` instead of an anchor. The cost is conceptual and practical: an
+   emoticon is not a mention, so this widens a shared abstraction and the
+   edits land in the middle of a file that is likely to move between
+   releases.
+2. **A separate popover for emoticons.** Self-contained, no risk of
+   regressing mention completion, rebases as a whole directory. The cost is
+   duplicating the buffer scanning and placement logic, which is the part
+   worth reusing.
+
+The composer side is the same either way, and is small: a
+`ComposerChunk::Emoticon`, `<img data-mx-emoticon src alt title height="32">`
+in the formatted body, `:shortcode:` in the plain body, and the flag that
+forces the message to be sent as HTML, next to `has_rich_mentions`.
+
+Note that the specification asks clients **not** to resolve a shortcode to an
+image on their own when several packs define it, and to present a picker
+instead, so the completion must always be a choice and never a substitution.
 
 ## Integration-point ledger
 
