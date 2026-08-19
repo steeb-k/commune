@@ -189,6 +189,12 @@ Four things cost a lot of time here and are easy to walk back into.
   intrinsic size**, ignoring the allocation. Draw at the allocated size.
 * **The SDK sanitizes the HTML of every message before we see it**, so
   `data-mx-emoticon` never arrives. See the wire format section.
+* **Reading the state of a room only answers with what sync brought.**
+  `Room::get_state_events` reads the state store and never the network, and
+  the state of a room that has seen no activity can predate the store, so a
+  pack defined in one is invisible until the room is opened. Anything that
+  has to be right about a pack in a room the user has not opened must ask the
+  homeserver for it, which `all_packs` does for the packs used everywhere.
 
 None of these are visible to the compiler or to the tests, which do not build
 widgets. A change to how something is drawn has to be looked at.
