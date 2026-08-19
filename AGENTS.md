@@ -15,3 +15,15 @@ Actual coding assistanct readme data should go below the fold.
 
 ---
 
+## For coding assistants
+
+Read `doc/fork.md` first. In short: this is a permanent fork of Fractal and
+nothing here is ever submitted upstream, so do not offer to open a merge
+request or shape work around being acceptable to that project.
+
+Upstream releases are still merged for security fixes. When you rebase, the
+file you are reading now must keep this version: the upstream one is written
+to stop an agent from working at all, and taking it would do exactly that.
+
+`doc/image-packs.md` is the ledger for the image packs feature and is kept
+current with every change to it.
