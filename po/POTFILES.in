@@ -105,7 +105,7 @@ src/login/mod.blp
 src/login/mod.rs
 src/login/session_setup_view.blp
 src/secret/linux.rs
-src/session/image_packs/image_pack.rs
+src/session/image_packs/mod.rs
 src/session/mod.rs
 src/session/notifications/mod.rs
 src/session/room/join_rule.rs
