@@ -110,6 +110,19 @@ Only an `mxc:` source is ever loaded, which ruma enforces by leaving
 `ImageData::src` unset for anything else, so a message cannot make us fetch
 anything from outside the homeserver.
 
+The SDK sanitizes the HTML of every message before we are given it, with
+`HtmlSanitizerMode::Compat` in `Message::from_event`, and there is no way to
+opt out. That allow-list only keeps `src`, `alt`, `title`, `width` and
+`height` on an image, so `data-mx-emoticon` never survives. The
+specification says an image is a custom emoticon **if and only if** that
+attribute is present, which we therefore cannot honour: an inline image whose
+source is on the homeserver is presented as an emoticon instead. The
+attribute is still checked first, so this becomes exact again if the SDK ever
+stops removing it. Reading the unsanitized HTML back from `Event::raw()` was
+the alternative, and it was rejected because an edited message would need
+`latest_edit_raw()` and its `m.new_content`, which is a lot of surface for
+the same result.
+
 Emoticons are deliberately **not** gated behind
 `GlobalAccountData::should_room_show_media_previews`, which they were at
 first. The setting exists so that the media of a message is not fetched until
