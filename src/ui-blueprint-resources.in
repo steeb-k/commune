@@ -33,6 +33,8 @@ components/dialogs/auth/password_page.blp
 components/dialogs/room_preview.blp
 components/dialogs/toastable.blp
 components/dialogs/user_profile.blp
+components/image_pack_editor/image_row.blp
+components/image_pack_editor/mod.blp
 components/loading/bin.blp
 components/media/audio_player/mod.blp
 components/media/content_viewer.blp

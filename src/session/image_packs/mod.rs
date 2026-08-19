@@ -20,14 +20,13 @@ mod pack_image;
 
 use self::events::{
     EmoteRoomsEvent, EmoteRoomsEventContent, EnabledPacks, ImagePackRoomsEvent,
-    ImagePackRoomsEventContent, RoomEmotesEventContent, RoomImagePackEventContent, UserEmotesEvent,
-    UserEmotesEventContent,
+    ImagePackRoomsEventContent, RoomEmotesEventContent, RoomImagePackEventContent,
+    SyncRoomEmotesEvent, SyncRoomImagePackEvent, UserEmotesEvent, UserEmotesEventContent,
 };
 pub(crate) use self::{
     emoticon_source::EmoticonSource,
     events::{
-        PackContent, PackImage as PackImageData, PackMeta, PackUsage, SHORTCODE_MAX_LEN,
-        is_valid_shortcode,
+        PackContent, PackImage as PackImageData, PackUsage, SHORTCODE_MAX_LEN, is_valid_shortcode,
     },
     image_pack::{ImagePack, ImagePackSource, RoomPackKind},
     pack_image::PackImage,
@@ -240,11 +239,46 @@ mod imp {
                 }
             });
 
+            // The packs in the state of a room are not kept here, because they
+            // are read from the state store when they are needed, but a change
+            // to one of them still has to be announced, under both names.
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let unstable_room_handle = client.add_event_handler(move |_: SyncRoomEmotesEvent| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.emit_by_name::<()>("changed", &[]);
+                        }
+                    });
+                }
+            });
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let stable_room_handle = client.add_event_handler(move |_: SyncRoomImagePackEvent| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.emit_by_name::<()>("changed", &[]);
+                        }
+                    });
+                }
+            });
+
             self.drop_guards.replace(
-                [user_pack_handle, unstable_handle, stable_handle]
-                    .into_iter()
-                    .map(|handle| client.event_handler_drop_guard(handle))
-                    .collect(),
+                [
+                    user_pack_handle,
+                    unstable_handle,
+                    stable_handle,
+                    unstable_room_handle,
+                    stable_room_handle,
+                ]
+                .into_iter()
+                .map(|handle| client.event_handler_drop_guard(handle))
+                .collect(),
             );
         }
 

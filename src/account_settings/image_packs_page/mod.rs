@@ -5,7 +5,7 @@ use ruma::RoomId;
 use tracing::error;
 
 use crate::{
-    components::SwitchLoadingRow,
+    components::{ImagePackEditor, SwitchLoadingRow},
     gettext_f, ngettext_f,
     prelude::*,
     session::{EnabledPack, ImagePack, ImagePackSource, ImagePacks, Session},
@@ -45,6 +45,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -58,6 +59,7 @@ mod imp {
     impl WidgetImpl for ImagePacksPage {}
     impl PreferencesPageImpl for ImagePacksPage {}
 
+    #[gtk::template_callbacks]
     impl ImagePacksPage {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
@@ -107,18 +109,39 @@ mod imp {
 
             let Some(pack) = session.image_packs().user_pack() else {
                 self.personal_row.set_title(&gettext("No Personal Pack"));
-                self.personal_row.set_subtitle(&gettext(
-                    "Fractal cannot create one yet, but it uses one that another client created",
-                ));
-                self.personal_row.add_css_class("dimmed");
+                self.personal_row
+                    .set_subtitle(&gettext("Create one to use your own images in every room"));
                 return;
             };
 
-            self.personal_row.remove_css_class("dimmed");
             self.personal_row
                 .set_title(&glib::markup_escape_text(&pack.display_name()));
             self.personal_row
                 .set_subtitle(&glib::markup_escape_text(&image_count(&pack)));
+        }
+
+        /// Open the editor for the personal pack of the user.
+        #[template_callback]
+        fn edit_personal_pack(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let editor = match session.image_packs().user_pack() {
+                Some(pack) => ImagePackEditor::edit(&session, &pack),
+                None => ImagePackEditor::create(&session, ImagePackSource::User),
+            };
+
+            let Some(dialog) = self
+                .obj()
+                .ancestor(adw::PreferencesDialog::static_type())
+                .and_downcast::<adw::PreferencesDialog>()
+            else {
+                error!("Could not find the dialog of the image packs page");
+                return;
+            };
+
+            dialog.push_subpage(&editor);
         }
 
         /// Present the packs that are enabled globally.

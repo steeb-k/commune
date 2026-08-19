@@ -6,7 +6,15 @@ template $ImagePacksSubpage: Adw.NavigationPage {
 
   child: Adw.ToolbarView {
     [top]
-    Adw.HeaderBar {}
+    Adw.HeaderBar {
+      [end]
+      Gtk.Button create_button {
+        icon-name: "list-add-symbolic";
+        tooltip-text: _("Create Pack");
+        visible: false;
+        clicked => $create_pack() swapped;
+      }
+    }
 
     content: Gtk.Stack stack {
       Gtk.StackPage {
@@ -27,6 +35,19 @@ template $ImagePacksSubpage: Adw.NavigationPage {
           icon-name: "sticker-symbolic";
           title: _("No Image Packs");
           description: _("This room does not define any sticker or emoticon pack");
+
+          child: Gtk.Button empty_create_button {
+            label: _("_Create Pack");
+            use-underline: true;
+            visible: false;
+            halign: center;
+            clicked => $create_pack() swapped;
+
+            styles [
+              "pill",
+              "suggested-action",
+            ]
+          };
         };
       }
 

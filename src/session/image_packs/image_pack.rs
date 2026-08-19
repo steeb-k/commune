@@ -1,6 +1,5 @@
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use ruma::OwnedMxcUri;
 
 use super::{
     PackImage,
@@ -35,16 +34,6 @@ pub(crate) enum ImagePackSource {
         /// The event type that the pack is defined under.
         kind: RoomPackKind,
     },
-}
-
-impl ImagePackSource {
-    /// The room that defines the pack, if it comes from one.
-    pub(crate) fn room(&self) -> Option<&Room> {
-        match self {
-            Self::User => None,
-            Self::Room { room, .. } => Some(room),
-        }
-    }
 }
 
 mod imp {
@@ -152,14 +141,6 @@ impl ImagePack {
     /// back through sync.
     pub(crate) fn content(&self) -> PackContent {
         self.imp().content().clone()
-    }
-
-    /// The `mxc://` URI of the avatar of this pack, if it has one.
-    ///
-    /// A pack defined in a room and without an avatar of its own uses the
-    /// avatar of the room, which is not handled here.
-    pub(crate) fn avatar_url(&self) -> Option<&OwnedMxcUri> {
-        self.imp().content().pack.avatar_url.as_ref()
     }
 
     /// Who to credit for this pack.
