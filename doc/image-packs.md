@@ -109,8 +109,9 @@ small and listed in the ledger below.
   `src/components/avatar/image.rs`.
 * `src/account_settings/image_packs_page/` — where packs are managed. Every
   pack from every room the user is in, each with a switch to use it
-  everywhere and, where the power level allows, a menu to edit or delete it;
-  and a button to create one. The main menu of the session opens the dialog
+  everywhere and a menu: edit and delete where the power level allows, and
+  otherwise leave the room that provides it, which is the only way to be rid
+  of a pack you cannot delete; and a button to create one. The main menu of the session opens the dialog
   straight on this page, because nobody looks for stickers in the account
   settings; it is there because the state it needs is account data. A pack that is used everywhere but whose room the
   user has left cannot be loaded, and is presented by its state key with a
