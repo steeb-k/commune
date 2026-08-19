@@ -14,7 +14,7 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     OwnedRoomId,
     events::{
-        Mentions,
+        AnyMessageLikeEventContent, Mentions,
         room::{
             message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
             tombstone::RoomTombstoneEventContent,
@@ -27,11 +27,12 @@ mod attachment_dialog;
 mod completion;
 mod composer_parser;
 mod composer_state;
+mod sticker_picker;
 
 pub(crate) use self::composer_state::{ComposerState, MessageEventSource, RelationInfo};
 use self::{
     attachment_dialog::AttachmentDialog, completion::CompletionPopover,
-    composer_parser::ComposerParser,
+    composer_parser::ComposerParser, sticker_picker::StickerPicker,
 };
 use super::message_row::MessageContent;
 use crate::{
@@ -39,7 +40,7 @@ use crate::{
     components::{AvatarImageSafetySetting, CustomEntry, LabelWithWidgets, LoadingButton},
     gettext_f,
     prelude::*,
-    session::{Event, Member, Room, RoomListRoomInfo, Timeline},
+    session::{Event, Member, PackImage, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
         Location, LocationError, TemplateCallbacks, TokioDrop,
@@ -108,6 +109,10 @@ mod imp {
         #[template_child]
         attach_button: TemplateChild<gtk::Button>,
         #[template_child]
+        sticker_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        sticker_picker: TemplateChild<StickerPicker>,
+        #[template_child]
         send_button: TemplateChild<gtk::Button>,
         #[template_child]
         related_event_header: TemplateChild<LabelWithWidgets>,
@@ -123,6 +128,9 @@ mod imp {
         successor_room_list_info: RoomListRoomInfo,
         room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         send_message_permission_handler: RefCell<Option<glib::SignalHandlerId>>,
+        send_sticker_permission_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// Whether non-text messages can be sent in the current state.
+        can_send_non_text_messages: Cell<bool>,
         /// Whether outgoing messages should be interpreted as markdown.
         #[property(get, set)]
         markdown_enabled: Cell<bool>,
@@ -188,6 +196,21 @@ mod imp {
             // Location.
             let location = Location::new();
             obj.action_set_enabled("message-toolbar.send-location", location.is_available());
+
+            // Stickers.
+            self.sticker_picker.connect_sticker_selected(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, image| {
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        async move {
+                            imp.send_sticker(&image).await;
+                        }
+                    ));
+                }
+            ));
 
             // Listen to changes in the room list for the successor.
             self.successor_room_list_info
@@ -296,6 +319,19 @@ mod imp {
                 self.send_message_permission_handler
                     .replace(Some(send_message_permission_handler));
 
+                let send_sticker_permission_handler = timeline
+                    .room()
+                    .permissions()
+                    .connect_can_send_sticker_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_sticker_button();
+                        }
+                    ));
+                self.send_sticker_permission_handler
+                    .replace(Some(send_sticker_permission_handler));
+
                 if let Some(session) = room.session() {
                     self.successor_room_list_info
                         .set_room_list(session.room_list());
@@ -303,6 +339,8 @@ mod imp {
             }
 
             self.completion.set_room(timeline.map(Timeline::room));
+            self.sticker_picker
+                .set_room(timeline.map(Timeline::room).as_ref());
             self.timeline.set(timeline);
 
             self.update_successor_identifier();
@@ -564,10 +602,23 @@ mod imp {
         /// Toggle UI for sending non-text messages.
         fn enable_sending_non_text_messages(&self, enable: bool) {
             self.attach_button.set_sensitive(enable);
+            self.can_send_non_text_messages.set(enable);
+            self.update_sticker_button();
             self.obj().action_set_enabled(
                 "message-toolbar.send-location",
                 enable && Location::new().is_available(),
             );
+        }
+
+        /// Update whether a sticker can be sent in the current state.
+        pub(super) fn update_sticker_button(&self) {
+            let has_permission = self
+                .timeline
+                .upgrade()
+                .is_some_and(|timeline| timeline.room().permissions().can_send_sticker());
+
+            self.sticker_button
+                .set_sensitive(self.can_send_non_text_messages.get() && has_permission);
         }
 
         /// Clear the related event.
@@ -888,6 +939,27 @@ mod imp {
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not send location: {error}");
                 toast!(self.obj(), gettext("Could not send location"));
+            }
+        }
+
+        /// Send the given image of a pack as a sticker.
+        async fn send_sticker(&self, image: &PackImage) {
+            let Some(timeline) = self.timeline.upgrade() else {
+                return;
+            };
+
+            let content = image.sticker_content();
+
+            let matrix_timeline = timeline.matrix_timeline();
+            let handle = spawn_tokio!(async move {
+                matrix_timeline
+                    .send(AnyMessageLikeEventContent::Sticker(content))
+                    .await
+            });
+
+            if let Err(error) = handle.await.unwrap() {
+                error!("Could not send sticker: {error}");
+                toast!(self.obj(), gettext("Could not send sticker"));
             }
         }
 
@@ -1274,6 +1346,10 @@ mod imp {
                 }
 
                 if let Some(handler) = self.send_message_permission_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+
+                if let Some(handler) = self.send_sticker_permission_handler.take() {
                     room.permissions().disconnect(handler);
                 }
             }

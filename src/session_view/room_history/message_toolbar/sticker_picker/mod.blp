@@ -1,0 +1,54 @@
+using Gtk 4.0;
+
+template $StickerPicker: Gtk.Popover {
+  width-request: 340;
+  height-request: 300;
+
+  styles [
+    "sticker-picker",
+  ]
+
+  child: Gtk.Stack stack {
+    Gtk.StackPage {
+      name: "loading";
+
+      child: Gtk.Spinner {
+        halign: center;
+        valign: center;
+        spinning: true;
+      };
+    }
+
+    Gtk.StackPage {
+      name: "empty";
+
+      child: Gtk.Label {
+        halign: center;
+        valign: center;
+        wrap: true;
+        justify: center;
+        // Translators: This is shown in the sticker picker when no sticker
+        // pack is available.
+        label: _("No stickers available.\n\nAdd a sticker pack to this room, or enable one from another room in your account settings.");
+
+        styles [
+          "dimmed",
+        ]
+      };
+    }
+
+    Gtk.StackPage {
+      name: "packs";
+
+      child: Gtk.ScrolledWindow {
+        hscrollbar-policy: never;
+        propagate-natural-height: true;
+
+        child: Gtk.Box packs_box {
+          orientation: vertical;
+          spacing: 12;
+        };
+      };
+    }
+  };
+}
