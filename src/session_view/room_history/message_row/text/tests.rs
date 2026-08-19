@@ -225,3 +225,43 @@ fn custom_emoticon_description_is_escaped() {
 
     assert_eq!(s, "&lt;b&gt;bold&lt;/b&gt;");
 }
+
+/// The sanitizer keeps what identifies a custom emoticon and where its image
+/// is, which is what tells one apart from any other image.
+#[test]
+fn custom_emoticon_keeps_its_attributes() {
+    use ruma::html::matrix::{MatrixElement, MatrixElementData};
+
+    let html = Html::parse(
+        r#"<img data-mx-emoticon src="mxc://example.org/abc" alt="a waving cat" title="cat_wave" height="32">"#,
+    );
+    html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
+
+    let node = html
+        .children()
+        .find(|node| node.as_element().is_some())
+        .expect("the image should not be removed");
+    let MatrixElementData { element, attrs } = node
+        .as_element()
+        .expect("the node is an element")
+        .to_matrix();
+
+    let MatrixElement::Img(image) = element else {
+        panic!("the element should be an image");
+    };
+
+    assert_eq!(
+        image.src.as_deref().map(ToString::to_string),
+        Some("mxc://example.org/abc".to_owned())
+    );
+    assert_eq!(
+        image.alt.as_ref().map(ToString::to_string).as_deref(),
+        Some("a waving cat")
+    );
+    assert!(
+        attrs
+            .iter()
+            .any(|attr| attr.name.local.as_ref() == super::CUSTOM_EMOTICON_ATTRIBUTE),
+        "the attribute marking a custom emoticon should be kept"
+    );
+}
