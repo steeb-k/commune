@@ -121,6 +121,11 @@ class Client:
         )
         return response["content_uri"]
 
+    def send_message(self, room_id, transaction_id, content):
+        room = urllib.parse.quote(room_id, safe="")
+        path = f"/_matrix/client/v3/rooms/{room}/send/m.room.message/{transaction_id}"
+        return self._json_request("PUT", path, content)
+
     def set_room_state(self, room_id, event_type, state_key, content):
         room = urllib.parse.quote(room_id, safe="")
         state_key = urllib.parse.quote(state_key, safe="")
@@ -234,6 +239,70 @@ def image_info(data, mimetype):
     return info
 
 
+def escape(text):
+    """Escape the text for inclusion in HTML."""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def send_emoticons(client, room_id, images):
+    """Send messages using the images inline, to test their rendering.
+
+    Fractal cannot send custom emoticons yet, so this stands in for a client
+    that can. The height attribute is the one the specification requires, for
+    the clients that do not support image packs.
+    """
+    shortcodes = list(images)[:3]
+
+    def img(shortcode):
+        image = images[shortcode]
+        body = image.get("body") or shortcode
+        return (
+            f'<img data-mx-emoticon src="{escape(image["url"])}" '
+            f'alt="{escape(body)}" title="{escape(shortcode)}" height="32">'
+        )
+
+    messages = [
+        (
+            "a custom emoticon in a sentence",
+            "Look at this " + " ".join(f":{s}:" for s in shortcodes[:1]) + " one",
+            "Look at this " + "".join(img(s) for s in shortcodes[:1]) + " one",
+        ),
+        (
+            "only custom emoticons",
+            " ".join(f":{s}:" for s in shortcodes),
+            "".join(img(s) for s in shortcodes),
+        ),
+        (
+            "a custom emoticon next to markup",
+            "bold and " + f":{shortcodes[0]}:",
+            "<b>bold</b> and " + img(shortcodes[0]),
+        ),
+        (
+            "an image that is not an emoticon, which must stay text",
+            "not an emoticon",
+            f'<img src="{escape(images[shortcodes[0]]["url"])}" alt="not an emoticon">',
+        ),
+    ]
+
+    for index, (description, plain, formatted) in enumerate(messages):
+        client.send_message(
+            room_id,
+            f"image-pack-tool-{index}",
+            {
+                "msgtype": "m.text",
+                "body": plain,
+                "format": "org.matrix.custom.html",
+                "formatted_body": formatted,
+            },
+        )
+        print(f"  sent {description}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -261,6 +330,11 @@ def main():
         "--enable-globally",
         action="store_true",
         help="also enable the pack of the room in every room",
+    )
+    parser.add_argument(
+        "--send-emoticons",
+        action="store_true",
+        help="also send a message using the images inline, to test their rendering",
     )
     parser.add_argument("--images", help="a directory of images to use instead of emoji")
     parser.add_argument(
@@ -320,6 +394,11 @@ def main():
     if args.personal:
         client.set_account_data(user_id, USER_PACK, content)
         print(f"put {len(images)} images in the personal pack, as {USER_PACK}")
+
+    if args.send_emoticons:
+        if not args.room:
+            die("--send-emoticons needs --room")
+        send_emoticons(client, args.room, images)
 
     print("\nOpen the room in Fractal and click the sticker button in the composer.")
     print("If a pack does not appear, leave the room and come back: the picker")
