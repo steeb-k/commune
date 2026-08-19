@@ -201,12 +201,15 @@ fn custom_emoticon_with_remote_source() {
     assert!(widgets.is_none());
 }
 
-/// An image that is not a custom emoticon is replaced by its description.
+/// An image without the attribute is still presented as a custom emoticon,
+/// because the SDK removes the attribute before we are given the message.
 #[test]
-fn image_that_is_not_an_emoticon() {
+fn image_without_the_emoticon_attribute() {
     let html = Html::parse(r#"Hello <img src="mxc://example.org/abc" alt="a waving cat">"#);
     html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
 
+    // Without a room it cannot be loaded, so it still falls back here, but it
+    // takes the same path as one that has the attribute.
     let (s, widgets) =
         InlineHtmlBuilder::new(false, false, false).build_with_nodes(html.children());
 

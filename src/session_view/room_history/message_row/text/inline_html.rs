@@ -256,9 +256,21 @@ impl<'a> InlineHtmlBuilder<'a> {
             .unwrap_or_default();
 
         // The value of the attribute, if it has one, must be ignored.
-        let is_emoticon = attrs
+        let has_emoticon_attribute = attrs
             .iter()
             .any(|attr| attr.name.local.as_ref() == CUSTOM_EMOTICON_ATTRIBUTE);
+
+        // The specification says an image is a custom emoticon if and only if
+        // it carries the attribute, but we never see it: the SDK sanitizes the
+        // HTML of every message with the rules of the specification, which only
+        // keep `src`, `alt`, `title`, `width` and `height` on an image, before
+        // we are given it, and there is no way to opt out.
+        //
+        // An inline image in a message is a custom emoticon in practice, that
+        // being the reason image packs exist, so one is presented whenever it
+        // comes from the homeserver. The attribute is still honoured, so this
+        // becomes exact again if the SDK ever stops removing it.
+        let is_emoticon = has_emoticon_attribute || image.src.is_some();
 
         // `src` is only set when it is a valid `mxc:` URI, which is the only
         // scheme that the specification allows, so a message cannot make us
