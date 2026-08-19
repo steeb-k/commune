@@ -419,12 +419,12 @@ message-reactions {
 }
 
 .sticker-picker {
-  > contents {
-    padding: 6px;
-  }
+  .sticker-pack {
+    padding: 6px 9px 9px;
 
-  button {
-    padding: 3px;
+    button {
+      padding: 3px;
+    }
   }
 }
 
