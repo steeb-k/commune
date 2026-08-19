@@ -57,7 +57,7 @@ fn shortcode_from_file_name(name: &str) -> String {
 }
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -88,6 +88,8 @@ mod imp {
         pub(super) session: OnceCell<Session>,
         /// Where the pack is, or will be, stored.
         pub(super) source: OnceCell<ImagePackSource>,
+        /// Whether the pack does not exist yet.
+        pub(super) is_new: Cell<bool>,
         /// The content that the pack was opened with.
         ///
         /// Only the parts that this editor does not present are kept from it,
@@ -388,15 +390,25 @@ mod imp {
             }
 
             let source = self.source.get().expect("source should be initialized");
-
-            self.save_button.set_is_loading(true);
-            let result = self
+            let image_packs = self
                 .session
                 .get()
                 .expect("session should be initialized")
-                .image_packs()
-                .save_pack(source, content)
-                .await;
+                .image_packs();
+
+            self.save_button.set_is_loading(true);
+            let result = image_packs.save_pack(source, content).await;
+
+            if result.is_ok() && self.is_new.get() {
+                // A pack is only usable in the room it lives in, and a pack
+                // that was just created lives in a room that exists for that,
+                // so it would be usable nowhere the user meant.
+                let _ = image_packs
+                    .set_pack_enabled(source.room.room_id(), &source.state_key, true)
+                    .await;
+                self.is_new.set(false);
+            }
+
             self.save_button.set_is_loading(false);
 
             if result.is_err() {
@@ -496,6 +508,7 @@ impl ImagePackEditor {
         let imp = obj.imp();
         imp.source.set(source).expect("source is not initialized");
         imp.content.replace(content);
+        imp.is_new.set(is_new);
         imp.init(is_new);
 
         obj

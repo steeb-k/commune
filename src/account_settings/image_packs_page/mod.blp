@@ -6,36 +6,36 @@ template $ImagePacksPage: Adw.PreferencesPage {
   title: _("Image Packs");
   name: "image-packs";
 
-  Adw.PreferencesGroup personal_group {
-    title: _("Your Pack");
-    description: _("The stickers and emoticons stored in your account, available in every room.");
+  Adw.PreferencesGroup packs_group {
+    title: _("Packs");
+    description: _("The sticker and emoticon packs defined in the rooms you are in. Turn one on to use it in every room.");
 
-    Adw.ActionRow personal_row {
-      selectable: false;
-      activatable: true;
-      activated => $edit_personal_pack() swapped;
+    header-suffix: $LoadingButton create_button {
+      content-icon-name: "list-add-symbolic";
+      tooltip-text: _("Create Pack");
+      valign: center;
+      clicked => $create_pack() swapped;
 
-      [suffix]
-      Gtk.Image {
-        icon-name: "go-next-symbolic";
-        accessible-role: presentation;
-      }
-    }
-  }
+      styles [
+        "flat",
+      ]
+    };
 
-  Adw.PreferencesGroup enabled_group {
-    title: _("Enabled Everywhere");
-    description: _("The packs from rooms that you chose to use in every room. Turn one off to stop using it.");
-
-    Adw.ActionRow enabled_placeholder_row {
+    Adw.ActionRow placeholder_row {
+      title: _("No Packs");
+      subtitle: _("Create one to send stickers and emoticons of your own");
       selectable: false;
       activatable: false;
-      title: _("No pack enabled");
-      subtitle: _("Open the details of a room to use one of its packs everywhere");
 
       styles [
         "dimmed",
       ]
     }
+  }
+
+  Adw.PreferencesGroup unavailable_group {
+    visible: false;
+    title: _("Unavailable");
+    description: _("These packs are used in every room but come from rooms you have left. Turn one off to stop looking for it.");
   }
 }
