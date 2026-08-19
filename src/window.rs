@@ -126,6 +126,16 @@ mod imp {
                 },
             );
 
+            klass.install_action(
+                "win.open-image-packs",
+                Some(&String::static_variant_type()),
+                |obj, _, variant| {
+                    if let Some(session_id) = variant.and_then(glib::Variant::get::<String>) {
+                        obj.imp().open_image_packs(&session_id);
+                    }
+                },
+            );
+
             klass.install_action("win.new-session", None, |obj, _, _| {
                 obj.imp().set_visible_page(WindowPage::Login);
             });
@@ -498,6 +508,26 @@ mod imp {
             };
 
             let dialog = AccountSettings::new(&session);
+            dialog.present(Some(&*self.obj()));
+        }
+
+        /// Open the image packs of the session with the given ID.
+        ///
+        /// The page is in the account settings, because the state it needs is
+        /// account data, but managing image packs is not something a user
+        /// looks for there, so it has its own way in.
+        fn open_image_packs(&self, session_id: &str) {
+            let Some(session) = Application::default()
+                .session_list()
+                .get(session_id)
+                .and_downcast::<Session>()
+            else {
+                error!("Tried to open the image packs of unknown session with ID '{session_id}'");
+                return;
+            };
+
+            let dialog = AccountSettings::new(&session);
+            dialog.show_image_packs_tab();
             dialog.present(Some(&*self.obj()));
         }
     }

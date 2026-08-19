@@ -256,6 +256,11 @@ impl AccountSettings {
         self.set_visible_page_name("encryption");
     }
 
+    /// Show the "Image Packs" tab.
+    pub(crate) fn show_image_packs_tab(&self) {
+        self.set_visible_page_name("image-packs");
+    }
+
     /// Show the given subpage.
     pub(crate) fn show_subpage(&self, subpage: AccountSettingsSubpage) {
         let Some(session) = self.session() else {
