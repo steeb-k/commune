@@ -67,17 +67,37 @@ template $ContentVisualMediaHistoryViewer: Adw.NavigationPage {
           name: "content";
           title: _("Media History");
 
-          child: Gtk.ScrolledWindow {
-            hscrollbar-policy: never;
-            vexpand: true;
+          child: Gtk.Overlay {
+            [overlay]
+            Gtk.Revealer date_indicator_revealer {
+              transition-type: crossfade;
+              halign: center;
+              valign: start;
+              margin-top: 12;
+              can-target: false;
 
-            Adw.ClampScrollable {
-              maximum-size: 1000;
-              tightening-threshold: 800;
-              vscroll-policy: natural;
+              Gtk.Label date_indicator {
+                accessible-role: presentation;
+                single-line-mode: true;
 
-              Gtk.ListView list_view {
-                single-click-activate: false;
+                styles [
+                  "date-indicator",
+                ]
+              }
+            }
+
+            Gtk.ScrolledWindow {
+              hscrollbar-policy: never;
+              vexpand: true;
+
+              Adw.ClampScrollable {
+                maximum-size: 1000;
+                tightening-threshold: 800;
+                vscroll-policy: natural;
+
+                Gtk.ListView list_view {
+                  single-click-activate: false;
+                }
               }
             }
           };
