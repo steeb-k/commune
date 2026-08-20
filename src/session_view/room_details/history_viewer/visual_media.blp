@@ -76,9 +76,8 @@ template $ContentVisualMediaHistoryViewer: Adw.NavigationPage {
               tightening-threshold: 800;
               vscroll-policy: natural;
 
-              Gtk.GridView grid_view {
-                min-columns: 2;
-                max-columns: 5;
+              Gtk.ListView list_view {
+                single-click-activate: false;
               }
             }
           };

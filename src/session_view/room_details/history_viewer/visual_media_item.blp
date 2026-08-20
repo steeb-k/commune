@@ -3,8 +3,6 @@ using Gtk 4.0;
 template $ContentVisualMediaHistoryViewerItem: Gtk.Widget {
   focusable: true;
   accessible-role: button;
-  height-request: 150;
-  width-request: 150;
 
   Gtk.GestureClick {
     released => $activate() swapped;
