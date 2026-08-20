@@ -328,24 +328,29 @@ mod imp {
         /// sent.
         ///
         /// GTK does not tell a list view which of its items are visible, so the
-        /// rows that it has built are compared with the position of the
-        /// viewport. There are only as many of those as fit on screen, plus the
-        /// few that GTK keeps around them.
+        /// rows it is presenting are asked where they are instead.
         fn visible_date(&self) -> Option<glib::DateTime> {
-            let top = self.list_view.vadjustment()?.value();
-
             let mut topmost: Option<(f32, glib::DateTime)> = None;
             let mut child = self.list_view.first_child();
 
             while let Some(widget) = child {
                 child = widget.next_sibling();
 
+                // A list view keeps a widget for the rows that are off screen as well,
+                // and those keep the position they had the last time they were
+                // presented, so they would answer with where they used to be.
+                if !widget.is_mapped() {
+                    continue;
+                }
+
                 let Some(bounds) = widget.compute_bounds(&*self.list_view) else {
                     continue;
                 };
 
-                if f64::from(bounds.y() + bounds.height()) <= top {
-                    // The row is entirely above the viewport.
+                // The rows are placed relative to the viewport rather than to the whole
+                // of the history, so the top of the viewport is always at zero and the
+                // row presented there is the one that ends after it.
+                if bounds.y() + bounds.height() <= 0.0 {
                     continue;
                 }
 
