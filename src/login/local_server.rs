@@ -79,11 +79,14 @@ fn svg_icon() -> String {
     let icon = String::from_utf8(bytes.to_vec())
         .expect("Application SVG icon content should be a UTF-8 string");
 
-    // Remove the XML prologue, to inline the SVG directly into the HTML.
-    icon.trim()
-        .strip_prefix(r#"<?xml version="1.0" encoding="UTF-8"?>"#)
-        .expect("Application SVG icon should start with an XML prologue")
-        .to_owned()
+    // Remove the XML prologue, if there is one, to inline the SVG directly into the
+    // HTML. Whether an icon has one says nothing about whether it can be drawn, so
+    // it is not worth refusing to serve the page over.
+    let icon = icon.trim();
+    match icon.split_once("?>") {
+        Some((prologue, rest)) if prologue.starts_with("<?xml") => rest.trim_start().to_owned(),
+        _ => icon.to_owned(),
+    }
 }
 
 #[cfg(test)]
