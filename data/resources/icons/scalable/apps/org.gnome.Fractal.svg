@@ -2,30 +2,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <title>Interlocking fingers chat bubble</title>
 
-  <defs>
-    <clipPath id="body">
-      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
-    </clipPath>
-    <clipPath id="bodyAndTail">
-      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
-    </clipPath>
-  </defs>
+  <!-- All geometry is flattened: no clipPath, mask or filter anywhere. QtSvg
+       implements SVG Tiny 1.2 and silently ignores clip-path, which made the
+       backing shapes render full-bleed in Qt-based launchers and panels while
+       looking correct under librsvg. Keep new shapes trimmed to the silhouette
+       by hand rather than clipping them. -->
 
-  <g transform="translate(0 16)" clip-path="url(#body)">
-    <rect width="512" height="512" fill="#a2131a"/>
-    <rect x="-35" width="180" height="512" fill="#b08608"/>
+  <!-- Extruded side wall -->
+  <g transform="translate(0 16)">
+    <path fill="#a2131a" d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    <path fill="#b08608" d="M 112 72 A 72 72 0 0 0 40 144 L 40 328 A 72 72 0 0 0 112 400 L 145 400 L 145 72 L 112 72 z"/>
   </g>
 
-  <g clip-path="url(#bodyAndTail)">
-    <rect width="512" height="512" fill="#e01b24"/>
-    <g fill="#f5c211">
-      <rect x="-44" y="40" width="220" height="400"/>
-      <rect x="-38" y="72" width="446" height="82" rx="41"/>
-      <rect x="-38" y="236" width="446" height="82" rx="41"/>
-    </g>
-    <g fill="#e01b24">
-      <rect x="104" y="154" width="458" height="82" rx="41"/>
-      <rect x="104" y="318" width="458" height="82" rx="41"/>
-    </g>
+  <!-- Top face -->
+  <path fill="#e01b24" d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+  <g fill="#f5c211">
+    <path d="M 112 72 A 72 72 0 0 0 40 144 L 40 328 A 72 72 0 0 0 112 400 L 176 400 L 176 72 L 112 72 z"/>
+    <path d="M 112 72 A 72 72 0 0 0 40 144 L 40 154 L 367 154 C 389.71 154 408 135.71 408 113 C 408 90.29 389.71 72 367 72 L 112 72 z"/>
+    <path d="M 40 236 L 40 318 L 367 318 C 389.71 318 408 299.71 408 277 C 408 254.29 389.71 236 367 236 L 40 236 z"/>
+  </g>
+  <g fill="#e01b24">
+    <path d="M 145 154 C 122.29 154 104 172.29 104 195 C 104 217.71 122.29 236 145 236 L 472 236 L 472 154 L 145 154 z"/>
+    <path d="M 145 318 C 122.29 318 104 336.29 104 359 C 104 381.71 122.29 400 145 400 L 272 400 L 368 400 L 400 400 A 72 72 0 0 0 472 328 L 472 318 L 145 318 z"/>
   </g>
 </svg>

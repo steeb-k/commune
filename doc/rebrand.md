@@ -79,6 +79,16 @@ Build and packaging, all of it ours to keep on a rebase:
   `data/icons/meson.build` simply installs it under the real application ID
   when the profile is Devel. The symbolic one is drawn separately at 16px,
   because the interlocking bars do not survive being scaled down that far.
+
+  All three carry no `clipPath`, `mask` or `filter`, and new shapes must keep
+  it that way. QtSvg renders only SVG Tiny 1.2 and silently ignores
+  `clip-path`, so the earlier versions — which built the bubble by clipping
+  full-bleed rectangles — came out as edge-to-edge squares in Qt-based
+  launchers and panels while looking correct everywhere GTK draws them, since
+  librsvg handles the full spec. The shapes are now trimmed to the silhouette
+  as literal geometry instead. `assets/appicon.svg` is also the content of
+  `data/resources/icons/scalable/apps/org.gnome.Fractal.svg`, so a change to
+  the artwork is three files, not one.
 * `build-aux/io.github.steeb_k.Commune{,.Devel}.json` — see `flatpak.md`.
 * `po/POTFILES.in`, `.gitattributes`, `.gitlab-ci.yml`,
   `.gitlab-ci/flatpak-builder-lint-exceptions.json`.
