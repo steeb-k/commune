@@ -2,7 +2,10 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone};
 use tracing::error;
 
-use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, VisualMediaItem};
+use super::{
+    HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, MAX_COLUMNS, MediaAge,
+    VisualMediaItem, VisualMediaRow, VisualMediaRowItem, VisualMediaRowModel, n_columns_for_width,
+};
 use crate::{
     components::LoadingRow,
     prelude::*,
@@ -11,13 +14,14 @@ use crate::{
     utils::{BoundConstructOnlyObject, LoadingState},
 };
 
-/// The minimum number of items that should be loaded.
+/// The minimum number of media that should be loaded.
 const MIN_N_ITEMS: u32 = 50;
-/// The minimum size requested by an item.
-const SIZE_REQUEST: i32 = 150;
 
 mod imp {
-    use std::{cell::Cell, ops::ControlFlow};
+    use std::{
+        cell::{Cell, OnceCell},
+        ops::ControlFlow,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -34,15 +38,23 @@ mod imp {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        grid_view: TemplateChild<gtk::GridView>,
+        list_view: TemplateChild<gtk::ListView>,
         /// The timeline containing the media events.
         #[property(get, set = Self::set_timeline, construct_only)]
         timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
+        /// The media events of the timeline, with the loading item.
+        media: OnceCell<gtk::FilterListModel>,
+        /// The media events, as rows split into sections by age.
+        rows: OnceCell<VisualMediaRowModel>,
         /// Whether the initial load has settled.
         ///
         /// Until it has, the view is put back on the most recent media every
         /// time items are added.
         is_initialized: Cell<bool>,
+        /// The width of the list view that the rows were built for.
+        row_width: Cell<i32>,
+        /// Whether the rows are waiting to be rebuilt for a new width.
+        is_row_width_queued: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -68,61 +80,136 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let factory = gtk::SignalListItemFactory::new();
-
-            factory.connect_bind(move |_, list_item| {
-                let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {list_item:?}");
-                    return;
-                };
-
-                list_item.set_activatable(false);
-                list_item.set_selectable(false);
-            });
-            factory.connect_bind(move |_, list_item| {
-                let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {list_item:?}");
-                    return;
-                };
-
-                let item = list_item.item();
-
-                if let Some(loading_row) = item
-                    .and_downcast_ref::<LoadingRow>()
-                    .filter(|_| !list_item.child().is_some_and(|c| c.is::<LoadingRow>()))
-                {
-                    loading_row.unparent();
-                    loading_row.set_width_request(SIZE_REQUEST);
-                    loading_row.set_height_request(SIZE_REQUEST);
-
-                    list_item.set_child(Some(loading_row));
-                } else if let Some(event) = item.and_downcast::<HistoryViewerEvent>() {
-                    let media_item = list_item.child_or_default::<VisualMediaItem>();
-                    media_item.set_event(Some(event));
-                }
-            });
-
-            self.grid_view.set_factory(Some(&factory));
+            self.list_view.set_factory(Some(&Self::row_factory()));
+            self.list_view
+                .set_header_factory(Some(&Self::heading_factory()));
         }
     }
 
-    impl WidgetImpl for VisualMediaHistoryViewer {}
+    impl WidgetImpl for VisualMediaHistoryViewer {
+        fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
+            self.parent_size_allocate(width, height, baseline);
+            self.update_n_columns();
+        }
+
+        fn map(&self) {
+            self.parent_map();
+
+            // The headings are relative to the current date, so they are stale if the
+            // viewer was opened before midnight and is opened again after it.
+            if let Some(rows) = self.rows.get() {
+                rows.refresh();
+            }
+        }
+    }
+
     impl NavigationPageImpl for VisualMediaHistoryViewer {}
 
     #[gtk::template_callbacks]
     impl VisualMediaHistoryViewer {
+        /// Construct the factory for the rows of media.
+        fn row_factory() -> gtk::SignalListItemFactory {
+            let factory = gtk::SignalListItemFactory::new();
+
+            factory.connect_setup(|_, list_item| {
+                let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+                    error!("List item factory did not receive a list item: {list_item:?}");
+                    return;
+                };
+
+                // The media are activated individually, the row is only a container.
+                list_item.set_activatable(false);
+                list_item.set_selectable(false);
+                list_item.set_child(Some(&VisualMediaRowItem::new()));
+            });
+
+            factory.connect_bind(|_, list_item| {
+                let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+                    error!("List item factory did not receive a list item: {list_item:?}");
+                    return;
+                };
+
+                let row_item = list_item.child_or_default::<VisualMediaRowItem>();
+                row_item.set_row(list_item.item().and_downcast::<VisualMediaRow>());
+            });
+
+            factory
+        }
+
+        /// Construct the factory for the headings above the sections.
+        fn heading_factory() -> gtk::SignalListItemFactory {
+            let factory = gtk::SignalListItemFactory::new();
+
+            factory.connect_setup(|_, list_header| {
+                let Some(list_header) = list_header.downcast_ref::<gtk::ListHeader>() else {
+                    error!("Header factory did not receive a list header: {list_header:?}");
+                    return;
+                };
+
+                let label = gtk::Label::builder()
+                    .xalign(0.0)
+                    .ellipsize(gtk::pango::EllipsizeMode::End)
+                    .css_classes(["heading"])
+                    .build();
+
+                list_header.set_child(Some(&label));
+            });
+
+            factory.connect_bind(|_, list_header| {
+                let Some(list_header) = list_header.downcast_ref::<gtk::ListHeader>() else {
+                    error!("Header factory did not receive a list header: {list_header:?}");
+                    return;
+                };
+                let Some(label) = list_header.child().and_downcast::<gtk::Label>() else {
+                    return;
+                };
+
+                let age = list_header
+                    .item()
+                    .and_downcast::<VisualMediaRow>()
+                    .and_then(|row| row.age());
+
+                // The loading item has no age when there is no media before it, and it
+                // should not be given a heading of its own.
+                label.set_visible(age.is_some());
+                label.set_label(&age.map(MediaAge::label).unwrap_or_default());
+            });
+
+            factory
+        }
+
+        /// The media events of the timeline, with the loading item.
+        fn media(&self) -> &gtk::FilterListModel {
+            self.media.get_or_init(|| {
+                let filter = gtk::CustomFilter::new(|obj| {
+                    obj.downcast_ref::<HistoryViewerEvent>()
+                        .is_some_and(|event| event.event_type() == HistoryViewerEventType::Media)
+                        || obj.is::<LoadingRow>()
+                });
+
+                gtk::FilterListModel::new(None::<gtk::FilterListModel>, Some(filter))
+            })
+        }
+
         /// Set the timeline containing the media events.
         fn set_timeline(&self, timeline: HistoryViewerTimeline) {
-            let filter = gtk::CustomFilter::new(|obj| {
-                obj.downcast_ref::<HistoryViewerEvent>()
-                    .is_some_and(|e| e.event_type() == HistoryViewerEventType::Media)
-                    || obj.is::<LoadingRow>()
-            });
-            let filter_model =
-                gtk::FilterListModel::new(Some(timeline.with_loading_item().clone()), Some(filter));
+            let media = self.media();
+            media.set_model(Some(timeline.with_loading_item()));
 
-            let model = gtk::NoSelection::new(Some(filter_model));
-            model.connect_items_changed(clone!(
+            let rows = self.rows.get_or_init(|| {
+                VisualMediaRowModel::new(|item| {
+                    item.downcast_ref::<HistoryViewerEvent>()
+                        .map(HistoryViewerEvent::timestamp)
+                })
+            });
+            // The width of the view is not known until it has been allocated, and the
+            // rows are built before that. The view is clamped to a width that fits the
+            // largest number of columns, so that is the value that is the least likely
+            // to need a correction.
+            rows.set_n_columns(MAX_COLUMNS);
+            rows.set_model(Some(media.clone()));
+
+            rows.connect_items_changed(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_, _, _, _| {
@@ -133,7 +220,8 @@ mod imp {
                     }
                 }
             ));
-            self.grid_view.set_model(Some(&model));
+            self.list_view
+                .set_model(Some(&gtk::NoSelection::new(Some(rows.clone()))));
 
             let timeline_state_handler = timeline.connect_state_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -161,9 +249,9 @@ mod imp {
             self.is_initialized.set(true);
 
             let adj = self
-                .grid_view
+                .list_view
                 .vadjustment()
-                .expect("GtkGridView has a vadjustment");
+                .expect("GtkListView has a vadjustment");
 
             let load_more = clone!(
                 #[weak(rename_to = imp)]
@@ -176,7 +264,7 @@ mod imp {
                     }
                 }
             );
-            // The upper bound is watched as well as the value: until the grid view has
+            // The upper bound is watched as well as the value: until the list view has
             // been allocated there is no way to tell whether the viewport is full, so
             // its allocation is what makes the question answerable.
             adj.connect_value_notify(load_more.clone());
@@ -204,14 +292,42 @@ mod imp {
                 .await;
         }
 
+        /// Rebuild the rows for the current width of the list view.
+        fn update_n_columns(&self) {
+            let width = self.list_view.width();
+
+            if width <= 0 || width == self.row_width.get() {
+                return;
+            }
+            self.row_width.set(width);
+
+            if self.is_row_width_queued.replace(true) {
+                return;
+            }
+
+            // The rows cannot be rebuilt while the view presenting them is being
+            // allocated, so it is done as soon as the allocation is over.
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    imp.is_row_width_queued.set(false);
+
+                    if let Some(rows) = imp.rows.get() {
+                        rows.set_n_columns(n_columns_for_width(imp.row_width.get()));
+                    }
+                }
+            ));
+        }
+
         /// Scroll back to the most recent media.
         ///
-        /// The grid view anchors its scroll position on one of its items, and
-        /// the loading item is the last one, so filling the timeline
-        /// for the first time drags the view down with it and the most
-        /// recent media ends up off-screen.
+        /// The list view anchors its scroll position on one of its rows, and
+        /// the loading row is the last one, so filling the timeline for
+        /// the first time drags the view down with it and the most recent
+        /// media ends up off-screen.
         fn scroll_to_start(&self) {
-            let Some(model) = self.grid_view.model() else {
+            let Some(model) = self.list_view.model() else {
                 return;
             };
 
@@ -219,13 +335,13 @@ mod imp {
                 return;
             }
 
-            // Wait until the next tick, to make sure that the GtkGridView has created
-            // the item before scrolling to it.
+            // Wait until the next tick, to make sure that the GtkListView has created
+            // the row before scrolling to it.
             glib::idle_add_local_once(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move || {
-                    imp.grid_view
+                    imp.list_view
                         .scroll_to(0, gtk::ListScrollFlags::FOCUS, None);
                 }
             ));
@@ -233,22 +349,18 @@ mod imp {
 
         /// Whether this viewer needs more items.
         fn needs_more_items(&self) -> bool {
-            let Some(model) = self.grid_view.model() else {
-                return false;
-            };
-
-            // Make sure there is an initial number of items.
-            if model.n_items() < MIN_N_ITEMS {
+            // Make sure there is an initial number of media.
+            if self.media().n_items() < MIN_N_ITEMS {
                 return true;
             }
 
             let adj = self
-                .grid_view
+                .list_view
                 .vadjustment()
-                .expect("GtkGridView has a vadjustment");
+                .expect("GtkListView has a vadjustment");
 
             if adj.upper() <= 0.0 {
-                // The grid view has not been allocated yet, so the viewport size and
+                // The list view has not been allocated yet, so the viewport size and
                 // the content size are both unknown. Answering `true` here asks for
                 // the whole room to be paginated before anything is on screen.
                 return false;
@@ -259,19 +371,17 @@ mod imp {
 
         /// Update this viewer for the current state.
         fn update_state(&self) {
-            let Some(model) = self.grid_view.model() else {
-                return;
-            };
+            let media = self.media();
             let timeline = self.timeline.obj();
 
             let visible_child_name = match timeline.state() {
                 LoadingState::Initial => "loading",
                 LoadingState::Error => "error",
-                LoadingState::Ready if model.n_items() == 0 => "empty",
+                LoadingState::Ready if media.n_items() == 0 => "empty",
                 LoadingState::Loading => {
-                    if model.n_items() == 0
-                        || (model.n_items() == 1
-                            && model.item(0).is_some_and(|item| item.is::<LoadingRow>()))
+                    if media.n_items() == 0
+                        || (media.n_items() == 1
+                            && media.item(0).is_some_and(|item| item.is::<LoadingRow>()))
                     {
                         "loading"
                     } else {
