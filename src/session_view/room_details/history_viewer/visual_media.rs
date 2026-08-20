@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 use tracing::error;
 
@@ -16,10 +19,12 @@ use crate::{
 
 /// The minimum number of media that should be loaded.
 const MIN_N_ITEMS: u32 = 50;
+/// How long the date indicator stays on screen after the view stopped moving.
+const DATE_INDICATOR_DURATION: Duration = Duration::from_secs(1);
 
 mod imp {
     use std::{
-        cell::{Cell, OnceCell},
+        cell::{Cell, OnceCell, RefCell},
         ops::ControlFlow,
     };
 
@@ -39,6 +44,10 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         list_view: TemplateChild<gtk::ListView>,
+        #[template_child]
+        date_indicator_revealer: TemplateChild<gtk::Revealer>,
+        #[template_child]
+        date_indicator: TemplateChild<gtk::Label>,
         /// The timeline containing the media events.
         #[property(get, set = Self::set_timeline, construct_only)]
         timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
@@ -55,6 +64,8 @@ mod imp {
         row_width: Cell<i32>,
         /// Whether the rows are waiting to be rebuilt for a new width.
         is_row_width_queued: Cell<bool>,
+        /// The timeout hiding the date indicator, while it is on screen.
+        hide_date_indicator: RefCell<Option<glib::SourceId>>,
     }
 
     #[glib::object_subclass]
@@ -77,6 +88,12 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for VisualMediaHistoryViewer {
+        fn dispose(&self) {
+            if let Some(source_id) = self.hide_date_indicator.take() {
+                source_id.remove();
+            }
+        }
+
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -269,6 +286,117 @@ mod imp {
             // its allocation is what makes the question answerable.
             adj.connect_value_notify(load_more.clone());
             adj.connect_upper_notify(load_more);
+
+            adj.connect_value_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_date_indicator();
+                }
+            ));
+        }
+
+        /// Present the date of the media at the top of the viewport.
+        fn update_date_indicator(&self) {
+            if !self.is_initialized.get() {
+                // The view is still being put back on the most recent media, which is
+                // not the user moving through the history.
+                return;
+            }
+
+            let Some(date) = self.visible_date() else {
+                return;
+            };
+
+            // Translators: This is a date format for the indicator that is presented
+            // while the media history is scrolled, with the name of the month and the
+            // year. See `man strftime` or the documentation of g_date_time_format for
+            // the available specifiers:
+            // <https://docs.gtk.org/glib/method.DateTime.format.html>
+            let format = gettext("%B %Y");
+            let Ok(label) = date.format(&format) else {
+                return;
+            };
+
+            self.date_indicator.set_label(&label);
+            self.date_indicator_revealer.set_reveal_child(true);
+
+            self.hide_date_indicator_after_delay();
+        }
+
+        /// The time at which the media presented at the top of the viewport was
+        /// sent.
+        ///
+        /// GTK does not tell a list view which of its items are visible, so the
+        /// rows that it has built are compared with the position of the
+        /// viewport. There are only as many of those as fit on screen, plus the
+        /// few that GTK keeps around them.
+        fn visible_date(&self) -> Option<glib::DateTime> {
+            let top = self.list_view.vadjustment()?.value();
+
+            let mut topmost: Option<(f32, glib::DateTime)> = None;
+            let mut child = self.list_view.first_child();
+
+            while let Some(widget) = child {
+                child = widget.next_sibling();
+
+                let Some(bounds) = widget.compute_bounds(&*self.list_view) else {
+                    continue;
+                };
+
+                if f64::from(bounds.y() + bounds.height()) <= top {
+                    // The row is entirely above the viewport.
+                    continue;
+                }
+
+                if topmost.as_ref().is_some_and(|(y, _)| *y <= bounds.y()) {
+                    continue;
+                }
+
+                // The headings and the loading row have no date of their own, the row
+                // below them does.
+                let Some(row) = widget
+                    .first_child()
+                    .and_downcast::<VisualMediaRowItem>()
+                    .and_then(|row_item| row_item.row())
+                    .filter(|row| !row.is_loading())
+                else {
+                    continue;
+                };
+
+                let items = row.items();
+                let Some(event) = items
+                    .first()
+                    .and_then(|item| item.downcast_ref::<HistoryViewerEvent>())
+                else {
+                    continue;
+                };
+
+                topmost = Some((bounds.y(), event.timestamp()));
+            }
+
+            topmost.map(|(_, date)| date)
+        }
+
+        /// Hide the date indicator once the view has stopped moving.
+        fn hide_date_indicator_after_delay(&self) {
+            if let Some(source_id) = self.hide_date_indicator.take() {
+                source_id.remove();
+            }
+
+            let source_id = glib::timeout_add_local_once(
+                DATE_INDICATOR_DURATION,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move || {
+                        imp.hide_date_indicator.take();
+                        imp.date_indicator_revealer.set_reveal_child(false);
+                    }
+                ),
+            );
+
+            self.hide_date_indicator.replace(Some(source_id));
         }
 
         /// Load more items in this viewer.
