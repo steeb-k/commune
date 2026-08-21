@@ -12,7 +12,10 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, rc::Rc};
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
 
     use super::*;
 
@@ -27,6 +30,9 @@ mod imp {
         /// The event presented by this row.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
         event: BoundObject<Event>,
+        /// Whether this row presents the event that the timeline is focused on.
+        #[property(get, set = Self::set_is_focused_event, explicit_notify)]
+        is_focused_event: Cell<bool>,
         /// The event action group of this row.
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
         shortcut_controller: RefCell<Option<gtk::ShortcutController>>,
@@ -331,6 +337,25 @@ mod imp {
             } else {
                 obj.remove_css_class("highlight");
             }
+        }
+
+        /// Set whether this row presents the event that the timeline is focused
+        /// on.
+        fn set_is_focused_event(&self, is_focused_event: bool) {
+            if self.is_focused_event.get() == is_focused_event {
+                return;
+            }
+
+            self.is_focused_event.set(is_focused_event);
+
+            let obj = self.obj();
+            if is_focused_event {
+                obj.add_css_class("focused-event");
+            } else {
+                obj.remove_css_class("focused-event");
+            }
+
+            obj.notify_is_focused_event();
         }
 
         /// Update this row for the related event with the given identifier.

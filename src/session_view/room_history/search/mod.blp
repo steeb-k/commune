@@ -1,0 +1,97 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomHistorySearch: Adw.Bin {
+  vexpand: true;
+  hexpand: true;
+
+  Gtk.Stack stack {
+    transition-type: crossfade;
+
+    Gtk.StackPage {
+      name: "empty";
+      title: _("Search Messages");
+
+      child: Adw.StatusPage {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "system-search-symbolic";
+        title: _("Search Messages");
+        description: _("Type to search the messages of this room");
+      };
+    }
+
+    Gtk.StackPage {
+      name: "loading";
+      title: _("Loading");
+
+      child: Adw.Spinner {};
+    }
+
+    Gtk.StackPage {
+      name: "no-results";
+      title: _("No Messages Found");
+
+      child: Adw.StatusPage no_results_page {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "system-search-symbolic";
+        title: _("No Messages Found");
+      };
+    }
+
+    Gtk.StackPage {
+      name: "error";
+      title: _("Could Not Search Messages");
+
+      child: Adw.StatusPage {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "error-symbolic";
+        title: _("Could Not Search Messages");
+        description: _("Check your network connection");
+
+        child: Gtk.Button {
+          can-shrink: true;
+          label: _("Try Again");
+          halign: center;
+          clicked => $retry() swapped;
+
+          styles [
+            "pill",
+          ]
+        };
+      };
+    }
+
+    Gtk.StackPage {
+      name: "results";
+      title: _("Search Results");
+
+      child: Gtk.ScrolledWindow {
+        hscrollbar-policy: never;
+        vexpand: true;
+
+        child: Adw.ClampScrollable {
+          vexpand: true;
+          hexpand: true;
+          maximum-size: 750;
+          tightening-threshold: 550;
+
+          child: Gtk.ListView list_view {
+            show-separators: true;
+            single-click-activate: true;
+            activate => $result_activated() swapped;
+
+            styles [
+              "navigation-sidebar",
+            ]
+          };
+        };
+      };
+    }
+  }
+}

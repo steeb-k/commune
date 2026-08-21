@@ -1,0 +1,47 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomHistorySearchRow: Adw.Bin {
+  Gtk.Box {
+    orientation: vertical;
+    spacing: 3;
+
+    Gtk.Box {
+      spacing: 6;
+
+      $Avatar avatar {
+        size: 24;
+        valign: center;
+      }
+
+      Gtk.Label sender_label {
+        ellipsize: end;
+        xalign: 0;
+        hexpand: true;
+
+        styles [
+          "heading",
+        ]
+      }
+
+      Gtk.Label timestamp_label {
+        valign: center;
+        halign: end;
+
+        styles [
+          "caption",
+          "dimmed",
+          "numeric",
+        ]
+      }
+    }
+
+    Gtk.Label body_label {
+      xalign: 0;
+      wrap: true;
+      wrap-mode: word_char;
+      lines: 3;
+      ellipsize: end;
+    }
+  }
+}

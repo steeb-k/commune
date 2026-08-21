@@ -116,7 +116,7 @@ mod imp {
 
         /// Find the index of the list item containing the given position in the
         /// underlying model.
-        fn model_position_to_index(&self, position: u32) -> Option<usize> {
+        pub(super) fn model_position_to_index(&self, position: u32) -> Option<usize> {
             for (index, item) in self.items.borrow().iter().enumerate() {
                 if item.contains(position) {
                     return Some(index);
@@ -497,6 +497,18 @@ impl GroupingListModel {
         // Ignore the error because we cannot `.expect()` when the value is a function.
         let _ = obj.imp().group_fn.set(Box::new(group_fn));
         obj
+    }
+
+    /// The position in this model of the item containing the given position of
+    /// the underlying model.
+    ///
+    /// Positions differ between both models as soon as items are grouped, so
+    /// this must be used to convert a position from the underlying model, e.g.
+    /// to scroll to an item.
+    pub(crate) fn index_for_model_position(&self, position: u32) -> Option<u32> {
+        self.imp()
+            .model_position_to_index(position)
+            .and_then(|index| u32::try_from(index).ok())
     }
 }
 

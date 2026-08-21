@@ -70,7 +70,7 @@ mod imp {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        room_history: TemplateChild<RoomHistory>,
+        pub(super) room_history: TemplateChild<RoomHistory>,
         #[template_child]
         invite_request: TemplateChild<InviteRequest>,
         #[template_child]
@@ -309,6 +309,11 @@ impl Content {
     /// Handle a paste action.
     pub(crate) fn handle_paste_action(&self) {
         self.imp().handle_paste_action();
+    }
+
+    /// The room history of this content.
+    pub(crate) fn room_history(&self) -> &RoomHistory {
+        &self.imp().room_history
     }
 
     /// All the header bars of the children of the content.

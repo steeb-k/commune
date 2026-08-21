@@ -125,6 +125,18 @@ impl VirtualItem {
         )
     }
 
+    /// Create a spinner virtual item for the end of the timeline.
+    ///
+    /// It needs a different timeline ID than [`VirtualItem::spinner()`],
+    /// because both can be in the timeline at the same time.
+    pub(crate) fn spinner_end(timeline: &Timeline) -> Self {
+        Self::new(
+            timeline,
+            VirtualItemKind::Spinner,
+            "VirtualItemKind::SpinnerEnd",
+        )
+    }
+
     /// Create a typing virtual item.
     pub(crate) fn typing(timeline: &Timeline) -> Self {
         Self::new(timeline, VirtualItemKind::Typing, "VirtualItemKind::Typing")

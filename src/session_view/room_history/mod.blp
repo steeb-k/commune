@@ -56,6 +56,14 @@ template $ContentRoomHistory: Adw.Bin {
       }
 
       [end]
+      Gtk.ToggleButton search_button {
+        valign: center;
+        icon-name: "system-search-symbolic";
+        tooltip-text: _("Search Messages");
+        active: bind search_bar.search-mode-enabled bidirectional;
+      }
+
+      [end]
       Gtk.MenuButton room_menu {
         valign: center;
         icon-name: "menu-secondary-symbolic";
@@ -63,6 +71,21 @@ template $ContentRoomHistory: Adw.Bin {
         primary: bind template.is-only-view;
         tooltip-text: _("Room Menu");
       }
+    }
+
+    [top]
+    Gtk.SearchBar search_bar {
+      show-close-button: true;
+
+      child: Adw.Clamp {
+        maximum-size: 750;
+        tightening-threshold: 550;
+
+        child: Gtk.SearchEntry search_entry {
+          placeholder-text: _("Search messages of this room…");
+          hexpand: true;
+        };
+      };
     }
 
     content: Gtk.Box {
@@ -120,6 +143,13 @@ template $ContentRoomHistory: Adw.Bin {
         }
 
         Gtk.StackPage {
+          name: "search";
+          title: _("Search Results");
+
+          child: $RoomHistorySearch search_view {};
+        }
+
+        Gtk.StackPage {
           name: "content";
           title: _("Room History");
 
@@ -136,7 +166,7 @@ template $ContentRoomHistory: Adw.Bin {
               Gtk.Button scroll_btn {
                 icon-name: "go-bottom-symbolic";
                 tooltip-text: _("Scroll to Bottom");
-                clicked => $scroll_down() swapped;
+                clicked => $scroll_btn_clicked() swapped;
 
                 styles [
                   "osd",
@@ -184,9 +214,13 @@ template $ContentRoomHistory: Adw.Bin {
         vexpand: false;
         maximum-size: 750;
         tightening-threshold: 550;
+        // There is nothing to compose to while looking at search results.
+        visible: bind search_bar.search-mode-enabled inverted;
 
         $MessageToolbar message_toolbar {
-          timeline: bind template.timeline;
+          // Always compose in the live timeline: a focused timeline never receives
+          // local echoes, so a message sent through it would not appear.
+          timeline: bind template.timeline as <$Timeline>.room as <$Room>.live-timeline;
         }
       }
     };

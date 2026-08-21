@@ -599,14 +599,33 @@ mod imp {
         /// Show the given `MatrixIdUri`.
         pub(super) fn show_matrix_uri(&self, uri: MatrixIdUri) {
             match uri {
-                MatrixIdUri::Room(room_uri)
-                | MatrixIdUri::Event(MatrixEventIdUri { room_uri, .. }) => {
+                MatrixIdUri::Room(room_uri) => {
                     self.preview_room(Some(room_uri));
+                }
+                MatrixIdUri::Event(MatrixEventIdUri { room_uri, event_id }) => {
+                    self.show_room_event(room_uri, event_id);
                 }
                 MatrixIdUri::User(user_id) => {
                     self.show_user_profile_dialog(user_id);
                 }
             }
+        }
+
+        /// Show the event with the given ID in the room with the given URI.
+        ///
+        /// If we are not in the room, we can only show its preview, since we
+        /// cannot fetch the event.
+        fn show_room_event(&self, room_uri: MatrixRoomIdUri, event_id: OwnedEventId) {
+            let Some(room) = self
+                .room_list()
+                .and_then(|room_list| room_list.get_by_identifier(&room_uri.id))
+            else {
+                self.preview_room(Some(room_uri));
+                return;
+            };
+
+            self.select_room(room);
+            self.content.room_history().focus_on_event(event_id);
         }
     }
 }

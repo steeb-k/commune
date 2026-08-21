@@ -2,15 +2,14 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::deserialized_responses::TimelineEvent;
 use ruma::{
     OwnedEventId,
-    events::{
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-        room::message::{MessageType, OriginalSyncRoomMessageEvent, Relation},
-    },
+    events::room::message::{MessageType, OriginalSyncRoomMessageEvent},
 };
 
 use crate::{
     session::Room,
-    utils::matrix::{MediaMessage, VisualMediaMessage, timestamp_to_date},
+    utils::matrix::{
+        MediaMessage, VisualMediaMessage, original_message_event_from_raw, timestamp_to_date,
+    },
 };
 
 /// The types of events that can be displayed in the history viewers.
@@ -92,33 +91,7 @@ impl HistoryViewerEvent {
     /// Constructs a new `HistoryViewerEvent` with the given event, if it is
     /// viewable in one of the history viewers.
     pub fn try_new(room: &Room, event: &TimelineEvent) -> Option<Self> {
-        let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
-            SyncMessageLikeEvent::Original(mut message_event),
-        ))) = event.raw().deserialize()
-        else {
-            return None;
-        };
-
-        // Filter out edits, they should be bundled with the original event.
-        if matches!(
-            message_event.content.relates_to,
-            Some(Relation::Replacement(_))
-        ) {
-            return None;
-        }
-
-        // Apply bundled edit.
-        if let Some(Relation::Replacement(replacement)) = message_event
-            .unsigned
-            .relations
-            .replace
-            .as_ref()
-            .and_then(|e| e.content.relates_to.as_ref())
-        {
-            message_event
-                .content
-                .apply_replacement(replacement.new_content.clone());
-        }
+        let message_event = original_message_event_from_raw(event.raw())?;
 
         let event_type = HistoryViewerEventType::with_msgtype(&message_event.content.msgtype)?;
 

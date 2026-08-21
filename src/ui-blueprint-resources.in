@@ -142,6 +142,8 @@ session_view/room_history/message_toolbar/sticker_picker/mod.blp
 session_view/room_history/mod.blp
 session_view/room_history/read_receipts_list/mod.blp
 session_view/room_history/read_receipts_list/read_receipts_popover.blp
+session_view/room_history/search/mod.blp
+session_view/room_history/search/row.blp
 session_view/room_history/state/creation.blp
 session_view/room_history/state/group_row.blp
 session_view/room_history/state/row.blp
