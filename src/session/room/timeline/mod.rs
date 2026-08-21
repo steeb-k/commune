@@ -10,8 +10,8 @@ use gtk::{
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
-        RoomExt, Timeline as SdkTimeline, TimelineEventItemId, TimelineItem as SdkTimelineItem,
-        default_event_filter,
+        RoomExt, Timeline as SdkTimeline, TimelineEventFocusThreadMode, TimelineEventItemId,
+        TimelineFocus, TimelineItem as SdkTimelineItem, default_event_filter,
     },
 };
 use ruma::{
@@ -81,6 +81,9 @@ mod imp {
         filter: gtk::CustomFilter,
         /// Filtered list of items provided by the SDK timeline.
         filtered_sdk_items: gtk::FilterListModel,
+        /// The spinner shown at the end of the timeline, when loading events
+        /// forwards.
+        end_spinner_items: OnceCell<SingleItemListModel>,
         /// Items added at the end of the timeline.
         ///
         /// Currently this can only contain one item at a time.
@@ -94,9 +97,21 @@ mod imp {
         /// The loading state of the timeline.
         #[property(get, builder(LoadingState::default()))]
         state: Cell<LoadingState>,
+        /// The event this timeline is focused on.
+        ///
+        /// If this is set, this is not the live timeline of the room: it is a
+        /// timeline centered on a single event, e.g. a search result or a
+        /// permalink. Such a timeline never receives new events from sync.
+        focused_event_id: OnceCell<Option<OwnedEventId>>,
+        /// Whether this timeline is focused on a single event.
+        #[property(get = Self::is_focused)]
+        is_focused: PhantomData<bool>,
         /// Whether we are loading events at the start of the timeline.
         #[property(get)]
         is_loading_start: Cell<bool>,
+        /// Whether we are loading events at the end of the timeline.
+        #[property(get)]
+        is_loading_end: Cell<bool>,
         /// Whether the timeline is empty.
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
@@ -106,6 +121,12 @@ mod imp {
         /// Whether we have reached the start of the timeline.
         #[property(get)]
         has_reached_start: Cell<bool>,
+        /// Whether we have reached the end of the timeline.
+        ///
+        /// This is always `true` for the live timeline, which is by definition
+        /// at the end of the room's history.
+        #[property(get)]
+        has_reached_end: Cell<bool>,
         /// Whether we have the `m.room.create` event in the timeline.
         #[property(get)]
         has_room_create: Cell<bool>,
@@ -193,19 +214,31 @@ mod imp {
                 }
             };
             let matrix_room = room.matrix_room().clone();
+            let focused_event_id = self.focused_event_id().cloned();
             let handle = spawn_tokio!(async move {
-                matrix_room
+                let mut builder = matrix_room
                     .timeline_builder()
                     .event_filter(filter)
-                    .add_failed_to_parse(false)
-                    .build()
-                    .await
+                    .add_failed_to_parse(false);
+
+                if let Some(target) = focused_event_id {
+                    builder = builder.with_focus(TimelineFocus::Event {
+                        target,
+                        num_context_events: MAX_BATCH_SIZE,
+                        thread_mode: TimelineEventFocusThreadMode::Automatic {
+                            hide_threaded_events: false,
+                        },
+                    });
+                }
+
+                builder.build().await
             });
 
             let matrix_timeline = match handle.await.expect("task was not aborted") {
                 Ok(timeline) => timeline,
                 Err(error) => {
                     error!("Could not create timeline: {error}");
+                    self.set_state(LoadingState::Error);
                     return;
                 }
             };
@@ -214,6 +247,11 @@ mod imp {
             self.matrix_timeline
                 .set(matrix_timeline.clone())
                 .expect("matrix timeline is uninitialized");
+
+            if !self.is_focused() {
+                // The live timeline is always at the end of the room's history.
+                self.set_has_reached_end(true);
+            }
 
             let (values, timeline_stream) = matrix_timeline.subscribe().await;
 
@@ -256,13 +294,34 @@ mod imp {
                 .set(diff_handle.abort_handle())
                 .expect("handle should be uninitialized");
 
-            self.watch_read_receipts().await;
+            if !self.is_focused() {
+                // A focused timeline never gets new events and must not move the
+                // read receipt of the user, so it does not need any of this.
+                self.watch_read_receipts().await;
+            }
 
-            if self.preload.get() {
+            if !self.is_focused() && self.preload.get() {
                 self.preload().await;
             }
 
             self.set_state(LoadingState::Ready);
+        }
+
+        /// Set the event this timeline is focused on.
+        pub(super) fn set_focused_event_id(&self, event_id: Option<OwnedEventId>) {
+            self.focused_event_id
+                .set(event_id)
+                .expect("focused event ID should be uninitialized");
+        }
+
+        /// The event this timeline is focused on, if any.
+        pub(super) fn focused_event_id(&self) -> Option<&OwnedEventId> {
+            self.focused_event_id.get().and_then(Option::as_ref)
+        }
+
+        /// Whether this timeline is focused on a single event.
+        fn is_focused(&self) -> bool {
+            self.focused_event_id().is_some()
         }
 
         /// The underlying SDK timeline.
@@ -290,6 +349,15 @@ mod imp {
             })
         }
 
+        /// The spinner shown at the end of the timeline.
+        fn end_spinner_items(&self) -> &SingleItemListModel {
+            self.end_spinner_items.get_or_init(|| {
+                let model = SingleItemListModel::new(Some(&VirtualItem::spinner_end(&self.obj())));
+                model.set_is_hidden(true);
+                model
+            })
+        }
+
         /// Items added at the end of the timeline.
         fn end_items(&self) -> &SingleItemListModel {
             self.end_items.get_or_init(|| {
@@ -306,6 +374,7 @@ mod imp {
                     let model_list = gio::ListStore::new::<gio::ListModel>();
                     model_list.append(self.start_items());
                     model_list.append(&self.filtered_sdk_items);
+                    model_list.append(self.end_spinner_items());
                     model_list.append(self.end_items());
                     gtk::FlattenListModel::new(Some(model_list))
                 })
@@ -330,7 +399,7 @@ mod imp {
 
         /// Update the loading state of the timeline.
         fn update_loading_state(&self) {
-            let is_loading = self.is_loading_start.get();
+            let is_loading = self.is_loading_start.get() || self.is_loading_end.get();
 
             if is_loading {
                 self.set_state(LoadingState::Loading);
@@ -350,6 +419,31 @@ mod imp {
             self.update_loading_state();
             self.start_items().set_is_hidden(!is_loading_start);
             self.obj().notify_is_loading_start();
+        }
+
+        /// Set whether we are loading events at the end of the timeline.
+        fn set_loading_end(&self, is_loading_end: bool) {
+            if self.is_loading_end.get() == is_loading_end {
+                return;
+            }
+
+            self.is_loading_end.set(is_loading_end);
+
+            self.update_loading_state();
+            self.end_spinner_items().set_is_hidden(!is_loading_end);
+            self.obj().notify_is_loading_end();
+        }
+
+        /// Set whether we have reached the end of the timeline.
+        fn set_has_reached_end(&self, has_reached_end: bool) {
+            if self.has_reached_end.get() == has_reached_end {
+                // Nothing to do.
+                return;
+            }
+
+            self.has_reached_end.set(has_reached_end);
+
+            self.obj().notify_has_reached_end();
         }
 
         /// Set whether we have reached the start of the timeline.
@@ -389,6 +483,10 @@ mod imp {
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
             self.set_has_reached_start(false);
+            if self.is_focused() {
+                // The live timeline is always at the end of the room's history.
+                self.set_has_reached_end(false);
+            }
             self.set_has_room_create(false);
         }
 
@@ -721,8 +819,71 @@ mod imp {
             }
         }
 
+        /// Whether we can load more events at the end of the timeline with the
+        /// current state.
+        pub(super) fn can_paginate_forwards(&self) -> bool {
+            // Only a focused timeline can load events forwards: the live timeline is
+            // already at the end of the room's history.
+            self.is_focused()
+                && self.state.get() != LoadingState::Initial
+                && !self.is_loading_end.get()
+                && !self.has_reached_end.get()
+        }
+
+        /// Load more events at the end of the timeline until the given function
+        /// tells us to stop.
+        pub(super) async fn paginate_forwards<F>(&self, continue_fn: F)
+        where
+            F: Fn() -> ControlFlow<()>,
+        {
+            self.set_loading_end(true);
+
+            loop {
+                if !self.paginate_forwards_inner().await {
+                    break;
+                }
+
+                if continue_fn().is_break() {
+                    break;
+                }
+            }
+
+            self.set_loading_end(false);
+        }
+
+        /// Load more events at the end of the timeline.
+        ///
+        /// Returns `true` if more events can be loaded.
+        async fn paginate_forwards_inner(&self) -> bool {
+            let matrix_timeline = self.matrix_timeline().clone();
+            let handle =
+                spawn_tokio!(
+                    async move { matrix_timeline.paginate_forwards(MAX_BATCH_SIZE).await }
+                );
+
+            match handle.await.expect("task was not aborted") {
+                Ok(reached_end) => {
+                    if reached_end {
+                        self.set_has_reached_end(true);
+                    }
+
+                    !reached_end
+                }
+                Err(error) => {
+                    error!("Could not load timeline: {error}");
+                    self.set_state(LoadingState::Error);
+                    false
+                }
+            }
+        }
+
         /// Add the typing row to the timeline, if it isn't present already.
         fn add_typing_row(&self) {
+            if self.is_focused() {
+                // A focused timeline does not show the typing status.
+                return;
+            }
+
             self.end_items().set_is_hidden(false);
         }
 
@@ -950,11 +1111,29 @@ glib::wrapper! {
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
     pub(crate) fn new(room: &Room) -> Self {
+        Self::construct(room, None)
+    }
+
+    /// Construct a new `Timeline` for the given room, focused on the event with
+    /// the given ID.
+    ///
+    /// Such a timeline is centered on a single event and can be paginated in
+    /// both directions, but it never receives new events from sync, so it
+    /// cannot replace the live timeline of the room.
+    pub(crate) fn new_focused(room: &Room, event_id: OwnedEventId) -> Self {
+        Self::construct(room, Some(event_id))
+    }
+
+    /// Construct a new `Timeline` for the given room, optionally focused on the
+    /// event with the given ID.
+    fn construct(room: &Room, focused_event_id: Option<OwnedEventId>) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
         let imp = obj.imp();
+        imp.set_focused_event_id(focused_event_id);
+
         spawn!(clone!(
             #[weak]
             imp,
@@ -964,6 +1143,11 @@ impl Timeline {
         ));
 
         obj
+    }
+
+    /// The event this timeline is focused on, if any.
+    pub(crate) fn focused_event_id(&self) -> Option<OwnedEventId> {
+        self.imp().focused_event_id().cloned()
     }
 
     /// The underlying SDK timeline.
@@ -984,6 +1168,21 @@ impl Timeline {
         }
 
         imp.paginate_backwards(continue_fn).await;
+    }
+
+    /// Load more events at the end of the timeline until the given function
+    /// tells us to stop.
+    pub(crate) async fn paginate_forwards<F>(&self, continue_fn: F)
+    where
+        F: Fn() -> ControlFlow<()>,
+    {
+        let imp = self.imp();
+
+        if !imp.can_paginate_forwards() {
+            return;
+        }
+
+        imp.paginate_forwards(continue_fn).await;
     }
 
     /// Get the event with the given identifier from this `Timeline`.

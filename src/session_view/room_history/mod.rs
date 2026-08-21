@@ -21,6 +21,7 @@ mod member_timestamp;
 mod message_row;
 mod message_toolbar;
 mod read_receipts_list;
+mod search;
 mod state;
 mod title;
 mod typing_row;
@@ -35,6 +36,7 @@ use self::{
     message_row::MessageRow,
     message_toolbar::MessageToolbar,
     read_receipts_list::ReadReceiptsList,
+    search::RoomHistorySearch,
     state::{StateGroupRow, StateRow},
     title::RoomHistoryTitle,
     typing_row::TypingRow,
@@ -51,7 +53,10 @@ use crate::{
         TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
     },
     spawn, toast,
-    utils::{BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks},
+    utils::{
+        BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks,
+        key_bindings,
+    },
 };
 
 /// The time to wait before considering that scrolling has ended.
@@ -100,6 +105,14 @@ mod imp {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
+        search_bar: TemplateChild<gtk::SearchBar>,
+        #[template_child]
+        search_entry: TemplateChild<gtk::SearchEntry>,
+        #[template_child]
+        search_button: TemplateChild<gtk::ToggleButton>,
+        #[template_child]
+        search_view: TemplateChild<RoomHistorySearch>,
+        #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
@@ -120,6 +133,9 @@ mod imp {
         /// timeline.
         #[property(get)]
         is_sticky: Cell<bool>,
+        /// Whether we already scrolled to the focused event of the current
+        /// timeline.
+        focused_scroll_done: Cell<bool>,
         /// The `GroupingListModel` used in the list view.
         grouping_model: OnceCell<GroupingListModel>,
         scroll_timeout: RefCell<Option<glib::SourceId>>,
@@ -141,6 +157,7 @@ mod imp {
         #[allow(clippy::too_many_lines)]
         fn class_init(klass: &mut Self::Class) {
             VerificationInfoBar::ensure_type();
+            RoomHistorySearch::ensure_type();
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
@@ -227,6 +244,19 @@ mod imp {
                 },
             );
 
+            klass.install_action("room-history.return-to-live", None, |obj, _, _| {
+                obj.return_to_live();
+            });
+
+            klass.install_action("room-history.toggle-search", None, |obj, _, _| {
+                obj.imp().toggle_search();
+            });
+            klass.add_binding_action(
+                gdk::Key::f,
+                key_bindings::PRIMARY_MASK,
+                "room-history.toggle-search",
+            );
+
             klass.install_action("room-history.edit-latest-message", None, |obj, _, _| {
                 let Some(timeline) = obj.timeline() else {
                     return;
@@ -273,6 +303,7 @@ mod imp {
 
             self.init_listview();
             self.init_drop_target();
+            self.init_search();
 
             self.scroll_btn_revealer
                 .connect_child_revealed_notify(|revealer| {
@@ -397,6 +428,60 @@ mod imp {
             ));
         }
 
+        /// Initialize the search of the messages of the room.
+        fn init_search(&self) {
+            // The search bar is not the direct parent of the entry, so it must be
+            // connected explicitly.
+            self.search_bar.connect_entry(&*self.search_entry);
+
+            self.search_entry.connect_search_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |entry| {
+                    imp.search_view.set_search_term(&entry.text());
+                }
+            ));
+
+            self.search_bar.connect_search_mode_enabled_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |search_bar| {
+                    if !search_bar.is_search_mode() {
+                        // Forget the previous search, so that reopening the search
+                        // starts fresh.
+                        imp.search_entry.set_text("");
+                    }
+
+                    imp.update_view();
+                }
+            ));
+
+            self.search_view.connect_result_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, event_id| {
+                    let Ok(event_id) = EventId::parse(&event_id) else {
+                        error!("Could not parse event ID of activated search result");
+                        return;
+                    };
+
+                    // Close the search to show the message in the timeline.
+                    imp.search_bar.set_search_mode(false);
+                    imp.obj().focus_on_event(event_id);
+                }
+            ));
+        }
+
+        /// Toggle the search of the messages of the room.
+        fn toggle_search(&self) {
+            let enable = !self.search_bar.is_search_mode();
+            self.search_bar.set_search_mode(enable);
+
+            if enable {
+                self.search_entry.grab_focus();
+            }
+        }
+
         /// Initialize the drop target.
         fn init_drop_target(&self) {
             let target = gtk::DropTarget::new(
@@ -466,6 +551,13 @@ mod imp {
         fn set_timeline(&self, timeline: Option<Timeline>) {
             if self.timeline.obj() == timeline {
                 return;
+            }
+
+            // A search only applies to the room it was started in, so leave it when
+            // another room is opened.
+            let new_room = timeline.as_ref().map(Timeline::room);
+            if self.room() != new_room {
+                self.search_bar.set_search_mode(false);
             }
 
             self.disconnect_all();
@@ -547,6 +639,7 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_view();
+                        imp.scroll_to_focused_event_if_needed();
                     }
                 ));
 
@@ -561,6 +654,12 @@ mod imp {
                         // initialized when the room was opened.
                         if timeline.state() == LoadingState::Ready {
                             imp.load_more_events_if_needed();
+                            imp.scroll_to_focused_event_if_needed();
+                        } else if timeline.state() == LoadingState::Error && timeline.is_focused() {
+                            // The focused timeline could not be loaded and its error page
+                            // has no way back, so return to the live timeline.
+                            toast!(imp.obj(), gettext("Could not load the message"));
+                            imp.obj().return_to_live();
                         }
                     }
                 ));
@@ -571,10 +670,23 @@ mod imp {
                 timeline.remove_empty_typing_row();
                 self.grouping_model().set_model(Some(timeline.items()));
 
-                self.trigger_read_receipts_update();
-                self.scroll_down();
+                self.search_view.set_room(Some(room.clone()));
+
+                if timeline.is_focused() {
+                    // The bottom of a focused timeline is not the present, so we must not
+                    // stick to it, and the scroll button returns to the live timeline
+                    // instead of scrolling down.
+                    self.focused_scroll_done.set(false);
+                    self.set_sticky(false);
+                    self.update_scroll_btn();
+                    self.scroll_to_focused_event_if_needed();
+                } else {
+                    self.trigger_read_receipts_update();
+                    self.scroll_down();
+                }
             } else {
                 self.grouping_model().set_model(None::<gio::ListModel>);
+                self.search_view.set_room(None::<Room>);
             }
 
             self.update_view();
@@ -615,6 +727,16 @@ mod imp {
             if let Some(event) = item.downcast_ref::<Event>() {
                 let child = list_item.child_or_else::<EventRow>(|| EventRow::new(&self.obj()));
                 child.set_event(Some(event.clone()));
+
+                // Rows are recycled, so this must be set for every row.
+                let is_focused_event = self
+                    .timeline
+                    .obj()
+                    .and_then(|timeline| timeline.focused_event_id())
+                    .is_some_and(|event_id| {
+                        event.matches_identifier(&TimelineEventItemId::EventId(event_id))
+                    });
+                child.set_is_focused_event(is_focused_event);
             } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
                 set_virtual_item_child(list_item, virtual_item);
             } else if let Some(group) = item.downcast_ref::<GroupingListGroup>() {
@@ -635,7 +757,9 @@ mod imp {
                     .emit_scroll_child(gtk::ScrollType::End, false);
             } else {
                 self.set_is_auto_scrolling(false);
-                self.set_sticky(is_at_bottom);
+                // The bottom of a focused timeline is not the newest message, so never
+                // stick to it.
+                self.set_sticky(is_at_bottom && !self.is_focused());
                 self.update_scroll_btn();
 
                 // Remove the typing row if the user scrolls up.
@@ -721,14 +845,101 @@ mod imp {
 
         /// Update the visibility of the scroll button.
         fn update_scroll_btn(&self) {
-            let is_at_bottom = self.is_at_bottom();
+            // In focused mode the button returns to the live timeline, so it is always
+            // useful, wherever we are scrolled.
+            let is_focused = self.is_focused();
+            let reveal = is_focused || !self.is_at_bottom();
 
-            if !is_at_bottom {
+            if reveal {
                 // Show the revealer so we can reveal the button.
                 self.scroll_btn_revealer.set_visible(true);
+                self.update_scroll_btn_content(is_focused);
             }
 
-            self.scroll_btn_revealer.set_reveal_child(!is_at_bottom);
+            self.scroll_btn_revealer.set_reveal_child(reveal);
+        }
+
+        /// Update the content of the scroll button.
+        ///
+        /// Leaving a focused timeline is not a common action, so the button
+        /// says what it does rather than relying on an icon alone.
+        fn update_scroll_btn_content(&self, is_focused: bool) {
+            let has_label = self
+                .scroll_btn
+                .child()
+                .is_some_and(|child| child.is::<adw::ButtonContent>());
+
+            if has_label == is_focused {
+                // The button is already in the proper state, and this is called for
+                // every scroll event.
+                return;
+            }
+
+            if is_focused {
+                let content = adw::ButtonContent::builder()
+                    .icon_name("go-last-symbolic")
+                    .label(gettext("Back to Latest"))
+                    .build();
+                self.scroll_btn.set_child(Some(&content));
+                self.scroll_btn.remove_css_class("circular");
+                self.scroll_btn.add_css_class("pill");
+                self.scroll_btn
+                    .set_tooltip_text(Some(&gettext("Go back to the latest messages")));
+            } else {
+                self.scroll_btn.set_icon_name("go-bottom-symbolic");
+                self.scroll_btn.remove_css_class("pill");
+                self.scroll_btn.add_css_class("circular");
+                self.scroll_btn
+                    .set_tooltip_text(Some(&gettext("Scroll to Bottom")));
+            }
+        }
+
+        /// Whether the timeline currently displayed is focused on an event.
+        fn is_focused(&self) -> bool {
+            self.timeline
+                .obj()
+                .is_some_and(|timeline| timeline.is_focused())
+        }
+
+        /// Handle a click on the scroll button.
+        #[template_callback]
+        fn scroll_btn_clicked(&self) {
+            if self.is_focused() {
+                self.obj().return_to_live();
+            } else {
+                self.scroll_down();
+            }
+        }
+
+        /// Scroll to the focused event of the current timeline, if it has not
+        /// been done already.
+        fn scroll_to_focused_event_if_needed(&self) {
+            if self.focused_scroll_done.get() {
+                return;
+            }
+
+            let Some(timeline) = self.timeline.obj() else {
+                return;
+            };
+            let Some(event_id) = timeline.focused_event_id() else {
+                return;
+            };
+            if timeline.is_empty() {
+                // Wait until the events are loaded.
+                return;
+            }
+
+            self.focused_scroll_done.set(true);
+
+            // Wait until the next tick, to make sure that the GtkListView has created the
+            // item before scrolling to it.
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    imp.scroll_to_event(&TimelineEventItemId::EventId(event_id));
+                }
+            ));
         }
 
         /// Update the room menu for the current state.
@@ -755,6 +966,12 @@ mod imp {
 
         /// Update the view for the current state.
         fn update_view(&self) {
+            if self.search_bar.is_search_mode() {
+                // The search results take the place of the timeline.
+                self.stack.set_visible_child_name("search");
+                return;
+            }
+
             let Some(timeline) = self.timeline.obj() else {
                 return;
             };
@@ -788,11 +1005,65 @@ mod imp {
             adj.value() < adj.page_size() * 2.0
         }
 
+        /// Whether we need to load more events at the end of the timeline.
+        fn needs_more_events_at_the_end(&self) -> bool {
+            if !self.is_focused() {
+                // The live timeline is already at the end of the room's history.
+                return false;
+            }
+
+            if self.grouping_model().n_items() == 0 {
+                // Wait for the initial events, they are loaded with the timeline.
+                return false;
+            }
+
+            // Load more messages when the user gets close to the bottom of the known
+            // room history. Use the page size twice to detect if the user gets close to
+            // the bottom.
+            let adj = self
+                .listview
+                .vadjustment()
+                .expect("GtkListView has a vadjustment");
+            adj.value() + adj.page_size() * 2.0 >= adj.upper()
+        }
+
         /// Load more events in the history if needed.
         fn load_more_events_if_needed(&self) {
             if self.needs_more_events_at_the_start() {
                 self.load_more_events_at_the_start();
             }
+            if self.needs_more_events_at_the_end() {
+                self.load_more_events_at_the_end();
+            }
+        }
+
+        /// Load more events at the end of the history.
+        fn load_more_events_at_the_end(&self) {
+            let Some(timeline) = self.timeline.obj() else {
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    timeline
+                        .paginate_forwards(clone!(
+                            #[weak]
+                            imp,
+                            #[upgrade_or]
+                            ControlFlow::Break(()),
+                            move || {
+                                if imp.needs_more_events_at_the_end() {
+                                    ControlFlow::Continue(())
+                                } else {
+                                    ControlFlow::Break(())
+                                }
+                            }
+                        ))
+                        .await;
+                }
+            ));
         }
 
         /// Load more events at the beginning of the history.
@@ -838,11 +1109,21 @@ mod imp {
                 return;
             };
 
-            if let Some(pos) = timeline.find_event_position(key) {
-                let pos = pos as u32;
-                self.listview
-                    .scroll_to(pos, gtk::ListScrollFlags::FOCUS, None);
-            }
+            let Some(pos) = timeline
+                .find_event_position(key)
+                .and_then(|pos| u32::try_from(pos).ok())
+            else {
+                return;
+            };
+
+            // The list view is bound to the grouping model, which can merge several
+            // items of the timeline into a single row, so the positions differ.
+            let Some(index) = self.grouping_model().index_for_model_position(pos) else {
+                return;
+            };
+
+            self.listview
+                .scroll_to(index, gtk::ListScrollFlags::FOCUS, None);
         }
 
         /// The ancestor window of the room history.
@@ -865,6 +1146,12 @@ mod imp {
             let Some(timeline) = self.timeline.obj() else {
                 return;
             };
+
+            if timeline.is_focused() {
+                // A focused timeline shows old messages, sending a read receipt for them
+                // would move the read marker backwards or mark the room as fully read.
+                return;
+            }
 
             if !timeline.is_empty() {
                 if let Some(source_id) = self.scroll_timeout.take() {
@@ -1172,10 +1459,47 @@ impl RoomHistory {
     pub(crate) fn enable_sticky_mode(&self, enable: bool) {
         let imp = self.imp();
         if enable {
-            imp.set_sticky(imp.is_at_bottom());
+            imp.set_sticky(imp.is_at_bottom() && !self.timeline().is_some_and(|t| t.is_focused()));
         } else {
             imp.set_sticky(false);
         }
+    }
+
+    /// Show the event with the given ID, by displaying a timeline focused on
+    /// it.
+    ///
+    /// The timeline of a focused event never receives new events, so
+    /// [`RoomHistory::return_to_live()`] must be used to go back to the live
+    /// timeline of the room.
+    pub(crate) fn focus_on_event(&self, event_id: OwnedEventId) {
+        let Some(room) = self.imp().room() else {
+            return;
+        };
+
+        if self
+            .timeline()
+            .is_some_and(|timeline| timeline.focused_event_id().as_ref() == Some(&event_id))
+        {
+            // We are already showing that event.
+            return;
+        }
+
+        self.set_timeline(Some(Timeline::new_focused(&room, event_id)));
+    }
+
+    /// Show the live timeline of the room again, after it was focused on an
+    /// event.
+    pub(crate) fn return_to_live(&self) {
+        let Some(room) = self.imp().room() else {
+            return;
+        };
+
+        if self.timeline().is_some_and(|t| !t.is_focused()) {
+            // We are already showing the live timeline.
+            return;
+        }
+
+        self.set_timeline(Some(room.live_timeline()));
     }
 
     /// Handle a paste action.

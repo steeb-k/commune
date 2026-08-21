@@ -85,6 +85,7 @@ default-features = false
 features = [
     "automatic-room-key-forwarding",
     "e2e-encryption",
+    "experimental-search",
     "markdown",
     "qrcode",
     "rustls-aws-lc-rs",
@@ -103,6 +104,7 @@ rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
 default-features = false
+features = ["experimental-search"]
 
 [dependencies.ruma]
 # version = "0.16"

@@ -39,6 +39,7 @@ mod join_rule;
 mod member;
 mod member_list;
 mod permissions;
+mod search;
 mod timeline;
 mod typing_list;
 
@@ -50,6 +51,7 @@ pub(crate) use self::{
     member::{Member, Membership},
     member_list::*,
     permissions::*,
+    search::{RoomSearch, RoomSearchResult},
     timeline::*,
     typing_list::TypingList,
 };
@@ -1841,7 +1843,9 @@ impl Room {
 
     /// Toggle the `key` reaction on the given related event in this room.
     pub(crate) async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
-        let matrix_timeline = self.live_timeline().matrix_timeline();
+        // Use the timeline of the event: it might be a focused timeline rather than
+        // the live one, and the SDK can only react to an event it knows about.
+        let matrix_timeline = event.timeline().matrix_timeline();
         let identifier = event.identifier();
 
         let handle =

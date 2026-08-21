@@ -13,12 +13,16 @@ use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
+    search_index::SearchIndexStoreKind,
 };
 use ruma::{
     EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch,
     OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName,
     OwnedTransactionId, OwnedUserId, RoomId, RoomOrAliasId, UserId,
-    events::{AnyStrippedStateEvent, AnySyncTimelineEvent},
+    events::{
+        AnyStrippedStateEvent, AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        room::message::{OriginalSyncRoomMessageEvent, Relation as MessageRelation},
+    },
     html::{
         Children, Html, NodeRef, StrTendril,
         matrix::{AnchorUri, MatrixElement},
@@ -186,6 +190,9 @@ pub(crate) async fn client_with_stored_session(
     let has_refresh_token = tokens.refresh_token.is_some();
     let data_path = session.data_path();
     let cache_path = session.cache_path();
+    // The search index can always be rebuilt from the event cache, so it belongs
+    // in the cache directory.
+    let search_index_path = cache_path.join("search_index");
 
     let StoredSession {
         homeserver,
@@ -222,7 +229,13 @@ pub(crate) async fn client_with_stored_session(
         // auth for profiles:
         // https://gitlab.gnome.org/World/fractal/-/issues/934
         .request_config(RequestConfig::new().retry_limit(2).force_auth())
-        .with_encryption_settings(encryption_settings);
+        .with_encryption_settings(encryption_settings)
+        // Store the message search index encrypted with the same passphrase as the
+        // databases, so that message bodies are not readable at rest.
+        .search_index_store(SearchIndexStoreKind::EncryptedDirectory(
+            search_index_path,
+            passphrase.to_string(),
+        ));
 
     if has_refresh_token {
         client_builder = client_builder.handle_refresh_tokens();
@@ -608,6 +621,45 @@ pub(crate) enum MatrixIdUriParseError {
 /// Convert the given timestamp to a `GDateTime`.
 pub(crate) fn timestamp_to_date(ts: MilliSecondsSinceUnixEpoch) -> glib::DateTime {
     seconds_since_unix_epoch_to_date(ts.as_secs().into())
+}
+
+/// Deserialize the given raw event as an original room message event, with its
+/// bundled edit applied.
+///
+/// Returns `None` if the event is not an original `m.room.message` event, or if
+/// it is an edit, since edits are bundled with the event they replace.
+pub(crate) fn original_message_event_from_raw(
+    raw: &Raw<AnySyncTimelineEvent>,
+) -> Option<OriginalSyncRoomMessageEvent> {
+    let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
+        SyncMessageLikeEvent::Original(mut message_event),
+    ))) = raw.deserialize()
+    else {
+        return None;
+    };
+
+    // Filter out edits, they should be bundled with the original event.
+    if matches!(
+        message_event.content.relates_to,
+        Some(MessageRelation::Replacement(_))
+    ) {
+        return None;
+    }
+
+    // Apply bundled edit.
+    if let Some(MessageRelation::Replacement(replacement)) = message_event
+        .unsigned
+        .relations
+        .replace
+        .as_ref()
+        .and_then(|e| e.content.relates_to.as_ref())
+    {
+        message_event
+            .content
+            .apply_replacement(replacement.new_content.clone());
+    }
+
+    Some(message_event)
 }
 
 /// Convert the given number of seconds since Unix EPOCH to a `GDateTime`.

@@ -90,6 +90,16 @@ room-title {
     }
   }
 
+  // The event a focused timeline is centered on, e.g. a search result or a
+  // permalink.
+  &.focused-event {
+    background-color: color-mix(in srgb, var(--accent-bg-color) 20%, transparent);
+
+    &.has-open-popup {
+      background-color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);
+    }
+  }
+
   &.highlight {
     background-color: color-mix(in srgb, var(--accent-bg-color) 20%, transparent);
 
