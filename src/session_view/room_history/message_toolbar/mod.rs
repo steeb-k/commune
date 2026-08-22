@@ -1025,8 +1025,8 @@ mod imp {
             };
 
             let mut info = ImageInfo::new();
-            info.width = width.try_into().ok();
-            info.height = height.try_into().ok();
+            info.width = Some(width.into());
+            info.height = Some(height.into());
             info.size = size.try_into().ok();
             info.mimetype = Some(mime::IMAGE_GIF.to_string());
             // Without this the receiving client asks its homeserver for a
