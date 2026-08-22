@@ -232,8 +232,8 @@ mod imp {
         /// Sets up keyboard shortcuts for application and window actions.
         fn set_up_accels(&self) {
             let obj = self.obj();
-            obj.set_accels_for_action("app.quit", &["<Control>q"]);
-            obj.set_accels_for_action("window.close", &["<Control>w"]);
+            obj.set_accels_for_action("app.quit", &["<Primary>q"]);
+            obj.set_accels_for_action("window.close", &["<Primary>w"]);
         }
 
         /// Show the dialog with information about the application.

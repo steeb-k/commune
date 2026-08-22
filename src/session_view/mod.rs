@@ -29,7 +29,10 @@ use crate::{
         IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
     },
-    utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
+    utils::{
+        key_bindings,
+        matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
+    },
 };
 
 mod imp {
@@ -88,7 +91,7 @@ mod imp {
             });
             klass.add_binding_action(
                 gdk::Key::comma,
-                gdk::ModifierType::CONTROL_MASK,
+                key_bindings::PRIMARY_MASK,
                 "session.open-account-settings",
             );
 
@@ -145,11 +148,7 @@ mod imp {
             klass.install_action("session.join-room", None, |obj, _, _| {
                 obj.imp().preview_room(None);
             });
-            klass.add_binding_action(
-                gdk::Key::L,
-                gdk::ModifierType::CONTROL_MASK,
-                "session.join-room",
-            );
+            klass.add_binding_action(gdk::Key::L, key_bindings::PRIMARY_MASK, "session.join-room");
 
             klass.install_action("session.create-direct-chat", None, |obj, _, _| {
                 obj.imp().create_direct_chat();
@@ -160,7 +159,7 @@ mod imp {
             });
             klass.add_binding_action(
                 gdk::Key::k,
-                gdk::ModifierType::CONTROL_MASK,
+                key_bindings::PRIMARY_MASK,
                 "session.toggle-room-search",
             );
 
@@ -169,7 +168,7 @@ mod imp {
             });
             klass.add_binding_action(
                 gdk::Key::asterisk,
-                gdk::ModifierType::CONTROL_MASK,
+                key_bindings::PRIMARY_MASK,
                 "session.select-unread-room",
             );
 

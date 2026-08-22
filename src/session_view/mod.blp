@@ -32,22 +32,22 @@ template $SessionView: Adw.Bin {
     propagation-phase: capture;
 
     Gtk.Shortcut {
-      trigger: "<Control>Page_Up";
+      trigger: "<Primary>Page_Up";
       action: "action(session.select-prev-room)";
     }
 
     Gtk.Shortcut {
-      trigger: "<Control>Page_Down";
+      trigger: "<Primary>Page_Down";
       action: "action(session.select-next-room)";
     }
 
     Gtk.Shortcut {
-      trigger: "<Control><Shift>Page_Down";
+      trigger: "<Primary><Shift>Page_Down";
       action: "action(session.select-next-unread-room)";
     }
 
     Gtk.Shortcut {
-      trigger: "<Control><Shift>Page_Up";
+      trigger: "<Primary><Shift>Page_Up";
       action: "action(session.select-prev-unread-room)";
     }
   }
