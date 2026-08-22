@@ -662,6 +662,35 @@ Three things about it are worth knowing:
   takes the file over when the request is added, so whatever is still there belongs to a request
   that failed.
 
+**Text size.** GTK resolves a font's point size against `gtk-xft-dpi`, and the two platforms do not
+agree on it. Linux uses 96 dots per inch by a convention old enough that nothing measures a real
+screen with it. macOS uses 72, which is not a fudge: its coordinate space really is 72 units to the
+inch, so a point is one logical pixel, and the backend reports that honestly.
+
+The result is that the same stylesheet renders about a fifth smaller here. Measured with a GTK4
+label on this machine:
+
+| | macOS, as GTK reports it | Linux/GNOME |
+| --- | --- | --- |
+| Default label | 12 px (`.AppleSystemUIFont 12` @ 72 dpi) | 14.67 px (Cantarell 11 @ 96 dpi) |
+| CSS `15pt`, a Markdown `h1` | 15 px | 20 px |
+
+The headings are the part that makes this a bug rather than a preference. `_room_history.scss`
+sizes `h1`–`h6` in `pt`, chosen to sit above body text at 96 dpi; at 72 they compress toward it,
+and `h6` — 11 pt, so 11 px — comes out **smaller than the 12 px body it heads**. Raising the
+resolution fixes the whole scale at once, where changing only the default font size would leave the
+headings wrong.
+
+`src/utils/macos_text_scale.rs` therefore sets `gtk-xft-dpi` to 96 dpi at startup, and only when it
+finds the 72 the quartz backend reports — anything else is somebody's `settings.ini` and is left
+alone. Commune's text is then larger than a typical Mac application's, which is the deliberate
+trade: the alternative is a window that does not match the same application on every other
+platform. If it ever wants tuning, 84 dpi (body 14 px) leans native and 88 dpi (body 14.67 px)
+matches Linux body text exactly.
+
+Note that only text moves. Padding and icon sizes are in pixels, so the layout stays where it was
+and is a little tighter than on Linux, where the design is drawn for 96 dpi throughout.
+
 **Secrets.** `src/secret/macos.rs` stores one generic password item per session, service `APP_ID`
 and account = session ID. The Keychain cannot be searched on free-form attributes the way the
 Secret Service can, so the session metadata is serialised into the secret next to the passphrase
@@ -716,7 +745,11 @@ Still unverified: GTK's macOS backend for input methods and drag and drop.
 Two cosmetic things a run turns up that are nobody's bug in particular. GTK's macOS backend
 reports the system font as `.AppleSystemUIFont`, and libadwaita's stylesheet feeds that
 leading-dot name to the CSS parser unquoted, so every window logs a run of
-`Theme parser error: gtk.css:1:1-2: Junk at end of font-family value`. And image packs whose
+`Theme parser error: gtk.css:1:1-2: Junk at end of font-family value`. It is genuinely only noise:
+the properties it fails to expand are libadwaita's own `--document-font-family` and
+`--document-font-size`, and nothing in `data/resources/stylesheet/` refers to either, so no text in
+Commune is styled by them. It is not the reason text is small on macOS — see
+[Text size](#what-differs-from-linux) for that. And image packs whose
 images are in a format the `image` crate does not decode report "Image format not supported" per
 image; see the format list above.
 
