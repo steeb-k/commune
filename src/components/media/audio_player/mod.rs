@@ -10,6 +10,8 @@ mod waveform;
 mod waveform_paintable;
 
 use self::waveform::Waveform;
+#[cfg(target_os = "macos")]
+use super::gst_media_stream::GstMediaStream;
 use crate::{
     MEDIA_FILE_NOTIFIER,
     session::Session,
@@ -20,6 +22,36 @@ use crate::{
         media::{self, MediaFileError, audio::load_audio_info},
     },
 };
+
+/// Create a stream that plays the given file.
+#[cfg(not(target_os = "macos"))]
+fn media_stream_for_file(file: &gio::File) -> gtk::MediaStream {
+    gtk::MediaFile::for_file(file).upcast()
+}
+
+/// Create a stream that plays the given file.
+///
+/// `GtkMediaFile` has no backend at all in the GTK build we use on macOS, so
+/// it is given the same stream of ours that the media viewer plays video with.
+#[cfg(target_os = "macos")]
+fn media_stream_for_file(file: &gio::File) -> gtk::MediaStream {
+    GstMediaStream::new(file).upcast()
+}
+
+/// Stop the given stream and drop what it was playing.
+#[cfg(not(target_os = "macos"))]
+fn clear_media_stream(stream: &gtk::MediaStream) {
+    if let Some(media_file) = stream.downcast_ref::<gtk::MediaFile>() {
+        media_file.clear();
+    }
+}
+
+/// Stop the given stream and drop what it was playing.
+///
+/// `GstMediaStream` stops its pipeline when it is disposed, so letting go of it
+/// is all there is to do.
+#[cfg(target_os = "macos")]
+fn clear_media_stream(_stream: &gtk::MediaStream) {}
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -53,7 +85,7 @@ mod imp {
         /// The source to play.
         source: RefCell<Option<AudioPlayerSource>>,
         /// The API used to play the audio file.
-        media_file: RefCell<Option<gtk::MediaFile>>,
+        media_stream: RefCell<Option<gtk::MediaStream>>,
         /// The audio file that is currently loaded.
         ///
         /// This is used to keep a strong reference to the temporary file.
@@ -295,7 +327,7 @@ mod imp {
         /// Update the play button.
         fn update_play_button(&self) {
             let is_playing = self
-                .media_file
+                .media_stream
                 .borrow()
                 .as_ref()
                 .is_some_and(MediaStreamExt::is_playing);
@@ -321,22 +353,27 @@ mod imp {
             // playing this one.
             notifier.notify();
 
-            let media_file = gtk::MediaFile::new();
+            let gfile = file.as_gfile();
+            // The stream is created with its file rather than given one after
+            // the handlers are connected, because the two backends differ in
+            // how they take it. Nothing is missed: neither reports anything
+            // before the main loop runs again.
+            let media_stream = media_stream_for_file(&gfile);
 
-            media_file.connect_duration_notify(clone!(
+            media_stream.connect_duration_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |media_file| {
-                    let duration = Duration::from_micros(media_file.duration().cast_unsigned());
+                move |media_stream| {
+                    let duration = Duration::from_micros(media_stream.duration().cast_unsigned());
                     imp.set_duration(duration);
                 }
             ));
-            media_file.connect_timestamp_notify(clone!(
+            media_stream.connect_timestamp_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |media_file| {
-                    let mut duration = media_file.duration();
-                    let timestamp = media_file.timestamp();
+                move |media_stream| {
+                    let mut duration = media_stream.duration();
+                    let timestamp = media_stream.timestamp();
 
                     // The duration should always be bigger than the timestamp, but let's be safe.
                     if duration != 0 && timestamp > duration {
@@ -352,46 +389,45 @@ mod imp {
                     imp.waveform.set_position(position);
                 }
             ));
-            media_file.connect_playing_notify(clone!(
+            media_stream.connect_playing_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
                     imp.update_play_button();
                 }
             ));
-            media_file.connect_prepared_notify(clone!(
+            media_stream.connect_prepared_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |media_file| {
-                    if media_file.is_prepared() {
+                move |media_stream| {
+                    if media_stream.is_prepared() {
                         // The media file should only become prepared after the user clicked play,
                         // so start playing it.
-                        media_file.set_playing(true);
+                        media_stream.set_playing(true);
 
                         // If the user selected a position while we didn't have a media file, seek
                         // to it.
                         let position = imp.waveform.position();
                         if position > 0.0 {
-                            media_file
-                                .seek((media_file.duration() as f64 * f64::from(position)) as i64);
+                            media_stream.seek(
+                                (media_stream.duration() as f64 * f64::from(position)) as i64,
+                            );
                         }
                     }
                 }
             ));
-            media_file.connect_error_notify(clone!(
+            media_stream.connect_error_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |media_file| {
-                    if let Some(error) = media_file.error() {
+                move |media_stream| {
+                    if let Some(error) = media_stream.error() {
                         warn!("Could not read audio file: {error}");
                         imp.set_error(&gettext("Error reading audio file"));
                     }
                 }
             ));
 
-            let gfile = file.as_gfile();
-            media_file.set_file(Some(&gfile));
-            self.media_file.replace(Some(media_file));
+            self.media_stream.replace(Some(media_stream));
             self.file.replace(Some(file));
 
             // We use a shared notifier to make sure that only a single media file can be
@@ -436,12 +472,12 @@ mod imp {
         fn clear(&self) {
             self.set_state(LoadingState::Initial);
 
-            if let Some(media_file) = self.media_file.take() {
-                if media_file.is_playing() {
-                    media_file.set_playing(false);
+            if let Some(media_stream) = self.media_stream.take() {
+                if media_stream.is_playing() {
+                    media_stream.set_playing(false);
                 }
 
-                media_file.clear();
+                clear_media_stream(&media_stream);
             }
 
             self.file.take();
@@ -455,8 +491,8 @@ mod imp {
         /// Play or pause the media.
         #[template_callback]
         async fn toggle_playing(&self) {
-            if let Some(media_file) = self.media_file.borrow().clone() {
-                media_file.set_playing(!media_file.is_playing());
+            if let Some(media_stream) = self.media_stream.borrow().clone() {
+                media_stream.set_playing(!media_stream.is_playing());
                 return;
             }
 
@@ -482,12 +518,12 @@ mod imp {
         /// The position must be a value between 0 and 1.
         #[template_callback]
         fn seek(&self, new_position: f32) {
-            if let Some(media_file) = self.media_file.borrow().clone() {
+            if let Some(media_stream) = self.media_stream.borrow().clone() {
                 let duration = self.duration.get();
 
                 if !duration.is_zero() {
                     let timestamp = duration.as_micros() as f64 * f64::from(new_position);
-                    media_file.seek(timestamp as i64);
+                    media_stream.seek(timestamp as i64);
                 }
             } else {
                 self.waveform.set_position(new_position);
