@@ -29,8 +29,9 @@ builds for `aarch64-apple-darwin`, and `cargo check`, `cargo
 clippy --all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
 `cargo sort`, `typos`, `rumdl`, `cargo nextest run` and `meson test` all pass. `meson compile` and
 `meson install` work, and **the app runs**: logging in with a password, syncing, the timeline,
-image thumbnails, animated GIFs, the GIF search, video in the media viewer and restoring the
-session from the Keychain after a quit were all exercised on macOS 26.
+image thumbnails, animated GIFs, the GIF search, searching the messages of a room, video in the
+media viewer and restoring the session from the Keychain after a quit were all exercised on
+macOS 26.
 
 There is now a **relocatable `Commune.app`**, and a `.dmg` and a `.tar.gz` around it. It launches
 from a shell with nothing exported, and loads no library from outside itself.
@@ -435,6 +436,27 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 32b | Icons | Look at the app in Finder and the Dock | The macOS plate, not the GNOME icon; see the cache note below |
 | 33 | Regression | Quit and relaunch | The session comes back without a login — **verified** |
 | 34 | Regression | Launch the bundle from a shell with nothing exported | It runs |
+| 35 | Search | ⌘F in a room | The search bar opens, entry focused, composer hidden — **verified** |
+| 36 | Search | Type a word in an unencrypted room | Results newest first, with sender, avatar and date — **verified** |
+| 37 | Search | Activate a result | A timeline centred on that message, and a "Back to Latest" pill — **verified** |
+| 38 | Search | Click "Back to Latest" | The live timeline again — **verified** |
+| 39 | Search | Escape, or the × in the search bar | The search closes and the composer comes back — **verified** |
+| 40 | Search | Search an encrypted room, then "Re-index This Room" | Messages loaded in the room become findable |
+| 41 | Search | `ls ~/Library/Caches/commune-Devel/<session>/search_index` | One directory per room, and no plain text in them — **verified** |
+
+**The "Back to Latest" pill is the row worth watching in a bundle.** Its `go-last-symbolic` is not
+one of the icons in `data/resources/icons/`, so unlike everything else in the search UI it has to
+come out of the Adwaita theme the bundle carries, through the `loaders.cache` that
+[the GTK environment](#the-gtk-environment) section exists to get right. An icon that renders in a
+prefix run proves nothing about the bundle here.
+
+Row 40 is the one that will look broken and is not. The local index is only fed as the event cache
+stores an event, so every message that was already stored before the index existed — which is all of
+them, on a machine that ran a build without `experimental-search` — is missing from it, and no
+search finds it. Paginating fetches events the cache does not have and those get indexed, which is
+why scrolling back makes old messages findable while recent ones stay invisible. "Re-index This
+Room" hands the events the room has loaded to the index after the fact. None of this is macOS
+specific; a Linux install that predates the feature has the same hole.
 
 Both `matrix:` rows have been run, and the cold one is the interesting result: a cold launch queues
 the event before the handler exists, and `AppKit` still delivers it afterwards. Launching a quit app
