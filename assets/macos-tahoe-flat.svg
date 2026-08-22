@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Interlocking fingers chat bubble, macOS plate, flat</title>
+  <defs>
+    <clipPath id="bodyAndTail">
+      <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Full bleed plate: no corner radius, the system masks the enclosure -->
+  <rect width="1024" height="1024" fill="#241f31"/>
+
+  <g transform="translate(64 32) scale(1.75)">
+    <g clip-path="url(#bodyAndTail)">
+      <rect width="512" height="512" fill="#e01b24"/>
+      <g fill="#f5c211">
+        <rect x="-44" y="40" width="220" height="400"/>
+        <rect x="-38" y="72" width="446" height="82" rx="41"/>
+        <rect x="-38" y="236" width="446" height="82" rx="41"/>
+      </g>
+      <g fill="#e01b24">
+        <rect x="104" y="154" width="458" height="82" rx="41"/>
+        <rect x="104" y="318" width="458" height="82" rx="41"/>
+      </g>
+    </g>
+  </g>
+</svg>

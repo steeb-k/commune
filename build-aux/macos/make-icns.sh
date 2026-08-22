@@ -3,15 +3,16 @@
 #
 #   build-aux/macos/make-icns.sh assets/appicon.svg _build/commune.icns
 #
-# The .icns is a derived artefact and is not committed: assets/appicon.svg and
-# assets/appicon-devel.svg are the sources, and `bundle.sh` picks between them
-# by profile. `.iconset/` is gitignored for the intermediate directory this
-# leaves behind if it fails partway.
+# The .icns is a derived artefact and is not committed. `bundle.sh` chooses the
+# source: assets/macos-tahoe-flat.svg or assets/macos-legacy-bevel.svg for a
+# stable build, assets/appicon-devel.svg for a development one. `.iconset/` is
+# gitignored for the intermediate directory this leaves behind if it fails
+# partway.
 #
-# Nothing here masks the artwork into the rounded-rectangle shape that Apple's
-# own icons use. The GNOME icon is drawn full-bleed with its own silhouette, and
-# squeezing it into a squircle would crop it; macOS is happy to show an icon of
-# any shape.
+# Nothing here masks the artwork into a rounded rectangle. The macOS plates are
+# already square and full-bleed, which is what the system wants to enclose, and
+# the GNOME icon is drawn with a silhouette of its own that a squircle would
+# crop. macOS is happy to show an icon of any shape.
 set -euo pipefail
 
 SRC="${1:-}"
