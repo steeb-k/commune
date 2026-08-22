@@ -248,7 +248,7 @@ mod imp {
                     imp.load_more_spinner.set_visible(false);
 
                     match result {
-                        Ok(page_result) => imp.present(page, page_result),
+                        Ok(page_result) => imp.present(page, &page_result),
                         Err(error) => {
                             warn!("Could not load GIFs: {error}");
 
@@ -264,7 +264,7 @@ mod imp {
         }
 
         /// Present the given page of results.
-        fn present(&self, page: u32, result: klipy::GifPage) {
+        fn present(&self, page: u32, result: &klipy::GifPage) {
             self.page.set(page);
             self.has_next.set(result.has_next);
 
