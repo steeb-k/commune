@@ -25,6 +25,7 @@ Highlights:
   end-to-end encryption
 * Send rich formatted messages, files, or your current location
 * Reply to specific messages, react with emoji, edit or remove messages
+* Search the messages of a room, including rooms that are end-to-end encrypted
 * View images, and play audio and video directly in the conversation
 * Send and manage custom sticker and emoticon packs
 * See who has read messages, and who is typing

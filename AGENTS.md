@@ -32,7 +32,9 @@ Upstream releases are still merged for security fixes. When you rebase, the
 file you are reading now must keep this version: the upstream one is written
 to stop an agent from working at all, and taking it would do exactly that.
 
-`doc/image-packs.md` is the ledger for the image packs feature and is kept
-current with every change to it. `doc/rebrand.md` does the same for the rename
-to Commune, and is where to look before touching anything that carries the
-application's name or ID.
+Every feature this fork adds has a ledger under `doc/`, kept current with each
+change to it: `doc/image-packs.md`, `doc/search.md` for message search, and
+`doc/gif-search.md`. Read the one for a feature before touching it — each
+carries the design decisions, the integration points, and a rebase guide.
+`doc/rebrand.md` does the same for the rename to Commune, and is where to look
+before touching anything that carries the application's name or ID.
