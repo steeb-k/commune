@@ -20,7 +20,7 @@ use super::{Image, ImageDecoderSource, ImageError};
 use crate::{
     spawn, spawn_tokio,
     utils::{
-        File,
+        File, http,
         media::{FrameDimensions, MediaFileError},
     },
 };
@@ -36,6 +36,11 @@ const MAX_REQUEST_RETRY_COUNT: u8 = 2;
 /// The time after which a request is considered to be stalled, 10
 /// seconds.
 const STALLED_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+/// The maximum size of an image downloaded over HTTP, 20 MB.
+///
+/// Matrix media goes through the homeserver, which enforces its own limit;
+/// nothing constrains what a third-party host serves us, so we do it here.
+const MAX_HTTP_IMAGE_SIZE: u64 = 20 * 1024 * 1024;
 
 /// A queue for image requests.
 ///
@@ -117,6 +122,19 @@ impl ImageRequestQueue {
         dimensions: Option<FrameDimensions>,
     ) -> ImageRequestHandle {
         self.inner().add_file_request(file, dimensions)
+    }
+
+    /// Add a request to download an image over HTTP, from outside Matrix.
+    ///
+    /// If another request for the same URL already exists, this will reuse the
+    /// same request.
+    pub(crate) fn add_http_request(
+        &self,
+        url: String,
+        dimensions: Option<FrameDimensions>,
+        priority: ImageRequestPriority,
+    ) -> ImageRequestHandle {
+        self.inner().add_http_request(url, dimensions, priority)
     }
 
     /// Mark the request with the given ID as stalled.
@@ -225,6 +243,25 @@ impl ImageRequestQueueInner {
                 dimensions,
             },
             ImageRequestPriority::High,
+        )
+    }
+
+    /// Add a request to download an image over HTTP, from outside Matrix.
+    ///
+    /// If another request for the same URL already exists, this will reuse the
+    /// same request.
+    fn add_http_request(
+        &mut self,
+        url: String,
+        dimensions: Option<FrameDimensions>,
+        priority: ImageRequestPriority,
+    ) -> ImageRequestHandle {
+        self.add_request(
+            ImageLoaderRequest {
+                source: ImageRequestSource::Http(HttpRequest { url }),
+                dimensions,
+            },
+            priority,
         )
     }
 
@@ -510,6 +547,34 @@ impl IntoFuture for DownloadRequest {
     }
 }
 
+/// A request to download an image over HTTP, from outside Matrix.
+#[derive(Clone)]
+struct HttpRequest {
+    /// The URL to download the image from.
+    url: String,
+}
+
+impl IntoFuture for HttpRequest {
+    type Output = Result<ImageDecoderSource, ImageError>;
+    type IntoFuture = BoxFuture<'static, Self::Output>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        let Self { url } = self;
+
+        Box::pin(async move {
+            let data = spawn_tokio!(async move { http::fetch(&url, MAX_HTTP_IMAGE_SIZE).await })
+                .await
+                .expect("task should not be aborted")
+                .map_err(|error| {
+                    warn!("Could not download image over HTTP: {error}");
+                    ImageError::Download
+                })?;
+
+            Ok(ImageDecoderSource::with_bytes(data).await?)
+        })
+    }
+}
+
 /// A request to the image loader.
 #[derive(Clone)]
 struct ImageLoaderRequest {
@@ -541,6 +606,8 @@ enum ImageRequestSource {
     Download(DownloadRequest),
     /// The image is in the given file.
     File(File),
+    /// The image must be downloaded from the given URL, outside Matrix.
+    Http(HttpRequest),
 }
 
 impl ImageRequestSource {
@@ -551,6 +618,7 @@ impl ImageRequestSource {
                 ImageRequestId::Download(download_request.settings.unique_key())
             }
             Self::File(file) => ImageRequestId::File(file.path().expect("file should have a path")),
+            Self::Http(request) => ImageRequestId::Http(request.url.clone()),
         }
     }
 
@@ -564,6 +632,7 @@ impl ImageRequestSource {
                     .inspect_err(|error| warn!("Could not retrieve image: {error}"))?)
             }
             Self::File(data) => Ok(data.into()),
+            Self::Http(http_request) => http_request.await,
         }
     }
 }
@@ -575,6 +644,8 @@ enum ImageRequestId {
     Download(String),
     /// The identifier for a file request.
     File(PathBuf),
+    /// The identifier for an HTTP request, its URL.
+    Http(String),
 }
 
 impl fmt::Display for ImageRequestId {
@@ -582,6 +653,7 @@ impl fmt::Display for ImageRequestId {
         match self {
             Self::Download(id) => id.fmt(f),
             Self::File(path) => path.to_string_lossy().fmt(f),
+            Self::Http(url) => url.fmt(f),
         }
     }
 }

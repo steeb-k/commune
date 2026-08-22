@@ -24,6 +24,7 @@ pub(crate) mod expression;
 mod expression_list_model;
 mod fixed_selection;
 mod grouping_list_model;
+pub(crate) mod http;
 pub(crate) mod key_bindings;
 mod location;
 mod macros;
