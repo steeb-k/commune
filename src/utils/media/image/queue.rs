@@ -417,7 +417,7 @@ impl ImageRequest {
     /// Whether we can retry a request with the given retries count and after
     /// the given error.
     fn can_retry(retries_count: u8, error: ImageError) -> bool {
-        // Retry if we have not the max retry count && if it's a glycin error.
+        // Retry if we have not the max retry count && if it's a decoder error.
         // We assume that the download requests have already been retried by the client.
         retries_count < MAX_REQUEST_RETRY_COUNT && error == ImageError::Unknown
     }
@@ -469,7 +469,8 @@ impl ImageRequest {
                     .err()
                     .is_some_and(|error| Self::can_retry(retries_count, *error))
                 {
-                    // Lower the limit of the queue, it is likely that glycin cannot spawn a sandbox.
+                    // Lower the limit of the queue, it is likely that the decoder ran out of the
+                    // resources it needs to decode another image concurrently.
                     IMAGE_QUEUE.retry_request(&request_id, true);
                     return;
                 }
