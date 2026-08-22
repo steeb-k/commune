@@ -35,7 +35,7 @@
 //! identity to `CFBundleExecutable`, and a wrapper script would receive both
 //! instead of the app.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::config::{LOCALEDIR, RESOURCES_FILE, UI_RESOURCES_FILE};
 
@@ -51,6 +51,14 @@ pub(crate) struct RuntimePaths {
 }
 
 impl RuntimePaths {
+    /// The directory the app's own data was loaded from.
+    ///
+    /// This is Meson's `PKGDATADIR` outside a bundle, and a directory inside
+    /// the bundle within one.
+    pub(crate) fn pkgdata_dir(&self) -> &Path {
+        self.resources_file.parent().unwrap_or(&self.resources_file)
+    }
+
     /// The paths that Meson baked in at build time.
     fn from_config() -> Self {
         Self {

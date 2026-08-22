@@ -92,5 +92,5 @@ fn main() {
         .add_resource_path("/org/gnome/Fractal/icons");
 
     let app = Application::new();
-    app.run();
+    app.run(&paths);
 }
