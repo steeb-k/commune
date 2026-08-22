@@ -586,6 +586,29 @@ both styles anyway.** Nothing in a bundle lets the system pick an icon by OS ver
 asset catalogue built with Apple's own tooling, which is not part of this environment — so a build
 that wanted both would have to choose at build time regardless.
 
+**The plate carries its own corners.** It did not at first, and the failure was invisible on the
+machine that built it. Both plates were drawn full bleed with a comment saying the system masks the
+enclosure — which is true of macOS 26 and of nothing before it. Every earlier release draws an
+icon exactly as handed over, so the shipped `.icns` was a hard square there: the images inside it
+came out colortype 2, RGB with no alpha at all, the corner pixel the same `#241f31` as the middle
+of the plate.
+
+`macos-legacy-bevel.svg` now clips itself to a rounded rectangle, full bleed, radius 230 of 1024 —
+the 0.225 proportion Apple's own icon grid uses. Tahoe then masks a shape it already agrees with,
+and older releases get corners they were never going to add. Two things follow from choosing full
+bleed over Apple's inset template: on older macOS the icon fills its slot edge to edge rather than
+sitting ~10% inside one, and it has no drop shadow. The alternative — inset and shadowed — is
+correct there and comes out visibly undersized once Tahoe masks it again.
+
+It is a circular corner where the system's is a continuous curve. At icon sizes that is not
+visible, and it keeps the artwork hand-editable. To check the result, render it and look at the
+alpha rather than the picture:
+
+```sh
+rsvg-convert -w 512 -h 512 assets/macos-legacy-bevel.svg -o /tmp/i.png
+# colortype 6 and a transparent corner pixel; colortype 2 means the rounding was lost
+```
+
 A development build keeps the GNOME devel icon. There is no devel variant of the plate, and the
 bundle name would otherwise be the only thing telling the two apart in the Dock.
 
