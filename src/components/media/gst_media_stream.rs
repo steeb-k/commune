@@ -24,7 +24,7 @@ fn to_stream_time(time: gst::ClockTime) -> i64 {
 }
 
 mod imp {
-    use std::cell::{Cell, OnceCell, RefCell};
+    use std::cell::{OnceCell, RefCell};
 
     use glib::clone;
     use tracing::warn;
@@ -41,12 +41,6 @@ mod imp {
         paintable: OnceCell<gdk::Paintable>,
         /// The watch on the player's message bus.
         bus_guard: RefCell<Option<gst::bus::BusWatchGuard>>,
-        /// Whether the player was ever asked to play.
-        ///
-        /// `GstPlay` only starts reporting a position once it is playing, and
-        /// [`gtk::MediaStream`] wants a duration before that, so a stream that
-        /// is not played yet is prepared from its media info alone.
-        started: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -123,7 +117,6 @@ mod imp {
 
     impl MediaStreamImpl for GstMediaStream {
         fn play(&self) -> bool {
-            self.started.set(true);
             self.player().play();
             true
         }
@@ -165,6 +158,17 @@ mod imp {
         /// Set the file to play.
         pub(super) fn set_file(&self, file: &gio::File) {
             self.player().set_uri(Some(file.uri().as_ref()));
+
+            // Preroll, which is what makes the stream prepared, and what
+            // `GtkMediaFile` does the moment it is given a file. Callers count
+            // on it: the audio player waits to be told the stream is prepared
+            // before it plays anything, while `GstPlay` reports nothing at all
+            // until it is playing or paused. Left to themselves the two wait
+            // for each other and the spinner never stops.
+            //
+            // The video path never hit this because `GtkVideo` autoplays, which
+            // starts the pipeline itself.
+            self.player().pause();
         }
 
         /// Tell the stream what it is playing, if it does not know yet.
