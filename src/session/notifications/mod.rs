@@ -1,7 +1,9 @@
 use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
+#[cfg(not(target_os = "macos"))]
+use gtk::gio;
+use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
 use ruma::{
     OwnedRoomId, RoomId, UserId,
@@ -22,6 +24,8 @@ pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
 };
 use super::{IdentityVerification, Session, VerificationKey};
+#[cfg(target_os = "macos")]
+use crate::utils::macos_notifications;
 use crate::{
     Application, Window, gettext_f,
     intent::SessionIntent,
@@ -119,10 +123,6 @@ impl Notifications {
         intent: &SessionIntent,
         icon: Option<&gdk::Texture>,
     ) {
-        let notification = gio::Notification::new(title);
-        notification.set_category(Some("im.received"));
-        notification.set_priority(gio::NotificationPriority::High);
-
         // Truncate the body if necessary.
         let body = if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
             let mut body = body[..end].trim_end().to_owned();
@@ -134,17 +134,37 @@ impl Notifications {
             Cow::Borrowed(body)
         };
 
-        notification.set_body(Some(&body));
-
         let action = intent.app_action_name();
         let target_value = intent.to_variant_with_session_id(session_id.to_owned());
-        notification.set_default_action_and_target_value(action, Some(&target_value));
 
-        if let Some(notification_icon) = icon {
-            notification.set_icon(notification_icon);
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "macos")] {
+                macos_notifications::send(id, title, &body, action, &target_value, icon);
+            } else {
+                let notification = gio::Notification::new(title);
+                notification.set_category(Some("im.received"));
+                notification.set_priority(gio::NotificationPriority::High);
+                notification.set_body(Some(&body));
+                notification.set_default_action_and_target_value(action, Some(&target_value));
+
+                if let Some(notification_icon) = icon {
+                    notification.set_icon(notification_icon);
+                }
+
+                Application::default().send_notification(Some(id), &notification);
+            }
         }
+    }
 
-        Application::default().send_notification(Some(id), &notification);
+    /// Ask the system to remove the notification with the given ID.
+    fn withdraw_notification(id: &str) {
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "macos")] {
+                macos_notifications::withdraw(id);
+            } else {
+                Application::default().withdraw_notification(id);
+            }
+        }
     }
 
     /// Ask the system to show the given push notification, if applicable.
@@ -425,10 +445,8 @@ impl Notifications {
     /// are known, older ones might still be present.
     pub(crate) fn withdraw_all_for_room(&self, room_id: &RoomId) {
         if let Some(notifications) = self.imp().push.borrow_mut().remove(room_id) {
-            let app = Application::default();
-
             for id in notifications {
-                app.withdraw_notification(&id);
+                Self::withdraw_notification(&id);
             }
         }
     }
@@ -437,8 +455,7 @@ impl Notifications {
     /// verification with the given key.
     pub(crate) fn withdraw_identity_verification(&self, key: &VerificationKey) {
         if let Some(id) = self.imp().identity_verifications.borrow_mut().remove(key) {
-            let app = Application::default();
-            app.withdraw_notification(&id);
+            Self::withdraw_notification(&id);
         }
     }
 
@@ -447,13 +464,11 @@ impl Notifications {
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
     pub(crate) fn clear(&self) {
-        let app = Application::default();
-
         for id in self.imp().push.take().values().flatten() {
-            app.withdraw_notification(id);
+            Self::withdraw_notification(id);
         }
         for id in self.imp().identity_verifications.take().values() {
-            app.withdraw_notification(id);
+            Self::withdraw_notification(id);
         }
     }
 }
