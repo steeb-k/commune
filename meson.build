@@ -22,7 +22,7 @@ if pre_release_version != ''
 endif
 full_version = version
 
-dependency('glib-2.0', version: '>= 2.82')  # update when changing gtk version
+glib_dep = dependency('glib-2.0', version: '>= 2.82')  # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
 dependency('gtk4', version: '>= 4.20.2')
 dependency('libadwaita-1', version: '>= 1.8.0')
@@ -35,8 +35,12 @@ dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
 dependency('gtksourceview-5', version: '>= 5.0.0')
-dependency('glycin-2', version: '>= 2.0.0')
-dependency('glycin-gtk4-2', version: '>= 2.0.0')
+if host_machine.system() != 'darwin'
+    # glycin decodes images on Linux. macOS uses the `image` crate instead, see
+    # `src/utils/media/image/decoder/`.
+    dependency('glycin-2', version: '>= 2.0.0')
+    dependency('glycin-gtk4-2', version: '>= 2.0.0')
+endif
 dependency('libwebp', version: '>= 1.0.0')
 dependency('shumate-1.0', version: '>= 1.1.0')
 dependency('sqlite3', version: '>= 3.24.0')
@@ -102,6 +106,22 @@ cargo_env = [
     'CARGO_HOME=' + cargo_home,
     'CARGO_TARGET_DIR=' + cargo_target_dir,
 ]
+
+if host_machine.system() == 'darwin'
+    # Without these, `gettext-sys` compiles and statically links its own vendored
+    # copy of libintl. Point it at the one in the prefix instead, so the binary
+    # links the same libintl as everything else it loads.
+    gettext_prefix = glib_dep.get_variable(pkgconfig: 'prefix')
+
+    if fs.exists(gettext_prefix / 'include' / 'libintl.h')
+        cargo_env += 'GETTEXT_SYSTEM=1'
+        cargo_env += 'GETTEXT_DIR=' + gettext_prefix
+    else
+        message(
+            'No libintl.h in ' + gettext_prefix + ', gettext-rs will build its vendored copy',
+        )
+    endif
+endif
 
 if profile == 'Devel'
     vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD', check: false).stdout().strip()
@@ -177,5 +197,7 @@ subdir('src')
 gnome.post_install(
     gtk_update_icon_cache: true,
     glib_compile_schemas: true,
-    update_desktop_database: true,
+    # There is no desktop file to register on macOS, and no
+    # update-desktop-database to register it with.
+    update_desktop_database: host_machine.system() != 'darwin',
 )
