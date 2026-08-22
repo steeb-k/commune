@@ -77,6 +77,7 @@ login/in_browser_page.blp
 login/method_page.blp
 login/mod.blp
 login/session_setup_view.blp
+macos_menu_bar.blp
 session_view/content.blp
 session_view/create_direct_chat_dialog/mod.blp
 session_view/create_room_dialog.blp

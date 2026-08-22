@@ -35,6 +35,29 @@ enum WindowPage {
     Error,
 }
 
+/// The `SessionView` actions that the window forwards to, as
+/// `(the name under win., the name under session.)`.
+///
+/// The macOS menu bar can only reach `app.` and `win.` actions -- GTK's quartz
+/// backend builds it from a muxer holding the application's actions and the
+/// active window's, and nothing else -- while everything the main menu offers
+/// is installed on the `SessionView` widget. These are the way across.
+const FORWARDED_SESSION_ACTIONS: &[(&str, &str)] = &[
+    ("close-room", "close-room"),
+    ("create-direct-chat", "create-direct-chat"),
+    ("create-room", "create-room"),
+    ("join-room", "join-room"),
+    ("select-next-room", "select-next-room"),
+    ("select-next-unread-room", "select-next-unread-room"),
+    ("select-prev-room", "select-prev-room"),
+    ("select-prev-unread-room", "select-prev-unread-room"),
+    ("select-unread-room", "select-unread-room"),
+    // The obvious name is taken by the parameterized action that the session
+    // view forwards to in the other direction.
+    ("show-image-packs", "open-image-packs"),
+    ("toggle-room-search", "toggle-room-search"),
+];
+
 impl WindowPage {
     /// Get the name of this page.
     const fn name(self) -> &'static str {
@@ -150,6 +173,16 @@ mod imp {
                     obj.fullscreen();
                 }
             });
+
+            for (window_action, _) in FORWARDED_SESSION_ACTIONS {
+                klass.install_action(
+                    &format!("win.{window_action}"),
+                    None,
+                    |obj, action_name, _| {
+                        obj.imp().forward_to_session_view(action_name);
+                    },
+                );
+            }
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -168,6 +201,7 @@ mod imp {
             }
 
             self.load_window_size();
+            self.update_forwarded_session_actions();
 
             self.main_stack.connect_transition_running_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -483,6 +517,43 @@ mod imp {
         /// Set the visible page of the window.
         fn set_visible_page(&self, page: WindowPage) {
             self.main_stack.set_visible_child_name(page.name());
+            self.update_forwarded_session_actions();
+        }
+
+        /// Activate the `SessionView` action that the given window action
+        /// stands in for.
+        fn forward_to_session_view(&self, window_action: &str) {
+            let name = window_action.trim_start_matches("win.");
+
+            let Some((_, session_action)) =
+                FORWARDED_SESSION_ACTIONS.iter().find(|(n, _)| *n == name)
+            else {
+                error!("Tried to forward unknown window action `{window_action}`");
+                return;
+            };
+
+            let session_action = format!("session.{session_action}");
+            if self
+                .session_view
+                .activate_action(&session_action, None)
+                .is_err()
+            {
+                error!("Could not activate action `{session_action}`");
+            }
+        }
+
+        /// Enable the forwarded actions only while a session is on screen.
+        ///
+        /// Nothing else needs this -- the widget they lead to is not reachable
+        /// otherwise -- but the macOS menu bar is always on screen, and an item
+        /// that does nothing is worse than one that is visibly unavailable.
+        fn update_forwarded_session_actions(&self) {
+            let enabled = self.visible_page() == WindowPage::Session;
+            let obj = self.obj();
+
+            for (window_action, _) in FORWARDED_SESSION_ACTIONS {
+                obj.action_set_enabled(&format!("win.{window_action}"), enabled);
+            }
         }
 
         /// Open the error page and display the given secret error message.
@@ -497,7 +568,7 @@ mod imp {
         }
 
         /// Open the account settings for the session with the given ID.
-        fn open_account_settings(&self, session_id: &str) {
+        pub(super) fn open_account_settings(&self, session_id: &str) {
             let Some(session) = Application::default()
                 .session_list()
                 .get(session_id)
@@ -574,6 +645,11 @@ impl Window {
     /// The `SessionView` of this window.
     pub(crate) fn session_view(&self) -> &SessionView {
         &self.imp().session_view
+    }
+
+    /// Open the account settings of the session with the given ID.
+    pub(crate) fn open_account_settings(&self, session_id: &str) {
+        self.imp().open_account_settings(session_id);
     }
 
     /// Open the error page and display the given secret error message.
