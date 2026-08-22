@@ -341,8 +341,10 @@ camera is released on dialog close (`dispose` → `Null`).
 
 ## M5 — notifications that macOS still supports
 
-The last thing in M3 that does not work, and the only one where the code to fix it is not written
-yet. Nothing here has been built; this is the route.
+**Done.** Both of the questions below were answered by experiment before any of Commune was
+touched, and both came back the way the route assumed. `doc/macos.md` records what was built and
+how to test it; what follows is kept as written, with the answers filled in, because the two
+experiments are the reason the design is what it is.
 
 ### What is already known
 
@@ -379,6 +381,34 @@ in, with the window backgrounded, have somebody send a message:
 Record the answer here either way. If it works, this milestone becomes optional maintenance rather
 than a bug fix, and can be scheduled rather than rushed.
 
+**Answered: it is a repair.** Rather than wait for a message to arrive, the question was put to
+GLib directly — a forty-line `GApplication` in a bundle of its own, sending the same thing
+`send_notification()` sends: a title, a body, `im.received`, high priority, and a default action
+with a `GVariant` target. Two runs, on macOS 26.5.2:
+
+* **First run:** something appeared, but it was the system asking for permission, not the
+  notification. `g_application_send_notification()` returned without complaint either way — it has
+  no return value and the backend logs nothing, so from inside the process the two are
+  indistinguishable.
+* **Second run, permission already answered:** nothing. No banner, nothing in Notification Center.
+
+The interesting part is where the app ended up in the system's own records. It is in usernoted's
+database — `~/Library/Group Containers/group.com.apple.usernoted/db2/db`, table `app` — and it is
+**not** in `com.apple.ncprefs`, which is where an authorization record actually lives and what
+System Settings → Notifications lists. So the legacy path registers just enough to look like it
+worked and never gets the permission it would need to deliver. There is no version of this that a
+user could fix from System Settings, because the app never appears there to be switched on.
+
+That is the whole answer: no banner, so nothing to click, so the second question does not arise.
+
+### Step 0a — an aside worth not re-deriving
+
+`GCocoaNotificationBackend` is still compiled into the `libgio` in use, and still selected; the
+strings are all there (`GCocoaNotificationBackend`, `NSUserNotificationCenterDelegate`, and the two
+method signatures it implements). Nothing is missing or misconfigured. The backend runs, calls
+`NSUserNotification`, and macOS does nothing with it. Looking for a build flag or a GLib version
+that changes this is time spent for no reason.
+
 ### Step 1 — the risk that decides the design
 
 `UNUserNotificationCenter` is stricter than the API it replaced: it wants a bundle with a real
@@ -390,6 +420,23 @@ Expect the same rebuild problem the Keychain has: an ad-hoc signature is a new i
 build, so macOS may treat each build as a different application and ask again — or worse, remember
 a denial. The mitigation is the one `doc/macos.md` already documents, a stable self-signed
 certificate and `CODESIGN_IDENTITY`. Use it from the start here rather than discovering it later.
+
+**Answered: it registers, and an ad-hoc signature is enough.** The same trick as Step 0 — a small
+Objective-C program in a bundle of its own, ad-hoc signed, doing exactly what the real code would:
+delegate, `requestAuthorization`, `add`, and a `userInfo` payload to read back on the tap. It
+prompted, `granted=1`, `authorizationStatus=2`, `alertSetting=2`, `add` returned no error, and the
+banner appeared. Clicking it delivered
+`didReceiveNotificationResponse` with the payload intact, printed `GVariant` and all.
+
+What did **not** work is worth writing down, because the error message points nowhere near the
+cause. A bundle sitting in `/private/tmp`, launched by running its executable directly, failed at
+`requestAuthorization` with `UNErrorDomain` code 1, *"Notifications are not allowed for this
+application"* — the same error a denial gives, with no prompt ever shown. It was not the ad-hoc
+signature and not the API: LaunchServices simply did not know the bundle. Registering it
+(`lsregister -f`) and launching it from a normal location fixed it, and `_build/macos/` is a normal
+enough location — the real dev bundle was tested there and behaves the same.
+
+So: if authorization fails with code 1 and no prompt, suspect LaunchServices before anything else.
 
 ### Step 2 — the shape, if we are writing it
 
@@ -422,6 +469,20 @@ second encoding, put `glib::Variant::print(true)` of that same variant into `use
 and read it back with `glib::Variant::parse()`. One representation, and the intent types stay the
 single source of truth.
 
+Three details the sketch above did not have, all found while writing it:
+
+* **`init()` is called from `main()`, not from `Application::startup`.** The ordering trap is real
+  and startup is already too late to be sure of — it runs after GTK has sent `-finishLaunching`.
+  Calling it before `gtk::init()` turned out to be fine: the authorization prompt appears normally
+  even though no `NSApplication` exists yet.
+* **`willPresentNotification` has to be implemented too**, or macOS silently drops anything that
+  arrives while Commune is frontmost. That looks like the right default until you notice that
+  `show_push()` has already decided this, and more precisely — it suppresses only the room actually
+  on screen. Anything reaching the delegate has passed that test, so the delegate says show it.
+* **The target is parsed against the type the action declares** (`action_parameter_type()`) rather
+  than against whatever the string happens to parse as. That is what keeps `SessionIntent` the
+  single source of truth in practice rather than only in intent.
+
 ### Known fidelity gap
 
 Today's notifications carry the sender's avatar, set as a `gdk::Texture`. `UNNotificationContent`
@@ -429,12 +490,29 @@ takes attachments as **file URLs**, so an avatar means writing the texture to a 
 first. Worth doing after the basic path works, not before — and worth deciding whether it is worth
 doing at all.
 
+**Done, and it was worth doing.** The texture goes to `<cache>/notification-icons/<uuid>.png` via
+`save_to_png_bytes()`, and the file becomes a `UNNotificationAttachment`. The lifetime question
+answers itself: macOS takes the file over when the request is added, so the only files left behind
+belong to requests that failed. `init()` deletes the whole directory at startup, which bounds it to
+one run and needs no bookkeeping per notification.
+
 ### Verify
 
 A message arriving with the app backgrounded raises a banner; clicking it opens the right room in
 the right session; an identity verification request does the same; a notification for a room that
 is then read disappears rather than lingering; and none of it asks for permission twice across two
 rebuilds signed with the same identity.
+
+**Done, except for the events that need somebody else.** A notification sent through the real
+`Notifications::send_notification` — via `COMMUNE_TEST_NOTIFICATION`, which `doc/macos.md`
+describes — raised a banner carrying the room's avatar, and clicking it went the whole way:
+delegate, action name, `GVariant` parsed back against the action's own type, and
+`ShowMatrixId(Room(…))` for exactly the room the banner named. Two rebuilds under the same signing
+identity asked for permission once between them.
+
+What is still owed is the half that needs a second person: a real incoming message, a real identity
+verification, and a notification withdrawn because the room was read. The code path they take is
+the one already exercised, so these confirm the Matrix side rather than the platform side.
 
 ## Dependencies and from-source recipes
 

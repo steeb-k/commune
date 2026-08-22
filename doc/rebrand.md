@@ -136,6 +136,14 @@ room as its support URL: the `connect_activate_link` handler that opened that
 room inside the app, and `SessionList::has_session_ready`, which the handler
 was the only caller of. If upstream grows another caller, take it back.
 
+Two Objective-C names carry the application's, and neither is a user-visible
+string: `src/utils/macos_notifications.rs` registers its delegate class as
+`CommuneNotificationDelegate`, and carries the intent of a notification under
+the `userInfo` keys `commune.action` and `commune.target`. The class name has
+to be unique inside the process, which is why it is prefixed at all; the
+`userInfo` keys are only ever read back by the same build that wrote them, so
+renaming either is safe as long as both ends move together.
+
 One wire-format identifier changed: the image packs room account data event
 is now `io.github.steeb_k.Commune.image_packs_room`
 (`src/session/image_packs/events.rs`). It was renamed without a migration, so

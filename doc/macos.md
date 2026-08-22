@@ -19,10 +19,12 @@ was built; this file records what actually exists, what is stubbed, and what bit
 
 ## State today
 
-M0, M1 and M2 are done, and M3 is written and partly exercised: the menu bar, the hidden hamburger,
-the `matrix:` URL scheme warm and cold, session restore and the Keychain have all been seen working
-on a bundle. **Notifications and the Command shortcuts have not been**, and the rows in
-[Testing by hand](#testing-by-hand) that are not marked verified are the ones still owed. The tree
+M0, M1, M2 and M5 are done, and M3 is written and partly exercised: the menu bar, the hidden
+hamburger, the `matrix:` URL scheme warm and cold, session restore and the Keychain have all been
+seen working on a bundle, and so has a notification: banner, avatar, and a click that opens the
+room it names. **The Command shortcuts have not been**, and the rows in
+[Testing by hand](#testing-by-hand) that are not marked verified are the ones still owed — for
+notifications that means a real incoming message, an identity verification, and withdrawal. The tree
 builds for `aarch64-apple-darwin`, and `cargo check`, `cargo
 clippy --all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
 `cargo sort`, `typos`, `rumdl`, `cargo nextest run` and `meson test` all pass. `meson compile` and
@@ -50,7 +52,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
-| Notifications | Still GLib's deprecated Cocoa backend; replacing it is M5 |
+| Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
 
 ## The GTK environment
 
@@ -417,9 +419,12 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 21 | `matrix:` URL | Quit first, then the same command | It launches, restores the session and opens the room — **verified** |
 | 22 | `matrix:` URL | Bare `open 'matrix:…'`, no `-a` | Goes to whichever app owns the scheme; see below |
 | 23 | `matrix:` URL | Click a `matrix:` link in another app | Same as 20 |
-| 24 | Notifications | Background the app, have somebody send a message | A notification appears |
-| 25 | Notifications | Click it | The right session and the right room open |
-| 26 | Notifications | Same for an identity verification request | The verification opens |
+| 24 | Notifications | `COMMUNE_TEST_NOTIFICATION=1`, see below | A banner: room name, body, and the room's avatar — **verified** |
+| 25 | Notifications | Click that banner | The room it names opens, in the right session — **verified** |
+| 26 | Notifications | Background the app, have somebody send a real message | The same, for the real event |
+| 26a | Notifications | Same for an identity verification request | The verification opens |
+| 26b | Notifications | Read a room that has a notification pending | The banner leaves Notification Center |
+| 26c | Notifications | Rebuild with the same `CODESIGN_IDENTITY`, relaunch | No second permission prompt — **verified** |
 | 27 | Keychain | Log out of a session | Its item is gone from Keychain Access — **verified** |
 | 28 | Keychain | Then look in `~/Library/Application Support/commune-Devel/` | The session's directory is gone |
 | 29 | Regression | Log in with a password, and with SSO | Both work; SSO may raise a firewall prompt |
@@ -459,10 +464,51 @@ killall Dock; killall Finder
 proves nothing about Commune unless Commune happens to have won the scheme. Naming the bundle takes
 LaunchServices' choice out of it.
 
-Rows 24 to 26 are the ones most likely to fail. GLib's Cocoa notification backend is built on
-`NSUserNotification`, which Apple deprecated in 10.14, and whether it still does anything at all on
-a current macOS is exactly what has not been tried. If nothing appears, that is the first thing to
-suspect rather than anything in `src/session/notifications/`.
+**Notifications need the app to be authorized, once.** The first launch of a bundle macOS has not
+seen before raises the system's permission prompt, and until it is answered nothing is delivered.
+The log says which way it went, at debug level:
+
+```sh
+RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune 2>&1 \
+    | grep macos_notifications
+# Listening for notification taps
+# Allowed to show notifications
+```
+
+If instead it says _not allowed_, look in System Settings → Notifications before touching any code.
+And if the prompt never appears at all, the cause is more likely LaunchServices than the
+notification code — see [Signing](#signing-and-why-the-keychain-keeps-asking) below.
+
+**Sending one on demand.** A real notification needs somebody else to send a message, which makes
+the parts most likely to break — the avatar, the payload, and what a click does — the parts
+hardest to get at. Development builds therefore send one on request:
+
+```sh
+COMMUNE_TEST_NOTIFICATION=1 RUST_LOG=commune=debug \
+    _build/macos/"Commune Devel.app"/Contents/MacOS/commune
+```
+
+A couple of seconds after a session goes ready, this sends a notification for a room through the
+same `Notifications::send_notification` everything else uses — the room's real avatar, a real
+`SessionIntent::ShowMatrixId`, the lot. Clicking it should open the room it names. The log carries
+both ends:
+
+```text
+commune::session::notifications: Sending a test notification id="…//matrix:roomid/…//test"
+commune::utils::macos_notifications: Opening a tapped notification action="show-matrix-id"
+commune::application::imp: `app.show-matrix-id` action activated
+commune::application::imp: Processing session intent… intent=ShowMatrixId(Room(…))
+```
+
+It is `#[cfg(debug_assertions)]`, so a release bundle does not carry it. **Which room it picks is
+not worth reading anything into** — it takes the one on screen if there is one and the first in the
+list otherwise, and a restart does not reliably restore a selection, so it often is not the room
+you were last looking at. What matters is that the room the banner names is the room the click
+opens.
+
+There is also an `app.test-notification` action behind the same `cfg`. Nothing reaches it today:
+a key binding was tried first and `AppKit` swallows every Command combination that is not in the
+menu bar, which is why the environment variable exists at all.
 
 Rows 1 and 13 are done: the menu bar comes up as Commune, File, Edit, View, Window, Help, and the
 sidebar header carries nothing but the account switcher and the search toggle. What is left in
@@ -585,6 +631,37 @@ Both paths work. The cold one was the doubtful half — the event is queued befo
 installed there — and `AppKit` delivers it afterwards regardless, so installing the handler
 immediately after `GtkApplication` starts up is early enough.
 
+**Notifications.** On Linux `Application::send_notification()` is `GNotification` and GIO finds a
+backend for it. On macOS the backend it finds is `GCocoaNotificationBackend`, built on
+`NSUserNotification`, deprecated in 10.14 — and on macOS 26 it delivers nothing at all. This was
+measured rather than assumed: a `GApplication` in a bundle of its own sent the same notification
+the real code sends, twice, and no banner ever appeared. The app ends up registered in usernoted's
+database but never in `com.apple.ncprefs`, where an authorization record actually lives, so it
+never appears in System Settings → Notifications to be switched on either. A GLib upgrade does not
+help; 2.88's `libgio` still names `NSUserNotification`, links no `UserNotifications.framework`, and
+mentions `UNUserNotificationCenter` nowhere.
+
+`src/utils/macos_notifications.rs` talks to `UNUserNotificationCenter` instead, and unlike the
+Apple Event Manager this one genuinely needs `objc2` — the API is Objective-C only, and receiving a
+tap means declaring a delegate class with `define_class!`. `src/session/notifications/mod.rs`
+chooses between the two behind a `cfg_if!`, so Linux is untouched.
+
+Three things about it are worth knowing:
+
+* **Authorization is asked for once**, at startup, from `main()` rather than from
+  `Application::startup` — a tap that launched the app is delivered right after launching
+  finishes, and startup is already past that. The prompt is bound to the bundle ID _and_ the
+  signing identity, so an ad-hoc signature asks again on every rebuild, exactly as the Keychain
+  does. Use a stable `CODESIGN_IDENTITY`.
+* **The intent rides in `userInfo`** as `glib::Variant::print(true)` of the same variant the
+  action already takes, read back with `glib::Variant::parse()` against the type the action
+  declares. One representation, and `SessionIntent` stays the only description of what a
+  notification means.
+* **The avatar has to reach the disk first**, because `UNNotificationContent` takes attachments as
+  file URLs. It goes to `<cache>/notification-icons/`, which `init()` empties at startup; macOS
+  takes the file over when the request is added, so whatever is still there belongs to a request
+  that failed.
+
 **Secrets.** `src/secret/macos.rs` stores one generic password item per session, service `APP_ID`
 and account = session ID. The Keychain cannot be searched on free-form attributes the way the
 Secret Service can, so the session metadata is serialised into the secret next to the passphrase
@@ -632,14 +709,6 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
   Left out of M3 deliberately: a File → Close Window item, which the muxer cannot reach, so it
   would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
   this list too and has come off it — looked at on a Mac, it reads as native as it stands.
-* **Notifications**, which were M3 and are now their own milestone. `Application::send_notification()`
-  is GLib's `GNotification`, and GLib serves that on macOS with `NSUserNotification`, deprecated
-  in 10.14. **A GLib upgrade will not help**: the environment is already on 2.88.3, and its
-  `libgio` still references `NSUserNotification`, links no `UserNotifications.framework`, and
-  mentions `UNUserNotificationCenter` nowhere. So the modern API is not reachable through
-  `GNotification` and whatever we want is ours to write, the same conclusion the media backend and
-  the `matrix:` handler reached. Whether it is _broken_ today has not actually been tested — that
-  is step 0. The route is `M5` in `doc/macos-plan.md`.
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 
 Still unverified: GTK's macOS backend for input methods and drag and drop.
