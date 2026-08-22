@@ -181,12 +181,19 @@ meson setup _build -Dprofile=development
 meson compile -C _build
 ```
 
-Or straight to cargo, which is faster while iterating on Rust:
+Or straight to cargo, which is faster while iterating on Rust — but **export `CARGO_HOME` as well**:
 
 ```sh
-CARGO_TARGET_DIR=_build/cargo-target cargo check
-CARGO_TARGET_DIR=_build/cargo-target cargo clippy --all-targets -- -D warnings
+export CARGO_TARGET_DIR=$PWD/_build/cargo-target
+export CARGO_HOME=$PWD/_build/cargo-home
+cargo check
+cargo clippy --all-targets -- -D warnings
 ```
+
+`meson.build` sets both for the cargo it runs. Setting only the target directory puts the two
+invocations in the same one with different registry paths, which changes the fingerprint of every
+dependency, so each rebuilds the whole tree the other just built. It looks like a slow machine
+rather than a mistake, and on this one it is about five minutes each way.
 
 To install and run the development build:
 
