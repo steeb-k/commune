@@ -326,6 +326,52 @@ impl Notifications {
             .insert(id);
     }
 
+    /// Show a notification for the room that is on screen.
+    ///
+    /// Development builds only, and there is a reason it exists: a real
+    /// notification needs somebody else to send a message, and the parts of
+    /// this that are most likely to break — the avatar, the payload, and what
+    /// clicking it does — are exactly the parts that a test outside the
+    /// application cannot reach. This goes through the same
+    /// [`Self::send_notification`] everything else does.
+    #[cfg(debug_assertions)]
+    pub(crate) async fn show_test(&self) {
+        let Some(session) = self.session() else {
+            warn!("Cannot send a test notification with no session");
+            return;
+        };
+        // The room on screen if there is one, so that the notification is for
+        // something recognisable, and otherwise whichever room comes first.
+        let room = Application::default()
+            .active_window()
+            .and_downcast::<Window>()
+            .and_then(|window| window.session_view().selected_room())
+            .or_else(|| session.room_list().item(0).and_downcast());
+
+        let Some(room) = room else {
+            warn!("Cannot send a test notification with no room");
+            return;
+        };
+
+        let session_id = session.session_id();
+        let matrix_uri = MatrixIdUri::Room(MatrixRoomIdUri {
+            id: room.room_id().to_owned().into(),
+            via: vec![],
+        });
+        let id = format!("{session_id}//{matrix_uri}//test");
+        let icon = room.avatar_data().as_notification_icon(false).await;
+
+        debug!(id, "Sending a test notification");
+        Self::send_notification(
+            &id,
+            &room.display_name(),
+            "Test notification. Clicking this should open this room.",
+            session_id,
+            &SessionIntent::ShowMatrixId(matrix_uri),
+            icon.as_ref(),
+        );
+    }
+
     /// Show a notification for the given in-room identity verification.
     pub(crate) async fn show_in_room_identity_verification(
         &self,
