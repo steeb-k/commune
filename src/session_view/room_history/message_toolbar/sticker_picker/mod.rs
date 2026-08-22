@@ -1,17 +1,21 @@
+use adw::prelude::*;
 use gtk::{
     CompositeTemplate, glib,
     glib::{clone, closure_local},
     pango,
-    prelude::*,
     subclass::prelude::*,
 };
 
+mod gif_button;
+mod gif_page;
 mod pack_image_button;
 
-use self::pack_image_button::PackImageButton;
+use self::{gif_page::GifPage, pack_image_button::PackImageButton};
 use crate::{
+    Application,
     session::{ImagePack, ImagePacks, PackImage, PackUsage, Room, Session},
     spawn,
+    utils::klipy::{self, SelectedGif},
 };
 
 mod imp {
@@ -31,9 +35,15 @@ mod imp {
     )]
     pub struct StickerPicker {
         #[template_child]
+        switcher: TemplateChild<adw::InlineViewSwitcher>,
+        #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
         packs_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        gif_view_page: TemplateChild<adw::ViewStackPage>,
+        #[template_child]
+        gif_page: TemplateChild<GifPage>,
         /// The room that the stickers are sent to.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         room: glib::WeakRef<Room>,
@@ -66,9 +76,43 @@ mod imp {
                     Signal::builder("sticker-selected")
                         .param_types([PackImage::static_type()])
                         .build(),
+                    Signal::builder("gif-selected")
+                        .param_types([SelectedGif::static_type()])
+                        .build(),
                 ]
             });
             SIGNALS.as_ref()
+        }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            // The GIF search is only built when this build has an API key, and it is
+            // only presented when the user has turned it on: searching sends the
+            // search text and the IP address of this device to a third party.
+            if klipy::is_available() {
+                Application::default()
+                    .settings()
+                    .bind("gif-search-enabled", &*self.gif_view_page, "visible")
+                    .get_only()
+                    .build();
+
+                // A switcher between one page is noise.
+                self.gif_view_page
+                    .bind_property("visible", &*self.switcher, "visible")
+                    .sync_create()
+                    .build();
+            }
+
+            self.gif_page.connect_gif_selected(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, gif| {
+                    let obj = imp.obj();
+                    obj.emit_by_name::<()>("gif-selected", &[&gif]);
+                    obj.popdown();
+                }
+            ));
         }
     }
 
@@ -263,6 +307,20 @@ impl StickerPicker {
             true,
             closure_local!(move |obj: Self, image: PackImage| {
                 f(&obj, image);
+            }),
+        )
+    }
+
+    /// Connect to the signal emitted when a GIF is selected.
+    pub(crate) fn connect_gif_selected<F: Fn(&Self, SelectedGif) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "gif-selected",
+            true,
+            closure_local!(move |obj: Self, gif: SelectedGif| {
+                f(&obj, gif);
             }),
         )
     }

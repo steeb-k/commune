@@ -19,11 +19,12 @@ pub use self::{
 };
 use super::AccountSettings;
 use crate::{
+    Application,
     components::{ActionButton, ActionState, ButtonCountRow, CopyableRow, EditableAvatar},
     prelude::*,
     session::Session,
     spawn, spawn_tokio, toast,
-    utils::{OngoingAsyncAction, TemplateCallbacks, media::FileInfo},
+    utils::{OngoingAsyncAction, TemplateCallbacks, klipy, media::FileInfo},
 };
 
 mod imp {
@@ -57,6 +58,10 @@ mod imp {
         session_id: TemplateChild<CopyableRow>,
         #[template_child]
         deactivate_account_button: TemplateChild<adw::ButtonRow>,
+        #[template_child]
+        gif_search_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        gif_search_row: TemplateChild<adw::SwitchRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -89,7 +94,21 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for GeneralPage {}
+    impl ObjectImpl for GeneralPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            // There is nothing to turn on when this build has no API key.
+            if klipy::is_available() {
+                self.gif_search_group.set_visible(true);
+
+                Application::default()
+                    .settings()
+                    .bind("gif-search-enabled", &*self.gif_search_row, "active")
+                    .build();
+            }
+        }
+    }
 
     impl WidgetImpl for GeneralPage {}
     impl PreferencesPageImpl for GeneralPage {}

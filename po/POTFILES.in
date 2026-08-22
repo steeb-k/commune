@@ -196,6 +196,7 @@ src/session_view/room_history/message_toolbar/attachment_dialog.blp
 src/session_view/room_history/message_toolbar/completion/completion_popover.rs
 src/session_view/room_history/message_toolbar/mod.blp
 src/session_view/room_history/message_toolbar/mod.rs
+src/session_view/room_history/message_toolbar/sticker_picker/gif_page.blp
 src/session_view/room_history/message_toolbar/sticker_picker/mod.blp
 src/session_view/room_history/message_toolbar/sticker_picker/pack_image_button.rs
 src/session_view/room_history/mod.blp
@@ -215,6 +216,7 @@ src/session_view/sidebar/row.rs
 src/session_view/sidebar/section_row.rs
 src/shortcuts-dialog.blp
 src/user_facing_error.rs
+src/utils/klipy.rs
 src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs
 src/utils/media/image/mod.rs

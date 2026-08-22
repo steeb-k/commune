@@ -18,3 +18,10 @@ option(
   description: 'Whether the sandbox of glycin should be disabled.' +
                'This is only useful during development.'
 )
+option(
+  'klipy-api-key',
+  type : 'string',
+  value : '',
+  description: 'The KLIPY API key used by the GIF search in the sticker picker. ' +
+               'When it is empty, the GIF search is not built in and its tab is hidden.'
+)

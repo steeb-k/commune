@@ -1,0 +1,155 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $GifPage: Adw.Bin {
+  child: Gtk.Box {
+    orientation: vertical;
+    spacing: 6;
+
+    Gtk.SearchEntry search_entry {
+      placeholder-text: _("Search GIFs");
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 12;
+      search-changed => $search_changed() swapped;
+
+      accessibility {
+        label: _("Search GIFs");
+      }
+    }
+
+    // Required by the terms of use of the API. Under the search box, where it
+    // reads as the source of the results.
+    Gtk.LinkButton {
+      label: _("Powered by KLIPY");
+      uri: "https://klipy.com/";
+      halign: start;
+      margin-start: 12;
+      margin-end: 12;
+
+      styles [
+        "caption",
+        "dimmed",
+      ]
+    }
+
+    Gtk.Stack stack {
+      vexpand: true;
+      visible-child-name: "start";
+
+      Gtk.StackPage {
+        name: "start";
+
+        child: Gtk.Label {
+          halign: center;
+          valign: center;
+          wrap: true;
+          justify: center;
+          margin-start: 18;
+          margin-end: 18;
+          // Translators: This is shown in the GIF search before anything has
+          // been searched for.
+          label: _("Search for a GIF to send.");
+
+          styles [
+            "dimmed",
+          ]
+        };
+      }
+
+      Gtk.StackPage {
+        name: "loading";
+
+        child: Gtk.Spinner {
+          halign: center;
+          valign: center;
+          spinning: true;
+        };
+      }
+
+      Gtk.StackPage {
+        name: "empty";
+
+        child: Gtk.Label {
+          halign: center;
+          valign: center;
+          wrap: true;
+          justify: center;
+          margin-start: 18;
+          margin-end: 18;
+          // Translators: This is shown in the GIF search when a search returned
+          // nothing.
+          label: _("No GIFs found.");
+
+          styles [
+            "dimmed",
+          ]
+        };
+      }
+
+      Gtk.StackPage {
+        name: "error";
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 12;
+          halign: center;
+          valign: center;
+          margin-start: 18;
+          margin-end: 18;
+
+          Gtk.Label {
+            wrap: true;
+            justify: center;
+            // Translators: This is shown in the GIF search when the GIF service
+            // could not be reached.
+            label: _("Could not reach the GIF service.");
+
+            styles [
+              "dimmed",
+            ]
+          }
+
+          Gtk.Button {
+            halign: center;
+            label: _("Try Again");
+            clicked => $retry() swapped;
+          }
+        };
+      }
+
+      Gtk.StackPage {
+        name: "results";
+
+        child: Gtk.ScrolledWindow scrolled_window {
+          hscrollbar-policy: never;
+
+          child: Gtk.Box {
+            orientation: vertical;
+            spacing: 6;
+            margin-start: 12;
+            margin-end: 12;
+
+            Gtk.FlowBox flow_box {
+              selection-mode: none;
+              homogeneous: false;
+              min-children-per-line: 2;
+              max-children-per-line: 8;
+              row-spacing: 6;
+              column-spacing: 6;
+              valign: start;
+            }
+
+            Gtk.Spinner load_more_spinner {
+              visible: false;
+              halign: center;
+              spinning: true;
+              margin-bottom: 6;
+            }
+          };
+        };
+      }
+    }
+
+  };
+}

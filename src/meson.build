@@ -68,6 +68,7 @@ global_conf.set(
     get_option('disable-glycin-sandbox').to_string(),
 )
 global_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
+global_conf.set_quoted('KLIPY_API_KEY', get_option('klipy-api-key'))
 global_conf.set_quoted('LOCALEDIR', localedir)
 global_conf.set_quoted('PKGDATADIR', pkgdatadir)
 global_conf.set('PROFILE', profile)

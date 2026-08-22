@@ -96,6 +96,16 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup gif_search_group {
+    visible: false;
+    title: _("Composer");
+
+    Adw.SwitchRow gif_search_row {
+      title: _("GIF Search");
+      subtitle: _("Add a tab to the sticker picker to search for GIFs. What you type there, and the IP address of this device, are sent to KLIPY, a service that is not part of Matrix.");
+    }
+  }
+
   Adw.PreferencesGroup {
     Adw.ExpanderRow {
       title: _("Advanced Information");
