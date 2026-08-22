@@ -3,6 +3,8 @@ use geo_uri::GeoUri;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
+#[cfg(target_os = "macos")]
+use super::gst_media_stream::GstMediaStream;
 use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource, LocationViewer};
 use crate::{
     MEDIA_FILE_NOTIFIER,
@@ -10,6 +12,33 @@ use crate::{
     prelude::*,
     utils::{CountedRef, File, media::image::IMAGE_QUEUE},
 };
+
+/// Play the given file in the given video widget.
+#[cfg(not(target_os = "macos"))]
+fn set_video_file(video: &gtk::Video, file: &gio::File) {
+    video.set_file(Some(file));
+}
+
+/// Play the given file in the given video widget.
+///
+/// `GtkVideo` plays a file with `GtkMediaFile`, which has no backend at all in
+/// the GTK build we use on macOS, so it is given a stream of ours instead.
+#[cfg(target_os = "macos")]
+fn set_video_file(video: &gtk::Video, file: &gio::File) {
+    video.set_media_stream(Some(&GstMediaStream::new(file)));
+}
+
+/// Stop the given video widget and drop what it was playing.
+#[cfg(not(target_os = "macos"))]
+fn clear_video(video: &gtk::Video) {
+    video.set_file(None::<&gio::File>);
+}
+
+/// Stop the given video widget and drop what it was playing.
+#[cfg(target_os = "macos")]
+fn clear_video(video: &gtk::Video) {
+    video.set_media_stream(None::<&gtk::MediaStream>);
+}
 
 /// The types of content supported by the [`MediaContentViewer`].
 #[derive(Debug, Default, Clone, Copy)]
@@ -226,7 +255,7 @@ mod imp {
                     // opened.
                     MEDIA_FILE_NOTIFIER.notify();
 
-                    video.set_file(Some(&file.as_gfile()));
+                    set_video_file(&video, &file.as_gfile());
                     self.set_visible_child("viewer");
 
                     return;
@@ -269,7 +298,7 @@ mod imp {
         /// Clear the viewer.
         pub(super) fn clear(&self) {
             if let Some(video) = self.media_child::<gtk::Video>() {
-                video.set_file(None::<&gio::File>);
+                clear_video(&video);
             }
 
             self.paintable_animation_ref.take();
