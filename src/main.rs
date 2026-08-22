@@ -67,6 +67,12 @@ fn main() {
     // before anything spawns a thread.
     let paths = app_bundle::init();
 
+    // Start listening for notification taps before anything else can finish
+    // launching the application, or a tap that launched it is delivered to
+    // nobody.
+    #[cfg(target_os = "macos")]
+    utils::macos_notifications::init();
+
     // Prepare i18n
     // Safety: `setlocale` is safe to call because the program is single-threaded.
     unsafe { setlocale(LocaleCategory::LcAll, "") };

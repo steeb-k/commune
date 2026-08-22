@@ -148,6 +148,31 @@ oo7 = { version = "0.7.0-alpha", default-features = false, features = [
 
 # macOS-only dependencies.
 [target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSArray",
+    "NSDictionary",
+    "NSError",
+    "NSObject",
+    "NSString",
+    "NSURL",
+] }
+objc2-user-notifications = { version = "0.3", default-features = false, features = [
+    "block2",
+    "std",
+    "UNError",
+    "UNNotification",
+    "UNNotificationAttachment",
+    "UNNotificationContent",
+    "UNNotificationRequest",
+    "UNNotificationResponse",
+    "UNNotificationSettings",
+    "UNNotificationSound",
+    "UNNotificationTrigger",
+    "UNUserNotificationCenter",
+] }
 security-framework = "3"
 
 [dev-dependencies]
