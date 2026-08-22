@@ -16,7 +16,13 @@ ignored = [
 [profile.release]
 debug = true
 lto = "thin"
-codegen-units = 1
+# Upstream builds the crate as a single codegen unit. That is worth a few
+# percent at most, and it costs about forty minutes: the dependencies are
+# already optimised by the `dev.package."*"` profile below and cached, so a
+# release build is one crate, and one codegen unit means compiling it with no
+# parallelism at all. `opt-level` and thin LTO are where the speed actually
+# comes from, and both are kept.
+codegen-units = 16
 
 [profile.dev.package."*"]
 opt-level = 3
