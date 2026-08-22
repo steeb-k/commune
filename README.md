@@ -118,9 +118,10 @@ The result is a relocatable, ad-hoc signed `Commune.app` in `_build-release/maco
 tarball for handing to anyone: a browser tags a downloaded `.dmg` with `com.apple.quarantine`, and
 Gatekeeper refuses a quarantined app that is not signed with a Developer ID.
 
-Notifications, `matrix:` links and the Cmd-key shortcuts are not done yet, and camera QR scanning
-and location sharing are stubbed. See [`doc/macos.md`](doc/macos.md) for the full story, the
-environment probe, and what is stubbed.
+The menu bar, the Cmd-key shortcuts, `matrix:` links and notifications are all in place but have
+not been exercised by hand yet; camera QR scanning and location sharing are stubbed. See
+[`doc/macos.md`](doc/macos.md) for the full story, the environment probe, the list of what still
+has to be tested, and what is stubbed.
 
 ## Runtime Dependencies
 

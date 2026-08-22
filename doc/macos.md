@@ -11,6 +11,7 @@ was built; this file records what actually exists, what is stubbed, and what bit
 * [Setting the environment up](#setting-the-environment-up)
 * [Building](#building)
 * [Packaging](#packaging)
+* [Testing by hand](#testing-by-hand)
 * [What differs from Linux](#what-differs-from-linux)
 * [Not done yet](#not-done-yet)
 * [Rebasing](#rebasing)
@@ -18,7 +19,10 @@ was built; this file records what actually exists, what is stubbed, and what bit
 
 ## State today
 
-M0, M1 and M2 are done. The tree builds for `aarch64-apple-darwin`, and `cargo check`, `cargo
+M0, M1 and M2 are done, and M3 is written but not yet exercised by hand — see
+[Testing by hand](#testing-by-hand) for the list that has to be worked through, and treat the menu
+bar, the `matrix:` URL handler and notifications as unproven until it has been. The tree builds for
+`aarch64-apple-darwin`, and `cargo check`, `cargo
 clippy --all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
 `cargo sort`, `typos`, `rumdl`, `cargo nextest run` and `meson test` all pass. `meson compile` and
 `meson install` work, and **the app runs**: logging in with a password, syncing, the timeline,
@@ -41,7 +45,10 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
 | System 12/24h clock | Locale-derived at startup, never updates live |
 | Camera QR scanning | Stubbed, returns no cameras |
-| Notifications, `matrix:` URLs, Cmd shortcuts | Not done yet |
+| Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
+| Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
+| `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
+| Notifications | GLib's Cocoa backend, unchanged and unproven |
 
 ## The GTK environment
 
@@ -348,6 +355,80 @@ artefact to actually hand to somebody today**; `make-dmg.sh` exists because it i
 once the signing story is sorted, and because a locally built `.dmg` is a fine way to test the
 install itself.
 
+## Testing by hand
+
+There is no macOS CI and there will not be one for a while, so this is the list. Everything here
+has to be exercised from a **bundle** unless the row says otherwise: `matrix:` URLs and
+notifications both need a `CFBundleIdentifier`, and a build run out of a prefix does not have one.
+
+```sh
+meson compile -C _build macos-bundle && open _build/macos/"Commune Devel.app"
+```
+
+To see what the app is saying while it runs, launch the binary inside the bundle directly instead
+of with `open`; it is a normal executable and needs nothing exported:
+
+```sh
+RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
+```
+
+| # | Area | Do this | Expect |
+| --- | --- | --- | --- |
+| 1 | Menu bar | Look at it | Commune, File, Edit, View, Window, Help |
+| 2 | Menu bar | Commune → About Commune | The About dialog, named Commune, not `commune` |
+| 3 | Menu bar | Commune → Preferences, and ⌘, | The account settings of the visible session |
+| 4 | Menu bar | Preferences while logged out | Greyed out |
+| 5 | Menu bar | Commune → Hide, Hide Others, Show All, Quit | The usual macOS behaviour |
+| 6 | Menu bar | File → each of the five items | The same dialogs the old hamburger menu opened |
+| 7 | Menu bar | File and View on the login page | Greyed out; sensitive again once a session is up |
+| 8 | Menu bar | Edit → Cut, Copy, Paste, Select All | Greyed, but showing ⌘X ⌘C ⌘V ⌘A |
+| 9 | Menu bar | ⌘X, ⌘C, ⌘V, ⌘A in the composer | They work, greyed menu items notwithstanding |
+| 10 | Menu bar | View → the five room items, Full Screen | Selection moves; the window goes full screen |
+| 11 | Menu bar | Window | Minimize, Zoom and the window list, from AppKit |
+| 12 | Menu bar | Help → Keyboard Shortcuts | The shortcuts dialog |
+| 13 | Sidebar | Look at the header bar | No hamburger button |
+| 14 | Shortcuts | ⌘Q, ⌘W | Quit; close window |
+| 15 | Shortcuts | ⌘K, ⌘L, ⌘, | Room search; join room; account settings |
+| 16 | Shortcuts | ⌘Page Up, ⌘Page Down, and both with ⇧ | Previous/next room, then the unread ones |
+| 17 | Shortcuts | ⌘⇧8 (⌘\*) | Jumps to the first room with unread messages |
+| 18 | Shortcuts | ⌘V into the composer | Pastes, including an image |
+| 19 | Shortcuts | Help → Keyboard Shortcuts, read the list | ⌘ glyphs throughout, no ⌃ |
+| 20 | `matrix:` URL | Running: `open -a <bundle> 'matrix:r/<room>:<server>'` | Comes forward and opens the room — **verified** |
+| 21 | `matrix:` URL | Quit first, then the same command | It launches and lands in the room |
+| 22 | `matrix:` URL | Bare `open 'matrix:…'`, no `-a` | Goes to whichever app owns the scheme; see below |
+| 23 | `matrix:` URL | Click a `matrix:` link in another app | Same as 20 |
+| 24 | Notifications | Background the app, have somebody send a message | A notification appears |
+| 25 | Notifications | Click it | The right session and the right room open |
+| 26 | Notifications | Same for an identity verification request | The verification opens |
+| 27 | Keychain | Log out of a session | Its item is gone from Keychain Access, under the application ID |
+| 28 | Keychain | Then look in `~/Library/Application Support/commune-Devel/` | The session's directory is gone |
+| 29 | Regression | Log in with a password, and with SSO | Both work; SSO may raise a firewall prompt |
+| 30 | Regression | Send and receive text; open a room's history | Nothing unusual |
+| 31 | Regression | An image thumbnail, an animated GIF, the GIF search | All render, animation included |
+| 32 | Regression | A video in the media viewer | Plays, with working controls |
+| 33 | Regression | Quit and relaunch | The session comes back without a login |
+| 34 | Regression | Launch the bundle from a shell with nothing exported | It runs |
+
+Row 20 has been run: the Apple Event arrives, `Application::open()` is reached, and the URI is
+parsed into the right intent — the whole path, stopping only at "Cannot process intent with no
+logged in session", which is what a build with no session should say. Row 21 is the one that is
+still open, because a cold launch queues the event before the handler exists and it is `AppKit`
+that decides when to deliver it.
+
+**Pass `-a` and the bundle.** More than one application on a developer's machine claims the
+`matrix:` scheme — `lsregister -dump | grep matrix:` will list them — so a bare `open 'matrix:…'`
+proves nothing about Commune unless Commune happens to have won the scheme. Naming the bundle takes
+LaunchServices' choice out of it.
+
+Rows 24 to 26 are the ones most likely to fail. GLib's Cocoa notification backend is built on
+`NSUserNotification`, which Apple deprecated in 10.14, and whether it still does anything at all on
+a current macOS is exactly what has not been tried. If nothing appears, that is the first thing to
+suspect rather than anything in `src/session/notifications/`.
+
+Rows 1 to 19 could not be run here either: reading the menu bar needs Accessibility or Screen
+Recording permission, which is the user's to grant. All that is known is that the menu model loads
+and `set_menubar()` is reached without complaint.
+
 ## What differs from Linux
 
 **Image decoding.** glycin is Linux-only — it is a set of C libraries that decode in a sandboxed
@@ -388,6 +469,48 @@ is a media stream that is also a paintable. `content_viewer.rs` picks between th
 Note that the timeline's own previews were never affected: `VideoPlayer` drives `GstPlay`
 directly and never touches `GtkMediaFile`.
 
+**The menu bar.** Everything the main menu offers used to be reachable only from the hamburger
+button in a sidebar that is already short of room, while the menu bar every other Mac application
+uses sat empty. `src/macos_menu_bar.blp` fills it and `Application::startup` installs it with
+`set_menubar()`; the hamburger is hidden there in exchange.
+
+Three things about GTK's quartz backend shape that file, and none of them are obvious:
+
+* GTK builds the **application menu** — About, Preferences, Services, Hide, Quit — itself, from
+  `gtk/ui/gtkapplication-quartz.ui`, and keeps it ahead of whatever `set_menubar()` is given. It
+  names `app.preferences` unconditionally and binds Command-comma to it, so that item was dead
+  until `src/application.rs` grew one. It opens the account settings of the visible session, and
+  is insensitive when there is no session to configure.
+* **Setting a menubar replaces GTK's fallback one**, which is where Edit and Window come from.
+  Ours carries both. Window is nothing but a submenu with
+  `gtk-macos-special: "window-submenu"`; AppKit fills in Minimize, Zoom and the window list.
+* **Only `app.`, `win.` and `gtkinternal.` resolve there.** The menu is backed by a muxer holding
+  the application's actions and the active window's, and nothing else, while every item the
+  hamburger offered is `klass.install_action`ed on the `SessionView` **widget**. So `Window` grew
+  a `win.` forwarder per item — `FORWARDED_SESSION_ACTIONS` in `src/window.rs` — each enabled only
+  while a session is actually on screen.
+
+  The Edit items are the exception. They are copied verbatim from GTK's fallback menu, are not in
+  that muxer either, and so are drawn insensitive — but their key equivalents work, because
+  `GtkMacosContentView` dispatches Command-X, C, V and A to the focused widget itself. Every GTK
+  application on macOS looks like this; reproducing it beats leaving Edit out.
+
+**`matrix:` URLs.** On Linux the desktop file claims the scheme and GIO hands the URI to
+`Application::open()`. On macOS `LaunchServices` reads `CFBundleURLTypes` and sends a `'GURL'`
+Apple Event, which `AppKit` would forward to `-application:openURLs:` on the application
+delegate — except the delegate is GTK's, and `GtkApplicationQuartzDelegate` implements only
+`-applicationShouldTerminate:` and `-application:openFiles:`. The event is dropped in silence.
+
+`src/utils/macos_url_events.rs` takes it instead, straight from the Apple Event Manager, and calls
+the same `Application::open()` the Linux path ends at. It needs no new dependency: the Apple Event
+Manager is a C API, so this is two `extern "C"` declarations against `CoreServices` rather than an
+Objective-C class to declare. It is installed after `GtkApplication` has started up, which is where
+GTK sends `-finishLaunching` and `AppKit` installs the handlers this one replaces.
+
+This one has been exercised against a running bundle and works. What has not been exercised is a
+**cold** launch, where the event is queued before the handler is installed and it is `AppKit` that
+decides when to deliver it.
+
 **Secrets.** `src/secret/macos.rs` stores one generic password item per session, service `APP_ID`
 and account = session ID. The Keychain cannot be searched on free-form attributes the way the
 Secret Service can, so the session metadata is serialised into the secret next to the passphrase
@@ -427,17 +550,18 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
 ## Not done yet
 
-In plan order, none of this exists:
+* **M3 is written but unproven.** Nothing in it has been through the
+  [Testing by hand](#testing-by-hand) list, which is where it has to go before any of it can be
+  called done. Notifications are the part most likely to be broken and the only part with no code
+  of ours behind it: GLib's Cocoa backend is built on `NSUserNotification`, deprecated since
+  10.14.
 
-* **M3** — `<Primary>` shortcuts (`key_bindings::PRIMARY_MASK` exists but nothing uses it yet),
-  notifications, and the `matrix:` URL scheme. The media viewer's own close button belongs here
-  too: it sits in the top right of a window that already has the traffic lights in its top left,
-  which is wrong on macOS.
-* **M4** — camera QR scanning through `avfvideosrc`.
+  Left out of M3 deliberately: the media viewer's own close button, which sits where macOS puts
+  the traffic lights and wants rethinking rather than moving; and a File → Close Window item,
+  which the muxer cannot reach, so it would be drawn insensitive next to a ⌘W that works.
+* **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 
-Still unverified: GTK's macOS backend for input methods and drag and drop, whether
-`GApplication::open` ever receives Apple Events, and whether GLib's Cocoa notification backend
-forwards an action target.
+Still unverified: GTK's macOS backend for input methods and drag and drop.
 
 Two cosmetic things a run turns up that are nobody's bug in particular. GTK's macOS backend
 reports the system font as `.AppleSystemUIFont`, and libadwaita's stylesheet feeds that
@@ -469,6 +593,10 @@ waiting to happen on a rebase. Re-apply, in rough order of how easily they are l
   that built it and need not exist at all on the machine running it. That was the constant's only
   use, so `src/config.rs.in` no longer defines `PKGDATADIR`; `RESOURCES_FILE` and
   `UI_RESOURCES_FILE` still interpolate Meson's `@PKGDATADIR@` and are unchanged.
+* `src/macos_menu_bar.blp` and `src/utils/macos_url_events.rs` are ours alone, but the seams they
+  are wired into are not: `Application::startup` installs both, `Application` gained an
+  `app.preferences` action, `Window` gained the `FORWARDED_SESSION_ACTIONS` table, and `Sidebar`
+  hides its `appmenu_button`.
 * `src/components/media/content_viewer.rs` calls `set_video_file()` and `clear_video()` instead
   of `GtkVideo::set_file()` directly, for the media backend reason above.
 * `src/session_view/room_details/history_viewer/file_row.rs` opens files with
