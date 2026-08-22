@@ -109,8 +109,11 @@ mod imp {
 
             // If there is a file, open it.
             if let Some(file) = file {
-                if let Err(error) =
-                    gio::AppInfo::launch_default_for_uri(&file.uri(), gio::AppLaunchContext::NONE)
+                // `gio::AppInfo` has no backend outside of Linux, so it can
+                // only be launched through the portal-aware GTK API.
+                if let Err(error) = gtk::FileLauncher::new(Some(&file))
+                    .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
+                    .await
                 {
                     error!("Could not open file: {error}");
                 }
