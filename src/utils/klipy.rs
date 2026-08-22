@@ -249,7 +249,7 @@ impl Gif {
     /// one is available.
     pub(crate) fn to_send(&self) -> Option<&GifFile> {
         let sizes = [&self.file.hd, &self.file.md, &self.file.sm, &self.file.xs];
-        let gifs = sizes.into_iter().flatten().filter_map(|s| s.gif.as_ref());
+        let mut gifs = sizes.into_iter().flatten().filter_map(|s| s.gif.as_ref());
 
         // The variants are in decreasing order of size, so the first one that
         // fits is the biggest one that fits.
@@ -257,7 +257,7 @@ impl Gif {
             .find(|file| file.size <= MAX_SEND_FILESIZE)
             // Every variant is too big. Send the smallest one and let the
             // homeserver be the judge.
-            .or_else(|| gifs.last())
+            .or_else(|| gifs.next_back())
     }
 }
 
