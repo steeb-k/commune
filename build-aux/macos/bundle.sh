@@ -30,7 +30,6 @@ APP_NAME=''
 VERSION=''
 PROFILE=''
 EXECUTABLE='commune'
-ICON_STYLE="${ICON_STYLE:-tahoe}"
 WANT_DMG=0
 WANT_TARBALL=0
 
@@ -44,7 +43,6 @@ while [ $# -gt 0 ]; do
     --version) VERSION=$2 && shift 2 ;;
     --profile) PROFILE=$2 && shift 2 ;;
     --executable) EXECUTABLE=$2 && shift 2 ;;
-    --icon-style) ICON_STYLE=$2 && shift 2 ;;
     --dmg) WANT_DMG=1 && shift ;;
     --tarball) WANT_TARBALL=1 && shift ;;
     *)
@@ -442,23 +440,12 @@ note "deployment target $MIN_OS"
 # full-bleed with its own silhouette, while a Mac icon is a square plate that the
 # system encloses.
 #
-# There are two of those plates and the difference is the version of macOS, not
-# the profile. Tahoe re-shapes and lights an application icon itself, so its
-# plate is flat; every system before it draws the icon exactly as given, so that
-# plate carries its own bevel. One `.icns` cannot serve both -- nothing in a
-# bundle lets the system pick by OS version -- so it is a build-time choice, and
-# Tahoe is the default because that is what a Mac being built on today runs.
+# The beveled plate is used on every version of macOS. Tahoe re-shapes and lights
+# an application icon itself, so a flat plate meant for it exists in `assets` as
+# well -- but what Tahoe made of it did not look good enough to be worth carrying
+# two of these and a switch to pick between them.
 case "$PROFILE" in
-Stable)
-    case "$ICON_STYLE" in
-    tahoe) ICON_SRC="$ROOT/assets/macos-tahoe-flat.svg" ;;
-    legacy) ICON_SRC="$ROOT/assets/macos-legacy-bevel.svg" ;;
-    *)
-        echo "bundle: unknown --icon-style: $ICON_STYLE (want tahoe or legacy)" >&2
-        exit 2
-        ;;
-    esac
-    ;;
+Stable) ICON_SRC="$ROOT/assets/macos-legacy-bevel.svg" ;;
 # A development build keeps the GNOME devel icon, which is the only thing
 # telling it apart from a stable one at a glance.
 *) ICON_SRC="$ROOT/assets/appicon-devel.svg" ;;

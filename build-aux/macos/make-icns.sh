@@ -4,12 +4,11 @@
 #   build-aux/macos/make-icns.sh assets/appicon.svg _build/commune.icns
 #
 # The .icns is a derived artefact and is not committed. `bundle.sh` chooses the
-# source: assets/macos-tahoe-flat.svg or assets/macos-legacy-bevel.svg for a
-# stable build, assets/appicon-devel.svg for a development one. `.iconset/` is
-# gitignored for the intermediate directory this leaves behind if it fails
-# partway.
+# source: assets/macos-legacy-bevel.svg for a stable build,
+# assets/appicon-devel.svg for a development one. `.iconset/` is gitignored for
+# the intermediate directory this leaves behind if it fails partway.
 #
-# Nothing here masks the artwork into a rounded rectangle. The macOS plates are
+# Nothing here masks the artwork into a rounded rectangle. The macOS plate is
 # already square and full-bleed, which is what the system wants to enclose, and
 # the GNOME icon is drawn with a silhouette of its own that a squircle would
 # crop. macOS is happy to show an icon of any shape.
