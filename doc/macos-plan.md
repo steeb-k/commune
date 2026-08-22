@@ -261,6 +261,10 @@ Verify: `open ~/Desktop/Commune.app` in a clean shell (no `PKG_CONFIG_PATH` or `
 
 Shortcuts, the menu bar, notifications, URL scheme, file open.
 
+**Written, not yet proven.** Everything below is built; none of it has been exercised on the
+machine. `doc/macos.md` has the list that has to be worked through, and records what the GTK
+source turned out to say — most of which the sketch below had right.
+
 0. **The menu bar**, macOS only. Everything in the hamburger menu is reachable only from a button
    in a sidebar that is already cramped, while the menu bar every other Mac application uses sits
    empty. GTK can fill it: `gtkapplication-quartz.c` turns the `GtkApplication` `menubar` into
@@ -301,6 +305,12 @@ Shortcuts, the menu bar, notifications, URL scheme, file open.
    `src/utils/macos_url_events.rs` (an `NSAppleEventManager` handler →
    `Application::default().open(..)`; deps `objc2`, `objc2-foundation` in the macOS target
    table). Only if verification fails.
+
+   **It does not.** `GtkApplicationQuartzDelegate` implements `-applicationShouldTerminate:`
+   and `-application:openFiles:` and nothing else, so a `'GURL'` event has no handler and is
+   dropped without a word. The fallback is written, and it needs no new dependency: the Apple
+   Event Manager is a C API, so `AEInstallEventHandler` and `AEGetParamPtr` are two `extern "C"`
+   declarations against `CoreServices` rather than an Objective-C class to be declared.
 4. Verify that logging out removes the Keychain item and
    `~/Library/Application Support/commune-Devel/<id>` (`StoredSession::delete`,
    `src/secret/mod.rs`).
