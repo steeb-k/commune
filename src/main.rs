@@ -83,6 +83,12 @@ fn main() {
     gtk::glib::set_application_name("Commune");
 
     gtk::init().expect("Could not start GTK4");
+
+    // Now that there are settings to change, make text resolve to the size it
+    // is on every other platform.
+    #[cfg(target_os = "macos")]
+    utils::macos_text_scale::init();
+
     gst::init().expect("Could not initialize gst");
 
     #[cfg(target_os = "linux")]
