@@ -15,6 +15,10 @@ causes on a rebase. See `fork.md` for why this tree is a fork at all.
 | GSettings path | `/io/github/steeb_k/Commune/<profile>/` |
 | Session data | `~/.local/share/commune`, `~/.local/share/commune-Devel` |
 | Cache | `~/.cache/commune`, `~/.cache/commune-Devel` |
+| macOS bundle ID | `CFBundleIdentifier` = the application ID |
+| macOS session data | `~/Library/Application Support/commune[-Devel]` |
+| macOS cache | `~/Library/Caches/commune[-Devel]` |
+| macOS Keychain | Service = the application ID, account = the session ID |
 
 The ID uses `steeb_k`, with an underscore, because an application ID is also
 a D-Bus name and D-Bus name elements cannot contain a hyphen. The GitHub
@@ -104,7 +108,9 @@ has to carry inside the code:
   rustdoc logo URLs.
 * `login/method_page.rs` — `initial_device_display_name`, the name other
   people see for this device in a Matrix room.
-* `secret/linux.rs` — the label of the keyring item.
+* `secret/linux.rs` and `secret/macos.rs` — the label of the keyring or
+  Keychain item. Both use the same string, so a change has to be made in both
+  or the translations diverge.
 * `login/local_server.rs` — the OAuth "you can go back now" page.
 * `identity_verification_view/no_supported_methods_page.rs` — four strings.
 * `account_settings/encryption_page/import_export_keys_subpage.rs` — the
