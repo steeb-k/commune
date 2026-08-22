@@ -98,6 +98,9 @@ mod imp {
                 }
             ));
 
+            #[cfg(debug_assertions)]
+            self.set_up_test_notification();
+
             // Watch the network to log its state.
             let network_monitor = gio::NetworkMonitor::default();
             network_monitor.connect_network_changed(clone!(
@@ -254,6 +257,75 @@ mod imp {
                     })
                     .build(),
             ]);
+
+            // Send a notification for the room on screen, so that the platform
+            // path can be exercised without waiting for somebody to send a
+            // message. Development builds only.
+            #[cfg(debug_assertions)]
+            self.obj()
+                .add_action_entries([gio::ActionEntry::builder("test-notification")
+                    .activate(|obj: &super::Application, _, _| {
+                        obj.imp().send_test_notification();
+                    })
+                    .build()]);
+        }
+
+        /// Send a notification for the room on screen, if there is a session to
+        /// send it for.
+        ///
+        /// Returns whether one was sent.
+        #[cfg(debug_assertions)]
+        fn send_test_notification(&self) -> bool {
+            let obj = self.obj();
+            let session = obj
+                .active_window()
+                .and_downcast::<Window>()
+                .and_then(|window| window.current_session_id())
+                .and_then(|session_id| self.session_list.get(&session_id))
+                .and_downcast::<Session>();
+
+            let Some(session) = session.filter(|session| session.state() == SessionState::Ready)
+            else {
+                return false;
+            };
+
+            spawn!(async move {
+                session.notifications().show_test().await;
+            });
+
+            true
+        }
+
+        /// Send a test notification a moment after startup, when
+        /// `COMMUNE_TEST_NOTIFICATION` is set.
+        ///
+        /// A key binding would be the obvious way in, but on macOS `AppKit`
+        /// takes every Command combination that is not in the menu bar before
+        /// GTK ever sees it, so the shortcut silently does nothing. Waiting for
+        /// the session instead needs no keyboard and no menu.
+        #[cfg(debug_assertions)]
+        fn set_up_test_notification(&self) {
+            if std::env::var_os("COMMUNE_TEST_NOTIFICATION").is_none() {
+                return;
+            }
+
+            info!("Will send a test notification once a session is ready");
+            glib::timeout_add_seconds_local(
+                2,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    #[upgrade_or]
+                    glib::ControlFlow::Break,
+                    move || {
+                        if imp.send_test_notification() {
+                            glib::ControlFlow::Break
+                        } else {
+                            glib::ControlFlow::Continue
+                        }
+                    }
+                ),
+            );
         }
 
         /// Sets up keyboard shortcuts for application and window actions.
