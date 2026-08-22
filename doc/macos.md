@@ -19,10 +19,11 @@ was built; this file records what actually exists, what is stubbed, and what bit
 
 ## State today
 
-M0, M1 and M2 are done, and M3 is written but not yet exercised by hand — see
-[Testing by hand](#testing-by-hand) for the list that has to be worked through, and treat the menu
-bar, the `matrix:` URL handler and notifications as unproven until it has been. The tree builds for
-`aarch64-apple-darwin`, and `cargo check`, `cargo
+M0, M1 and M2 are done, and M3 is written and partly exercised: the menu bar, the hidden hamburger,
+the `matrix:` URL scheme warm and cold, session restore and the Keychain have all been seen working
+on a bundle. **Notifications and the Command shortcuts have not been**, and the rows in
+[Testing by hand](#testing-by-hand) that are not marked verified are the ones still owed. The tree
+builds for `aarch64-apple-darwin`, and `cargo check`, `cargo
 clippy --all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
 `cargo sort`, `typos`, `rumdl`, `cargo nextest run` and `meson test` all pass. `meson compile` and
 `meson install` work, and **the app runs**: logging in with a password, syncing, the timeline,
@@ -48,7 +49,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
-| Notifications | GLib's Cocoa backend, unchanged and unproven |
+| Notifications | GLib's Cocoa backend, unchanged and still unproven |
 
 ## The GTK environment
 
@@ -392,7 +393,7 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 
 | # | Area | Do this | Expect |
 | --- | --- | --- | --- |
-| 1 | Menu bar | Look at it | Commune, File, Edit, View, Window, Help |
+| 1 | Menu bar | Look at it | Commune, File, Edit, View, Window, Help — **verified** |
 | 2 | Menu bar | Commune → About Commune | The About dialog, named Commune, not `commune` |
 | 3 | Menu bar | Commune → Preferences, and ⌘, | The account settings of the visible session |
 | 4 | Menu bar | Preferences while logged out | Greyed out |
@@ -404,7 +405,7 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 10 | Menu bar | View → the five room items, Full Screen | Selection moves; the window goes full screen |
 | 11 | Menu bar | Window | Minimize, Zoom and the window list, from AppKit |
 | 12 | Menu bar | Help → Keyboard Shortcuts | The shortcuts dialog |
-| 13 | Sidebar | Look at the header bar | No hamburger button |
+| 13 | Sidebar | Look at the header bar | No hamburger button — **verified** |
 | 14 | Shortcuts | ⌘Q, ⌘W | Quit; close window |
 | 15 | Shortcuts | ⌘K, ⌘L, ⌘, | Room search; join room; account settings |
 | 16 | Shortcuts | ⌘Page Up, ⌘Page Down, and both with ⇧ | Previous/next room, then the unread ones |
@@ -412,27 +413,27 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 18 | Shortcuts | ⌘V into the composer | Pastes, including an image |
 | 19 | Shortcuts | Help → Keyboard Shortcuts, read the list | ⌘ glyphs throughout, no ⌃ |
 | 20 | `matrix:` URL | Running: `open -a <bundle> 'matrix:r/<room>:<server>'` | Comes forward and opens the room — **verified** |
-| 21 | `matrix:` URL | Quit first, then the same command | It launches and lands in the room |
+| 21 | `matrix:` URL | Quit first, then the same command | It launches, restores the session and opens the room — **verified** |
 | 22 | `matrix:` URL | Bare `open 'matrix:…'`, no `-a` | Goes to whichever app owns the scheme; see below |
 | 23 | `matrix:` URL | Click a `matrix:` link in another app | Same as 20 |
 | 24 | Notifications | Background the app, have somebody send a message | A notification appears |
 | 25 | Notifications | Click it | The right session and the right room open |
 | 26 | Notifications | Same for an identity verification request | The verification opens |
-| 27 | Keychain | Log out of a session | Its item is gone from Keychain Access, under the application ID |
+| 27 | Keychain | Log out of a session | Its item is gone from Keychain Access — **verified** |
 | 28 | Keychain | Then look in `~/Library/Application Support/commune-Devel/` | The session's directory is gone |
 | 29 | Regression | Log in with a password, and with SSO | Both work; SSO may raise a firewall prompt |
 | 30 | Regression | Send and receive text; open a room's history | Nothing unusual |
 | 31 | Regression | An image thumbnail, an animated GIF, the GIF search | All render, animation included |
 | 32 | Regression | A video in the media viewer | Plays, with working controls |
 | 32a | Regression | An audio clip, in the timeline and the viewer | Plays, with a moving waveform |
-| 33 | Regression | Quit and relaunch | The session comes back without a login |
+| 33 | Regression | Quit and relaunch | The session comes back without a login — **verified** |
 | 34 | Regression | Launch the bundle from a shell with nothing exported | It runs |
 
-Row 20 has been run: the Apple Event arrives, `Application::open()` is reached, and the URI is
-parsed into the right intent — the whole path, stopping only at "Cannot process intent with no
-logged in session", which is what a build with no session should say. Row 21 is the one that is
-still open, because a cold launch queues the event before the handler exists and it is `AppKit`
-that decides when to deliver it.
+Both `matrix:` rows have been run, and the cold one is the interesting result: a cold launch queues
+the event before the handler exists, and `AppKit` still delivers it afterwards. Launching a quit app
+with `open -a … 'matrix:r/matrix:matrix.org'` brought it up, restored the session from the Keychain,
+and opened the room preview dialog for a room the account is not in — the whole path, on the release
+bundle, in one go.
 
 **Pass `-a` and the bundle.** More than one application on a developer's machine claims the
 `matrix:` scheme — `lsregister -dump | grep matrix:` will list them — so a bare `open 'matrix:…'`
@@ -444,8 +445,9 @@ Rows 24 to 26 are the ones most likely to fail. GLib's Cocoa notification backen
 a current macOS is exactly what has not been tried. If nothing appears, that is the first thing to
 suspect rather than anything in `src/session/notifications/`.
 
-Row 1 is done: the menu bar comes up as Commune, File, Edit, View, Window, Help. Rows 2 to 19 need
-a session, since File and View are insensitive without one and the sidebar is not on screen.
+Rows 1 and 13 are done: the menu bar comes up as Commune, File, Edit, View, Window, Help, and the
+sidebar header carries nothing but the account switcher and the search toggle. What is left in
+between is the behaviour of the individual items and the Command keys, rows 2 to 12 and 14 to 19.
 
 ## What differs from Linux
 
@@ -533,9 +535,9 @@ Manager is a C API, so this is two `extern "C"` declarations against `CoreServic
 Objective-C class to declare. It is installed after `GtkApplication` has started up, which is where
 GTK sends `-finishLaunching` and `AppKit` installs the handlers this one replaces.
 
-This one has been exercised against a running bundle and works. What has not been exercised is a
-**cold** launch, where the event is queued before the handler is installed and it is `AppKit` that
-decides when to deliver it.
+Both paths work. The cold one was the doubtful half — the event is queued before the handler is
+installed there — and `AppKit` delivers it afterwards regardless, so installing the handler
+immediately after `GtkApplication` starts up is early enough.
 
 **Secrets.** `src/secret/macos.rs` stores one generic password item per session, service `APP_ID`
 and account = session ID. The Keychain cannot be searched on free-form attributes the way the
