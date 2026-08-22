@@ -762,6 +762,26 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
   would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
   this list too and has come off it — looked at on a Mac, it reads as native as it stands.
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
+* **The sticker picker sometimes will not close on a click outside it.** Reported from a bundle,
+  intermittent, and not reproducible on demand — Escape closes it, and so does changing room, but
+  a click outside it sometimes does nothing. Nothing has been changed, because a fix that cannot
+  be triggered cannot be tested, and a wrong one closes the picker while somebody is using it.
+
+  What is known. A `GtkPopover` dismisses by taking a **grab**: GTK's own documentation says it
+  performs one "so the popover is dismissed in the expected situations (clicks outside the popover,
+  or the Escape key being pressed)". Escape working while the click does not is a grab that still
+  routes the keyboard and is not receiving the pointer.
+
+  Why that would be macOS-only and intermittent: the picker is 400×420 on a `MenuButton` that opens
+  `up` from the bottom of the window, so it often does not fit inside the window, and GDK promotes
+  a popover that does not fit into a separate popup surface — which on macOS is another `NSWindow`.
+  A click back onto the main window is then a window-activation click, which macOS may consume
+  rather than deliver. Whether it overflows at all depends on the window size and where the toolbar
+  sits, which would explain why it comes and goes. The `GtkSearchEntry` on the GIF tab holding
+  keyboard focus fits the same picture.
+
+  The candidate fix, when there is something to test it against: a focus controller on the picker
+  that calls `popdown()` when focus leaves its subtree, belt-and-braces beside the grab.
 
 Still unverified: GTK's macOS backend for input methods and drag and drop.
 
