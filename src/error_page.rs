@@ -2,7 +2,10 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::glib;
 
-use crate::{APP_ID, toast};
+// Only the Flatpak instructions, which are Linux-only, name the application ID.
+#[cfg(target_os = "linux")]
+use crate::APP_ID;
+use crate::toast;
 
 /// The possible error subpages.
 #[derive(Debug, Clone, Copy)]

@@ -81,6 +81,10 @@ impl SystemSettings {
     }
 
     /// Set the clock format setting.
+    ///
+    /// Only a backend that watches the system for changes calls this. Without
+    /// one the format keeps the value derived from the locale at startup.
+    #[cfg(target_os = "linux")]
     fn set_clock_format(&self, clock_format: ClockFormat) {
         if self.clock_format() == clock_format {
             return;

@@ -2,6 +2,20 @@
 
 use gtk::{gdk, subclass::prelude::*};
 
+/// The modifier for the platform's primary accelerator.
+///
+/// This is the Rust counterpart of GTK's `<Primary>` accelerator name: Command
+/// on macOS, Control everywhere else.
+#[expect(
+    dead_code,
+    reason = "the sweep replacing the hardcoded CONTROL_MASK bindings is M3 of doc/macos-plan.md"
+)]
+pub(crate) const PRIMARY_MASK: gdk::ModifierType = if cfg!(target_os = "macos") {
+    gdk::ModifierType::META_MASK
+} else {
+    gdk::ModifierType::CONTROL_MASK
+};
+
 /// List of keys that activate a widget.
 // Copied from GtkButton's source code.
 const ACTIVATE_KEYS: &[gdk::Key] = &[
