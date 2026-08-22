@@ -196,7 +196,10 @@ ID, version, profile). `.gitignore` gains `*.app/`, `*.dmg`, `*.iconset/`.
 1. `make-icns.sh <svg> <out.icns>`: `rsvg-convert` at 16…1024 (plus @2x) → iconset →
    `iconutil -c icns`. Sources `assets/appicon.svg` and `assets/appicon-devel.svg` (derived
    artifact, not committed).
-2. `Info.plist.in` (meson-configured `@APP_ID@`, `@VERSION@`, `@APP_NAME@`):
+2. `Info.plist.in` (meson-configured `@APP_ID@`, `@VERSION@`, `@APP_NAME@`). `CFBundleName` is
+   what fixes the lowercase `commune` that macOS shows in the menu bar and the Dock today: with
+   no bundle it has nothing to go on but the name of the executable, and
+   `glib::set_application_name()` only reaches the items GTK builds itself, like "About Commune".
    `CFBundleIdentifier=@APP_ID@`, `CFBundleExecutable=commune`, `CFBundleName`/`DisplayName`,
    `CFBundleIconFile=commune.icns`, `CFBundleShortVersionString`/`Version`,
    `CFBundlePackageType=APPL`, `LSMinimumSystemVersion` (match the prefix; default 12.0),
@@ -244,7 +247,31 @@ Verify: `open ~/Desktop/Commune.app` in a clean shell (no `PKG_CONFIG_PATH` or `
 
 ## M3 — polish
 
-Shortcuts, notifications, URL scheme, file open.
+Shortcuts, the menu bar, notifications, URL scheme, file open.
+
+0. **The menu bar**, macOS only. Everything in the hamburger menu is reachable only from a button
+   in a sidebar that is already cramped, while the menu bar every other Mac application uses sits
+   empty. GTK can fill it: `gtkapplication-quartz.c` turns the `GtkApplication` `menubar` into
+   `[NSApp setMainMenu:]`, and builds the application menu itself — About, Preferences, Services,
+   Hide, Quit — from `app.about`, `app.preferences` and `app.quit`.
+
+   Three things this depends on:
+
+   * **`app.preferences` does not exist.** GTK's application menu names it unconditionally, so
+     the item is dead until `src/application.rs` has one. It should open the account settings of
+     the current session.
+   * **The hamburger's own items cannot be used as they are.** `session.create-direct-chat`,
+     `session.create-room`, `session.join-room` and `session.open-image-packs` are installed with
+     `klass.install_action` on the `SessionView` **widget**, and the global menu resolves through
+     the application muxer plus the active window's `win.` group only — a widget's actions are
+     not in it. Each one needs a `win.` action on `Window` forwarding to the visible session view.
+   * **Setting a menubar replaces GTK's default one**, which is where the Edit and Window menus
+     come from (`gtk/ui/gtkapplication-quartz.ui`). Ours has to carry both; Window is only
+     `gtk-macos-special: window-submenu`.
+
+   So: a menu model with File, Edit, View, Window and Help, set with `set_menubar()` in
+   `Application::startup`; the `win.` forwarders; `app.preferences`; and the hamburger button
+   hidden on macOS, since everything in it is then in the menu bar.
 
 1. **Shortcuts sweep** to `<Primary>`: `src/application.rs:233-237` (`<Primary>q`, `<Primary>w`),
    `src/session_view/mod.blp:31-50` (four triggers), `src/shortcuts-dialog.blp` (`<ctrl>` →
