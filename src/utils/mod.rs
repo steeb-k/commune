@@ -20,6 +20,7 @@ use tempfile::NamedTempFile;
 use tokio::task::{AbortHandle, JoinHandle};
 use tracing::error;
 
+pub(crate) mod app_bundle;
 pub(crate) mod expression;
 mod expression_list_model;
 mod fixed_selection;

@@ -33,7 +33,13 @@ use gettextrs::*;
 use gtk::{IconTheme, gdk::Display, gio};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
-use self::{application::*, config::*, i18n::*, utils::OneshotNotifier, window::Window};
+use self::{
+    application::*,
+    config::*,
+    i18n::*,
+    utils::{OneshotNotifier, app_bundle},
+    window::Window,
+};
 
 /// The default tokio runtime to be used for async tasks
 static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
@@ -56,10 +62,16 @@ fn main() {
         .with(fmt::layer().with_filter(env_filter))
         .init();
 
+    // Find out where our own files are, and tell the libraries we link against
+    // where theirs are. This sets environment variables, so it must happen
+    // before anything spawns a thread.
+    let paths = app_bundle::init();
+
     // Prepare i18n
     // Safety: `setlocale` is safe to call because the program is single-threaded.
     unsafe { setlocale(LocaleCategory::LcAll, "") };
-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR).expect("Invalid argument passed to bindtextdomain");
+    bindtextdomain(GETTEXT_PACKAGE, &paths.localedir)
+        .expect("Invalid argument passed to bindtextdomain");
     textdomain(GETTEXT_PACKAGE).expect("Invalid string passed to textdomain");
 
     gtk::glib::set_application_name("Commune");
@@ -70,9 +82,10 @@ fn main() {
     #[cfg(target_os = "linux")]
     aperture::init(APP_ID);
 
-    let res = gio::Resource::load(RESOURCES_FILE).expect("Could not load gresource file");
+    let res = gio::Resource::load(&paths.resources_file).expect("Could not load gresource file");
     gio::resources_register(&res);
-    let ui_res = gio::Resource::load(UI_RESOURCES_FILE).expect("Could not load UI gresource file");
+    let ui_res =
+        gio::Resource::load(&paths.ui_resources_file).expect("Could not load UI gresource file");
     gio::resources_register(&ui_res);
 
     IconTheme::for_display(&Display::default().unwrap())
