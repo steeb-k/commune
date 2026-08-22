@@ -63,11 +63,36 @@ impl DataType {
     /// The path of the directory where data should be stored, depending on this
     /// type.
     pub(crate) fn dir_path(self) -> PathBuf {
-        let mut path = match self {
+        let mut path = self.base_dir_path();
+        path.push(PROFILE.dir_name().as_ref());
+
+        path
+    }
+
+    /// The path of the platform directory that holds data of this type.
+    #[cfg(not(target_os = "macos"))]
+    fn base_dir_path(self) -> PathBuf {
+        match self {
             DataType::Persistent => glib::user_data_dir(),
             DataType::Cache => glib::user_cache_dir(),
-        };
-        path.push(PROFILE.dir_name().as_ref());
+        }
+    }
+
+    /// The path of the platform directory that holds data of this type.
+    ///
+    /// `GLib` follows the XDG base directory specification everywhere, so it
+    /// would put our data in `~/.local/share` and `~/.cache` on macOS. Use the
+    /// directories macOS actually expects instead, which is also where a user
+    /// looking for the app's data would go.
+    #[cfg(target_os = "macos")]
+    fn base_dir_path(self) -> PathBuf {
+        let mut path = glib::home_dir();
+        path.push("Library");
+
+        match self {
+            DataType::Persistent => path.push("Application Support"),
+            DataType::Cache => path.push("Caches"),
+        }
 
         path
     }
