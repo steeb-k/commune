@@ -18,6 +18,11 @@
       <summary>Enable markdown formatting</summary>
       <description>Whether messages should be processed as markdown when sending them</description>
     </key>
+    <key name="force-dark-mode" type="b">
+      <default>false</default>
+      <summary>Always use the dark theme</summary>
+      <description>Whether to use the dark theme whatever the system is set to. When this is off, the system decides</description>
+    </key>
     <key name="gif-search-enabled" type="b">
       <default>false</default>
       <summary>Enable GIF search</summary>
