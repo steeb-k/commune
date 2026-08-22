@@ -19,7 +19,7 @@ use crate::{
     session_list::{FailedSession, SessionInfo},
     session_view::SessionView,
     toast,
-    utils::{FixedSelection, LoadingState},
+    utils::{FixedSelection, LoadingState, key_bindings},
 };
 
 /// A page of the main window stack.
@@ -110,7 +110,7 @@ mod imp {
 
             Self::bind_template(klass);
 
-            klass.add_binding_action(gdk::Key::v, gdk::ModifierType::CONTROL_MASK, "win.paste");
+            klass.add_binding_action(gdk::Key::v, key_bindings::PRIMARY_MASK, "win.paste");
             klass.add_binding_action(gdk::Key::Insert, gdk::ModifierType::SHIFT_MASK, "win.paste");
             klass.install_action("win.paste", None, |obj, _, _| {
                 obj.imp().session_view.handle_paste_action();
