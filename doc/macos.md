@@ -46,7 +46,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
 | System 12/24h clock | Locale-derived at startup, never updates live |
 | Camera QR scanning | Stubbed, returns no cameras |
-| Application icon | Its own artwork, `assets/macos-{tahoe-flat,legacy-bevel}.svg` |
+| Application icon | Its own artwork, `assets/macos-legacy-bevel.svg` |
 | Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
@@ -399,11 +399,11 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 3 | Menu bar | Commune → Preferences, and ⌘, | The account settings of the visible session |
 | 4 | Menu bar | Preferences while logged out | Greyed out |
 | 5 | Menu bar | Commune → Hide, Hide Others, Show All, Quit | The usual macOS behaviour |
-| 6 | Menu bar | File → each of the five items | The same dialogs the old hamburger menu opened |
+| 6 | Menu bar | File → each of the five items | The same dialogs the old hamburger menu opened — **verified** |
 | 7 | Menu bar | File and View on the login page | Greyed out; sensitive again once a session is up |
 | 8 | Menu bar | Edit → Cut, Copy, Paste, Select All | Greyed, but showing ⌘X ⌘C ⌘V ⌘A |
 | 9 | Menu bar | ⌘X, ⌘C, ⌘V, ⌘A in the composer | They work, greyed menu items notwithstanding |
-| 10 | Menu bar | View → the five room items, Full Screen | Selection moves; the window goes full screen |
+| 10 | Menu bar | View → the five room items, Full Screen | Selection moves; the window goes full screen — **verified** |
 | 11 | Menu bar | Window | Minimize, Zoom and the window list, from AppKit |
 | 12 | Menu bar | Help → Keyboard Shortcuts | The shortcuts dialog |
 | 13 | Sidebar | Look at the header bar | No hamburger button — **verified** |
@@ -529,17 +529,19 @@ directly and never touches `GtkMediaFile`.
 Linux builds ship, because the shape rules differ: the GNOME icon is drawn full-bleed with a
 silhouette of its own, while a Mac icon is a square plate that the system encloses.
 
-There are two plates, and what separates them is the version of macOS rather than the profile.
-Tahoe re-shapes and lights an application icon itself, so `macos-tahoe-flat.svg` is flat and lets it;
-every release before that draws the icon exactly as handed over, so `macos-legacy-bevel.svg` carries
-its own bevel.
+`macos-legacy-bevel.svg` is that plate, and it is used on **every** version of macOS. Tahoe
+re-shapes and lights an application icon itself, so a flat plate meant to let it do that exists as
+`macos-tahoe-flat.svg` — but what Tahoe made of it did not look good enough to be worth carrying two
+plates and a switch to choose between them. The flat one is kept in `assets` and referred to by
+nothing.
 
-**One `.icns` cannot serve both.** Nothing in a bundle lets the system choose an icon by OS
-version — that wants an asset catalogue built with Apple's own tooling, which is not part of this
-environment — so `bundle.sh` takes `--icon-style tahoe|legacy`, or `ICON_STYLE` from the
-environment, and defaults to Tahoe. A development build keeps the GNOME devel icon: there is no
-devel variant of the new artwork, and the bundle name would otherwise be the only thing telling the
-two apart in the Dock.
+That is worth knowing before anyone tries to make the choice automatic: **one `.icns` cannot serve
+both styles anyway.** Nothing in a bundle lets the system pick an icon by OS version — that wants an
+asset catalogue built with Apple's own tooling, which is not part of this environment — so a build
+that wanted both would have to choose at build time regardless.
+
+A development build keeps the GNOME devel icon. There is no devel variant of the plate, and the
+bundle name would otherwise be the only thing telling the two apart in the Dock.
 
 **The menu bar.** Everything the main menu offers used to be reachable only from the hamburger
 button in a sidebar that is already short of room, while the menu bar every other Mac application
