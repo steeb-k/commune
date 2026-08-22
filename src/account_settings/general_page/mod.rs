@@ -62,6 +62,8 @@ mod imp {
         gif_search_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         gif_search_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        dark_mode_row: TemplateChild<adw::SwitchRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -97,6 +99,14 @@ mod imp {
     impl ObjectImpl for GeneralPage {
         fn constructed(&self) {
             self.parent_constructed();
+
+            // The setting is the source of truth: `Application` watches the
+            // same key and is what actually tells libadwaita about it, so this
+            // row does not have to know that the style manager exists.
+            Application::default()
+                .settings()
+                .bind("force-dark-mode", &*self.dark_mode_row, "active")
+                .build();
 
             // There is nothing to turn on when this build has no API key.
             if klipy::is_available() {

@@ -98,6 +98,8 @@ mod imp {
                 }
             ));
 
+            self.set_up_color_scheme();
+
             #[cfg(debug_assertions)]
             self.set_up_test_notification();
 
@@ -333,6 +335,28 @@ mod imp {
             let obj = self.obj();
             obj.set_accels_for_action("app.quit", &["<Primary>q"]);
             obj.set_accels_for_action("window.close", &["<Primary>w"]);
+        }
+
+        /// Follow the `force-dark-mode` setting.
+        ///
+        /// Off is [`ColorScheme::Default`] rather than "force light", so the
+        /// system keeps deciding — which is what it did before this setting
+        /// existed, and what most of the desktop expects.
+        fn set_up_color_scheme(&self) {
+            let apply = |force_dark: bool| {
+                adw::StyleManager::default().set_color_scheme(if force_dark {
+                    adw::ColorScheme::ForceDark
+                } else {
+                    adw::ColorScheme::Default
+                });
+            };
+
+            apply(self.settings.boolean("force-dark-mode"));
+
+            self.settings
+                .connect_changed(Some("force-dark-mode"), move |settings, key| {
+                    apply(settings.boolean(key));
+                });
         }
 
         /// Open the account settings of the session that is on screen.

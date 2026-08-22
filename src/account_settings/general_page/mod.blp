@@ -96,6 +96,15 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup {
+    title: _("Appearance");
+
+    Adw.SwitchRow dark_mode_row {
+      title: _("Dark Mode");
+      subtitle: _("Always use the dark theme, whatever this device is set to");
+    }
+  }
+
   Adw.PreferencesGroup gif_search_group {
     visible: false;
     title: _("Composer");
