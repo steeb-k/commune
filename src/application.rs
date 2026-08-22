@@ -14,7 +14,7 @@ use crate::{
     spawn,
     system_settings::SystemSettings,
     toast,
-    utils::{BoundObjectWeakRef, LoadingState, matrix::MatrixIdUri},
+    utils::{BoundObjectWeakRef, LoadingState, app_bundle::RuntimePaths, matrix::MatrixIdUri},
 };
 
 /// The key for the current session setting.
@@ -486,10 +486,13 @@ impl Application {
     }
 
     /// Run Commune.
-    pub(crate) fn run(&self) {
+    ///
+    /// The paths are the ones the app actually loaded its resources from, which
+    /// inside a macOS bundle are not the ones Meson compiled in.
+    pub(crate) fn run(&self, paths: &RuntimePaths) {
         info!("Commune ({})", config::APP_ID);
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
-        info!("Datadir: {}", config::PKGDATADIR);
+        info!("Datadir: {}", paths.pkgdata_dir().display());
 
         ApplicationExtManual::run(self);
     }
