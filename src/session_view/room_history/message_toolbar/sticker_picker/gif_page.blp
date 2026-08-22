@@ -35,8 +35,10 @@ template $GifPage: Adw.Bin {
 
     Gtk.Stack stack {
       vexpand: true;
-      visible-child-name: "start";
 
+      // The first page is the visible one until we change it, so setting
+      // `visible-child-name` here would only warn: GtkBuilder sets properties
+      // before it adds children, so the page does not exist yet.
       Gtk.StackPage {
         name: "start";
 
