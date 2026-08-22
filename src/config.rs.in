@@ -1,6 +1,9 @@
 use crate::application::AppProfile;
 
 pub(crate) const APP_ID: &str = @APP_ID@;
+/// Only the glycin image decoder has a sandbox, and glycin is only used on
+/// Linux, so this is dead code anywhere else.
+#[cfg(target_os = "linux")]
 pub(crate) const DISABLE_GLYCIN_SANDBOX: bool = @DISABLE_GLYCIN_SANDBOX@;
 pub(crate) const GETTEXT_PACKAGE: &str = @GETTEXT_PACKAGE@;
 pub(crate) const KLIPY_API_KEY: &str = @KLIPY_API_KEY@;

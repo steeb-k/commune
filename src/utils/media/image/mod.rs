@@ -1,6 +1,6 @@
 //! Collection of methods for images.
 
-use std::{cmp::Ordering, error::Error, fmt, str::FromStr, time::Duration};
+use std::{cmp::Ordering, error::Error, fmt, str::FromStr};
 
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, graphene, gsk, prelude::*};
@@ -23,6 +23,7 @@ use ruma::{
 use tracing::{error, warn};
 
 mod cache;
+pub(crate) mod decoder;
 mod queue;
 
 use cache::TextureCacheKey;
@@ -30,7 +31,7 @@ pub(crate) use queue::{IMAGE_QUEUE, ImageRequestPriority};
 
 use super::{FrameDimensions, MediaFileError};
 use crate::{
-    DISABLE_GLYCIN_SANDBOX, RUNTIME,
+    RUNTIME,
     components::AnimatedImagePaintable,
     utils::{File, save_data_to_tmp_file},
 };
@@ -63,7 +64,9 @@ const THUMBNAIL_MAX_FILESIZE_THRESHOLD: u32 = 1024 * 1024;
 const THUMBNAIL_DIMENSIONS_THRESHOLD: u32 = 200;
 /// The known image MIME types that can be animated.
 ///
-/// From the list of [supported image formats of glycin].
+/// These are the formats that both image decoder backends can animate: the
+/// list of [supported image formats of glycin], intersected with what the
+/// `image` crate backend handles (see the `decoder` module).
 ///
 /// [supported image formats of glycin]: https://gitlab.gnome.org/GNOME/glycin/-/tree/main?ref_type=heads#supported-image-formats
 const SUPPORTED_ANIMATED_IMAGE_MIME_TYPES: &[&str] = &["image/gif", "image/png", "image/webp"];
@@ -95,20 +98,14 @@ impl ImageDecoderSource {
     /// Convert this image source into a loader.
     ///
     /// Returns the created loader, and the image file, if any.
-    fn into_loader(self) -> (glycin::Loader, Option<File>) {
-        let (loader, file) = match self {
+    fn into_loader(self) -> (decoder::Loader, Option<File>) {
+        match self {
             Self::Data(bytes) => (
-                glycin::Loader::for_bytes(&glib::Bytes::from_owned(bytes)),
+                decoder::Loader::for_bytes(&glib::Bytes::from_owned(bytes)),
                 None,
             ),
-            Self::File(file) => (glycin::Loader::new(&file.as_gfile()), Some(file)),
-        };
-
-        if DISABLE_GLYCIN_SANDBOX {
-            loader.set_sandbox_selector(glycin::SandboxSelector::NotSandboxed);
+            Self::File(file) => (decoder::Loader::for_file(&file.as_gfile()), Some(file)),
         }
-
-        (loader, file)
     }
 
     /// Decode this image source into an [`Image`].
@@ -120,7 +117,7 @@ impl ImageDecoderSource {
         request_dimensions: Option<FrameDimensions>,
     ) -> Result<Image, ImageError> {
         let (loader, file) = self.into_loader();
-        let decoder = loader.load_future().await?;
+        let decoder = loader.load().await?;
 
         let frame_request = request_dimensions.map(|request| {
             let original_dimensions = FrameDimensions {
@@ -132,9 +129,9 @@ impl ImageDecoderSource {
         });
 
         let first_frame = if let Some(frame_request) = &frame_request {
-            decoder.specific_frame_future(frame_request).await?
+            decoder.specific_frame(frame_request).await?
         } else {
-            decoder.next_frame_future().await?
+            decoder.next_frame().await?
         };
 
         Ok(Image {
@@ -166,9 +163,9 @@ pub(crate) struct Image {
     /// destroyed.
     file: Option<File>,
     /// The image decoder.
-    decoder: glycin::Image,
+    decoder: decoder::Image,
     /// The first frame of the image.
-    first_frame: glycin::Frame,
+    first_frame: decoder::Frame,
 }
 
 impl Image {
@@ -176,12 +173,12 @@ impl Image {
     /// key if it can be.
     ///
     /// An animated image is not cached: it is presented by an
-    /// [`AnimatedImagePaintable`] that keeps its glycin decoder alive, so
-    /// caching it would keep a sandbox subprocess alive with it. A still image
-    /// does not need its decoder once its texture is built, so this also lets
-    /// us release it right away.
+    /// [`AnimatedImagePaintable`] that keeps its decoder alive, so caching it
+    /// would keep the decoder's sandbox subprocess or streaming thread alive
+    /// with it. A still image does not need its decoder once its texture is
+    /// built, so this also lets us release it right away.
     fn into_loaded(self, key: TextureCacheKey) -> LoadedImage {
-        if self.first_frame.has_delay() {
+        if self.first_frame.delay().is_some() {
             return LoadedImage::Animated(self);
         }
 
@@ -203,10 +200,10 @@ impl fmt::Debug for Image {
 pub(crate) enum LoadedImage {
     /// A still image, as a texture.
     ///
-    /// This might come from the cache. Its glycin decoder has been released.
+    /// This might come from the cache. Its decoder has been released.
     Texture(gdk::Texture),
-    /// An animated image, which needs to keep its glycin decoder around to
-    /// produce the next frames.
+    /// An animated image, which needs to keep its decoder around to produce the
+    /// next frames.
     Animated(Image),
 }
 
@@ -227,7 +224,7 @@ impl From<LoadedImage> for gdk::Paintable {
 
 impl From<Image> for gdk::Paintable {
     fn from(value: Image) -> Self {
-        if value.first_frame.has_delay() {
+        if value.first_frame.delay().is_some() {
             AnimatedImagePaintable::new(value.decoder, value.first_frame, value.file).upcast()
         } else {
             value.first_frame.texture().upcast()
@@ -252,15 +249,9 @@ impl ImageInfoLoader {
         match self {
             Self::File(file) => {
                 let (loader, _) = ImageDecoderSource::from(file).into_loader();
-                let frame = loader
-                    .load_future()
-                    .await
-                    .ok()?
-                    .next_frame_future()
-                    .await
-                    .ok()?;
+                let frame = loader.load().await.ok()?.next_frame().await.ok()?;
 
-                Some(Frame::Glycin(frame))
+                Some(Frame::Decoded(frame))
             }
             Self::Texture(texture) => Some(Frame::Texture(texture)),
         }
@@ -337,8 +328,8 @@ impl From<gdk::Texture> for ImageInfoLoader {
 /// A frame of an image.
 #[derive(Debug, Clone)]
 enum Frame {
-    /// A frame loaded via glycin.
-    Glycin(glycin::Frame),
+    /// A frame produced by the image decoder.
+    Decoded(decoder::Frame),
     /// A texture in memory,
     Texture(gdk::Texture),
 }
@@ -347,7 +338,7 @@ impl Frame {
     /// The dimensions of the frame.
     fn dimensions(&self) -> Option<FrameDimensions> {
         match self {
-            Self::Glycin(frame) => Some(FrameDimensions {
+            Self::Decoded(frame) => Some(FrameDimensions {
                 width: frame.width(),
                 height: frame.height(),
             }),
@@ -358,7 +349,7 @@ impl Frame {
     /// Whether the image that this frame belongs to is animated.
     fn is_animated(&self) -> bool {
         match self {
-            Self::Glycin(frame) => frame.has_delay(),
+            Self::Decoded(frame) => frame.delay().is_some(),
             Self::Texture(_) => false,
         }
     }
@@ -377,7 +368,7 @@ impl Frame {
     /// Generate a Blurhash of this frame.
     fn generate_blurhash(self) -> Option<Blurhash> {
         let texture = match self {
-            Self::Glycin(frame) => frame.texture(),
+            Self::Decoded(frame) => frame.texture(),
             Self::Texture(texture) => texture,
         };
 
@@ -400,7 +391,7 @@ impl Frame {
         renderer: &gsk::Renderer,
     ) -> Option<(Thumbnail, Blurhash)> {
         let texture = match self {
-            Self::Glycin(frame) => frame.texture(),
+            Self::Decoded(frame) => frame.texture(),
             Self::Texture(texture) => texture,
         };
 
@@ -453,12 +444,10 @@ impl FrameDimensions {
 
     /// Convert these dimensions to a request for the image loader with the
     /// requested dimensions.
-    fn to_image_loader_request(self, requested: Self) -> glycin::FrameRequest {
+    fn to_image_loader_request(self, requested: Self) -> decoder::FrameRequest {
         let scaled = self.scale_to_fit(requested, gtk::ContentFit::Cover);
 
-        let request = glycin::FrameRequest::new();
-        request.set_scale(scaled.width, scaled.height);
-        request
+        decoder::FrameRequest::new().with_scale(scaled.width, scaled.height)
     }
 }
 
@@ -1022,46 +1011,14 @@ impl From<MediaFileError> for ImageError {
     }
 }
 
-impl From<glib::Error> for ImageError {
-    fn from(value: glib::Error) -> Self {
+impl From<decoder::Error> for ImageError {
+    fn from(value: decoder::Error) -> Self {
         Self::log_error(&value);
 
-        if let Some(glycin::LoaderError::UnknownImageFormat) = value.kind() {
+        if value.is_unknown_format() {
             Self::UnsupportedFormat
         } else {
             Self::Unknown
         }
-    }
-}
-
-/// Extensions to [`glycin::Frame`].
-pub(crate) trait GlycinFrameExt {
-    /// Whether the frame has a delay, which means that the image is animated.
-    fn has_delay(&self) -> bool;
-
-    /// How long to show this frame for if the image is animated, as a
-    /// [`Duration`].
-    fn delay_duration(&self) -> Option<Duration>;
-
-    /// Convert this frame to a [`gdk::Texture`].
-    fn texture(&self) -> gdk::Texture;
-}
-
-impl GlycinFrameExt for glycin::Frame {
-    fn has_delay(&self) -> bool {
-        // glycin always computes a suitable delay if the image is animated but its
-        // delay is set to 0, so 0 should mean that the image is not animated.
-        self.delay() > 0
-    }
-
-    fn delay_duration(&self) -> Option<Duration> {
-        self.has_delay()
-            .then(|| u64::try_from(self.delay()).ok())
-            .flatten()
-            .map(Duration::from_micros)
-    }
-
-    fn texture(&self) -> gdk::Texture {
-        glycin_gtk4::frame_get_texture(self)
     }
 }

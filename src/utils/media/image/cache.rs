@@ -1,10 +1,10 @@
 //! An in-memory cache of decoded image textures.
 //!
-//! Decoding an image goes through a glycin sandbox, which means spawning a
-//! subprocess for every single image. Without this cache, scrolling back over
-//! images that were already shown pays that cost again every time, because the
-//! decoded texture only ever lived on the row widget that the list view then
-//! recycled.
+//! Decoding an image is expensive: the decoder either spawns a sandboxed
+//! subprocess or a streaming thread for every single image. Without this cache,
+//! scrolling back over images that were already shown pays that cost again
+//! every time, because the decoded texture only ever lived on the row widget
+//! that the list view then recycled.
 
 use std::cell::RefCell;
 

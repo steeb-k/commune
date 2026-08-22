@@ -1,11 +1,12 @@
-use glycin::{Frame, Image};
 use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
 use tracing::error;
 
 use crate::{
-    prelude::*,
     spawn,
-    utils::{CountedRef, File},
+    utils::{
+        CountedRef, File,
+        media::image::decoder::{Frame, Image},
+    },
 };
 
 mod imp {
@@ -48,7 +49,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.decoder().height(), glycin::Frame::height)
+                .map_or_else(|| self.decoder().height(), Frame::height)
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -57,7 +58,7 @@ mod imp {
             self.current_frame
                 .borrow()
                 .as_ref()
-                .map_or_else(|| self.decoder().width(), glycin::Frame::width)
+                .map_or_else(|| self.decoder().width(), Frame::width)
                 .try_into()
                 .unwrap_or(i32::MAX)
         }
@@ -166,12 +167,7 @@ mod imp {
                 return;
             }
 
-            let Some(delay) = self
-                .current_frame
-                .borrow()
-                .as_ref()
-                .and_then(GlycinFrameExt::delay_duration)
-            else {
+            let Some(delay) = self.current_frame.borrow().as_ref().and_then(Frame::delay) else {
                 return;
             };
 
@@ -198,7 +194,7 @@ mod imp {
         }
 
         async fn load_next_frame_inner(&self) {
-            match self.decoder().next_frame_future().await {
+            match self.decoder().next_frame().await {
                 Ok(next_frame) => {
                     self.next_frame.replace(Some(next_frame));
 
