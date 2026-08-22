@@ -29,6 +29,8 @@ pub(crate) mod http;
 pub(crate) mod key_bindings;
 pub(crate) mod klipy;
 mod location;
+#[cfg(target_os = "macos")]
+pub(crate) mod macos_url_events;
 mod macros;
 pub(crate) mod matrix;
 pub(crate) mod media;
