@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The bundle's metadata. `bundle.sh` substitutes the @TOKEN@ placeholders; it,
+  and not Meson, does the substitution because the deployment target and the
+  icon file name are things it works out while assembling the bundle.
+
+  CFBundleName is the entry that matters most here. Without a bundle, macOS has
+  nothing to name the app by but the executable, so the menu bar and the Dock
+  both say a lowercase "commune"; glib::set_application_name() does not reach
+  them, because it only names the items GTK builds for itself.
+-->
+<plist version="1.0">
+<dict>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>@APP_ID@</string>
+    <key>CFBundleName</key>
+    <string>@APP_NAME@</string>
+    <key>CFBundleDisplayName</key>
+    <string>@APP_NAME@</string>
+    <key>CFBundleExecutable</key>
+    <string>@EXECUTABLE@</string>
+    <key>CFBundleIconFile</key>
+    <string>@ICON@</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <!--
+      Both are the plain `major.minor` version, never the development one.
+      LaunchServices wants at most three dot-separated integers, and the Devel
+      profile's version carries a `-<short sha>` suffix that is not one. The
+      About dialog shows the full version from `config.rs` anyway.
+    -->
+    <key>CFBundleShortVersionString</key>
+    <string>@VERSION@</string>
+    <key>CFBundleVersion</key>
+    <string>@VERSION@</string>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>@MIN_OS@</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.social-networking</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <!--
+      GTK draws its own window decorations and reads the system colour scheme
+      through NSAppearance, so it must not be given the legacy aqua-only
+      treatment that this key opts out of.
+    -->
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+
+    <!--
+      The `matrix:` URI scheme. On Linux this is the desktop file's MimeType
+      plus D-Bus activation; here LaunchServices reads it from the bundle and
+      delivers the URL as an Apple Event to the executable named above, which
+      is why the bundle runs the binary directly rather than a wrapper script.
+    -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>@APP_ID@.matrix</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>matrix</string>
+            </array>
+        </dict>
+    </array>
+
+    <!--
+      Required before the camera can be opened at all: without it the process
+      is killed rather than refused. Camera QR scanning is M4 and is stubbed
+      out today, but the string has to ship in the bundle that first asks.
+    -->
+    <key>NSCameraUsageDescription</key>
+    <string>@APP_NAME@ uses the camera to scan the QR code that verifies another Matrix session.</string>
+</dict>
+</plist>

@@ -1,5 +1,6 @@
 # Common build directory names
 _build/
+_build-*/
 _install/
 build/
 builddir/
@@ -23,6 +24,7 @@ build-flatpak*/
 # Temporary files
 *.ui.in~
 *.ui~
+.DS_Store
 
 # Dynamically-generated files
 src/config.rs

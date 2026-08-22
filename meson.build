@@ -194,6 +194,24 @@ endif
 
 subdir('src')
 
+# macOS packaging. There is nothing to gate on a profile here: the bundle is
+# assembled out of a staged `meson install` of whatever this build directory was
+# configured as, and `bundle.sh` names and identifies the result accordingly.
+if host_machine.system() == 'darwin'
+    macos_bundle_command = [
+        meson.project_source_root() / 'build-aux' / 'macos' / 'bundle.sh',
+        '--build-dir', meson.project_build_root(),
+        '--app-id', application_id,
+        '--version', version,
+        '--profile', profile,
+        '--executable', meson.project_name(),
+    ]
+
+    run_target('macos-bundle', command: macos_bundle_command)
+    run_target('macos-dmg', command: macos_bundle_command + ['--dmg'])
+    run_target('macos-tarball', command: macos_bundle_command + ['--tarball'])
+endif
+
 gnome.post_install(
     gtk_update_icon_cache: true,
     glib_compile_schemas: true,
