@@ -4,7 +4,13 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod age;
 mod row;
-#[cfg(test)]
+// These tests need GTK initialized, because the model implements
+// `GtkSectionModel` and registering that interface asserts on it.
+// `#[gtk::test]` initializes GTK on a `GThreadPool` thread, and on macOS GTK
+// insists on being initialized on the process main thread, which no test
+// harness we use runs the body of a test on. The model itself has nothing
+// platform-specific in it, so the Linux runs cover it.
+#[cfg(all(test, not(target_os = "macos")))]
 mod tests;
 
 pub(crate) use self::{age::MediaAge, row::VisualMediaRow};
