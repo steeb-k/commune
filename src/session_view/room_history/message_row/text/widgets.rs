@@ -36,14 +36,19 @@ pub(super) struct HtmlWidgetConfig<'a> {
 
 /// Construct a new label for displaying a message's content.
 pub(super) fn new_message_label() -> gtk::Label {
-    gtk::Label::builder()
+    let label = gtk::Label::builder()
         .wrap(true)
         .wrap_mode(pango::WrapMode::WordChar)
         .xalign(0.0)
         .valign(gtk::Align::Start)
         .use_markup(true)
         .css_classes(["document"])
-        .build()
+        .build();
+
+    #[cfg(target_os = "macos")]
+    crate::utils::macos_emoji_spacing::watch(&label);
+
+    label
 }
 
 /// Create a widget for the given HTML nodes in the given room.
