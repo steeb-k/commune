@@ -14,6 +14,7 @@ stubbed); this file records the intended route and is updated as decisions chang
 * [M2 — unsigned `Commune.app` and `.dmg`](#m2--unsigned-communeapp-and-dmg)
 * [M3 — polish](#m3--polish)
 * [M4 — stretch: camera QR scanning](#m4--stretch-camera-qr-scanning)
+* [M5 — notifications that macOS still supports](#m5--notifications-that-macos-still-supports)
 * [Dependencies and from-source recipes](#dependencies-and-from-source-recipes)
 * [Docs and ledger updates](#docs-and-ledger-updates)
 * [Risks and open questions](#risks-and-open-questions)
@@ -295,10 +296,9 @@ source turned out to say — most of which the sketch below had right.
    `src/session_view/mod.rs:89-91,148-150,161-163,170-172` → `key_bindings::PRIMARY_MASK`.
    Afterwards `grep -rn "<Control>\|<ctrl>\|CONTROL_MASK" src` is empty (or a commented,
    deliberate binding).
-2. **Notifications.** GLib's Cocoa backend auto-selects inside a bundle with
-   `CFBundleIdentifier`; `src/session/notifications/mod.rs:114-148` is unchanged. Verify that a
-   click fires `app.show-matrix-id` with its target; if the Cocoa backend drops the target, fall
-   back to plain activation and note it.
+2. **Notifications.** Moved out to [M5](#m5--notifications-that-macos-still-supports), which is
+   where it turned out to belong: the backend GLib would use is deprecated, and replacing it is
+   more work than the rest of M3 put together.
 3. **`matrix:` URL scheme.** `CFBundleURLTypes` (M2) plus `HANDLES_OPEN`/`open()`
    (`src/application.rs:127-141`). Verify `open 'matrix:…'` cold and warm. If GTK's macOS
    backend does not forward `kAEGetURL` to `GApplication::open`, add
@@ -338,6 +338,103 @@ Via GStreamer `avfvideosrc`.
 
 Verify: Verification → Scan QR shows the camera; scanning another client's QR completes; the
 camera is released on dialog close (`dispose` → `Null`).
+
+## M5 — notifications that macOS still supports
+
+The last thing in M3 that does not work, and the only one where the code to fix it is not written
+yet. Nothing here has been built; this is the route.
+
+### What is already known
+
+`Application::send_notification()` is GLib's `GNotification`, and on macOS GLib serves that with
+`GCocoaNotificationBackend`, which is built on **`NSUserNotification`** — deprecated in 10.14 and
+long past the point of being trusted on a current system.
+
+**Upgrading GLib will not fix this.** The environment already has 2.88.3, which is current, and its
+`libgio` still says so:
+
+```sh
+strings libgio-2.0.0.dylib | grep -c NSUserNotification         # 3
+strings libgio-2.0.0.dylib | grep -c UNUserNotificationCenter   # 0
+otool -L libgio-2.0.0.dylib | grep -i framework
+#   Foundation, CoreFoundation, AppKit, CoreServices — and no UserNotifications
+```
+
+So the modern API is not reachable through `GNotification` at all, and whatever we want has to be
+ours. That is the same conclusion the media backend and the `matrix:` URL handler reached, and the
+seam is the same shape.
+
+The call sites are contained: three `send_notification` and four `withdraw_notification`, all in
+`src/session/notifications/mod.rs`.
+
+### Step 0 — find out what it does today, before replacing anything
+
+Thirty seconds, and it decides whether this is a repair or a modernization. From a bundle, logged
+in, with the window backgrounded, have somebody send a message:
+
+* Does a banner appear at all?
+* If it does, does clicking it open the right room — that is, does `app.show-matrix-id` fire with
+  its target intact?
+
+Record the answer here either way. If it works, this milestone becomes optional maintenance rather
+than a bug fix, and can be scheduled rather than rushed.
+
+### Step 1 — the risk that decides the design
+
+`UNUserNotificationCenter` is stricter than the API it replaced: it wants a bundle with a real
+identifier, and it wants the user to have granted authorization. **Whether it will register at all
+for an ad-hoc-signed bundle is the open question**, and it should be answered before any code is
+written, because a "no" changes the plan rather than the implementation.
+
+Expect the same rebuild problem the Keychain has: an ad-hoc signature is a new identity every
+build, so macOS may treat each build as a different application and ask again — or worse, remember
+a denial. The mitigation is the one `doc/macos.md` already documents, a stable self-signed
+certificate and `CODESIGN_IDENTITY`. Use it from the start here rather than discovering it later.
+
+### Step 2 — the shape, if we are writing it
+
+A `cfg_if!` seam beside the ones the port already has, so Linux keeps `GNotification` untouched:
+
+* New `src/utils/macos_notifications.rs` with `send(id, ..)` and `withdraw(id)`.
+* `src/session/notifications/mod.rs` picks between it and `Application::send_notification()` at
+  those seven call sites.
+* `Cargo.toml`: `objc2`, `objc2-foundation`, `objc2-user-notifications` in the
+  `cfg(target_os = "macos")` table. **This one really does need them** — unlike the Apple Event
+  Manager, which was a C API and needed nothing, `UNUserNotificationCenter` is Objective-C only,
+  and receiving taps needs a delegate class declared with `define_class!`.
+
+The pieces:
+
+* Authorization once, `requestAuthorization` with alert, sound and badge, early enough that the
+  first notification is not the thing that asks.
+* Send: `UNMutableNotificationContent` (title, body), `UNNotificationRequest` keyed by the same
+  identifier string the code already generates, then `add`.
+* Withdraw: `removeDeliveredNotifications(withIdentifiers:)`, which is what the current
+  `withdraw_notification` maps to.
+* Taps: a `UNUserNotificationCenterDelegate` implementing
+  `userNotificationCenter:didReceiveNotificationResponse:`. **Set the delegate before the app
+  finishes launching**, or a tap that launched the app is delivered to nobody — the same ordering
+  trap as the `'GURL'` handler, which is worth re-reading in `src/utils/macos_url_events.rs`.
+
+Carrying the intent through `userInfo` is the one design decision worth making deliberately. The
+existing code puts a `GVariant` in `set_default_action_and_target_value()`; rather than inventing a
+second encoding, put `glib::Variant::print(true)` of that same variant into `userInfo` as a string
+and read it back with `glib::Variant::parse()`. One representation, and the intent types stay the
+single source of truth.
+
+### Known fidelity gap
+
+Today's notifications carry the sender's avatar, set as a `gdk::Texture`. `UNNotificationContent`
+takes attachments as **file URLs**, so an avatar means writing the texture to a temporary file
+first. Worth doing after the basic path works, not before — and worth deciding whether it is worth
+doing at all.
+
+### Verify
+
+A message arriving with the app backgrounded raises a banner; clicking it opens the right room in
+the right session; an identity verification request does the same; a notification for a room that
+is then read disappears rather than lingering; and none of it asks for permission twice across two
+rebuilds signed with the same identity.
 
 ## Dependencies and from-source recipes
 

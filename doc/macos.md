@@ -50,7 +50,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
-| Notifications | GLib's Cocoa backend, unchanged and still unproven |
+| Notifications | Still GLib's deprecated Cocoa backend; replacing it is M5 |
 
 ## The GTK environment
 
@@ -624,15 +624,22 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
 ## Not done yet
 
-* **M3 is written but unproven.** Nothing in it has been through the
-  [Testing by hand](#testing-by-hand) list, which is where it has to go before any of it can be
-  called done. Notifications are the part most likely to be broken and the only part with no code
-  of ours behind it: GLib's Cocoa backend is built on `NSUserNotification`, deprecated since
-  10.14.
+* **M3 is mostly proven.** The menu bar, the File and View items, the hidden hamburger, the
+  `matrix:` scheme warm and cold, session restore, the Keychain, video and audio have all been
+  seen working. What is left on the [Testing by hand](#testing-by-hand) list is the Command keys,
+  Preferences, and the Edit menu.
 
   Left out of M3 deliberately: a File → Close Window item, which the muxer cannot reach, so it
   would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
   this list too and has come off it — looked at on a Mac, it reads as native as it stands.
+* **Notifications**, which were M3 and are now their own milestone. `Application::send_notification()`
+  is GLib's `GNotification`, and GLib serves that on macOS with `NSUserNotification`, deprecated
+  in 10.14. **A GLib upgrade will not help**: the environment is already on 2.88.3, and its
+  `libgio` still references `NSUserNotification`, links no `UserNotifications.framework`, and
+  mentions `UNUserNotificationCenter` nowhere. So the modern API is not reachable through
+  `GNotification` and whatever we want is ours to write, the same conclusion the media backend and
+  the `matrix:` handler reached. Whether it is _broken_ today has not actually been tested — that
+  is step 0. The route is `M5` in `doc/macos-plan.md`.
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 
 Still unverified: GTK's macOS backend for input methods and drag and drop.
