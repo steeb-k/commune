@@ -52,6 +52,9 @@ mod imp {
             child.set_wrap_mode(pango::WrapMode::WordChar);
             child.set_xalign(0.0);
             child.set_valign(gtk::Align::Start);
+
+            #[cfg(target_os = "macos")]
+            crate::utils::macos_emoji_spacing::watch(child);
         }
 
         fn dispose(&self) {

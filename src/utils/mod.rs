@@ -30,6 +30,8 @@ pub(crate) mod key_bindings;
 pub(crate) mod klipy;
 mod location;
 #[cfg(target_os = "macos")]
+pub(crate) mod macos_emoji_spacing;
+#[cfg(target_os = "macos")]
 pub(crate) mod macos_notifications;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_text_scale;
