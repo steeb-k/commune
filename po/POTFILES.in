@@ -104,6 +104,7 @@ src/login/method_page.rs
 src/login/mod.blp
 src/login/mod.rs
 src/login/session_setup_view.blp
+src/macos_menu_bar.blp
 src/secret/linux.rs
 src/secret/macos.rs
 src/session/image_packs/mod.rs

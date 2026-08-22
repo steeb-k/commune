@@ -1,0 +1,166 @@
+using Gtk 4.0;
+
+// The macOS menu bar, set with `set_menubar()` from `Application::startup` and
+// used nowhere else.
+//
+// GTK's quartz backend keeps its own application menu -- About, Preferences,
+// Services, Hide, Quit -- at index 0 of the menu it hands to NSApp, and puts
+// whatever `set_menubar()` was given after it. What it puts there when nothing
+// was set is `default-menu` from `gtk/ui/gtkapplication-quartz.ui`, which is
+// where Edit and Window come from, so a menu bar of our own has to carry both
+// or they disappear.
+//
+// Only `app.`, `win.` and `gtkinternal.` resolve here: the quartz menu is
+// backed by a muxer holding the application's actions and the active window's,
+// and nothing else. Everything the hamburger menu offers is installed on the
+// `SessionView` widget, so each item below goes through a forwarder on
+// `Window` rather than naming the widget action.
+//
+// The Edit items are the exception, copied verbatim from GTK's default menu.
+// They are not in that muxer either and so are drawn insensitive, but their
+// key equivalents work: GtkMacosContentView dispatches Command-X, C, V and A
+// to the focused widget itself. That is how every GTK application looks on
+// macOS, and reproducing it is better than leaving the menu out.
+menu macos_menu_bar {
+  submenu {
+    label: _("_File");
+
+    section {
+      item {
+        label: _("New _Direct Chat…");
+        action: "win.create-direct-chat";
+      }
+
+      item {
+        label: _("_New Room…");
+        action: "win.create-room";
+      }
+
+      item {
+        label: _("_Join Room…");
+        action: "win.join-room";
+      }
+    }
+
+    section {
+      item {
+        label: _("Image _Packs…");
+        action: "win.show-image-packs";
+      }
+    }
+
+    section {
+      item {
+        label: _("Close _Room");
+        action: "win.close-room";
+      }
+    }
+  }
+
+  submenu {
+    label: _("_Edit");
+
+    section {
+      item {
+        label: _("_Undo");
+        action: "text.undo";
+      }
+
+      item {
+        label: _("_Redo");
+        action: "text.redo";
+      }
+    }
+
+    section {
+      item {
+        label: _("Cu_t");
+        action: "clipboard.cut";
+      }
+
+      item {
+        label: _("_Copy");
+        action: "clipboard.copy";
+      }
+
+      item {
+        label: _("_Paste");
+        action: "clipboard.paste";
+      }
+
+      item {
+        label: _("_Delete");
+        action: "selection.delete";
+      }
+
+      item {
+        label: _("Select _All");
+        action: "selection.select-all";
+      }
+    }
+
+    section {
+      item {
+        label: _("_Find Room…");
+        action: "win.toggle-room-search";
+      }
+    }
+  }
+
+  submenu {
+    label: _("_View");
+
+    section {
+      item {
+        label: _("_Next Room");
+        action: "win.select-next-room";
+      }
+
+      item {
+        label: _("_Previous Room");
+        action: "win.select-prev-room";
+      }
+    }
+
+    section {
+      item {
+        label: _("_First Room With Unread Messages");
+        action: "win.select-unread-room";
+      }
+
+      item {
+        label: _("Ne_xt Room With Unread Messages");
+        action: "win.select-next-unread-room";
+      }
+
+      item {
+        label: _("Pre_vious Room With Unread Messages");
+        action: "win.select-prev-unread-room";
+      }
+    }
+
+    section {
+      item {
+        label: _("_Full Screen");
+        action: "win.toggle-fullscreen";
+      }
+    }
+  }
+
+  // Filled in by AppKit with the window list, Minimize and Zoom.
+  submenu {
+    label: _("_Window");
+    gtk-macos-special: "window-submenu";
+  }
+
+  submenu {
+    label: _("_Help");
+
+    section {
+      item {
+        label: _("_Keyboard Shortcuts");
+        action: "app.shortcuts";
+      }
+    }
+  }
+}

@@ -68,6 +68,15 @@ mod imp {
             self.set_up_gactions();
             self.set_up_accels();
 
+            self.update_preferences_action();
+            self.session_list.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_preferences_action();
+                }
+            ));
+
             // Listen to errors in the session list.
             self.session_list.connect_error_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -122,6 +131,16 @@ mod imp {
 
             // Set icons for shell
             gtk::Window::set_default_icon_name(crate::APP_ID);
+
+            // Both of these have to come after the parent: it is where GTK's
+            // quartz backend builds the menu we replace part of, and where it
+            // sends `-finishLaunching`, which installs the Apple Event handlers
+            // that ours has to replace in turn.
+            #[cfg(target_os = "macos")]
+            {
+                self.set_up_menu_bar();
+                crate::utils::macos_url_events::init();
+            }
         }
 
         fn open(&self, files: &[gio::File], _hint: &str) {
@@ -180,6 +199,14 @@ mod imp {
                         obj.imp().show_about_dialog();
                     })
                     .build(),
+                // Preferences. Only macOS asks for this one: GTK's application
+                // menu names it unconditionally and binds Command-comma to it,
+                // so without it the item is there and dead.
+                gio::ActionEntry::builder("preferences")
+                    .activate(|obj: &super::Application, _, _| {
+                        obj.imp().show_account_settings();
+                    })
+                    .build(),
                 // Show a room. This is the action triggered when clicking a notification about a
                 // message.
                 gio::ActionEntry::builder(SessionIntent::SHOW_MATRIX_ID_ACTION_NAME)
@@ -234,6 +261,49 @@ mod imp {
             let obj = self.obj();
             obj.set_accels_for_action("app.quit", &["<Primary>q"]);
             obj.set_accels_for_action("window.close", &["<Primary>w"]);
+        }
+
+        /// Open the account settings of the session that is on screen.
+        fn show_account_settings(&self) {
+            let window = self.present_main_window();
+
+            let Some(session_id) = window.current_session_id() else {
+                warn!("Cannot open the account settings with no session");
+                return;
+            };
+
+            window.open_account_settings(&session_id);
+        }
+
+        /// Enable `app.preferences` only while there is a session to configure.
+        fn update_preferences_action(&self) {
+            let enabled = self.session_list.n_items() > 0;
+
+            if let Some(action) = self
+                .obj()
+                .lookup_action("preferences")
+                .and_downcast::<gio::SimpleAction>()
+            {
+                action.set_enabled(enabled);
+            }
+        }
+
+        /// Fill the macOS menu bar.
+        ///
+        /// GTK keeps its own application menu -- About, Preferences, Services,
+        /// Hide, Quit -- ahead of whatever this sets, and replaces the rest,
+        /// which is the fallback menu that Edit and Window come from. Ours
+        /// carries both.
+        #[cfg(target_os = "macos")]
+        fn set_up_menu_bar(&self) {
+            let builder = gtk::Builder::from_resource("/org/gnome/Fractal/ui/macos_menu_bar.ui");
+
+            let Some(menu_bar) = builder.object::<gio::MenuModel>("macos_menu_bar") else {
+                error!("Could not load the macOS menu bar");
+                return;
+            };
+
+            self.obj().set_menubar(Some(&menu_bar));
         }
 
         /// Show the dialog with information about the application.

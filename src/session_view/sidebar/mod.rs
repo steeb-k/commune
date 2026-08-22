@@ -46,6 +46,8 @@ mod imp {
         #[template_child]
         account_switcher_button: TemplateChild<AccountSwitcherButton>,
         #[template_child]
+        appmenu_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
         security_banner: TemplateChild<adw::Banner>,
         #[template_child]
         scrolled_window: TemplateChild<gtk::ScrolledWindow>,
@@ -109,6 +111,12 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
+
+            // Everything in this menu is in the macOS menu bar instead, where
+            // it costs none of the room this header bar is short of.
+            if cfg!(target_os = "macos") {
+                self.appmenu_button.set_visible(false);
+            }
 
             let factory = gtk::SignalListItemFactory::new();
             factory.connect_setup(clone!(
