@@ -48,8 +48,9 @@ they can act on: in an encrypted room there is no server option, and in an
 unencrypted one the server strictly dominates.
 
 The consequence worth knowing: in an encrypted room, search only finds what
-this device has received and indexed. A message from before this session was
-created is not findable here, and there is nothing the client can do about it.
+this device has received and indexed. A message the device never saw is not
+findable here at all. A message it saw but never indexed can be recovered —
+see the next section, which is the subtler half of the same problem.
 
 ## The index is encrypted, and lives in the cache
 
@@ -73,6 +74,49 @@ Left at its default the store is in memory, which means reindexing from
 nothing on every launch. That is the failure mode to watch for if this line is
 ever lost in a rebase: search still works, it is just silently useless on a
 cold start.
+
+## The index only knows what it was handed
+
+The index is fed by the event cache, as it stores an event, and by nothing
+else. An event that was **already stored when the index was created** was never
+handed over, so no search finds it however many times it is read.
+
+That is not an edge case. It is every message on any device that received it
+before the index existed — which is every device upgrading into the feature
+rather than installing fresh. The room looks fully populated and searching it
+returns nothing.
+
+What makes it hard to recognise is that paginating hides how complete the hole
+is. Fetching a chunk the cache does not have indexes it on the way in, so
+scrolling back makes old messages findable while the recent ones stay missing.
+The index looks like it is working at random, or like it only has old history,
+which is the opposite of the truth.
+
+**Re-index This Room** is the remedy: `RoomSearch::reindex()` takes the events
+the room has loaded from the event cache and hands them to the index through
+`bulk_handle_timeline_event`, then restarts the search so the results appear
+without the term being retyped. Load more history and press it again to cover
+more — the event cache only offers the chunks it has, and nothing is fetched
+from the server for a message this device already holds.
+
+Three things about where the button appears:
+
+* **Only on the two pages with nothing else to show** — before a term is typed,
+  and when a search came up empty. Those are exactly the states this problem
+  produces.
+* **Only in an encrypted room.** `update_reindex_buttons()` returns
+  `Room::is_encrypted` and gates on it. Every other room is searched on the
+  server, which knows the whole history and wants nothing from this device, so
+  the button there would do nothing at all.
+* **The spinner runs even before a term is typed**, where the view would
+  otherwise sit on the empty page giving no sign that anything is happening. A
+  rebuild that fails leaves the error page rather than a spinner that never
+  stops — see the two `LoadingState::Error` arms in `reindex()`, one for the
+  task dying and one for the index refusing.
+
+`doc/macos.md` carries this as row 40 of its by-hand list, with a note that it
+is not a macOS problem, so that nobody tests a bundle and goes looking for a
+port bug.
 
 ## The query parser has a syntax, and a search field does not
 
@@ -161,8 +205,8 @@ New:
 
 | File | What |
 | --- | --- |
-| `src/session/room/search.rs` | `RoomSearch`, `RoomSearchResult`, query sanitisation, both backends |
-| `src/session_view/room_history/search/mod.rs`, `.blp` | The search pane over the timeline |
+| `src/session/room/search.rs` | `RoomSearch`, `RoomSearchResult`, query sanitisation, both backends, `reindex()` |
+| `src/session_view/room_history/search/mod.rs`, `.blp` | The search pane, its empty/no-results pages and the two re-index buttons |
 | `src/session_view/room_history/search/row.rs`, `.blp` | One result row |
 
 Integration points, which are where a rebase will conflict:
@@ -199,7 +243,14 @@ Integration points, which are where a rebase will conflict:
 4. `<primary>F`, not `<ctrl>F`. The binding in `room_history/mod.rs` uses
    `key_bindings::PRIMARY_MASK`. This was wrong in the first version of the
    branch and is easy to reintroduce.
-5. Any new `.rs` file here calls `gettext`, so it belongs in `po/POTFILES.in`,
+5. `reindex()` reaches past the SDK's stable surface —
+   `client.search_index().lock().await.bulk_handle_timeline_event(...)`, plus
+   `room_version_rules_or_default().redaction` for the redaction rules. All of
+   it is behind `experimental-search` and is the most likely thing here to be
+   renamed or reshaped by an SDK bump. Its error type belongs to a crate that
+   is not a direct dependency, which is why the result is mapped to `String`
+   rather than named.
+6. Any new `.rs` file here calls `gettext`, so it belongs in `po/POTFILES.in`,
    alphabetically. `hooks/checks-bin` catches it, but read its message with
    care: the two for that check are swapped, so "Found N file(s) in
    POTFILES.in without translatable strings" in fact means those files _have_
@@ -212,6 +263,11 @@ Integration points, which are where a rebase will conflict:
   zero on both sides; going to the message in the timeline is the answer
   instead.
 * Searching state events, membership changes or attachment filenames.
-* Any indication in an encrypted room that results are limited to what this
-  device has seen. The limitation is real and currently invisible.
+* Any explanation, in an encrypted room, of _why_ results are limited to what
+  this device has seen. "Re-index This Room" offers the remedy but says nothing
+  about the cause, and a room that has never been scrolled back still cannot
+  find what it never loaded.
+* Re-indexing every room at once, or on upgrade. It is per-room and manual, so
+  a device coming from a build without an index stays mostly unsearchable until
+  each room is visited.
 * Highlighting the matched terms within a result row.
