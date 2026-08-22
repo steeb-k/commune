@@ -1,5 +1,21 @@
 [build]
 rustflags = ["--cfg", "ruma_identifiers_storage=\"Arc\""]
 
+# Cargo takes its rustflags from exactly one source: a matching `target.<cfg>`
+# table replaces `[build]` rather than adding to it, so `ruma_identifiers_storage`
+# has to be repeated here.
+#
+# `-headerpad_max_install_names` reserves room in the Mach-O header for the
+# longer `@executable_path/../Frameworks/…` install names that bundling rewrites
+# in. Without it `install_name_tool` fails with "load commands do not fit", and
+# the failure only shows up at bundling time, long after the build.
+[target.'cfg(target_os = "macos")']
+rustflags = [
+    "--cfg",
+    "ruma_identifiers_storage=\"Arc\"",
+    "-C",
+    "link-arg=-Wl,-headerpad_max_install_names",
+]
+
 [doc.extern-map.registries]
 crates-io = "https://docs.rs/"

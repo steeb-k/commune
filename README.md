@@ -100,6 +100,14 @@ commune
 Note that a host build installs into the same prefix as anything else you have installed there; the
 Flatpak builds are what keep Commune fully self-contained.
 
+### macOS
+
+The macOS port is a work in progress: it builds and the source changes are in place, but there is
+no `.app` bundle yet. The GTK stack comes from a conda-forge environment that
+`build-aux/macos/setup-conda-macos.sh` creates — **not** from Homebrew, which would stamp the build
+machine's OS version as the deployment floor. See [`doc/macos.md`](doc/macos.md) for the full
+story, the environment probe, and what is stubbed.
+
 ## Runtime Dependencies
 
 On top of the dependencies required at build time and checked by Meson, Commune depends on the
@@ -115,6 +123,11 @@ following dependencies at runtime:
   * gst-plugin-gtk4 (gstgtk4): required to preview videos in the timeline and to present the output
     of the camera.
   * libgstpipewire with the `pipewiredeviceprovider`: used to list and access the cameras.
+
+On macOS none of the portals apply. Secrets go to the Keychain, the 12h/24h format is read from the
+locale at startup, and location sharing and camera QR scanning are not available. GStreamer is
+still needed, including gst-plugin-gtk4; `build-aux/macos/setup-conda-macos.sh` builds that plugin
+from source because conda-forge does not package it.
 
 ### Storing secrets
 

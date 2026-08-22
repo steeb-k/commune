@@ -167,6 +167,12 @@ ninja -C _build
 sudo ninja -C _build install
 ```
 
+### macOS
+
+The macOS port has its own environment, built with conda-forge rather than Homebrew, and its own
+set of platform differences. Both are documented in [`doc/macos.md`](doc/macos.md); start there
+rather than with the instructions above.
+
 ## Pre-commit
 
 We expect all code contributions to be correctly formatted. To help with that, a pre-commit hook

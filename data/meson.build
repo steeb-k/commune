@@ -1,27 +1,31 @@
 subdir('icons')
 
 # Desktop file
-desktop_conf = configuration_data()
-desktop_conf.set('icon', application_id)
-desktop_file = i18n.merge_file(
-    type: 'desktop',
-    input: configure_file(
-        input: '@0@.desktop.in.in'.format(base_id),
-        output: '@BASENAME@',
-        configuration: desktop_conf,
-    ),
-    output: '@0@.desktop'.format(application_id),
-    po_dir: podir,
-    install: true,
-    install_dir: datadir / 'applications',
-)
-# Validate Desktop file
-if desktop_file_validate.found()
-    test(
-        'validate-desktop',
-        desktop_file_validate,
-        args: [desktop_file.full_path()],
+# This is an XDG concept: macOS gets its application metadata from the bundle's
+# Info.plist instead, see `build-aux/macos/`.
+if host_machine.system() != 'darwin'
+    desktop_conf = configuration_data()
+    desktop_conf.set('icon', application_id)
+    desktop_file = i18n.merge_file(
+        type: 'desktop',
+        input: configure_file(
+            input: '@0@.desktop.in.in'.format(base_id),
+            output: '@BASENAME@',
+            configuration: desktop_conf,
+        ),
+        output: '@0@.desktop'.format(application_id),
+        po_dir: podir,
+        install: true,
+        install_dir: datadir / 'applications',
     )
+    # Validate Desktop file
+    if desktop_file_validate.found()
+        test(
+            'validate-desktop',
+            desktop_file_validate,
+            args: [desktop_file.full_path()],
+        )
+    endif
 endif
 
 # Appdata
@@ -87,15 +91,19 @@ if glib_compile_schemas.found()
 endif
 
 # D-Bus service file
-service_conf = configuration_data()
-service_conf.set('application_id', application_id)
-service_conf.set('bindir', bindir)
-configure_file(
-    input: '@0@.service.in'.format(base_id),
-    output: '@0@.service'.format(application_id),
-    configuration: service_conf,
-    install: true,
-    install_dir: datadir / 'dbus-1/services',
-)
+# D-Bus activation is how the `matrix:` URI scheme reaches a running instance on
+# Linux. macOS uses LaunchServices and `CFBundleURLTypes` instead.
+if host_machine.system() != 'darwin'
+    service_conf = configuration_data()
+    service_conf.set('application_id', application_id)
+    service_conf.set('bindir', bindir)
+    configure_file(
+        input: '@0@.service.in'.format(base_id),
+        output: '@0@.service'.format(application_id),
+        configuration: service_conf,
+        install: true,
+        install_dir: datadir / 'dbus-1/services',
+    )
+endif
 
 subdir('resources')

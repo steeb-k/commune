@@ -1,5 +1,6 @@
 # Common build directory names
 _build/
+_install/
 build/
 builddir/
 
@@ -12,6 +13,12 @@ build-flatpak*/
 .flatpak
 .fenv
 .foundry
+
+# The macOS conda-forge GTK environment and bundle artefacts
+.conda-gtk/
+*.app/
+*.dmg
+*.iconset/
 
 # Temporary files
 *.ui.in~
