@@ -38,7 +38,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | --- | --- |
 | Runtime paths | `src/utils/app_bundle.rs`, relative to the executable inside a bundle |
 | Image decoding | Rewritten behind `src/utils/media/image/decoder/`, `image` crate on macOS |
-| Video in the media viewer | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
+| Video and audio playback | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
 | Secrets | macOS Keychain, `src/secret/macos.rs` |
 | Data directories | `~/Library/Application Support` and `~/Library/Caches` |
 | `.app` bundle, `.dmg`, `.tar.gz` | `build-aux/macos/bundle.sh` and its two wrappers |
@@ -368,6 +368,17 @@ There is no macOS CI and there will not be one for a while, so this is the list.
 has to be exercised from a **bundle** unless the row says otherwise: `matrix:` URLs and
 notifications both need a `CFBundleIdentifier`, and a build run out of a prefix does not have one.
 
+**Check that the bundle you are testing is the one you just built.** There are up to four copies of
+this application on a development machine — `_build/macos/Commune Devel.app`,
+`_build-release/macos/Commune.app`, whatever was dragged into `/Applications`, and whatever a `.dmg`
+or `.tar.gz` was unpacked to — and each build target only rebuilds its own. A whole milestone was
+once reported as "completely unchanged" because the copy in `/Applications` came from a
+`_build-release` that predated it. `grep` the binary for something the change introduced:
+
+```sh
+strings /Applications/Commune.app/Contents/MacOS/commune | grep -c macos_menu_bar
+```
+
 ```sh
 meson compile -C _build macos-bundle && open _build/macos/"Commune Devel.app"
 ```
@@ -413,6 +424,7 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 30 | Regression | Send and receive text; open a room's history | Nothing unusual |
 | 31 | Regression | An image thumbnail, an animated GIF, the GIF search | All render, animation included |
 | 32 | Regression | A video in the media viewer | Plays, with working controls |
+| 32a | Regression | An audio clip, in the timeline and the viewer | Plays, with a moving waveform |
 | 33 | Regression | Quit and relaunch | The session comes back without a login |
 | 34 | Regression | Launch the bundle from a shell with nothing exported | It runs |
 
@@ -432,9 +444,8 @@ Rows 24 to 26 are the ones most likely to fail. GLib's Cocoa notification backen
 a current macOS is exactly what has not been tried. If nothing appears, that is the first thing to
 suspect rather than anything in `src/session/notifications/`.
 
-Rows 1 to 19 could not be run here either: reading the menu bar needs Accessibility or Screen
-Recording permission, which is the user's to grant. All that is known is that the menu model loads
-and `set_menubar()` is reached without complaint.
+Row 1 is done: the menu bar comes up as Commune, File, Edit, View, Window, Help. Rows 2 to 19 need
+a session, since File and View are insensitive without one and the sidebar is not on screen.
 
 ## What differs from Linux
 
@@ -456,7 +467,7 @@ single-frame GIF has to be reported as a still image rather than a one-frame ani
 format not supported". BMP, GIF, ICO, JPEG, PNG, APNG, TIFF and WebP all work, animated where the
 format allows. An ImageIO-backed decoder would close the gap and is the obvious later option.
 
-**Video in the media viewer.** `GtkVideo` plays a file with `GtkMediaFile`, and `GtkMediaFile` has
+**Video and audio playback.** `GtkVideo` plays a file with `GtkMediaFile`, and `GtkMediaFile` has
 no backend of its own: GTK 4.22 compiles a GStreamer one into `libgtk`, but only when the
 GStreamer libraries happen to be found while GTK itself is built, and conda-forge's `gtk4` is
 built without them. `nm` on their `libgtk-4.1.dylib` finds not one `gst` symbol. Nothing reports
@@ -473,7 +484,15 @@ the sink's paintable. `GtkVideo` and its `GtkMediaControls` need no changes, sin
 is a media stream that is also a paintable. `content_viewer.rs` picks between the two in
 `set_video_file()` and `clear_video()`.
 
-Note that the timeline's own previews were never affected: `VideoPlayer` drives `GstPlay`
+**Audio clips had the same bug and the same fix**, found later because the symptom is quieter: the
+player showed the "not playable" glyph and made no sound. `audio_player/mod.rs` asked for a
+`GtkMediaFile` too, so it now holds a `gtk::MediaStream` and picks a backend with the same pair of
+`cfg`'d constructors. Nothing between them changed — every notification it listens to, duration,
+timestamp, playing, prepared and error, belongs to `GtkMediaStream` rather than to `GtkMediaFile`.
+Tearing down needed its own pair, because `clear()` is `GtkMediaFile`'s alone; on macOS there is
+nothing to do, since `GstMediaStream` stops its pipeline when it is disposed.
+
+Note that the timeline's own video previews were never affected: `VideoPlayer` drives `GstPlay`
 directly and never touches `GtkMediaFile`.
 
 **The menu bar.** Everything the main menu offers used to be reachable only from the hamburger
@@ -563,9 +582,9 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
   of ours behind it: GLib's Cocoa backend is built on `NSUserNotification`, deprecated since
   10.14.
 
-  Left out of M3 deliberately: the media viewer's own close button, which sits where macOS puts
-  the traffic lights and wants rethinking rather than moving; and a File → Close Window item,
-  which the muxer cannot reach, so it would be drawn insensitive next to a ⌘W that works.
+  Left out of M3 deliberately: a File → Close Window item, which the muxer cannot reach, so it
+  would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
+  this list too and has come off it — looked at on a Mac, it reads as native as it stands.
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 
 Still unverified: GTK's macOS backend for input methods and drag and drop.
