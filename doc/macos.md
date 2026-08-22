@@ -46,6 +46,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
 | System 12/24h clock | Locale-derived at startup, never updates live |
 | Camera QR scanning | Stubbed, returns no cameras |
+| Application icon | Its own artwork, `assets/macos-{tahoe-flat,legacy-bevel}.svg` |
 | Menu bar | `src/macos_menu_bar.blp`, with `win.` forwarders on `Window` |
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
@@ -425,7 +426,8 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 30 | Regression | Send and receive text; open a room's history | Nothing unusual |
 | 31 | Regression | An image thumbnail, an animated GIF, the GIF search | All render, animation included |
 | 32 | Regression | A video in the media viewer | Plays, with working controls |
-| 32a | Regression | An audio clip, in the timeline and the viewer | Plays, with a moving waveform |
+| 32a | Regression | An audio clip, in the timeline and the viewer | Plays, with a moving waveform — **verified** |
+| 32b | Icons | Look at the app in Finder and the Dock | The macOS plate, not the GNOME icon; see the cache note below |
 | 33 | Regression | Quit and relaunch | The session comes back without a login — **verified** |
 | 34 | Regression | Launch the bundle from a shell with nothing exported | It runs |
 
@@ -434,6 +436,23 @@ the event before the handler exists, and `AppKit` still delivers it afterwards. 
 with `open -a … 'matrix:r/matrix:matrix.org'` brought it up, restored the session from the Keychain,
 and opened the room preview dialog for a room the account is not in — the whole path, on the release
 bundle, in one go.
+
+**A changed icon will not look changed.** macOS caches application icons hard, and replacing a
+bundle in place is exactly the case it gets wrong: Finder and the Dock keep showing the old icon
+long after the new one is installed. Check the bundle rather than the screen before believing
+anything is broken —
+
+```sh
+md5 /Applications/Commune.app/Contents/Resources/commune.icns   # against a fresh make-icns.sh run
+```
+
+— and if it matches, it is the cache. `touch` the bundle, re-register it, and restart both:
+
+```sh
+touch /Applications/Commune.app
+lsregister -f /Applications/Commune.app
+killall Dock; killall Finder
+```
 
 **Pass `-a` and the bundle.** More than one application on a developer's machine claims the
 `matrix:` scheme — `lsregister -dump | grep matrix:` will list them — so a bare `open 'matrix:…'`
@@ -494,8 +513,33 @@ timestamp, playing, prepared and error, belongs to `GtkMediaStream` rather than 
 Tearing down needed its own pair, because `clear()` is `GtkMediaFile`'s alone; on macOS there is
 nothing to do, since `GstMediaStream` stops its pipeline when it is disposed.
 
+That swap uncovered a second half to the same bug: clips stopped refusing to play and started
+spinning forever instead. The audio player waits to be told a stream is **prepared** before playing
+it, since that is when `GtkMediaFile` would have opened the file and learned its duration, while
+`GstPlay` reports nothing at all — no media info, no duration, no position — until it is playing or
+paused. Each waited for the other. `GstMediaStream` now prerolls when it is given a file, which is
+what `GtkMediaFile` does, and the media info that arrives at `PAUSED` is what prepares the stream.
+Video never showed this, because `GtkVideo` autoplays and starts the pipeline itself; only a caller
+that waits on `prepared` first can deadlock.
+
 Note that the timeline's own video previews were never affected: `VideoPlayer` drives `GstPlay`
 directly and never touches `GtkMediaFile`.
+
+**The application icon.** The Mac builds carry artwork of their own rather than the GNOME icon the
+Linux builds ship, because the shape rules differ: the GNOME icon is drawn full-bleed with a
+silhouette of its own, while a Mac icon is a square plate that the system encloses.
+
+There are two plates, and what separates them is the version of macOS rather than the profile.
+Tahoe re-shapes and lights an application icon itself, so `macos-tahoe-flat.svg` is flat and lets it;
+every release before that draws the icon exactly as handed over, so `macos-legacy-bevel.svg` carries
+its own bevel.
+
+**One `.icns` cannot serve both.** Nothing in a bundle lets the system choose an icon by OS
+version — that wants an asset catalogue built with Apple's own tooling, which is not part of this
+environment — so `bundle.sh` takes `--icon-style tahoe|legacy`, or `ICON_STYLE` from the
+environment, and defaults to Tahoe. A development build keeps the GNOME devel icon: there is no
+devel variant of the new artwork, and the bundle name would otherwise be the only thing telling the
+two apart in the Dock.
 
 **The menu bar.** Everything the main menu offers used to be reachable only from the hamburger
 button in a sidebar that is already short of room, while the menu bar every other Mac application
