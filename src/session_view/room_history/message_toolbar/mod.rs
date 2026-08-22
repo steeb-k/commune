@@ -5,6 +5,7 @@ use futures_util::{StreamExt, future, lock::Mutex, pin_mut};
 use gettextrs::{gettext, pgettext};
 use gtk::{gdk, gio, glib, glib::clone};
 use matrix_sdk::{
+    Client,
     attachment::{AttachmentInfo, BaseFileInfo, Thumbnail},
     room::edit::EditedContent,
 };
@@ -16,9 +17,11 @@ use ruma::{
     events::{
         AnyMessageLikeEventContent, Mentions,
         room::{
+            ImageInfo,
             message::{LocationMessageEventContent, MessageType, RoomMessageEventContent},
             tombstone::RoomTombstoneEventContent,
         },
+        sticker::{StickerEventContent, StickerMediaSource},
     },
 };
 use tracing::{debug, error, warn};
@@ -43,7 +46,8 @@ use crate::{
     session::{Event, Member, PackImage, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
-        Location, LocationError, TemplateCallbacks, TokioDrop,
+        Location, LocationError, TemplateCallbacks, TokioDrop, http,
+        klipy::{self, SelectedGif},
         media::{
             FileInfo, audio::load_audio_info, filename_for_mime, image::ImageInfoLoader,
             video::load_video_info,
@@ -208,6 +212,21 @@ mod imp {
                         imp,
                         async move {
                             imp.send_sticker(&image).await;
+                        }
+                    ));
+                }
+            ));
+
+            // GIFs.
+            self.sticker_picker.connect_gif_selected(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, gif| {
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        async move {
+                            imp.send_gif(gif).await;
                         }
                     ));
                 }
@@ -964,6 +983,76 @@ mod imp {
             }
         }
 
+        /// Send the given GIF as a sticker.
+        ///
+        /// The GIF is downloaded from the service and uploaded to the
+        /// homeserver, rather than linked: a link would leak the IP address of
+        /// everyone in the room to the service, would rot when the service
+        /// drops the file, and could not be end-to-end encrypted.
+        async fn send_gif(&self, gif: SelectedGif) {
+            let Some(timeline) = self.timeline.upgrade() else {
+                return;
+            };
+            let room = timeline.room();
+            let Some(session) = room.session() else {
+                return;
+            };
+            let client = session.client();
+            let is_encrypted = room.is_encrypted();
+
+            let SelectedGif {
+                url,
+                width,
+                height,
+                size,
+                slug,
+                title,
+            } = gif;
+
+            let handle = spawn_tokio!(async move {
+                let data = http::fetch(&url, MAX_GIF_SIZE).await?;
+                let source = upload_gif(&client, is_encrypted, data).await?;
+                Ok::<_, SendGifError>(source)
+            });
+
+            let source = match handle.await.expect("task should not be aborted") {
+                Ok(source) => source,
+                Err(error) => {
+                    error!("Could not send GIF: {error}");
+                    toast!(self.obj(), gettext("Could not send GIF"));
+                    return;
+                }
+            };
+
+            let mut info = ImageInfo::new();
+            info.width = width.try_into().ok();
+            info.height = height.try_into().ok();
+            info.size = size.try_into().ok();
+            info.mimetype = Some(mime::IMAGE_GIF.to_string());
+            // Without this the receiving client asks its homeserver for a
+            // thumbnail, which is a still frame.
+            info.is_animated = Some(true);
+
+            let content = StickerEventContent::with_source(title, info, source);
+
+            let matrix_timeline = timeline.matrix_timeline();
+            let handle = spawn_tokio!(async move {
+                matrix_timeline
+                    .send(AnyMessageLikeEventContent::Sticker(content))
+                    .await
+            });
+
+            if let Err(error) = handle.await.unwrap() {
+                error!("Could not send GIF: {error}");
+                toast!(self.obj(), gettext("Could not send GIF"));
+                return;
+            }
+
+            // Tell the service that the GIF was shared. This is how it counts, and
+            // it is why the API is free to use.
+            spawn_tokio!(async move { klipy::report_share(&slug).await });
+        }
+
         /// Show a toast for the given location error;
         fn location_error_toast(&self, error: LocationError) {
             let msg = match error {
@@ -1408,5 +1497,43 @@ impl MessageToolbar {
                 imp.read_clipboard_file().await;
             }
         ));
+    }
+}
+
+/// The maximum size of a GIF that we are willing to download to send, 16 MB.
+///
+/// [`klipy`] already picks a variant well under this; this is the backstop for
+/// a service that does not describe its own files accurately.
+const MAX_GIF_SIZE: u64 = 16 * 1024 * 1024;
+
+/// An error encountered while putting a GIF on the homeserver.
+#[derive(Debug, thiserror::Error)]
+enum SendGifError {
+    /// The GIF could not be downloaded from the service.
+    #[error(transparent)]
+    Download(#[from] crate::utils::http::HttpError),
+    /// The GIF could not be uploaded to the homeserver.
+    #[error(transparent)]
+    Upload(#[from] matrix_sdk::Error),
+}
+
+/// Upload the given GIF to the homeserver and return the source to refer to it.
+///
+/// The GIF is encrypted first if it is going to an encrypted room, so a GIF is
+/// no less private than any other image sent there.
+async fn upload_gif(
+    client: &Client,
+    is_encrypted: bool,
+    data: Vec<u8>,
+) -> Result<StickerMediaSource, SendGifError> {
+    if is_encrypted {
+        let mut cursor = std::io::Cursor::new(data);
+        let file = client.upload_encrypted_file(&mut cursor).await?;
+
+        Ok(StickerMediaSource::Encrypted(Box::new(file)))
+    } else {
+        let response = client.media().upload(&mime::IMAGE_GIF, data, None).await?;
+
+        Ok(StickerMediaSource::Plain(response.content_uri))
     }
 }

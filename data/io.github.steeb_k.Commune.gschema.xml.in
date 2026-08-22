@@ -18,6 +18,11 @@
       <summary>Enable markdown formatting</summary>
       <description>Whether messages should be processed as markdown when sending them</description>
     </key>
+    <key name="gif-search-enabled" type="b">
+      <default>false</default>
+      <summary>Enable GIF search</summary>
+      <description>Whether the GIF search is available in the sticker picker. It is disabled by default because searching sends the search text and the IP address of this device to KLIPY, a third-party service</description>
+    </key>
     <key name="sessions" type="s">
       <default>'[]'</default>
       <summary>Session settings</summary>

@@ -426,6 +426,19 @@ message-reactions {
       padding: 3px;
     }
   }
+
+  // GIFs are cropped to their button, so the button has to clip them for the
+  // rounded corners to be visible.
+  .gif-button {
+    padding: 0;
+    border-radius: 6px;
+
+    // Holds the place of a GIF whose preview has not arrived and that had no
+    // blurred placeholder to show in the meantime.
+    &.loading {
+      background-color: color-mix(in srgb, currentColor 10%, transparent);
+    }
+  }
 }
 
 read-receipts-list {

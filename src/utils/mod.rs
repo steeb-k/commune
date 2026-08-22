@@ -26,6 +26,7 @@ mod fixed_selection;
 mod grouping_list_model;
 pub(crate) mod http;
 pub(crate) mod key_bindings;
+pub(crate) mod klipy;
 mod location;
 mod macros;
 pub(crate) mod matrix;

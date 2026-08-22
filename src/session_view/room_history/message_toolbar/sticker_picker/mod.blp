@@ -1,62 +1,97 @@
 using Gtk 4.0;
+using Adw 1;
 
 template $StickerPicker: Gtk.Popover {
-  width-request: 340;
-  height-request: 300;
+  width-request: 400;
+  height-request: 420;
 
   styles [
     "sticker-picker",
   ]
 
-  child: Gtk.Stack stack {
-    Gtk.StackPage {
-      name: "loading";
+  child: Gtk.Box {
+    orientation: vertical;
 
-      child: Gtk.Spinner {
-        halign: center;
-        valign: center;
-        spinning: true;
-      };
-    }
+    Adw.ViewStack view_stack {
+      vexpand: true;
 
-    Gtk.StackPage {
-      name: "empty";
+      Adw.ViewStackPage {
+        name: "stickers";
+        title: _("Stickers");
 
-      child: Gtk.Label {
-        halign: center;
-        valign: center;
-        wrap: true;
-        justify: center;
-        margin-start: 18;
-        margin-end: 18;
-        margin-top: 18;
-        margin-bottom: 18;
-        // Translators: This is shown in the sticker picker when no sticker
-        // pack is available.
-        label: _("No stickers available.\n\nAdd a sticker pack to this room, or enable one from another room in your account settings.");
+        child: Gtk.Stack stack {
+          Gtk.StackPage {
+            name: "loading";
 
-        styles [
-          "dimmed",
-        ]
-      };
-    }
+            child: Gtk.Spinner {
+              halign: center;
+              valign: center;
+              spinning: true;
+            };
+          }
 
-    Gtk.StackPage {
-      name: "packs";
+          Gtk.StackPage {
+            name: "empty";
 
-      child: Gtk.ScrolledWindow {
-        hscrollbar-policy: never;
-        propagate-natural-height: true;
+            child: Gtk.Label {
+              halign: center;
+              valign: center;
+              wrap: true;
+              justify: center;
+              margin-start: 18;
+              margin-end: 18;
+              margin-top: 18;
+              margin-bottom: 18;
+              // Translators: This is shown in the sticker picker when no sticker
+              // pack is available.
+              label: _("No stickers available.\n\nAdd a sticker pack to this room, or enable one from another room in your account settings.");
 
-        child: Gtk.Box packs_box {
-          orientation: vertical;
-          spacing: 12;
-          margin-start: 12;
-          margin-end: 12;
-          margin-top: 12;
-          margin-bottom: 12;
+              styles [
+                "dimmed",
+              ]
+            };
+          }
+
+          Gtk.StackPage {
+            name: "packs";
+
+            child: Gtk.ScrolledWindow {
+              hscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Gtk.Box packs_box {
+                orientation: vertical;
+                spacing: 12;
+                margin-start: 12;
+                margin-end: 12;
+                margin-top: 12;
+                margin-bottom: 12;
+              };
+            };
+          }
         };
-      };
+      }
+
+      Adw.ViewStackPage gif_view_page {
+        name: "gifs";
+        title: _("GIFs");
+        visible: false;
+
+        child: $GifPage gif_page {};
+      }
+    }
+
+    // Below the pages, and only shown when the GIF search is available: a
+    // switcher between one page is noise.
+    Adw.InlineViewSwitcher switcher {
+      visible: false;
+      stack: view_stack;
+      display-mode: labels;
+      halign: center;
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 6;
+      margin-bottom: 12;
     }
   };
 }
