@@ -2,16 +2,18 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use tracing::error;
 
 use crate::{
+    components::AnimatedImagePaintable,
     gettext_f,
     session::{PackImage, Session},
     spawn,
+    utils::CountedRef,
 };
 
 /// The size at which an image of a pack is presented, in pixels.
 const IMAGE_SIZE: u32 = 64;
 
 mod imp {
-    use std::cell::OnceCell;
+    use std::cell::{OnceCell, RefCell};
 
     use super::*;
 
@@ -25,6 +27,12 @@ mod imp {
         #[property(get, construct_only)]
         pub(super) image: OnceCell<PackImage>,
         pub(super) picture: gtk::Picture,
+        /// The reference that keeps an animated image playing.
+        ///
+        /// An [`AnimatedImagePaintable`] only advances while something holds
+        /// one of these, so without it every animated image of a pack sits on
+        /// its first frame.
+        animation_ref: RefCell<Option<CountedRef>>,
     }
 
     #[glib::object_subclass]
@@ -61,10 +69,39 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for PackImageButton {}
+    impl WidgetImpl for PackImageButton {
+        fn map(&self) {
+            self.parent_map();
+            self.update_animation_ref();
+        }
+
+        fn unmap(&self) {
+            self.parent_unmap();
+            self.update_animation_ref();
+        }
+    }
+
     impl ButtonImpl for PackImageButton {}
 
     impl PackImageButton {
+        /// Hold or drop the reference that keeps an animated image playing,
+        /// according to whether this button is on screen.
+        fn update_animation_ref(&self) {
+            self.animation_ref.take();
+
+            let Some(paintable) = self
+                .picture
+                .paintable()
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.obj().is_mapped() {
+                self.animation_ref.replace(Some(paintable.animation_ref()));
+            }
+        }
+
         /// Present this image as unavailable.
         ///
         /// An image that we could not load is still presented, so that the
@@ -101,7 +138,10 @@ mod imp {
                 .download_thumbnail(session, IMAGE_SIZE, obj.scale_factor())
                 .await
             {
-                Ok(paintable) => self.picture.set_paintable(Some(&paintable)),
+                Ok(paintable) => {
+                    self.picture.set_paintable(Some(&paintable));
+                    self.update_animation_ref();
+                }
                 Err(error) => {
                     error!("Could not load the image of a pack: {error}");
                     self.set_unavailable();

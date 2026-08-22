@@ -464,3 +464,15 @@ must not be resolved in upstream's favour.
 5. If ruma gains the unstable names, `events.rs` can be replaced by them.
 6. Run the `events.rs` tests and `message_row/text/tests.rs` first; they
    catch wire and renderer drift cheapest.
+
+## Animated images of a pack
+
+An `AnimatedImagePaintable` only advances while something holds a `CountedRef`
+from its `animation_ref()`. Neither `PackImageButton` nor `CustomEmoticon` took
+one, so every animated image of a pack — in the picker and inline in messages —
+sat on its first frame, which looks like a still image rather than a bug. Both
+now take a reference when they are mapped and drop it when they are not, the
+same as `MessageVisualMedia` and the media viewer do.
+
+`CustomEmoticon` already connected to `invalidate-contents` to redraw itself,
+so this was an oversight rather than a decision.
