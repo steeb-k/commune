@@ -10,6 +10,7 @@ was built; this file records what actually exists, what is stubbed, and what bit
 * [The GTK environment](#the-gtk-environment)
 * [Setting the environment up](#setting-the-environment-up)
 * [Building](#building)
+* [Packaging](#packaging)
 * [What differs from Linux](#what-differs-from-linux)
 * [Not done yet](#not-done-yet)
 * [Rebasing](#rebasing)
@@ -17,12 +18,15 @@ was built; this file records what actually exists, what is stubbed, and what bit
 
 ## State today
 
-M0 and M1 are done. The tree builds for `aarch64-apple-darwin`, and `cargo check`, `cargo clippy
---all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
+M0, M1 and M2 are done. The tree builds for `aarch64-apple-darwin`, and `cargo check`, `cargo
+clippy --all-targets -- -D warnings`, `cargo +nightly fmt --check`, `cargo deny`, `cargo machete`,
 `cargo sort`, `typos`, `rumdl`, `cargo nextest run` and `meson test` all pass. `meson compile` and
 `meson install` work, and **the app runs**: logging in with a password, syncing, the timeline,
 image thumbnails, animated GIFs, the GIF search, video in the media viewer and restoring the
 session from the Keychain after a quit were all exercised on macOS 26.
+
+There is now a **relocatable `Commune.app`**, and a `.dmg` and a `.tar.gz` around it. It launches
+from a shell with nothing exported, and loads no library from outside itself.
 
 The environment it all needs is created by a script in `build-aux/macos/`.
 
@@ -33,10 +37,10 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Video in the media viewer | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
 | Secrets | macOS Keychain, `src/secret/macos.rs` |
 | Data directories | `~/Library/Application Support` and `~/Library/Caches` |
+| `.app` bundle, `.dmg`, `.tar.gz` | `build-aux/macos/bundle.sh` and its two wrappers |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
 | System 12/24h clock | Locale-derived at startup, never updates live |
 | Camera QR scanning | Stubbed, returns no cameras |
-| `.app` bundle and `.dmg` | Not built yet |
 | Notifications, `matrix:` URLs, Cmd shortcuts | Not done yet |
 
 ## The GTK environment
@@ -219,6 +223,131 @@ purpose**: cargo takes rustflags from exactly one source, and a matching `target
 replaces `[build]` rather than adding to it. Dropping the repeat silently changes how ruma stores
 identifiers.
 
+## Packaging
+
+```sh
+meson compile -C _build macos-bundle    # Commune.app
+meson compile -C _build macos-dmg       # ... and a .dmg
+meson compile -C _build macos-tarball   # ... and a .tar.gz
+```
+
+All three targets exist only on darwin, and each assembles the bundle from scratch out of a staged
+`meson install` of whatever the build directory was configured as. The result lands in
+`<build-dir>/macos/`. `build-aux/macos/README.md` has the direct invocation.
+
+**The packaged build is the `default` profile**, not `development`: `meson setup _build-release
+-Dprofile=default`. That is what makes it `Commune.app` with the application ID
+`io.github.steeb_k.Commune` and the plain icon. A development build is deliberately named
+`Commune Devel.app` so that the two can sit in `/Applications` together — on Linux the profiles are
+told apart by their application ID and icon, but here the bundle directory name has to differ
+because two bundles cannot share one name.
+
+`Contents/Resources` is laid out as a small Unix prefix, and that layout is a contract with
+`src/utils/app_bundle.rs`, which reads it back at startup and points GLib, GdkPixbuf, GStreamer and
+fontconfig at it. Moving anything in one means moving it in the other.
+
+### The release profile does not fit in 8 GB
+
+`Cargo.toml` asks for `debug = true`, `lto = "thin"` and `codegen-units = 1`. On the machine this
+port was built on — 8 GB of RAM — compiling the `commune` crate itself with those settings reaches
+about **11 GB resident** and then stops making progress: the CPU goes idle, swap fills, and CPU time
+advances by fractions of a second per wall-clock second. It is thrashing, not compiling, and it does
+not recover.
+
+`codegen-units = 1` is also single-threaded for that crate, so none of the other cores help.
+
+Override the profile for the packaging build rather than editing `Cargo.toml`, which the Flatpak and
+Linux builds share:
+
+```sh
+export CARGO_PROFILE_RELEASE_DEBUG=false
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+meson compile -C _build-release macos-tarball
+```
+
+Dropping the debug info costs no optimization at all and is what makes the bundle a sane size —
+debug symbols are why a development bundle comes out at 320 MB. Sixteen codegen units restores
+parallelism and cuts peak memory to a few GB; against `codegen-units = 1` it gives up a few percent
+of runtime performance, which is the right trade when the alternative is no build.
+
+### There is no dylibbundler
+
+Every dylib conda-forge builds already has an `@rpath/<basename>` install name, so bundling is a
+flat copy into `Contents/Frameworks` plus one `LC_RPATH` per Mach-O file — no per-dependency
+rewriting, and no dependency on a tool that is not otherwise part of this environment. The rpath is
+`@loader_path/<however many ../ it takes>/Frameworks`, computed per file, which works for the
+executable, the libraries, the plugins and the out-of-process `gst-plugin-scanner` alike:
+`@loader_path` in a main executable means the same thing as `@executable_path`.
+
+The one thing that does get rewritten is the install name of anything built outside conda-forge.
+`libgstgtk4.dylib` is built here by `cargo-c` and carries the absolute path it was built at, which
+would otherwise be indistinguishable from a real leak in the audit below.
+
+### The `otool -L` audit is the point
+
+A bundle that still names a path on the machine that built it works perfectly there and fails on
+the first machine it is copied to. That is the hardest kind of failure to notice, so `bundle.sh`
+ends by walking every Mach-O file in the bundle and asserting that nothing outside `/usr/lib`,
+`/System`, `@executable_path`, `@rpath` and `@loader_path` remains.
+
+Three more guards exist because each of these went wrong once:
+
+* **`loaders.cache` must be generated against the prefix, never against the staging tree.** Run
+  against the prefix, `gdk-pixbuf-query-loaders` emits paths relative to it, and gdk-pixbuf resolves
+  them against whatever directory it finds the cache in — so the same file works from
+  `Contents/Resources` wherever the user drags the app. Run against a staging directory it emits
+  absolute paths and pins the bundle to this machine. The script checks and refuses.
+
+  When writing that check, note that a bare `^"/` also matches `"/*"`, which is not a path but the
+  magic signature the XPM loader recognises files by. Match the module-path lines, which are the
+  ones ending in `.so"` or `.dylib"`.
+
+* **fontconfig's `conf.d` has to be copied with symlinks dereferenced.** Every file in it is a link
+  to `../../../share/fontconfig/conf.avail/`, which is outside the directory being copied, so a
+  plain `cp -R` leaves two dozen dangling symlinks and silently loses most of the font
+  configuration. `cp -RL` is the fix.
+
+  A dangling symlink is also invisible to `otool`, and it makes `codesign --verify --strict` fail
+  with a bare `No such file or directory` that names only the bundle and gives no hint which file is
+  at fault. `bundle.sh` therefore checks for dangling symlinks _before_ it signs, so that the error
+  says something useful.
+
+* **The deployment target is measured, not declared.** `LSMinimumSystemVersion` is the highest
+  `minos` of anything the bundle carries. It should come out at 11.0; if it comes out as this
+  machine's OS version then something Homebrew-built has crept in, which is the whole reason for
+  [the conda-forge rule](#the-gtk-environment).
+
+### Signing, and why the Keychain keeps asking
+
+arm64 refuses to run unsigned code at all, so even a bundle nobody is going to distribute has to be
+signed with something. `bundle.sh` signs nested code first and the bundle last — `--deep` would do
+it in one call but is deprecated and signs in an order `codesign` itself warns about.
+
+The default is an ad-hoc signature (`-`), which is a **new identity on every build**. The Keychain
+binds an item's access control to the signing identity, so every rebuild makes macOS ask again
+whether the app may read the session it stored last time. The fix is a stable identity: make a
+self-signed **Code Signing** certificate in Keychain Access (Certificate Assistant → Create a
+Certificate, type "Code Signing", self-signed), then
+
+```sh
+CODESIGN_IDENTITY="Commune Dev" meson compile -C _build macos-bundle
+```
+
+### `.dmg` or `.tar.gz`
+
+Both are built, and the difference matters more than it looks.
+
+A `.dmg` is the familiar shape — open it, drag the icon onto `Applications`. But anything a browser
+downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc or self-signed
+signature for a quarantined app, so the **first launch is refused outright**. Until there is a
+Developer ID to sign and notarize with, the `.dmg` is the artefact that will not open.
+
+Files extracted from a tarball on the command line are never quarantined in the first place, which
+is why the sibling SEED Sync project ships a `curl | sh` tarball. **`make-tarball.sh` produces the
+artefact to actually hand to somebody today**; `make-dmg.sh` exists because it is the right shape
+once the signing story is sorted, and because a locally built `.dmg` is a fine way to test the
+install itself.
+
 ## What differs from Linux
 
 **Image decoding.** glycin is Linux-only — it is a set of C libraries that decode in a sandboxed
@@ -300,11 +429,6 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
 In plan order, none of this exists:
 
-* **M2** — the `Commune.app` bundle and the `.dmg`. Note that the sibling SEED Sync project
-  deliberately ships a `curl | sh` tarball rather than a `.dmg`, because a browser-downloaded
-  `.dmg` gets `com.apple.quarantine` and an ad-hoc signature will not clear Gatekeeper, while a
-  tarball never gets quarantined at all. That trade-off should be settled before `make-dmg.sh` is
-  written.
 * **M3** — `<Primary>` shortcuts (`key_bindings::PRIMARY_MASK` exists but nothing uses it yet),
   notifications, and the `matrix:` URL scheme. The media viewer's own close button belongs here
   too: it sits in the top right of a window that already has the traffic lights in its top left,
@@ -340,6 +464,11 @@ waiting to happen on a rebase. Re-apply, in rough order of how easily they are l
 * `src/config.rs.in` has `#[cfg(target_os = "linux")]` on `DISABLE_GLYCIN_SANDBOX`.
 * `src/main.rs` loads its gresources and binds its text domain from `app_bundle::init()` rather
   than from the `config` constants. Any upstream change to startup will conflict.
+* `Application::run()` takes the `RuntimePaths` and logs the directory the app **actually** loaded
+  its data from. Upstream logs `config::PKGDATADIR`, which inside a bundle is a path on the machine
+  that built it and need not exist at all on the machine running it. That was the constant's only
+  use, so `src/config.rs.in` no longer defines `PKGDATADIR`; `RESOURCES_FILE` and
+  `UI_RESOURCES_FILE` still interpolate Meson's `@PKGDATADIR@` and are unchanged.
 * `src/components/media/content_viewer.rs` calls `set_video_file()` and `clear_video()` instead
   of `GtkVideo::set_file()` directly, for the media backend reason above.
 * `src/session_view/room_details/history_viewer/file_row.rs` opens files with

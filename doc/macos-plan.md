@@ -189,14 +189,22 @@ the session; `meson test -C _build` passes.
 
 ## M2 — unsigned `Commune.app` and `.dmg`
 
-Files: `build-aux/macos/{Info.plist.in, make-icns.sh, bundle.sh, make-dmg.sh, README.md}`;
-`meson.build` darwin-only `run_target`s `macos-bundle` and `macos-dmg` (passing build root, app
-ID, version, profile). `.gitignore` gains `*.app/`, `*.dmg`, `*.iconset/`.
+**Done.** `doc/macos.md` records what was built. Four things went differently from the sketch
+below, all noted in place: `bundle.sh` substitutes `Info.plist.in` itself rather than Meson doing
+it, the dylib walk is our own rather than `dylibbundler`'s, a `.tar.gz` is built alongside the
+`.dmg`, and `LSMinimumSystemVersion` is measured from the bundle rather than declared.
+
+Files: `build-aux/macos/{Info.plist.in, make-icns.sh, bundle.sh, make-dmg.sh, make-tarball.sh,
+README.md}`; `meson.build` darwin-only `run_target`s `macos-bundle`, `macos-dmg` and
+`macos-tarball` (passing build root, app ID, version, profile). `.gitignore` gains `*.app/`,
+`*.dmg`, `*.iconset/`.
 
 1. `make-icns.sh <svg> <out.icns>`: `rsvg-convert` at 16…1024 (plus @2x) → iconset →
    `iconutil -c icns`. Sources `assets/appicon.svg` and `assets/appicon-devel.svg` (derived
    artifact, not committed).
-2. `Info.plist.in` (meson-configured `@APP_ID@`, `@VERSION@`, `@APP_NAME@`). `CFBundleName` is
+2. `Info.plist.in` (`@APP_ID@`, `@VERSION@`, `@APP_NAME@`, substituted by `bundle.sh` rather than
+   by Meson, since the deployment target and the icon file name are only known while the bundle is
+   being assembled). `CFBundleName` is
    what fixes the lowercase `commune` that macOS shows in the menu bar and the Dock today: with
    no bundle it has nothing to go on but the name of the executable, and
    `glib::set_application_name()` only reaches the items GTK builds itself, like "About Commune".
@@ -225,12 +233,12 @@ ID, version, profile). `.gitignore` gains `*.app/`, `*.dmg`, `*.iconset/`.
      Resources/etc/fonts/ (only if fontconfig in play)
    ```
 
-   Prefix-agnostic dylib walk: `dylibbundler -od -b -x MacOS/commune -x <each plugin>
-   -d Contents/Frameworks -p @executable_path/../Frameworks -s $GTK_PREFIX/lib` (extra `-s` for
-   Nix/MacPorts paths), then an `otool -L` audit loop over everything in `Contents/` asserting
+   Prefix-agnostic dylib walk. `dylibbundler` turned out to be unnecessary: every conda-forge
+   dylib already has an `@rpath/<basename>` install name, so the walk is a recursive `otool -L`
+   into a flat `Contents/Frameworks` plus one `LC_RPATH` per Mach-O file, and no tool beyond the
+   Xcode command line ones. Then an `otool -L` audit loop over everything in `Contents/` asserting
    only `/usr/lib`, `/System`, `@executable_path`, `@rpath`, `@loader_path` remain
-   (`install_name_tool` for stragglers). If the environment turns out to be jhbuild,
-   `gtk-mac-bundler` is the alternative; `bundle.sh` stays primary (no extra tool). Ad-hoc sign:
+   (`install_name_tool` for stragglers). Ad-hoc sign:
    `codesign --force --deep -s ${CODESIGN_IDENTITY:--} Commune.app` (arm64 needs a signature to
    run; Keychain ACLs bind to it). The ad-hoc identity changes per build, so the Keychain asks
    to allow on each rebuild; the mitigation, documented in `doc/macos.md`, is a stable
@@ -239,6 +247,10 @@ ID, version, profile). `.gitignore` gains `*.app/`, `*.dmg`, `*.iconset/`.
 4. `make-dmg.sh`: stage the app plus an `Applications` symlink →
    `hdiutil create -volname Commune -srcfolder stage -ov -format UDZO out.dmg` (`create-dmg`
    optional, for a background image).
+5. `make-tarball.sh`, added because the `.dmg` on its own is not distributable while the app is
+   ad-hoc signed: a browser tags a downloaded `.dmg` with `com.apple.quarantine`, and Gatekeeper
+   refuses a quarantined app whose signature is not a Developer ID. Files extracted from a tarball
+   are never quarantined. Both are built; `doc/macos.md` says which to hand out.
 
 Verify: `open ~/Desktop/Commune.app` in a clean shell (no `PKG_CONFIG_PATH` or `DYLD_*`); the
 `otool -L` audit is clean; `DYLD_PRINT_LIBRARIES=1 …/commune | grep -v Commune.app` shows only
