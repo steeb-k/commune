@@ -174,9 +174,14 @@ mod imp {
                 return;
             }
 
-            self.search_term.replace(search_term.clone());
+            self.search_term.replace(search_term);
             self.obj().notify_search_term();
 
+            self.restart_search();
+        }
+
+        /// Search the current term again, from scratch.
+        fn restart_search(&self) {
             // Any ongoing search is not the current one anymore.
             self.generation.set(self.generation.get().wrapping_add(1));
             if let Some(handle) = self.abort_handle.take() {
@@ -188,7 +193,7 @@ mod imp {
             self.pending.take();
             self.set_has_reached_end(false);
 
-            if search_term.is_empty() {
+            if self.search_term.borrow().is_empty() {
                 self.set_loading_state(LoadingState::Ready);
                 return;
             }
@@ -200,6 +205,74 @@ mod imp {
                     imp.load().await;
                 }
             ));
+        }
+
+        /// Add the messages that are loaded in the room to its local search
+        /// index.
+        ///
+        /// The index is only fed as the event cache stores an event, so an
+        /// event that was already stored when the index was created was never
+        /// handed to it, and no search can find it. That is every message a
+        /// device received before it had an index at all. This hands the events
+        /// the room has loaded over after the fact; loading more of the history
+        /// and doing it again covers more of it.
+        pub(super) async fn reindex(&self) {
+            let matrix_room = self.room().matrix_room().clone();
+
+            self.set_loading_state(LoadingState::Loading);
+
+            let handle = spawn_tokio!(async move {
+                let client = matrix_room.client();
+                let room_id = matrix_room.room_id();
+
+                let (room_cache, _drop_handles) = client
+                    .event_cache()
+                    .room(room_id)
+                    .await
+                    .map_err(|error| error.to_string())?;
+                let events = room_cache
+                    .events()
+                    .await
+                    .map_err(|error| error.to_string())?;
+                let redaction_rules = matrix_room
+                    .clone_info()
+                    .room_version_rules_or_default()
+                    .redaction;
+
+                // The error type of the index belongs to a crate that is not a direct
+                // dependency, so it cannot be named here.
+                client
+                    .search_index()
+                    .lock()
+                    .await
+                    .bulk_handle_timeline_event(
+                        events.into_iter(),
+                        &room_cache,
+                        room_id,
+                        &redaction_rules,
+                    )
+                    .await
+                    .map_err(|error| error.to_string())
+            });
+
+            let result = match handle.await {
+                Ok(result) => result,
+                Err(error) => {
+                    // Leaving the state as it is would show a spinner that never stops.
+                    error!("Could not finish adding the messages to the search index: {error}");
+                    self.set_loading_state(LoadingState::Error);
+                    return;
+                }
+            };
+
+            if let Err(error) = result {
+                error!("Could not add the loaded messages to the search index: {error}");
+                self.set_loading_state(LoadingState::Error);
+                return;
+            }
+
+            // Search again, so that the messages that were just added are presented.
+            self.restart_search();
         }
 
         /// Whether we can load more results with the current search.
@@ -481,6 +554,24 @@ impl RoomSearch {
             imp,
             async move {
                 imp.load().await;
+            }
+        ));
+    }
+
+    /// Add the messages that are loaded in the room to its local search index,
+    /// then search again.
+    pub(crate) fn reindex(&self) {
+        if self.loading_state() == LoadingState::Loading {
+            return;
+        }
+
+        let imp = self.imp();
+
+        spawn!(clone!(
+            #[weak]
+            imp,
+            async move {
+                imp.reindex().await;
             }
         ));
     }

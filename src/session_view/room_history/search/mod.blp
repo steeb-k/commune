@@ -19,6 +19,19 @@ template $RoomHistorySearch: Adw.Bin {
         icon-name: "system-search-symbolic";
         title: _("Search Messages");
         description: _("Type to search the messages of this room");
+
+        child: Gtk.Button empty_reindex_button {
+          can-shrink: true;
+          label: _("Re-index This Room");
+          tooltip-text: _("Add the messages that are loaded in this room to the search index");
+          halign: center;
+          visible: false;
+          clicked => $reindex() swapped;
+
+          styles [
+            "pill",
+          ]
+        };
       };
     }
 
@@ -39,6 +52,19 @@ template $RoomHistorySearch: Adw.Bin {
         vexpand: true;
         icon-name: "system-search-symbolic";
         title: _("No Messages Found");
+
+        child: Gtk.Button no_results_reindex_button {
+          can-shrink: true;
+          label: _("Re-index This Room");
+          tooltip-text: _("Add the messages that are loaded in this room to the search index");
+          halign: center;
+          visible: false;
+          clicked => $reindex() swapped;
+
+          styles [
+            "pill",
+          ]
+        };
       };
     }
 

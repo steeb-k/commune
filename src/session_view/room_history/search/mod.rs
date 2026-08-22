@@ -31,6 +31,10 @@ mod imp {
         #[template_child]
         no_results_page: TemplateChild<adw::StatusPage>,
         #[template_child]
+        empty_reindex_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        no_results_reindex_button: TemplateChild<gtk::Button>,
+        #[template_child]
         list_view: TemplateChild<gtk::ListView>,
         /// The room the messages of which are searched.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
@@ -234,6 +238,14 @@ mod imp {
             }
         }
 
+        /// Add the messages that are loaded in the room to its search index.
+        #[template_callback]
+        fn reindex(&self) {
+            if let Some(search) = self.search.obj() {
+                search.reindex();
+            }
+        }
+
         /// Handle the activation of a result.
         #[template_callback]
         fn result_activated(&self, position: u32) {
@@ -257,7 +269,15 @@ mod imp {
             };
 
             if search.search_term().is_empty() {
-                self.stack.set_visible_child_name("empty");
+                // Nothing is searched yet, but the index can still be busy being
+                // rebuilt, which is worth showing.
+                let visible_child_name = if search.loading_state() == LoadingState::Loading {
+                    "loading"
+                } else {
+                    "empty"
+                };
+                self.stack.set_visible_child_name(visible_child_name);
+                self.update_reindex_buttons();
                 return;
             }
 
@@ -270,10 +290,12 @@ mod imp {
                 _ => "no-results",
             };
 
+            let is_encrypted = self.update_reindex_buttons();
+
             if visible_child_name == "no-results" {
                 // An encrypted room can only be searched locally, which cannot find
                 // messages that this device never received.
-                let description = if self.room.borrow().as_ref().is_some_and(Room::is_encrypted) {
+                let description = if is_encrypted {
                     gettext(
                         "Messages of encrypted rooms are searched on this device, so messages \
                          received before it joined the room cannot be found",
@@ -285,6 +307,21 @@ mod imp {
             }
 
             self.stack.set_visible_child_name(visible_child_name);
+        }
+
+        /// Update the visibility of the buttons rebuilding the search index,
+        /// and return whether the room is encrypted.
+        ///
+        /// Only the local index can be added to, and it is only used for an
+        /// encrypted room. Searching any other room goes to the server, which
+        /// needs nothing from this device.
+        fn update_reindex_buttons(&self) -> bool {
+            let is_encrypted = self.room.borrow().as_ref().is_some_and(Room::is_encrypted);
+
+            self.empty_reindex_button.set_visible(is_encrypted);
+            self.no_results_reindex_button.set_visible(is_encrypted);
+
+            is_encrypted
         }
     }
 }
