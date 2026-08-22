@@ -102,11 +102,25 @@ Flatpak builds are what keep Commune fully self-contained.
 
 ### macOS
 
-The macOS port is a work in progress: it builds and the source changes are in place, but there is
-no `.app` bundle yet. The GTK stack comes from a conda-forge environment that
+The GTK stack comes from a conda-forge environment that
 `build-aux/macos/setup-conda-macos.sh` creates — **not** from Homebrew, which would stamp the build
-machine's OS version as the deployment floor. See [`doc/macos.md`](doc/macos.md) for the full
-story, the environment probe, and what is stubbed.
+machine's OS version as the deployment floor. With that in place the usual Meson build works, and
+three extra targets package it:
+
+```sh
+meson setup _build-release -Dprofile=default
+meson compile -C _build-release macos-bundle    # Commune.app
+meson compile -C _build-release macos-tarball   # ... and a .tar.gz
+meson compile -C _build-release macos-dmg       # ... and a .dmg
+```
+
+The result is a relocatable, ad-hoc signed `Commune.app` in `_build-release/macos/`. Prefer the
+tarball for handing to anyone: a browser tags a downloaded `.dmg` with `com.apple.quarantine`, and
+Gatekeeper refuses a quarantined app that is not signed with a Developer ID.
+
+Notifications, `matrix:` links and the Cmd-key shortcuts are not done yet, and camera QR scanning
+and location sharing are stubbed. See [`doc/macos.md`](doc/macos.md) for the full story, the
+environment probe, and what is stubbed.
 
 ## Runtime Dependencies
 

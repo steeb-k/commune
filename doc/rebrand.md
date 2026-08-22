@@ -16,6 +16,7 @@ causes on a rebase. See `fork.md` for why this tree is a fork at all.
 | Session data | `~/.local/share/commune`, `~/.local/share/commune-Devel` |
 | Cache | `~/.cache/commune`, `~/.cache/commune-Devel` |
 | macOS bundle ID | `CFBundleIdentifier` = the application ID |
+| macOS bundle | `Commune.app`, or `Commune <profile>.app` off Stable |
 | macOS session data | `~/Library/Application Support/commune[-Devel]` |
 | macOS cache | `~/Library/Caches/commune[-Devel]` |
 | macOS Keychain | Service = the application ID, account = the session ID |
@@ -94,6 +95,12 @@ Build and packaging, all of it ours to keep on a rebase:
   `data/resources/icons/scalable/apps/org.gnome.Fractal.svg`, so a change to
   the artwork is three files, not one.
 * `build-aux/io.github.steeb_k.Commune{,.Devel}.json` — see `flatpak.md`.
+* `build-aux/macos/Info.plist.in` — `CFBundleName` and `CFBundleDisplayName` are
+  what macOS shows in the menu bar and the Dock, and `CFBundleIdentifier` is the
+  application ID. `bundle.sh` derives the bundle's own name from the profile, so
+  a Devel build is `Commune Devel.app` and can sit beside a stable one. The
+  `.icns` is generated from `assets/appicon{,-devel}.svg` by `make-icns.sh` and
+  is a derived artefact, not a fourth copy of the artwork to keep in step.
 * `po/POTFILES.in`, `.gitattributes`, `.gitlab-ci.yml`,
   `.gitlab-ci/flatpak-builder-lint-exceptions.json`.
 * `fractal.doap` was deleted. It exists only to describe a project to GNOME's
