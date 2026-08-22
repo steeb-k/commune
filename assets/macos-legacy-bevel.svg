@@ -7,9 +7,24 @@
     <clipPath id="bodyAndTail">
       <path d="M112 72H400A72 72 0 0 1 472 144V328A72 72 0 0 1 400 400H368V476L272 400H112A72 72 0 0 1 40 328V144A72 72 0 0 1 112 72Z"/>
     </clipPath>
+    <!--
+      The enclosure, carried by the artwork rather than left to the system.
+      macOS 26 masks an application icon to this shape itself; every release
+      before it draws the icon exactly as handed over, and got a hard square.
+      One .icns has to serve both, so the plate is rounded here and full bleed:
+      Tahoe then masks a shape it already agrees with, and older releases get
+      the corners they will not add themselves.
+
+      1024 * 0.225 = 230, the proportion Apple's own icon grid uses. This is a
+      circular corner where the system's is a continuous curve; at icon sizes
+      the difference is not visible, and it keeps the artwork hand-editable.
+    -->
+    <clipPath id="plate">
+      <rect width="1024" height="1024" rx="230" ry="230"/>
+    </clipPath>
   </defs>
 
-  <!-- Full bleed plate: no corner radius, the system masks the enclosure -->
+  <g clip-path="url(#plate)">
   <rect width="1024" height="1024" fill="#241f31"/>
 
   <g transform="translate(64 32) scale(1.75)">
@@ -29,5 +44,6 @@
         <rect x="104" y="318" width="458" height="82" rx="41"/>
       </g>
     </g>
+  </g>
   </g>
 </svg>
