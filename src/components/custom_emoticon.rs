@@ -3,13 +3,17 @@ use ruma::{OwnedMxcUri, api::client::media::get_content_thumbnail::v3::Method};
 use tracing::error;
 
 use crate::{
+    components::AnimatedImagePaintable,
     session::Session,
     spawn,
-    utils::media::{
-        FrameDimensions,
-        image::{
-            ImageRequestPriority, ImageSource, THUMBNAIL_MAX_DIMENSIONS, ThumbnailDownloader,
-            ThumbnailSettings,
+    utils::{
+        CountedRef,
+        media::{
+            FrameDimensions,
+            image::{
+                ImageRequestPriority, ImageSource, THUMBNAIL_MAX_DIMENSIONS, ThumbnailDownloader,
+                ThumbnailSettings,
+            },
         },
     },
 };
@@ -54,6 +58,12 @@ mod imp {
         is_large: Cell<bool>,
         /// The image, once it is loaded.
         pub(super) paintable: RefCell<Option<gdk::Paintable>>,
+        /// The reference that keeps an animated image playing.
+        ///
+        /// An [`AnimatedImagePaintable`] only advances while something holds
+        /// one of these, so without it an animated emoticon sits on its first
+        /// frame.
+        animation_ref: RefCell<Option<CountedRef>>,
         /// The height that the image was loaded at, in pixels.
         loaded_height: Cell<i32>,
     }
@@ -90,6 +100,12 @@ mod imp {
             // The font is only known once the widget is in a window, and it can
             // change while it is presented.
             self.update_size();
+            self.update_animation_ref();
+        }
+
+        fn unmap(&self) {
+            self.parent_unmap();
+            self.update_animation_ref();
         }
 
         /// The size of an emoticon follows the font, not the image.
@@ -233,9 +249,29 @@ mod imp {
             }
 
             self.paintable.replace(paintable);
+            self.update_animation_ref();
 
             // The width follows the aspect ratio, which is only known now.
             obj.queue_resize();
+        }
+
+        /// Hold or drop the reference that keeps an animated image playing,
+        /// according to whether this emoticon is on screen.
+        fn update_animation_ref(&self) {
+            self.animation_ref.take();
+
+            let Some(paintable) = self
+                .paintable
+                .borrow()
+                .clone()
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.obj().is_mapped() {
+                self.animation_ref.replace(Some(paintable.animation_ref()));
+            }
         }
 
         /// Load the image at the given size.
