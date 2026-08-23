@@ -64,9 +64,15 @@ what fetches the page.
 | Link Room | seven messages covering what does and does not get a preview card |
 | Encrypted Room | where a link must never get one, whatever the setting says |
 | Server Notices | created by the homeserver on `notice`, and tagged `m.server_notice` |
+| (a direct chat) | alice and bob, in `m.direct` on both sides — where the call buttons are |
 
 Three accounts: `alice` owns the rooms, `bob` is a second member to report and
 be reported, `admin` is a Synapse admin so reports can be read back.
+
+The direct chat is made outside the `seeded.json` gate, so a homeserver that
+was seeded before it existed gets one on the next `up`. It is not needed for
+the call buttons — those go by the member count, so every room alice and bob
+share has them — but it is where anybody testing calls looks first.
 
 ## `check` versus the app
 

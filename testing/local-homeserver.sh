@@ -520,6 +520,59 @@ seed() {
     '$ARGS.named' > "$STATE"
 }
 
+# ------------------------------------------------------------ direct chat ----
+
+# Make sure alice and bob have a direct chat.
+#
+# Nothing else in the seed is one: the rooms bob is in are ordinary rooms that
+# happen to have two people in them. A DM is what the sidebar shows as a person
+# rather than a room, and it is where anybody testing calls will look first.
+#
+# Idempotent, and outside the `seeded.json` gate, so a homeserver seeded before
+# this existed gets one on the next `up`.
+seed_direct_chat() {
+  local alice bob existing dm
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] || return 0
+
+  # A user who has never had a direct chat has no `m.direct` at all, and the
+  # homeserver answers 404. Under `set -e` with `pipefail` that ends the script,
+  # so the failure is swallowed here rather than treated as one.
+  existing=$(curl -sf "$HS/_matrix/client/v3/user/@alice:localhost/account_data/m.direct" \
+    -H "Authorization: Bearer $alice" 2>/dev/null || true)
+  existing=$(printf '%s' "$existing" | jq -r '.["@bob:localhost"][0] // empty' 2>/dev/null || true)
+
+  if [ -n "$existing" ]; then
+    log "alice and bob already have a direct chat."
+    return 0
+  fi
+
+  log "Creating the direct chat between alice and bob…"
+  dm=$(create_room "$alice" '{
+    "preset": "trusted_private_chat",
+    "is_direct": true,
+    "invite": ["@bob:localhost"]
+  }')
+  [ -n "$dm" ] && [ "$dm" != null ] || { warn "could not create the direct chat"; return 0; }
+
+  curl -sf -X POST "$HS/_matrix/client/v3/rooms/$dm/join" \
+    -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+    -d '{}' >/dev/null || true
+
+  # `is_direct` on createRoom only marks the invite; the account data is what
+  # actually makes it a DM for the person who created it, and Synapse does not
+  # write it for them.
+  curl -sf -X PUT "$HS/_matrix/client/v3/user/@alice:localhost/account_data/m.direct" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg dm "$dm" '{"@bob:localhost": [$dm]}')" >/dev/null || true
+  curl -sf -X PUT "$HS/_matrix/client/v3/user/@bob:localhost/account_data/m.direct" \
+    -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg dm "$dm" '{"@alice:localhost": [$dm]}')" >/dev/null || true
+
+  log "Direct chat is $dm"
+}
+
 # --------------------------------------------------------------- notices ----
 
 # Send a server notice to alice and put her in the room.
@@ -950,7 +1003,9 @@ summary() {
                              notice the next time it looks at the account, so
                              the banner goes away a beat later, not at once.
 
-  Calls — the homeserver hands out TURN credentials for the coturn beside it
+  Calls — alice and bob have a direct chat; the call buttons are in its header
+    Any two-person room            also gets them, DM or not: the spec's rule is
+                                   about the member count, not about m.direct
     ./testing/local-homeserver.sh turn        shows what a client is given
     ./testing/local-homeserver.sh check       allocates a relay with them
 
@@ -974,6 +1029,7 @@ case "${1:-up}" in
     ensure_server_notices_config
     ensure_turn_config
     seed
+    seed_direct_chat
     send_notice || true
     summary
     ;;
