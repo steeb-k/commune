@@ -466,11 +466,11 @@ mod imp {
         /// Update whether our own member can change the image packs of the
         /// room.
         fn update_can_change_image_packs(&self) {
-            // The packs that we create use the unstable event type. A pack that
-            // was created under the stable one is written back under that name,
-            // and a room that gives the two types different power levels would
-            // need this to be per pack, which is not worth the trouble: the
-            // request fails and the error is reported.
+            // The packs that we create use the stable event type. A pack that
+            // was created under the unstable one is written back under that
+            // name, and a room that gives the two types different power levels
+            // would need this to be per pack, which is not worth the trouble:
+            // the request fails and the error is reported.
             let can_change_image_packs = self.is_allowed_to(PowerLevelAction::SendState(
                 StateEventType::from(ROOM_IMAGE_PACK_EVENT_TYPE),
             ));
