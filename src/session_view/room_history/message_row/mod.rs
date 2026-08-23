@@ -14,6 +14,7 @@ mod reaction_list;
 mod reply;
 mod sender_name;
 mod text;
+mod url_preview;
 mod visual_media;
 
 pub use self::content::{ContentFormat, MessageContent};

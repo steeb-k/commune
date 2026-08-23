@@ -134,6 +134,7 @@ session_view/room_history/message_row/reaction/reaction_popover.blp
 session_view/room_history/message_row/reaction_list.blp
 session_view/room_history/message_row/reply.blp
 session_view/room_history/message_row/sender_name.blp
+session_view/room_history/message_row/url_preview.blp
 session_view/room_history/message_row/visual_media.blp
 session_view/room_history/message_toolbar/attachment_dialog.blp
 session_view/room_history/message_toolbar/completion/completion_popover.blp

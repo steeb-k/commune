@@ -499,6 +499,37 @@ typing-row {
   min-height: 30px;
 }
 
+message-url-preview {
+  button.url-preview {
+    padding: 8px;
+    border-radius: vendor.$menu_radius;
+    // The card belongs to the message, so it is tinted rather than framed:
+    // a border here reads as a second bubble inside the first one.
+    background-color: color-mix(in srgb, var(--view-fg-color) 5%, transparent);
+    background-image: none;
+    box-shadow: none;
+    border: none;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--view-fg-color) 9%, transparent);
+    }
+
+    &:active {
+      background-color: color-mix(in srgb, var(--view-fg-color) 13%, transparent);
+    }
+
+    label {
+      // The button's own label styling would fight the heading and caption
+      // classes the card sets.
+      font-weight: inherit;
+    }
+  }
+
+  image.url-preview-image {
+    border-radius: 6px;
+  }
+}
+
 .related-event-toolbar {
   padding: 0 6px 0 12px;
 
