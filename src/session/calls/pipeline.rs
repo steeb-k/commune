@@ -16,7 +16,7 @@ use gst::prelude::*;
 use gtk::{gdk, glib};
 use tracing::{debug, error, warn};
 
-use super::turn::TurnServer;
+use super::turn::IceServers;
 
 /// Remote ICE candidate lines, waiting for somewhere to go.
 type PendingCandidates = Arc<Mutex<Vec<String>>>;
@@ -64,6 +64,13 @@ pub(crate) enum PipelineEvent {
         candidate: String,
         /// The index of the media section it belongs to.
         sdp_m_line_index: u32,
+        /// The `a=mid:` of that section, when the local description has one.
+        ///
+        /// The spec asks for one of the two and every other client sends
+        /// both. A candidate with only an index is one libwebrtc is handed as
+        /// `IceCandidate(null, index, line)`, and a null mid is how a
+        /// candidate gets dropped by the far end without a word.
+        sdp_mid: Option<String>,
     },
     /// No more ICE candidates will be gathered.
     IceGatheringDone,
@@ -133,6 +140,8 @@ pub(crate) struct CallPipeline {
     /// lands on the first pair and takes it out of `SUCCEEDED`. The next
     /// nomination tick asserts on that and the process dies.
     remote_addresses: RemoteAddresses,
+    /// The `a=mid:` of each section of our own description, in m-line order.
+    local_mids: Arc<Mutex<Vec<String>>>,
     /// The m-line index the other party's transport is on.
     ///
     /// Zero until their description says otherwise, which is the answer for
@@ -158,7 +167,7 @@ impl CallPipeline {
     /// one expects to see in an answer.
     pub(crate) fn new_for_offer(
         with_video: bool,
-        turn_servers: &[TurnServer],
+        servers: &IceServers,
     ) -> Result<(Self, mpsc::UnboundedReceiver<PipelineEvent>), PipelineError> {
         let media = if with_video {
             vec![MediaKind::Audio, MediaKind::Video]
@@ -166,7 +175,7 @@ impl CallPipeline {
             vec![MediaKind::Audio]
         };
 
-        Self::build(media, turn_servers)
+        Self::build(media, servers)
     }
 
     /// Build a pipeline for a call we are answering.
@@ -176,15 +185,15 @@ impl CallPipeline {
     /// can source we send, and what we cannot we still make room for.
     pub(crate) fn new_for_answer(
         offer_sdp: &str,
-        turn_servers: &[TurnServer],
+        servers: &IceServers,
     ) -> Result<(Self, mpsc::UnboundedReceiver<PipelineEvent>), PipelineError> {
         let media = media_sections(offer_sdp);
-        Self::build(media, turn_servers)
+        Self::build(media, servers)
     }
 
     fn build(
         media: Vec<MediaKind>,
-        turn_servers: &[TurnServer],
+        servers: &IceServers,
     ) -> Result<(Self, mpsc::UnboundedReceiver<PipelineEvent>), PipelineError> {
         if media.is_empty() {
             return Err(PipelineError::Other(
@@ -202,25 +211,33 @@ impl CallPipeline {
             .build()?;
         pipeline.add(&webrtcbin)?;
 
-        // No default STUN server. The usual one is Google's, and pointing every
-        // call at a third party to learn our own address tells that third party
-        // that a call is happening at all. A TURN server answers STUN binding
-        // requests too, so the homeserver's own is enough — and where there is
-        // none, host candidates are what is left.
-        if turn_servers.is_empty() {
-            // Host candidates only. Two people on one network still find each
-            // other; anybody behind a NAT does not.
-            warn!("No TURN server for this call; only host candidates will be gathered");
+        // No STUN server of our own choosing. The usual one is Google's, and
+        // pointing every call at a third party to learn our own address tells
+        // that third party that a call is happening at all. One the
+        // homeserver's operator named is their decision, and using it is the
+        // only way a client whose TURN server sits inside the same NAT ever
+        // learns an address the other end can reach it on.
+        if let Some(stun) = &servers.stun {
+            debug!("Using the STUN server the homeserver named: {stun}");
+            webrtcbin.set_property("stun-server", stun);
         }
 
-        for server in turn_servers {
+        if servers.is_empty() {
+            // Host candidates only. Two people on one network still find each
+            // other; anybody behind a NAT does not.
+            warn!("No STUN or TURN server for this call; only host candidates will be gathered");
+        }
+
+        for server in &servers.turn {
             let added = webrtcbin.emit_by_name::<bool>("add-turn-server", &[&server.uri]);
 
-            // The credentials are in the URI, so it is not logged.
+            // The credentials are in the URI, so only the transport is
+            // logged — and it is the part that matters, since the first server
+            // accepted is the one a relay candidate comes from.
             if added {
-                debug!("webrtcbin accepted a TURN server");
+                debug!("webrtcbin accepted a TURN server over {}", server.transport);
             } else {
-                warn!("webrtcbin refused a TURN server");
+                warn!("webrtcbin refused a TURN server over {}", server.transport);
             }
         }
 
@@ -242,6 +259,7 @@ impl CallPipeline {
             pending_remote_candidates: Arc::new(Mutex::new(Vec::new())),
             remote_transport_index: Arc::new(AtomicU32::new(0)),
             remote_addresses: Arc::new(Mutex::new(HashSet::new())),
+            local_mids: Arc::new(Mutex::new(Vec::new())),
         };
 
         for kind in media {
@@ -510,10 +528,16 @@ impl CallPipeline {
         remote_video_sink: gst::Element,
     ) -> Result<(), PipelineError> {
         let ice_sender = sender.clone();
+        let ice_mids = self.local_mids.clone();
         self.webrtcbin
             .connect("on-ice-candidate", false, move |values| {
                 let sdp_m_line_index = values.get(1)?.get::<u32>().ok()?;
                 let candidate = values.get(2)?.get::<String>().ok()?;
+
+                let sdp_mid = ice_mids
+                    .lock()
+                    .ok()
+                    .and_then(|mids| mids.get(sdp_m_line_index as usize).cloned());
 
                 // The type is what says whether the TURN server actually gave
                 // us anything: `host` is our own address, `srflx` is what the
@@ -531,6 +555,7 @@ impl CallPipeline {
                 let _ = ice_sender.unbounded_send(PipelineEvent::IceCandidate {
                     candidate,
                     sdp_m_line_index,
+                    sdp_mid,
                 });
 
                 None
@@ -698,7 +723,7 @@ impl CallPipeline {
         is_answer: bool,
         sender: mpsc::UnboundedSender<PipelineEvent>,
     ) {
-        create_description(&self.webrtcbin, signal, is_answer, sender);
+        create_description(&self.webrtcbin, signal, is_answer, sender, &self.local_mids);
     }
 
     /// Set the session description the other party sent.
@@ -767,6 +792,7 @@ impl CallPipeline {
         let ufrag = self.remote_ice_ufrag.clone();
         let index = self.remote_transport_index.clone();
         let seen = self.remote_addresses.clone();
+        let mids = self.local_mids.clone();
         let promise = gst::Promise::with_change_func(move |reply| {
             if let Err(error) = reply {
                 let _ = sender.unbounded_send(PipelineEvent::Error(format!(
@@ -777,7 +803,7 @@ impl CallPipeline {
 
             debug!("The remote offer is applied; creating the answer");
             flush_remote_candidates(&webrtcbin, &applied, &pending, &ufrag, &index, &seen);
-            create_description(&webrtcbin, "create-answer", true, sender);
+            create_description(&webrtcbin, "create-answer", true, sender, &mids);
         });
 
         self.webrtcbin
@@ -903,9 +929,11 @@ fn create_description(
     signal: &str,
     is_answer: bool,
     sender: mpsc::UnboundedSender<PipelineEvent>,
+    local_mids: &Arc<Mutex<Vec<String>>>,
 ) {
     let field = if is_answer { "answer" } else { "offer" };
     let for_local = webrtcbin.clone();
+    let mids = local_mids.clone();
 
     let promise = gst::Promise::with_change_func(move |reply| {
         let description = match reply {
@@ -935,6 +963,12 @@ fn create_description(
         // way to know what went out — an offer made before the audio chain has
         // negotiated carries the capsfilter's caps and nothing more.
         debug!("Our own {field}:\n{}", sdp.trim_end());
+
+        // The mids of our own sections, so that a candidate can name the one
+        // it belongs to and not only its index.
+        if let Ok(mut mids) = mids.lock() {
+            *mids = section_mids(&sdp);
+        }
 
         for_local.emit_by_name::<()>(
             "set-local-description",
@@ -1105,6 +1139,27 @@ fn add_remote_candidate(
         candidate_type(candidate)
     );
     webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
+}
+
+/// The `a=mid:` of every media section of a description, in m-line order.
+fn section_mids(sdp: &str) -> Vec<String> {
+    let mut mids: Vec<String> = Vec::new();
+    let mut sections = 0usize;
+
+    for line in sdp.lines().map(str::trim_end) {
+        if line.starts_with("m=") {
+            sections += 1;
+        } else if let Some(mid) = line.strip_prefix("a=mid:")
+            && mids.len() < sections
+        {
+            // The first `a=mid:` of the section it appears in, and one entry
+            // per section so that the index of a candidate lines up.
+            mids.resize(sections - 1, String::new());
+            mids.push(mid.to_owned());
+        }
+    }
+
+    mids
 }
 
 /// Whether a remote candidate is one this machine could ever use.
@@ -1422,6 +1477,34 @@ a=mid:audio0\r\n";
 
         assert_ne!(transport_address(active), transport_address(passive));
         assert_ne!(transport_address(active), transport_address(elsewhere));
+    }
+
+    #[test]
+    fn the_mid_of_each_section_is_read_in_order() {
+        // What `webrtcbin` writes for a video call.
+        let sdp = "\
+v=0\r\n\
+a=group:BUNDLE audio0 video1\r\n\
+m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n\
+a=rtcp-mux\r\n\
+a=mid:audio0\r\n\
+m=video 0 UDP/TLS/RTP/SAVPF 96\r\n\
+a=bundle-only\r\n\
+a=mid:video1\r\n";
+
+        assert_eq!(section_mids(sdp), vec!["audio0", "video1"]);
+    }
+
+    #[test]
+    fn a_section_without_a_mid_still_holds_its_place() {
+        let sdp = "\
+v=0\r\n\
+m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n\
+m=video 9 UDP/TLS/RTP/SAVPF 96\r\n\
+a=mid:video1\r\n";
+
+        // The index of a candidate has to keep lining up with the section.
+        assert_eq!(section_mids(sdp), vec!["", "video1"]);
     }
 
     #[test]

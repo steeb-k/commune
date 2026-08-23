@@ -24,7 +24,7 @@ use tracing::{debug, error, warn};
 use super::{
     pipeline::{CallPipeline, PipelineEvent},
     state::{CallEndReason, CallState},
-    turn::TurnServer,
+    turn::IceServers,
 };
 use crate::{
     session::{Member, Room, UserExt},
@@ -232,7 +232,7 @@ glib::wrapper! {
 
 impl Call {
     /// Place a call in the given room.
-    pub(crate) fn place(room: &Room, with_video: bool, turn_servers: &[TurnServer]) -> Self {
+    pub(crate) fn place(room: &Room, with_video: bool, servers: &IceServers) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .property("is-outgoing", true)
@@ -246,7 +246,7 @@ impl Call {
 
         obj.load_remote_member();
 
-        let (pipeline, events) = match CallPipeline::new_for_offer(with_video, turn_servers) {
+        let (pipeline, events) = match CallPipeline::new_for_offer(with_video, servers) {
             Ok(pipeline) => pipeline,
             Err(error) => {
                 error!("Could not set up the call: {error}");
@@ -337,7 +337,7 @@ impl Call {
     }
 
     /// Answer the call.
-    pub(crate) fn accept(&self, turn_servers: &[TurnServer]) {
+    pub(crate) fn accept(&self, servers: &IceServers) {
         let imp = self.imp();
 
         if imp.state.get() != CallState::Ringing {
@@ -349,7 +349,7 @@ impl Call {
             return;
         };
 
-        let (pipeline, events) = match CallPipeline::new_for_answer(&offer.sdp, turn_servers) {
+        let (pipeline, events) = match CallPipeline::new_for_answer(&offer.sdp, servers) {
             Ok(pipeline) => pipeline,
             Err(error) => {
                 error!("Could not set up the call: {error}");
@@ -532,14 +532,25 @@ impl Call {
             PipelineEvent::IceCandidate {
                 candidate,
                 sdp_m_line_index,
+                sdp_mid,
             } => {
+                // Both, because the spec asks for one of the two and clients
+                // in the wild want the mid: a candidate handed to libwebrtc as
+                // `IceCandidate(null, index, line)` is one the far end can
+                // drop without saying anything, and a peer with no remote
+                // candidates never sends a check and never installs a relay
+                // permission for us — which looks exactly like a network that
+                // will not carry the call.
                 let mut queued = Candidate::new(candidate);
                 queued.sdp_m_line_index = Some(UInt::from(sdp_m_line_index));
+                queued.sdp_mid = sdp_mid;
                 self.queue_candidate(queued);
             }
             PipelineEvent::IceGatheringDone => {
                 // An empty candidate is how the spec spells "that is all of
-                // them", so that a bridge can stop waiting for more.
+                // them", so that a bridge can stop waiting for more. Neither
+                // field is required for it, and the index is sent anyway
+                // because a client that insists on one gets one.
                 let mut end = Candidate::new(String::new());
                 end.sdp_m_line_index = Some(UInt::from(0u32));
                 self.queue_candidate(end);
