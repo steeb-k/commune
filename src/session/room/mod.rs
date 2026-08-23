@@ -22,13 +22,15 @@ use ruma::{
         error::{ErrorKind, LimitExceededErrorData, RetryAfter},
     },
     events::{
-        SyncStateEvent,
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent, SyncStateEvent,
         room::{
             guest_access::GuestAccess,
             history_visibility::HistoryVisibility,
             member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
+            message::MessageType,
             server_acl::RoomServerAclEventContent,
         },
+        tag::TagName,
     },
     room_version_rules::RoomVersionRules,
 };
@@ -74,6 +76,20 @@ use crate::{
 /// The default duration in seconds that we wait for before retrying failed
 /// sending requests.
 const DEFAULT_RETRY_AFTER: u32 = 30;
+
+/// Whether the given error is the homeserver refusing to let our user out of
+/// the server notices room.
+///
+/// The Server Notices module makes this its own error code because it is not a
+/// failure the user can do anything about: the client "must not expect to be
+/// able to reject an invite to join the server notices room", and a server that
+/// also prevents leaving after joining answers with the same code.
+pub(crate) fn is_cannot_leave_server_notice_room(error: &matrix_sdk::Error) -> bool {
+    matches!(
+        error.client_api_error_kind(),
+        Some(ErrorKind::CannotLeaveServerNoticeRoom)
+    )
+}
 
 mod imp {
     use std::{
@@ -239,6 +255,18 @@ mod imp {
         /// Whether this is a call room as defined by [MSC3417](https://github.com/matrix-org/matrix-spec-proposals/pull/3417)
         #[property(get = Self::is_call)]
         is_call: PhantomData<bool>,
+        /// The body of the active server notice of this room, if any.
+        ///
+        /// A notice is active while it is pinned in the server notices room.
+        /// This is always `None` outside of that room.
+        #[property(get)]
+        active_server_notice: RefCell<Option<String>>,
+        /// The contact method for the administrator of the homeserver, given
+        /// by the active server notice.
+        #[property(get)]
+        server_notice_admin_contact: RefCell<Option<String>>,
+        /// The pinned event IDs that `active_server_notice` was computed from.
+        pub(super) server_notice_pinned_ids: RefCell<Vec<OwnedEventId>>,
     }
 
     #[glib::object_subclass]
@@ -305,6 +333,7 @@ mod imp {
                             RoomCategory::Favorite
                                 | RoomCategory::Normal
                                 | RoomCategory::LowPriority
+                                | RoomCategory::ServerNotice
                         );
                         imp.live_timeline().set_preload(preload);
 
@@ -560,6 +589,92 @@ mod imp {
             }
         }
 
+        /// Whether this room carries the `m.server_notice` tag.
+        ///
+        /// The tag is set by the homeserver, and it is the only thing that
+        /// identifies the server notices room, per the Server Notices module.
+        /// It is not one of the SDK's "notable tags", so it is not cached on
+        /// the room info and has to be read from the store. The room account
+        /// data that carries it is saved before the room info update that
+        /// brings us here, so this sees the same sync as the caller.
+        async fn is_tagged_server_notice(&self) -> bool {
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.tags().await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(tags) => tags.is_some_and(|tags| tags.contains_key(&TagName::ServerNotice)),
+                Err(error) => {
+                    error!("Could not read the tags of the room: {error}");
+                    false
+                }
+            }
+        }
+
+        /// Update the active server notice of this room.
+        ///
+        /// The spec represents the notices that are still active as the pinned
+        /// events of the server notices room, and asks that they be shown
+        /// through a UI of their own rather than through the usual pinned
+        /// events interface. We surface the most recent one as a banner above
+        /// the timeline.
+        async fn update_active_server_notice(&self) {
+            let pinned_ids = if self.category.get() == RoomCategory::ServerNotice {
+                self.matrix_room().pinned_event_ids().unwrap_or_default()
+            } else {
+                // Outside the server notices room, a pinned `m.server_notice`
+                // means nothing: the spec says such an event must be ignored.
+                Vec::new()
+            };
+
+            if *self.server_notice_pinned_ids.borrow() == pinned_ids {
+                return;
+            }
+            self.server_notice_pinned_ids.replace(pinned_ids.clone());
+
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move {
+                // The server pins the notice it wants shown; when several are
+                // pinned, the last one is the most recent.
+                for event_id in pinned_ids.iter().rev() {
+                    let event = match matrix_room.load_or_fetch_event(event_id, None).await {
+                        Ok(event) => event,
+                        Err(error) => {
+                            warn!("Could not load pinned event {event_id}: {error}");
+                            continue;
+                        }
+                    };
+
+                    let Ok(AnySyncTimelineEvent::MessageLike(
+                        AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(event)),
+                    )) = event.raw().deserialize()
+                    else {
+                        continue;
+                    };
+
+                    if let MessageType::ServerNotice(content) = event.content.msgtype {
+                        return Some((content.body, content.admin_contact));
+                    }
+                }
+
+                None
+            });
+
+            let (body, admin_contact) = match handle.await.expect("task was not aborted") {
+                Some((body, admin_contact)) => (Some(body), admin_contact),
+                None => (None, None),
+            };
+
+            if *self.active_server_notice.borrow() != body {
+                self.active_server_notice.replace(body);
+                self.obj().notify_active_server_notice();
+            }
+
+            if *self.server_notice_admin_contact.borrow() != admin_contact {
+                self.server_notice_admin_contact.replace(admin_contact);
+                self.obj().notify_server_notice_admin_contact();
+            }
+        }
+
         /// Update the category from the SDK.
         pub(super) async fn update_category(&self) {
             // Do not load the category if this room was upgraded.
@@ -582,6 +697,8 @@ mod imp {
                 RoomState::Joined => {
                     if matrix_room.is_space() {
                         RoomCategory::Space
+                    } else if self.is_tagged_server_notice().await {
+                        RoomCategory::ServerNotice
                     } else if matrix_room.is_favourite() {
                         RoomCategory::Favorite
                     } else if matrix_room.is_low_priority() {
@@ -1510,6 +1627,7 @@ mod imp {
             self.update_avatar();
             self.update_topic();
             self.update_category().await;
+            self.update_active_server_notice().await;
             self.update_is_direct().await;
             self.update_is_marked_unread().await;
             self.update_tombstone();

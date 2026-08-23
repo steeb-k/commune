@@ -296,6 +296,7 @@ impl Default for SectionsExpanded {
             SidebarSectionName::VerificationRequest,
             SidebarSectionName::InviteRequest,
             SidebarSectionName::Invited,
+            SidebarSectionName::ServerNotice,
             SidebarSectionName::Favorite,
             SidebarSectionName::Normal,
             SidebarSectionName::LowPriority,

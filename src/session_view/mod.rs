@@ -483,6 +483,9 @@ mod imp {
             }
 
             let category_score = match room.category() {
+                // The homeserver talking to the user in an official capacity
+                // outranks everything else that is unread.
+                RoomCategory::ServerNotice => 6,
                 RoomCategory::Invited => 5,
                 RoomCategory::Favorite => 4,
                 RoomCategory::Normal => 3,

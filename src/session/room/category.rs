@@ -13,6 +13,11 @@ pub enum RoomCategory {
     Knocked,
     /// The user was invited to the room.
     Invited,
+    /// The room is joined and has the `m.server_notice` tag.
+    ///
+    /// This is the room the homeserver uses to talk to the user in an official
+    /// capacity. The tag is set by the server, never by us.
+    ServerNotice,
     /// The room is joined and has the `m.favourite` tag.
     Favorite,
     /// The room is joined and has no known tag.
@@ -79,6 +84,11 @@ impl RoomCategory {
                         | TargetRoomCategory::LowPriority
                 )
             }
+            // The server owns the `m.server_notice` tag, so moving the room
+            // out of the category would only be undone on the next sync. The
+            // spec expects leaving to be possible, and the server to answer
+            // with `M_CANNOT_LEAVE_SERVER_NOTICE_ROOM` when it is not.
+            Self::ServerNotice => matches!(category, TargetRoomCategory::Left),
             Self::Knocked | Self::Ignored | Self::Outdated | Self::Space => false,
         }
     }
@@ -88,7 +98,8 @@ impl RoomCategory {
         match self {
             RoomCategory::Knocked => state == RoomState::Knocked,
             RoomCategory::Invited | RoomCategory::Ignored => state == RoomState::Invited,
-            RoomCategory::Favorite
+            RoomCategory::ServerNotice
+            | RoomCategory::Favorite
             | RoomCategory::Normal
             | RoomCategory::LowPriority
             | RoomCategory::Outdated
@@ -106,6 +117,7 @@ impl RoomCategory {
             RoomCategory::Left => TargetRoomCategory::Left,
             RoomCategory::Knocked
             | RoomCategory::Invited
+            | RoomCategory::ServerNotice
             | RoomCategory::Outdated
             | RoomCategory::Space
             | RoomCategory::Ignored => return None,
