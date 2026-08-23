@@ -10,7 +10,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
 
@@ -44,9 +44,6 @@ mod imp {
         /// The call being shown.
         #[property(get)]
         pub(super) call: RefCell<Option<Call>>,
-        /// The name of the person on the other end.
-        #[property(get = Self::title)]
-        title: PhantomData<String>,
         /// What the call is doing, in a few words.
         #[property(get)]
         pub(super) status: RefCell<String>,
@@ -153,7 +150,6 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_person();
-                        imp.obj().notify_title();
                     }
                 )),
                 call.connect_remote_paintable_notify(clone!(
@@ -198,13 +194,12 @@ mod imp {
             self.call_handlers.replace(handlers);
 
             obj.notify_call();
-            obj.notify_title();
             self.update();
             self.update_person();
         }
 
         /// The name of the person on the other end.
-        fn title(&self) -> String {
+        fn remote_name(&self) -> String {
             self.call
                 .borrow()
                 .as_ref()
@@ -222,12 +217,18 @@ mod imp {
         }
 
         /// Refresh the avatar and the name.
+        ///
+        /// The window's own title is what the compositor shows in a task list,
+        /// so it is the person's name too — set here rather than bound, since a
+        /// property cannot be bound to itself on the same object.
         fn update_person(&self) {
             let member = self.call.borrow().as_ref().and_then(Call::remote_member);
+            let name = self.remote_name();
 
             self.remote_avatar
                 .set_data(member.as_ref().map(PillSourceExt::avatar_data));
-            self.person_page.set_title(&self.title());
+            self.person_page.set_title(&name);
+            self.obj().set_title(Some(&name));
         }
 
         /// Say what the call is doing.

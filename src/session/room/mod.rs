@@ -602,7 +602,28 @@ mod imp {
             let handle = spawn_tokio!(async move { matrix_room.tags().await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(tags) => tags.is_some_and(|tags| tags.contains_key(&TagName::ServerNotice)),
+                Ok(tags) => {
+                    let is_server_notice = tags
+                        .as_ref()
+                        .is_some_and(|tags| tags.contains_key(&TagName::ServerNotice));
+
+                    if is_server_notice {
+                        debug!(
+                            room_id = %self.room_id(),
+                            "The room carries the m.server_notice tag"
+                        );
+                    } else if let Some(tags) = tags
+                        && !tags.is_empty()
+                    {
+                        debug!(
+                            room_id = %self.room_id(),
+                            tags = ?tags.keys().collect::<Vec<_>>(),
+                            "Room tags, none of them m.server_notice"
+                        );
+                    }
+
+                    is_server_notice
+                }
                 Err(error) => {
                     error!("Could not read the tags of the room: {error}");
                     false
