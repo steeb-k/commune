@@ -105,6 +105,15 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup {
+    title: _("Messages");
+
+    Adw.SwitchRow url_previews_row {
+      title: _("Link Previews");
+      subtitle: _("Show a card describing the first link of a message under it. Building the card asks your homeserver about the link, so it is never done in an encrypted room.");
+    }
+  }
+
   Adw.PreferencesGroup gif_search_group {
     visible: false;
     title: _("Composer");

@@ -64,6 +64,8 @@ mod imp {
         gif_search_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         dark_mode_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        url_previews_row: TemplateChild<adw::SwitchRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -106,6 +108,11 @@ mod imp {
             Application::default()
                 .settings()
                 .bind("force-dark-mode", &*self.dark_mode_row, "active")
+                .build();
+
+            Application::default()
+                .settings()
+                .bind("url-previews-enabled", &*self.url_previews_row, "active")
                 .build();
 
             // There is nothing to turn on when this build has no API key.
