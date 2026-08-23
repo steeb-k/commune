@@ -596,6 +596,18 @@ impl Call {
         content.invitee = self.remote_member().map(|member| member.user_id().clone());
         content.sdp_stream_metadata = self.stream_metadata();
 
+        // A call that never rings is usually a call addressed to the wrong
+        // person: "the invite should be ignored if the invitee is set and
+        // doesn't match the user's ID", so a wrong `invitee` is silence rather
+        // than an error.
+        debug!(
+            "Placing call {} to {:?} with {} media section(s)",
+            self.call_id(),
+            content.invitee,
+            content.offer.sdp.matches("\r\nm=").count()
+                + usize::from(content.offer.sdp.starts_with("m="))
+        );
+
         self.send(AnyMessageLikeEventContent::CallInvite(content));
         self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_INVITE);
     }
