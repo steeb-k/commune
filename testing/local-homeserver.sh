@@ -100,6 +100,32 @@ rc_login:
 rc_reports:
   per_second: 1000
   burst_count: 1000
+
+# Synapse ships with URL previews off, and most servers leave them that way, so
+# a real account is no use for testing them. The blacklist is not optional:
+# Synapse refuses to start with previews on and no range excluded, because
+# without it the endpoint will happily fetch anything on the host's network.
+url_preview_enabled: true
+url_preview_ip_range_blacklist:
+  - '127.0.0.0/8'
+  - '10.0.0.0/8'
+  - '172.16.0.0/12'
+  - '192.168.0.0/16'
+  - '100.64.0.0/10'
+  - '192.0.0.0/24'
+  - '169.254.0.0/16'
+  - '192.88.99.0/24'
+  - '198.18.0.0/15'
+  - '192.0.2.0/24'
+  - '198.51.100.0/24'
+  - '203.0.113.0/24'
+  - '224.0.0.0/4'
+  - '::1/128'
+  - 'fe80::/10'
+  - 'fc00::/7'
+  - '2001:db8::/32'
+  - 'ff00::/8'
+  - 'fec0::/10'
 YAML
   fi
 
@@ -150,6 +176,13 @@ login() {
 }
 
 # ------------------------------------------------------------------ rooms ----
+
+send_text() {
+  local token=$1 room=$2 txn=$3 body=$4
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/$txn" \
+    -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+    -d "$body" >/dev/null
+}
 
 create_room() {
   local token=$1 body=$2
@@ -236,6 +269,43 @@ seed() {
     -d '{"allow": ["*"], "deny": ["evil.example"], "allow_ip_literals": false}' >/dev/null \
     || warn "the server refused the second ACL"
 
+  # Link previews need a room full of the cases the extraction rules are about,
+  # because most of those rules are about what must *not* get a card.
+  log "Creating the link room…"
+  local link_room
+  link_room=$(create_room "$alice" '{"name": "Link Room", "preset": "private_chat"}')
+
+  send_text "$alice" "$link_room" link1 '{"msgtype": "m.text", "body": "A plain link: https://matrix.org"}'
+  send_text "$alice" "$link_room" link2 '{"msgtype": "m.text", "body": "No scheme, still a link: spec.matrix.org"}'
+  send_text "$alice" "$link_room" link3 "$(jq -nc '{
+    msgtype: "m.text",
+    body: "An anchor whose text is not the URL: the spec",
+    format: "org.matrix.custom.html",
+    formatted_body: "An anchor whose text is not the URL: <a href=\"https://spec.matrix.org/v1.19/\">the spec</a>"
+  }')"
+  send_text "$alice" "$link_room" link4 "$(jq -nc '{
+    msgtype: "m.text",
+    body: "In code, so no card: `https://matrix.org`",
+    format: "org.matrix.custom.html",
+    formatted_body: "In code, so no card: <code>https://matrix.org</code>"
+  }')"
+  send_text "$alice" "$link_room" link5 '{"msgtype": "m.text", "body": "A mention is not a link: @alice:localhost"}'
+  send_text "$alice" "$link_room" link6 '{"msgtype": "m.text", "body": "Not a link at all: version 1.5, e.g. this one"}'
+  send_text "$alice" "$link_room" link7 '{"msgtype": "m.text", "body": "First one only: https://matrix.org and https://spec.matrix.org"}'
+
+  # The card must never appear here, whatever the setting says.
+  log "Creating the encrypted room…"
+  local encrypted_room
+  encrypted_room=$(create_room "$alice" '{
+    "name": "Encrypted Room",
+    "preset": "private_chat",
+    "initial_state": [{
+      "type": "m.room.encryption",
+      "state_key": "",
+      "content": {"algorithm": "m.megolm.v1.aes-sha2"}
+    }]
+  }')
+
   log "Creating the plain rooms…"
   local invite_room knock_room public_room
   invite_room=$(create_room "$alice" '{"name": "Invite Room", "preset": "private_chat"}')
@@ -277,6 +347,8 @@ seed() {
     --arg knock_room "$knock_room" \
     --arg public_room "$public_room" \
     --arg acl_room "$acl_room" \
+    --arg link_room "$link_room" \
+    --arg encrypted_room "$encrypted_room" \
     '$ARGS.named' > "$STATE"
 }
 
@@ -384,6 +456,39 @@ check() {
     printf '    the server refused it as well\n'
   fi
 
+  log "Checking the URL preview endpoint…"
+  local preview
+  preview=$(curl -sf -G "$HS/_matrix/client/v1/media/preview_url" \
+    -H "Authorization: Bearer $alice" \
+    --data-urlencode 'url=https://matrix.org' || true)
+
+  if [ -z "$preview" ]; then
+    warn "GET /_matrix/client/v1/media/preview_url was rejected — previews are off,"
+    warn "or the container cannot reach the internet. Run 'clean' then 'up' if this"
+    warn "homeserver was created before previews were added to the config."
+    failed=1
+  elif [ "$(jq -r 'has("og:title")' <<<"$preview")" = true ]; then
+    printf '    GET /_matrix/client/v1/media/preview_url       OK\n'
+    printf '    og:title  %s\n' "$(jq -r '."og:title"' <<<"$preview")"
+    printf '    og:image  %s\n' "$(jq -r '."og:image" // "(none)"' <<<"$preview")"
+  else
+    warn "the endpoint answered but sent no og:title; the card will stay hidden"
+    failed=1
+  fi
+
+  # Not a pass or a fail: it records whether the image really arrives as an
+  # `mxc:` URI, which is the one thing the spec says is different from
+  # OpenGraph, and the one thing the card refuses to render without.
+  if [ -n "$preview" ]; then
+    local image
+    image=$(jq -r '."og:image" // ""' <<<"$preview")
+    case "$image" in
+      "") printf '    this page has no preview image\n' ;;
+      mxc://*) printf '    the preview image is an mxc: URI, as specified\n' ;;
+      *) printf '    the preview image is NOT an mxc: URI — Commune ignores it\n' ;;
+    esac
+  fi
+
   [ "$failed" = 0 ] || die "Some checks failed; see above."
   log "All server-side checks passed."
 }
@@ -457,6 +562,18 @@ summary() {
                              the timeline shows the first ACL and the change
     Remove "*" and save      the page refuses it: nobody could take part
     Block "localhost"        it asks first, because that is your own server
+
+  Link previews — open "Link Room"; a card should appear under
+    "A plain link"           matrix.org, with title, description and image
+    "No scheme"              the same, the linkifier's rule is matched
+    "An anchor"              the card is for the href, not the link text
+    "In code"                NO card: it was written to be read
+    "A mention"              NO card: @alice:localhost is not a page
+    "Not a link at all"      NO card: 1.5 and e.g. are not domains
+    "First one only"         exactly one card, for the first of the two
+    "Encrypted Room"         post a link yourself: NO card, ever, and the
+                             switch below cannot turn one on
+    Settings ▸ General ▸ Messages ▸ Link Previews turns the rest off
 
   Reporting — the report goes to the admin account above, not to a stranger
     Room menu ▸ Report Room…          on any room
