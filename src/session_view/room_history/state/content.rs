@@ -7,7 +7,10 @@ use matrix_sdk_ui::timeline::{
 };
 use ruma::{
     UserId,
-    events::{StateEventContentChange, room::member::MembershipState},
+    events::{
+        StateEventContentChange,
+        room::{member::MembershipState, server_acl::RoomServerAclEventContent},
+    },
 };
 use tracing::warn;
 
@@ -118,6 +121,9 @@ mod imp {
                             ("user", display_name),
                         ],
                     ))
+                }
+                AnyOtherStateEventContentChange::RoomServerAcl(content) => {
+                    WidgetType::Text(server_acl_message(content, &sender.disambiguated_name()))
                 }
                 _ => {
                     warn!(
@@ -423,6 +429,73 @@ enum WidgetType {
     Creation(StateCreation),
 }
 
+/// The message describing the given change of the server access list.
+///
+/// Only a change of the blocked servers is spelled out: that is the common
+/// moderation action, and everything else is a rule change that does not fit
+/// in one line.
+fn server_acl_message(
+    content: &StateEventContentChange<RoomServerAclEventContent>,
+    sender_name: &str,
+) -> String {
+    // Translators: Do NOT translate the content between '{' and '}', this is a
+    // variable name.
+    let generic = || {
+        gettext_f(
+            "{sender} changed which servers can take part in this room.",
+            &[("sender", sender_name)],
+        )
+    };
+
+    let StateEventContentChange::Original {
+        content,
+        prev_content,
+    } = content
+    else {
+        // A redacted event no longer holds the list it set.
+        return generic();
+    };
+
+    let Some(prev_content) = prev_content else {
+        return gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            "{sender} restricted which servers can take part in this room.",
+            &[("sender", sender_name)],
+        );
+    };
+
+    if content.allow != prev_content.allow
+        || content.allow_ip_literals != prev_content.allow_ip_literals
+    {
+        return generic();
+    }
+
+    let blocked = servers_added(&prev_content.deny, &content.deny);
+    let unblocked = servers_added(&content.deny, &prev_content.deny);
+
+    match (blocked.is_empty(), unblocked.is_empty()) {
+        (false, true) => gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', these are
+            // variable names.
+            "{sender} blocked {servers} from taking part in this room.",
+            &[("sender", sender_name), ("servers", &blocked.join(", "))],
+        ),
+        (true, false) => gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', these are
+            // variable names.
+            "{sender} let {servers} take part in this room again.",
+            &[("sender", sender_name), ("servers", &unblocked.join(", "))],
+        ),
+        _ => generic(),
+    }
+}
+
+/// The servers that are in `new` but not in `old`.
+fn servers_added(old: &[String], new: &[String]) -> Vec<String> {
+    new.iter().filter(|s| !old.contains(s)).cloned().collect()
+}
+
 /// Construct a `GtkLabel` for presenting a state content.
 fn text() -> gtk::Label {
     gtk::Label::builder()
@@ -431,4 +504,132 @@ fn text() -> gtk::Label {
         .wrap_mode(pango::WrapMode::WordChar)
         .xalign(0.0)
         .build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a server ACL change from the given previous and new blocked
+    /// servers, with the same allow list on both sides.
+    fn deny_change(
+        prev_deny: &[&str],
+        deny: &[&str],
+    ) -> StateEventContentChange<RoomServerAclEventContent> {
+        let allow = vec!["*".to_owned()];
+        StateEventContentChange::Original {
+            content: RoomServerAclEventContent::new(
+                true,
+                allow.clone(),
+                deny.iter().map(|s| (*s).to_owned()).collect(),
+            ),
+            prev_content: Some(RoomServerAclEventContent::new(
+                true,
+                allow,
+                prev_deny.iter().map(|s| (*s).to_owned()).collect(),
+            )),
+        }
+    }
+
+    #[test]
+    fn blocking_a_server_names_it() {
+        let change = deny_change(&[], &["evil.example"]);
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice blocked evil.example from taking part in this room."
+        );
+    }
+
+    #[test]
+    fn unblocking_a_server_names_it() {
+        let change = deny_change(&["evil.example"], &[]);
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice let evil.example take part in this room again."
+        );
+    }
+
+    #[test]
+    fn blocking_several_servers_names_them_all() {
+        let change = deny_change(
+            &["one.example"],
+            &["one.example", "two.example", "three.example"],
+        );
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice blocked two.example, three.example from taking part in this room."
+        );
+    }
+
+    #[test]
+    fn a_change_in_both_directions_stays_generic() {
+        // Saying "blocked A and unblocked B" in one line is not worth the
+        // translator's trouble, so it falls back.
+        let change = deny_change(&["one.example"], &["two.example"]);
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice changed which servers can take part in this room."
+        );
+    }
+
+    #[test]
+    fn a_change_of_the_allow_list_stays_generic() {
+        let change = StateEventContentChange::Original {
+            content: RoomServerAclEventContent::new(
+                true,
+                vec!["*.example.org".to_owned()],
+                Vec::new(),
+            ),
+            prev_content: Some(RoomServerAclEventContent::new(
+                true,
+                vec!["*".to_owned()],
+                Vec::new(),
+            )),
+        };
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice changed which servers can take part in this room."
+        );
+    }
+
+    #[test]
+    fn the_ip_literal_switch_is_not_a_block() {
+        // The blocked servers are untouched here, so the deny diff is empty and
+        // the message must not claim a server was unblocked.
+        let change = StateEventContentChange::Original {
+            content: RoomServerAclEventContent::new(false, vec!["*".to_owned()], Vec::new()),
+            prev_content: Some(RoomServerAclEventContent::new(
+                true,
+                vec!["*".to_owned()],
+                Vec::new(),
+            )),
+        };
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice changed which servers can take part in this room."
+        );
+    }
+
+    #[test]
+    fn the_first_acl_of_a_room_is_a_restriction() {
+        let change = StateEventContentChange::Original {
+            content: RoomServerAclEventContent::new(
+                true,
+                vec!["*".to_owned()],
+                vec!["evil.example".to_owned()],
+            ),
+            prev_content: None,
+        };
+
+        assert_eq!(
+            server_acl_message(&change, "Alice"),
+            "Alice restricted which servers can take part in this room."
+        );
+    }
 }
