@@ -956,8 +956,16 @@ fn flush_remote_candidates(
 
     for (index, candidate) in pending.drain(..) {
         if candidate.is_empty() {
+            debug!("End of candidates from the other party");
             webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
         } else {
+            // Logged here as well as in `add_ice_candidate`, because a
+            // candidate that waited took this path instead of that one — which
+            // is why the first attempt at logging these showed nothing at all.
+            debug!(
+                "Adding remote {} candidate on m-line {index}: {candidate}",
+                candidate_type(&candidate)
+            );
             webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
         }
     }
