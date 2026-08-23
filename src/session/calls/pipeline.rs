@@ -444,7 +444,16 @@ impl CallPipeline {
             .connect("on-ice-candidate", false, move |values| {
                 let sdp_m_line_index = values.get(1)?.get::<u32>().ok()?;
                 let candidate = values.get(2)?.get::<String>().ok()?;
-                debug!("webrtcbin gathered a candidate for m-line {sdp_m_line_index}");
+
+                // The type is what says whether the TURN server actually gave
+                // us anything: `host` is our own address, `srflx` is what the
+                // server says our address looks like from outside, and `relay`
+                // is an allocation on the server itself. No `relay` among them
+                // means the relay was never obtained, whatever the URI said.
+                debug!(
+                    "webrtcbin gathered a {} candidate for m-line {sdp_m_line_index}",
+                    candidate_type(&candidate)
+                );
 
                 let _ = ice_sender.unbounded_send(PipelineEvent::IceCandidate {
                     candidate,
@@ -878,6 +887,20 @@ fn attach_decoded_pad(
     Ok(())
 }
 
+/// The type of an ICE candidate — `host`, `srflx`, `prflx` or `relay`.
+///
+/// It is the word after `typ` in the candidate line. Worth naming in the log
+/// because the absence of `relay` is the difference between "the TURN server
+/// was configured" and "the TURN server gave us an allocation", and those look
+/// identical everywhere else.
+fn candidate_type(candidate: &str) -> &str {
+    candidate
+        .split(" typ ")
+        .nth(1)
+        .and_then(|rest| rest.split_whitespace().next())
+        .unwrap_or("unknown")
+}
+
 /// A queue that drops what it cannot pass on, for the branches feeding
 /// `webrtcbin`.
 ///
@@ -951,6 +974,22 @@ a=rtpmap:111 opus/48000/2\r\n\
 m=video 9 UDP/TLS/RTP/SAVPF 96\r\n\
 c=IN IP4 0.0.0.0\r\n\
 a=rtpmap:96 VP8/90000\r\n";
+
+    #[test]
+    fn a_candidate_names_its_own_type() {
+        assert_eq!(
+            candidate_type("candidate:1 1 UDP 2013266431 192.168.1.5 54321 typ host"),
+            "host"
+        );
+        assert_eq!(
+            candidate_type(
+                "candidate:4 1 UDP 92274687 174.74.218.66 49160 typ relay raddr 0.0.0.0 rport 0"
+            ),
+            "relay"
+        );
+        // End-of-candidates is an empty string and names nothing.
+        assert_eq!(candidate_type(""), "unknown");
+    }
 
     #[test]
     fn the_offer_decides_the_order_of_the_sections() {
