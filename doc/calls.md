@@ -172,9 +172,30 @@ The microphone is a `volume` element with `mute`, so the track keeps flowing
 and only silence goes down it. The camera is a `valve` with `drop`.
 
 Both are announced with `m.call.sdp_stream_metadata_changed`, keyed on the
-stream ID taken out of our own SDP's `a=msid:` line. Without that ID there is
-nothing to key the metadata on, so muting is not announced at all rather than
-announced about the wrong stream.
+stream ID taken out of our own SDP. **There are two places an SDP can carry
+one, and the one the spec's examples show is not the one we write.** A browser
+puts it at media level, `a=msid:<stream> <track>`; `webrtcbin` writes no such
+line anywhere, only the per-source form:
+
+```text
+a=ssrc:2181993077 msid:user217149580@host-e5ab91bf webrtctransceiver0
+```
+
+Reading only the first form left the stream ID empty, and an empty one means
+the metadata map is empty, and an empty map is never sent — so the microphone
+and the camera stopped and the far side was never told why. `first_stream_id()`
+reads both forms. `a=ssrc:N cname:…` has the same line shape and is not an
+msid; there is a test for that too, and one asserting that both media sections
+of a real offer name the same single stream, which is what one `m.usermedia`
+is supposed to look like.
+
+Setting the ID instead of reading it would be better, and is not available:
+`GstWebRTCRTPTransceiver` has no `msid` property in GStreamer 1.28.6.
+
+A mute made while the call is still ringing is announced once it connects. The
+invite or the answer carries the state as it stood when the description was
+made, and `send_stream_metadata()` will not send to a party that has not
+answered — so without that the far side would join already wrong.
 
 The spec's asymmetry is followed on the receiving side. A remote `video_muted`
 hides the picture and shows the avatar, because the alternative is a frozen
@@ -337,7 +358,9 @@ wrong first, in the order they will show up:
    never sent. The microphone and the camera still stop locally; the other end
    is simply never told, and never hides the picture. Reading the ssrc form as
    well is the fix, and it is not macOS-specific: it is what this version of
-   `webrtcbin` writes.
+   `webrtcbin` writes. **Fixed on 23 August 2026**, against an offer dumped
+   from `webrtcbin` 1.28.6 on Linux that matched the macOS one line for line;
+   see "Muting" above.
 
    The rest of that offer was as intended — `m=audio` then `m=video` in the
    order the answerer is expected to match, both `sendrecv` and in
