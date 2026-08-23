@@ -32,3 +32,6 @@ hooks/checks-bin
 
 # Python bytecode from the image pack tool
 __pycache__/
+
+# The throwaway homeserver used by testing/local-homeserver.sh
+testing/.homeserver/
