@@ -527,6 +527,15 @@ impl Call {
                     );
                     self.notify_connected_at();
                     self.set_state(CallState::Connected);
+
+                    // A mute made while it was still ringing went out to
+                    // nobody: the invite or the answer carried the state as it
+                    // was when the description was made, and
+                    // `send_stream_metadata()` refuses to send before there is
+                    // somebody to send to. Say it once now that there is.
+                    if self.is_microphone_muted() || self.is_camera_muted() {
+                        self.send_stream_metadata();
+                    }
                 }
             }
             PipelineEvent::ConnectionFailed => {
@@ -953,25 +962,114 @@ impl Call {
 
 /// The ID of the first media stream in an SDP.
 ///
-/// `a=msid:<stream id> <track id>`, which is what `sdp_stream_metadata` is
-/// keyed on. Without it we cannot say which stream we muted, so muting is not
-/// announced at all rather than announced about the wrong one.
+/// `sdp_stream_metadata` is keyed on the stream ID, which is the first field of
+/// an `msid`. There are two places an SDP can carry one, and this reads both
+/// because the one the spec's examples show is not the one we write.
+///
+/// A browser puts it at media level:
+///
+/// ```text
+/// a=msid:<stream id> <track id>
+/// ```
+///
+/// `webrtcbin` writes no such line anywhere. What it writes is the per-source
+/// form, once for each `ssrc`:
+///
+/// ```text
+/// a=ssrc:2181993077 msid:user217149580@host-e5ab91bf webrtctransceiver0
+/// ```
+///
+/// Reading only the first form is what left `local_stream_id` empty, and an
+/// empty one means `stream_metadata()` returns nothing, and nothing means
+/// muting was never announced to the other end at all — the microphone and the
+/// camera stopped, and the far side was never told why.
+///
+/// Both media sections share one stream ID, which is what a single
+/// `m.usermedia` stream should look like, so the first one found is the one.
 fn first_stream_id(sdp: &str) -> Option<String> {
     sdp.lines()
-        .filter_map(|line| line.trim_end().strip_prefix("a=msid:"))
-        .filter_map(|value| value.split_whitespace().next())
+        .filter_map(stream_id_of_line)
         .find(|stream_id| *stream_id != "-")
         .map(ToOwned::to_owned)
+}
+
+/// The stream ID carried by one SDP attribute line, if it carries one.
+fn stream_id_of_line(line: &str) -> Option<&str> {
+    let attribute = line.trim_end().strip_prefix("a=")?;
+
+    let msid = if let Some(msid) = attribute.strip_prefix("msid:") {
+        msid
+    } else {
+        // `ssrc:<id> msid:<stream id> <track id>`. The same line shape also
+        // carries `cname:`, which is not an msid and must not be read as one.
+        let (_, rest) = attribute
+            .strip_prefix("ssrc:")?
+            .split_once(char::is_whitespace)?;
+        rest.trim_start().strip_prefix("msid:")?
+    };
+
+    msid.split_whitespace().next()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// An offer as `webrtcbin` 1.28.6 actually writes one, trimmed to the
+    /// lines that matter here. There is no media-level `a=msid:` anywhere in
+    /// it; the msid is an attribute of the source.
+    const WEBRTCBIN_OFFER: &str = "\
+v=0\r\n\
+o=- 8423898717797077664 0 IN IP4 0.0.0.0\r\n\
+a=group:BUNDLE audio0 video1\r\n\
+m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n\
+a=sendrecv\r\n\
+a=rtpmap:111 OPUS/48000/2\r\n\
+a=ssrc:2181993077 msid:user217149580@host-e5ab91bf webrtctransceiver0\r\n\
+a=ssrc:2181993077 cname:user217149580@host-e5ab91bf\r\n\
+a=mid:audio0\r\n\
+m=video 0 UDP/TLS/RTP/SAVPF 96\r\n\
+a=sendrecv\r\n\
+a=rtpmap:96 VP8/90000\r\n\
+a=ssrc:3666412715 msid:user217149580@host-e5ab91bf webrtctransceiver1\r\n\
+a=ssrc:3666412715 cname:user217149580@host-e5ab91bf\r\n\
+a=mid:video1\r\n";
+
     #[test]
     fn the_stream_id_comes_from_the_msid_attribute() {
         let sdp = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=msid:stream0 track0\r\n";
         assert_eq!(first_stream_id(sdp), Some("stream0".to_owned()));
+    }
+
+    #[test]
+    fn the_stream_id_is_found_in_what_webrtcbin_writes() {
+        // This is the case that was broken: no media-level `a=msid:` line, so
+        // the whole of `sdp_stream_metadata` was silently empty and muting was
+        // never announced.
+        assert_eq!(
+            first_stream_id(WEBRTCBIN_OFFER),
+            Some("user217149580@host-e5ab91bf".to_owned())
+        );
+    }
+
+    #[test]
+    fn both_sections_of_that_offer_name_one_stream() {
+        // One `m.usermedia` stream carrying audio and video, which is what the
+        // single entry in `sdp_stream_metadata` is supposed to describe.
+        let ids = WEBRTCBIN_OFFER
+            .lines()
+            .filter_map(stream_id_of_line)
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(ids.len(), 1);
+    }
+
+    #[test]
+    fn a_cname_on_the_same_ssrc_is_not_a_stream_id() {
+        // `a=ssrc:N cname:…` has the shape of the line we read and is not one.
+        assert_eq!(
+            stream_id_of_line("a=ssrc:2181993077 cname:user217149580@host-e5ab91bf"),
+            None
+        );
     }
 
     #[test]
