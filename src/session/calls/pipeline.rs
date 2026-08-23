@@ -106,6 +106,12 @@ pub(crate) struct CallPipeline {
     had_media: bool,
     /// The bus watch, dropped with the pipeline.
     bus_guard: Option<gst::bus::BusWatchGuard>,
+    /// The `ice-ufrag` of the remote description, once there is one.
+    ///
+    /// A candidate names the ufrag it belongs to, and one that does not match
+    /// is from a different ICE session — a second device that rang and did not
+    /// answer, most often.
+    remote_ice_ufrag: Arc<Mutex<Option<String>>>,
     /// Whether the other party's description has been applied.
     ///
     /// Remote ICE candidates are meaningless before it: there is no remote ICE
@@ -212,6 +218,7 @@ impl CallPipeline {
             media: Vec::new(),
             had_media: false,
             bus_guard: None,
+            remote_ice_ufrag: Arc::new(Mutex::new(None)),
             remote_description_applied: Arc::new(AtomicBool::new(false)),
             pending_remote_candidates: Arc::new(Mutex::new(Vec::new())),
         };
@@ -656,7 +663,7 @@ impl CallPipeline {
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, is_answer)?;
         debug!("Setting the remote description");
-        Self::log_ice_credentials(sdp);
+        self.note_ice_credentials(sdp);
 
         // With a promise, so that candidates held back for want of a remote
         // description can go in the moment there is one.
@@ -689,7 +696,7 @@ impl CallPipeline {
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, false)?;
         debug!("Setting the remote offer, and answering it when it is applied");
-        Self::log_ice_credentials(sdp);
+        self.note_ice_credentials(sdp);
 
         let webrtcbin = self.webrtcbin.clone();
         let applied = self.remote_description_applied.clone();
@@ -719,13 +726,19 @@ impl CallPipeline {
     /// whose `ufrag` is not the remote description's, and discarding all of
     /// them looks exactly like connectivity failing: pairs are checked, none
     /// succeed, and ICE gives up quickly because there was nothing real to try.
-    fn log_ice_credentials(sdp: &str) {
+    fn note_ice_credentials(&self, sdp: &str) {
         let ufrag = sdp
             .lines()
-            .find_map(|line| line.trim_end().strip_prefix("a=ice-ufrag:"))
-            .unwrap_or("(none)");
+            .find_map(|line| line.trim_end().strip_prefix("a=ice-ufrag:"));
 
-        debug!("The remote description carries ice-ufrag {ufrag}");
+        debug!(
+            "The remote description carries ice-ufrag {}",
+            ufrag.unwrap_or("(none)")
+        );
+
+        if let Ok(mut stored) = self.remote_ice_ufrag.lock() {
+            *stored = ufrag.map(ToOwned::to_owned);
+        }
     }
 
     /// Parse an SDP into something `webrtcbin` will take.
@@ -775,6 +788,23 @@ impl CallPipeline {
             );
         }
 
+        // A candidate names the ICE session it belongs to. One that names a
+        // different session than the remote description is from a party we are
+        // not talking to — a second device that rang and did not answer — and
+        // libnice discards it, leaving a call that looks like it has candidates
+        // and has none it can use.
+        //
+        // Measured on 23 August 2026: an outgoing call took an answer with
+        // `ice-ufrag DfBZ` and twelve candidates all carrying `ufrag t/fW`,
+        // giving zero usable pairs and a failure five seconds later.
+        if let Some(mismatch) = self.mismatched_ufrag(candidate) {
+            debug!(
+                "Dropping a remote candidate for ICE session {mismatch}; \
+                 the remote description is a different one"
+            );
+            return;
+        }
+
         // Nothing can be given to the remote ICE agent before there is one.
         // `webrtcbin` discards candidates added before the remote description
         // is applied, and on the answering side that was every one of them:
@@ -808,6 +838,23 @@ impl CallPipeline {
         );
         self.webrtcbin
             .emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
+    }
+
+    /// The ufrag a candidate names, when it is not the remote description's.
+    ///
+    /// Returns `None` when they agree, when the candidate names none, or when
+    /// no remote description has been seen yet — the last of those because a
+    /// candidate that arrives first is held, not judged.
+    fn mismatched_ufrag(&self, candidate: &str) -> Option<String> {
+        let theirs = candidate
+            .split(" ufrag ")
+            .nth(1)
+            .and_then(|rest| rest.split_whitespace().next())?;
+
+        let stored = self.remote_ice_ufrag.lock().ok()?;
+        let ours = stored.as_deref()?;
+
+        (theirs != ours).then(|| theirs.to_owned())
     }
 
     /// Set whether our own microphone is muted.

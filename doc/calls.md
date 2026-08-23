@@ -477,6 +477,63 @@ Two clients on the same machine will never need the relay — host candidates
 win. It is there so that the code that reads the credentials, hands them to
 `webrtcbin` and gathers relay candidates runs at all.
 
+## Where this stands, and how to test it
+
+Written down because the debugging ran long and the context it lived in is not
+durable. This section is the state of it.
+
+### What is known to work
+
+* A call between two clients on one network. Seen connecting with media.
+* Both ends obtaining a TURN relay from the homeserver's coturn: `add-turn-server`
+  accepts the percent-encoded URI, and `host`/`srflx`/`relay` candidates are all
+  gathered.
+* Offer, answer, `select_answer`, hangup and the rest of the signalling.
+
+### What is not
+
+A call between networks. ICE reaches `Checking` and fails from there.
+
+### The diagnosis as it stands
+
+An outgoing call took an answer carrying `ice-ufrag DfBZ` and then twelve
+candidates every one of which carried `ufrag t/fW`. Those are two different ICE
+sessions: **one device answered and a different one sent the candidates**, both
+signed in as the same user. libnice discards a candidate whose ufrag is not the
+remote description's, so the call had zero usable pairs and failed five seconds
+later. The incoming call in the same log, whose candidates and description
+agreed, reached `Checking` normally.
+
+The spec's mechanism for this is `party_id`, which identifies a party as
+`(user_id, party_id)` and "matches `m.call.candidates` events to their
+respective answer/invite". Candidates whose ufrag disagrees with the remote
+description are now dropped and logged, and the party of every answer and every
+candidate batch is logged, because whether `party_id` is present and what it
+says is the next thing to establish.
+
+### The one procedure to run
+
+One account signed in on exactly two clients, and nothing else ringing:
+
+1. `RUST_LOG=commune=debug commune 2>&1 | tee /tmp/call.log`
+2. Place **one voice call** from Commune to the other client.
+3. Answer it there. Leave it for twenty seconds whether or not it connects.
+4. Hang up. Stop Commune.
+
+Then:
+
+```sh
+grep -E "Placing call|from party|ice-ufrag|Dropping a remote|gathered a (relay|srflx)|ICE connection state" /tmp/call.log
+```
+
+Those lines say, in order: who the invite was addressed to, which party
+answered, which ICE session the candidates belong to, whether any were dropped
+for belonging to another, whether a relay was obtained, and where ICE ended up.
+
+**Sign every other client out first.** A second session of the same account
+that rings and does not answer is what produced the split above, and it is
+indistinguishable from a network fault unless it is ruled out deliberately.
+
 ## Not done, and not yet seen working
 
 **Nothing past the invite has been exercised.** The outgoing half is seen

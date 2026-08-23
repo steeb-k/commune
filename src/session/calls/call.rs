@@ -785,6 +785,12 @@ impl Call {
 
         let imp = self.imp();
 
+        debug!(
+            "Answer for call {} from party {:?}",
+            self.call_id(),
+            party_id
+        );
+
         if imp.answer_selected.get() {
             // Two of their devices answered. The first one won; this one is
             // told so by the `m.call.select_answer` we already sent.
@@ -857,10 +863,11 @@ impl Call {
         };
 
         debug!(
-            "{}: received {} ICE candidate(s) for call {} on m-line(s) {:?}",
+            "{}: received {} ICE candidate(s) for call {} from party {:?} on m-line(s) {:?}",
             own_user_id(&self.room()),
             candidates.len(),
             self.call_id(),
+            party_id,
             candidates
                 .iter()
                 .map(|c| c.sdp_m_line_index.map_or(0, u64::from))
