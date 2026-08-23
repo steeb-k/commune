@@ -911,6 +911,18 @@ mod imp {
         fn handle_member_event(&self, event: &SyncRoomMemberEvent) {
             let user_id = event.state_key();
 
+            // "If the client sees the user it is in a call with leave the
+            // room, the client should treat this as a hangup event for any
+            // calls that are in progress." They cannot send one from outside
+            // the room, so nothing else is coming.
+            if matches!(
+                event.membership(),
+                MembershipState::Leave | MembershipState::Ban
+            ) && let Some(session) = self.obj().session()
+            {
+                session.calls().handle_member_left(&self.obj(), user_id);
+            }
+
             if let Some(members) = self.members.upgrade() {
                 members.update_member(user_id.clone());
             } else if user_id == self.own_member().user_id() {

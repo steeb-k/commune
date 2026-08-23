@@ -33,7 +33,9 @@ dependency('gstreamer-app-1.0', version: '>= 1.20')
 dependency('gstreamer-base-1.0', version: '>= 1.20')
 dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')
+dependency('gstreamer-sdp-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
+dependency('gstreamer-webrtc-1.0', version: '>= 1.20')
 dependency('gtksourceview-5', version: '>= 5.0.0')
 if host_machine.system() != 'darwin'
     # glycin decodes images on Linux. macOS uses the `image` crate instead, see

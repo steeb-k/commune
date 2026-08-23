@@ -72,7 +72,9 @@ gst = { version = "0.25", package = "gstreamer" }
 gst_app = { version = "0.25", package = "gstreamer-app" }
 gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
 gst_play = { version = "0.25", package = "gstreamer-play" }
+gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
 gst_video = { version = "0.25", package = "gstreamer-video" }
+gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
 shumate = { version = "0.8", features = ["v1_1"], package = "libshumate" }
 sourceview = { version = "0.11", package = "sourceview5" }
