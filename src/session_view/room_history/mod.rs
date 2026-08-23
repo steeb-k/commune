@@ -728,6 +728,7 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_pending_knocks();
+                        imp.update_call_buttons();
                     }
                 ));
                 self.permissions_handlers

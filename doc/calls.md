@@ -130,6 +130,9 @@ second call. A second call in a different room is refused as busy.
 
 ## What is deliberately refused
 
+* **Rooms we cannot send a message to.** A call is message-like events in the
+  room; a room that refuses them refuses the call. This is what keeps the
+  buttons off the server notices room.
 * **Rooms with more than two people.** "Calls should only be placed to rooms
   with one other user in them. If they are placed to group chat rooms it is
   possible that another user will intercept and answer the call." The invite
@@ -165,6 +168,21 @@ hides the picture and shows the avatar, because the alternative is a frozen
 frame or a black rectangle. A remote `audio_muted` does **not** mute the
 incoming audio: unmuting takes a round trip and the words spoken in between
 would be lost.
+
+## Two things seen on screen, and neither was visible to the compiler
+
+**The self-view is a `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`.** A
+Picture takes the natural size of its paintable, and a camera's paintable is as
+big as the camera, so the corner thumbnail filled the whole window and covered
+the person being called. `width-request` is a minimum, not a maximum, and does
+nothing about it. This is the same trap `url-previews.md` records for preview
+images; it cost a round trip here too.
+
+**The call buttons need `can_send_message`, not just a member count.** A call is
+a stream of message-like events into the room. The server notices room has two
+members and puts the recipient at power level −10, so the buttons appeared,
+the invite was refused with `M_FORBIDDEN`, and the call rang for nobody while
+four events failed to send in a row.
 
 ## The window
 

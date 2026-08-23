@@ -56,10 +56,14 @@ template $CallView: Adw.Window {
         margin-end: 12;
         transition-type: crossfade;
 
-        child: Gtk.Picture self_picture {
-          content-fit: cover;
-          width-request: 132;
-          height-request: 99;
+        // A `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`. A Picture takes
+        // the natural size of its paintable, and a camera's paintable is as
+        // big as the camera — so the self-view filled the whole window and
+        // covered the person being called. `width-request` is a minimum, not a
+        // maximum, and does not help. An Image with `pixel-size` pins the box
+        // and scales the frame inside it.
+        child: Gtk.Image self_picture {
+          pixel-size: 120;
 
           styles [
             "call-self-view",
