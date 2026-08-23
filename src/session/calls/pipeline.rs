@@ -167,10 +167,19 @@ impl CallPipeline {
         // that a call is happening at all. A TURN server answers STUN binding
         // requests too, so the homeserver's own is enough — and where there is
         // none, host candidates are what is left.
+        if turn_servers.is_empty() {
+            // Host candidates only. Two people on one network still find each
+            // other; anybody behind a NAT does not.
+            warn!("No TURN server for this call; only host candidates will be gathered");
+        }
+
         for server in turn_servers {
             let added = webrtcbin.emit_by_name::<bool>("add-turn-server", &[&server.uri]);
 
-            if !added {
+            // The credentials are in the URI, so it is not logged.
+            if added {
+                debug!("webrtcbin accepted a TURN server");
+            } else {
                 warn!("webrtcbin refused a TURN server");
             }
         }
