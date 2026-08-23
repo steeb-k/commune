@@ -23,6 +23,11 @@
       <summary>Always use the dark theme</summary>
       <description>Whether to use the dark theme whatever the system is set to. When this is off, the system decides</description>
     </key>
+    <key name="url-previews-enabled" type="b">
+      <default>true</default>
+      <summary>Show a preview of links</summary>
+      <description>Whether a card describing the first link of a message is shown under it. Building the card asks the homeserver about the link, so it is never done for a message in an encrypted room</description>
+    </key>
     <key name="gif-search-enabled" type="b">
       <default>false</default>
       <summary>Enable GIF search</summary>
