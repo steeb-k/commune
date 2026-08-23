@@ -3,9 +3,12 @@
 //! This is where WebRTC actually happens. Everything above it deals in Matrix
 //! events; everything here deals in SDP, ICE candidates and media.
 
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    collections::HashSet,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, AtomicU32, Ordering},
+    },
 };
 
 use futures_channel::mpsc;
@@ -15,8 +18,11 @@ use tracing::{debug, error, warn};
 
 use super::turn::TurnServer;
 
-/// A remote ICE candidate, waiting for somewhere to go.
-type PendingCandidates = Arc<Mutex<Vec<(u32, String)>>>;
+/// Remote ICE candidate lines, waiting for somewhere to go.
+type PendingCandidates = Arc<Mutex<Vec<String>>>;
+
+/// The transport addresses of the remote candidates already handed over.
+type RemoteAddresses = Arc<Mutex<HashSet<String>>>;
 
 /// An error that stops a call pipeline from being built or driven.
 #[derive(Debug, thiserror::Error)]
@@ -119,6 +125,19 @@ pub(crate) struct CallPipeline {
     remote_description_applied: Arc<AtomicBool>,
     /// Remote candidates that arrived before that happened.
     pending_remote_candidates: PendingCandidates,
+    /// The transport addresses of the remote candidates already added.
+    ///
+    /// Two candidates for one address are two pairs to one place, and libnice
+    /// cannot hold them apart: it resolves a check response to a remote
+    /// candidate *by address*, so the response to the second pair's check
+    /// lands on the first pair and takes it out of `SUCCEEDED`. The next
+    /// nomination tick asserts on that and the process dies.
+    remote_addresses: RemoteAddresses,
+    /// The m-line index the other party's transport is on.
+    ///
+    /// Zero until their description says otherwise, which is the answer for
+    /// every peer that accepts the first section we offer.
+    remote_transport_index: Arc<AtomicU32>,
 }
 
 impl Drop for CallPipeline {
@@ -221,6 +240,8 @@ impl CallPipeline {
             remote_ice_ufrag: Arc::new(Mutex::new(None)),
             remote_description_applied: Arc::new(AtomicBool::new(false)),
             pending_remote_candidates: Arc::new(Mutex::new(Vec::new())),
+            remote_transport_index: Arc::new(AtomicU32::new(0)),
+            remote_addresses: Arc::new(Mutex::new(HashSet::new())),
         };
 
         for kind in media {
@@ -259,6 +280,29 @@ impl CallPipeline {
         let convert = gst::ElementFactory::make("audioconvert").build()?;
         let resample = gst::ElementFactory::make("audioresample").build()?;
         let volume = gst::ElementFactory::make("volume").build()?;
+        // Two channels, and not because the microphone has two.
+        //
+        // "The RTP clock rate ... MUST be 48000, and the number of channels
+        // MUST be 2" — RFC 7587 §7, and libwebrtc holds callers to it. A
+        // `webrtcbin` fed mono audio writes `a=rtpmap:111 OPUS/48000`, which
+        // names a codec libwebrtc does not have, and it answers by rejecting
+        // the whole section.
+        //
+        // That is what every call to Element for Android did. Measured on 23
+        // August 2026: a voice call came back `m=audio 0` with `a=group:BUNDLE`
+        // empty — nothing accepted, no transport, and no candidates ever sent,
+        // so the call sat in `Connecting` until somebody gave up. A video call
+        // came back with the audio rejected and the video kept, and then failed
+        // for the reasons below.
+        let stereo = gst::ElementFactory::make("capsfilter")
+            .property(
+                "caps",
+                gst::Caps::builder("audio/x-raw")
+                    .field("rate", 48_000i32)
+                    .field("channels", 2i32)
+                    .build(),
+            )
+            .build()?;
         let encoder = gst::ElementFactory::make("opusenc").build()?;
         let payloader = gst::ElementFactory::make("rtpopuspay")
             .property("pt", u32::try_from(OPUS_PAYLOAD_TYPE).unwrap_or_default())
@@ -271,12 +315,14 @@ impl CallPipeline {
                     .field("encoding-name", "OPUS")
                     .field("payload", OPUS_PAYLOAD_TYPE)
                     .field("clock-rate", 48_000i32)
+                    // What puts the `/2` in the rtpmap line.
+                    .field("encoding-params", "2")
                     .build(),
             )
             .build()?;
 
         let elements = [
-            &source, &queue, &convert, &resample, &volume, &encoder, &payloader, &caps,
+            &source, &queue, &convert, &resample, &volume, &stereo, &encoder, &payloader, &caps,
         ];
         self.pipeline.add_many(elements)?;
         gst::Element::link_many(elements)?;
@@ -662,16 +708,30 @@ impl CallPipeline {
         is_answer: bool,
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, is_answer)?;
-        debug!("Setting the remote description");
-        self.note_ice_credentials(sdp);
+        debug!("Setting the remote description:\n{}", sdp.trim_end());
+
+        let transport = self.note_remote_transport(sdp);
+
+        // A peer that rejected everything cannot be called, and saying so is
+        // better than the alternative: no transport is negotiated, so no
+        // candidate is ever sent, and a call with nothing wrong to report sits
+        // in `Connecting` until the person watching it gives up.
+        if is_answer && !transport.accepted_anything {
+            return Err(PipelineError::Other(
+                "the other party accepted none of the media we offered",
+            ));
+        }
 
         // With a promise, so that candidates held back for want of a remote
         // description can go in the moment there is one.
         let webrtcbin = self.webrtcbin.clone();
         let applied = self.remote_description_applied.clone();
         let pending = self.pending_remote_candidates.clone();
+        let ufrag = self.remote_ice_ufrag.clone();
+        let index = self.remote_transport_index.clone();
+        let seen = self.remote_addresses.clone();
         let promise = gst::Promise::with_change_func(move |_| {
-            flush_remote_candidates(&webrtcbin, &applied, &pending);
+            flush_remote_candidates(&webrtcbin, &applied, &pending, &ufrag, &index, &seen);
         });
 
         self.webrtcbin
@@ -695,12 +755,18 @@ impl CallPipeline {
         sender: mpsc::UnboundedSender<PipelineEvent>,
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, false)?;
-        debug!("Setting the remote offer, and answering it when it is applied");
-        self.note_ice_credentials(sdp);
+        debug!(
+            "Setting the remote offer, and answering it when it is applied:\n{}",
+            sdp.trim_end()
+        );
+        self.note_remote_transport(sdp);
 
         let webrtcbin = self.webrtcbin.clone();
         let applied = self.remote_description_applied.clone();
         let pending = self.pending_remote_candidates.clone();
+        let ufrag = self.remote_ice_ufrag.clone();
+        let index = self.remote_transport_index.clone();
+        let seen = self.remote_addresses.clone();
         let promise = gst::Promise::with_change_func(move |reply| {
             if let Err(error) = reply {
                 let _ = sender.unbounded_send(PipelineEvent::Error(format!(
@@ -710,7 +776,7 @@ impl CallPipeline {
             }
 
             debug!("The remote offer is applied; creating the answer");
-            flush_remote_candidates(&webrtcbin, &applied, &pending);
+            flush_remote_candidates(&webrtcbin, &applied, &pending, &ufrag, &index, &seen);
             create_description(&webrtcbin, "create-answer", true, sender);
         });
 
@@ -720,25 +786,29 @@ impl CallPipeline {
         Ok(())
     }
 
-    /// The ICE credentials an SDP carries, for comparing against candidates.
+    /// Note where the other party put the transport, and what it is called.
     ///
-    /// Every candidate names the `ufrag` it belongs to. libnice discards one
-    /// whose `ufrag` is not the remote description's, and discarding all of
-    /// them looks exactly like connectivity failing: pairs are checked, none
-    /// succeed, and ICE gives up quickly because there was nothing real to try.
-    fn note_ice_credentials(&self, sdp: &str) {
-        let ufrag = sdp
-            .lines()
-            .find_map(|line| line.trim_end().strip_prefix("a=ice-ufrag:"));
+    /// Both come out of their description and neither can be assumed. A peer
+    /// that rejects a section we offered leaves it in the SDP with `port 0`
+    /// and no transport, and the live one — the one its candidates and its
+    /// `ice-ufrag` belong to — is whichever the `a=group:BUNDLE` line names
+    /// first.
+    fn note_remote_transport(&self, sdp: &str) -> RemoteTransport {
+        let transport = remote_transport(sdp);
 
         debug!(
-            "The remote description carries ice-ufrag {}",
-            ufrag.unwrap_or("(none)")
+            "The other party's transport is on m-line {} with ice-ufrag {}",
+            transport.index,
+            transport.ufrag.as_deref().unwrap_or("(none)")
         );
 
         if let Ok(mut stored) = self.remote_ice_ufrag.lock() {
-            *stored = ufrag.map(ToOwned::to_owned);
+            stored.clone_from(&transport.ufrag);
         }
+        self.remote_transport_index
+            .store(transport.index, Ordering::Relaxed);
+
+        transport
     }
 
     /// Parse an SDP into something `webrtcbin` will take.
@@ -762,99 +832,41 @@ impl CallPipeline {
     ///
     /// An empty candidate means they have finished gathering.
     pub(crate) fn add_ice_candidate(&self, sdp_m_line_index: u32, candidate: &str) {
-        // Every remote candidate goes on the first media section, whatever
-        // index the other party put on it.
-        //
-        // This client always negotiates `max-bundle`, so a call has exactly one
-        // transport and it belongs to section 0. The second section is the
-        // `a=bundle-only` video one, advertised with `port 0` — it has no
-        // transport of its own, so a candidate placed there names nothing and
-        // `webrtcbin` drops it without a word.
-        //
-        // That is not a hypothetical: an outgoing call whose peer labelled
-        // every candidate `1` collected none at all, and `ice-connection-state`
-        // never left `New` — it did not reach `Checking`, let alone fail. The
-        // incoming call that worked in the same session was the one whose peer
-        // sent a mixture including `0`.
-        //
-        // Clamping only out-of-range indices was tried first and was not
-        // enough: on a video call `1` is in range and still wrong.
-        let index = 0u32;
-
-        if sdp_m_line_index != index {
-            debug!(
-                "Remote candidate is labelled m-line {sdp_m_line_index}; \
-                 this call is bundled onto section 0"
-            );
-        }
-
-        // A candidate names the ICE session it belongs to. One that names a
-        // different session than the remote description is from a party we are
-        // not talking to — a second device that rang and did not answer — and
-        // libnice discards it, leaving a call that looks like it has candidates
-        // and has none it can use.
-        //
-        // Measured on 23 August 2026: an outgoing call took an answer with
-        // `ice-ufrag DfBZ` and twelve candidates all carrying `ufrag t/fW`,
-        // giving zero usable pairs and a failure five seconds later.
-        if let Some(mismatch) = self.mismatched_ufrag(candidate) {
-            debug!(
-                "Dropping a remote candidate for ICE session {mismatch}; \
-                 the remote description is a different one"
-            );
-            return;
-        }
-
         // Nothing can be given to the remote ICE agent before there is one.
         // `webrtcbin` discards candidates added before the remote description
         // is applied, and on the answering side that was every one of them:
         // the buffered candidates went in on the line after
         // `set-remote-description` was emitted, and that call is asynchronous.
+        //
+        // Held first and judged later, because both of the things a candidate
+        // is judged against — which section carries the transport, and what
+        // that section's ufrag is — come out of the description that has not
+        // arrived.
         if !self.remote_description_applied.load(Ordering::Relaxed) {
             debug!("Holding a remote candidate until the remote description is applied");
             if let Ok(mut pending) = self.pending_remote_candidates.lock() {
-                pending.push((index, candidate.to_owned()));
+                pending.push(candidate.to_owned());
             }
             return;
         }
 
-        if candidate.is_empty() {
-            // The spec spells end-of-candidates as an empty string;
-            // `webrtcbin` spells it as a NULL candidate, and hands an empty
-            // string to its parser like any other, where it is not a candidate
-            // and fails.
-            debug!("End of candidates from the other party");
-            self.webrtcbin
-                .emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
-            return;
+        let index = self.remote_transport_index.load(Ordering::Relaxed);
+
+        if sdp_m_line_index != index {
+            debug!(
+                "Remote candidate is labelled m-line {sdp_m_line_index}; \
+                 this call's transport is on section {index}"
+            );
         }
 
-        // The whole line, because a candidate that does not parse is one
-        // `webrtcbin` drops in silence, and "unknown" here is the difference
-        // between a pair that failed and a pair that never existed.
-        debug!(
-            "Adding remote {} candidate on m-line {index}: {candidate}",
-            candidate_type(candidate)
+        let ufrag = self.remote_ice_ufrag.lock().ok().and_then(|it| it.clone());
+        add_remote_candidate(
+            &self.webrtcbin,
+            index,
+            ufrag.as_deref(),
+            &self.remote_addresses,
+            candidate,
         );
-        self.webrtcbin
-            .emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
-    }
-
-    /// The ufrag a candidate names, when it is not the remote description's.
-    ///
-    /// Returns `None` when they agree, when the candidate names none, or when
-    /// no remote description has been seen yet — the last of those because a
-    /// candidate that arrives first is held, not judged.
-    fn mismatched_ufrag(&self, candidate: &str) -> Option<String> {
-        let theirs = candidate
-            .split(" ufrag ")
-            .nth(1)
-            .and_then(|rest| rest.split_whitespace().next())?;
-
-        let stored = self.remote_ice_ufrag.lock().ok()?;
-        let ours = stored.as_deref()?;
-
-        (theirs != ours).then(|| theirs.to_owned())
     }
 
     /// Set whether our own microphone is muted.
@@ -916,6 +928,13 @@ fn create_description(
         };
 
         let sdp = description.sdp().as_text().unwrap_or_default();
+
+        // Ours as well as theirs. What a codec line says about itself is the
+        // half of a negotiation this client can actually change, and reading
+        // it out of a `webrtcbin` in the state the call put it in is the only
+        // way to know what went out — an offer made before the audio chain has
+        // negotiated carries the capsfilter's caps and nothing more.
+        debug!("Our own {field}:\n{}", sdp.trim_end());
 
         for_local.emit_by_name::<()>(
             "set-local-description",
@@ -1013,11 +1032,149 @@ fn attach_decoded_pad(
     Ok(())
 }
 
+/// Hand `webrtcbin` one remote candidate, on the section that has a transport.
+///
+/// Every remote candidate goes on the bundled section whatever index the other
+/// party put on it: this client always negotiates `max-bundle`, so a call has
+/// exactly one transport, and a candidate placed on a section without one
+/// names nothing and is dropped without a word. Which section that is comes
+/// from their description — usually the first, and not always.
+fn add_remote_candidate(
+    webrtcbin: &gst::Element,
+    index: u32,
+    description_ufrag: Option<&str>,
+    seen: &RemoteAddresses,
+    candidate: &str,
+) {
+    if candidate.is_empty() {
+        // The spec spells end-of-candidates as an empty string; `webrtcbin`
+        // spells it as a NULL candidate, and hands an empty string to its
+        // parser like any other, where it is not a candidate and fails.
+        debug!("End of candidates from the other party");
+        webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
+        return;
+    }
+
+    if !is_usable_candidate(candidate) {
+        debug!("Ignoring a remote candidate on an address only we could reach: {candidate}");
+        return;
+    }
+
+    // One candidate per transport address. A second one for an address we
+    // already have offers no path we do not already have, and costs the
+    // process: libnice matches a check response to a remote candidate by
+    // address, so the second pair's response is credited to the first pair,
+    // which stops being `SUCCEEDED` while staying valid — and the nomination
+    // tick asserts that no such pair exists.
+    //
+    // Measured on 23 August 2026: Element for Android offered
+    // `192.168.50.234 59098 typ host` and `192.168.50.234 59098 typ srflx`,
+    // its own address seen through a STUN server that did not translate it,
+    // and the client died the instant checking began.
+    if let Some(address) = transport_address(candidate)
+        && let Ok(mut seen) = seen.lock()
+        && !seen.insert(address.clone())
+    {
+        debug!("Ignoring a second remote candidate for {address}: {candidate}");
+        return;
+    }
+
+    // A candidate tagged with an ICE session other than the description's is
+    // one libnice discards, and discarding all of them looks exactly like a
+    // network that will not carry the call. The tag is dropped and the address
+    // kept: an address is what a candidate is for, and the description is what
+    // says which session this call is.
+    let stripped;
+    let candidate = match mismatched_ufrag(candidate, description_ufrag) {
+        Some(mismatch) => {
+            warn!(
+                "Remote candidate names ICE session {mismatch}, which is not the \
+                 remote description's; dropping the tag and keeping the address"
+            );
+            stripped = without_ufrag(candidate);
+            stripped.as_str()
+        }
+        None => candidate,
+    };
+
+    // The whole line, because a candidate that does not parse is one
+    // `webrtcbin` drops in silence, and "unknown" here is the difference
+    // between a pair that failed and a pair that never existed.
+    debug!(
+        "Adding remote {} candidate on m-line {index}: {candidate}",
+        candidate_type(candidate)
+    );
+    webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
+}
+
+/// Whether a remote candidate is one this machine could ever use.
+///
+/// The other end's loopback address is not a path to the other end. It is a
+/// path to *us*: a check sent to `127.0.0.1` leaves our machine and arrives
+/// back at it. Every libwebrtc client offers them and nobody can use them, so
+/// they are pairs that exist only to fail.
+///
+/// Which matters more than the wasted checks. libnice 0.1.23 aborts the whole
+/// process — `conncheck.c:959`, `assertion failed: (p->state ==
+/// NICE_CHECK_SUCCEEDED)` — when it comes to nominate and finds a pair that is
+/// valid and no longer succeeded, and a pair that succeeds and then dies is
+/// how one gets into that state. Every pair that cannot work is a chance at
+/// it, and the assertion is still on libnice's master branch, so there is no
+/// version of it to move to.
+fn is_usable_candidate(candidate: &str) -> bool {
+    // `candidate:<foundation> <component> <transport> <priority> <address> …`
+    let Some(address) = candidate.split_whitespace().nth(4) else {
+        return true;
+    };
+
+    !(address == "::1" || address.starts_with("127."))
+}
+
+/// The transport address a candidate line names, as a key.
+///
+/// `candidate:<foundation> <component> <transport> <priority> <address>
+/// <port>`, plus the TCP type, which is the one thing that distinguishes two
+/// TCP candidates on one address — an active one always says port 9.
+fn transport_address(candidate: &str) -> Option<String> {
+    let words: Vec<&str> = candidate.split_whitespace().collect();
+    let transport = words.get(2)?.to_lowercase();
+    let address = words.get(4)?;
+    let port = words.get(5)?;
+
+    let tcptype = words
+        .iter()
+        .position(|word| *word == "tcptype")
+        .and_then(|at| words.get(at + 1))
+        .unwrap_or(&"");
+
+    Some(
+        format!("{transport} {address} {port} {tcptype}")
+            .trim_end()
+            .to_owned(),
+    )
+}
+
+/// The ufrag a candidate names, when it is not the remote description's.
+///
+/// Returns `None` when they agree, when the candidate names none, or when the
+/// description named none either.
+fn mismatched_ufrag(candidate: &str, description_ufrag: Option<&str>) -> Option<String> {
+    let theirs = candidate
+        .split(" ufrag ")
+        .nth(1)
+        .and_then(|rest| rest.split_whitespace().next())?;
+
+    (theirs != description_ufrag?).then(|| theirs.to_owned())
+}
+
 /// Hand `webrtcbin` the remote candidates that were waiting for a description.
 fn flush_remote_candidates(
     webrtcbin: &gst::Element,
     applied: &Arc<AtomicBool>,
     pending: &PendingCandidates,
+    ufrag: &Arc<Mutex<Option<String>>>,
+    index: &Arc<AtomicU32>,
+    seen: &RemoteAddresses,
 ) {
     applied.store(true, Ordering::Relaxed);
 
@@ -1034,21 +1191,108 @@ fn flush_remote_candidates(
         pending.len()
     );
 
-    for (index, candidate) in pending.drain(..) {
-        if candidate.is_empty() {
-            debug!("End of candidates from the other party");
-            webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
-        } else {
-            // Logged here as well as in `add_ice_candidate`, because a
-            // candidate that waited took this path instead of that one — which
-            // is why the first attempt at logging these showed nothing at all.
-            debug!(
-                "Adding remote {} candidate on m-line {index}: {candidate}",
-                candidate_type(&candidate)
-            );
-            webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
+    let index = index.load(Ordering::Relaxed);
+    let ufrag = ufrag.lock().ok().and_then(|it| it.clone());
+
+    for candidate in pending.drain(..) {
+        add_remote_candidate(webrtcbin, index, ufrag.as_deref(), seen, &candidate);
+    }
+}
+
+/// Where the other party's description puts the transport of the call.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct RemoteTransport {
+    /// The m-line index of the section carrying it.
+    index: u32,
+    /// That section's `ice-ufrag`, which its candidates name too.
+    ufrag: Option<String>,
+    /// Whether any section at all was accepted.
+    ///
+    /// A description in which every section has `port 0` is a peer that agreed
+    /// to nothing. There is no transport to find, and no call to be had.
+    accepted_anything: bool,
+}
+
+/// Read the transport out of a session description.
+///
+/// `a=group:BUNDLE` names the sections sharing one transport, in order, so its
+/// first mid is the section that owns it. Without a usable bundle line the
+/// first section with a port is the next best answer, and the ufrag is read
+/// from whichever section that turns out to be — not from the top of the file,
+/// where a rejected section's stale credentials sit waiting to be mistaken for
+/// the call's.
+fn remote_transport(sdp: &str) -> RemoteTransport {
+    struct Section<'a> {
+        mid: Option<&'a str>,
+        port: &'a str,
+        ufrag: Option<&'a str>,
+    }
+
+    let mut bundle: Vec<&str> = Vec::new();
+    let mut sections: Vec<Section<'_>> = Vec::new();
+
+    for line in sdp.lines().map(str::trim_end) {
+        if let Some(media) = line.strip_prefix("m=") {
+            sections.push(Section {
+                mid: None,
+                // `m=<media> <port> <proto> <formats…>`
+                port: media.split_whitespace().nth(1).unwrap_or("0"),
+                ufrag: None,
+            });
+        } else if let Some(mids) = line.strip_prefix("a=group:BUNDLE") {
+            bundle = mids.split_whitespace().collect();
+        } else if let Some(section) = sections.last_mut() {
+            if let Some(mid) = line.strip_prefix("a=mid:") {
+                section.mid = Some(mid);
+            } else if let Some(ufrag) = line.strip_prefix("a=ice-ufrag:") {
+                section.ufrag = Some(ufrag);
+            }
         }
     }
+
+    let is_live = |section: &Section<'_>| section.port != "0";
+    let accepted_anything = sections.iter().any(is_live);
+
+    // The bundled section, when the line names one we can find and that the
+    // answer did not go on to reject.
+    let bundled = bundle.first().and_then(|mid| {
+        sections
+            .iter()
+            .position(|section| section.mid == Some(*mid) && is_live(section))
+    });
+
+    let index = bundled
+        .or_else(|| sections.iter().position(is_live))
+        .unwrap_or(0);
+
+    RemoteTransport {
+        index: u32::try_from(index).unwrap_or(0),
+        ufrag: sections
+            .get(index)
+            .and_then(|section| section.ufrag)
+            .map(ToOwned::to_owned),
+        accepted_anything,
+    }
+}
+
+/// A candidate line without its `ufrag` tag.
+///
+/// The tag is an extension attribute — a pair of words at the end of the line
+/// — so removing it leaves a candidate every parser still reads.
+fn without_ufrag(candidate: &str) -> String {
+    let mut kept = Vec::new();
+    let mut words = candidate.split_whitespace();
+
+    while let Some(word) = words.next() {
+        if word == "ufrag" {
+            words.next();
+            continue;
+        }
+
+        kept.push(word);
+    }
+
+    kept.join(" ")
 }
 
 /// The type of an ICE candidate — `host`, `srflx`, `prflx` or `relay`.
@@ -1126,6 +1370,136 @@ fn media_sections(sdp: &str) -> Vec<MediaKind> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The line Element for Android sent on 23 August 2026, tag and all.
+    const TAGGED_CANDIDATE: &str = "candidate:2907572369 1 udp 2122194687 \
+192.168.50.234 34239 typ host generation 0 ufrag Jlts network-id 6 \
+network-cost 10";
+
+    /// Element for Android's answer to a video call, 23 August 2026: the
+    /// audio section rejected, the video one kept and bundled alone.
+    const ANSWER_WITH_AUDIO_REJECTED: &str = "\
+v=0\r\n\
+o=- 1645252129759934538 2 IN IP4 127.0.0.1\r\n\
+s=-\r\n\
+t=0 0\r\n\
+a=group:BUNDLE video1\r\n\
+m=audio 0 UDP/TLS/RTP/SAVPF 0\r\n\
+a=ice-ufrag:zHw1\r\n\
+a=mid:audio0\r\n\
+m=video 9 UDP/TLS/RTP/SAVPF 96\r\n\
+a=ice-ufrag:dv9I\r\n\
+a=mid:video1\r\n";
+
+    /// Its answer to a voice call the same minute: nothing accepted at all.
+    const ANSWER_WITH_NOTHING_ACCEPTED: &str = "\
+v=0\r\n\
+o=- 1586226428592016302 2 IN IP4 127.0.0.1\r\n\
+s=-\r\n\
+t=0 0\r\n\
+a=group:BUNDLE\r\n\
+m=audio 0 UDP/TLS/RTP/SAVPF 0\r\n\
+a=ice-ufrag:Orve\r\n\
+a=mid:audio0\r\n";
+
+    #[test]
+    fn the_same_address_twice_is_one_address() {
+        // The pair Element for Android sent that killed the process: its own
+        // address, once as a host candidate and once seen through STUN.
+        let host = "candidate:2160058006 1 udp 2122194687 192.168.50.234 59098 typ host \
+                    generation 0";
+        let srflx = "candidate:1628368629 1 udp 1685987071 192.168.50.234 59098 typ srflx \
+                     raddr 192.168.50.234 rport 59098 generation 0";
+
+        assert_eq!(transport_address(host), transport_address(srflx));
+    }
+
+    #[test]
+    fn tcp_candidates_on_one_port_are_told_apart_by_their_type() {
+        let active = "candidate:1 1 tcp 1518018303 100.117.101.3 9 typ host tcptype active";
+        let passive = "candidate:2 1 tcp 1518018303 100.117.101.3 9 typ host tcptype passive";
+        let elsewhere = "candidate:3 1 tcp 1518018303 192.168.50.234 9 typ host tcptype active";
+
+        assert_ne!(transport_address(active), transport_address(passive));
+        assert_ne!(transport_address(active), transport_address(elsewhere));
+    }
+
+    #[test]
+    fn a_remote_loopback_candidate_is_not_a_path_to_them() {
+        let host = "candidate:324044106 1 udp 2122194687 192.168.50.234 48264 typ host";
+        let loopback = "candidate:971919295 1 udp 2121867007 127.0.0.1 40986 typ host";
+        let loopback6 = "candidate:683826487 1 udp 2121940223 ::1 54784 typ host";
+
+        assert!(is_usable_candidate(host));
+        assert!(!is_usable_candidate(loopback));
+        assert!(!is_usable_candidate(loopback6));
+
+        // Not a candidate at all: end-of-candidates, which has its own path.
+        assert!(is_usable_candidate(""));
+    }
+
+    #[test]
+    fn the_transport_is_the_section_the_bundle_names() {
+        let transport = remote_transport(ANSWER_WITH_AUDIO_REJECTED);
+
+        // Not section 0, whose `ice-ufrag` is the one a call spent five
+        // seconds measuring every candidate against.
+        assert_eq!(transport.index, 1);
+        assert_eq!(transport.ufrag.as_deref(), Some("dv9I"));
+        assert!(transport.accepted_anything);
+    }
+
+    #[test]
+    fn a_description_that_accepts_nothing_says_so() {
+        let transport = remote_transport(ANSWER_WITH_NOTHING_ACCEPTED);
+
+        assert!(!transport.accepted_anything);
+    }
+
+    #[test]
+    fn a_bundle_of_everything_puts_the_transport_first() {
+        let sdp = "\
+v=0\r\n\
+a=group:BUNDLE audio0 video1\r\n\
+m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n\
+a=ice-ufrag:abcd\r\n\
+a=mid:audio0\r\n\
+m=video 0 UDP/TLS/RTP/SAVPF 96\r\n\
+a=ice-ufrag:efgh\r\n\
+a=mid:video1\r\n";
+
+        let transport = remote_transport(sdp);
+
+        assert_eq!(transport.index, 0);
+        assert_eq!(transport.ufrag.as_deref(), Some("abcd"));
+    }
+
+    #[test]
+    fn a_tag_matching_the_description_is_left_alone() {
+        assert_eq!(mismatched_ufrag(TAGGED_CANDIDATE, Some("Jlts")), None);
+        assert_eq!(
+            mismatched_ufrag(TAGGED_CANDIDATE, Some("+sSs")).as_deref(),
+            Some("Jlts")
+        );
+    }
+
+    #[test]
+    fn the_ufrag_tag_is_removed_and_the_rest_is_not() {
+        assert_eq!(
+            without_ufrag(TAGGED_CANDIDATE),
+            "candidate:2907572369 1 udp 2122194687 192.168.50.234 34239 typ host \
+             generation 0 network-id 6 network-cost 10"
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+    }
+
+    #[test]
+    fn a_candidate_with_no_tag_is_unchanged() {
+        let plain = "candidate:1 1 UDP 2015363327 192.168.50.140 60336 typ host";
+        assert_eq!(without_ufrag(plain), plain);
+    }
 
     const AUDIO_VIDEO_OFFER: &str = "\
 v=0\r\n\
