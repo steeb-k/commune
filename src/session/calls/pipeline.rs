@@ -483,6 +483,30 @@ impl CallPipeline {
                 None
             });
 
+        self.watch_states(&sender);
+
+        // Incoming media arrives as a new pad per stream, still packetised.
+        let pipeline = self.pipeline.downgrade();
+        let error_sender = sender.clone();
+        self.webrtcbin.connect_pad_added(move |_, pad| {
+            if pad.direction() != gst::PadDirection::Src {
+                return;
+            }
+            let Some(pipeline) = pipeline.upgrade() else {
+                return;
+            };
+
+            if let Err(error) = attach_receiver(&pipeline, pad, &remote_video_sink) {
+                error!("Could not play an incoming stream: {error}");
+                let _ = error_sender.unbounded_send(PipelineEvent::Error(error.to_string()));
+            }
+        });
+
+        self.watch_bus(sender)
+    }
+
+    /// Follow the four state machines `webrtcbin` keeps.
+    fn watch_states(&self, sender: &mpsc::UnboundedSender<PipelineEvent>) {
         let gathering_sender = sender.clone();
         self.webrtcbin
             .connect_notify(Some("ice-gathering-state"), move |webrtcbin, _| {
@@ -550,24 +574,13 @@ impl CallPipeline {
                     webrtcbin.property::<gst_webrtc::WebRTCSignalingState>("signaling-state");
                 debug!("Signalling state is now {state:?}");
             });
+    }
 
-        // Incoming media arrives as a new pad per stream, still packetised.
-        let pipeline = self.pipeline.downgrade();
-        let error_sender = sender.clone();
-        self.webrtcbin.connect_pad_added(move |_, pad| {
-            if pad.direction() != gst::PadDirection::Src {
-                return;
-            }
-            let Some(pipeline) = pipeline.upgrade() else {
-                return;
-            };
-
-            if let Err(error) = attach_receiver(&pipeline, pad, &remote_video_sink) {
-                error!("Could not play an incoming stream: {error}");
-                let _ = error_sender.unbounded_send(PipelineEvent::Error(error.to_string()));
-            }
-        });
-
+    /// Report what the pipeline's bus says went wrong.
+    fn watch_bus(
+        &mut self,
+        sender: mpsc::UnboundedSender<PipelineEvent>,
+    ) -> Result<(), PipelineError> {
         let bus = self.pipeline.bus().expect("a pipeline always has a bus");
         let bus_sender = sender;
         let guard = bus
