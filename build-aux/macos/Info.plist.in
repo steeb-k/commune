@@ -81,10 +81,19 @@
 
     <!--
       Required before the camera can be opened at all: without it the process
-      is killed rather than refused. Camera QR scanning is M4 and is stubbed
-      out today, but the string has to ship in the bundle that first asks.
+      is killed rather than refused. A video call opens it through
+      autovideosrc; camera QR scanning is M4 and is stubbed out today, but the
+      string has to ship in the bundle that first asks.
     -->
     <key>NSCameraUsageDescription</key>
-    <string>@APP_NAME@ uses the camera to scan the QR code that verifies another Matrix session.</string>
+    <string>@APP_NAME@ uses the camera for video calls, and to scan the QR code that verifies another Matrix session.</string>
+
+    <!--
+      The same rule, and the same consequence for leaving it out: a voice call
+      opens the microphone through autoaudiosrc, so without this key placing
+      one kills the application rather than showing a permission prompt.
+    -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>@APP_NAME@ uses the microphone for voice and video calls.</string>
 </dict>
 </plist>
