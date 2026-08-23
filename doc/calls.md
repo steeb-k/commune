@@ -235,6 +235,22 @@ Meson dependencies — they are plugins, found at runtime — so a build that
 succeeds on a machine without them produces a client whose calls fail with a
 missing-element error rather than one that fails to link.
 
+**That is not hypothetical, and macOS is where it happened.** conda-forge's
+`gst-plugins-bad` ships the `libgstwebrtc-1.0` library and the
+`gstreamer-webrtc-1.0.pc` this fork links against, but not the `webrtc`, `nice`
+or `srtp` plugins — and the channel has no `libnice` or `libsrtp` package at
+all. The build was clean, every test passed, and `webrtcbin` did not exist. So
+`build-aux/macos/setup-conda-macos.sh` builds libsrtp2, libnice and those two
+plugins from source into the environment, and `build-aux/macos/bundle.sh` lists
+`webrtc nice srtp dtls rtp rtpmanager` among the plugins it copies — `rtp` and
+`rtpmanager` were missing from that list too, so even the payloaders that _did_
+exist in the environment were being left out of the app. `macos.md` has the
+whole recipe. Check with:
+
+```sh
+gst-inspect-1.0 webrtcbin
+```
+
 ## Testing
 
 `./testing/local-homeserver.sh up` now runs a coturn beside the Synapse and

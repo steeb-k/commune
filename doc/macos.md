@@ -117,6 +117,52 @@ environment by the setup script:
   the vector renderer is always enabled, and conda-forge's build already has it. gtksourceview
   uses `-Dintrospection=enabled`. Both need their sysprof subproject disabled, which does not
   build on macOS (`fatal error: 'config.h' file not found`).
+* **`webrtcbin`, and the two libraries under it.** conda-forge's `gst-plugins-bad` carries the
+  `libgstwebrtc-1.0` _library_ and the `gstreamer-webrtc-1.0.pc` that `Cargo.toml` links against,
+  so the Rust side builds and links perfectly well — but it does **not** carry the `webrtc`,
+  `nice` or `srtp` _plugins_, and there is no `libnice` or `libsrtp` package anywhere in the
+  channel for it to have built them from. Every other element a call needs is present. The result
+  is a client that compiles cleanly and then ends every call with a missing-element error, which
+  is exactly the failure `calls.md` warned about under "Runtime requirements": these are plugins
+  found at runtime, not Meson dependencies, so nothing fails at build time.
+
+  So `build_webrtc()` builds three things, in the order they depend on each other:
+
+  | Built | Why |
+  | --- | --- |
+  | libsrtp2 | the ciphers under `srtpenc`, which `dtlssrtpenc` makes **by name** at runtime |
+  | libnice | ICE, and the `nice` plugin (`nicesrc`/`nicesink`) that ships with it |
+  | gst-plugins-bad | rebuilt at the version conda-forge installed, everything but `webrtc`, `srtp`, `dtls` and `sctp` switched off |
+
+  Both libraries are built against the environment's OpenSSL (`-Dcrypto-library=openssl`) rather
+  than their built-in ciphers, which is what the AES-GCM profiles WebRTC negotiates need.
+
+  **libnice must be at least 0.1.23.** That is what `gst-libs/gst/webrtc/nice/meson.build` asks
+  for, and an older one fails the check silently: `libgstwebrtcnice` is not built, so
+  `libgstwebrtcnice_dep` is not found, so the `webrtc` plugin is quietly dropped from the build
+  with no error anywhere.
+
+  **`dtls` and `sctp` are enabled because the `webrtc` option requires them to be**, not because
+  their plugins are wanted — meson refuses to configure otherwise, with
+  `Feature dtls cannot be disabled: webrtc option is enabled`. conda-forge already ships both, and
+  neither is copied out.
+
+  Only three files come out of the staging prefix: `libgstwebrtc.dylib`, `libgstsrtp.dylib` and
+  `libgstwebrtcnice-1.0`. gst-plugins-bad also builds a dozen libraries conda-forge already
+  ships — `libgstwebrtc-1.0`, `libgstsctp-1.0`, `libgstcodecparsers-1.0` — and overwriting those
+  with copies compiled here would replace the macOS 11 deployment floor with this machine's SDK,
+  which is the whole reason for using conda-forge. `libgstwebrtcnice-1.0` is the exception
+  because it exists nowhere in the environment: it is the half of gst-plugins-bad that needs
+  libnice. Everything built here carries `minos 11.0`, because `build_extras()` exports
+  `MACOSX_DEPLOYMENT_TARGET`; check with `vtool -show-build`.
+
+  The GStreamer registry caches which plugins exist, so `~/.cache/gstreamer-1.0` is cleared after
+  the copy. A stale registry hides a plugin that has just appeared, which looks exactly like a
+  build that did not work.
+
+  This is the slow part of the setup and it is the same three projects at the same pinned
+  versions on every machine, so it is the obvious candidate for prebuilt artifacts if it ever
+  becomes a nuisance.
 
 `shared-mime-info` is also absent from conda-forge. Nothing so far needs it.
 
