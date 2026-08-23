@@ -680,22 +680,31 @@ impl CallPipeline {
     ///
     /// An empty candidate means they have finished gathering.
     pub(crate) fn add_ice_candidate(&self, sdp_m_line_index: u32, candidate: &str) {
-        // The index is the other party's, and it counts their media sections,
-        // not ours. An audio-only call has one section here, so a candidate
-        // labelled for the second one names nothing — `webrtcbin` drops it, and
-        // a caller that receives only those gets no remote candidates at all
-        // and never starts checking. Everything is bundled onto the first
-        // transport anyway, so that is where an index we cannot use belongs.
-        let sections = u32::try_from(self.media.len()).unwrap_or(1);
-        let index = if sdp_m_line_index < sections {
-            sdp_m_line_index
-        } else {
+        // Every remote candidate goes on the first media section, whatever
+        // index the other party put on it.
+        //
+        // This client always negotiates `max-bundle`, so a call has exactly one
+        // transport and it belongs to section 0. The second section is the
+        // `a=bundle-only` video one, advertised with `port 0` — it has no
+        // transport of its own, so a candidate placed there names nothing and
+        // `webrtcbin` drops it without a word.
+        //
+        // That is not a hypothetical: an outgoing call whose peer labelled
+        // every candidate `1` collected none at all, and `ice-connection-state`
+        // never left `New` — it did not reach `Checking`, let alone fail. The
+        // incoming call that worked in the same session was the one whose peer
+        // sent a mixture including `0`.
+        //
+        // Clamping only out-of-range indices was tried first and was not
+        // enough: on a video call `1` is in range and still wrong.
+        let index = 0u32;
+
+        if sdp_m_line_index != index {
             debug!(
-                "Remote candidate names m-line {sdp_m_line_index} and this call has {sections}; \
-                 using the bundled first section"
+                "Remote candidate is labelled m-line {sdp_m_line_index}; \
+                 this call is bundled onto section 0"
             );
-            0
-        };
+        }
 
         if candidate.is_empty() {
             // The spec spells end-of-candidates as an empty string;

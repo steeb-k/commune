@@ -242,6 +242,15 @@ impl Calls {
                         event.content.party_id.as_ref(),
                         &event.content.candidates,
                     );
+                } else {
+                    // The last silent path. Candidates for a call this session
+                    // is not in look exactly like candidates that never
+                    // arrived, and the two want opposite fixes.
+                    debug!(
+                        "{} ICE candidate(s) arrived for call {}, which is not the call in progress",
+                        event.content.candidates.len(),
+                        event.content.call_id
+                    );
                 }
             }
             CallSignal::Hangup(event) => {
