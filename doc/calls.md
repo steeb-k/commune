@@ -168,6 +168,23 @@ The symptom in the log is one line — `the answer came back empty` — and it t
 this long to see because the failure is on the _callee_, while the complaint a
 person makes is about the caller's window.
 
+## A remote candidate's m-line index is the other party's, not ours
+
+`sdpMLineIndex` counts the sender's media sections. An audio-only call has one
+section on this side, index 0 — so a candidate labelled for the second one
+names nothing here, and `webrtcbin` drops it without a word. A caller that
+receives only those ends up with no remote candidates at all and never leaves
+`New`: `ice-connection-state` does not even reach `Checking`.
+
+That is what an outgoing call did while an incoming one worked. The incoming
+one was video, so it had a second section for index 1 to land on; the outgoing
+one was audio and did not.
+
+Everything is bundled onto the first transport regardless — `max-bundle` is
+negotiated on both — so an index this side cannot use is applied to section 0,
+which is where the transport is. Indices that do name a section here are left
+alone, since a peer that is not bundling still means what it says.
+
 ## Both connection states are watched, not only the aggregate
 
 This was chased first, on the theory that a call with a working path was

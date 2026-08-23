@@ -680,6 +680,23 @@ impl CallPipeline {
     ///
     /// An empty candidate means they have finished gathering.
     pub(crate) fn add_ice_candidate(&self, sdp_m_line_index: u32, candidate: &str) {
+        // The index is the other party's, and it counts their media sections,
+        // not ours. An audio-only call has one section here, so a candidate
+        // labelled for the second one names nothing — `webrtcbin` drops it, and
+        // a caller that receives only those gets no remote candidates at all
+        // and never starts checking. Everything is bundled onto the first
+        // transport anyway, so that is where an index we cannot use belongs.
+        let sections = u32::try_from(self.media.len()).unwrap_or(1);
+        let index = if sdp_m_line_index < sections {
+            sdp_m_line_index
+        } else {
+            debug!(
+                "Remote candidate names m-line {sdp_m_line_index} and this call has {sections}; \
+                 using the bundled first section"
+            );
+            0
+        };
+
         if candidate.is_empty() {
             // The spec spells end-of-candidates as an empty string;
             // `webrtcbin` spells it as a NULL candidate, and hands an empty
@@ -687,13 +704,13 @@ impl CallPipeline {
             // and fails.
             debug!("End of candidates from the other party");
             self.webrtcbin
-                .emit_by_name::<()>("add-ice-candidate", &[&sdp_m_line_index, &None::<String>]);
+                .emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
             return;
         }
 
-        debug!("Adding remote candidate for m-line {sdp_m_line_index}");
+        debug!("Adding remote candidate for m-line {index}");
         self.webrtcbin
-            .emit_by_name::<()>("add-ice-candidate", &[&sdp_m_line_index, &candidate]);
+            .emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
     }
 
     /// Set whether our own microphone is muted.
