@@ -529,7 +529,7 @@ mod imp {
                     room,
                     state_key,
                     // A pack that we create uses the event type that we send.
-                    kind: RoomPackKind::Unstable,
+                    kind: RoomPackKind::Stable,
                 },
             ));
         }

@@ -52,7 +52,7 @@ use crate::{spawn, spawn_tokio};
 ///
 /// Exposed so that the permission to change them can be checked without
 /// repeating the string.
-pub(crate) const ROOM_IMAGE_PACK_EVENT_TYPE: &str = RoomEmotesEventContent::TYPE;
+pub(crate) const ROOM_IMAGE_PACK_EVENT_TYPE: &str = RoomImagePackEventContent::TYPE;
 
 /// The state key of the first image pack of a room.
 const FIRST_STATE_KEY: &str = "";
@@ -62,11 +62,11 @@ const STATE_KEY_PREFIX: &str = "pack";
 
 /// The event types of a room image pack, in the order in which they are read.
 ///
-/// The unstable type comes last so that it wins over the stable one, since it
+/// The stable type comes last so that it wins over the unstable one, since it
 /// is the one that we send.
 const ROOM_PACK_TYPES: &[(RoomPackKind, &str)] = &[
-    (RoomPackKind::Stable, RoomImagePackEventContent::TYPE),
     (RoomPackKind::Unstable, RoomEmotesEventContent::TYPE),
+    (RoomPackKind::Stable, RoomImagePackEventContent::TYPE),
 ];
 
 /// Read the image packs defined in the state of the given room.
@@ -140,7 +140,7 @@ async fn fetch_room_pack(session: &Session, room: &Room, state_key: String) -> O
     let key = state_key.clone();
 
     let handle = spawn_tokio!(async move {
-        // The unstable type comes first, so that it wins over the stable one,
+        // The stable type comes first, so that it wins over the unstable one,
         // as it does when the state store is what answers.
         for (kind, event_type) in ROOM_PACK_TYPES.iter().rev() {
             let request = get_state_event_for_key::v3::Request::new(
@@ -375,10 +375,13 @@ mod imp {
         }
 
         /// The room image packs enabled globally, under both names.
+        ///
+        /// A pack listed under both keeps the metadata of the stable event,
+        /// which is the one we write.
         pub(super) fn enabled_packs(&self) -> EnabledPacks {
-            let mut enabled_packs = self.enabled_packs_stable.borrow().clone();
+            let mut enabled_packs = self.enabled_packs_unstable.borrow().clone();
 
-            for (room_id, packs) in &*self.enabled_packs_unstable.borrow() {
+            for (room_id, packs) in &*self.enabled_packs_stable.borrow() {
                 enabled_packs
                     .entry(room_id.clone())
                     .or_default()
@@ -717,7 +720,7 @@ impl ImagePacks {
     /// Enable or disable the pack with the given state key in the given room,
     /// globally.
     ///
-    /// Enabling writes the unstable event, which is the one we send. Disabling
+    /// Enabling writes the stable event, which is the one we send. Disabling
     /// has to update whichever events hold the pack, so that it does not come
     /// back on the next load.
     pub(crate) async fn set_pack_enabled(
@@ -740,15 +743,15 @@ impl ImagePacks {
         let mut unstable = imp.enabled_packs_unstable.borrow().clone();
         let mut stable = imp.enabled_packs_stable.borrow().clone();
 
-        // The stable event only needs to be written when it is the one that
+        // The unstable event only needs to be written when it is the one that
         // holds the pack that is being disabled.
-        let write_stable = !enabled
-            && stable
+        let write_unstable = !enabled
+            && unstable
                 .get(room_id)
                 .is_some_and(|packs| packs.contains_key(state_key));
 
         if enabled {
-            unstable
+            stable
                 .entry(room_id.to_owned())
                 .or_default()
                 .entry(state_key.to_owned())
@@ -772,15 +775,15 @@ impl ImagePacks {
             let account = client.account();
 
             account
-                .set_account_data(EmoteRoomsEventContent {
-                    rooms: unstable_clone,
+                .set_account_data(ImagePackRoomsEventContent {
+                    rooms: stable_clone,
                 })
                 .await?;
 
-            if write_stable {
+            if write_unstable {
                 account
-                    .set_account_data(ImagePackRoomsEventContent {
-                        rooms: stable_clone,
+                    .set_account_data(EmoteRoomsEventContent {
+                        rooms: unstable_clone,
                     })
                     .await?;
             }

@@ -9,7 +9,7 @@
 //! There is one type per name rather than one type with an `alias`, because an
 //! alias only affects deserialization: both the state store and the event
 //! handlers of the SDK key events on the single type string of a content type.
-//! We send the unstable names and read both.
+//! We send the stable names and read both.
 //!
 //! MSC2545 also defined a personal image pack in the global account data,
 //! `im.ponies.user_emotes`. It was not carried into the stable specification,
@@ -178,8 +178,8 @@ pub struct PackContent {
 
 /// The content of an `im.ponies.room_emotes` event.
 ///
-/// An image pack defined in the state of a room. The state key is the
-/// identifier of the pack within that room.
+/// The unstable counterpart of [`RoomImagePackEventContent`], which we read
+/// but do not send.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
 #[ruma_event(type = "im.ponies.room_emotes", kind = State, state_key_type = String)]
 pub struct RoomEmotesEventContent {
@@ -190,8 +190,8 @@ pub struct RoomEmotesEventContent {
 
 /// The content of an `m.room.image_pack` event.
 ///
-/// The stable counterpart of [`RoomEmotesEventContent`], which we read but do
-/// not send.
+/// An image pack defined in the state of a room. The state key is the
+/// identifier of the pack within that room.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
 #[ruma_event(type = "m.room.image_pack", kind = State, state_key_type = String)]
 pub struct RoomImagePackEventContent {
@@ -231,7 +231,8 @@ pub type EnabledPacks = BTreeMap<OwnedRoomId, BTreeMap<String, EnabledPackMeta>>
 
 /// The content of an `im.ponies.emote_rooms` event.
 ///
-/// Lists the room image packs that the user enabled globally.
+/// The unstable counterpart of [`ImagePackRoomsEventContent`], which we read
+/// but do not send.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
 #[ruma_event(type = "im.ponies.emote_rooms", kind = GlobalAccountData)]
 pub struct EmoteRoomsEventContent {
@@ -241,8 +242,7 @@ pub struct EmoteRoomsEventContent {
 
 /// The content of an `m.image_pack.rooms` event.
 ///
-/// The stable counterpart of [`EmoteRoomsEventContent`], which we read but do
-/// not send.
+/// Lists the room image packs that the user enabled globally.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
 #[ruma_event(type = "m.image_pack.rooms", kind = GlobalAccountData)]
 pub struct ImagePackRoomsEventContent {
@@ -412,16 +412,20 @@ mod tests {
         assert_eq!(to_value(deserialized).unwrap(), expected);
     }
 
-    /// The event types that we send are the unstable ones.
+    /// The event types that we send are the stable ones.
     #[test]
-    fn sent_event_types_are_unstable() {
+    fn sent_event_types_are_stable() {
         assert_eq!(
-            EmoteRoomsEventContent::default().event_type().to_string(),
-            "im.ponies.emote_rooms"
+            ImagePackRoomsEventContent::default()
+                .event_type()
+                .to_string(),
+            "m.image_pack.rooms"
         );
         assert_eq!(
-            RoomEmotesEventContent::default().event_type().to_string(),
-            "im.ponies.room_emotes"
+            RoomImagePackEventContent::default()
+                .event_type()
+                .to_string(),
+            "m.room.image_pack"
         );
     }
 
@@ -465,20 +469,16 @@ mod tests {
         assert_eq!(stable.as_original().unwrap().content.pack.images.len(), 1);
     }
 
-    /// The stable event types are the ones we only read.
+    /// The unstable event types are the ones we only read.
     #[test]
-    fn read_event_types_are_stable() {
+    fn read_event_types_are_unstable() {
         assert_eq!(
-            ImagePackRoomsEventContent::default()
-                .event_type()
-                .to_string(),
-            "m.image_pack.rooms"
+            EmoteRoomsEventContent::default().event_type().to_string(),
+            "im.ponies.emote_rooms"
         );
         assert_eq!(
-            RoomImagePackEventContent::default()
-                .event_type()
-                .to_string(),
-            "m.room.image_pack"
+            RoomEmotesEventContent::default().event_type().to_string(),
+            "im.ponies.room_emotes"
         );
     }
 }

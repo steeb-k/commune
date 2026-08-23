@@ -13,9 +13,11 @@ use crate::{prelude::*, session::Room};
 /// it behind under the other name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RoomPackKind {
-    /// `im.ponies.room_emotes`, from MSC2545, which is the one we create.
+    /// `im.ponies.room_emotes`, from MSC2545, which we read but do not
+    /// create.
     Unstable,
-    /// `m.room.image_pack`, from the specification.
+    /// `m.room.image_pack`, from the specification, which is the one we
+    /// create.
     Stable,
 }
 

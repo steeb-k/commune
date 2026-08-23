@@ -47,19 +47,31 @@ Points that shaped the code:
 
 ## Wire format
 
-The specification uses `m.*`; deployed clients use `im.ponies.*`. We read both
-and send `im.ponies.*`.
+The specification uses `m.*`; deployed clients still use the `im.ponies.*`
+names from MSC2545. We send `m.*` and read both.
 
-| Purpose            | Send (unstable)         | Also read (stable)   |
-| ------------------ | ----------------------- | -------------------- |
-| Room pack          | `im.ponies.room_emotes` | `m.room.image_pack`  |
-| Enabled room packs | `im.ponies.emote_rooms` | `m.image_pack.rooms` |
+| Purpose            | Send (stable)        | Also read (unstable)    |
+| ------------------ | -------------------- | ----------------------- |
+| Room pack          | `m.room.image_pack`  | `im.ponies.room_emotes` |
+| Enabled room packs | `m.image_pack.rooms` | `im.ponies.emote_rooms` |
 
-**Revisit this.** Writing the unstable names is the one deliberate departure
-from the specification, and it is only worth its cost while the clients people
-use read them. When Element, Cinny and FluffyChat read `m.room.image_pack` and
-`m.image_pack.rooms`, flip `ROOM_PACK_TYPES` and the type that `save_pack` and
-`set_pack_enabled` send, and the non-standard part of this branch is gone.
+This branch sent `im.ponies.*` at first, so that packs made here were visible
+in Element and FluffyChat. That was the wrong trade. It bought interoperability
+with clients that have not caught up, at the price of putting a non-standard
+event in other people's rooms, and it left a departure in the tree that had to
+be re-argued on every release. The specified names are what belongs in a room's
+state; a client that has not caught up is the one with the gap.
+
+The cost is worth naming plainly: a pack Commune creates does not appear in a
+client that only reads `im.ponies.*`. Nothing that already exists breaks —
+both names are read, and a pack is written back under the name it arrived on,
+so editing one made elsewhere leaves it where it was.
+
+Where both names carry the same pack, the stable one wins: the read order in
+`ROOM_PACK_TYPES` and `fetch_room_pack`, and the merge in `enabled_packs`, all
+put it last. Whether a pack is on is the union of the two account data events,
+so a pack another client enabled stays enabled; turning one off writes the
+stable event, and the unstable one as well when that is where it was listed.
 
 One event here is ours and no specification defines it:
 `io.github.steeb_k.Commune.image_packs_room`, holding the room that new packs are
@@ -301,9 +313,9 @@ keeping.
 
 * **A pack is written back under the event type it was read from.** The
   source of a pack carries that type, so editing a pack that another client
-  created under `m.room.image_pack` does not leave a second copy of it behind
-  under `im.ponies.room_emotes`, shadowing the first. Only a new pack picks
-  the type, and it picks the unstable one.
+  created under `im.ponies.room_emotes` does not leave a second copy of it
+  behind under `m.room.image_pack`, shadowing the first. Only a new pack picks
+  the type, and it picks the stable one.
 * **Deleting is saving a pack with no images**, which is what the reader
   already treats as absent, and is also what a redacted pack looks like. The
   pack is removed from the packs enabled everywhere at the same time.
@@ -427,8 +439,8 @@ their names. The placements to cover, one flag each:
 
 | Flag | What it writes |
 | ---- | -------------- |
-| `--room` | `im.ponies.room_emotes` in the state of the room |
-| `--room --stable` | `m.room.image_pack`, to check that we read both names |
+| `--room` | `im.ponies.room_emotes` in the state of the room, which we read but never write |
+| `--room --stable` | `m.room.image_pack`, the name we write |
 | `--room --enable-globally` | also `im.ponies.emote_rooms`, so the pack appears in every room |
 | `--personal` | `im.ponies.user_emotes`, which we no longer read |
 
@@ -436,8 +448,8 @@ their names. The placements to cover, one flag each:
 the default leaves `usage` unset, which means everywhere.
 
 There is an authoring UI now, so the tool is only needed to put a pack
-somewhere Commune will not write to: under the stable event name
-(`--room --stable`), to check that both names are read.
+somewhere Commune will not write to: under the unstable event name (`--room`,
+the default), to check that both names are read.
 
 Two things that look like bugs but are not:
 
