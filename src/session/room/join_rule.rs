@@ -34,7 +34,7 @@ pub enum JoinRuleValue {
 impl JoinRuleValue {
     /// Whether we support editing this join rule.
     pub(crate) fn can_be_edited(self) -> bool {
-        matches!(self, Self::Invite | Self::Public)
+        matches!(self, Self::Invite | Self::Public | Self::RoomMembership)
     }
 }
 
