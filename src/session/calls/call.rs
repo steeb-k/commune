@@ -655,10 +655,19 @@ impl Call {
             return;
         }
 
+        // The m-line indices matter as much as the count: with `max-bundle`
+        // every candidate belongs to the first section, and one that says
+        // otherwise lands on a `bundle-only` section with no transport of its
+        // own.
         debug!(
-            "Sending {} ICE candidate(s) for call {}",
+            "{}: sending {} ICE candidate(s) for call {} on m-line(s) {:?}",
+            own_user_id(&self.room()),
             candidates.len(),
-            self.call_id()
+            self.call_id(),
+            candidates
+                .iter()
+                .map(|c| c.sdp_m_line_index.map_or(0, u64::from))
+                .collect::<std::collections::BTreeSet<_>>(),
         );
 
         let content = CallCandidatesEventContent::version_1(
@@ -794,6 +803,11 @@ impl Call {
         candidates: &[Candidate],
     ) {
         if !self.is_remote_party(sender, party_id) {
+            // Silently dropping these is indistinguishable from none arriving.
+            debug!(
+                "Ignoring {} ICE candidate(s) from a party we are not talking to",
+                candidates.len()
+            );
             return;
         }
 
@@ -811,8 +825,14 @@ impl Call {
         };
 
         debug!(
-            "Received {} ICE candidate(s) from the other party",
-            candidates.len()
+            "{}: received {} ICE candidate(s) for call {} on m-line(s) {:?}",
+            own_user_id(&self.room()),
+            candidates.len(),
+            self.call_id(),
+            candidates
+                .iter()
+                .map(|c| c.sdp_m_line_index.map_or(0, u64::from))
+                .collect::<std::collections::BTreeSet<_>>(),
         );
 
         for candidate in candidates {
