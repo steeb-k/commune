@@ -29,7 +29,7 @@ pub(crate) use self::{
     state::{CallEndReason, CallState},
     turn::{TurnCredentials, TurnServer, load_turn_credentials},
 };
-use super::{JoinRuleValue, Room, Session, UserExt};
+use super::{JoinRuleValue, Member, Membership, MembershipListKind, Room, Session, UserExt};
 use crate::spawn;
 
 /// Everything that arrives about a call.
@@ -413,8 +413,40 @@ impl Calls {
 /// are placed to group chat rooms it is possible that another user will
 /// intercept and answer the call." That is not a hint; the invite goes to the
 /// room, and anybody in it can answer.
+///
+/// The count is the test, not whether the room is a direct chat. Two people who
+/// both happen to be in a room that nobody marked as a DM can still call each
+/// other, and a direct chat that grew a third member cannot.
 pub(crate) fn can_call(room: &Room) -> bool {
-    room.joined_members_count() == 2 && room.direct_member().is_some()
+    room.joined_members_count() == 2 && room.own_member().membership() == Membership::Join
+}
+
+/// The one other person in a two-person room.
+///
+/// `Room::direct_member()` only answers for a room in `m.direct`, so the joined
+/// members are what gets looked at. Returns `None` unless there is exactly one
+/// other joined member, which is the same condition as [`can_call`].
+pub(crate) fn other_member(room: &Room) -> Option<Member> {
+    if let Some(member) = room.direct_member() {
+        return Some(member);
+    }
+
+    let own_user_id = room.own_member().user_id().clone();
+    let joined = room
+        .get_or_create_members()
+        .membership_list(MembershipListKind::Join);
+
+    let mut others = (0..joined.n_items())
+        .filter_map(|position| joined.item(position).and_downcast::<Member>())
+        .filter(|member| *member.user_id() != own_user_id);
+
+    let first = others.next()?;
+
+    if others.next().is_some() {
+        return None;
+    }
+
+    Some(first)
 }
 
 /// Whether an invite is too old to ring for.

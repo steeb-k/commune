@@ -134,7 +134,11 @@ second call. A second call in a different room is refused as busy.
   with one other user in them. If they are placed to group chat rooms it is
   possible that another user will intercept and answer the call." The invite
   goes to the room, not to a person. So the call buttons appear on a two-person
-  room and nowhere else.
+  room and nowhere else. The count is the test, not whether the room is in
+  `m.direct`: two people in a room nobody marked as a direct chat can still
+  call each other, and a direct chat that grew a third member cannot. That is
+  why `other_member()` exists rather than `Room::direct_member()`, which only
+  answers for the former.
 * **Invites in public rooms.** "As a starting point, it is RECOMMENDED that
   clients ignore call invites in rooms with a join rule of `public`." Anybody
   can walk into one, and a ringing phone is not a thing a stranger should be
