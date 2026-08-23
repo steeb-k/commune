@@ -4,61 +4,16 @@ use gtk::{
     glib::{clone, closure_local},
 };
 
-use crate::{session::ReactionList, utils::BoundObject};
+use crate::{
+    session::{GlobalAccountData, QUICK_REACTIONS_LEN, ReactionList},
+    utils::BoundObject,
+};
 
-/// A quick reaction.
-#[derive(Debug, Clone, Copy)]
-struct QuickReaction {
-    /// The emoji that is presented.
-    key: &'static str,
-    /// The number of the column where this reaction is presented.
-    ///
-    /// There are 4 columns in total.
-    column: i32,
-    /// The number of the row where this reaction is presented.
-    ///
-    /// There are 2 rows in total.
-    row: i32,
-}
-
-/// The quick reactions to present.
-static QUICK_REACTIONS: &[QuickReaction] = &[
-    QuickReaction {
-        key: "👍️",
-        column: 0,
-        row: 0,
-    },
-    QuickReaction {
-        key: "👎️",
-        column: 1,
-        row: 0,
-    },
-    QuickReaction {
-        key: "😄",
-        column: 2,
-        row: 0,
-    },
-    QuickReaction {
-        key: "🎉",
-        column: 3,
-        row: 0,
-    },
-    QuickReaction {
-        key: "😕",
-        column: 0,
-        row: 1,
-    },
-    QuickReaction {
-        key: "❤️",
-        column: 1,
-        row: 1,
-    },
-    QuickReaction {
-        key: "🚀",
-        column: 2,
-        row: 1,
-    },
-];
+/// Where each quick reaction sits in the grid.
+///
+/// The last cell of the second row belongs to the "More Reactions" button.
+const QUICK_REACTION_CELLS: &[(i32, i32); QUICK_REACTIONS_LEN] =
+    &[(0, 0), (1, 0), (2, 0), (3, 0), (0, 1), (1, 1), (2, 1)];
 
 mod imp {
 
@@ -81,6 +36,9 @@ mod imp {
         #[property(get, set = Self::set_reactions, explicit_notify, nullable)]
         reactions: BoundObject<ReactionList>,
         reaction_bindings: RefCell<HashMap<String, glib::Binding>>,
+        /// The emoji currently presented, in grid order.
+        keys: RefCell<Vec<String>>,
+        account_data: BoundObject<GlobalAccountData>,
     }
 
     #[glib::object_subclass]
@@ -110,20 +68,12 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            // Construct the quick reactions.
-            let grid = &self.reaction_grid;
-            for reaction in QUICK_REACTIONS {
-                let button = gtk::ToggleButton::builder()
-                    .label(reaction.key)
-                    .action_name("event.toggle-reaction")
-                    .action_target(&reaction.key.to_variant())
-                    .css_classes(["flat", "circular"])
-                    .build();
-                button.connect_clicked(|button| {
-                    button.activate_action("context-menu.close", None).unwrap();
-                });
-                grid.attach(&button, reaction.column, reaction.row, 1, 1);
-            }
+            self.build_buttons();
+        }
+
+        fn dispose(&self) {
+            self.account_data.disconnect_signals();
+            self.reactions.disconnect_signals();
         }
     }
 
@@ -147,15 +97,13 @@ mod imp {
             }
 
             // Reset the state of the buttons.
-            for row in 0..=1 {
-                for column in 0..=3 {
-                    if let Some(button) = self
-                        .reaction_grid
-                        .child_at(column, row)
-                        .and_downcast::<gtk::ToggleButton>()
-                    {
-                        button.set_active(false);
-                    }
+            for (column, row) in QUICK_REACTION_CELLS {
+                if let Some(button) = self
+                    .reaction_grid
+                    .child_at(*column, *row)
+                    .and_downcast::<gtk::ToggleButton>()
+                {
+                    button.set_active(false);
                 }
             }
 
@@ -167,37 +115,90 @@ mod imp {
                         imp.update_reactions();
                     }
                 ));
+
+                // The chooser outlives the events it is shown for, so the
+                // account data is only bound the first time one arrives.
+                if self.account_data.obj().is_none() {
+                    let account_data = reactions.user().session().global_account_data();
+                    let changed_handler = account_data.connect_recent_emoji_changed(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.build_buttons();
+                            imp.update_reactions();
+                        }
+                    ));
+
+                    self.account_data.set(account_data, vec![changed_handler]);
+                    self.build_buttons();
+                }
+
                 self.reactions.set(reactions, vec![signal_handler]);
             }
 
             self.update_reactions();
         }
 
+        /// Build the quick reaction buttons from the emoji to present.
+        fn build_buttons(&self) {
+            let keys = match self.account_data.obj() {
+                Some(account_data) => account_data.quick_reactions(),
+                // Before a session is known, the defaults are all we have.
+                None => GlobalAccountData::default_quick_reactions(),
+            };
+
+            if *self.keys.borrow() == keys {
+                return;
+            }
+
+            for (_, binding) in self.reaction_bindings.borrow_mut().drain() {
+                binding.unbind();
+            }
+
+            let grid = &self.reaction_grid;
+            for ((column, row), key) in QUICK_REACTION_CELLS.iter().zip(&keys) {
+                if let Some(previous) = grid.child_at(*column, *row) {
+                    grid.remove(&previous);
+                }
+
+                let button = gtk::ToggleButton::builder()
+                    .label(key)
+                    .action_name("event.toggle-reaction")
+                    .action_target(&key.to_variant())
+                    .css_classes(["flat", "circular"])
+                    .build();
+                button.connect_clicked(|button| {
+                    button.activate_action("context-menu.close", None).unwrap();
+                });
+                grid.attach(&button, *column, *row, 1, 1);
+            }
+
+            self.keys.replace(keys);
+        }
+
         /// Update the state of the quick reactions.
         fn update_reactions(&self) {
             let mut reaction_bindings = self.reaction_bindings.borrow_mut();
             let reactions = self.reactions.obj();
+            let keys = self.keys.borrow();
 
-            for reaction_item in QUICK_REACTIONS {
+            for ((column, row), key) in QUICK_REACTION_CELLS.iter().zip(&*keys) {
                 if let Some(reaction) = reactions
                     .as_ref()
-                    .and_then(|reactions| reactions.reaction_group_by_key(reaction_item.key))
+                    .and_then(|reactions| reactions.reaction_group_by_key(key))
                 {
-                    if reaction_bindings.get(reaction_item.key).is_none() {
-                        let button = self
-                            .reaction_grid
-                            .child_at(reaction_item.column, reaction_item.row)
-                            .unwrap();
+                    if reaction_bindings.get(key).is_none() {
+                        let button = self.reaction_grid.child_at(*column, *row).unwrap();
                         let binding = reaction
                             .bind_property("has-own-user", &button, "active")
                             .sync_create()
                             .build();
-                        reaction_bindings.insert(reaction_item.key.to_string(), binding);
+                        reaction_bindings.insert(key.clone(), binding);
                     }
-                } else if let Some(binding) = reaction_bindings.remove(reaction_item.key) {
+                } else if let Some(binding) = reaction_bindings.remove(key) {
                     if let Some(button) = self
                         .reaction_grid
-                        .child_at(reaction_item.column, reaction_item.row)
+                        .child_at(*column, *row)
                         .and_downcast::<gtk::ToggleButton>()
                     {
                         button.set_active(false);
