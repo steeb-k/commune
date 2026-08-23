@@ -1,0 +1,178 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CallView: Adw.Window {
+  default-width: 420;
+  default-height: 560;
+  title: bind template.title;
+
+  content: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [title]
+      Adw.WindowTitle {
+        title: bind template.title;
+        subtitle: bind template.status;
+      }
+    }
+
+    content: Gtk.Overlay {
+      Gtk.Stack stage {
+        transition-type: crossfade;
+        vexpand: true;
+        hexpand: true;
+
+        Gtk.StackPage {
+          name: "person";
+
+          child: Adw.StatusPage person_page {
+            vexpand: true;
+
+            child: $Avatar remote_avatar {
+              size: 128;
+              accessible-role: presentation;
+            };
+          };
+        }
+
+        Gtk.StackPage {
+          name: "video";
+
+          child: Gtk.Picture remote_picture {
+            content-fit: contain;
+            vexpand: true;
+            hexpand: true;
+          };
+        }
+      }
+
+      [overlay]
+      Gtk.Revealer self_view_revealer {
+        halign: end;
+        valign: start;
+        margin-top: 12;
+        margin-end: 12;
+        transition-type: crossfade;
+
+        child: Gtk.Picture self_picture {
+          content-fit: cover;
+          width-request: 132;
+          height-request: 99;
+
+          styles [
+            "call-self-view",
+          ]
+
+          accessibility {
+            label: _("Your own camera");
+          }
+        };
+      }
+
+      [overlay]
+      Gtk.Stack controls {
+        halign: center;
+        valign: end;
+        margin-bottom: 24;
+        transition-type: crossfade;
+
+        Gtk.StackPage {
+          name: "incoming";
+
+          child: Gtk.Box {
+            spacing: 18;
+
+            Gtk.Button decline_button {
+              icon-name: "call-stop-symbolic";
+              tooltip-text: _("Decline");
+              clicked => $decline() swapped;
+
+              styles [
+                "destructive-action",
+                "circular",
+                "call-button",
+              ]
+
+              accessibility {
+                label: _("Decline the call");
+              }
+            }
+
+            Gtk.Button accept_button {
+              icon-name: "call-start-symbolic";
+              tooltip-text: _("Answer");
+              clicked => $accept() swapped;
+
+              styles [
+                "suggested-action",
+                "circular",
+                "call-button",
+              ]
+
+              accessibility {
+                label: _("Answer the call");
+              }
+            }
+          };
+        }
+
+        Gtk.StackPage {
+          name: "in-call";
+
+          child: Gtk.Box {
+            spacing: 18;
+
+            Gtk.ToggleButton microphone_button {
+              tooltip-text: _("Mute Microphone");
+              toggled => $toggle_microphone() swapped;
+
+              styles [
+                "circular",
+                "call-button",
+              ]
+            }
+
+            Gtk.ToggleButton camera_button {
+              tooltip-text: _("Turn Off Camera");
+              toggled => $toggle_camera() swapped;
+
+              styles [
+                "circular",
+                "call-button",
+              ]
+            }
+
+            Gtk.Button hangup_button {
+              icon-name: "call-stop-symbolic";
+              tooltip-text: _("End Call");
+              clicked => $hangup() swapped;
+
+              styles [
+                "destructive-action",
+                "circular",
+                "call-button",
+              ]
+
+              accessibility {
+                label: _("End the call");
+              }
+            }
+          };
+        }
+
+        Gtk.StackPage {
+          name: "ended";
+
+          child: Gtk.Button close_button {
+            label: _("Close");
+            clicked => $close_window() swapped;
+
+            styles [
+              "pill",
+            ]
+          };
+        }
+      }
+    };
+  };
+}

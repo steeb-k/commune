@@ -64,6 +64,24 @@ template $ContentRoomHistory: Adw.Bin {
       }
 
       [end]
+      Gtk.Button video_call_button {
+        valign: center;
+        visible: false;
+        icon-name: "camera-web-symbolic";
+        tooltip-text: _("Start Video Call");
+        clicked => $start_video_call() swapped;
+      }
+
+      [end]
+      Gtk.Button call_button {
+        valign: center;
+        visible: false;
+        icon-name: "call-start-symbolic";
+        tooltip-text: _("Start Voice Call");
+        clicked => $start_call() swapped;
+      }
+
+      [end]
       Gtk.ToggleButton search_button {
         valign: center;
         icon-name: "system-search-symbolic";

@@ -50,7 +50,7 @@ use crate::{
     prelude::*,
     session::{
         Event, MemberList, Membership, MembershipListKind, ReceiptPosition, Room,
-        TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
+        TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind, can_call,
         is_cannot_leave_server_notice_room,
     },
     spawn, toast,
@@ -85,6 +85,10 @@ mod imp {
         room_title: TemplateChild<RoomHistoryTitle>,
         #[template_child]
         room_menu: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        call_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        video_call_button: TemplateChild<gtk::Button>,
         #[template_child]
         server_notice_banner: TemplateChild<adw::Banner>,
         #[template_child]
@@ -144,6 +148,7 @@ mod imp {
         scroll_timeout: RefCell<Option<glib::SourceId>>,
         read_timeout: RefCell<Option<glib::SourceId>>,
         room_handler: RefCell<Option<glib::SignalHandlerId>>,
+        call_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         permissions_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -375,6 +380,50 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl RoomHistory {
+        /// Show the call buttons only where a call means anything.
+        ///
+        /// A call invite goes to the room, not to a person, and anybody in the
+        /// room can answer it. The spec says so plainly — "calls should only be
+        /// placed to rooms with one other user in them" — so the buttons are
+        /// there for a two-person room and nowhere else.
+        fn update_call_buttons(&self) {
+            let can_call = self.room().is_some_and(|room| can_call(&room));
+
+            self.call_button.set_visible(can_call);
+            self.video_call_button.set_visible(can_call);
+        }
+
+        /// Place a voice call.
+        #[template_callback]
+        fn start_call(&self) {
+            self.place_call(false);
+        }
+
+        /// Place a video call.
+        #[template_callback]
+        fn start_video_call(&self) {
+            self.place_call(true);
+        }
+
+        fn place_call(&self, with_video: bool) {
+            let Some(room) = self.room() else {
+                return;
+            };
+            let Some(calls) = room.session().map(|session| session.calls()) else {
+                return;
+            };
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    if calls.place(&room, with_video).await.is_none() {
+                        toast!(imp.obj(), gettext("Could not start the call"));
+                    }
+                }
+            ));
+        }
+
         /// The label of the button of the server notice banner.
         ///
         /// Returns an empty string, which hides the button, when there is no
@@ -572,6 +621,9 @@ mod imp {
                 if let Some(handler) = self.room_handler.take() {
                     room.disconnect(handler);
                 }
+                for handler in self.call_handlers.take() {
+                    room.disconnect(handler);
+                }
 
                 let permissions = room.permissions();
                 for handler in self.permissions_handlers.take() {
@@ -680,10 +732,19 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_invite_action();
+                        imp.update_call_buttons();
+                    }
+                ));
+                let members_count_handler = room.connect_joined_members_count_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_call_buttons();
                     }
                 ));
 
                 self.room_handler.replace(Some(is_direct_handler));
+                self.call_handlers.replace(vec![members_count_handler]);
 
                 let empty_handler = timeline.connect_is_empty_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -745,6 +806,7 @@ mod imp {
             self.update_room_menu();
             self.update_invite_action();
             self.update_pending_knocks();
+            self.update_call_buttons();
 
             self.obj().notify_timeline();
         }
