@@ -467,8 +467,11 @@ impl CallPipeline {
                 // server says our address looks like from outside, and `relay`
                 // is an allocation on the server itself. No `relay` among them
                 // means the relay was never obtained, whatever the URI said.
+                // The whole line, so that local and remote candidates can be
+                // compared side by side: which pairs exist at all is decided by
+                // their addresses and families, and by the `ufrag` they carry.
                 debug!(
-                    "webrtcbin gathered a {} candidate for m-line {sdp_m_line_index}",
+                    "webrtcbin gathered a {} candidate on m-line {sdp_m_line_index}: {candidate}",
                     candidate_type(&candidate)
                 );
 
@@ -640,6 +643,7 @@ impl CallPipeline {
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, is_answer)?;
         debug!("Setting the remote description");
+        Self::log_ice_credentials(sdp);
 
         // With a promise, so that candidates held back for want of a remote
         // description can go in the moment there is one.
@@ -672,6 +676,7 @@ impl CallPipeline {
     ) -> Result<(), PipelineError> {
         let description = Self::parse_description(sdp, false)?;
         debug!("Setting the remote offer, and answering it when it is applied");
+        Self::log_ice_credentials(sdp);
 
         let webrtcbin = self.webrtcbin.clone();
         let applied = self.remote_description_applied.clone();
@@ -693,6 +698,21 @@ impl CallPipeline {
             .emit_by_name::<()>("set-remote-description", &[&description, &promise]);
 
         Ok(())
+    }
+
+    /// The ICE credentials an SDP carries, for comparing against candidates.
+    ///
+    /// Every candidate names the `ufrag` it belongs to. libnice discards one
+    /// whose `ufrag` is not the remote description's, and discarding all of
+    /// them looks exactly like connectivity failing: pairs are checked, none
+    /// succeed, and ICE gives up quickly because there was nothing real to try.
+    fn log_ice_credentials(sdp: &str) {
+        let ufrag = sdp
+            .lines()
+            .find_map(|line| line.trim_end().strip_prefix("a=ice-ufrag:"))
+            .unwrap_or("(none)");
+
+        debug!("The remote description carries ice-ufrag {ufrag}");
     }
 
     /// Parse an SDP into something `webrtcbin` will take.
