@@ -1,9 +1,14 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    fmt,
+    rc::Rc,
+};
 
 use quick_cache::unsync::Cache;
 use ruma::{OwnedRoomOrAliasId, OwnedUserId, RoomId};
+use url::Url;
 
-use super::{RemoteRoom, RemoteUser};
+use super::{RemoteRoom, RemoteUrlPreview, RemoteUser, UrlPreviewSupport};
 use crate::{session::Session, utils::matrix::MatrixRoomIdUri};
 
 /// The data of the [`RemoteCache`].
@@ -12,6 +17,10 @@ struct RemoteCacheData {
     rooms: RefCell<Cache<OwnedRoomOrAliasId, RemoteRoom>>,
     /// Remote users.
     users: RefCell<Cache<OwnedUserId, RemoteUser>>,
+    /// Previews of URLs, keyed by the URL they are a preview of.
+    url_previews: RefCell<Cache<String, RemoteUrlPreview>>,
+    /// Whether the homeserver can answer a URL preview request.
+    url_previews_support: UrlPreviewSupport,
 }
 
 /// An API to query remote data and cache it.
@@ -29,6 +38,10 @@ impl RemoteCache {
             data: RemoteCacheData {
                 rooms: Cache::new(30).into(),
                 users: Cache::new(30).into(),
+                // A screenful of the timeline holds far fewer links than this,
+                // so scrolling back over one never asks for it twice.
+                url_previews: Cache::new(100).into(),
+                url_previews_support: Cell::new(None).into(),
             }
             .into(),
         }
@@ -98,6 +111,26 @@ impl RemoteCache {
         users.insert(user_id, user.clone());
 
         user
+    }
+
+    /// Get the preview for the given URL.
+    pub(crate) fn url_preview(&self, url: Url) -> RemoteUrlPreview {
+        let mut url_previews = self.data.url_previews.borrow_mut();
+        let key = url.to_string();
+
+        // Check if the preview is in the cache.
+        if let Some(preview) = url_previews.get(&key) {
+            return preview.clone();
+        }
+
+        // We did not find it, request it. Unlike rooms and users, a preview is
+        // never reloaded: a page changing under a message that linked to it
+        // does not change what the message said.
+        let preview =
+            RemoteUrlPreview::new(&self.session, url, self.data.url_previews_support.clone());
+        url_previews.insert(key, preview.clone());
+
+        preview
     }
 }
 
