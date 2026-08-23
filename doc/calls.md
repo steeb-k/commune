@@ -115,9 +115,39 @@ hearing each other.
 `ice-gathering-state` reaching `Complete` is what triggers it, and it flushes
 whatever is still queued at the same time.
 
+**The two ends spell end-of-candidates differently.** The spec says the empty
+string; `webrtcbin` says a NULL candidate, and hands an empty string to its
+parser like any other, where it is not a candidate and fails. So the two are
+translated in `add_ice_candidate()` rather than passed through.
+
 Candidates can arrive before the call is answered, when there is no pipeline to
 give them to. They are kept and replayed after `set-remote-description`.
 Dropping them costs a round trip at best and the call at worst.
+
+## Both connection states are watched, not only the aggregate
+
+`webrtcbin` has two that matter, and only one of them is any use for telling a
+person that their call has started.
+
+`connection-state` is the aggregate `RTCPeerConnectionState`, and it moves only
+once every transport underneath it has reported in — ICE **and** DTLS.
+`ice-connection-state` moves as soon as a candidate pair starts carrying
+traffic.
+
+Watching only the aggregate is how a call with a perfectly good path sits on
+"Connecting…" for ever. That is what it did, on the same wifi and across
+networks alike — and the sameness across both is the tell, because a NAT
+problem would not behave identically on a LAN.
+
+Either one reaching a usable value is now taken as connected, whichever gets
+there first, and the second is a no-op. `Completed` counts alongside
+`Connected`, being the same thing plus "and nothing better is coming".
+`Disconnected` is deliberately not a failure: it is usually a handful of lost
+packets on a wifi handover, and ICE recovers from it on its own.
+
+Every one of these states is logged, along with how many candidates go out and
+come in, because none of it was visible and every guess about ICE costs a round
+trip through somebody else's machine.
 
 ## Two devices, one answer
 
