@@ -120,9 +120,36 @@ string; `webrtcbin` says a NULL candidate, and hands an empty string to its
 parser like any other, where it is not a candidate and fails. So the two are
 translated in `add_ice_candidate()` rather than passed through.
 
+This landed once as a commit that did not contain it — an edit script asserted
+its way out before writing, and the message described code that was not there.
+Verify a change of this kind by grepping the built binary for the strings it
+adds, not by trusting that the edit applied.
+
 Candidates can arrive before the call is answered, when there is no pipeline to
 give them to. They are kept and replayed after `set-remote-description`.
 Dropping them costs a round trip at best and the call at worst.
+
+## Both queues into and off the camera leak
+
+The send queue leaks because `webrtcbin` consumes nothing until the call
+connects; that is recorded above. The **preview** queue leaks for a second
+reason, and it is the one that is easy to miss.
+
+Both queues sit _before_ their `videoconvert`, so what they hold are the
+camera's own buffers. A camera hands out a small fixed pool — four or eight —
+and a queue that holds even a few and does not give them back starves the
+source. The whole tee stops, preview included.
+
+`videotestsrc` allocates a fresh buffer every time and has no pool, so a test
+pipeline built on it cannot reproduce this. Measured against one, the topology
+with a plain preview queue held a steady 30 fps for twelve seconds with
+`webrtcbin` consuming nothing — which cleared the tee, the send queue and the
+sink, and could say nothing at all about the camera.
+
+Also measured, and also not the cause: `Gtk.Image` and `Gtk.Picture` repaint
+identically for this sink — 241 snapshots each against 240 paintable
+invalidations over eight seconds. The self-view being a `Gtk.Image` is a
+sizing decision and nothing more.
 
 ## Both connection states are watched, not only the aggregate
 

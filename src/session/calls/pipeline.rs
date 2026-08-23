@@ -269,7 +269,14 @@ impl CallPipeline {
         let valve = gst::ElementFactory::make("valve").build()?;
         let tee = gst::ElementFactory::make("tee").build()?;
 
-        let preview_queue = gst::ElementFactory::make("queue").build()?;
+        // Leaky for the same reason the send queue is, and one more: this
+        // queue sits before `videoconvert`, so what it holds are the camera's
+        // own buffers. A camera hands out a small fixed pool of them — four or
+        // eight — and a queue that holds even a few and does not give them back
+        // starves the source. `videotestsrc` allocates fresh buffers every
+        // time and cannot reproduce that, which is why the measurement that
+        // cleared the rest of this topology could not clear this.
+        let preview_queue = leaky_queue()?;
         let preview_convert = gst::ElementFactory::make("videoconvert").build()?;
         // Ask the self-view for a plain system-memory format, by name.
         //
@@ -442,6 +449,7 @@ impl CallPipeline {
             .connect_notify(Some("ice-gathering-state"), move |webrtcbin, _| {
                 let state = webrtcbin
                     .property::<gst_webrtc::WebRTCICEGatheringState>("ice-gathering-state");
+                debug!("ICE gathering state is now {state:?}");
 
                 if state == gst_webrtc::WebRTCICEGatheringState::Complete {
                     let _ = gathering_sender.unbounded_send(PipelineEvent::IceGatheringDone);
@@ -453,6 +461,7 @@ impl CallPipeline {
             .connect_notify(Some("connection-state"), move |webrtcbin, _| {
                 let state =
                     webrtcbin.property::<gst_webrtc::WebRTCPeerConnectionState>("connection-state");
+                debug!("Peer connection state is now {state:?}");
 
                 match state {
                     gst_webrtc::WebRTCPeerConnectionState::Connected => {
@@ -463,6 +472,44 @@ impl CallPipeline {
                     }
                     _ => {}
                 }
+            });
+
+        // The ICE connection state, watched alongside the aggregate one above.
+        //
+        // `connection-state` is the aggregate `RTCPeerConnectionState`, and it
+        // moves only once every transport underneath it has reported in — ICE
+        // and DTLS both. `ice-connection-state` moves as soon as a candidate
+        // pair starts carrying traffic. Watching only the aggregate is how a
+        // call with a working path sits on "Connecting…" indefinitely.
+        let ice_connection_sender = sender.clone();
+        self.webrtcbin
+            .connect_notify(Some("ice-connection-state"), move |webrtcbin, _| {
+                let state = webrtcbin
+                    .property::<gst_webrtc::WebRTCICEConnectionState>("ice-connection-state");
+                debug!("ICE connection state is now {state:?}");
+
+                match state {
+                    // `Completed` is `Connected` plus "and nothing better is
+                    // coming"; both mean a pair is carrying traffic.
+                    gst_webrtc::WebRTCICEConnectionState::Connected
+                    | gst_webrtc::WebRTCICEConnectionState::Completed => {
+                        let _ = ice_connection_sender.unbounded_send(PipelineEvent::Connected);
+                    }
+                    gst_webrtc::WebRTCICEConnectionState::Failed => {
+                        let _ =
+                            ice_connection_sender.unbounded_send(PipelineEvent::ConnectionFailed);
+                    }
+                    // `Disconnected` is usually transient — a few lost packets
+                    // — and ICE recovers from it on its own.
+                    _ => {}
+                }
+            });
+
+        self.webrtcbin
+            .connect_notify(Some("signaling-state"), |webrtcbin, _| {
+                let state =
+                    webrtcbin.property::<gst_webrtc::WebRTCSignalingState>("signaling-state");
+                debug!("Signalling state is now {state:?}");
             });
 
         // Incoming media arrives as a new pad per stream, still packetised.
@@ -613,9 +660,17 @@ impl CallPipeline {
     /// An empty candidate means they have finished gathering.
     pub(crate) fn add_ice_candidate(&self, sdp_m_line_index: u32, candidate: &str) {
         if candidate.is_empty() {
+            // The spec spells end-of-candidates as an empty string;
+            // `webrtcbin` spells it as a NULL candidate, and hands an empty
+            // string to its parser like any other, where it is not a candidate
+            // and fails.
             debug!("End of candidates from the other party");
+            self.webrtcbin
+                .emit_by_name::<()>("add-ice-candidate", &[&sdp_m_line_index, &None::<String>]);
+            return;
         }
 
+        debug!("Adding remote candidate for m-line {sdp_m_line_index}");
         self.webrtcbin
             .emit_by_name::<()>("add-ice-candidate", &[&sdp_m_line_index, &candidate]);
     }
