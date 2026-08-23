@@ -34,8 +34,9 @@ use thiserror::Error;
 
 pub(crate) mod ext_traits;
 mod media_message;
+mod url_preview;
 
-pub(crate) use self::media_message::*;
+pub(crate) use self::{media_message::*, url_preview::*};
 use crate::{
     components::{AvatarImageSafetySetting, Pill},
     prelude::*,
