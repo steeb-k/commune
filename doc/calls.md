@@ -390,6 +390,29 @@ whole recipe. Check with:
 gst-inspect-1.0 webrtcbin
 ```
 
+## Telling a missing relay from a broken one
+
+A call between two people on one network needs no TURN at all — host
+candidates find each other. A call between two networks needs a relay, and
+there are three separate ways for that to be absent, which look identical from
+the outside:
+
+* the homeserver offers no TURN server, or one this client cannot use;
+* `webrtcbin` refuses the URI we build from it;
+* the TURN server is reached and refuses to allocate.
+
+All three end the same way: ICE stops at `Checking` and the call never starts.
+So each is logged separately — how many URIs the homeserver offered and what
+they were, whether `webrtcbin` accepted each one, and a warning when a call is
+placed with none at all. The URIs carry no credentials, those being separate
+fields, so logging them is safe; and a `turn_uris` pointing at a LAN address
+looks exactly like a working one until somebody calls in from outside.
+
+`webrtcbin` was measured accepting the percent-encoded URI this client builds —
+`add-turn-server` returns true for it — so a Synapse username full of `:` and
+`@` does not defeat the parser. Whether the server then _authenticates_ it is a
+separate question and not one this client can answer about itself.
+
 ## Testing
 
 `./testing/local-homeserver.sh up` now runs a coturn beside the Synapse and

@@ -65,7 +65,10 @@ pub(crate) async fn load_turn_credentials(client: &MatrixClient) -> TurnCredenti
     let response = match handle.await.expect("task was not aborted") {
         Ok(response) => response,
         Err(error) => {
-            debug!("Homeserver offered no TURN server: {error}");
+            // Not an error in itself — a homeserver need not run one — but it
+            // decides whether anybody behind a NAT can be called at all, so it
+            // is worth saying out loud rather than at debug.
+            warn!("The homeserver offered no TURN server: {error}");
             return TurnCredentials::default();
         }
     };
@@ -84,6 +87,16 @@ pub(crate) async fn load_turn_credentials(client: &MatrixClient) -> TurnCredenti
         })
         .map(|uri| TurnServer { uri })
         .collect::<Vec<_>>();
+
+    // The URIs carry no credentials — those are separate fields — so they are
+    // safe to log, and worth logging: a `turn_uris` pointing at a LAN address
+    // looks exactly like a working one until somebody calls in from outside.
+    debug!(
+        "The homeserver offered {} TURN URI(s), {} of them usable: {:?}",
+        response.uris.len(),
+        servers.len(),
+        response.uris
+    );
 
     TurnCredentials {
         servers,
