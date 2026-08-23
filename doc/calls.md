@@ -4,9 +4,20 @@ This file is the ledger for one-to-one calls: what the fork added, the
 decisions behind it, and what to check when rebasing onto a new Fractal
 release. See `fork.md` for why none of this goes upstream.
 
-**Status: the signalling and the pipeline are written and the whole thing
-builds, but no call has been placed end to end yet.** Nothing below has been
-seen working on screen. Read the last section before trusting any of it.
+**Status: an invite goes out and the call window works; nothing has answered
+one yet.** Seen on screen on 23 August 2026: the buttons appear on the right
+rooms and not on the wrong ones, pressing one builds the pipeline, opens the
+camera, renders the self-view, sends `m.call.invite` into the room and sits in
+`Dialing` with a working mute/camera/hang-up row. What has **not** been seen is
+any of the second half — an answer, ICE connecting, media flowing, or a call
+ending in anything but a hangup or a timeout. Read the last section before
+trusting any of that.
+
+Testing it needs two clients, and two accounts inside one Commune are not two
+clients: `Calls` holds one call per session, so a second call from the same
+account is refused by design, and two pipelines in one process would be
+fighting over one camera and one microphone anyway. Use two machines, or
+Commune against Element.
 
 ## Scope
 
@@ -239,9 +250,9 @@ win. It is there so that the code that reads the credentials, hands them to
 
 ## Not done, and not yet seen working
 
-**Nothing here has been exercised against a real call.** It compiles, the unit
-tests around the SDP and the TURN URI pass, and the harness proves the server
-side. The parts most likely to be wrong first, in the order they will show up:
+**Nothing past the invite has been exercised.** The outgoing half is seen
+working; the answering half, ICE and media are not. The parts most likely to be
+wrong first, in the order they will show up:
 
 1. **The answerer's pad ordering.** Building sink pads to match the offer is
    the fiddliest thing in `webrtcbin`, and getting it wrong shows up as an
@@ -250,7 +261,9 @@ side. The parts most likely to be wrong first, in the order they will show up:
    logs a warning on `false`; watch for that before blaming ICE.
 3. **`autoaudiosrc` and `autovideosrc` under a portal.** On a sandboxed desktop
    the camera wants `pipewiresrc` through the portal, and `autovideosrc` may
-   pick a `v4l2src` that cannot open the device.
+   pick a `v4l2src` that cannot open the device. On the machine this was first
+   run on — an IPU6 camera on Arch — `autovideosrc` opened it and the frames
+   were fine, so this is not a given failure.
 4. **Renegotiation.** `m.call.negotiate` is parsed by ruma and is not handled
    here at all, so a call that renegotiates mid-flight — which is what adding
    video to a voice call looks like — will not follow.
