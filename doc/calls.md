@@ -78,11 +78,25 @@ that exact string in it.
 `turns:` maps to `turns://`. `stun:` is refused rather than guessed at, since
 it takes no credentials.
 
-**No default STUN server.** The usual choice is Google's, and pointing every
-call at a third party to learn our own address tells that third party that a
-call is happening at all. A TURN server answers STUN binding requests too, so
-the homeserver's own covers it — and on a homeserver with no TURN, host
-candidates are what is left, which works on a LAN and not through a NAT.
+**No STUN server of our own choosing, and the homeserver's is used.** The
+usual default is Google's, and pointing every call at a third party to learn
+our own address tells that third party that a call is happening at all. So
+this client names none.
+
+A `stun:` URI in the homeserver's own list is a different thing: its operator
+chose it, and until 23 August 2026 we threw it away. That cost more than it
+looks like. A TURN server does answer STUN binding requests — but only from
+where the client can reach it, and on a deployment whose TURN server sits
+inside the same NAT as the client, the binding response reports the client's
+_private_ address. `webrtcbin` then drops a reflexive candidate identical to a
+host candidate it already has, and the client goes into the call with no
+address the other end can reach: relay or nothing.
+
+That was this deployment, and it is why one end being co-located with coturn
+turned every cross-network call into relay-to-relay. `stun:` is honoured now,
+converted to `webrtcbin`'s `stun://host:port` and set on its `stun-server`
+property. `stuns:` is refused — `webrtcbin` has no spelling for STUN over TLS
+— and a homeserver that names no STUN server behaves exactly as before.
 
 ## Opus is offered with two channels, whatever the microphone has
 
@@ -229,6 +243,29 @@ often.
 
 This is the same fault as the empty answer, one line further down, and it
 survived that fix because the answer was the visible half.
+
+## A candidate says which section it belongs to, by name as well as by index
+
+`m.call.candidates` carries `sdpMid` and `sdpMLineIndex`, and the spec asks
+for at least one. We sent only the index, and for a long time nothing said
+otherwise — a candidate with an index is well-formed and this client reads
+its own incoming candidates by index too.
+
+The other end does not. A client on libwebrtc turns each of them into
+`IceCandidate(sdpMid, sdpMLineIndex, line)`, and a null mid is a candidate
+that goes no further. Nothing is logged, nothing is rejected on the wire, and
+what it looks like from here is a network that will not carry the call:
+
+* the far end has no remote candidates, so it never sends a check;
+* it never installs a relay permission for us either, so the checks _we_ send
+  arrive at its relay and are dropped there — which is exactly what the
+  relay's own counters said, packets in and none out;
+* and ICE on both sides runs its retransmissions out against silence.
+
+So the mid goes out too, read from our own description: `section_mids()` takes
+the `a=mid:` of each section in m-line order, and the candidate signal looks
+its own index up in that. An empty end-of-candidates needs neither field and
+keeps the index it always had.
 
 ## Candidates can arrive before the invite they belong to
 
@@ -654,6 +691,10 @@ durable. This section is the state of it.
   video, `Checking` to `Connected` to `Completed`. Seen on 23 August 2026 at
   21:13, with both media sections accepted — the first call to that client
   that ever negotiated audio.
+* A call between networks, Commune here and the phone on mobile data, with a
+  TURN server outside both. Seen at 23:04 the same evening: `Checking` at
+  27.400, `Connected` at 28.051, `Completed` a second later. Six hundred
+  milliseconds, where every attempt before it spent eight seconds failing.
 * Both ends obtaining a TURN relay from the homeserver's coturn: `add-turn-server`
   accepts the percent-encoded URI, and `host`/`srflx`/`relay` candidates are all
   gathered.
@@ -661,8 +702,8 @@ durable. This section is the state of it.
 
 ### What is not
 
-* A call between networks, against this deployment: the relay refuses to
-  carry it. See "A relay cannot reach another allocation on the same server".
+* Nothing known, as of the run above. What was here — a call between networks
+  — now works.
 
 ### The diagnosis as it stands
 
