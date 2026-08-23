@@ -84,6 +84,43 @@ call is happening at all. A TURN server answers STUN binding requests too, so
 the homeserver's own covers it — and on a homeserver with no TURN, host
 candidates are what is left, which works on a LAN and not through a NAT.
 
+## Opus is offered with two channels, whatever the microphone has
+
+`a=rtpmap:111 OPUS/48000` is a codec libwebrtc does not have. RFC 7587 §7:
+"The RTP clock rate ... MUST be 48000, and the number of channels MUST be 2",
+and libwebrtc holds the other end to it — the channel count is part of the
+codec's identity, so an offer that leaves it off matches nothing and the whole
+media section is answered with `port 0`.
+
+That is what every call to Element for Android did, and it is why they failed
+in ways that looked like ICE. A voice call came back:
+
+```text
+a=group:BUNDLE
+m=audio 0 UDP/TLS/RTP/SAVPF 0
+```
+
+Nothing accepted, an empty bundle group, no transport — so the far end never
+sent a candidate, nothing ever failed, and the call sat in `Connecting` until
+somebody hung it up. A video call came back with the audio rejected and the
+video kept, which failed differently and worse; the next two sections are
+both about that call.
+
+The fix is in the caps, in two places. `encoding-params=2` goes on the
+`application/x-rtp` capsfilter, because **the offer is made before the audio
+chain has negotiated** — `webrtcbin` writes the SDP from whatever the sink pad
+carries at that moment, which for a call placed the instant the pipeline plays
+is the capsfilter's own caps and nothing the encoder would have added. And the
+raw side is pinned to `channels=2` so the declaration is true rather than
+merely correct.
+
+Measured against the real chain: with the mic negotiated first, `rtpopuspay`
+writes `encoding-params=(string)2` and `sprop-stereo=0` on its own and the SDP
+says `OPUS/48000/2`; the offer that went on the wire said `OPUS/48000` and
+carried no `a=fmtp` line at all, which is the signature of an SDP built from
+static caps. Both descriptions are logged now — ours and theirs — because the
+one thing this could not be diagnosed without was seeing them side by side.
+
 ## The offer decides the media sections
 
 `webrtcbin` numbers its sink pads in the order they are requested, and that
@@ -193,12 +230,53 @@ often.
 This is the same fault as the empty answer, one line further down, and it
 survived that fix because the answer was the visible half.
 
-## Every remote candidate goes on section 0
+## Candidates can arrive before the invite they belong to
 
-Whatever index the other party put on it. This client always negotiates
-`max-bundle`, so a call has exactly one transport and it belongs to section 0.
-The second section is the `a=bundle-only` video one, advertised with `port 0`:
-it has no transport of its own, so a candidate placed there names nothing and
+Not before the answer — before the **invite**. The router looks the call up by
+`call_id`, and a batch for a call this session is not in looked exactly like a
+batch for a call that has not been invited yet, so both were dropped.
+
+Measured on 23 August 2026, on an incoming call from Element for Android: all
+twenty-four of its candidates arrived one sync ahead of the invite and were
+thrown away, and the call that followed had not a single remote candidate to
+pair with. It rang, it was answered, an answer went back, and nothing after
+that could ever have connected.
+
+The peer sends both within a few hundred milliseconds of each other and the
+order they reach us is not the order they were sent: in an encrypted room the
+invite is the event that has to wait for a megolm session and its key to go
+out, and the candidates that follow ride a session that already exists.
+
+So a batch whose call is unknown is kept — for thirty seconds, eight batches at
+most — and replayed the moment an invite claims it. Everything else about it is
+unchanged: `Call` holds them again until there is a pipeline, and the pipeline
+holds them again until the remote description is applied.
+
+Anything nothing claims belongs to a call this session is not in, which is the
+other half of what this path always saw, and it is forgotten.
+
+## Every remote candidate goes on the bundled section
+
+Which is section 0 in every call where the other end accepts what was offered,
+and was hard-coded as 0 until one did not. Element's answer to the video call
+above rejected the audio section and kept the video one:
+
+```text
+a=group:BUNDLE video1
+m=audio 0 …   a=ice-ufrag:zHw1   a=mid:audio0
+m=video 9 …   a=ice-ufrag:dv9I   a=mid:video1
+```
+
+Section 0 has no transport, so every candidate put there named nothing, and
+the `ice-ufrag` read from the top of the file — `zHw1`, belonging to the
+rejected section — made all eleven of the other end's candidates look like
+they came from a stranger's call. Both readings now come from the section
+`a=group:BUNDLE` names first, which is the one that owns the transport.
+
+The reasoning behind ignoring the index the other party sends holds as it did.
+This client always negotiates `max-bundle`, so a call has exactly one transport
+and only one section owns it. Our own second section is the `a=bundle-only`
+video one, advertised with `port 0`: a candidate placed there names nothing and
 `webrtcbin` drops it without a word.
 
 A caller whose peer labels every candidate `1` therefore collects none at all,
@@ -211,6 +289,55 @@ would be pairs to try.
 audio-only call there is one section, so `1` is out of range and gets caught. On
 a video call `1` is in range and still wrong, because being in range is not the
 same as having a transport. That distinction cost a round trip.
+
+## libnice aborts the process when it nominates a pair that stopped succeeding
+
+Seen on 23 August 2026, on the first call Element ever accepted both media
+sections of:
+
+```text
+libnice:ERROR:../libnice/agent/conncheck.c:959:
+  priv_conn_check_tick_stream_nominate: assertion failed:
+  (p->state == NICE_CHECK_SUCCEEDED)
+Bail out!
+```
+
+The whole client dies — this is `g_assert` in a dependency, so there is
+nothing to catch and nothing to report to the person on the call.
+
+It happens at the last step of ICE and only on the controlling side, which is
+the one that placed the call. `priv_conn_check_tick_stream_nominate` walks the
+valid pairs looking for the one to nominate, and asserts that a valid pair is
+either succeeded or a discovered pair whose parent succeeded. A pair that
+succeeded and then failed — a later check on it timing out, a TCP connection
+dropping — is valid, has no parent, and is in neither state.
+
+The assertion is on libnice's `master` as well as in 0.1.23, so there is no
+version to move to. Which pair gets into that state, though, is decidable from
+this side, and the second run said which one: the crash came in the same
+millisecond as `Checking`, before any check could have succeeded and then
+failed, so the "succeeded and then died" reading was wrong.
+
+**Two candidates for one transport address is the way in.** libnice resolves
+the response to a check by looking up the remote candidate _by address_
+(`nice_component_find_remote_candidate`), so when two remote candidates share
+one address:port, the response to the second pair's check is credited to the
+first pair — `SET_PAIR_STATE (new_pair, NICE_CHECK_DISCOVERED)` on a pair that
+is already `valid` and has no parent pair. That is precisely the pair the
+nomination tick asserts cannot exist.
+
+Element for Android sends exactly that: `192.168.50.234 59098 typ host` and
+`192.168.50.234 59098 typ srflx`, its own address seen through a STUN server
+that did not translate it. So one candidate per transport address is kept —
+the second offers no path the first does not, and costs the process.
+
+Remote loopback candidates are dropped for the lesser version of the same
+reason: `127.0.0.1` is a path to us, not to them, and every pair that cannot
+work is another chance at a bug in the checking.
+
+Reaching this at all is what it looks like to get everything else right. The
+nomination tick only runs when a pair has actually succeeded, so the call had
+a working path and died deciding which one to use.
 
 ## Both connection states are watched, not only the aggregate
 
@@ -464,6 +591,45 @@ not survive them. So the encoding is what makes the URI parse, and the parse is
 not costing the authentication. Both halves of that were guesses before they
 were measured.
 
+## A relay cannot reach another allocation on the same server
+
+Measured on 23 August 2026 against the real deployment, with credentials the
+homeserver minted for a throwaway account:
+
+```text
+allocation A: 174.74.218.66:49182
+allocation B: 174.74.218.66:49189
+permission A -> B's relay 174.74.218.66 : refused: 403
+permission A -> a public host 8.8.8.8   : granted
+```
+
+Two allocations are made, both succeed, and neither is allowed to name the
+other as a peer: `CreatePermission` for the server's own public address comes
+back `403 Forbidden`, while the same request for an unrelated address is
+granted. So relay-to-relay does not work on this server, and that is a coturn
+configuration — a `denied-peer-ip` range covering its own address — not
+anything a client can route around.
+
+It is the whole of the difference between the two calls of that run. On one
+LAN the call connected on host candidates and carried audio and video. Over
+mobile data it reached `Checking` and failed, because every pair it had left
+was relay-to-relay:
+
+* the phone is behind carrier NAT, so its host candidates are unreachable and
+  it needs its relay;
+* **and so do we**, because `turn.kzenjak.com` resolves to `192.168.50.35`
+  inside this network. A STUN binding request answered from the LAN reports
+  our own private address, `webrtcbin` drops a reflexive candidate identical
+  to a host candidate it already has, and the relay is the only candidate we
+  have that anything outside can reach.
+
+The second of those is worth knowing on its own: split-horizon DNS for the
+TURN host costs the client its server-reflexive candidate, and with it every
+direct path a NAT would otherwise have allowed.
+
+`allowed-peer-ip` for the server's own address is what makes the pair legal;
+it is checked ahead of the denied ranges.
+
 ## Testing
 
 `./testing/local-homeserver.sh up` now runs a coturn beside the Synapse and
@@ -484,7 +650,10 @@ durable. This section is the state of it.
 
 ### What is known to work
 
-* A call between two clients on one network. Seen connecting with media.
+* A call between Commune and Element for Android on one network, audio and
+  video, `Checking` to `Connected` to `Completed`. Seen on 23 August 2026 at
+  21:13, with both media sections accepted — the first call to that client
+  that ever negotiated audio.
 * Both ends obtaining a TURN relay from the homeserver's coturn: `add-turn-server`
   accepts the percent-encoded URI, and `host`/`srflx`/`relay` candidates are all
   gathered.
@@ -492,24 +661,48 @@ durable. This section is the state of it.
 
 ### What is not
 
-A call between networks. ICE reaches `Checking` and fails from there.
+* A call between networks, against this deployment: the relay refuses to
+  carry it. See "A relay cannot reach another allocation on the same server".
 
 ### The diagnosis as it stands
 
-An outgoing call took an answer carrying `ice-ufrag DfBZ` and then twelve
-candidates every one of which carried `ufrag t/fW`. Those are two different ICE
-sessions: **one device answered and a different one sent the candidates**, both
-signed in as the same user. libnice discards a candidate whose ufrag is not the
-remote description's, so the call had zero usable pairs and failed five seconds
-later. The incoming call in the same log, whose candidates and description
-agreed, reached `Checking` normally.
+**The far end's candidates name an ICE session its own answer does not.**
+Measured on 23 August 2026 against Element for Android, twice in one run —
+once over the internet and once with both machines on one switch:
 
-The spec's mechanism for this is `party_id`, which identifies a party as
-`(user_id, party_id)` and "matches `m.call.candidates` events to their
-respective answer/invite". Candidates whose ufrag disagrees with the remote
-description are now dropped and logged, and the party of every answer and every
-candidate batch is logged, because whether `party_id` is present and what it
-says is the next thing to establish.
+```text
+Answer for call kHUhimu2SaCX5nwT from party Some("LYEBQWFTPB")
+The remote description carries ice-ufrag +sSs
+Adding remote host candidate … 192.168.50.234 34239 typ host … ufrag Jlts
+        ×11, every one of them Jlts
+ICE connection state is now Checking      → Failed, five seconds later
+```
+
+Both values are four characters, which is what libwebrtc writes and not what
+`webrtcbin` does, so both are the phone's: it answers out of one ICE session
+and trickles out of another. libnice discards a candidate whose tag is not the
+remote description's, so the pair list was empty — with the two machines on
+one network and `192.168.50.234` sitting there in the list.
+
+Not two devices. This was one, `party_id LYEBQWFTPB`, the only one signed in,
+and the split appears on every call it answers. It does _not_ appear on calls
+it places: the invite it sent us carried `ice-ufrag 9ENC` and every candidate
+behind it said `ufrag 9ENC`.
+
+So the tag is dropped and the address kept — see "Every remote candidate goes
+on section 0" for the other half of the same argument. An address is what a
+candidate is for; the answer is what says which session the call is.
+
+**And a call is no longer hung up on the first `Failed`.** libnice reports it
+the instant it has nothing left to check, which on a trickling call describes
+that instant and not the call. The other end's next batch comes through a
+room, at whatever pace its client batches and the homeserver syncs. Fifteen
+seconds, and a `Connected` in between cancels it.
+
+**Both of these were reached by watching a call that should not have failed.**
+The two ends were on one switch, both had the other's host address, and it
+still ended in five seconds — which is what makes the pair list, rather than
+the network, the thing to look at.
 
 ### The one procedure to run
 
@@ -523,12 +716,20 @@ One account signed in on exactly two clients, and nothing else ringing:
 Then:
 
 ```sh
-grep -E "Placing call|from party|ice-ufrag|Dropping a remote|gathered a (relay|srflx)|ICE connection state" /tmp/call.log
+grep -E "Placing call|Sent m.call|from party|Replaying|not the call in progress|ice-ufrag|gathered a (relay|srflx)|ICE connection state" /tmp/call.log
 ```
 
-Those lines say, in order: who the invite was addressed to, which party
-answered, which ICE session the candidates belong to, whether any were dropped
-for belonging to another, whether a relay was obtained, and where ICE ended up.
+Those lines say, in order: which room the call went into and who it was
+addressed to, the event ID of every event we sent and whether it was
+encrypted, which party answered, whether any candidates had to wait for their
+invite, which ICE session they belong to, whether a relay was obtained, and
+where ICE ended up.
+
+When the other end never rings, the log above has said all it can. The next
+question is whether the invite reached that device at all, and it is answered
+there: look for the event ID in the room on the other client — Element draws a
+timeline row for a call it received and ignored, and nothing at all for one it
+never got.
 
 **Sign every other client out first.** A second session of the same account
 that rings and does not answer is what produced the split above, and it is
