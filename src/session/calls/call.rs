@@ -6,7 +6,7 @@ use rand::distr::{Alphanumeric, SampleString};
 use ruma::{
     OwnedUserId, OwnedVoipId, UInt, UserId, VoipVersionId,
     events::{
-        AnyMessageLikeEventContent,
+        AnyMessageLikeEventContent, MessageLikeEventContent as _,
         call::{
             SessionDescription, StreamMetadata, StreamPurpose,
             answer::CallAnswerEventContent,
@@ -41,6 +41,16 @@ fn own_user_id(room: &Room) -> OwnedUserId {
 /// The spec's recommended minimum is 90 seconds, on the grounds that the person
 /// on the other end needs time to actually pick up.
 const INVITE_LIFETIME: Duration = Duration::from_secs(90);
+
+/// How long a call that reports ICE failure is given to recover.
+///
+/// libnice says `Failed` the moment it has no pair left to check, which on a
+/// trickling call is a statement about this instant and not about the call:
+/// the other end sends its candidates in batches, over the room, and a batch
+/// that lands afterwards can still make the call. Hanging up on the first one
+/// is how a call that was five seconds from connecting gets ended for the
+/// person waiting on it.
+const ICE_FAILURE_GRACE: Duration = Duration::from_secs(15);
 
 /// How long to gather candidates before sending the first batch, after an
 /// invite.
@@ -138,6 +148,8 @@ mod imp {
         pub(super) candidate_batch: RefCell<Option<glib::SourceId>>,
         /// The timeout that gives up on an unanswered invite.
         pub(super) lifetime_timeout: RefCell<Option<glib::SourceId>>,
+        /// The timeout that gives up on a call ICE says has failed.
+        pub(super) ice_failure_timeout: RefCell<Option<glib::SourceId>>,
         /// The ID of the stream we send, taken from our own SDP.
         pub(super) local_stream_id: RefCell<Option<String>>,
         /// Whether we have chosen which answer to use.
@@ -204,6 +216,9 @@ mod imp {
                 source.remove();
             }
             if let Some(source) = self.lifetime_timeout.take() {
+                source.remove();
+            }
+            if let Some(source) = self.ice_failure_timeout.take() {
                 source.remove();
             }
         }
@@ -535,6 +550,12 @@ impl Call {
                     pipeline.note_media();
                 }
 
+                // A failure it recovered from, which is the whole reason the
+                // first one is not acted on.
+                if let Some(source) = self.imp().ice_failure_timeout.take() {
+                    source.remove();
+                }
+
                 // Two state machines can both say connected — the aggregate
                 // peer connection state and the ICE one — so whichever gets
                 // there first wins and the second is a no-op.
@@ -557,29 +578,63 @@ impl Call {
                     }
                 }
             }
-            PipelineEvent::ConnectionFailed => {
-                let had_media = self
-                    .imp()
-                    .pipeline
-                    .borrow()
-                    .as_ref()
-                    .is_some_and(CallPipeline::had_media);
-
-                // The spec asks for these two to be told apart: a connection
-                // that never came up is `ice_failed`, and one that came up and
-                // then died is `ice_timeout`.
-                let reason = if had_media {
-                    Reason::IceTimeout
-                } else {
-                    Reason::IceFailed
-                };
-                self.hangup_with(reason, CallEndReason::NoConnection);
-            }
+            PipelineEvent::ConnectionFailed => self.handle_connection_failed(),
             PipelineEvent::Error(error) => {
                 error!("The call pipeline failed: {error}");
                 self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
             }
         }
+    }
+
+    /// Act on ICE reporting that it has failed.
+    ///
+    /// A call that carried media and then stopped is over: something that was
+    /// working has died, and there is nothing to wait for. A call that never
+    /// connected is a different thing — `Failed` there means only that there
+    /// is nothing left to check *yet*, and the other end trickles its
+    /// candidates through the room at its own pace. So that one is given
+    /// [`ICE_FAILURE_GRACE`] to recover before the person is told it will not.
+    fn handle_connection_failed(&self) {
+        let imp = self.imp();
+        let had_media = imp
+            .pipeline
+            .borrow()
+            .as_ref()
+            .is_some_and(CallPipeline::had_media);
+
+        if had_media {
+            // The spec asks for these two to be told apart: a connection that
+            // never came up is `ice_failed`, and one that came up and then
+            // died is `ice_timeout`.
+            self.hangup_with(Reason::IceTimeout, CallEndReason::NoConnection);
+            return;
+        }
+
+        if imp.ice_failure_timeout.borrow().is_some() {
+            // Already waiting. Both state machines report a failure, and the
+            // second one is not a second failure.
+            return;
+        }
+
+        debug!("ICE has nothing left to check; waiting to see if more arrives");
+
+        let source = glib::timeout_add_local_once(
+            ICE_FAILURE_GRACE,
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move || {
+                    obj.imp().ice_failure_timeout.take();
+
+                    if obj.state() == CallState::Connected || obj.state().is_ended() {
+                        return;
+                    }
+
+                    obj.hangup_with(Reason::IceFailed, CallEndReason::NoConnection);
+                }
+            ),
+        );
+        imp.ice_failure_timeout.replace(Some(source));
     }
 
     /// Send the invite that starts an outgoing call.
@@ -601,8 +656,9 @@ impl Call {
         // doesn't match the user's ID", so a wrong `invitee` is silence rather
         // than an error.
         debug!(
-            "Placing call {} to {:?} with {} media section(s)",
+            "Placing call {} in {} to {:?} with {} media section(s)",
             self.call_id(),
+            self.room().room_id(),
             content.invitee,
             content.offer.sdp.matches("\r\nm=").count()
                 + usize::from(content.offer.sdp.starts_with("m="))
@@ -962,12 +1018,26 @@ impl Call {
     /// queued hangup is a call the other end thinks is still running.
     fn send(&self, content: AnyMessageLikeEventContent) {
         let matrix_room = self.room().matrix_room().clone();
+        let room_id = matrix_room.room_id().to_owned();
+        let event_type = content.event_type().to_string();
 
         spawn!(async move {
             let handle = spawn_tokio!(async move { matrix_room.send(content).await });
 
-            if let Err(error) = handle.await.expect("task was not aborted") {
-                warn!("Could not send a call event: {error}");
+            // The event ID, because a call that rings for nobody is a call
+            // whose events have to be looked for in the room, and this is the
+            // only place their IDs exist.
+            match handle.await.expect("task was not aborted") {
+                Ok(result) => debug!(
+                    "Sent {event_type} into {room_id} as {}{}",
+                    result.response.event_id,
+                    if result.encryption_info.is_some() {
+                        ", encrypted"
+                    } else {
+                        ""
+                    }
+                ),
+                Err(error) => warn!("Could not send a call event: {error}"),
             }
         });
     }
