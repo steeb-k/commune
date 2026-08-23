@@ -151,7 +151,29 @@ identically for this sink — 241 snapshots each against 240 paintable
 invalidations over eight seconds. The self-view being a `Gtk.Image` is a
 sizing decision and nothing more.
 
+## The answer is created from inside the offer's promise
+
+`set-remote-description` is asynchronous. Emitting it and calling
+`create-answer` on the next line asks `webrtcbin` to answer an offer it has not
+applied yet, and what comes back is an **empty answer**. An empty answer is
+never sent, so the caller sits on "Connecting…" until its invite expires, and
+the callee sits there with a pipeline that will never negotiate. That is what
+every incoming call did.
+
+So `answer_remote_offer()` emits the description with a promise and creates the
+answer from inside it, which is the only ordering `webrtcbin` guarantees. The
+same care is not needed for the caller taking the answer: nothing follows it.
+
+The symptom in the log is one line — `the answer came back empty` — and it took
+this long to see because the failure is on the _callee_, while the complaint a
+person makes is about the caller's window.
+
 ## Both connection states are watched, not only the aggregate
+
+This was chased first, on the theory that a call with a working path was
+sitting on "Connecting…". It was not the cause — nothing was connecting at all
+— but it stays, because the aggregate state is still the wrong thing to drive
+an interface from.
 
 `webrtcbin` has two that matter, and only one of them is any use for telling a
 person that their call has started.
