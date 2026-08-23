@@ -17,12 +17,20 @@
 #     getting one wrong shuts people out of a room for good. It is not a thing
 #     to try out on a room anybody is using.
 #
+#   * Server notices come from the homeserver itself. Getting one on a real
+#     account means waiting for that server to have something to say, and
+#     Synapse ships them switched off. Here they are turned on and one is sent
+#     and pinned on demand.
+#
 # Everything lives under testing/.homeserver, which is git-ignored. Run
 # `./testing/local-homeserver.sh down` to stop the server, or `clean` to also
 # delete its data.
 #
 # Usage:
 #   ./testing/local-homeserver.sh up      # start and seed (default)
+#   ./testing/local-homeserver.sh notice  # send another server notice to alice
+#   ./testing/local-homeserver.sh limit on|off  # cross the MAU limit, so Synapse
+#                                         # sends and pins a notice of its own
 #   ./testing/local-homeserver.sh check   # verify the endpoints server-side
 #   ./testing/local-homeserver.sh reports # show what the admin has received
 #   ./testing/local-homeserver.sh down    # stop the server, keep the data
@@ -105,6 +113,20 @@ rc_reports:
 # a real account is no use for testing them. The blacklist is not optional:
 # Synapse refuses to start with previews on and no range excluded, because
 # without it the endpoint will happily fetch anything on the host's network.
+# Server notices are off by default, and there is no way for a client to turn
+# them on. The localpart below becomes @notices:localhost, which is the user the
+# homeserver speaks as.
+server_notices:
+  system_mxid_localpart: notices
+  system_mxid_display_name: "Server Notices"
+  room_name: "Server Notices"
+  room_topic: "Messages from the administrator of this homeserver"
+  auto_join: false
+
+# Without this, the notice Synapse writes itself carries `admin_contact: null`
+# and the banner has nothing to offer a button for.
+admin_contact: 'mailto:admin@localhost'
+
 url_preview_enabled: true
 url_preview_ip_range_blacklist:
   - '127.0.0.0/8'
@@ -136,6 +158,38 @@ YAML
     "$IMAGE" >/dev/null
 
   wait_for_server
+}
+
+# A homeserver.yaml generated before server notices were part of this script has
+# no `server_notices` block, and the admin endpoint answers 400 without one. Add
+# it in place rather than making the user throw the server away.
+ensure_server_notices_config() {
+  local config=$DATA/homeserver.yaml
+  [ -f "$config" ] || return 0
+  grep -q '^server_notices:' "$config" && return 0
+
+  log "Turning server notices on in the existing configuration…"
+  cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh.
+server_notices:
+  system_mxid_localpart: notices
+  system_mxid_display_name: "Server Notices"
+  room_name: "Server Notices"
+  room_topic: "Messages from the administrator of this homeserver"
+  auto_join: false
+
+# Without this, the notice Synapse writes itself carries `admin_contact: null`
+# and the banner has nothing to offer a button for.
+admin_contact: 'mailto:admin@localhost'
+YAML
+
+  if podman container exists "$CONTAINER" 2>/dev/null \
+    && [ "$(podman inspect -f '{{.State.Running}}' "$CONTAINER")" = true ]; then
+    log "Restarting the homeserver so it reads the change…"
+    podman restart "$CONTAINER" >/dev/null
+    wait_for_server
+  fi
 }
 
 wait_for_server() {
@@ -352,6 +406,134 @@ seed() {
     '$ARGS.named' > "$STATE"
 }
 
+# --------------------------------------------------------------- notices ----
+
+# Send a server notice to alice and put her in the room.
+#
+# The room is created by @notices:localhost, which is not a registered user —
+# Synapse speaks as it without ever giving it an account — so the admin API
+# cannot log in as it and nothing outside the server can act on its behalf. That
+# is also why the notice cannot be pinned from here; see `limit` below for the
+# path that makes Synapse pin one itself.
+#
+# The `m.server_notice` tag is room account data, and a client is sent none of
+# that for a room it has only been invited to. So the tag, and with it the whole
+# of the client behaviour this module describes, only appears once the invite is
+# accepted. This joins alice for that reason.
+send_notice() {
+  local admin room
+  admin=$(login admin admin-is-testing)
+  [ -n "$admin" ] || die "Could not log in as admin"
+
+  log "Sending a server notice to alice…"
+  if ! curl -sf -X POST "$HS/_synapse/admin/v1/send_server_notice" \
+      -H "Authorization: Bearer $admin" -H 'Content-Type: application/json' \
+      -d "$(jq -nc '{
+        user_id: "@alice:localhost",
+        content: {
+          msgtype: "m.server_notice",
+          body: "This homeserver has exceeded its monthly active user limit. Please contact your administrator.",
+          server_notice_type: "m.server_notice.usage_limit_reached",
+          admin_contact: "mailto:admin@localhost",
+          limit_type: "monthly_active_user"
+        }
+      }')" >/dev/null; then
+    warn "the homeserver refused to send a server notice; is the server_notices block in homeserver.yaml?"
+    return 1
+  fi
+
+  room=$(notice_room_for_alice)
+  if [ -z "$room" ]; then
+    warn "the notice was sent but alice is in no server notices room"
+    return 0
+  fi
+
+  local alice
+  alice=$(login alice "$ALICE_PASS")
+  curl -sf -X POST "$HS/_matrix/client/v3/rooms/$room/join" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{}' >/dev/null || true
+
+  log "Server notices room is $room"
+}
+
+# The room ID of alice's server notices room, joined or invited, or nothing.
+notice_room_for_alice() {
+  local alice
+  alice=$(login alice "$ALICE_PASS")
+  curl -sf "$HS/_matrix/client/v3/sync?timeout=0" -H "Authorization: Bearer $alice" \
+    | jq -r '
+        [ (.rooms.join // {} | to_entries[]
+           | select(any(.value.account_data.events[]?;
+                        .type == "m.tag" and (.content.tags | has("m.server_notice"))))),
+          (.rooms.invite // {} | to_entries[]) ]
+        | .[0].key // empty'
+}
+
+# Turn Synapse's monthly active user limit on or off.
+#
+# This is the only way to see an *active* notice without a registered account
+# for the notices user: over the limit, Synapse sends a
+# `m.server_notice.usage_limit_reached` notice itself and pins it, which is what
+# makes it active, and unpins it when the limit is lifted. The cost is real —
+# while it is on, nobody on this server can send a message or register — so it
+# is its own command and not part of `up`.
+limit() {
+  local mode=${1:-on}
+  local config=$DATA/homeserver.yaml
+  [ -f "$config" ] || die "No homeserver configuration; run './testing/local-homeserver.sh up' first"
+
+  # Drop any block this command added before, so the two directions are the
+  # same operation with a different value.
+  python3 - "$config" <<'PY'
+import re, sys
+path = sys.argv[1]
+text = open(path).read()
+text = re.sub(r"\n# Added by testing/local-homeserver\.sh \(limit\)\.\n(?:.*\n)*?# End limit\.\n", "\n", text)
+open(path, "w").write(text)
+PY
+
+  if [ "$mode" = on ]; then
+    log "Putting the homeserver over its monthly active user limit…"
+    cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (limit).
+limit_usage_by_mau: true
+max_mau_value: 1
+mau_trial_days: 0
+# End limit.
+YAML
+  elif [ "$mode" = off ]; then
+    log "Lifting the monthly active user limit…"
+  else
+    die "Unknown limit mode '$mode'. Try: on, off"
+  fi
+
+  podman restart "$CONTAINER" >/dev/null
+  wait_for_server
+
+  # Synapse acts on the limit when a user next does something, not on startup,
+  # so give it something to act on in both directions.
+  local alice room
+  alice=$(login alice "$ALICE_PASS")
+  curl -s -X PUT "$HS/_matrix/client/v3/rooms/$(jq -r .invite_room "$STATE")/send/m.room.message/limit-$RANDOM" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"msgtype": "m.text", "body": "poke"}' >/dev/null || true
+  curl -sf "$HS/_matrix/client/v3/sync?timeout=0" -H "Authorization: Bearer $alice" >/dev/null || true
+
+  room=$(notice_room_for_alice)
+  [ -n "$room" ] || return 0
+
+  local pinned
+  pinned=$(curl -sf "$HS/_matrix/client/v3/rooms/$room/state/m.room.pinned_events/" \
+    -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '.pinned | length // 0')
+
+  log "Server notices room $room now has ${pinned:-0} pinned event(s)."
+  if [ "$mode" = off ] && [ "${pinned:-0}" != 0 ]; then
+    warn "Synapse has not unpinned it yet; it does that the next time it looks, so open the app and wait"
+  fi
+}
+
 # ------------------------------------------------------------------ check ----
 
 # Confirm the server accepts what Commune sends, so that a failure in the app is
@@ -489,6 +671,33 @@ check() {
     esac
   fi
 
+  log "Checking the server notices room…"
+  local notice_room pinned
+  notice_room=$(notice_room_for_alice)
+
+  if [ -z "$notice_room" ]; then
+    warn "alice has no server notices room; run './testing/local-homeserver.sh notice' first"
+    failed=1
+  elif curl -sf "$HS/_matrix/client/v3/user/@alice:localhost/rooms/$notice_room/tags" \
+      -H "Authorization: Bearer $alice" \
+      | jq -e '.tags | has("m.server_notice")' >/dev/null; then
+    printf '    m.server_notice tag on %s  OK\n' "$notice_room"
+
+    # The banner is driven by the pinned events, and only Synapse itself pins a
+    # notice, when it is over a limit. Absence is not a failure here.
+    pinned=$(curl -sf "$HS/_matrix/client/v3/rooms/$notice_room/state/m.room.pinned_events/" \
+      -H "Authorization: Bearer $alice" | jq -r '.pinned[0] // empty')
+
+    if [ -n "$pinned" ]; then
+      printf '    m.room.pinned_events holds %s  OK\n' "$pinned"
+    else
+      printf '    nothing pinned, so no banner — run "limit on" to make Synapse pin one\n'
+    fi
+  else
+    warn "the server notices room carries no m.server_notice tag; the client has nothing to recognise"
+    failed=1
+  fi
+
   [ "$failed" = 0 ] || die "Some checks failed; see above."
   log "All server-side checks passed."
 }
@@ -575,6 +784,24 @@ summary() {
                              switch below cannot turn one on
     Settings ▸ General ▸ Messages ▸ Link Previews turns the rest off
 
+  Server notices — log in as alice; the homeserver has sent her one
+    Sidebar                  a "Server Notices" section sits above Favorites,
+                             with a warning icon on the room
+    Open the room            the notice reads as a warning in the timeline
+    Any other room           post a message with msgtype m.server_notice from
+                             another client: it must not appear at all
+    Try to leave it          Synapse allows it; a server that refuses gets a
+                             message saying so rather than "Could not leave"
+
+    ./testing/local-homeserver.sh notice      sends another one
+    ./testing/local-homeserver.sh limit on    Synapse sends and PINS one of its
+                             own, which is what raises the banner over the
+                             timeline with its "Contact Administrator" button.
+                             Nobody can send a message while this is on.
+    ./testing/local-homeserver.sh limit off   lifts it. Synapse unpins its own
+                             notice the next time it looks at the account, so
+                             the banner goes away a beat later, not at once.
+
   Reporting — the report goes to the admin account above, not to a stranger
     Room menu ▸ Report Room…          on any room
     Sidebar right-click ▸ Report Room… including on an invite
@@ -591,8 +818,19 @@ case "${1:-up}" in
   up)
     need podman; need curl; need jq
     start_server
+    ensure_server_notices_config
     seed
+    send_notice || true
     summary
+    ;;
+  notice)
+    need podman; need curl; need jq
+    ensure_server_notices_config
+    send_notice
+    ;;
+  limit)
+    need podman; need curl; need jq; need python3
+    limit "${2:-on}"
     ;;
   check)
     need podman; need curl; need jq
@@ -613,6 +851,6 @@ case "${1:-up}" in
     log "Homeserver and its data are gone."
     ;;
   *)
-    die "Unknown command '$1'. Try: up, check, reports, down, clean"
+    die "Unknown command '$1'. Try: up, notice, limit, check, reports, down, clean"
     ;;
 esac

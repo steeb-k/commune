@@ -17,6 +17,10 @@ anyone else uses:
   off and which most servers leave that way. Turning it on somewhere real is a
   security decision about that server, not a testing convenience — the endpoint
   makes the homeserver fetch URLs on a user's say-so.
+* **Server notices** come from the homeserver itself, and Synapse ships them
+  off. Getting one on a real account means waiting for that server to have
+  something official to say; getting an _active_ one means the server actually
+  crossing a limit, which is not a state to wish on a server people use.
 
 None of them is a thing to try on other people.
 
@@ -24,6 +28,9 @@ None of them is a thing to try on other people.
 
 ```sh
 ./testing/local-homeserver.sh up       # start and seed; prints credentials
+./testing/local-homeserver.sh notice   # send alice a server notice
+./testing/local-homeserver.sh limit on # cross the MAU limit, so Synapse pins one
+./testing/local-homeserver.sh limit off
 ./testing/local-homeserver.sh check    # confirm the server accepts what we send
 ./testing/local-homeserver.sh reports  # show every report that arrived
 ./testing/local-homeserver.sh down     # stop, keep the data
@@ -56,6 +63,7 @@ what fetches the page.
 | Public Room | plain `public` |
 | Link Room | seven messages covering what does and does not get a preview card |
 | Encrypted Room | where a link must never get one, whatever the setting says |
+| Server Notices | created by the homeserver on `notice`, and tagged `m.server_notice` |
 
 Three accounts: `alice` owns the rooms, `bob` is a second member to report and
 be reported, `admin` is a Synapse admin so reports can be read back.
@@ -67,12 +75,37 @@ question only — _does this homeserver accept what we intend to send_ — so th
 a failure in the app is known to be the app's. It covers the room report
 endpoint, the user report endpoint, a `knock_restricted` round trip that
 asserts the allow list survives unchanged, an `m.room.server_acl` round trip,
+the server notices room's tag and whether anything is pinned in it,
 and the URL preview endpoint — which also prints whether the image really came
 back as an `mxc:` URI, since that is the one difference from OpenGraph the spec
 names and the one thing the card refuses to render without.
 
 It is not a test of Commune. The GUI still has to be driven by hand, which is
 what `up` prints a checklist for.
+
+## Server notices, and why pinning needs `limit`
+
+`notice` sends one through Synapse's `send_server_notice` admin endpoint and
+joins alice to the room it lands in. That covers everything the client keys off
+the tag: the sidebar section, the room icon, and the rule that an
+`m.server_notice` msgtype anywhere else must be ignored.
+
+It does not cover the banner, because the banner is driven by the _pinned_
+events and the notice cannot be pinned from outside. `@notices:localhost` is
+not a registered user — Synapse speaks as it without giving it an account, so
+the admin login API answers `M_NOT_FOUND` — and the recipient of a notice sits
+at `users_default: -10` in a room whose `state_default` is 50. Only Synapse can
+pin in there.
+
+`limit on` makes it do so, by putting the server over its monthly active user
+limit. Synapse then sends a `m.server_notice.usage_limit_reached` notice of its
+own and pins it, which is exactly the state the banner is for. The cost is that
+nobody on that server can send a message or register while it is on, so it is
+its own command rather than part of `up`. `limit off` reverses it; Synapse
+unpins the notice the next time it looks at the account, so the banner goes a
+beat later rather than at once.
+
+See `server-notices.md` for what the client does with all of it.
 
 ## `reports`
 
