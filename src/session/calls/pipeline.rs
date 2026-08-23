@@ -435,6 +435,7 @@ impl CallPipeline {
             .connect("on-ice-candidate", false, move |values| {
                 let sdp_m_line_index = values.get(1)?.get::<u32>().ok()?;
                 let candidate = values.get(2)?.get::<String>().ok()?;
+                debug!("webrtcbin gathered a candidate for m-line {sdp_m_line_index}");
 
                 let _ = ice_sender.unbounded_send(PipelineEvent::IceCandidate {
                     candidate,
