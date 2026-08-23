@@ -1,4 +1,8 @@
-use std::{collections::HashMap, ops::ControlFlow, sync::Arc};
+use std::{
+    collections::HashMap,
+    ops::ControlFlow,
+    sync::{Arc, atomic::AtomicBool},
+};
 
 use futures_util::StreamExt;
 use gtk::{
@@ -18,7 +22,7 @@ use ruma::{
     OwnedEventId, UserId,
     events::{
         AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-        SyncStateEvent, room::message::MessageType,
+        SyncStateEvent, room::message::MessageType, tag::TagName,
     },
     room_version_rules::RoomVersionRules,
 };
@@ -36,7 +40,7 @@ pub(crate) use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
-use super::Room;
+use super::{Room, RoomCategory};
 use crate::{
     prelude::*,
     spawn, spawn_tokio,
@@ -56,7 +60,7 @@ mod imp {
         cell::{Cell, OnceCell, RefCell},
         iter,
         marker::PhantomData,
-        sync::LazyLock,
+        sync::{LazyLock, atomic::Ordering},
     };
 
     use glib::subclass::Signal;
@@ -71,6 +75,11 @@ mod imp {
         room: OnceCell<Room>,
         /// The underlying SDK timeline.
         matrix_timeline: OnceCell<Arc<SdkTimeline>>,
+        /// Whether this is the timeline of the server notices room.
+        ///
+        /// Read by the event filter, which runs off the main thread, so it
+        /// cannot ask the room for its category.
+        is_server_notice_room: Arc<AtomicBool>,
         /// Items added at the start of the timeline.
         ///
         /// Currently this can only contain one item at a time.
@@ -186,6 +195,17 @@ mod imp {
         fn set_room(&self, room: Room) {
             let room = self.room.get_or_init(|| room);
 
+            room.connect_category_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |room| {
+                    imp.is_server_notice_room.store(
+                        room.category() == RoomCategory::ServerNotice,
+                        Ordering::Relaxed,
+                    );
+                }
+            ));
+
             room.typing_list().connect_is_empty_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -207,13 +227,33 @@ mod imp {
             let room = self.room();
 
             let own_user_id = room.own_member().user_id().to_owned();
+            let matrix_room = room.matrix_room().clone();
+
+            // The category of the room might not have been loaded yet, and the
+            // filter cannot wait for it, so ask the store directly. The
+            // `m.server_notice` tag is what identifies the room.
+            let is_server_notice_room = self.is_server_notice_room.clone();
+            {
+                let matrix_room = matrix_room.clone();
+                let handle = spawn_tokio!(async move { matrix_room.tags().await });
+
+                if let Ok(Some(tags)) = handle.await.expect("task was not aborted") {
+                    is_server_notice_room
+                        .store(tags.contains_key(&TagName::ServerNotice), Ordering::Relaxed);
+                }
+            }
+
             let filter = {
                 let own_user_id = own_user_id.clone();
                 move |any: &AnySyncTimelineEvent, rules: &RoomVersionRules| -> bool {
-                    show_in_timeline(any, rules, &own_user_id)
+                    show_in_timeline(
+                        any,
+                        rules,
+                        &own_user_id,
+                        is_server_notice_room.load(Ordering::Relaxed),
+                    )
                 }
             };
-            let matrix_room = room.matrix_room().clone();
             let focused_event_id = self.focused_event_id().cloned();
             let handle = spawn_tokio!(async move {
                 let mut builder = matrix_room
@@ -1305,6 +1345,7 @@ fn show_in_timeline(
     any: &AnySyncTimelineEvent,
     rules: &RoomVersionRules,
     own_user_id: &UserId,
+    is_server_notice_room: bool,
 ) -> bool {
     // Make sure we do not show events that cannot be shown.
     if !default_event_filter(any, rules) {
@@ -1315,18 +1356,22 @@ fn show_in_timeline(
     match any {
         AnySyncTimelineEvent::MessageLike(msg) => match msg {
             AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(ev)) => {
-                matches!(
-                    ev.content.msgtype,
+                match ev.content.msgtype {
+                    // "Events with a `m.server_notice` `msgtype` outside of the
+                    // server notice room must be ignored by clients." Anybody
+                    // can send one, and we present them as coming from the
+                    // homeserver, so this is the whole of the protection.
+                    MessageType::ServerNotice(_) => is_server_notice_room,
                     MessageType::Audio(_)
-                        | MessageType::Emote(_)
-                        | MessageType::File(_)
-                        | MessageType::Image(_)
-                        | MessageType::Location(_)
-                        | MessageType::Notice(_)
-                        | MessageType::ServerNotice(_)
-                        | MessageType::Text(_)
-                        | MessageType::Video(_)
-                )
+                    | MessageType::Emote(_)
+                    | MessageType::File(_)
+                    | MessageType::Image(_)
+                    | MessageType::Location(_)
+                    | MessageType::Notice(_)
+                    | MessageType::Text(_)
+                    | MessageType::Video(_) => true,
+                    _ => false,
+                }
             }
             AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
             | AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Original(_)) => true,
