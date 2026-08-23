@@ -565,6 +565,96 @@ pub(crate) async fn confirm_leave_image_pack_room_dialog(
     confirm_dialog.choose_future(Some(parent)).await == "leave"
 }
 
+/// Show a dialog to confirm sending a report, with an optional reason.
+///
+/// The heading and body describe what is being reported; the reason entry and
+/// the wording of the buttons are the same for every kind of report.
+///
+/// Returns `None` if the user did not confirm, otherwise the reason they gave,
+/// which is empty if they did not give one.
+pub(crate) async fn confirm_report_dialog(
+    heading: String,
+    body: String,
+    parent: &impl IsA<gtk::Widget>,
+) -> Option<String> {
+    let reason_entry = adw::EntryRow::builder()
+        .title(gettext("Reason (optional)"))
+        .build();
+    let list_box = gtk::ListBox::builder()
+        .css_classes(["boxed-list"])
+        .margin_top(6)
+        .accessible_role(gtk::AccessibleRole::Group)
+        .build();
+    list_box.append(&reason_entry);
+
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(heading)
+        .body(body)
+        .extra_child(&list_box)
+        .build();
+    confirm_dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        // Translators: This is a verb, as in 'Report Event'.
+        ("report", &gettext("Report")),
+    ]);
+    confirm_dialog.set_response_appearance("report", adw::ResponseAppearance::Destructive);
+
+    if confirm_dialog.choose_future(Some(parent)).await != "report" {
+        return None;
+    }
+
+    Some(reason_entry.text().into())
+}
+
+/// Show a dialog to confirm reporting a room to the administrator of our
+/// homeserver.
+///
+/// Returns `None` if the user did not confirm, otherwise the reason they gave,
+/// which is empty if they did not give one.
+pub(crate) async fn confirm_report_room_dialog(
+    room: &Room,
+    parent: &impl IsA<gtk::Widget>,
+) -> Option<String> {
+    confirm_report_dialog(
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "Report {room}?",
+            &[("room", &room.display_name())],
+        ),
+        gettext(
+            "Reporting a room will send its unique ID to the administrator of your homeserver. The administrator will not be able to see the content of the room if it is encrypted.",
+        ),
+        parent,
+    )
+    .await
+}
+
+/// Show a dialog to confirm reporting a user to the administrator of our
+/// homeserver.
+///
+/// Returns `None` if the user did not confirm, otherwise the reason they gave,
+/// which is empty if they did not give one.
+pub(crate) async fn confirm_report_user_dialog(
+    user: &User,
+    parent: &impl IsA<gtk::Widget>,
+) -> Option<String> {
+    confirm_report_dialog(
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "Report {user}?",
+            &[("user", &user.display_name())],
+        ),
+        gettext(
+            "Reporting a user will send their Matrix ID to the administrator of your homeserver. Only the reason you give here tells them what this user did.",
+        ),
+        parent,
+    )
+    .await
+}
+
 /// Show a dialog for the user to choose what to do about unsaved changes.
 pub(crate) async fn unsaved_changes_dialog(
     parent: &impl IsA<gtk::Widget>,

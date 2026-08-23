@@ -45,7 +45,7 @@ use self::{
 use super::{RoomDetails, room_details};
 use crate::{
     Window,
-    components::{DragOverlay, confirm_leave_room_dialog},
+    components::{DragOverlay, confirm_leave_room_dialog, confirm_report_room_dialog},
     ngettext_f,
     prelude::*,
     session::{
@@ -173,6 +173,9 @@ mod imp {
             });
             klass.install_action_async("room-history.forget", None, |obj, _, _| async move {
                 obj.imp().forget().await;
+            });
+            klass.install_action_async("room-history.report", None, |obj, _, _| async move {
+                obj.imp().report().await;
             });
 
             klass.install_action("room-history.details", None, |obj, _, _| {
@@ -1315,6 +1318,31 @@ mod imp {
                     ),
                     @room,
                 );
+            }
+        }
+
+        /// Report the room to the administrator of our homeserver.
+        async fn report(&self) {
+            let Some(room) = self.room() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let Some(reason) = confirm_report_room_dialog(&room, &*obj).await else {
+                return;
+            };
+
+            if room.report(reason).await.is_err() {
+                toast!(
+                    obj,
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                        "Could not report {room}",
+                    ),
+                    @room,
+                );
+            } else {
+                toast!(obj, gettext("Report sent"));
             }
         }
 

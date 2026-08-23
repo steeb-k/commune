@@ -226,6 +226,21 @@ template $UserPage: Adw.NavigationPage {
                   clicked => $toggle_ignored() swapped;
                 }
               }
+
+              Adw.ActionRow report_row {
+                selectable: false;
+                title: _("Report to Administrator");
+
+                $LoadingButton report_button {
+                  valign: center;
+                  content-label: _("Report…");
+                  clicked => $report_user() swapped;
+
+                  styles [
+                    "destructive-action",
+                  ]
+                }
+              }
             }
           }
         };

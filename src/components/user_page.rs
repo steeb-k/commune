@@ -16,7 +16,7 @@ use crate::{
     Window,
     components::{
         RoomMemberDestructiveAction, confirm_mute_room_member_dialog, confirm_own_demotion_dialog,
-        confirm_room_member_destructive_action_dialog,
+        confirm_report_user_dialog, confirm_room_member_destructive_action_dialog,
         confirm_set_room_member_power_level_same_as_own_dialog,
     },
     gettext_f,
@@ -73,6 +73,10 @@ mod imp {
         ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         ignored_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        report_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        report_button: TemplateChild<LoadingButton>,
         /// The current user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         user: BoundObject<User>,
@@ -211,6 +215,7 @@ mod imp {
                 // construction.
                 let is_own_user = user.is_own_user();
                 self.ignored_row.set_visible(!is_own_user);
+                self.report_row.set_visible(!is_own_user);
 
                 self.user.set(user, handlers);
                 self.bindings.replace(bindings);
@@ -771,6 +776,29 @@ mod imp {
             }
 
             self.ignored_button.set_is_loading(false);
+        }
+
+        /// Report the user to the administrator of our homeserver.
+        #[template_callback]
+        async fn report_user(&self) {
+            let Some(user) = self.user.obj() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let Some(reason) = confirm_report_user_dialog(&user, &*obj).await else {
+                return;
+            };
+
+            self.report_button.set_is_loading(true);
+
+            if user.report(reason).await.is_err() {
+                toast!(obj, gettext("Could not report user"));
+            } else {
+                toast!(obj, gettext("Report sent"));
+            }
+
+            self.report_button.set_is_loading(false);
         }
     }
 }

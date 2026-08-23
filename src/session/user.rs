@@ -2,7 +2,10 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::identities::UserIdentity;
 use ruma::{
     MatrixToUri, OwnedMxcUri, OwnedUserId,
-    api::client::profile::{AvatarUrl, DisplayName},
+    api::client::{
+        profile::{AvatarUrl, DisplayName},
+        reporting::report_user,
+    },
 };
 use tracing::{debug, error};
 
@@ -324,6 +327,25 @@ impl User {
     /// Stop ignoring this user.
     pub(crate) async fn stop_ignoring(&self) -> Result<(), ()> {
         self.session().ignored_users().remove(self.user_id()).await
+    }
+
+    /// Report this user to the administrator of our homeserver.
+    ///
+    /// The reason may be empty.
+    pub(crate) async fn report(&self, reason: String) -> Result<(), ()> {
+        let user_id = self.user_id().clone();
+        let client = self.session().client();
+
+        let request = report_user::v3::Request::new(user_id.clone(), reason);
+        let handle = spawn_tokio!(async move { client.send(request).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not report user {user_id}: {error}");
+                Err(())
+            }
+        }
     }
 }
 

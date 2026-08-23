@@ -2012,6 +2012,22 @@ impl Room {
         }
     }
 
+    /// Report this room to the administrator of our homeserver.
+    ///
+    /// The reason may be empty. We do not have to be joined to report a room.
+    pub(crate) async fn report(&self, reason: String) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.report_room(reason).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not report room {}: {error}", self.room_id());
+                Err(())
+            }
+        }
+    }
+
     /// Invite the given users to this room.
     ///
     /// Returns `Ok(())` if all the invites are sent successfully, otherwise
