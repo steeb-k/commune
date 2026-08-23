@@ -939,9 +939,10 @@ impl Call {
     ///
     /// A call is placed to a room, and the room has to have exactly one other
     /// person in it for that to mean anything. The caller checks that before
-    /// getting here; this is only about which name and avatar to show.
+    /// getting here; this decides whose name is on the window and who the
+    /// invite is addressed to.
     fn load_remote_member(&self) {
-        let Some(member) = self.room().direct_member() else {
+        let Some(member) = super::other_member(&self.room()) else {
             return;
         };
 
