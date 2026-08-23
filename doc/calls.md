@@ -7,8 +7,10 @@ release. See `fork.md` for why none of this goes upstream.
 **Status: an invite goes out and the call window works; nothing has answered
 one yet.** Seen on screen on 23 August 2026: the buttons appear on the right
 rooms and not on the wrong ones, pressing one builds the pipeline, opens the
-camera, renders the self-view, sends `m.call.invite` into the room and sits in
-`Dialing` with a working mute/camera/hang-up row. What has **not** been seen is
+camera, renders a live self-view, sends `m.call.invite` into the room and sits
+in `Dialing` with a working mute/camera/hang-up row. "Live" is doing work in
+that sentence — until the two pipeline bugs below were found it was one frozen
+frame, which looks close enough to working to be reported as working. What has **not** been seen is
 any of the second half — an answer, ICE connecting, media flowing, or a call
 ending in anything but a hangup or a timeout. Read the last section before
 trusting any of that.
@@ -180,7 +182,7 @@ frame or a black rectangle. A remote `audio_muted` does **not** mute the
 incoming audio: unmuting takes a round trip and the words spoken in between
 would be lost.
 
-## Two things seen on screen, and neither was visible to the compiler
+## Four things seen on screen, and none of them visible to the compiler
 
 **The self-view is a `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`.** A
 Picture takes the natural size of its paintable, and a camera's paintable is as
@@ -194,6 +196,43 @@ a stream of message-like events into the room. The server notices room has two
 members and puts the recipient at power level −10, so the buttons appeared,
 the invite was refused with `M_FORBIDDEN`, and the call rang for nobody while
 four events failed to send in a row.
+
+**The queues in front of `webrtcbin` have to leak, or the self-view freezes.**
+`webrtcbin` consumes nothing at all until the call is connected — no answer, no
+transport, nowhere for a packet to go. A plain `queue` in front of it fills
+while the other end is still deciding whether to pick up and then blocks what is
+behind it, which for audio is the microphone and for video is a `tee` whose
+other branch is the self-view. A `tee` runs no faster than its slowest branch,
+so the preview stopped too: the caller's own face frozen on its first frame for
+as long as the call rang, while the camera light stayed on. Measured on the
+outgoing chain with nothing answering, the preview got about two seconds of
+frames and then none, and audio reached `webrtcbin` once and then never again;
+with `leaky=downstream` on both it holds a steady 30 fps for as long as it is
+left running. Dropping the oldest is the right end to drop from — a frame that
+could not be sent while nobody was listening is of no use once somebody is —
+and nothing is dropped after the call connects, because from then on
+`webrtcbin` is taking them. This was on Linux as well; it is not a macOS bug.
+
+**The self-view sink has to be asked for a format by name, or the camera dies.**
+`gtk4paintablesink` offers `video/x-raw(memory:GLMemory)` ahead of everything
+else, and `videoconvert` passes a memory feature it does not recognise straight
+through rather than refusing it — so left alone the preview branch negotiates GL
+textures and the camera is asked to produce them. `avfvideosrc` accepts that and
+then fails on the first buffer, and what arrives on the bus is
+`Internal data stream error … streaming stopped, reason error (-5)`, attributed
+to the source. It is not a negotiation error, so there is nothing in it pointing
+at the sink that asked for GL, and the element it names is the one element that
+is not at fault. A `capsfilter` of `video/x-raw, format=RGBA` before the sink
+settles it, because naming a format makes `videoconvert` convert instead of pass
+through. A bare `video/x-raw` does **not** work — that was tried, and the GL
+feature still won. The remote video sink needs none of this: it is fed by a
+decoder that only ever produces system memory, so there is no GL path to prefer.
+
+Both of those took reproducing outside the application to find. The bus error
+names a source that is working correctly, and a frozen preview looks like a
+camera problem rather than a queue three elements away — `doc/macos.md` has the
+`GStreamer` debug settings, and `error.debug()` is now logged beside
+`error.error()` because the reason lives in it and nowhere else.
 
 ## The window
 
@@ -283,6 +322,28 @@ wrong first, in the order they will show up:
 4. **Renegotiation.** `m.call.negotiate` is parsed by ruma and is not handled
    here at all, so a call that renegotiates mid-flight — which is what adding
    video to a voice call looks like — will not follow.
+5. **Muting is never announced, because `first_stream_id()` finds nothing.**
+   This one is no longer a guess. Driving `webrtcbin` 1.28.6 through the same
+   element chain `new_for_offer()` builds produces an offer whose only msid is
+   an **ssrc attribute**:
+
+   ```text
+   a=ssrc:3324831192 msid:user3428219828@host-8d6a82da webrtctransceiver0
+   ```
+
+   There is no media-level `a=msid:` line anywhere in it. `first_stream_id()`
+   strips exactly that prefix, so it returns `None`, so — by the design
+   recorded under "Muting" above — `m.call.sdp_stream_metadata_changed` is
+   never sent. The microphone and the camera still stop locally; the other end
+   is simply never told, and never hides the picture. Reading the ssrc form as
+   well is the fix, and it is not macOS-specific: it is what this version of
+   `webrtcbin` writes.
+
+   The rest of that offer was as intended — `m=audio` then `m=video` in the
+   order the answerer is expected to match, both `sendrecv` and in
+   `a=group:BUNDLE`, a DTLS fingerprint, and 13 ICE candidates gathered. The
+   `m=video 0` port is `a=bundle-only`, which is what `max-bundle` is supposed
+   to produce, not a rejected section.
 
 Also absent on purpose:
 

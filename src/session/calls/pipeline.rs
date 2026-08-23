@@ -222,7 +222,7 @@ impl CallPipeline {
     /// Add the microphone to the pipeline, encoded and packetised for the wire.
     fn add_audio_source(&mut self) -> Result<(), PipelineError> {
         let source = gst::ElementFactory::make("autoaudiosrc").build()?;
-        let queue = gst::ElementFactory::make("queue").build()?;
+        let queue = leaky_queue()?;
         let convert = gst::ElementFactory::make("audioconvert").build()?;
         let resample = gst::ElementFactory::make("audioresample").build()?;
         let volume = gst::ElementFactory::make("volume").build()?;
@@ -271,10 +271,39 @@ impl CallPipeline {
 
         let preview_queue = gst::ElementFactory::make("queue").build()?;
         let preview_convert = gst::ElementFactory::make("videoconvert").build()?;
+        // Ask the self-view for a plain system-memory format, by name.
+        //
+        // `gtk4paintablesink` offers `video/x-raw(memory:GLMemory)` ahead of
+        // everything else, and `videoconvert` passes a memory feature it does
+        // not recognise straight through rather than refusing it — so left
+        // alone, the whole branch negotiates GL textures and the camera is
+        // asked to produce them. On macOS `avfvideosrc` accepts that and then
+        // dies on the first buffer, and what reaches the bus is
+        // `Internal data stream error … reason error (-5)` attributed to the
+        // source. It is not a negotiation error, so nothing in it points at
+        // the sink that asked for GL.
+        //
+        // Naming a format is what settles it: `videoconvert` then has to
+        // convert rather than pass through, and the camera is left on the
+        // plain `video/x-raw` it is happy with (UYVY here, converted to RGBA
+        // for the sink). A bare `video/x-raw` caps does **not** do it — that
+        // was tried, and the GL feature still won.
+        //
+        // The remote video sink needs none of this: it is fed by a decoder
+        // that only ever produces system memory, so there is no GL path for
+        // the negotiation to prefer.
+        let preview_caps = gst::ElementFactory::make("capsfilter")
+            .property(
+                "caps",
+                gst::Caps::builder("video/x-raw")
+                    .field("format", "RGBA")
+                    .build(),
+            )
+            .build()?;
         let preview_sink = gst::ElementFactory::make("gtk4paintablesink").build()?;
         self.local_paintable = Some(preview_sink.property::<gdk::Paintable>("paintable"));
 
-        let send_queue = gst::ElementFactory::make("queue").build()?;
+        let send_queue = leaky_queue()?;
         let convert = gst::ElementFactory::make("videoconvert").build()?;
         let scale = gst::ElementFactory::make("videoscale").build()?;
         let scaled = gst::ElementFactory::make("capsfilter")
@@ -314,6 +343,7 @@ impl CallPipeline {
             &tee,
             &preview_queue,
             &preview_convert,
+            &preview_caps,
             &preview_sink,
             &send_queue,
             &convert,
@@ -325,7 +355,13 @@ impl CallPipeline {
         ])?;
 
         gst::Element::link_many([&source, &valve, &tee])?;
-        gst::Element::link_many([&tee, &preview_queue, &preview_convert, &preview_sink])?;
+        gst::Element::link_many([
+            &tee,
+            &preview_queue,
+            &preview_convert,
+            &preview_caps,
+            &preview_sink,
+        ])?;
         gst::Element::link_many([
             &tee,
             &send_queue,
@@ -451,13 +487,19 @@ impl CallPipeline {
         let guard = bus
             .add_watch_local(move |_, message| {
                 if let gst::MessageView::Error(error) = message.view() {
+                    // The debug string is where the reason is. `GStreamer`
+                    // reports a failed negotiation as "Internal data stream
+                    // error" from whichever source starved, and only the debug
+                    // field says `not-negotiated`; without it the element that
+                    // is named is never the element that is wrong.
                     error!(
-                        "Error from {}: {}",
+                        "Error from {}: {} ({})",
                         error.src().map_or_else(
                             || "the call pipeline".to_owned(),
                             |src| src.path_string().to_string()
                         ),
-                        error.error()
+                        error.error(),
+                        error.debug().as_deref().unwrap_or("no debug information")
                     );
                     let _ =
                         bus_sender.unbounded_send(PipelineEvent::Error(error.error().to_string()));
@@ -683,6 +725,32 @@ fn attach_decoded_pad(
     }
 
     Ok(())
+}
+
+/// A queue that drops what it cannot pass on, for the branches feeding
+/// `webrtcbin`.
+///
+/// `webrtcbin` consumes nothing until the call is connected — there is no
+/// answer, no transport, and nowhere for a packet to go. A plain `queue` in
+/// front of it fills up while the other end is still deciding whether to pick
+/// up, and then blocks the element behind it.
+///
+/// For audio that element is the microphone, and the seconds recorded while it
+/// was blocked would be the first thing the other party hears. For video it is
+/// worse than it sounds: the camera feeds a `tee`, one branch of which is the
+/// self-view, and a `tee` runs no faster than its slowest branch — so a full
+/// send queue stops the preview as well, and what the caller sees is their own
+/// face frozen on the first frame for as long as the call is ringing. That is
+/// what it did, on Linux and on macOS alike.
+///
+/// The oldest is the right end to drop from: this is a live call, and a frame
+/// that could not be sent while nobody was listening is of no use once somebody
+/// is. Nothing is dropped once the call connects, because from then on
+/// `webrtcbin` is taking them.
+fn leaky_queue() -> Result<gst::Element, PipelineError> {
+    Ok(gst::ElementFactory::make("queue")
+        .property_from_str("leaky", "downstream")
+        .build()?)
 }
 
 /// Link a pad into the sink of an element.
