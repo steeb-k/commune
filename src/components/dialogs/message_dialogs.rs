@@ -655,6 +655,34 @@ pub(crate) async fn confirm_report_user_dialog(
     .await
 }
 
+/// Ask the user to confirm a server access list that shuts their own
+/// homeserver out of the room.
+///
+/// This is survivable — another server in the room can put it back — but not
+/// from here, so it is worth a stop.
+pub(crate) async fn confirm_exclude_own_server_dialog(
+    server: &str,
+    parent: &impl IsA<gtk::Widget>,
+) -> bool {
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(gettext("Shut Out Your Own Server?"))
+        .body(gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "This list does not let {server} take part in the room, so everyone with an account there loses access to it, including you. Only someone on another server still in the room could undo this.",
+            &[("server", server)],
+        ))
+        .build();
+    confirm_dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        ("exclude", &gettext("Shut Out")),
+    ]);
+    confirm_dialog.set_response_appearance("exclude", adw::ResponseAppearance::Destructive);
+
+    confirm_dialog.choose_future(Some(parent)).await == "exclude"
+}
+
 /// Show a dialog for the user to choose what to do about unsaved changes.
 pub(crate) async fn unsaved_changes_dialog(
     parent: &impl IsA<gtk::Widget>,

@@ -1,0 +1,103 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomDetailsServerAclSubpage: Adw.NavigationPage {
+  title: _("Server Access");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-back-button: false;
+
+      [start]
+      Gtk.Button {
+        icon-name: "go-previous-symbolic";
+        tooltip-text: _("Back");
+        clicked => $go_back() swapped;
+
+        styles [
+          "back",
+        ]
+      }
+
+      [end]
+      $LoadingButton save_button {
+        sensitive: bind template.changed;
+        content-label: _("_Save");
+        use-underline: true;
+        clicked => $save() swapped;
+
+        styles [
+          "suggested-action",
+        ]
+      }
+    }
+
+    content: Adw.PreferencesPage {
+      Adw.PreferencesGroup {
+        title: _("Allowed Servers");
+        description: _(
+          "Only members from these homeservers can take part in this room. “*” matches any number of characters and “?” exactly one, so “*.example.org” covers every subdomain of example.org."
+        );
+
+        Gtk.ListBox allowed_list {
+          styles [
+            "boxed-list",
+          ]
+        }
+
+        Gtk.Revealer error_revealer {
+          styles [
+            "entry-row-error-revealer",
+          ]
+
+          child: Gtk.Label error_label {
+            accessible-role: status;
+            wrap: true;
+            wrap-mode: word_char;
+            xalign: 0.0;
+
+            styles [
+              "caption",
+              "error",
+            ]
+          };
+        }
+      }
+
+      Adw.PreferencesGroup {
+        title: _("Blocked Servers");
+        description: _(
+          "These homeservers cannot take part in this room, even when the rules above would let them in."
+        );
+
+        Gtk.ListBox denied_list {
+          styles [
+            "boxed-list",
+          ]
+        }
+      }
+
+      Adw.PreferencesGroup {
+        Adw.SwitchRow ip_literals_row {
+          selectable: false;
+          title: _("Allow IP Address Literals");
+          subtitle: _("Homeservers named by a bare IP address rather than a domain name");
+          notify::active => $update_changed() swapped;
+        }
+      }
+    };
+  };
+}
+
+$EntryAddRow allowed_add_row {
+  title: _("Add Allowed Server");
+  add-button-tooltip-text: _("Add Allowed Server");
+  add => $add_allowed_server() swapped;
+}
+
+$EntryAddRow denied_add_row {
+  title: _("Add Blocked Server");
+  add-button-tooltip-text: _("Add Blocked Server");
+  add => $add_denied_server() swapped;
+}
