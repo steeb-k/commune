@@ -13,6 +13,10 @@
 #     administrator. Against a public homeserver that is noise someone has to
 #     read. Against this one it goes to a server you throw away afterwards.
 #
+#   * A server ACL decides which homeservers may take part in a room, and
+#     getting one wrong shuts people out of a room for good. It is not a thing
+#     to try out on a room anybody is using.
+#
 # Everything lives under testing/.homeserver, which is git-ignored. Run
 # `./testing/local-homeserver.sh down` to stop the server, or `clean` to also
 # delete its data.
@@ -215,6 +219,23 @@ seed() {
     }]
   }')")
 
+  # The server ACL subpage has nothing to show until a room has an ACL. This one
+  # gets two, so the timeline holds both the first restriction and a change to
+  # it — the two lines `server_acl_message()` tells apart.
+  log "Creating the server ACL room…"
+  local acl_room
+  acl_room=$(create_room "$alice" '{"name": "ACL Room", "preset": "private_chat"}')
+
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"allow": ["*"], "deny": [], "allow_ip_literals": false}' >/dev/null \
+    || warn "the server refused the first ACL; the ACL Room will be empty"
+
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"allow": ["*"], "deny": ["evil.example"], "allow_ip_literals": false}' >/dev/null \
+    || warn "the server refused the second ACL"
+
   log "Creating the plain rooms…"
   local invite_room knock_room public_room
   invite_room=$(create_room "$alice" '{"name": "Invite Room", "preset": "private_chat"}')
@@ -255,6 +276,7 @@ seed() {
     --arg invite_room "$invite_room" \
     --arg knock_room "$knock_room" \
     --arg public_room "$public_room" \
+    --arg acl_room "$acl_room" \
     '$ARGS.named' > "$STATE"
 }
 
@@ -318,6 +340,48 @@ check() {
   else
     warn "the allow list did not survive the round trip"
     failed=1
+  fi
+
+  log "Checking that the server ACL round trips…"
+  local acl_room acl_before acl_after
+  acl_room=$(jq -r .acl_room "$STATE")
+  acl_before=$(curl -sf "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice" || echo '{}')
+
+  # This is the change the subpage makes: add a blocked server, leave the allow
+  # list and the IP literal switch alone.
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"allow": ["*"], "deny": ["evil.example", "worse.example"], "allow_ip_literals": false}' \
+    >/dev/null || { warn "the server refused the new ACL"; failed=1; }
+
+  acl_after=$(curl -sf "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice")
+  if [ "$(jq -c '.deny' <<<"$acl_after")" = '["evil.example","worse.example"]' ] \
+     && [ "$(jq -c '.allow' <<<"$acl_after")" = '["*"]' ]; then
+    printf '    m.room.server_acl round trip                   OK\n'
+  else
+    warn "the ACL did not survive the round trip"
+    failed=1
+  fi
+
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d "$acl_before" >/dev/null || true
+
+  # Not a pass or a fail: it records whether the client-side warning is the only
+  # thing standing between the user and a room they have shut themselves out of.
+  log "Checking whether the server guards against shutting itself out…"
+  if curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{"allow": ["*"], "deny": ["localhost"], "allow_ip_literals": false}' >/dev/null 2>&1; then
+    printf '    the server ACCEPTED an ACL denying its own name —\n'
+    printf '    the confirmation dialog in Commune is the only guard\n'
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$acl_room/state/m.room.server_acl/" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d "$acl_before" >/dev/null || true
+  else
+    printf '    the server refused it as well\n'
   fi
 
   [ "$failed" = 0 ] || die "Some checks failed; see above."
@@ -387,6 +451,12 @@ summary() {
                              selected, and "Allow Invite Requests" now saves
     "Knock Restricted Room"  the same, with the switch already on
     "Invite Room"            unchanged behaviour, for comparison
+
+  Server ACLs — open Room Details ▸ Server Access on
+    "ACL Room"               "*" is allowed and "evil.example" is blocked;
+                             the timeline shows the first ACL and the change
+    Remove "*" and save      the page refuses it: nobody could take part
+    Block "localhost"        it asks first, because that is your own server
 
   Reporting — the report goes to the admin account above, not to a stranger
     Room menu ▸ Report Room…          on any room
