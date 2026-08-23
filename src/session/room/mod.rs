@@ -21,10 +21,14 @@ use ruma::{
         client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
         error::{ErrorKind, LimitExceededErrorData, RetryAfter},
     },
-    events::room::{
-        guest_access::GuestAccess,
-        history_visibility::HistoryVisibility,
-        member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
+    events::{
+        SyncStateEvent,
+        room::{
+            guest_access::GuestAccess,
+            history_visibility::HistoryVisibility,
+            member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
+            server_acl::RoomServerAclEventContent,
+        },
     },
     room_version_rules::RoomVersionRules,
 };
@@ -2023,6 +2027,57 @@ impl Room {
             Ok(_) => Ok(()),
             Err(error) => {
                 error!("Could not report room {}: {error}", self.room_id());
+                Err(())
+            }
+        }
+    }
+
+    /// The server ACL of this room, if it has one.
+    ///
+    /// A room without an ACL is not restricted at all, which is different from
+    /// an ACL we could not load, hence the nested result.
+    pub(crate) async fn server_acl(&self) -> Result<Option<RoomServerAclEventContent>, ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            matrix_room
+                .get_state_event_static::<RoomServerAclEventContent>()
+                .await
+        });
+
+        let raw_event = match handle.await.expect("task was not aborted") {
+            Ok(Some(RawSyncOrStrippedState::Sync(raw_event))) => raw_event,
+            // A room we were never in does not hand us its ACL.
+            Ok(_) => return Ok(None),
+            Err(error) => {
+                error!("Could not get server ACL event: {error}");
+                return Err(());
+            }
+        };
+
+        match raw_event.deserialize() {
+            Ok(SyncStateEvent::Original(event)) => Ok(Some(event.content)),
+            // A redacted event has no content. An ACL should never be redacted,
+            // it is in `NON_REDACTABLE_EVENTS`, but a remote one might be.
+            Ok(_) => Ok(None),
+            Err(error) => {
+                error!("Could not deserialize server ACL event: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Set the server ACL of this room.
+    pub(crate) async fn set_server_acl(
+        &self,
+        content: RoomServerAclEventContent,
+    ) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not change server ACL: {error}");
                 Err(())
             }
         }

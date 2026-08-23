@@ -19,6 +19,7 @@ mod member_row;
 mod members_page;
 mod membership_subpage_item;
 mod permissions;
+mod server_acl_subpage;
 mod upgrade_dialog;
 
 use self::{
@@ -36,6 +37,7 @@ use self::{
     members_page::MembersPage,
     membership_subpage_item::MembershipSubpageItem,
     permissions::PermissionsSubpage,
+    server_acl_subpage::ServerAclSubpage,
     upgrade_dialog::{UpgradeDialog, UpgradeInfo},
 };
 use crate::{
@@ -69,6 +71,8 @@ pub(super) enum SubpageName {
     HistoryVisibility,
     /// The page to manage the image packs of the room.
     ImagePacks,
+    /// The page to edit which servers can take part in the room.
+    ServerAcl,
 }
 
 /// The view to present when opening the room details.
@@ -241,6 +245,7 @@ mod imp {
                     SubpageName::JoinRule => JoinRuleSubpage::new(room).upcast(),
                     SubpageName::HistoryVisibility => HistoryVisibilitySubpage::new(room).upcast(),
                     SubpageName::ImagePacks => ImagePacksSubpage::new(room).upcast(),
+                    SubpageName::ServerAcl => ServerAclSubpage::new(room).upcast(),
                 })
                 .clone()
         }

@@ -256,6 +256,14 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
       action-target: "'permissions'";
     }
 
+    $ButtonCountRow {
+      title: _("Server Access");
+      subtitle: _("Which homeservers can take part in this room");
+      visible: bind $invert_boolean(template.room as <$Room>.is-direct) as <bool>;
+      action-name: "details.show-subpage";
+      action-target: "'server-acl'";
+    }
+
     Adw.ActionRow room_version {
       selectable: false;
       title: _("Room Version");

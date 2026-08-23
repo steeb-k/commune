@@ -167,6 +167,8 @@ src/session_view/room_details/permissions/members_subpage.blp
 src/session_view/room_details/permissions/members_subpage.rs
 src/session_view/room_details/permissions/permissions_subpage.blp
 src/session_view/room_details/permissions/permissions_subpage.rs
+src/session_view/room_details/server_acl_subpage.blp
+src/session_view/room_details/server_acl_subpage.rs
 src/session_view/room_details/upgrade_dialog/mod.blp
 src/session_view/room_details/upgrade_dialog/mod.rs
 src/session_view/room_history/call_row.rs
