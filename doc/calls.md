@@ -4,16 +4,19 @@ This file is the ledger for one-to-one calls: what the fork added, the
 decisions behind it, and what to check when rebasing onto a new Fractal
 release. See `fork.md` for why none of this goes upstream.
 
-**Status: an invite goes out and the call window works; nothing has answered
-one yet.** Seen on screen on 23 August 2026: the buttons appear on the right
-rooms and not on the wrong ones, pressing one builds the pipeline, opens the
-camera, renders a live self-view, sends `m.call.invite` into the room and sits
-in `Dialing` with a working mute/camera/hang-up row. "Live" is doing work in
-that sentence — until the two pipeline bugs below were found it was one frozen
-frame, which looks close enough to working to be reported as working. What has **not** been seen is
-any of the second half — an answer, ICE connecting, media flowing, or a call
-ending in anything but a hangup or a timeout. Read the last section before
-trusting any of that.
+**Status: calls work, and the module is not finished.** Placed and answered
+against Element for Android on 23 August 2026, carrying audio and video: on
+one network at 21:13, and between two — the phone on mobile data, a relay
+outside both — at 23:04, where `Checking` became `Connected` in six hundred
+milliseconds. Offer, answer, `select_answer`, candidates, hangup and muting
+all behave. What is not done is `m.call.negotiate`, call history in the
+timeline, and any sound or notification when a call comes in; the last section
+lists them.
+
+The evening that produced this is worth a sentence of warning: five separate
+faults, four of which looked identical from here — ICE reaching `Checking` and
+dying — and each of which hid the next. Anything below that reads like a
+diagnosis is one that was measured, not inferred.
 
 Testing it needs two clients, and two accounts inside one Commune are not two
 clients: `Calls` holds one call per session, so a second call from the same
@@ -665,7 +668,17 @@ TURN host costs the client its server-reflexive candidate, and with it every
 direct path a NAT would otherwise have allowed.
 
 `allowed-peer-ip` for the server's own address is what makes the pair legal;
-it is checked ahead of the denied ranges.
+it is checked ahead of the denied ranges. Adding it fixed the `403`, measured
+the same evening — two allocations, permissions granted both ways, and a
+packet delivered between them.
+
+**It was not, in the end, what the calls were failing on.** With relay-to-relay
+open they still failed, and so did calls through a hosted relay outside both
+networks, which has none of this deployment's problems. The fault was the
+missing `sdpMid` two sections up. This section stays because the measurement
+is sound and the topology is real — a TURN server behind the same NAT as one
+of its callers is a bad place for one to be — but it is a thing to fix for its
+own sake, not a thing that was stopping a call.
 
 ## Testing
 
@@ -705,120 +718,90 @@ durable. This section is the state of it.
 * Nothing known, as of the run above. What was here — a call between networks
   — now works.
 
-### The diagnosis as it stands
+### What five failures turned out to be
 
-**The far end's candidates name an ICE session its own answer does not.**
-Measured on 23 August 2026 against Element for Android, twice in one run —
-once over the internet and once with both machines on one switch:
+Written out because each one masked the next, and because four of the five
+looked identical from here — ICE reaching `Checking` and dying.
 
-```text
-Answer for call kHUhimu2SaCX5nwT from party Some("LYEBQWFTPB")
-The remote description carries ice-ufrag +sSs
-Adding remote host candidate … 192.168.50.234 34239 typ host … ufrag Jlts
-        ×11, every one of them Jlts
-ICE connection state is now Checking      → Failed, five seconds later
-```
+1. **`a=rtpmap:111 OPUS/48000`.** Element rejected the audio section of every
+   call this fork ever placed to it. A voice call was answered with nothing
+   accepted at all; a video call came back video-only. See "Opus is offered
+   with two channels".
+2. **Remote candidates hard-coded onto section 0.** When the peer rejects the
+   audio section its transport is on section 1, and everything we added named
+   a section with no transport. This one was a regression, and the two video
+   calls that worked that morning worked because the code then used the index
+   the peer sent.
+3. **Candidates dropped when they arrived before their invite**, which on the
+   answering side was every candidate the call was going to get.
+4. **Two remote candidates on one transport address**, which aborted the
+   process inside libnice. See the section on `conncheck.c:959`.
+5. **`m.call.candidates` sent with no `sdpMid`.** The last one, and the one
+   that made the other four so hard to see: the far end discarded every
+   candidate we sent, so it never checked and never opened its relay to us,
+   and every diagnosis pointed at the network.
 
-Both values are four characters, which is what libwebrtc writes and not what
-`webrtcbin` does, so both are the phone's: it answers out of one ICE session
-and trickles out of another. libnice discards a candidate whose tag is not the
-remote description's, so the pair list was empty — with the two machines on
-one network and `192.168.50.234` sitting there in the list.
+**The ufrag mismatch was ours.** An answer whose candidates all carried a tag
+the description did not name looked like the far end trickling from a second
+ICE session. It was not: the answer had two `a=ice-ufrag` lines, one per
+section, and we were reading the rejected section's. Reading the bundled
+section's fixed it. Dropping a mismatched tag rather than the candidate is
+kept, because libnice discards such a candidate itself and the address is
+never the part in doubt.
 
-Not two devices. This was one, `party_id LYEBQWFTPB`, the only one signed in,
-and the split appears on every call it answers. It does _not_ appear on calls
-it places: the invite it sent us carried `ice-ufrag 9ENC` and every candidate
-behind it said `ufrag 9ENC`.
-
-So the tag is dropped and the address kept — see "Every remote candidate goes
-on section 0" for the other half of the same argument. An address is what a
-candidate is for; the answer is what says which session the call is.
-
-**And a call is no longer hung up on the first `Failed`.** libnice reports it
-the instant it has nothing left to check, which on a trickling call describes
-that instant and not the call. The other end's next batch comes through a
-room, at whatever pace its client batches and the homeserver syncs. Fifteen
-seconds, and a `Connected` in between cancels it.
-
-**Both of these were reached by watching a call that should not have failed.**
-The two ends were on one switch, both had the other's host address, and it
-still ended in five seconds — which is what makes the pair list, rather than
-the network, the thing to look at.
-
-### The one procedure to run
-
-One account signed in on exactly two clients, and nothing else ringing:
+### The procedure when one does not connect
 
 1. `RUST_LOG=commune=debug commune 2>&1 | tee /tmp/call.log`
-2. Place **one voice call** from Commune to the other client.
-3. Answer it there. Leave it for twenty seconds whether or not it connects.
-4. Hang up. Stop Commune.
-
-Then:
+2. Place or answer **one** call. Leave it twenty seconds whether or not it
+   connects. Hang up, stop Commune.
 
 ```sh
-grep -E "Placing call|Sent m.call|from party|Replaying|not the call in progress|ice-ufrag|gathered a (relay|srflx)|ICE connection state" /tmp/call.log
+grep -E "Placing call|Sent m.call|Our own (offer|answer)|Setting the remote|\
+transport is on m-line|Adding remote|Ignoring a|gathered a (relay|srflx)|\
+ICE connection state" /tmp/call.log
 ```
 
-Those lines say, in order: which room the call went into and who it was
-addressed to, the event ID of every event we sent and whether it was
-encrypted, which party answered, whether any candidates had to wait for their
-invite, which ICE session they belong to, whether a relay was obtained, and
-where ICE ended up.
+Both descriptions are logged in full, which is what finally made the difference:
+the opus rtpmap, the rejected section and its stale `ice-ufrag` are all things
+that can only be seen by reading the two SDPs side by side.
 
-When the other end never rings, the log above has said all it can. The next
-question is whether the invite reached that device at all, and it is answered
-there: look for the event ID in the room on the other client — Element draws a
-timeline row for a call it received and ignored, and nothing at all for one it
-never got.
+When ICE stops at `Checking`, the next instrument is libnice's own:
 
-**Sign every other client out first.** A second session of the same account
-that rings and does not answer is what produced the split above, and it is
-indistinguishable from a network fault unless it is ruled out deliberately.
+```sh
+NICE_DEBUG=nice G_MESSAGES_DEBUG=all RUST_LOG=commune=debug commune 2>&1 | tee /tmp/ice.log
+```
 
-## Not done, and not yet seen working
+It prints every pair it builds and what each check did. `Failed pair is …`
+with `timer=3/3` against every pair, and no inbound STUN packet from anywhere
+but the TURN server, is the signature of a far end that never answered — which
+means it never had our candidates, not that the path was broken.
 
-**Nothing past the invite has been exercised.** The outgoing half is seen
-working; the answering half, ICE and media are not. The parts most likely to be
-wrong first, in the order they will show up:
+**Test against a homeserver whose TURN is known to work before blaming the
+client.** An evening went into faults that were not the client's: a coturn
+behind the same NAT as one caller, split-horizon DNS that cost that caller its
+reflexive candidate, `denied-peer-ip` covering the server's own address, and a
+relay port range that had to be moved. A free account elsewhere would have put
+the one client bug in plain sight.
 
-1. **The answerer's pad ordering.** Building sink pads to match the offer is
-   the fiddliest thing in `webrtcbin`, and getting it wrong shows up as an
-   answer the other end refuses rather than as an error here.
-2. **`add-turn-server` accepting the URI.** It returns a boolean and the code
-   logs a warning on `false`; watch for that before blaming ICE.
-3. **`autoaudiosrc` and `autovideosrc` under a portal.** On a sandboxed desktop
-   the camera wants `pipewiresrc` through the portal, and `autovideosrc` may
-   pick a `v4l2src` that cannot open the device. On the machine this was first
-   run on — an IPU6 camera on Arch — `autovideosrc` opened it and the frames
-   were fine, so this is not a given failure.
-4. **Renegotiation.** `m.call.negotiate` is parsed by ruma and is not handled
+## What is not done, and what is left out on purpose
+
+The module carries a call. These are the parts of it that do not.
+
+1. **Renegotiation.** `m.call.negotiate` is parsed by ruma and not handled
    here at all, so a call that renegotiates mid-flight — which is what adding
-   video to a voice call looks like — will not follow.
-5. **Muting is never announced, because `first_stream_id()` finds nothing.**
-   This one is no longer a guess. Driving `webrtcbin` 1.28.6 through the same
-   element chain `new_for_offer()` builds produces an offer whose only msid is
-   an **ssrc attribute**:
-
-   ```text
-   a=ssrc:3324831192 msid:user3428219828@host-8d6a82da webrtctransceiver0
-   ```
-
-   There is no media-level `a=msid:` line anywhere in it. `first_stream_id()`
-   strips exactly that prefix, so it returns `None`, so — by the design
-   recorded under "Muting" above — `m.call.sdp_stream_metadata_changed` is
-   never sent. The microphone and the camera still stop locally; the other end
-   is simply never told, and never hides the picture. Reading the ssrc form as
-   well is the fix, and it is not macOS-specific: it is what this version of
-   `webrtcbin` writes. **Fixed on 23 August 2026**, against an offer dumped
-   from `webrtcbin` 1.28.6 on Linux that matched the macOS one line for line;
-   see "Muting" above.
-
-   The rest of that offer was as intended — `m=audio` then `m=video` in the
-   order the answerer is expected to match, both `sendrecv` and in
-   `a=group:BUNDLE`, a DTLS fingerprint, and 13 ICE candidates gathered. The
-   `m=video 0` port is `a=bundle-only`, which is what `max-bundle` is supposed
-   to produce, not a rejected section.
+   video to a voice call looks like from the other end — will not follow. This
+   is the one thing the spec defines that the code does not answer, and the
+   only reason this feature is still counted as partial.
+2. **`autoaudiosrc` and `autovideosrc` under a portal.** On a sandboxed
+   desktop the camera wants `pipewiresrc` through the portal, and
+   `autovideosrc` may pick a `v4l2src` that cannot open the device. On the
+   machine this was built on — an IPU6 camera on Arch — `autovideosrc` opened
+   it and the frames were fine, so this is not a given failure, only an
+   untested one.
+3. **A second answering device.** `select_answer` and `AnsweredElsewhere` are
+   written and have never had two devices to exercise them.
+4. **macOS.** Everything above was measured on Linux. `doc/macos.md` records
+   what had to be built by hand to make `webrtcbin` exist there at all.
 
 Also absent on purpose:
 
