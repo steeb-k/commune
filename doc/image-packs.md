@@ -201,7 +201,7 @@ Four things cost a lot of time here and are easy to walk back into.
 * **`compute_concrete_size` with a specified size of zero returns the
   intrinsic size**, ignoring the allocation. Draw at the allocated size.
 * **The SDK sanitizes the HTML of every message before we see it**, so
-  `data-mx-emoticon` never arrives. See the wire format section.
+  `data-mx-emoticon` never arrives. See the architecture section.
 * **Reading the state of a room only answers with what sync brought.**
   `Room::get_state_events` reads the state store and never the network, and
   the state of a room that has seen no activity can predate the store, so a
@@ -214,22 +214,24 @@ widgets. A change to how something is drawn has to be looked at.
 
 ## Where this differs from the specification
 
-Audited against MSC2545 and the Matrix 1.19 module. Everything not listed here
-follows it: the pack order, pack-level `usage` with an absent value meaning
-all, the shortcode grammar and its hundred-byte limit, the sent
+Audited against MSC2545 and the Matrix 1.19 module. Nothing here is a
+departure we chose: the wire names are the specified ones, and what is left is
+one thing the SDK makes impossible and one phase not built yet.
+
+Everything not listed here follows the module: the pack order, pack-level
+`usage` with an absent value meaning all, the shortcode grammar and its
+hundred-byte limit, the sent
 `<img data-mx-emoticon src alt title height="32">` with `alt` the body or the
 shortcode and `title` the shortcode, the `body` and `info` fallbacks of a
 sticker, `mxc:` sources only, and preserving the properties we do not know
 about.
 
-* **We write the unstable event names.** Deliberate, and the only departure we
-  chose. See the wire format section, which says what to change when it can go.
 * **`data-mx-emoticon` cannot be honoured on the way in.** The specification
   says an inline image is an emoticon if and only if it carries that
   attribute. The SDK sanitizes every message before we see it and its
   allow-list drops it, with no way to opt out, so an inline image whose source
   is on the homeserver is presented as an emoticon. A genuine inline image in
-  HTML is therefore drawn emoticon-sized. See the wire format section.
+  HTML is therefore drawn emoticon-sized. See the architecture section.
 * **Space packs are not read.** The specification says clients SHOULD offer
   the packs of a room's canonical space hierarchy, recursively, with a cycle
   guard. Phase 8.
@@ -473,7 +475,9 @@ must not be resolved in upstream's favour.
 4. Check for changes in: the `EventContent` derive, `Timeline::send`, the
    sanitizer configuration, `LabelWithWidgets`, and
    `Room::get_state_events`.
-5. If ruma gains the unstable names, `events.rs` can be replaced by them.
+5. If ruma gains the unstable names _and_ stops dropping the properties it
+   does not know about, `events.rs` can be replaced by its types. Both are
+   needed; either alone is not enough.
 6. Run the `events.rs` tests and `message_row/text/tests.rs` first; they
    catch wire and renderer drift cheapest.
 
