@@ -5,6 +5,8 @@
 //! are a different thing entirely — `MatrixRTC`, still a proposal — and none of
 //! this is about them.
 
+use std::time::{Duration, Instant};
+
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::room::Room as MatrixRoom;
 use ruma::{
@@ -32,6 +34,19 @@ pub(crate) use self::{
 use super::{JoinRuleValue, Member, Membership, MembershipListKind, Room, Session, UserExt};
 use crate::spawn;
 
+/// How long a candidate batch is kept for an invite that has not arrived.
+///
+/// One sync round trip is all it takes; this is generous so that a slow one
+/// still lands the candidates rather than losing them.
+const EARLY_CANDIDATE_LIFETIME: Duration = Duration::from_secs(30);
+
+/// How many such batches are kept at once.
+///
+/// A bound rather than a number that matters: the batches are small, and
+/// everything in here is either claimed by an invite within a sync or two, or
+/// belongs to a call this session is not in.
+const MAX_EARLY_CANDIDATE_BATCHES: usize = 8;
+
 /// Everything that arrives about a call.
 ///
 /// One enum rather than seven handlers on the far side, so that the hop onto
@@ -45,6 +60,23 @@ enum CallSignal {
     Reject(Box<OriginalSyncCallRejectEvent>),
     SelectAnswer(Box<OriginalSyncCallSelectAnswerEvent>),
     StreamMetadata(Box<OriginalSyncCallSdpStreamMetadataChangedEvent>),
+}
+
+/// A candidate batch that arrived before the invite it belongs to.
+///
+/// The other end sends its candidates immediately after the invite, and the
+/// two can reach us the other way round — the invite takes longer to send when
+/// it is the first encrypted event of a session, and the sync that carries the
+/// candidates gets here first. Dropping them costs the call: for a peer that
+/// gathers before it dials, that batch is every candidate it will ever send.
+#[derive(Debug)]
+struct EarlyCandidates {
+    /// The room the batch arrived in.
+    room_id: OwnedRoomId,
+    /// The batch.
+    event: OriginalSyncCallCandidatesEvent,
+    /// When it arrived, so that it can be forgotten.
+    received: Instant,
 }
 
 mod imp {
@@ -66,6 +98,8 @@ mod imp {
         pub(super) active_call: RefCell<Option<Call>>,
         /// The TURN credentials, kept until they go stale.
         pub(super) turn_credentials: RefCell<TurnCredentials>,
+        /// Candidates that arrived before the invite they belong to.
+        pub(super) early_candidates: RefCell<Vec<EarlyCandidates>>,
     }
 
     #[glib::object_subclass]
@@ -198,6 +232,10 @@ impl Calls {
             return;
         };
 
+        // Candidates for it may already be here, an invite having taken longer
+        // to arrive than the batch that followed it.
+        self.replay_early_candidates(&call);
+
         call.connect_state_notify(clone!(
             #[weak(rename_to = obj)]
             self,
@@ -215,6 +253,72 @@ impl Calls {
                 }
             }
         ));
+    }
+
+    /// Keep a candidate batch whose call has not appeared.
+    ///
+    /// Measured on 23 August 2026: an incoming call arrived with its whole
+    /// batch of twenty-four candidates one sync ahead of the invite, all of
+    /// them dropped here, and the call that followed had not one remote
+    /// candidate to pair with. The ring worked; nothing after it could.
+    fn hold_early_candidates(&self, room_id: &OwnedRoomId, event: OriginalSyncCallCandidatesEvent) {
+        debug!(
+            "Holding {} ICE candidate(s) for call {}, which has not been invited yet",
+            event.content.candidates.len(),
+            event.content.call_id
+        );
+
+        let now = Instant::now();
+        let mut held = self.imp().early_candidates.borrow_mut();
+
+        // A batch nothing claimed belongs to a call this session is not in.
+        held.retain(|batch| now.duration_since(batch.received) < EARLY_CANDIDATE_LIFETIME);
+
+        if held.len() >= MAX_EARLY_CANDIDATE_BATCHES {
+            held.remove(0);
+        }
+
+        held.push(EarlyCandidates {
+            room_id: room_id.clone(),
+            event,
+            received: now,
+        });
+    }
+
+    /// Hand a call the candidates that arrived before it did.
+    fn replay_early_candidates(&self, call: &Call) {
+        let room = call.room();
+        let room_id = room.room_id();
+        let call_id = call.call_id();
+
+        let claimed = {
+            let mut held = self.imp().early_candidates.borrow_mut();
+            let mut claimed = Vec::new();
+            let mut rest = Vec::new();
+
+            for batch in held.drain(..) {
+                if batch.room_id == *room_id && batch.event.content.call_id == *call_id {
+                    claimed.push(batch.event);
+                } else {
+                    rest.push(batch);
+                }
+            }
+
+            *held = rest;
+            claimed
+        };
+
+        for event in claimed {
+            debug!(
+                "Replaying {} ICE candidate(s) that arrived before call {call_id}",
+                event.content.candidates.len()
+            );
+            call.handle_candidates(
+                &event.sender,
+                event.content.party_id.as_ref(),
+                &event.content.candidates,
+            );
+        }
     }
 
     /// The call with the given ID, if it is the one that is happening.
@@ -243,14 +347,11 @@ impl Calls {
                         &event.content.candidates,
                     );
                 } else {
-                    // The last silent path. Candidates for a call this session
-                    // is not in look exactly like candidates that never
-                    // arrived, and the two want opposite fixes.
-                    debug!(
-                        "{} ICE candidate(s) arrived for call {}, which is not the call in progress",
-                        event.content.candidates.len(),
-                        event.content.call_id
-                    );
+                    // Not a call this session is in — or not one it is in
+                    // *yet*, the invite being still on its way. The two look
+                    // identical here, so the batch is kept for the invite that
+                    // may be about to claim it.
+                    self.hold_early_candidates(room_id, *event);
                 }
             }
             CallSignal::Hangup(event) => {
