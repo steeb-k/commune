@@ -598,6 +598,7 @@ impl CallPipeline {
             gst_webrtc::WebRTCSDPType::Offer
         };
         let description = gst_webrtc::WebRTCSessionDescription::new(kind, message);
+        debug!("Setting the remote {kind:?} description");
 
         self.webrtcbin.emit_by_name::<()>(
             "set-remote-description",

@@ -519,7 +519,10 @@ impl Call {
                     pipeline.note_media();
                 }
 
-                if !self.state().is_ended() {
+                // Two state machines can both say connected — the aggregate
+                // peer connection state and the ICE one — so whichever gets
+                // there first wins and the second is a no-op.
+                if self.state() != CallState::Connected && !self.state().is_ended() {
                     self.imp().connected_at.set(
                         glib::DateTime::now_utc()
                             .map(|now| now.to_unix().unsigned_abs())
@@ -651,6 +654,12 @@ impl Call {
         if candidates.is_empty() || self.state().is_ended() {
             return;
         }
+
+        debug!(
+            "Sending {} ICE candidate(s) for call {}",
+            candidates.len(),
+            self.call_id()
+        );
 
         let content = CallCandidatesEventContent::version_1(
             self.call_id().clone(),
@@ -800,6 +809,11 @@ impl Call {
                 .extend_from_slice(candidates);
             return;
         };
+
+        debug!(
+            "Received {} ICE candidate(s) from the other party",
+            candidates.len()
+        );
 
         for candidate in candidates {
             pipeline.add_ice_candidate(
