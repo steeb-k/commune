@@ -35,6 +35,14 @@ menu room-menu-model {
       hidden-when: "action-disabled";
     }
   }
+
+  section {
+    item {
+      label: _("_Report Room…");
+      action: "room-history.report";
+      hidden-when: "action-disabled";
+    }
+  }
 }
 
 template $ContentRoomHistory: Adw.Bin {

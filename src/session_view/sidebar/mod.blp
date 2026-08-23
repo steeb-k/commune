@@ -125,6 +125,14 @@ menu room_row_menu {
       hidden-when: "action-missing";
     }
   }
+
+  section {
+    item {
+      label: _("_Report Room…");
+      action: "room-row.report";
+      hidden-when: "action-missing";
+    }
+  }
 }
 
 template $Sidebar: Adw.NavigationPage {

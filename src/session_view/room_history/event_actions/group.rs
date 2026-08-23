@@ -9,7 +9,10 @@ use tracing::error;
 
 use super::EventPropertiesDialog;
 use crate::{
-    components::{RoomMemberDestructiveAction, confirm_room_member_destructive_action_dialog},
+    components::{
+        RoomMemberDestructiveAction, confirm_report_dialog,
+        confirm_room_member_destructive_action_dialog,
+    },
     prelude::*,
     session::{Event, Membership, MessageState, Room},
     spawn, spawn_tokio, toast,
@@ -626,38 +629,19 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         let obj = self.obj();
 
         // Ask the user to confirm, and provide optional reason.
-        let reason_entry = adw::EntryRow::builder()
-            .title(gettext("Reason (optional)"))
-            .build();
-        let list_box = gtk::ListBox::builder()
-            .css_classes(["boxed-list"])
-            .margin_top(6)
-            .accessible_role(gtk::AccessibleRole::Group)
-            .build();
-        list_box.append(&reason_entry);
-
-        let confirm_dialog = adw::AlertDialog::builder()
-            .default_response("cancel")
-            .heading(gettext("Report Event?"))
-            .body(gettext(
+        let Some(reason) = confirm_report_dialog(
+            gettext("Report Event?"),
+            gettext(
                 "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator will not be able to see the content of the event if it is encrypted or redacted.",
-            ))
-            .extra_child(&list_box)
-            .build();
-        confirm_dialog.add_responses(&[
-            ("cancel", &gettext("Cancel")),
-            // Translators: This is a verb, as in 'Report Event'.
-            ("report", &gettext("Report")),
-        ]);
-        confirm_dialog.set_response_appearance("report", adw::ResponseAppearance::Destructive);
-
-        if confirm_dialog.choose_future(Some(&*obj)).await != "report" {
+            ),
+            &*obj,
+        )
+        .await
+        else {
             return;
-        }
+        };
 
-        let reason = Some(reason_entry.text())
-            .filter(|s| !s.is_empty())
-            .map(Into::into);
+        let reason = Some(reason).filter(|s| !s.is_empty());
 
         if event
             .room()

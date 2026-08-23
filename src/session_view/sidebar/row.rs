@@ -8,7 +8,7 @@ use super::{
     Sidebar, SidebarIconItemRow, SidebarRoomRow, SidebarSectionRow, SidebarVerificationRow,
 };
 use crate::{
-    components::{ContextMenuBin, confirm_leave_room_dialog},
+    components::{ContextMenuBin, confirm_leave_room_dialog, confirm_report_room_dialog},
     prelude::*,
     session::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
@@ -502,6 +502,22 @@ mod imp {
                 RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {}
             }
 
+            // A room can be reported whatever our membership is, and an unwanted
+            // invite is the main thing anyone wants to report.
+            action_group.add_action_entries([gio::ActionEntry::builder("report")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        if let Some(room) = imp.room() {
+                            spawn!(async move {
+                                imp.report_room(&room).await;
+                            });
+                        }
+                    }
+                ))
+                .build()]);
+
             if matches!(
                 category,
                 RoomCategory::Favorite
@@ -780,6 +796,26 @@ mod imp {
                     gettext("Could not forget {room}"),
                     @room,
                 );
+            }
+        }
+
+        /// Report the given room to the administrator of our homeserver.
+        async fn report_room(&self, room: &Room) {
+            let obj = self.obj();
+
+            let Some(reason) = confirm_report_room_dialog(room, &*obj).await else {
+                return;
+            };
+
+            if room.report(reason).await.is_err() {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                    gettext("Could not report {room}"),
+                    @room,
+                );
+            } else {
+                toast!(obj, gettext("Report sent"));
             }
         }
 
