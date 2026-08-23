@@ -43,7 +43,7 @@ use objc2::{
     runtime::{Bool, ProtocolObject},
 };
 use objc2_foundation::{
-    NSArray, NSDictionary, NSError, NSObject, NSObjectProtocol, NSString, NSURL,
+    NSArray, NSBundle, NSDictionary, NSError, NSObject, NSObjectProtocol, NSString, NSURL,
 };
 use objc2_user_notifications::{
     UNAuthorizationOptions, UNMutableNotificationContent, UNNotificationAttachment,
@@ -177,6 +177,21 @@ fn activate_action(action: String, target: String) {
     });
 }
 
+/// The notification center, or `None` when this process is not part of an app
+/// bundle.
+///
+/// `currentNotificationCenter` raises `NSInternalInconsistencyException`
+/// rather than returning nil when the process has no bundle identity, and an
+/// Objective-C exception unwinding back into Rust takes the whole application
+/// down rather than failing the call. A build run straight out of the install
+/// prefix — the `_install/bin/commune` that `doc/macos.md` documents for
+/// development — is exactly such a process, so ask whether there is a bundle
+/// before asking for the center.
+fn center() -> Option<Retained<UNUserNotificationCenter>> {
+    NSBundle::mainBundle().bundleIdentifier()?;
+    Some(UNUserNotificationCenter::currentNotificationCenter())
+}
+
 /// Start listening for notification taps, and ask for permission to show
 /// notifications at all.
 ///
@@ -191,7 +206,10 @@ pub(crate) fn init() {
         warn!("Could not clear the notification avatars of the last run: {error}");
     }
 
-    let center = UNUserNotificationCenter::currentNotificationCenter();
+    let Some(center) = center() else {
+        warn!("Not running from an app bundle; notifications are off for this run");
+        return;
+    };
 
     let delegate = NotificationDelegate::alloc().set_ivars(());
     let delegate: Retained<NotificationDelegate> =
@@ -344,15 +362,21 @@ pub(crate) fn send(
         }
     });
 
-    UNUserNotificationCenter::currentNotificationCenter()
-        .addNotificationRequest_withCompletionHandler(&request, Some(&handler));
+    // Nothing to say when there is no center: `init()` warned about it once
+    // already, and this runs once per notification.
+    let Some(center) = center() else {
+        return;
+    };
+    center.addNotificationRequest_withCompletionHandler(&request, Some(&handler));
 }
 
 /// Remove the notification with the given ID, whether it has been shown yet or
 /// not.
 pub(crate) fn withdraw(id: &str) {
+    let Some(center) = center() else {
+        return;
+    };
     let ids = NSArray::from_retained_slice(&[NSString::from_str(id)]);
-    let center = UNUserNotificationCenter::currentNotificationCenter();
 
     center.removeDeliveredNotificationsWithIdentifiers(&ids);
     center.removePendingNotificationRequestsWithIdentifiers(&ids);

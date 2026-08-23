@@ -259,6 +259,26 @@ GST_PLUGIN_SYSTEM_PATH_1_0=$PWD/.conda-gtk/arm64/lib/gstreamer-1.0 \
     _install/bin/commune
 ```
 
+Notifications are off in a run like that, and say so once at startup:
+
+```text
+WARN commune::utils::macos_notifications: Not running from an app bundle; notifications are off
+```
+
+`UNUserNotificationCenter.currentNotificationCenter` **raises**
+`NSInternalInconsistencyException` rather than returning nil when the process has no bundle
+identity, and an Objective-C exception unwinding back into Rust takes the whole application down
+before the first window is drawn:
+
+```text
+*** Terminating app due to uncaught exception 'NSInternalInconsistencyException',
+    reason: 'bundleProxyForCurrentProcess is nil: mainBundle.bundleURL file:///…/_install/bin/'
+```
+
+So `macos_notifications::center()` asks `NSBundle` for a bundle identifier first, and every one of
+the three places that reaches for the center goes through it. Testing notifications needs the
+bundle; everything else runs fine without it.
+
 `DYLD_FALLBACK_LIBRARY_PATH` is needed because the binary comes out with `@rpath/…` install names
 and **no `LC_RPATH`** — Meson reports "Skipping RPATH fixing" for a cargo-built binary it only
 copies into place, and cargo adds no rpath of its own. Without it the launch dies immediately with
