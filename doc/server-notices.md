@@ -160,6 +160,24 @@ written before this build has a stored set without it, so the section starts
 collapsed the first time it appears there, and one click fixes it for good.
 Migrating the stored set was not worth a settings version.
 
+## The banner's button label is a `function`, not a method
+
+Worth knowing because it crashed the client on every room open, and neither
+`cargo check` nor the blueprint compiler saw it.
+
+`server_notice_button_label()` takes no `self`. Inside a
+`#[gtk::template_callbacks]` block that is not declared `functions`, the macro
+reads the callback's first argument from index 0 of the closure's values — and
+`gtk_closure_expression_evaluate()` puts the object the expression is being
+evaluated against at index 0. So the callback was handed a
+`ContentRoomHistory` where it expected a string, and panicked the first time a
+room was opened.
+
+`#[template_callback(function)]` shifts the read to index 1, which is where the
+first real argument is. Any callback used in a `bind $name(...)` expression is
+either a method taking `&self` or marked `function`; there is no third option
+that works.
+
 ## Files
 
 Integration points, which are where a rebase will conflict:

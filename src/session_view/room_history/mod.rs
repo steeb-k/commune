@@ -430,7 +430,13 @@ mod imp {
         /// contact method or when it is not one we are willing to hand to the
         /// system. The URI comes from the homeserver, and the notice itself is
         /// readable without it.
-        #[template_callback]
+        ///
+        /// `function` because this takes no `self`. Without it the macro reads
+        /// the first argument from index 0 of the closure's values, and index 0
+        /// is the object the expression is evaluated against — so the callback
+        /// is handed a `ContentRoomHistory` where it expects a string, and
+        /// panics the first time a room is opened.
+        #[template_callback(function)]
         fn server_notice_button_label(admin_contact: Option<&str>) -> String {
             if admin_contact.is_some_and(is_openable_admin_contact) {
                 // Translators: The administrator of the homeserver, contacted through
