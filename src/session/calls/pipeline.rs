@@ -766,7 +766,13 @@ impl CallPipeline {
             return;
         }
 
-        debug!("Adding remote candidate for m-line {index}");
+        // The whole line, because a candidate that does not parse is one
+        // `webrtcbin` drops in silence, and "unknown" here is the difference
+        // between a pair that failed and a pair that never existed.
+        debug!(
+            "Adding remote {} candidate on m-line {index}: {candidate}",
+            candidate_type(candidate)
+        );
         self.webrtcbin
             .emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
     }
