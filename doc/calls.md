@@ -427,10 +427,17 @@ placed with none at all. The URIs carry no credentials, those being separate
 fields, so logging them is safe; and a `turn_uris` pointing at a LAN address
 looks exactly like a working one until somebody calls in from outside.
 
-`webrtcbin` was measured accepting the percent-encoded URI this client builds —
-`add-turn-server` returns true for it — so a Synapse username full of `:` and
-`@` does not defeat the parser. Whether the server then _authenticates_ it is a
-separate question and not one this client can answer about itself.
+**The percent-encoded URI works, end to end, and was measured doing so.**
+Against the throwaway coturn, with credentials the throwaway Synapse minted,
+`webrtcbin` gathered `host: 15, srflx: 2, relay: 1` — a relay candidate means
+the allocation was made and the credentials authenticated, not merely that the
+URI parsed.
+
+The unencoded form is not an alternative: `add-turn-server` returns **false**
+for it, because a Synapse username carries `:` and `@` and the authority does
+not survive them. So the encoding is what makes the URI parse, and the parse is
+not costing the authentication. Both halves of that were guesses before they
+were measured.
 
 ## Testing
 
