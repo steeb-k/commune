@@ -168,6 +168,31 @@ The symptom in the log is one line — `the answer came back empty` — and it t
 this long to see because the failure is on the _callee_, while the complaint a
 person makes is about the caller's window.
 
+## A remote candidate needs a remote description first
+
+`webrtcbin` discards ICE candidates added before the remote description is
+applied — there is no remote ICE agent to give them to yet. And
+`set-remote-description` is asynchronous, so the line after it runs long before
+that is true.
+
+On the answering side that was every candidate the call had. The buffered ones
+were handed over on the line after the description was emitted, and the log
+shows them going in ahead of `HaveRemoteOffer`:
+
+```text
+Setting the remote offer, and answering it when it is applied
+Adding remote candidate for m-line 0   ×22
+Signalling state is now HaveRemoteOffer      <- only now does a remote agent exist
+```
+
+So candidates are held until the description's promise fires and are added
+then. Both descriptions carry a promise for it: the answerer's offer and the
+caller's answer, since the caller receives candidates before the answer just as
+often.
+
+This is the same fault as the empty answer, one line further down, and it
+survived that fix because the answer was the visible half.
+
 ## Every remote candidate goes on section 0
 
 Whatever index the other party put on it. This client always negotiates

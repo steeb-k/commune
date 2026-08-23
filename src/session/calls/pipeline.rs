@@ -3,12 +3,20 @@
 //! This is where WebRTC actually happens. Everything above it deals in Matrix
 //! events; everything here deals in SDP, ICE candidates and media.
 
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+};
+
 use futures_channel::mpsc;
 use gst::prelude::*;
 use gtk::{gdk, glib};
 use tracing::{debug, error, warn};
 
 use super::turn::TurnServer;
+
+/// A remote ICE candidate, waiting for somewhere to go.
+type PendingCandidates = Arc<Mutex<Vec<(u32, String)>>>;
 
 /// An error that stops a call pipeline from being built or driven.
 #[derive(Debug, thiserror::Error)]
@@ -98,6 +106,13 @@ pub(crate) struct CallPipeline {
     had_media: bool,
     /// The bus watch, dropped with the pipeline.
     bus_guard: Option<gst::bus::BusWatchGuard>,
+    /// Whether the other party's description has been applied.
+    ///
+    /// Remote ICE candidates are meaningless before it: there is no remote ICE
+    /// agent to give them to, and `webrtcbin` discards them.
+    remote_description_applied: Arc<AtomicBool>,
+    /// Remote candidates that arrived before that happened.
+    pending_remote_candidates: PendingCandidates,
 }
 
 impl Drop for CallPipeline {
@@ -197,6 +212,8 @@ impl CallPipeline {
             media: Vec::new(),
             had_media: false,
             bus_guard: None,
+            remote_description_applied: Arc::new(AtomicBool::new(false)),
+            pending_remote_candidates: Arc::new(Mutex::new(Vec::new())),
         };
 
         for kind in media {
@@ -624,10 +641,17 @@ impl CallPipeline {
         let description = Self::parse_description(sdp, is_answer)?;
         debug!("Setting the remote description");
 
-        self.webrtcbin.emit_by_name::<()>(
-            "set-remote-description",
-            &[&description, &None::<gst::Promise>],
-        );
+        // With a promise, so that candidates held back for want of a remote
+        // description can go in the moment there is one.
+        let webrtcbin = self.webrtcbin.clone();
+        let applied = self.remote_description_applied.clone();
+        let pending = self.pending_remote_candidates.clone();
+        let promise = gst::Promise::with_change_func(move |_| {
+            flush_remote_candidates(&webrtcbin, &applied, &pending);
+        });
+
+        self.webrtcbin
+            .emit_by_name::<()>("set-remote-description", &[&description, &promise]);
 
         Ok(())
     }
@@ -650,6 +674,8 @@ impl CallPipeline {
         debug!("Setting the remote offer, and answering it when it is applied");
 
         let webrtcbin = self.webrtcbin.clone();
+        let applied = self.remote_description_applied.clone();
+        let pending = self.pending_remote_candidates.clone();
         let promise = gst::Promise::with_change_func(move |reply| {
             if let Err(error) = reply {
                 let _ = sender.unbounded_send(PipelineEvent::Error(format!(
@@ -659,6 +685,7 @@ impl CallPipeline {
             }
 
             debug!("The remote offer is applied; creating the answer");
+            flush_remote_candidates(&webrtcbin, &applied, &pending);
             create_description(&webrtcbin, "create-answer", true, sender);
         });
 
@@ -713,6 +740,19 @@ impl CallPipeline {
                 "Remote candidate is labelled m-line {sdp_m_line_index}; \
                  this call is bundled onto section 0"
             );
+        }
+
+        // Nothing can be given to the remote ICE agent before there is one.
+        // `webrtcbin` discards candidates added before the remote description
+        // is applied, and on the answering side that was every one of them:
+        // the buffered candidates went in on the line after
+        // `set-remote-description` was emitted, and that call is asynchronous.
+        if !self.remote_description_applied.load(Ordering::Relaxed) {
+            debug!("Holding a remote candidate until the remote description is applied");
+            if let Ok(mut pending) = self.pending_remote_candidates.lock() {
+                pending.push((index, candidate.to_owned()));
+            }
+            return;
         }
 
         if candidate.is_empty() {
@@ -885,6 +925,36 @@ fn attach_decoded_pad(
     }
 
     Ok(())
+}
+
+/// Hand `webrtcbin` the remote candidates that were waiting for a description.
+fn flush_remote_candidates(
+    webrtcbin: &gst::Element,
+    applied: &Arc<AtomicBool>,
+    pending: &PendingCandidates,
+) {
+    applied.store(true, Ordering::Relaxed);
+
+    let Ok(mut pending) = pending.lock() else {
+        return;
+    };
+
+    if pending.is_empty() {
+        return;
+    }
+
+    debug!(
+        "The remote description is applied; adding {} candidate(s) that were waiting",
+        pending.len()
+    );
+
+    for (index, candidate) in pending.drain(..) {
+        if candidate.is_empty() {
+            webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &None::<String>]);
+        } else {
+            webrtcbin.emit_by_name::<()>("add-ice-candidate", &[&index, &candidate]);
+        }
+    }
 }
 
 /// The type of an ICE candidate — `host`, `srflx`, `prflx` or `relay`.
