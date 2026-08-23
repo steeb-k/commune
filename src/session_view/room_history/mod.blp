@@ -108,6 +108,22 @@ template $ContentRoomHistory: Adw.Bin {
         verification: bind template.timeline as <$Timeline>.room as <$Room>.verification;
       }
 
+      Adw.Banner server_notice_banner {
+        // The body comes from the homeserver, so it is shown as plain text.
+        use-markup: false;
+        title: bind $unwrap_string_or_empty(
+          template.timeline as <$Timeline>.room as <$Room>.active-server-notice
+        ) as <string>;
+        revealed: bind $string_not_empty(
+          template.timeline as <$Timeline>.room as <$Room>.active-server-notice
+        ) as <bool>;
+        button-label: bind $server_notice_button_label(
+          template.timeline as <$Timeline>.room as <$Room>.server-notice-admin-contact
+        ) as <string>;
+        button-style: suggested;
+        button-clicked => $contact_server_administrator() swapped;
+      }
+
       Adw.Banner pending_knocks_banner {
         // Translators: This is a verb, as in 'View Room'.
         button-label: _("View");

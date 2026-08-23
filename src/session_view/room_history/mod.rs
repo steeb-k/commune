@@ -51,6 +51,7 @@ use crate::{
     session::{
         Event, MemberList, Membership, MembershipListKind, ReceiptPosition, Room,
         TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
+        is_cannot_leave_server_notice_room,
     },
     spawn, toast,
     utils::{
@@ -84,6 +85,8 @@ mod imp {
         room_title: TemplateChild<RoomHistoryTitle>,
         #[template_child]
         room_menu: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        server_notice_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pending_knocks_banner: TemplateChild<adw::Banner>,
         #[template_child]
@@ -372,6 +375,51 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl RoomHistory {
+        /// The label of the button of the server notice banner.
+        ///
+        /// Returns an empty string, which hides the button, when there is no
+        /// contact method or when it is not one we are willing to hand to the
+        /// system. The URI comes from the homeserver, and the notice itself is
+        /// readable without it.
+        #[template_callback]
+        fn server_notice_button_label(admin_contact: Option<&str>) -> String {
+            if admin_contact.is_some_and(is_openable_admin_contact) {
+                // Translators: The administrator of the homeserver, contacted through
+                // the address that the homeserver gave with a server notice.
+                gettext("Contact Administrator")
+            } else {
+                String::new()
+            }
+        }
+
+        /// Open the contact method of the administrator of the homeserver.
+        #[template_callback]
+        fn contact_server_administrator(&self) {
+            let Some(admin_contact) = self
+                .timeline
+                .obj()
+                .and_then(|timeline| timeline.room().server_notice_admin_contact())
+            else {
+                return;
+            };
+
+            if !is_openable_admin_contact(&admin_contact) {
+                return;
+            }
+
+            let window = self.obj().root().and_downcast::<gtk::Window>();
+
+            gtk::UriLauncher::new(&admin_contact).launch(
+                window.as_ref(),
+                gio::Cancellable::NONE,
+                |result| {
+                    if let Err(error) = result {
+                        warn!("Could not open the contact method of the administrator: {error}");
+                    }
+                },
+            );
+        }
+
         /// Initialize the list view.
         fn init_listview(&self) {
             let factory = gtk::SignalListItemFactory::new();
@@ -1305,19 +1353,22 @@ mod imp {
                 return;
             }
 
-            if room
-                .change_category(TargetRoomCategory::Left)
-                .await
-                .is_err()
-            {
-                toast!(
-                    self.obj(),
-                    gettext(
-                        // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                        "Could not leave {room}",
-                    ),
-                    @room,
-                );
+            if let Err(error) = room.change_category(TargetRoomCategory::Left).await {
+                if is_cannot_leave_server_notice_room(&error) {
+                    toast!(
+                        self.obj(),
+                        gettext("Your homeserver does not allow leaving its server notices room",)
+                    );
+                } else {
+                    toast!(
+                        self.obj(),
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                            "Could not leave {room}",
+                        ),
+                        @room,
+                    );
+                }
             }
         }
 
@@ -1577,4 +1628,27 @@ fn set_virtual_item_child(list_item: &gtk::ListItem, virtual_item: &VirtualItem)
             divider.set_virtual_item(Some(virtual_item));
         }
     }
+}
+
+/// Whether the given contact method of a server administrator is one that we
+/// are willing to hand to the system.
+///
+/// The URI is set by the homeserver, so the schemes are limited to the ones
+/// that mean "get in touch": a URI handler is a lot of surface to open on the
+/// say-so of a server.
+fn is_openable_admin_contact(admin_contact: impl AsRef<str>) -> bool {
+    let admin_contact = admin_contact.as_ref();
+
+    let Some((scheme, rest)) = admin_contact.split_once(':') else {
+        return false;
+    };
+
+    if rest.is_empty() {
+        return false;
+    }
+
+    matches!(
+        scheme.to_ascii_lowercase().as_str(),
+        "mailto" | "http" | "https" | "tel" | "sms" | "xmpp" | "matrix"
+    )
 }

@@ -135,6 +135,8 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_display_name();
+                        imp.update_room_icon();
+                        imp.update_accessibility_label();
                     }
                 ));
 
@@ -249,8 +251,20 @@ mod imp {
         fn update_room_icon(&self) {
             let is_direct = self.room.obj().is_some_and(|room| room.is_direct());
             let is_call = self.room.obj().is_some_and(|room| room.is_call());
+            let is_server_notice = self
+                .room
+                .obj()
+                .is_some_and(|room| room.category() == RoomCategory::ServerNotice);
 
-            if is_call {
+            if is_server_notice {
+                self.room_icon.set_icon_name(Some("warning-symbolic"));
+                // Translators: The server notices room is the room the homeserver uses to
+                // talk to the user in an official capacity, for example to warn them that
+                // the server has reached a limit.
+                self.room_icon
+                    .set_tooltip_text(Some(&gettext("Server notices")));
+                self.room_icon.set_visible(true);
+            } else if is_call {
                 self.room_icon.set_icon_name(Some("video-symbolic"));
                 // Translators: A "call room" is a room where an audio or video call
                 // is always active, that users can join and leave at any time.
@@ -280,7 +294,15 @@ mod imp {
                 return String::new();
             };
 
-            let name = if room.is_call() {
+            let name = if room.category() == RoomCategory::ServerNotice {
+                gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name. Presented to screen readers for the room the homeserver
+                    // uses to talk to the user in an official capacity.
+                    "{name} (server notices)",
+                    &[("name", &room.display_name())],
+                )
+            } else if room.is_call() {
                 gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name. Presented to screen readers for "call rooms".

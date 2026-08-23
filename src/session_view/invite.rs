@@ -9,7 +9,10 @@ use crate::{
     },
     gettext_f,
     prelude::*,
-    session::{MemberList, Room, RoomCategory, TargetRoomCategory, User},
+    session::{
+        MemberList, Room, RoomCategory, TargetRoomCategory, User,
+        is_cannot_leave_server_notice_room,
+    },
     toast,
     utils::matrix::MatrixIdUri,
 };
@@ -265,24 +268,36 @@ mod imp {
 
             let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
 
-            let closed = if room.change_category(TargetRoomCategory::Left).await.is_ok() {
-                // A room where we were invited is usually empty so just close it.
-                let _ = obj.activate_action("session.close-room", None);
-                true
-            } else {
-                toast!(
-                    obj,
-                    gettext(
-                        // Translators: Do NOT translate the content between '{' and '}', this
-                        // is a variable name.
-                        "Could not decline invitation for {room}",
-                    ),
-                    @room,
-                );
+            let closed = match room.change_category(TargetRoomCategory::Left).await {
+                Ok(()) => {
+                    // A room where we were invited is usually empty so just close it.
+                    let _ = obj.activate_action("session.close-room", None);
+                    true
+                }
+                Err(error) => {
+                    if is_cannot_leave_server_notice_room(&error) {
+                        toast!(
+                            obj,
+                            gettext(
+                                "Your homeserver does not allow declining the invite to its server notices room",
+                            )
+                        );
+                    } else {
+                        toast!(
+                            obj,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this
+                                // is a variable name.
+                                "Could not decline invitation for {room}",
+                            ),
+                            @room,
+                        );
+                    }
 
-                self.decline_requests.borrow_mut().remove(&room);
-                self.reset();
-                false
+                    self.decline_requests.borrow_mut().remove(&room);
+                    self.reset();
+                    false
+                }
             };
 
             if let Some(inviter) = ignored_inviter {

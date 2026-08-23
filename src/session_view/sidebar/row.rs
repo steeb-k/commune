@@ -13,6 +13,7 @@ use crate::{
     session::{
         IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
         SidebarIconItemType, SidebarSection, TargetRoomCategory, User,
+        is_cannot_leave_server_notice_room,
     },
     spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
@@ -273,6 +274,7 @@ mod imp {
                 matches!(
                     r.category(),
                     RoomCategory::Invited
+                        | RoomCategory::ServerNotice
                         | RoomCategory::Favorite
                         | RoomCategory::Normal
                         | RoomCategory::LowPriority
@@ -356,7 +358,14 @@ mod imp {
                             .build(),
                     ]);
                 }
-                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority => {
+                // The server notices room only gets the actions that do not
+                // touch its tag: the homeserver owns `m.server_notice`, and
+                // the three `set-*` actions below are all guarded on a
+                // category that is not this one.
+                RoomCategory::ServerNotice
+                | RoomCategory::Favorite
+                | RoomCategory::Normal
+                | RoomCategory::LowPriority => {
                     if matches!(category, RoomCategory::Favorite | RoomCategory::LowPriority) {
                         action_group.add_action_entries([gio::ActionEntry::builder("set-normal")
                             .activate(clone!(
@@ -718,7 +727,27 @@ mod imp {
             };
 
             let previous_category = room.category();
-            if room.change_category(category).await.is_err() {
+            if let Err(error) = room.change_category(category).await {
+                if is_cannot_leave_server_notice_room(&error) {
+                    if previous_category == RoomCategory::Invited {
+                        toast!(
+                            obj,
+                            gettext(
+                                "Your homeserver does not allow declining the invite to its server notices room",
+                            )
+                        );
+                    } else {
+                        toast!(
+                            obj,
+                            gettext(
+                                "Your homeserver does not allow leaving its server notices room",
+                            )
+                        );
+                    }
+
+                    return;
+                }
+
                 match previous_category {
                     RoomCategory::Invited => {
                         if category == RoomCategory::Left {
