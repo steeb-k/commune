@@ -76,6 +76,7 @@ a failure in the app is known to be the app's. It covers the room report
 endpoint, the user report endpoint, a `knock_restricted` round trip that
 asserts the allow list survives unchanged, an `m.room.server_acl` round trip,
 the server notices room's tag and whether anything is pinned in it,
+the TURN credentials plus a real relay allocation made with them,
 and the URL preview endpoint — which also prints whether the image really came
 back as an `mxc:` URI, since that is the one difference from OpenGraph the spec
 names and the one thing the card refuses to render without.
