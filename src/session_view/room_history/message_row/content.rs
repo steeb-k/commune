@@ -1,9 +1,14 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
+use matrix_sdk::EncryptionState;
 use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
-use ruma::{OwnedEventId, OwnedTransactionId, events::room::message::MessageType};
+use ruma::{
+    OwnedEventId, OwnedTransactionId,
+    events::room::message::{FormattedBody, MessageType},
+};
 use tracing::{error, warn};
+use url::Url;
 
 use super::{
     audio::MessageAudio,
@@ -13,16 +18,21 @@ use super::{
     location::MessageLocation,
     reply::MessageReply,
     text::MessageText,
+    url_preview::MessageUrlPreview,
     visual_media::MessageVisualMedia,
 };
 use crate::{
+    Application,
     components::AudioPlayerMessage,
     prelude::*,
     session::{Event, Member, Room},
     session_view::room_history::message_toolbar::MessageEventSource,
     spawn,
-    utils::matrix::{MediaMessage, MessageCacheKey},
+    utils::matrix::{MediaMessage, MessageCacheKey, previewable_url},
 };
+
+/// The setting that says whether a link should be previewed.
+const URL_PREVIEWS_ENABLED_SETTING: &str = "url-previews-enabled";
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]
@@ -374,8 +384,7 @@ trait MessageContentContainer: ChildPropertyExt {
                 child.set_geo_uri(&message.geo_uri, format);
             }
             MessageType::Notice(message) => {
-                let child = self.child_or_default::<MessageText>();
-                child.with_markup(
+                self.build_text_message_content(
                     message.formatted.clone(),
                     message.body.clone(),
                     &room,
@@ -388,8 +397,7 @@ trait MessageContentContainer: ChildPropertyExt {
                 child.set_info(MessageInfoIcon::Warning, &message.body.clone());
             }
             MessageType::Text(message) => {
-                let child = self.child_or_default::<MessageText>();
-                child.with_markup(
+                self.build_text_message_content(
                     message.formatted.clone(),
                     message.body.clone(),
                     &room,
@@ -403,6 +411,32 @@ trait MessageContentContainer: ChildPropertyExt {
                 child.set_info(MessageInfoIcon::Warning, &gettext("Unsupported event"));
             }
         }
+    }
+
+    /// Build the content widget of the given text message as a child of this
+    /// widget.
+    ///
+    /// The message is wrapped in a card for its first link when it has one and
+    /// the link can be previewed.
+    fn build_text_message_content(
+        &self,
+        formatted: Option<FormattedBody>,
+        body: String,
+        room: &Room,
+        format: ContentFormat,
+        detect_at_room: bool,
+    ) {
+        let Some(url) = previewable_message_url(&body, formatted.as_ref(), room, format) else {
+            let child = self.child_or_default::<MessageText>();
+            child.with_markup(formatted, body, room, format, detect_at_room);
+            return;
+        };
+
+        let preview = self.child_or_default::<MessageUrlPreview>();
+        let child = preview.child_or_default::<MessageText>();
+
+        child.with_markup(formatted, body, room, format, detect_at_room);
+        preview.set_url(room, url);
     }
 
     /// Build the content widget of the given media message as a child of this
@@ -474,3 +508,47 @@ trait MessageContentContainer: ChildPropertyExt {
 impl<W> MessageContentContainer for W where W: IsABin {}
 
 impl MessageContentContainer for MessageCaption {}
+
+impl MessageContentContainer for MessageUrlPreview {}
+
+/// The link of the given message that should be previewed, if there is one.
+///
+/// Returns `None` when a preview must not be requested, whatever the message
+/// contains.
+fn previewable_message_url(
+    body: &str,
+    formatted: Option<&FormattedBody>,
+    room: &Room,
+    format: ContentFormat,
+) -> Option<Url> {
+    // A card only belongs under the message itself, not under the copy of it
+    // shown in a reply or in the sidebar.
+    if format != ContentFormat::Natural {
+        return None;
+    }
+
+    // The spec asks clients to consider avoiding the endpoint for a URL posted
+    // in an encrypted room: the homeserver cannot read the message, and the
+    // link is usually what the message is about. This is not negotiable from
+    // the settings, which is why the check is here and not in the switch.
+    //
+    // The SDK's tri-state is what is asked, rather than `Room::is_encrypted()`:
+    // that property is `false` until an async check has answered, so a room
+    // whose state has not been synced yet would leak through the window before
+    // it flips. `Unknown` is treated as encrypted here.
+    if !matches!(
+        room.matrix_room().encryption_state(),
+        EncryptionState::NotEncrypted
+    ) {
+        return None;
+    }
+
+    if !Application::default()
+        .settings()
+        .boolean(URL_PREVIEWS_ENABLED_SETTING)
+    {
+        return None;
+    }
+
+    previewable_url(body, formatted)
+}

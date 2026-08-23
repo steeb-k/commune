@@ -1,0 +1,99 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ContentMessageUrlPreview: Gtk.Grid {
+  row-spacing: 6;
+  accessible-role: group;
+
+  Adw.Bin content {
+    layout {
+      column: 0;
+      row: 0;
+    }
+  }
+
+  Gtk.Button card {
+    visible: false;
+    halign: start;
+    clicked => $open_url() swapped;
+
+    styles [
+      "url-preview",
+    ]
+
+    layout {
+      column: 0;
+      row: 1;
+    }
+
+    Gtk.Box {
+      spacing: 12;
+
+      // Gtk.Image rather than Gtk.Picture: a Picture takes the natural size
+      // of its paintable, and the homeserver returns whatever thumbnail
+      // preset it feels like — 320px where 72 was asked for. `pixel-size`
+      // pins the box and scales the image to fit inside it, so nothing is
+      // cropped and the card is always the same width.
+      Gtk.Image image {
+        visible: false;
+        pixel-size: 72;
+        valign: start;
+        overflow: hidden;
+
+        styles [
+          "url-preview-image",
+        ]
+      }
+
+      Gtk.Box {
+        orientation: vertical;
+        spacing: 2;
+        hexpand: true;
+        valign: center;
+
+        Gtk.Label site_name {
+          halign: start;
+          xalign: 0;
+          ellipsize: end;
+          max-width-chars: 42;
+
+          styles [
+            "caption",
+            "dimmed",
+          ]
+        }
+
+        Gtk.Label title {
+          visible: false;
+          halign: start;
+          xalign: 0;
+          wrap: true;
+          wrap-mode: word_char;
+          lines: 2;
+          ellipsize: end;
+          max-width-chars: 42;
+
+          styles [
+            "heading",
+          ]
+        }
+
+        Gtk.Label description {
+          visible: false;
+          halign: start;
+          xalign: 0;
+          wrap: true;
+          wrap-mode: word_char;
+          lines: 3;
+          ellipsize: end;
+          max-width-chars: 42;
+
+          styles [
+            "caption",
+            "dimmed",
+          ]
+        }
+      }
+    }
+  }
+}
