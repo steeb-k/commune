@@ -217,3 +217,19 @@ sidebar {
     border-radius: vendor.$card_radius;
   }
 }
+
+// Calls
+.call-button {
+  min-width: 56px;
+  min-height: 56px;
+  // The three of them sit over the video, which can be any colour at all.
+  -gtk-icon-size: 24px;
+}
+
+.call-self-view {
+  border-radius: vendor.$card_radius;
+  // A frame, so that a dark self-view over a dark call is still a rectangle
+  // the eye can find.
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.4);
+}

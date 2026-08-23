@@ -3,6 +3,7 @@ use gtk::{gdk, glib, glib::clone};
 use ruma::{OwnedEventId, OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
+mod call_view;
 mod content;
 mod create_direct_chat_dialog;
 mod create_room_dialog;
@@ -15,7 +16,7 @@ mod room_history;
 mod sidebar;
 
 use self::{
-    content::Content, create_direct_chat_dialog::CreateDirectChatDialog,
+    call_view::CallView, content::Content, create_direct_chat_dialog::CreateDirectChatDialog,
     create_room_dialog::CreateRoomDialog, explore::Explore, invite::Invite,
     invite_request::InviteRequest, media_viewer::MediaViewer, room_details::RoomDetails,
     room_history::RoomHistory, sidebar::Sidebar,
@@ -62,6 +63,8 @@ mod imp {
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         session: glib::WeakRef<Session>,
         window_active_handler_id: RefCell<Option<glib::SignalHandlerId>>,
+        /// The window of the call that is happening, if it is still open.
+        call_view: RefCell<Option<CallView>>,
     }
 
     #[glib::object_subclass]
@@ -290,7 +293,62 @@ mod imp {
             }
 
             self.session.set(session);
+
+            if let Some(session) = session {
+                self.watch_calls(session);
+            }
+
             self.obj().notify_session();
+        }
+
+        /// Open a window for a call as soon as there is one.
+        ///
+        /// A call is its own window rather than a page in this one, because a
+        /// call outlives whichever room the person happens to be looking at and
+        /// a window is the thing their compositor already knows how to keep on
+        /// top, move to another workspace, or put away.
+        fn watch_calls(&self, session: &Session) {
+            let calls = session.calls();
+
+            calls.connect_active_call_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |calls| {
+                    if calls.active_call().is_none() {
+                        return;
+                    }
+
+                    imp.present_call_view();
+                }
+            ));
+
+            if calls.active_call().is_some() {
+                self.present_call_view();
+            }
+        }
+
+        /// Show the call window, making one if there is not one already.
+        fn present_call_view(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let view = self.call_view.borrow().clone().filter(|view| {
+                // A window the person closed is gone; the next call gets a new
+                // one rather than reopening the corpse of the last.
+                view.is_visible()
+            });
+
+            let view = if let Some(view) = view {
+                view
+            } else {
+                let view = CallView::new(&session.calls());
+                view.set_transient_for(self.obj().root().and_downcast::<gtk::Window>().as_ref());
+                self.call_view.replace(Some(view.clone()));
+                view
+            };
+
+            view.present();
         }
 
         /// Get the [`SidebarListModel`] of the current session.
