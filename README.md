@@ -142,8 +142,9 @@ following dependencies at runtime:
 
 On macOS none of the portals apply. Secrets go to the Keychain, the 12h/24h format is read from the
 locale at startup, and location sharing and camera QR scanning are not available. GStreamer is
-still needed, including gst-plugin-gtk4; `build-aux/macos/setup-conda-macos.sh` builds that plugin
-from source because conda-forge does not package it.
+still needed, including gst-plugin-gtk4 and — for calls — `webrtcbin` and the libnice and libsrtp2
+under it; `build-aux/macos/setup-conda-macos.sh` builds all of those from source, because
+conda-forge packages none of them.
 
 ### Storing secrets
 

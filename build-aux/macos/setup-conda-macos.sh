@@ -22,6 +22,15 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ARM_ENV="${COMMUNE_CONDA_ARM:-$ROOT/.conda-gtk/arm64}"
 X86_ENV="${COMMUNE_CONDA_X86:-$ROOT/.conda-gtk/x86}"
 
+# The three projects behind `webrtcbin`, which calls do not run without and
+# which conda-forge does not package. See build_webrtc() at the bottom.
+#
+# libnice must be at least 0.1.23: that is what gst-plugins-bad's
+# gst-libs/gst/webrtc/nice/meson.build asks for, and an older one silently
+# leaves libgstwebrtcnice unbuilt, which silently leaves the webrtc plugin out.
+LIBNICE_VERSION="${COMMUNE_LIBNICE_VERSION:-0.1.23}"
+LIBSRTP_VERSION="${COMMUNE_LIBSRTP_VERSION:-v2.8.0}"
+
 # The dependencies of meson.build, plus what the GTK stack dlopens at runtime.
 #
 # zlib/freetype/expat  their .pc files: conda-forge ships these separately from
@@ -149,10 +158,11 @@ finalize_env() { # <env-path>
     fi
 }
 
-# Two things Commune needs are not packaged by conda-forge at all, so they are
-# built into the env from source. Both are required: meson will not configure
-# without blueprint-compiler, and video playback has no sink without
-# gtk4paintablesink.
+# Three things Commune needs are not packaged by conda-forge at all, so they
+# are built into the env from source. All three are required: meson will not
+# configure without blueprint-compiler, video playback has no sink without
+# gtk4paintablesink, and a call cannot be placed or answered without
+# webrtcbin.
 build_extras() { # <env-path>
     local env="$1"
     export PKG_CONFIG_PATH="$env/lib/pkgconfig"
@@ -203,6 +213,8 @@ build_extras() { # <env-path>
         )
         rm -rf "$src"
     fi
+
+    build_webrtc "$env"
 }
 
 # conda-forge builds libshumate and gtksourceview without introspection, so
@@ -258,6 +270,110 @@ build_typelibs() { # <env-path>
     rm -rf "$(dirname "$stage")"
 }
 
+# `webrtcbin` is what every call is built on, and conda-forge does not ship it.
+# Its gst-plugins-bad carries the libgstwebrtc-1.0 *library* and the
+# gstreamer-webrtc-1.0.pc that Cargo.toml links against — so the Rust side
+# builds and links perfectly well — but not the `webrtc`, `nice` or `srtp`
+# *plugins*, and there is no libnice or libsrtp package in the channel at all
+# for it to have built them from. The result is a client that compiles cleanly
+# and then ends every call with a missing-element error.
+#
+# So three things are built here, in the order they depend on each other:
+#
+#   libsrtp2   the ciphers under `srtpenc`, which `dtlssrtpenc` makes by name
+#              at runtime. conda-forge's dtls plugin already exists and works
+#              once srtp is beside it, so that one is left alone.
+#   libnice    ICE, and the `nice` plugin (nicesrc/nicesink) that comes with it.
+#   the two    gst-plugins-bad rebuilt at the version conda-forge installed,
+#   plugins    with everything except webrtc/srtp/dtls/sctp switched off.
+#
+# The last one installs into a staging prefix and only three files are taken
+# out of it. gst-plugins-bad also builds a dozen libraries conda-forge already
+# ships — libgstwebrtc-1.0, libgstsctp-1.0, libgstcodecparsers-1.0 — and
+# overwriting those with copies compiled here would replace the macOS 11
+# deployment floor with this machine's SDK, which is the whole reason for using
+# conda-forge. libgstwebrtcnice-1.0 is the exception: it exists nowhere in the
+# env, because it is the half of gst-plugins-bad that needs libnice.
+#
+# MACOSX_DEPLOYMENT_TARGET is exported by build_extras(), so what is compiled
+# here carries `minos 11.0` the same way the packages do. Check with
+# `vtool -show-build`.
+build_webrtc() { # <env-path>
+    local env="$1"
+
+    if "$env/bin/gst-inspect-1.0" --exists webrtcbin 2>/dev/null; then
+        return 0
+    fi
+
+    echo "setup-conda-macos: building webrtcbin and its dependencies into $env"
+
+    local stage src version
+    stage="$(mktemp -d)/stage"
+
+    if ! "$env/bin/pkg-config" --exists libsrtp2; then
+        echo "setup-conda-macos: building libsrtp2 $LIBSRTP_VERSION"
+        src="$(mktemp -d)"
+        git clone --depth 1 --branch "$LIBSRTP_VERSION" \
+            https://github.com/cisco/libsrtp.git "$src"
+        # openssl rather than the built-in ciphers: it is already in the env,
+        # and it is what the AES-GCM profiles WebRTC negotiates need.
+        meson setup "$src/_b" "$src" --prefix="$env" --libdir=lib --buildtype=release \
+            -Dcrypto-library=openssl -Dtests=disabled -Ddoc=disabled -Dpcap-tests=disabled
+        meson install -C "$src/_b"
+        rm -rf "$src"
+    fi
+
+    if ! "$env/bin/pkg-config" --exists nice; then
+        echo "setup-conda-macos: building libnice $LIBNICE_VERSION"
+        src="$(mktemp -d)"
+        git clone --depth 1 --branch "$LIBNICE_VERSION" \
+            https://gitlab.freedesktop.org/libnice/libnice.git "$src"
+        # gupnp asks the router to map a port, which a call does not need and
+        # which would add a dependency the env does not have.
+        meson setup "$src/_b" "$src" --prefix="$env" --libdir=lib --buildtype=release \
+            -Dcrypto-library=openssl -Dgstreamer=enabled -Dgupnp=disabled \
+            -Dintrospection=disabled -Dexamples=disabled -Dtests=disabled -Dgtk_doc=disabled
+        meson install -C "$src/_b"
+        rm -rf "$src"
+    fi
+
+    # The version conda-forge installed, so the plugins match the libraries
+    # they will be loaded beside. Since 1.20 the modules live in one repository,
+    # so take only the subproject rather than cloning all of GStreamer's blobs.
+    version="$("$env/bin/pkg-config" --modversion gstreamer-1.0)"
+    echo "setup-conda-macos: building the webrtc and srtp plugins from gst-plugins-bad $version"
+    src="$(mktemp -d)"
+    git clone --depth 1 --branch "$version" --filter=blob:none --sparse \
+        https://gitlab.freedesktop.org/gstreamer/gstreamer.git "$src"
+    git -C "$src" sparse-checkout set subprojects/gst-plugins-bad
+
+    # dtls and sctp are enabled because the webrtc option requires them to be —
+    # webrtcbin will not configure otherwise — not because their plugins are
+    # wanted. Those two are not copied out.
+    meson setup "$src/subprojects/gst-plugins-bad/_b" "$src/subprojects/gst-plugins-bad" \
+        --prefix="$stage" --libdir=lib --buildtype=release \
+        --auto-features=disabled -Dwebrtc=enabled -Dsrtp=enabled -Ddtls=enabled -Dsctp=enabled \
+        -Dintrospection=disabled -Dexamples=disabled -Dtests=disabled \
+        -Dnls=disabled -Ddoc=disabled -Dorc=disabled
+    meson install -C "$src/subprojects/gst-plugins-bad/_b"
+
+    cp "$stage/lib/gstreamer-1.0/libgstwebrtc.dylib" \
+        "$stage/lib/gstreamer-1.0/libgstsrtp.dylib" "$env/lib/gstreamer-1.0/"
+    cp -a "$stage"/lib/libgstwebrtcnice-1.0*.dylib "$env/lib/"
+
+    rm -rf "$src" "$(dirname "$stage")"
+
+    # The registry caches which plugins exist, and a stale one hides the ones
+    # that just appeared.
+    rm -rf "${HOME:?}/.cache/gstreamer-1.0"
+
+    "$env/bin/gst-inspect-1.0" --exists webrtcbin || {
+        echo "setup-conda-macos: built the webrtc plugin but webrtcbin is still missing" >&2
+        return 1
+    }
+    echo "setup-conda-macos: webrtcbin is available"
+}
+
 create_env osx-arm64 "$ARM_ENV"
 [ "$UNIVERSAL" = 1 ] && create_env osx-64 "$X86_ENV"
 
@@ -265,7 +381,7 @@ if [ "$SKIP_EXTRAS" = 0 ]; then
     build_extras "$ARM_ENV"
     [ "$UNIVERSAL" = 1 ] && build_extras "$X86_ENV"
 else
-    echo "setup-conda-macos: skipping blueprint-compiler and gst-plugin-gtk4"
+    echo "setup-conda-macos: skipping blueprint-compiler, gst-plugin-gtk4 and webrtcbin"
 fi
 
 cat <<EOF

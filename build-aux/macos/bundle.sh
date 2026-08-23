@@ -258,10 +258,19 @@ if ! ls "$RES"/lib/gio/modules/*.so >/dev/null 2>&1; then
     exit 1
 fi
 
-# The GStreamer plugins Commune can actually reach. The full set is 173 plugins
+# The GStreamer plugins Commune can actually reach. The full set is 178 plugins
 # for decklink capture cards, JACK, festival speech synthesis and the like; the
 # cost of carrying them is not the plugins but the dylibs they would drag into
 # Frameworks behind them.
+#
+# The last line is the call. `webrtc` is webrtcbin itself, `nice` is the ICE
+# agent it drives, and `srtp` holds the srtpenc that `dtls` builds inside
+# dtlssrtpenc — none of which announce themselves as missing until a call is
+# placed, because webrtcbin is made at runtime by name like every other
+# element. `rtp` is the payloaders on either end of the pipeline, and
+# `rtpmanager` the jitter buffers webrtcbin puts behind them. Four of the six
+# are built from source by setup-conda-macos.sh; a bundle attempted without
+# that step fails here rather than shipping a client whose calls do not work.
 GST_PLUGINS="
 coreelements typefindfunctions playback app gio autodetect
 audioconvert audioresample audiorate audioparsers volume level
@@ -270,6 +279,7 @@ osxaudio gtk4 applemedia opengl
 isomp4 matroska ogg wavparse subparse
 opus opusparse vorbis mpg123 vpx png jpeg alaw mulaw
 codecalpha codectimestamper id3demux apetag icydemux soup
+webrtc nice srtp dtls rtp rtpmanager
 "
 mkdir -p "$RES/lib/gstreamer-1.0"
 for plugin in $GST_PLUGINS; do
