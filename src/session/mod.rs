@@ -18,6 +18,7 @@ use tokio::{task::AbortHandle, time::sleep};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 
+mod calls;
 mod global_account_data;
 mod ignored_users;
 mod image_packs;
@@ -33,8 +34,8 @@ mod user_sessions_list;
 mod verification;
 
 pub(crate) use self::{
-    global_account_data::*, ignored_users::*, image_packs::*, notifications::*, remote::*, room::*,
-    room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
+    calls::*, global_account_data::*, ignored_users::*, image_packs::*, notifications::*,
+    remote::*, room::*, room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
     user_sessions_list::*, verification::*,
 };
 use crate::{
@@ -114,6 +115,9 @@ mod imp {
         /// The ignored users API for this session.
         #[property(get)]
         ignored_users: IgnoredUsers,
+        /// The calls of this session.
+        #[property(get = Self::calls_owned)]
+        calls: OnceCell<Calls>,
         /// The list of sessions for this session's user.
         #[property(get)]
         user_sessions: UserSessionsList,
@@ -379,6 +383,16 @@ mod imp {
             self.image_packs().clone()
         }
 
+        /// The calls of this session.
+        pub(super) fn calls(&self) -> &Calls {
+            self.calls.get_or_init(|| Calls::new(&self.obj()))
+        }
+
+        /// The owned calls of this session.
+        fn calls_owned(&self) -> Calls {
+            self.calls().clone()
+        }
+
         /// The cache for remote data.
         pub(super) fn remote_cache(&self) -> &RemoteCache {
             self.remote_cache
@@ -408,6 +422,7 @@ mod imp {
 
             self.room_list().load().await;
             self.verification_list().init();
+            self.calls().init();
             self.security.set_session(Some(&*self.obj()));
 
             let client = self.client().clone();
