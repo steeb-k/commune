@@ -1847,17 +1847,32 @@ impl Room {
 
     /// Toggle the `key` reaction on the given related event in this room.
     pub(crate) async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
+        // Whether this adds the reaction rather than taking it back. Taking one
+        // back is not a use of the emoji, and has to be read before the toggle.
+        let is_adding = !event
+            .reactions()
+            .reaction_group_by_key(&key)
+            .is_some_and(|group| group.has_own_user());
+
         // Use the timeline of the event: it might be a focused timeline rather than
         // the live one, and the SDK can only react to an event it knows about.
         let matrix_timeline = event.timeline().matrix_timeline();
         let identifier = event.identifier();
+        let key_clone = key.clone();
 
-        let handle =
-            spawn_tokio!(async move { matrix_timeline.toggle_reaction(&identifier, &key).await });
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .toggle_reaction(&identifier, &key_clone)
+                .await
+        });
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             error!("Could not toggle reaction: {error}");
             return Err(());
+        }
+
+        if is_adding && let Some(session) = self.session() {
+            session.global_account_data().record_emoji_use(&key).await;
         }
 
         Ok(())
