@@ -594,41 +594,7 @@ impl CallPipeline {
         is_answer: bool,
         sender: mpsc::UnboundedSender<PipelineEvent>,
     ) {
-        let webrtcbin = self.webrtcbin.clone();
-        let field = if is_answer { "answer" } else { "offer" };
-
-        let promise = gst::Promise::with_change_func(move |reply| {
-            let description = match reply {
-                Ok(Some(reply)) => reply
-                    .get::<gst_webrtc::WebRTCSessionDescription>(field)
-                    .ok(),
-                Ok(None) => None,
-                Err(error) => {
-                    let _ = sender.unbounded_send(PipelineEvent::Error(format!(
-                        "could not create the {field}: {error:?}"
-                    )));
-                    return;
-                }
-            };
-
-            let Some(description) = description else {
-                let _ = sender
-                    .unbounded_send(PipelineEvent::Error(format!("the {field} came back empty")));
-                return;
-            };
-
-            let sdp = description.sdp().as_text().unwrap_or_default();
-
-            webrtcbin.emit_by_name::<()>(
-                "set-local-description",
-                &[&description, &None::<gst::Promise>],
-            );
-
-            let _ = sender.unbounded_send(PipelineEvent::LocalDescription { sdp, is_answer });
-        });
-
-        self.webrtcbin
-            .emit_by_name::<()>(signal, &[&None::<gst::Structure>, &promise]);
+        create_description(&self.webrtcbin, signal, is_answer, sender);
     }
 
     /// Set the session description the other party sent.
@@ -637,6 +603,58 @@ impl CallPipeline {
         sdp: &str,
         is_answer: bool,
     ) -> Result<(), PipelineError> {
+        let description = Self::parse_description(sdp, is_answer)?;
+        debug!("Setting the remote description");
+
+        self.webrtcbin.emit_by_name::<()>(
+            "set-remote-description",
+            &[&description, &None::<gst::Promise>],
+        );
+
+        Ok(())
+    }
+
+    /// Take the offer, and answer it once it has actually been taken.
+    ///
+    /// `set-remote-description` is asynchronous. Emitting it and then calling
+    /// `create-answer` on the next line asks `webrtcbin` to answer an offer it
+    /// has not applied yet, and what comes back is an empty answer — which the
+    /// caller then waits on for ever, because an empty answer is never sent.
+    ///
+    /// So the answer is created from inside the promise of the description,
+    /// which is the only ordering `webrtcbin` guarantees.
+    pub(crate) fn answer_remote_offer(
+        &self,
+        sdp: &str,
+        sender: mpsc::UnboundedSender<PipelineEvent>,
+    ) -> Result<(), PipelineError> {
+        let description = Self::parse_description(sdp, false)?;
+        debug!("Setting the remote offer, and answering it when it is applied");
+
+        let webrtcbin = self.webrtcbin.clone();
+        let promise = gst::Promise::with_change_func(move |reply| {
+            if let Err(error) = reply {
+                let _ = sender.unbounded_send(PipelineEvent::Error(format!(
+                    "the other party's offer was refused: {error:?}"
+                )));
+                return;
+            }
+
+            debug!("The remote offer is applied; creating the answer");
+            create_description(&webrtcbin, "create-answer", true, sender);
+        });
+
+        self.webrtcbin
+            .emit_by_name::<()>("set-remote-description", &[&description, &promise]);
+
+        Ok(())
+    }
+
+    /// Parse an SDP into something `webrtcbin` will take.
+    fn parse_description(
+        sdp: &str,
+        is_answer: bool,
+    ) -> Result<gst_webrtc::WebRTCSessionDescription, PipelineError> {
         let message = gst_sdp::SDPMessage::parse_buffer(sdp.as_bytes())
             .map_err(|_| PipelineError::Other("the other party sent an SDP we cannot parse"))?;
 
@@ -645,15 +663,8 @@ impl CallPipeline {
         } else {
             gst_webrtc::WebRTCSDPType::Offer
         };
-        let description = gst_webrtc::WebRTCSessionDescription::new(kind, message);
-        debug!("Setting the remote {kind:?} description");
 
-        self.webrtcbin.emit_by_name::<()>(
-            "set-remote-description",
-            &[&description, &None::<gst::Promise>],
-        );
-
-        Ok(())
+        Ok(gst_webrtc::WebRTCSessionDescription::new(kind, message))
     }
 
     /// Add an ICE candidate from the other party.
@@ -697,6 +708,54 @@ impl CallPipeline {
 
         valve.set_property("drop", muted);
     }
+}
+
+/// Ask `webrtcbin` for an offer or an answer, and set it as the local
+/// description once it arrives.
+///
+/// A free function rather than a method, because the answer has to be created
+/// from inside the promise of `set-remote-description`, where there is no
+/// `CallPipeline` left to call a method on.
+fn create_description(
+    webrtcbin: &gst::Element,
+    signal: &str,
+    is_answer: bool,
+    sender: mpsc::UnboundedSender<PipelineEvent>,
+) {
+    let field = if is_answer { "answer" } else { "offer" };
+    let for_local = webrtcbin.clone();
+
+    let promise = gst::Promise::with_change_func(move |reply| {
+        let description = match reply {
+            Ok(Some(reply)) => reply
+                .get::<gst_webrtc::WebRTCSessionDescription>(field)
+                .ok(),
+            Ok(None) => None,
+            Err(error) => {
+                let _ = sender.unbounded_send(PipelineEvent::Error(format!(
+                    "could not create the {field}: {error:?}"
+                )));
+                return;
+            }
+        };
+
+        let Some(description) = description else {
+            let _ =
+                sender.unbounded_send(PipelineEvent::Error(format!("the {field} came back empty")));
+            return;
+        };
+
+        let sdp = description.sdp().as_text().unwrap_or_default();
+
+        for_local.emit_by_name::<()>(
+            "set-local-description",
+            &[&description, &None::<gst::Promise>],
+        );
+
+        let _ = sender.unbounded_send(PipelineEvent::LocalDescription { sdp, is_answer });
+    });
+
+    webrtcbin.emit_by_name::<()>(signal, &[&None::<gst::Structure>, &promise]);
 }
 
 /// Play an incoming stream.

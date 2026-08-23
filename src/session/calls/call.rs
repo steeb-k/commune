@@ -350,17 +350,24 @@ impl Call {
             return;
         };
 
-        if let Err(error) = pipeline.set_remote_description(&offer.sdp, false) {
-            error!("Could not take the offer: {error}");
-            drop(borrowed);
-            self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
-            return;
-        }
-
         if let Err(error) = pipeline.start() {
             error!("Could not start the call: {error}");
             drop(borrowed);
             self.hangup_with(Reason::UserMediaFailed, CallEndReason::MediaFailed);
+            return;
+        }
+
+        // Take the offer and answer it, in that order and not merely in that
+        // sequence: `set-remote-description` is asynchronous, and answering an
+        // offer that has not been applied yet gets an empty answer back — which
+        // is never sent, so the caller waits until its invite expires. The
+        // answer is created from inside the description's promise.
+        let (sender, mut events) = futures_channel::mpsc::unbounded();
+
+        if let Err(error) = pipeline.answer_remote_offer(&offer.sdp, sender) {
+            error!("Could not take the offer: {error}");
+            drop(borrowed);
+            self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
             return;
         }
 
@@ -373,9 +380,18 @@ impl Call {
         }
         drop(borrowed);
 
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                while let Some(event) = events.next().await {
+                    obj.handle_pipeline_event(event);
+                }
+            }
+        ));
+
         self.set_state(CallState::Connecting);
         self.cancel_lifetime_timeout();
-        self.create_local_description(true);
     }
 
     /// Decline the call, everywhere.
@@ -818,6 +834,10 @@ impl Call {
             // Still ringing: keep them for when there is a pipeline. Dropping
             // them would mean the call takes an extra round trip to connect,
             // or does not connect at all.
+            debug!(
+                "Holding {} ICE candidate(s) until the call is answered",
+                candidates.len()
+            );
             imp.pending_candidates
                 .borrow_mut()
                 .extend_from_slice(candidates);
