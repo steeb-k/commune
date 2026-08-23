@@ -31,7 +31,7 @@ mod imp {
         #[template_child]
         self_view_revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
-        self_picture: TemplateChild<gtk::Picture>,
+        self_picture: TemplateChild<gtk::Image>,
         #[template_child]
         controls: TemplateChild<gtk::Stack>,
         #[template_child]

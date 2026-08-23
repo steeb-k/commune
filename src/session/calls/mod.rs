@@ -418,7 +418,16 @@ impl Calls {
 /// both happen to be in a room that nobody marked as a DM can still call each
 /// other, and a direct chat that grew a third member cannot.
 pub(crate) fn can_call(room: &Room) -> bool {
-    room.joined_members_count() == 2 && room.own_member().membership() == Membership::Join
+    if room.joined_members_count() != 2 || room.own_member().membership() != Membership::Join {
+        return false;
+    }
+
+    // A call is a stream of message-like events into the room, so a room we
+    // cannot send a message to is a room we cannot call in. The server notices
+    // room is exactly that — the recipient sits at power level -10 — and
+    // offering the buttons there produced a run of `M_FORBIDDEN` and a call
+    // that rang for nobody.
+    room.permissions().can_send_message()
 }
 
 /// The one other person in a two-person room.
