@@ -33,8 +33,14 @@ file you are reading now must keep this version: the upstream one is written
 to stop an agent from working at all, and taking it would do exactly that.
 
 Every feature this fork adds has a ledger under `doc/`, kept current with each
-change to it: `doc/image-packs.md`, `doc/search.md` for message search, and
-`doc/gif-search.md`. Read the one for a feature before touching it — each
-carries the design decisions, the integration points, and a rebase guide.
-`doc/rebrand.md` does the same for the rename to Commune, and is where to look
-before touching anything that carries the application's name or ID.
+change to it: `doc/image-packs.md`, `doc/search.md` for message search,
+`doc/gif-search.md`, `doc/reporting.md` for reporting a room or a user, and
+`doc/join-rules.md` for editing a restricted room's join rule. Read the one for
+a feature before touching it — each carries the design decisions, the
+integration points, and a rebase guide. `doc/rebrand.md` does the same for the
+rename to Commune, and is where to look before touching anything that carries
+the application's name or ID.
+
+`doc/testing.md` covers `testing/local-homeserver.sh`, a throwaway Synapse in
+podman. Reach for it before asking the user to test anything that would send a
+report to a stranger or that needs a space to exist.
