@@ -29,7 +29,7 @@ mod turn;
 pub(crate) use self::{
     call::Call,
     state::{CallEndReason, CallState},
-    turn::{TurnCredentials, TurnServer, load_turn_credentials},
+    turn::{IceServers, TurnCredentials, load_turn_credentials},
 };
 use super::{JoinRuleValue, Member, Membership, MembershipListKind, Room, Session, UserExt};
 use crate::spawn;
@@ -207,20 +207,20 @@ impl Calls {
         call.accept(&servers);
     }
 
-    /// The TURN servers to use, asking the homeserver if what we have is stale.
-    async fn turn_servers(&self) -> Vec<TurnServer> {
+    /// The ICE servers to use, asking the homeserver if what we have is stale.
+    async fn turn_servers(&self) -> IceServers {
         let imp = self.imp();
 
         if !imp.turn_credentials.borrow().is_fresh() {
             let Some(session) = self.session() else {
-                return Vec::new();
+                return IceServers::default();
             };
 
             let credentials = load_turn_credentials(&session.client()).await;
             imp.turn_credentials.replace(credentials);
         }
 
-        imp.turn_credentials.borrow().servers().to_vec()
+        imp.turn_credentials.borrow().servers().clone()
     }
 
     /// Set the call that is happening, and forget it when it ends.
