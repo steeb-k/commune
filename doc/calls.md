@@ -168,22 +168,24 @@ The symptom in the log is one line — `the answer came back empty` — and it t
 this long to see because the failure is on the _callee_, while the complaint a
 person makes is about the caller's window.
 
-## A remote candidate's m-line index is the other party's, not ours
+## Every remote candidate goes on section 0
 
-`sdpMLineIndex` counts the sender's media sections. An audio-only call has one
-section on this side, index 0 — so a candidate labelled for the second one
-names nothing here, and `webrtcbin` drops it without a word. A caller that
-receives only those ends up with no remote candidates at all and never leaves
-`New`: `ice-connection-state` does not even reach `Checking`.
+Whatever index the other party put on it. This client always negotiates
+`max-bundle`, so a call has exactly one transport and it belongs to section 0.
+The second section is the `a=bundle-only` video one, advertised with `port 0`:
+it has no transport of its own, so a candidate placed there names nothing and
+`webrtcbin` drops it without a word.
 
-That is what an outgoing call did while an incoming one worked. The incoming
-one was video, so it had a second section for index 1 to land on; the outgoing
-one was audio and did not.
+A caller whose peer labels every candidate `1` therefore collects none at all,
+and `ice-connection-state` never leaves `New` — it does not reach `Checking`,
+let alone fail. Nothing moving at all is the signature of no remote candidates;
+a relay that refused to allocate would still show `Checking`, because there
+would be pairs to try.
 
-Everything is bundled onto the first transport regardless — `max-bundle` is
-negotiated on both — so an index this side cannot use is applied to section 0,
-which is where the transport is. Indices that do name a section here are left
-alone, since a peer that is not bundling still means what it says.
+**Clamping only out-of-range indices was tried first and was not enough.** On an
+audio-only call there is one section, so `1` is out of range and gets caught. On
+a video call `1` is in range and still wrong, because being in range is not the
+same as having a transport. That distinction cost a round trip.
 
 ## Both connection states are watched, not only the aggregate
 
