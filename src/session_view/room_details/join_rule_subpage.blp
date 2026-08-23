@@ -87,6 +87,12 @@ template $RoomDetailsJoinRuleSubpage: Adw.NavigationPage {
               action-name: "join-rule.set-value";
               action-target: "'public'";
             }
+
+            $CheckLoadingRow membership_row {
+              visible: false;
+              action-name: "join-rule.set-value";
+              action-target: "'room-membership'";
+            }
           }
 
           Gtk.ListBox knock_box {
