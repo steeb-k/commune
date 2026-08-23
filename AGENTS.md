@@ -36,9 +36,10 @@ Every feature this fork adds has a ledger under `doc/`, kept current with each
 change to it: `doc/image-packs.md`, `doc/search.md` for message search,
 `doc/gif-search.md`, `doc/reporting.md` for reporting a room or a user,
 `doc/join-rules.md` for editing a restricted room's join rule,
-`doc/server-acls.md` for which servers can take part in a room, and
-`doc/recent-emoji.md` for the quick reactions. Read the one for
-a feature before touching it — each carries the design decisions, the
+`doc/server-acls.md` for which servers can take part in a room,
+`doc/recent-emoji.md` for the quick reactions, and `doc/url-previews.md` for
+the card under a message that has a link. Read the one for a feature before
+touching it — each carries the design decisions, the
 integration points, and a rebase guide. `doc/rebrand.md` does the same for the
 rename to Commune, and is where to look before touching anything that carries
 the application's name or ID.
