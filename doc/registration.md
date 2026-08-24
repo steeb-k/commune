@@ -313,6 +313,22 @@ person resets a password, which is the same place we would have sent them.
 So the OAuth branch is unreachable rather than unwritten. If the method page
 ever appears on an OAuth server, this is the thing that has to grow a branch.
 
+**This is not a hypothetical, and it applies to the default.** `matrix.org`
+answers `GET /_matrix/client/v1/auth_metadata` with 200 — checked
+24 August 2026, issuer `https://account.matrix.org/`, with `login` and `create`
+among its `prompt_values_supported`. So on the homeserver this client now offers
+first, logging in and signing up both go to the browser, the password login page
+never appears, and neither does the link to reset a password. That is correct:
+`account.matrix.org` owns those accounts and its own sign-in page carries its own
+"forgot password". It does mean **the reset page can only be reached on a
+homeserver that does not delegate authentication** — the throwaway Synapse in
+`testing/local-homeserver.sh` is one, and is where to look at it.
+
+The thing this leaves undone, should it ever be wanted: the in-browser login page
+could offer `account_management_uri` from that same metadata as a "manage this
+account" link. Today it says nothing, and the server's own page is one click away
+inside the browser it opens.
+
 ## One password meter, three pages
 
 Changing a password, signing up and resetting a password all ask somebody to
@@ -348,7 +364,9 @@ accounts behind. `matrix.org` has registration behind a captcha, which is worth
 one run through the fallback page and no more.
 
 **Password reset has no local harness either.** Synapse only sends email with an
-SMTP server configured, and the harness has none. Against `matrix.org` the first
+SMTP server configured, and the harness has none — and it is also the only place
+the page can be reached at all, since the default homeserver delegates
+authentication (above). Against `matrix.org` the first
 half is safe to exercise on an account you own — asking for the email — and the
 second half changes a real password and logs out every other session, so do that
 knowing it.
