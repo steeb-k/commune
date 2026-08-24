@@ -696,9 +696,10 @@
         <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
         presence, and signing up with the password reset that went with it. Their notes are gone
         rather than struck; what they became is in the table above, in the Commune cell of each.
-        <strong>Spaces went from absent to partial on 24 August 2026</strong>, and took its
-        second of three slices the same day. It stays here until it is whole: a feature you can
-        read but not organise with is still a gap.
+        <strong>Spaces went from absent to partial on 24 August 2026</strong>, and took two and a
+        half of its three slices the same day — the last half being the space picker, which
+        closed the restricted join rules row on its own. It stays here until it is whole: a
+        feature you can read but not organise with is still a gap.
       </p>
     </div>
     <div class="notes">
@@ -707,17 +708,18 @@
         <span class="note-head">Spaces</span>
         <p class="note-body">
           Every client in this table except Commune’s own parent can browse and join a space.
-          <strong>Two thirds of this landed on 24 August 2026</strong>: a space has its own
+          <strong>Five sixths of this landed on 24 August 2026</strong>: a space has its own
           sidebar section, opening one shows a page rather than an empty timeline, that page
-          lists the rooms inside and lets each be opened or joined, it can be left, and the public
-          directory lists and labels them instead of filtering them out. Commune has drawn level
-          with Element X’s read-only browsing. What is missing is the word <em>organising</em>:
-          nothing writes <code>m.space.child</code>, so <strong>no room can be put into a space
-          from Commune</strong>, and there is no picker for the restricted-join-rule editor to
-          call. Nesting is walked one page at a time rather than drawn as a tree, which is where
-          Nheko is still ahead.
-          <strong>It is also the blocker under two other rows</strong> — authoring a restricted
-          join rule and adding a room to a space both need a space picker first.
+          lists the rooms inside and lets each be opened or joined, it can be left, the public
+          directory lists and labels them instead of filtering them out, and there is a picker
+          that asks which space you mean. Commune is past Element X’s read-only browsing.
+          What is missing is the word <em>organising</em>: nothing writes
+          <code>m.space.child</code>, so <strong>no room can be put into a space from
+          Commune</strong>. Nesting is walked one page at a time rather than drawn as a tree,
+          which is where Nheko is still ahead.
+          <strong>One of the two rows it blocked is now closed</strong> — a restricted join rule
+          can be authored — and the other, adding a room to a space, is what the last half of
+          this is.
         </p>
       </div>
       <div class="note">
@@ -958,7 +960,7 @@
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
       c: { commune:0.5, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Joined spaces have a sidebar section and a page that lists the rooms inside them, each of which can be opened or joined from there. A subspace opens its own page — there is no tree. Nothing writes m.space.child, so no room can be put into a space from here.",
+      cn: { commune:"Joined spaces have a sidebar section and a page that lists the rooms inside them, each of which can be opened or joined from there. A subspace opens its own page — there is no tree. There is a space picker now, so a room can be restricted to a space; what is still missing is m.space.child, so no room can be put into one.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },
@@ -976,8 +978,8 @@
 
     { f: "Restricted join rules", g: "Rooms", kind: "spec", tag: "Restricting membership",
       note: "A room whose members come from a space.",
-      c: { commune:0.5, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:0.5, nc:-1, ci:0.5 },
-      cn: { commune:"An existing restriction can be edited and knocking toggled over it. Authoring one needs a space picker — see the Spaces row." } },
+      c: { commune:1, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:0.5, nc:-1, ci:0.5 },
+      cn: { commune:"A restriction can be created as well as kept: the space picker landed with the third slice of spaces. Offered for room version 8 and up, with knocking over it gated on version 10, where knock_restricted arrived. Picking a space replaces the whole allow list, so a room restricted to several is best left alone." } },
 
     { f: "Server ACLs", g: "Rooms", kind: "spec", tag: "Spec",
       note: "Which servers may take part in a room.",

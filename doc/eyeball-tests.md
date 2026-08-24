@@ -456,6 +456,78 @@ Slice 2. All of this is on the space page, below the topic.
       map was rewritten by hand and it is exactly the kind of change that
       moves a section's contents into its neighbour.
 
+## Choosing a space, and restricting a room to one — `doc/join-rules.md`
+
+Round 3, slice 3, first half. The client can now ask which space you mean, and
+_Who Can Join_ uses it to build a restricted rule rather than only to keep one.
+
+### Setting up
+
+The harness seeds `Test Space` and `Sub Space`, plus `Restricted Room`, which
+is already restricted to `Test Space`, and `Knock Restricted Room`, which is
+the same with knocking on. Log in as alice, who owns all of them.
+
+```sh
+testing/local-homeserver.sh up
+```
+
+### The picker
+
+* [ ] **Room Details → _Who Can Join_ on any room shows _Members of a Space_.**
+      It used to be hidden unless the room was already restricted. It should
+      now be there for `Public Room` and `Invite Room` too.
+* [ ] **Selecting it reveals a _Space_ row below the three choices**, reading
+      _None chosen_ for a room that has no restriction.
+* [ ] **Activating that row opens a dialog listing your spaces** — `Test Space`
+      and `Sub Space`, and nothing else. No ordinary rooms, no direct chat, no
+      server notices room.
+* [ ] **The room you are editing is not in the list.** Open _Who Can Join_ on
+      `Test Space` itself: the picker must offer `Sub Space` only. A space
+      cannot be restricted to itself.
+* [ ] **Search filters the list**, and a search matching nothing says so rather
+      than showing an empty box.
+* [ ] **Dismissing the dialog changes nothing** — press Escape or click away,
+      and the _Space_ row still reads what it did.
+* [ ] **Choosing a space fills the row in**, the dialog closes, and _Save_
+      becomes sensitive.
+* [ ] **Saving works.** The rule is written and the page comes back showing
+      _Members of a Space_ with that space named. Confirm from another client
+      that the room really is restricted.
+* [ ] **A user in the space can then join the room**, and one outside it
+      cannot. As bob, who is not in `Test Space`, try the room you just
+      restricted; then have alice invite bob to the space and try again.
+
+### What must not happen
+
+* [ ] **_Save_ stays insensitive with the rule selected and no space chosen.**
+      This is the check that matters most: saving in that state would send a
+      restricted rule allowing nobody, which this page cannot undo. Select
+      _Members of a Space_ on an unrestricted room and go no further.
+* [ ] **Going back with the rule selected and no space chosen** asks about
+      unsaved changes only if there are any — there are none, so it should just
+      go back.
+* [ ] **The rule is not silently swapped.** With _Members of a Space_ selected
+      and no space, the page must not save an invite or knock rule instead.
+      That is what the old code did, and it was invisible.
+* [ ] **A room already restricted to a space keeps it** when you only flip
+      _Allow Invite Requests_. Open `Restricted Room`, toggle the switch, save,
+      and check from another client that the allow list still names
+      `Test Space`.
+* [ ] **A room with no permission shows the space and no arrow.** As bob in a
+      room he cannot administer, _Who Can Join_ should still say which space,
+      with the row not activatable.
+
+### Old rooms
+
+* [ ] **A room too old for restricted rules does not offer it.** Restricted
+      join rules arrived in room version 8 and `knock_restricted` in version
+      10. Make a version 7 room from another client: _Members of a Space_ must
+      be absent and the notice at the top of the page must show.
+* [ ] **A version 8 or 9 room offers the rule but not knocking over it.**
+      Select _Members of a Space_ there and _Allow Invite Requests_ must go
+      insensitive — `knock_restricted` does not exist for that room, and
+      sending it would be rejected.
+
 ## Reading a room without joining it — `doc/peeking.md`
 
 Round 3, item 7. A room whose history is `world_readable` can be read by

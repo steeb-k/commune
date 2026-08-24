@@ -491,8 +491,8 @@
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Eleven gaps:
-      seven with no implementation at all, four implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Ten gaps:
+      seven with no implementation at all, three implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -510,7 +510,9 @@
       joined. Writing <code>m.space.child</code> — putting a room <em>into</em> a space — is what
       keeps the module in the partial column. Room Previews closed the same day, on top of the
       <code>world_readable</code> flag that came with it: the last twenty messages of a room
-      that says anybody may read them are now read, without joining.
+      that says anybody may read them are now read, without joining. And Restricting Room
+      Membership closed with the space picker the third slice of spaces begins with: a
+      restriction could be kept before and can be created now.
     </p>
   </header>
 
@@ -521,14 +523,14 @@
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">4</div>
+      <div class="score-num">3</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">37</div>
+      <div class="score-num">38</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews and one-to-one calls.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership and one-to-one calls.</div>
     </div>
   </div>
 
@@ -553,8 +555,8 @@
     <div class="shortlist">
       <ol>
         <li>
-          <span class="pick-name">Spaces — one slice of three left</span>
-          <span class="pick-why">The large one worth paying for, and the blocker on two other rows. It was always three jobs rather than one, and <strong>two were done on 24 August 2026</strong>: the sidebar no longer hides them, and a space page lists the rooms inside it with a button to open or join each. What is left is the slice the other rows are waiting on — a space picker, and the <code>m.space.child</code> writing behind it, which is what lets a room be put into a space and what unblocks authoring a restricted join rule.</span>
+          <span class="pick-name">Spaces — half a slice left</span>
+          <span class="pick-why">The large one worth paying for, and the blocker on two other rows. It was always three jobs rather than one, and <strong>two and a half were done on 24 August 2026</strong>: the sidebar no longer hides spaces, a space page lists the rooms inside it with a button to open or join each, and there is a space picker — which closed the restricted join rule row on its own. What is left is the writing half: <code>m.space.child</code>, so a room can be put <em>into</em> a space rather than only pointed at one.</span>
         </li>
         <li>
           <span class="pick-name">Threads</span>
@@ -637,7 +639,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">3 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Every one of these is a
         gap in coverage rather than a choice: the last deliberate departure, image packs
@@ -668,13 +670,6 @@
             <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
           </tr>
           <tr>
-            <td><span class="feat">Restricted join rule</span></td>
-            <td class="mod">Restricting room membership</td>
-            <td class="state">A room restricted to a space can now be edited: the rule is shown as a choice, and knocking can be turned on or off over it, carrying the allow list across. What is still missing is authoring one — a restriction needs a room to point at, and picking one needs a space picker, which is the Spaces row. So a restriction can be kept and never created.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
             <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Arbitrary user tags aren't supported and the <code>order</code> field is neither read nor written, so manual ordering is lost across clients.</td>
@@ -695,7 +690,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">20 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">21 touch the protocol</span></h2>
       <p class="sec-sub">
 206 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
@@ -734,6 +729,12 @@
             <td class="mod">Room Previews<br>Room History Visibility</td>
             <td class="state">A room whose <code>m.room.history_visibility</code> is <code>world_readable</code> says anybody may read it, and until 24 August 2026 nothing here took it up: the preview dialog showed a name, a topic and a member count, and you decided whether to join without reading a word. The last twenty messages are now fetched with <code>GET /rooms/{roomId}/messages</code> sent raw, since every timeline in this client is built from an SDK room and there is no SDK room for a room nobody has joined. Not the endpoints the peeking section is named after: <code>/initialSync</code> is deprecated and <code>/events</code> is for watching rather than reading, while <code>/messages</code> is what Synapse actually answers for a non-member. Senders are named from the <code>state</code> block that <code>lazy_load_members</code> fills, and a display name two people share is dropped for both, as the spec requires — in a room whose member list cannot be read, the user ID is what tells them apart. Offered only for a room that is not encrypted and not already joined. <strong>Nothing on the preview fetches media</strong>: no avatars, no images, plain text only, because the safety setting that exists for exactly this worry takes a <code>Room</code> and there is none.</td>
             <td><span class="chip on">On spec</span><span class="chip-note">Usually answers with an error: Synapse will not peek a room it does not already have.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Choosing a space, and restricting a room to one</span></td>
+            <td class="mod">Spaces<br>Restricting room membership</td>
+            <td class="state">A restricted join rule points at a space, and until 24 August 2026 this client could keep one and never make one: the choice was hidden unless the room was already restricted, because building an allow list means picking a space and nothing here could ask which. <code>SpacePickerDialog</code> asks — the session's room list filtered to <code>RoomCategory::Space</code> by the sidebar's own <code>RoomCategoryFilter</code>, with the room being edited left out, since a room restricted to itself admits nobody new. The choice is now offered to any room whose version carries the rule, which is version 8 and up, and knocking over it is gated separately on version 10, where <code>knock_restricted</code> arrived. <strong>An allow list of several spaces is carried over whole</strong> when only the knock switch moves — dropping one would quietly lock people out — and replaced entirely when a space is picked, which the ledger records rather than the interface pretending otherwise. The computation returns no rule at all for the membership choice with nothing chosen, rather than falling back to a rule the person did not pick.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
           </tr>
           <tr>
             <td><span class="feat">Creating an account, and getting back into one</span></td>
@@ -1233,7 +1234,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Already conformant <span class="tick have">37 modules</span></h2>
+      <h2>Already conformant <span class="tick have">38 modules</span></h2>
       <p class="sec-sub">
         For context on where the effort has gone. Encryption in particular is complete: cross-signing,
         SAS and QR verification, recovery through secret storage, and key import/export.
@@ -1254,6 +1255,7 @@
       <span>Secrets</span>
       <span>Room History Visibility</span>
       <span>Room Previews</span>
+      <span>Restricting Room Membership</span>
       <span>Push Notifications</span>
       <span>Guest Access (room side)</span>
       <span>Client Config</span>
@@ -1304,7 +1306,8 @@
     and shown and its publishing given an off switch, an account made creatable from the greeter and
     recoverable from an email, the spaces somebody is already in given a sidebar section and a
     page that lists what is inside them instead of being hidden, a room that says anybody may
-    read it finally read without joining,
+    read it finally read without joining, a restricted join rule made creatable rather than only
+    preservable,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the

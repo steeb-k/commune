@@ -125,7 +125,30 @@ The harness needed one more room: `Readable Room` is `world_readable` but alice
 made it, so she is in it and gets the room rather than a preview.
 `seed_peekable_room()` adds bob's `Peekable Room` behind a marker of its own.
 
-**Next: item 8 (spaces slice 3 — a space picker and `m.space.child`).**
+**Item 8 (spaces slice 3) is being built in two commits, not one.** The plan
+names three jobs under it and the first two are separable from the third, so:
+
+* **The picker, and authoring a restricted rule** — done. `SpacePickerDialog`
+  (`src/components/dialogs/space_picker.rs`) filters the room list with the
+  sidebar's own `RoomCategoryFilter`, which had to be exported. `_Who Can Join_`
+  offers _Members of a Space_ to any room whose version carries the rule rather
+  than only to one already restricted, and `compute_join_rule` now returns
+  `Option<MatrixJoinRule>` — the plan's own warning was right, the `None` arm
+  became reachable, and falling back to a rule the person did not pick is worse
+  than refusing to save. This closed the restricted join rule row on its own.
+* **Writing `m.space.child`** — not started. That is what actually puts a room
+  into a space, and what unblocks `image-packs.md` Phase 8.
+
+Two things worth knowing before the second half:
+
+* The picker answers through a `futures_channel::oneshot`, not
+  `utils::OneshotNotifier`, which requires `T: Send` and so cannot carry a
+  `Room`.
+* Knocking over a restricted rule needs room version 10, two versions later
+  than the restricted rule itself. `update_knock_sensitive` gates on
+  `knock_restricted_join_rule` now.
+
+**Next: the second half of item 8 — `m.space.child`.**
 
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
 pinned messages and presence marked as shipped in `client-comparison.html`, both
@@ -150,7 +173,9 @@ drift: they go in the feature's own commit.**
 | Space children in the harness | `6e4079ab` | done |
 | 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
 | 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
-| 8–11 | — | not started |
+| 8a. Space picker, restricted rule | (this round) | done, **unseen** |
+| 8b. `m.space.child` | — | not started |
+| 9–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

@@ -3,8 +3,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 mod name;
 mod room_category_filter;
 
-pub use self::name::SidebarSectionName;
-use self::room_category_filter::RoomCategoryFilter;
+pub use self::{name::SidebarSectionName, room_category_filter::RoomCategoryFilter};
 use crate::{
     session::{
         Room, RoomCategory, RoomList, SessionSettings, VerificationList, room::HighlightFlags,
