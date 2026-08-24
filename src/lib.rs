@@ -117,6 +117,20 @@ pub fn run() {
     tracing_subscriber::registry()
         .with(paranoid_android::layer("Commune").with_filter(env_filter))
         .init();
+
+    // The same missing stdout swallows panics, and that is much worse than
+    // losing log lines. A panic in a tokio worker aborts only that task, so
+    // without this the visible symptom is a future that never completes: a
+    // spinner that spins for ever, with nothing anywhere to say why. Route
+    // panics through `tracing`, which does reach logcat.
+    #[cfg(target_os = "android")]
+    {
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            tracing::error!("PANIC: {info}");
+            previous(info);
+        }));
+    }
     #[cfg(not(target_os = "android"))]
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(env_filter))
