@@ -115,20 +115,39 @@ impl DataType {
     /// application's UID. Everything here is derived from that, because asking
     /// Android directly needs a `Context`, and a `Context` needs a realized
     /// toplevel, which does not exist when the first session is restored.
+    ///
+    /// **Persistent data may not live in `getFilesDir()` itself**, which is
+    /// where it was first put and where it was destroyed by every new build.
+    /// That directory is GTK's, not ours: the glue extracts the application's
+    /// assets into it, and decides whether to do so by comparing a fingerprint
+    /// file against the one in the APK. When they differ — which is to say on
+    /// every build — `SystemFilesystem.doWriteResources()` calls
+    /// `cleanDirectory(getFilesDir())` first, and that recurses and deletes
+    /// everything it finds. Sessions, the secret store, the SDK's databases and
+    /// the message history all sat under it, so installing a new build silently
+    /// logged the account out and threw away its data.
+    ///
+    /// So persistent data goes to `<data>/no_backup` — `getNoBackupFilesDir()`,
+    /// a sibling of `files` and `cache` that the glue never looks at. It is the
+    /// right place on its own merits too: `patch-manifest.sh` already forces
+    /// `allowBackup="false"` because the databases are sealed with a Keystore
+    /// key that cannot leave the device, and this is the directory Android
+    /// provides for exactly that.
+    ///
+    /// The cache stays at `getCacheDir()`, which the glue does not touch.
     #[cfg(target_os = "android")]
     fn base_dir_path(self) -> PathBuf {
-        // `getFilesDir()` and `getCacheDir()` are siblings on Android:
-        // `<data>/files` and `<data>/cache`.
-        let files_dir = android_files_dir();
+        // `getFilesDir()`, `getCacheDir()` and `getNoBackupFilesDir()` are all
+        // siblings on Android: `<data>/files`, `<data>/cache`,
+        // `<data>/no_backup`.
+        let data_dir = android_files_dir()
+            .parent()
+            .expect("the Android files directory should have a parent")
+            .to_owned();
 
         match self {
-            DataType::Persistent => files_dir,
-            DataType::Cache => {
-                let data_dir = files_dir
-                    .parent()
-                    .expect("the Android files directory should have a parent");
-                data_dir.join("cache")
-            }
+            DataType::Persistent => data_dir.join("no_backup"),
+            DataType::Cache => data_dir.join("cache"),
         }
     }
 
