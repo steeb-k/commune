@@ -696,8 +696,9 @@
         <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
         presence, and signing up with the password reset that went with it. Their notes are gone
         rather than struck; what they became is in the table above, in the Commune cell of each.
-        <strong>Spaces went from absent to partial on 24 August 2026</strong> and stays here until
-        it is whole: half a feature is still a gap.
+        <strong>Spaces went from absent to partial on 24 August 2026</strong>, and took its
+        second of three slices the same day. It stays here until it is whole: a feature you can
+        read but not organise with is still a gap.
       </p>
     </div>
     <div class="notes">
@@ -706,13 +707,15 @@
         <span class="note-head">Spaces</span>
         <p class="note-body">
           Every client in this table except Commune’s own parent can browse and join a space.
-          <strong>Half of this landed on 24 August 2026</strong>: a space is no longer invisible —
-          it has its own sidebar section, opening one shows a page rather than an empty timeline,
-          it can be left, and the public directory lists and labels them instead of filtering them
-          out. What is missing is the half the row is named for: <strong>Commune still cannot tell
-          you what is inside a space</strong>, because nothing reads the <code>/hierarchy</code>
-          children or writes <code>m.space.child</code>. Element X, which drops nearly everything
-          to stay fast, shipped read-only browsing and is still ahead here.
+          <strong>Two thirds of this landed on 24 August 2026</strong>: a space has its own
+          sidebar section, opening one shows a page rather than an empty timeline, that page
+          lists the rooms inside and lets each be opened or joined, it can be left, and the public
+          directory lists and labels them instead of filtering them out. Commune has drawn level
+          with Element X’s read-only browsing. What is missing is the word <em>organising</em>:
+          nothing writes <code>m.space.child</code>, so <strong>no room can be put into a space
+          from Commune</strong>, and there is no picker for the restricted-join-rule editor to
+          call. Nesting is walked one page at a time rather than drawn as a tree, which is where
+          Nheko is still ahead.
           <strong>It is also the blocker under two other rows</strong> — authoring a restricted
           join rule and adding a room to a space both need a space picker first.
         </p>
@@ -955,7 +958,7 @@
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
       c: { commune:0.5, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Joined spaces have a sidebar section, a page of their own and can be left; the directory lists them and marks them. What is inside one still cannot be listed — that is the next slice.",
+      cn: { commune:"Joined spaces have a sidebar section and a page that lists the rooms inside them, each of which can be opened or joined from there. A subspace opens its own page — there is no tree. Nothing writes m.space.child, so no room can be put into a space from here.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },

@@ -5,9 +5,9 @@ This file is the ledger for the Spaces module (`m.space`, and the
 behind it, and what to check when rebasing onto a new Fractal release. See
 `fork.md` for why none of this goes upstream.
 
-**This feature is being built in three slices and only the first has landed.**
-The second and third are named at the bottom under _Not done_, and the HTML
-ledgers grade the row `◐`, not `●`, on purpose.
+**This feature is being built in three slices and two have landed.** The third
+is named at the bottom under _Not done_, and the HTML ledgers grade the row
+`◐`, not `●`, on purpose.
 
 ## Scope of slice 1 — stop hiding them
 
@@ -84,13 +84,95 @@ modelled on `Invite`: header bar, avatar, name, canonical alias, topic. It
 exists because the alternative was leaving the `_ =>` arm in place, and an
 empty `RoomHistory` is worse than a page that says what it is.
 
-For slice 1 it also carries one sentence admitting it cannot list the rooms
-inside. That sentence is what slice 2 replaces; it is there rather than absent
-because a page with an avatar and nothing else reads as broken.
+Slice 1 carried one sentence admitting it could not list the rooms inside.
+Slice 2 replaced that sentence with the list.
 
 `Content::header_bars()` returns a fixed-arity array which grew 6 → 7. It feeds
 one `GtkSizeGroup` so every header bar on screen is the same height; a page
 left out of it is a page whose header bar jumps when the text scaling changes.
+
+## Scope of slice 2 — look inside one
+
+The space page now lists the rooms that are in the space, each with the same
+row the public directory uses: _View_ if it has been joined, _Join_ if it has
+not, _Request an Invite_ if it only takes knocks.
+
+### The plan said to widen the call that was already there. That was wrong
+
+`RemoteRoom::load_data_from_space_hierarchy` does call `get_hierarchy::v1`, and
+it does ask for `limit: 1` and throw the children away, so widening it looks
+like the whole job. It is not, because of _when_ it runs: it is the fallback
+for `load_data_from_summary`, and it is only reached when the summary endpoint
+answers `404`. Synapse implements MSC3266, so on any homeserver worth testing
+against that method never executes. A space page hanging off it would have
+shown nothing, on the servers people actually use, with no error.
+
+So the fallback is left exactly as it is — `limit: 1` is correct for what it
+does, which is fetch one room's summary — and the listing is a separate object,
+`SpaceChildren` (`src/session/remote/space_children.rs`), which calls the same
+endpoint on purpose.
+
+### What `SpaceChildren` is
+
+A `GListStore` of `RemoteRoom` plus a loading state, modelled on
+`ExploreSearch`, which is the tree's existing answer to "a paginated list of
+rooms nobody has joined". Every chunk of the response carries a
+`summary: RoomSummary`, and `RemoteRoom::with_data` takes exactly that, so each
+row is a `RemoteRoom` with no conversion in between.
+
+Three things in it are decisions rather than mechanics:
+
+* **`max_depth: 1`.** The endpoint walks the tree depth-first and will happily
+  return grandchildren. There is nowhere to put them — see _one level only_
+  below — so asking for them would mean drawing rooms in a flat list that are
+  not in this space at all.
+* **The space's own chunk is skipped, but read first.** The first room in the
+  response is the space itself, and its `children_state` is the only place in
+  the response that carries the `via` servers from each `m.space.child` event.
+  Without them a room on another homeserver is unjoinable, so the events are
+  read into a map before the rows that need them are built. The space's chunk
+  only appears in the first batch, which is why the map is a field and not a
+  local.
+* **Ten batches of twenty, and then it stops.** A space can hold thousands of
+  rooms and the endpoint paginates; something has to end the loop. When the
+  cap is hit the list says so — `truncated_label`, _"This space holds more
+  rooms than are listed here."_ — rather than quietly looking complete.
+
+### The rows are `PublicRoomRow`, and the name stays wrong
+
+A space child needs an avatar, a name, a topic, an alias, a member count, a
+_Space_ marker and a View/Join button off `RoomListRoomInfo`. That is
+`PublicRoomRow` down to the last widget, so the space page uses it, and
+`explore/public_room_row.rs` is now `pub(super)`.
+
+The rooms in a space are not necessarily public, so the name is now a lie, and
+it stays a lie deliberately. Renaming the file would put every future upstream
+change to it into a conflict git cannot resolve by path, and its strings are
+referenced by path in thirty-odd `po/*.po` files. A wrong name is cheaper than
+that, in a fork that rebases.
+
+The `.explore .padded-button` and `.public-rooms row` rules are scoped to the
+Explore page, so `.space-children` in `_session_view.scss` repeats them. If the
+row ever grows a third home, that is the point to hoist them.
+
+### One level only
+
+A subspace is drawn as an ordinary row. Joined, its button says _View_, and
+viewing it selects it in the sidebar, which lands on _its_ space page with
+_its_ children. So the tree is walkable, one page at a time, without a tree
+widget.
+
+Real nesting — an expander per subspace, children drawn underneath — needs
+`GtkTreeListModel` and a `GtkTreeExpander` row type, neither of which exists
+anywhere in the tree. That is deferred, and it is deferred rather than
+forgotten.
+
+### `world_readable` is kept now
+
+`RemoteRoom::set_data` used to drop it. It is one line and one property, and
+nothing reads it yet: peeking is what will. It is here because it belongs to
+the same summary that slice 2 already parses, and adding it later would mean
+touching the same three places again.
 
 ## Explore stops filtering them out
 
@@ -106,8 +188,7 @@ count. Not in the plan for this slice; added because listing spaces without
 saying which ones they are is a half-change, and the summary already carried
 the answer.
 
-`RemoteRoom::set_data` still throws away `world_readable`. That is slice 2's
-line to add, and peeking is what needs it.
+`RemoteRoom::set_data` also gained `is-world-readable` in slice 2; see above.
 
 ## Files
 
@@ -123,7 +204,9 @@ line to add, and peeking is what needs it.
 | `src/session_view/sidebar/row.rs` | The `leave` action for a space |
 | `src/session_view/explore/search.rs` | Dropping the `room_types` filter |
 | `src/session/remote/room.rs` | `is-space` off `RoomSummary::room_type` |
-| `src/session_view/explore/public_room_row.rs`, `.blp` | The _Space_ marker |
+| `src/session_view/explore/public_room_row.rs`, `.blp` | The _Space_ marker; made reusable in slice 2 |
+| `src/session/remote/space_children.rs` | Slice 2: the `/hierarchy` listing |
+| `data/resources/stylesheet/_session_view.scss` | Slice 2: `.space-children` |
 
 ## Rebase guide
 
@@ -142,21 +225,25 @@ line to add, and peeking is what needs it.
    `class_init` — `space.blp` uses `$string_not_empty` twice, and without the
    binding the template fails to build and the application aborts at startup.
    This is not caught by anything but launching it, and it did happen.
+6. `explore/public_room_row.rs` is `pub(super)` and has a second caller now. An
+   upstream change to what `set_room` expects breaks the space page too, and
+   the compiler will only point at Explore's copy of the call.
+7. `SpaceChildren` skips the first room in the `/hierarchy` response by
+   comparing room IDs, not by position. If a server ever omits the space's own
+   chunk the list still works; it just loses the `via` servers with it.
 
 ## Not done
 
-* **Slice 2 — browsing a space.** The harness is ready for it:
-  `seed_space_children()` puts five rooms in `Test Space` — one to view, one to
-  join, a subspace and a `world_readable` room — since naming a space in a join
-  rule is not the same as being a child of it, and nothing wrote
-  `m.space.child` until then. `RemoteRoom::load_data_from_space_hierarchy`
-  already calls `get_hierarchy::v1` with `limit: 1` and throws the children
-  away; lifting the limit and keeping the chunks is the work, plus a child row
-  with a View/Join button off `RoomListRoomInfo`. One level of nesting only —
-  arbitrary depth means adopting `GtkTreeListModel` in the sidebar.
-* **Peeking a `world_readable` room**, which rides on slice 2 keeping the
-  `world_readable` flag `set_data` currently drops. See `peeking.md` when it
-  exists.
+* **Nesting deeper than one level.** A subspace is a row that opens its own
+  page. Drawing its rooms underneath it needs `GtkTreeListModel` and
+  `GtkTreeExpander`, which nothing in the tree uses yet.
+* **Peeking a `world_readable` room.** Slice 2 keeps the flag; nothing reads
+  it. See `peeking.md` when it exists.
+* **The listing is not live.** `SpaceChildren` asks once, when the page is
+  first given the space. A room added to the space while it is on screen does
+  not appear, because `m.space.child` is a state event in a room whose timeline
+  is not being watched. Reopening the space asks again — and so does _Try
+  Again_ after a failure.
 * **Slice 3 — a space picker and `m.space.child`.** Nothing in the tree reads
   or writes `m.space.child` or `m.space.parent` today, so no room can be put
   into a space from here, and the restricted join rule editor still cannot name
@@ -165,5 +252,7 @@ line to add, and peeking is what needs it.
   `RoomCategory::Invited` and the ordinary `Invite` page, which says nothing
   about it being a space. Correct as far as it goes — accepting it lands the
   space in the Spaces section — but the page could say what it is.
-* **No space ordering.** `m.space.child` carries an `order` field; without
-  slice 3 there is nothing to order.
+* **No space ordering of our own.** `m.space.child` carries an `order` field.
+  The listing takes the server's order, which the spec already defines as
+  `order`, then `origin_server_ts`, then room ID — so this is right by
+  accident until slice 3 writes the events.
