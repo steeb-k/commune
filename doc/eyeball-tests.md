@@ -397,10 +397,11 @@ deliberately carries a room URI, not an event URI, so it takes the room-preview
 path and proves nothing here. It needs a real incoming message while the window
 is unfocused — two accounts, or a phone.
 
-* [ ] **A notification for a brand new message opens the room at the bottom,
+* [x] **A notification for a brand new message opens the room at the bottom,
       with no _Back to Latest_ button.** This is the whole point. Before the
       change the button appeared and the timeline then silently stopped
-      updating.
+      updating. Reported fixed on 24 August 2026. The checks below it were not
+      separately reported and stay open.
 * [ ] **And the room keeps updating afterwards.** Send another message from the
       other account without touching anything: it must appear. This is the half
       that was actually broken, and it is invisible unless you wait for it.
