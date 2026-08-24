@@ -23,6 +23,32 @@ causes on a rebase. See `fork.md` for why this tree is a fork at all.
 | Windows session data | `%LOCALAPPDATA%\commune[-Devel]\data` |
 | Windows cache | `%LOCALAPPDATA%\commune[-Devel]\cache` |
 | Windows Credential Manager | Target name = `{application ID}/{session ID}` |
+| Windows install location | `%LOCALAPPDATA%\Programs\Commune[ Devel]`, per-user |
+| Windows AUMID | The application ID, declared on the Start Menu shortcut |
+
+### The Windows GUIDs, which are permanent
+
+An MSI upgrade code is how Windows recognises an installed copy as an earlier
+version of the same product. Change one and every existing install becomes
+invisible to the installer, so it stops upgrading and starts installing
+alongside — with two entries in the list of installed programs and no way for
+either to remove the other. There is one per profile so that a development
+build and a stable one can be installed at the same time, which is the whole
+reason they differ.
+
+| Profile | MSI `UpgradeCode` |
+| --- | --- |
+| Stable | `9434FE95-FA50-4428-A565-E1491147CE85` |
+| Devel | `2CF39ACA-5B32-47B8-B73F-91BC3C2512BB` |
+| Beta | `7974C0E9-61F9-4533-90FD-D6C70EC3AA4C` |
+
+One more is reserved rather than used: `7DC899BF-5566-4BDF-8169-77118EFC646B`
+is the toast activator CLSID, the COM class Windows will activate when somebody
+clicks a notification that starts the app rather than one that arrives while it
+is running. It is fixed now so that the installer does not have to change when
+notifications are written.
+
+### Why `steeb_k`
 
 The ID uses `steeb_k`, with an underscore, because an application ID is also
 a D-Bus name and D-Bus name elements cannot contain a hyphen. The GitHub

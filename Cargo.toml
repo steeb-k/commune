@@ -11,6 +11,9 @@ publish = false
 ignored = [
     # Used by the SecretFile API.
     "serde_bytes",
+    # Used by `build.rs`, inside a `cfg(target_os = "windows")` that
+    # cargo-machete does not follow.
+    "winresource",
 ]
 
 [profile.release]
@@ -195,6 +198,12 @@ windows = { version = "0.62", features = [
 
 [dev-dependencies]
 assert_matches2 = "0.1"
+
+# The icon, the version information and the manifest that `build.rs` compiles
+# into the executable. Windows has no metadata file beside the binary to put
+# them in, the way a macOS bundle has its `Info.plist`.
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1"
 
 [lints.rust]
 # ruma's `EventContent` derive emits this cfg; it is ruma's to set, not ours.

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Commune MSI (WiX v4+ schema, built with WiX 5).
+
+  Installs the relocatable folder that `bundle.sh` assembles — the executable
+  plus the whole GTK runtime — and registers the three things a bundle on its
+  own cannot: the Start Menu shortcut, the `matrix:` URL scheme, and the
+  application user model ID that toast notifications will need.
+
+  Build it with `build-msi.ps1`, which passes everything below as preprocessor
+  variables. Nothing here is profile-specific by hand; the profile decides the
+  name, the application ID and the upgrade code, and all three arrive as
+  `-d` definitions so that a Devel and a Stable install can coexist.
+
+  This is a **per-user** install. It needs no administrator, which means no UAC
+  prompt and no elevation for an update, and it puts the app in
+  `%LOCALAPPDATA%\Programs` where a per-user install belongs. The cost is that
+  it installs for whoever runs it rather than for the machine, which for a chat
+  client is the right way round anyway.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="$(AppName)"
+           Manufacturer="Commune"
+           Version="$(Version)"
+           UpgradeCode="$(UpgradeCode)"
+           Scope="perUser"
+           Compressed="yes">
+
+    <SummaryInformation Description="$(AppName) — a Matrix client" />
+
+    <!-- AllowSameVersionUpgrades so that reinstalling the same version during
+         development replaces the install rather than registering a second
+         product alongside it. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/steeb-k/commune" />
+
+    <!-- A single welcome-and-licence page, then progress and finish. No folder
+         chooser: a per-user install has one sensible location and offering a
+         choice only invites one that breaks. -->
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(LicenseRtf)" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsDir" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="$(AppName)">
+          <Directory Id="BinDir" Name="bin" />
+          <Directory Id="LibDir" Name="lib" />
+          <Directory Id="ShareDir" Name="share" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- The executable is its own component so that the shortcut and the
+         registry keys below can refer to it, and so that it is the KeyPath that
+         decides whether the install is intact. -->
+    <Component Id="CommuneExe" Directory="BinDir" Guid="*">
+      <File Id="commune.exe" Source="$(BundleDir)\bin\commune.exe" KeyPath="yes" />
+    </Component>
+
+    <!-- Everything else in bin\ is the DLL closure and the GStreamer plugin
+         scanner, harvested wholesale rather than listed: the set changes
+         whenever the GTK stack does, and a hand-maintained list would be a
+         list that is wrong. -->
+    <ComponentGroup Id="BinRest" Directory="BinDir">
+      <Files Include="$(BundleDir)\bin\*.dll" />
+      <Files Include="$(BundleDir)\bin\gst-plugin-scanner.exe" />
+    </ComponentGroup>
+
+    <!-- A `<Files>` glob takes the part before the wildcard as its base, so
+         these have to target the `lib` and `share` directories themselves;
+         pointing them at INSTALLFOLDER would flatten one level away and GTK
+         would not find any of it. -->
+    <ComponentGroup Id="LibFiles" Directory="LibDir">
+      <Files Include="$(BundleDir)\lib\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="ShareFiles" Directory="ShareDir">
+      <Files Include="$(BundleDir)\share\**" />
+    </ComponentGroup>
+
+    <!-- The Start Menu shortcut.
+
+         `System.AppUserModel.ID` is the reason this shortcut has to exist even
+         for someone who would rather launch from a pinned taskbar icon: Windows
+         identifies an unpackaged application to the notification system by an
+         AUMID, and it will only accept one that some shortcut in the Start Menu
+         declares. So the toasts of M5 depend on this property, and setting it
+         now means that milestone changes no installer.
+
+         `ToastActivatorCLSID` is the other half — the COM class Windows
+         activates when somebody clicks a toast that launched the app rather
+         than one that arrived while it was running. The CLSID is fixed now for
+         the same reason, and is registered by the code that implements it. -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="*">
+        <Shortcut Id="CommuneStartMenu"
+                  Name="$(AppName)"
+                  Description="Chat on Matrix"
+                  Target="[#commune.exe]"
+                  WorkingDirectory="BinDir"
+                  Icon="AppIcon">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="$(AppId)" />
+        </Shortcut>
+        <RegistryValue Root="HKCU" Key="Software\$(AppId)" Name="startmenu"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <!-- The `matrix:` URL scheme.
+
+         The application side of this already works: `HANDLES_OPEN` and
+         `Application::open` receive the URI, and a second invocation forwards
+         it to the instance that is already running rather than starting
+         another. All that was ever missing is somewhere for Windows to learn
+         that we handle the scheme, and this is it.
+
+         Under `HKCU\Software\Classes` rather than `HKCR`, because a per-user
+         install may not write machine-wide keys. -->
+    <Component Id="MatrixUrlScheme" Directory="BinDir" Guid="*">
+      <RegistryKey Root="HKCU" Key="Software\Classes\matrix">
+        <RegistryValue Type="string" Value="URL:Matrix Protocol" />
+        <RegistryValue Name="URL Protocol" Type="string" Value="" />
+        <RegistryKey Key="DefaultIcon">
+          <RegistryValue Type="string" Value="&quot;[#commune.exe]&quot;,0" />
+        </RegistryKey>
+        <RegistryKey Key="shell\open\command">
+          <RegistryValue Type="string" Value="&quot;[#commune.exe]&quot; &quot;%1&quot;" />
+        </RegistryKey>
+      </RegistryKey>
+      <RegistryValue Root="HKCU" Key="Software\$(AppId)" Name="urlscheme"
+                     Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="Main" Title="$(AppName)" Level="1">
+      <ComponentRef Id="CommuneExe" />
+      <ComponentGroupRef Id="BinRest" />
+      <ComponentGroupRef Id="LibFiles" />
+      <ComponentGroupRef Id="ShareFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="MatrixUrlScheme" />
+    </Feature>
+  </Package>
+</Wix>

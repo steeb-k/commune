@@ -582,6 +582,9 @@ table_header
 tool_check 'ntldd'        required -h
 tool_check 'rsvg-convert' required
 tool_check 'icotool'      required --version
+tool_check 'zip'          required
+# Not strictly required, but a bundle built without it carries a debug binary
+# several times the size of the whole of the rest of it.
 tool_check 'strip'        optional
 
 printf '\n'
@@ -589,11 +592,16 @@ printf 'These two live on the Windows side rather than in MSYS2, and are only\n'
 printf 'needed to build and sign the .msi:\n'
 
 # `wix` is a dotnet tool and `signtool` comes with the Windows SDK; neither is
-# on the MSYS2 PATH by default even when installed.
-if have dotnet && dotnet tool list --global 2>/dev/null | grep -qi '^wix '; then
-    row 'wix' 'yes' \
-        "$(dotnet tool list --global 2>/dev/null | awk '/^wix /{print $2}')" \
-        'optional' 'ok'
+# on the MSYS2 PATH by default even when installed, so look where they live
+# rather than only asking PATH.
+_wix=''
+if have wix; then
+    _wix="$(command -v wix)"
+elif [ -x "$(cygpath -u "${USERPROFILE:-}")/.dotnet/tools/wix.exe" ]; then
+    _wix="$(cygpath -u "${USERPROFILE:-}")/.dotnet/tools/wix.exe"
+fi
+if [ -n "$_wix" ]; then
+    row 'wix' 'yes' "$("$_wix" --version 2>/dev/null | head -n 1)" 'optional' 'ok'
 else
     row 'wix' 'no' '-' 'optional' 'MISSING'
     remember optional_missing 'wix'
