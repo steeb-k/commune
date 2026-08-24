@@ -309,7 +309,7 @@ fn show(
             &[JValue::Object(&body)],
         )?;
 
-        let small_icon = small_icon(env, context)?;
+        let small_icon = small_icon_resource(env, context)?;
         env.call_method(
             &builder,
             "setSmallIcon",
@@ -430,7 +430,13 @@ fn show(
 /// Java that the Rust side has no binding for. `getIdentifier()` is discouraged
 /// for being slower than a constant, which is true and does not matter once per
 /// notification.
-fn small_icon(env: &mut AttachGuard<'_>, context: &JObject) -> Result<i32, AndroidJniError> {
+///
+/// `pub(super)` because the foreground service wants the same drawable, and one
+/// lookup written once is better than the same three JNI calls in two files.
+pub(super) fn small_icon_resource(
+    env: &mut AttachGuard<'_>,
+    context: &JObject,
+) -> Result<i32, AndroidJniError> {
     let resources = env
         .call_method(
             context,

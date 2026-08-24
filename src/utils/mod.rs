@@ -24,6 +24,8 @@ use tracing::error;
 pub(crate) mod android;
 #[cfg(target_os = "android")]
 pub(crate) mod android_notifications;
+#[cfg(target_os = "android")]
+pub(crate) mod android_sync_service;
 pub(crate) mod app_bundle;
 pub(crate) mod expression;
 mod expression_list_model;

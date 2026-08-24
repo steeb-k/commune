@@ -74,6 +74,8 @@ mod imp {
                 self,
                 move |_, _, _, _| {
                     imp.update_preferences_action();
+                    #[cfg(target_os = "android")]
+                    imp.update_sync_service();
                 }
             ));
 
@@ -189,7 +191,14 @@ mod imp {
             // halves are idempotent, and this way a window recreated after the
             // process was killed sets them up again.
             #[cfg(target_os = "android")]
-            crate::utils::android_notifications::init(window.upcast_ref::<gtk::Window>());
+            {
+                crate::utils::android_notifications::init(window.upcast_ref::<gtk::Window>());
+
+                // Sessions restored before the window existed had nowhere to
+                // start the service from, since it needs the `Activity` the
+                // window carries. This is the first moment there is one.
+                self.update_sync_service();
+            }
 
             window
         }
@@ -416,6 +425,22 @@ mod imp {
             {
                 action.set_enabled(enabled);
             }
+        }
+
+        /// Sync in the background only while there is a session to sync.
+        ///
+        /// The same question `update_preferences_action` asks, for a different
+        /// reason: with no session there is nothing to keep the process alive
+        /// for, and the ongoing notification a foreground service must show
+        /// would be claiming work that is not happening.
+        ///
+        /// This is called from where it is because a foreground service may
+        /// only be started while the application is on screen, and both callers
+        /// -- presenting the window, and the session list changing -- are
+        /// moments when it is.
+        #[cfg(target_os = "android")]
+        fn update_sync_service(&self) {
+            crate::utils::android_sync_service::update(self.session_list.n_items() > 0);
         }
 
         /// Fill the macOS menu bar.
