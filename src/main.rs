@@ -31,7 +31,9 @@ use std::sync::LazyLock;
 
 use gettextrs::*;
 use gtk::{IconTheme, gdk::Display, gio};
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+#[cfg(not(target_os = "android"))]
+use tracing_subscriber::fmt;
+use tracing_subscriber::{EnvFilter, prelude::*};
 
 use self::{
     application::*,
@@ -58,6 +60,15 @@ fn main() {
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("commune=info,warn"));
 
+    // An Android application has no stdout: anything written there is dropped,
+    // so the same subscriber that works everywhere else would log into nothing.
+    // `logcat` is the platform's answer, and `adb logcat -s Commune` is how the
+    // output is read back.
+    #[cfg(target_os = "android")]
+    tracing_subscriber::registry()
+        .with(paranoid_android::layer("Commune").with_filter(env_filter))
+        .init();
+    #[cfg(not(target_os = "android"))]
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(env_filter))
         .init();
