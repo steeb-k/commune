@@ -31,6 +31,9 @@ None of them is a thing to try on other people.
 ./testing/local-homeserver.sh notice   # send alice a server notice
 ./testing/local-homeserver.sh limit on # cross the MAU limit, so Synapse pins one
 ./testing/local-homeserver.sh limit off
+./testing/local-homeserver.sh signup token # make signing up ask for a token
+./testing/local-homeserver.sh signup open  # back to nothing to answer
+./testing/local-homeserver.sh signup off   # refuse registration altogether
 ./testing/local-homeserver.sh check    # confirm the server accepts what we send
 ./testing/local-homeserver.sh reports  # show every report that arrived
 ./testing/local-homeserver.sh down     # stop, keep the data
@@ -113,6 +116,30 @@ unpins the notice the next time it looks at the account, so the banner goes a
 beat later rather than at once.
 
 See `server-notices.md` for what the client does with all of it.
+
+## `signup`, and the stages a new account has to pass
+
+`up` leaves registration open and unverified, which is the friendliest thing for
+the rest of the harness and the least interesting thing for testing sign-up: the
+only stage Synapse asks for is `m.login.dummy`, and the authentication dialog
+answers that without drawing anything at all. The whole of what Commune shows
+during registration is therefore invisible on a server in that state.
+
+`signup token` turns on `registration_requires_token` and mints a token through
+the admin API, printing it — good for three accounts, because getting a token
+wrong is one of the things worth watching. That is the stage Commune draws
+itself, and the only way to see it without a public homeserver.
+
+`signup off` refuses registration. Synapse answers `POST /register` with
+`M_FORBIDDEN`, which everywhere else in this app means bad credentials and here
+means the door is shut; the register page says so in its own words, and that
+sentence is what this mode is for.
+
+The terms stage, `m.login.terms`, is deliberately absent. Synapse only asks for
+it when `user_consent` is configured with template files it renders itself,
+which is more homeserver configuration than anything else here needs. Commune
+draws that stage — a check button per policy document, with a link to each — and
+it has never been seen against a real server. `registration.md` says so too.
 
 ## `reports`
 

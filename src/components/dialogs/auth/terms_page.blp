@@ -1,0 +1,101 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $AuthDialogTermsPage: Adw.Bin {
+  child: Gtk.WindowHandle {
+    child: Gtk.Box {
+      orientation: vertical;
+
+      Gtk.ScrolledWindow {
+        propagate-natural-width: true;
+        propagate-natural-height: true;
+        hscrollbar-policy: never;
+
+        styles [
+          "body-scrolled-window",
+          "undershoot-bottom",
+        ]
+
+        child: Gtk.Box {
+          orientation: vertical;
+
+          styles [
+            "message-area",
+            "has-heading",
+            "has-body",
+          ]
+
+          Adw.Bin {
+            styles [
+              "heading-bin",
+            ]
+
+            Gtk.Label {
+              justify: center;
+              xalign: 0.5;
+              label: _("Terms and Conditions");
+
+              styles [
+                "title-2",
+              ]
+            }
+          }
+
+          Gtk.Label {
+            vexpand: true;
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            xalign: 0.5;
+            label: _("This homeserver asks you to agree to these before it will create the account.");
+
+            styles [
+              "body",
+            ]
+          }
+
+          Gtk.ListBox policies {
+            margin-top: 6;
+            margin-start: 24;
+            margin-end: 24;
+            selection-mode: none;
+            accessible-role: group;
+
+            styles [
+              "boxed-list",
+            ]
+          }
+        };
+      }
+
+      Adw.WrapBox {
+        child-spacing: 12;
+        line-spacing: 12;
+        justify: fill;
+        justify-last-line: true;
+
+        styles [
+          "response-area",
+        ]
+
+        Gtk.Button {
+          can-shrink: true;
+          use-underline: true;
+          label: _("_Cancel");
+          action-name: "auth-dialog.close";
+        }
+
+        $LoadingButton confirm_button {
+          sensitive: false;
+          can-shrink: true;
+          content-label: _("_Agree");
+          clicked => $proceed() swapped;
+
+          styles [
+            "suggested-action",
+          ]
+        }
+      }
+    };
+  };
+}

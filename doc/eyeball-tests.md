@@ -172,10 +172,21 @@ Registering on a public server leaves a junk account behind.
 * [ ] **Going back cleans the page.** Leave the register page, come back, and
       the three rows should be empty with no leftover green or amber, and the
       meter at zero.
-* [ ] **The fallback page**, for a stage this client does not draw: a server
-      with a terms requirement or a registration token should show the
-      homeserver's own web page inside the dialog. Untested — the harness has
-      no such stage configured yet.
+* [ ] **The registration token page.** `./testing/local-homeserver.sh signup
+      token` prints a token; the dialog should show a plain entry with
+      _Continue_ insensitive until something is typed. Type the wrong token
+      first: the toast should say "The registration token is invalid" and the
+      entry should come back rather than the dialog closing.
+* [ ] **The terms page**, which has no harness at all — Synapse only asks for
+      `m.login.terms` with a `user_consent` block and its template files. A
+      check button per policy document, each row with an external-link button
+      that opens it, and _Agree_ insensitive until every box is ticked. The
+      most likely things to be wrong here are the row layout (prefix check
+      button, suffix link) and which language of the document is picked.
+* [ ] **The fallback page**, for a stage this client still does not draw — a
+      captcha, or an emailed token: the homeserver's own web page should appear
+      inside the dialog. `matrix.org` asks for a captcha, which is one run
+      through it and no more.
 * [ ] **The OAuth path**, which needs a server with the OAuth 2.0 API: the
       browser should open the server's _sign-up_ form rather than its sign-in
       form, and a server that does not advertise `prompt=create` should say so

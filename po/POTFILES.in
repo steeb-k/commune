@@ -50,6 +50,9 @@ src/components/dialogs/auth/in_browser_page.blp
 src/components/dialogs/auth/mod.blp
 src/components/dialogs/auth/mod.rs
 src/components/dialogs/auth/password_page.blp
+src/components/dialogs/auth/registration_token_page.blp
+src/components/dialogs/auth/terms_page.blp
+src/components/dialogs/auth/terms_page.rs
 src/components/dialogs/message_dialogs.rs
 src/components/dialogs/room_preview.blp
 src/components/dialogs/room_preview.rs
