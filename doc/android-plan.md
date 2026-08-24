@@ -180,36 +180,15 @@ Each spike is a yes/no gate; stop at the first no and record it in `doc/android.
   6. New `build-aux/android/probe-env.sh` in the shape of the macOS and Windows probes, and
      the start of `doc/android.md` with the versions, the manifest used, the wall-clock of the
      GTK build, and what the demos got wrong on the emulator.
-* **S1 — Rust hello-world APK.** **Read `doc/android.md` first.** S0 changed this spike's
-  starting assumptions: stock meson already has `android_exe_type`, libadwaita already
-  carries the guard that uses it, and `meson setup` writes a complete set of
-  `*-uninstalled.pc` files — `gtk4-uninstalled.pc` among them — before ninja runs a single
-  command, which is most of what step 2 below expected to have to discover.
-  The make-or-break spike, in a throwaway repo outside
-  Commune (`~/gtk-android-rust-spike`), so nothing is designed before it is known to link.
-  One to three days.
-  1. A Meson project with `subprojects/` prepared by pixiewood (glib, cairo, harfbuzz,
-     fontconfig, gdk-pixbuf, gtk, libadwaita) and one `executable('spike', 'stub.c',
-     android_exe_type: 'application', link_with: rust_lib, dependencies: [gtk, adw])`.
-     `stub.c` is `int main(int argc, char **argv) { return spike_main(argc, argv); }`.
-  2. `rust_lib` is a `custom_target` running `cargo build --target x86_64-linux-android` on a
-     `staticlib` crate whose `spike_main` opens an `adw::ApplicationWindow` with a button. The
-     order problem from gtk4-rs #1997 is attacked head-on: Meson configures the subprojects
-     first, so their `meson-uninstalled/*.pc` files exist under the build dir; the
-     `custom_target` sets `PKG_CONFIG_PATH`/`PKG_CONFIG_SYSROOT_DIR` at those, plus the NDK
-     `CC`/`AR`/linker vars `cargo-ndk` would set. The `-sys` crates then see the exact GTK the
-     APK ships. If the `.pc` files are not there at that point in the ninja graph, the fallback
-     is `PKG_CONFIG_ALLOW_CROSS=1` with hand-written `.pc` stubs — link flags are all Meson's
-     anyway, since the C stub is what links.
-  3. Known traps to hit deliberately: `-sys` crates' `system-deps` version checks against
-     the subproject's GTK; the two-cargo-runs problem (a `custom_target` is not incremental —
-     acceptable for a spike); `aws-lc-sys` does not exist yet here, `ring` is not needed yet;
-     `libgcc`/`libunwind` symbols on x86_64-android; `main` visibility (`G_MODULE_EXPORT`,
-     `-rdynamic` or a version script).
-  4. Pass: the button toggles a label on the emulator; `adb logcat` shows a `tracing` line
-     through an `android_log` sink; rotation does not crash. Fail after three days: the
-     finding goes to `doc/android.md`, a comment goes on gtk4-rs #1997, and Route B is costed.
-* **S2 — Commune compiles for `x86_64-linux-android`.** `cargo check` only, no APK: add the
+* **S1 — Rust hello-world APK.** **Done, 23 August 2026 — it passed.** The recipe, the traps and
+  the measurements are in `doc/android.md`; the spike itself is at `~/src/gtk-android-rust-spike`
+  in WSL. In short: a `staticlib` crate built by a meson `custom_target`, a three-line C stub
+  providing `main`, and `PKG_CONFIG_LIBDIR` pointed at meson's `meson-uninstalled`. gtk4-rs needed
+  no patches. Route A is no longer blocked on an unknown.
+* **S2 — Commune compiles for `x86_64-linux-android`.** Next. Two things S1 turned up feed
+  straight into it: the metainfo needs the appstream `xmlns` before pixiewood will read it, and
+  the host GLib problem must be solved before libadwaita builds at all (so before S3).
+  Originally: `cargo check` only, no APK: add the
   android cfg arms (entry, logging, data dirs, `UnimplementedSecret` → a temporary file
   secret), gate gtksourceview/shumate behind a feature, take the `aws-lc-rs` → `ring` fallback
   if needed. Measures how much of the 110k lines is actually platform-dirty.
