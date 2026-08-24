@@ -696,6 +696,8 @@
         <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
         presence, and signing up with the password reset that went with it. Their notes are gone
         rather than struck; what they became is in the table above, in the Commune cell of each.
+        <strong>Spaces went from absent to partial on 24 August 2026</strong> and stays here until
+        it is whole: half a feature is still a gap.
       </p>
     </div>
     <div class="notes">
@@ -703,10 +705,14 @@
         <span class="note-tag">7 of 9 peers, 1 partial · Spaces</span>
         <span class="note-head">Spaces</span>
         <p class="note-body">
-          Every client in this table except Commune’s own parent can browse and join a space. Commune recognises
-          <code>RoomCategory::Space</code> and then hides it, so a person organised around spaces
-          opens the app and finds their rooms scattered or missing. Element X, which drops nearly
-          everything to stay fast, still shipped a read-only version rather than none.
+          Every client in this table except Commune’s own parent can browse and join a space.
+          <strong>Half of this landed on 24 August 2026</strong>: a space is no longer invisible —
+          it has its own sidebar section, opening one shows a page rather than an empty timeline,
+          it can be left, and the public directory lists and labels them instead of filtering them
+          out. What is missing is the half the row is named for: <strong>Commune still cannot tell
+          you what is inside a space</strong>, because nothing reads the <code>/hierarchy</code>
+          children or writes <code>m.space.child</code>. Element X, which drops nearly everything
+          to stay fast, shipped read-only browsing and is still ahead here.
           <strong>It is also the blocker under two other rows</strong> — authoring a restricted
           join rule and adding a room to a space both need a space picker first.
         </p>
@@ -948,8 +954,8 @@
     // ---- Rooms
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
-      c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Spaces are recognised, then hidden: RoomCategory::Space maps to no sidebar section.",
+      c: { commune:0.5, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Joined spaces have a sidebar section, a page of their own and can be left; the directory lists them and marks them. What is inside one still cannot be listed — that is the next slice.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },

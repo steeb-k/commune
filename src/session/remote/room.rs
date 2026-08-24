@@ -6,7 +6,7 @@ use ruma::{
     OwnedRoomAliasId, OwnedRoomId,
     api::client::{room::get_summary, space::get_hierarchy},
     assign,
-    room::{JoinRuleSummary, RoomSummary},
+    room::{JoinRuleSummary, RoomSummary, RoomType},
     uint,
 };
 use tracing::{debug, warn};
@@ -65,6 +65,9 @@ mod imp {
         /// Whether we can knock on the room.
         #[property(get)]
         can_knock: Cell<bool>,
+        /// Whether this room is a space.
+        #[property(get)]
+        is_space: Cell<bool>,
         /// The information about this room in the room list.
         #[property(get)]
         room_list_info: RoomListRoomInfo,
@@ -254,6 +257,16 @@ mod imp {
             self.obj().notify_can_knock();
         }
 
+        /// Set whether this room is a space.
+        fn set_is_space(&self, is_space: bool) {
+            if self.is_space.get() == is_space {
+                return;
+            }
+
+            self.is_space.set(is_space);
+            self.obj().notify_is_space();
+        }
+
         /// Set the loading state.
         pub(super) fn set_loading_state(&self, loading_state: LoadingState) {
             if self.loading_state.get() == loading_state {
@@ -278,6 +291,7 @@ mod imp {
             self.set_topic(data.topic.into_clean_string());
             self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
             self.set_join_rule(&data.join_rule);
+            self.set_is_space(matches!(data.room_type, Some(RoomType::Space)));
 
             if let Some(image) = self.obj().avatar_data().image() {
                 image.set_uri_and_info(data.avatar_url, None);

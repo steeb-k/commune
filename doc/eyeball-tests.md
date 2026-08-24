@@ -262,3 +262,124 @@ is everything up to the point where the email would arrive.
       the new password works, and every other session is logged out.
 * [ ] **Going back and returning** empties both halves and starts at the email
       step again.
+
+## Spaces — `doc/spaces.md`
+
+Round 3, slice 1: spaces stop being invisible. Nothing here browses what is
+_inside_ a space — that is slice 2 — so every check below is about a space
+being present, openable, leavable and findable.
+
+### Setting up
+
+Everything except the last group runs against `testing/local-homeserver.sh`,
+which already seeds a public space called **Test Space** (`#test-space:localhost`,
+created by alice). Note it has **no child rooms**: `Restricted Room` and
+`Knock Restricted Room` name the space in their join rule, which is not the
+same as being in it. So an empty space is the case under test here, and that is
+the right case for slice 1.
+
+```sh
+testing/local-homeserver.sh up        # or `reset` for a clean slate
+```
+
+Log in as alice — the greeter now offers matrix.org first, so this means
+_Another Homeserver_ → `localhost:8008`. For the invite check, log in as bob in
+a second run.
+
+### The sidebar
+
+* [ ] **A "Spaces" section appears**, between _Server Notices_ and
+      _Favorites_, holding Test Space. This much was seen on 24 August 2026 on
+      the user's own account — the rest of this list was not.
+* [ ] **It is collapsed on an existing session and expanded on a new one.**
+      Expected, not a fault: the expanded sections are stored as a set of
+      names, and a session saved before this change has no `space` in it.
+      Check both: an account already logged in, and one logged in fresh after
+      `rm -rf ~/.local/share/commune` (or a second account).
+* [ ] **The expander remembers.** Collapse it, quit, start again: still
+      collapsed. This is the `space` string reaching `SessionSettings`, and a
+      typo there fails silently.
+* [ ] **The section disappears when it is empty.** Leave the last space and
+      the header should go with it, the way _Favorites_ does.
+* [ ] **The row carries a grid icon** with a "Space" tooltip on hover.
+* [ ] **The icon did not steal anyone else's.** A direct chat still shows the
+      person icon, a call room the video icon, the server notices room the
+      warning triangle. The space branch was put _ahead_ of all three, so this
+      is the regression to watch.
+* [ ] **A space with unread state does not shout.** A space receives no
+      messages, so its row should carry no unread dot and the section header no
+      count. If a count appears, the aggregation in `SidebarSection` is
+      counting something that is not a message.
+* [ ] **The sidebar room search finds it.** Ctrl+K, type "Test" — the space
+      should be among the results and selecting it should open the space page,
+      not an empty timeline.
+
+### The space page
+
+* [ ] **Selecting the space opens a page with its name**, not an empty room
+      history. This is the visible bug slice 1 exists to fix, so if anything
+      here is wrong, this is the thing to report.
+* [ ] **The header bar** shows the space name as the title and the word
+      "Space" underneath as a subtitle.
+* [ ] **The header bar is the same height as every other page's.** Switch
+      between a room, Explore and the space with the sidebar visible. It was
+      added to the size group by hand and the array's length is a literal.
+* [ ] **The body**: a large avatar, the name in large type, the canonical
+      alias `#test-space:localhost` under it, and the sentence saying the rooms
+      inside cannot be listed yet.
+* [ ] **A space with no topic hides the topic label** rather than leaving a
+      gap — and a space _with_ one shows it. Set one from another client, or
+      check against a space on matrix.org.
+* [ ] **A topic containing a matrix.to link is clickable** and opens that room
+      or user inside the app rather than a browser. Same handler as the invite
+      page; it is wired separately here.
+* [ ] **No dead controls.** There is no _Room Details_, no composer, no member
+      list. If any of the room-history header bar buttons appear on this page,
+      the wrong page is being shown.
+
+### Leaving one, and not re-filing one
+
+* [ ] **Right-click the space row: the menu offers _Leave Room_ and
+      _Report Room_, and nothing else.** No _Favorite_, no _Low Priority_, no
+      _Set as Direct Chat_, no _Mark as Unread_. Those are tags and a space
+      takes none of them.
+* [ ] **_Leave Room_ asks first**, then the row leaves the Spaces section and
+      turns up under _Historical_. Then _Forget_ from there should work as it
+      does for a room.
+* [ ] **Re-joining it** — from Explore, or the alias — puts it back in the
+      Spaces section rather than in _Rooms_.
+* [ ] **Dragging the space row** highlights only _Historical_ as a valid drop
+      target; every other section should go grey. Dropping it there leaves the
+      space, the same as the menu item.
+* [ ] **Dragging an ordinary room over the Spaces section does nothing.** The
+      section must show as disabled and refuse the drop. Rooms are put into
+      spaces with `m.space.child`, which does not exist here yet, and a drop
+      that silently did nothing would be worse than one that refuses.
+
+### Finding one in Explore
+
+* [ ] **Explore lists spaces at all.** Search for "Test" on `localhost` — the
+      space should be in the results next to the ordinary rooms. Before this
+      change the directory was asked to exclude them.
+* [ ] **A space row says "Space"** — a dimmed grid icon and the word, beside
+      the member count. An ordinary room row must **not** show it; that is the
+      half of this check that catches a property left always-true.
+* [ ] **Joining from Explore** works and the room lands in the Spaces section,
+      not in _Rooms_. The button should read _Join_, and _View_ once joined.
+* [ ] **On matrix.org**, where the directory is large: search for a known
+      space (`#space:matrix.org` and similar) and confirm the marker appears
+      there too. The local harness has one space and one shape of summary; a
+      real directory is where a missing `room_type` shows up.
+
+### Invites, and what slice 1 deliberately does not change
+
+* [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
+      invite page. As bob, have alice invite you to Test Space. Accepting it
+      should drop the space into the Spaces section on the next sync; declining
+      should behave like declining a room. The invite page says nothing about
+      it being a space, which is known and recorded in `spaces.md`.
+* [ ] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
+      Historical and the drag-and-drop between them all still work; the
+      _Forget_ target is still at the bottom of the sidebar. The section index
+      map was rewritten by hand and it is exactly the kind of change that
+      moves a section's contents into its neighbour.

@@ -73,6 +73,29 @@ template $PublicRoomRow: Adw.Bin {
           ]
         }
 
+        Gtk.Box space_box {
+          halign: center;
+          spacing: 6;
+
+          Gtk.Image {
+            icon-name: "view-grid-symbolic";
+
+            styles [
+              "dimmed",
+            ]
+          }
+
+          Gtk.Label {
+            // Translators: A space is a collection of rooms, presented as a
+            // folder-like room that other rooms belong to.
+            label: _("Space");
+
+            styles [
+              "dimmed",
+            ]
+          }
+        }
+
         Gtk.Box members_count_box {
           halign: center;
           spacing: 6;
