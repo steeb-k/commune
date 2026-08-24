@@ -701,14 +701,16 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">15 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">17 touch the protocol</span></h2>
       <p class="sec-sub">
 182 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Fifteen additions do touch the protocol,
+        rebrand, which the spec has no opinion about. Seventeen additions do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
-        the thirteen that a module covers follow it, and the other two are in space the standard
-        leaves empty.
+        the fifteen that a module covers follow it, and the other two are in space the standard
+        leaves empty. Two of them — the server access list and the quick reactions — were closed
+        on 22 August and left out of this table until 23 August; the notes further down had them
+        all along, which is how they went unmissed and uncounted at the same time.
       </p>
       <div class="legend">
         <div><span class="chip on">On spec</span> follows the module as written</div>
@@ -762,6 +764,18 @@
             <td class="mod">Server Notices</td>
             <td class="state">The room is now found by its <code>m.server_notice</code> tag rather than ignored, and sits in a section of its own above every ordinary room. The notices that are still <em>active</em> — the pinned ones — raise a banner over the timeline, which is the module's "special UI, and not the normal pinned events interface". The half that matters most is the one that removes something: an <code>m.server_notice</code> msgtype outside that room is now dropped by the timeline filter, as the spec requires, so an ordinary user can no longer put an official-looking warning in a room.</td>
             <td><span class="chip on">On spec</span><span class="chip-note">The invite carries no tag; nothing to be done about that.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Editing which servers can take part</span></td>
+            <td class="mod">Server ACLs</td>
+            <td class="state">Upstream exposed exactly one thing about <code>m.room.server_acl</code>: the power level needed to send one. The event itself was invisible and unreachable. A subpage under room details now shows and edits the allow list, the deny list and <code>allow_ip_literals</code>, and sends them as one event, because one event is what an ACL is — the draft is checked whole before it goes out, since a half-saved ACL would be a live one. The spec's trap is guarded: an empty allow list denies every server, including the one that would have to send the fix, so it cannot be saved. Since 23 August the event also draws a sentence in the timeline, which it never had — <code>show_in_timeline</code>'s state allow-list dropped it, so the editor had been writing an event nobody could see.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">No other client in the field offers an editor for it.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">The quick reactions</span></td>
+            <td class="mod">Recently used emoji</td>
+            <td class="state">The seven buttons in a message's context menu were a constant in the widget. They come from the <code>m.recent_emoji</code> global account data event now, so the list is the one every other client on the account is already keeping, and ruma owns the bookkeeping — incrementing, the recommended truncation at 100, and the two orderings. Sorted by use count rather than recency, so a button does not move out from under somebody who has just learned where it is; a fresh account still looks exactly like the old build, because the old defaults are the tail of the list rather than the whole of it.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">GTK's own emoji chooser keeps its recents in GSettings, out of reach.</span></td>
           </tr>
           <tr>
             <td><span class="feat">Link previews</span></td>
