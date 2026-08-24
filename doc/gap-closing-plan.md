@@ -115,6 +115,12 @@ departures worth knowing:
   with an error. The page says so and the failure is logged at `debug`, not
   `warn`.
 
+Two faults came straight back from looking at it (`43d26d02`): the preview page
+carried no room name, because the dialog's heading is fixed at _Join a Room_ and
+only the details page draws its own; and it opened on the oldest of the twenty
+messages rather than the newest. Both were invisible to every check that is not
+a pair of eyes.
+
 The harness needed one more room: `Readable Room` is `world_readable` but alice
 made it, so she is in it and gets the room rather than a preview.
 `seed_peekable_room()` adds bob's `Peekable Room` behind a marker of its own.
@@ -143,7 +149,7 @@ drift: they go in the feature's own commit.**
 | 5. Spaces, slice 1 | `69002a14`, `1427c68c` | done; only the sidebar section seen |
 | Space children in the harness | `6e4079ab` | done |
 | 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
-| 7. Peeking | (this round) | done, **unseen** |
+| 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
 | 8–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**

@@ -462,6 +462,12 @@ Round 3, item 7. A room whose history is `world_readable` can be read by
 anybody, and Commune now offers that as a **Preview** — in the room preview
 dialog, and on every row of Explore and of a space page.
 
+**Some of this was seen on 24 August 2026**, against a real room on
+`matrix.org` from a `matrix.org` account rather than against the harness. Those
+checks are struck below and say so. Everything unstruck is still unseen — and
+the whole "where the button is _not_" group is, which is the half that catches
+a flag being read wrong.
+
 ### Setting up
 
 `testing/local-homeserver.sh` seeds **Peekable Room** inside `Test Space`: bob's
@@ -498,34 +504,46 @@ existed picks the room up without a reset. Log in as alice.
 ### The preview itself
 
 * [ ] **Pressing _Preview_ shows the two seeded messages**, oldest first, each
-      with a sender name and a timestamp.
-* [ ] **The room's name is on the page**, above the line about nobody seeing
+      with a sender name and a timestamp. Seen on 24 August 2026 on a
+      `matrix.org` room, not against the harness, so this stays open.
+* [x] **The room's name is on the page**, above the line about nobody seeing
       you. The heading above that belongs to the dialog and says _Join a Room_
       on every page, so this is the only thing saying which room you are in.
-* [ ] **A room with more messages than fit opens at the newest**, not the
-      oldest — the same end every other timeline here opens at. The harness
-      cannot show this with two messages; use a busy room on matrix.org.
-* [ ] **The sender is named, not numbered.** It should read bob's display name,
-      not `@bob:localhost` — that fallback is what a room with no lazy-loaded
-      member events gets.
-* [ ] **There are no avatars and no images**, by design. A message with a
-      picture in it shows its fallback text. If an avatar appears, something is
-      fetching media from a room that has not been joined.
-* [ ] **The line above the list says nobody can see you looking.**
+      Missing when first drawn; added in `43d26d02` and reported good on
+      24 August 2026.
+* [x] **A room with more messages than fit opens at the newest**, not the
+      oldest — the same end every other timeline here opens at. Opened at the
+      oldest when first drawn; fixed in `43d26d02` and reported good on
+      24 August 2026. The harness cannot show this with two messages; it was
+      seen on a busy `matrix.org` room.
+* [x] **The sender is named, not numbered.** Seen on 24 August 2026: three
+      distinct display names off the lazy-loaded member events, and one of them
+      used twice with no disambiguation suffix, so the shared-name rule is not
+      firing where it should not.
+* [x] **There are no avatars and no images**, by design. Seen on 24 August
+      2026. A message with a picture in it should show its fallback text; that
+      half was not among the messages on screen and is not confirmed.
+* [x] **The line above the list says nobody can see you looking.** Seen on
+      24 August 2026.
 * [ ] **_Join_ is on the preview page too**, and joining from there works and
-      closes the dialog on the room.
+      closes the dialog on the room. The button was on screen on 24 August
+      2026; it was not pressed, so this stays open.
 * [ ] **Back goes to the details, not out.** From the preview, the back arrow
       should land on the room's details page; from there it goes to the entry
-      page, or closes if the dialog was opened on a room.
-* [ ] **Opening it from a row lands straight on the preview**, with the details
-      one press of Back away.
+      page, or closes if the dialog was opened on a room. The arrow was on
+      screen; it was not pressed.
+* [x] **Opening it from a row lands straight on the preview**, with the details
+      one press of Back away. Seen on 24 August 2026, from an Explore row.
 
 ### When it cannot be read
 
 * [ ] **A room on another homeserver says so.** Try a `world_readable` room on
       matrix.org from the local harness. Expect _Cannot Be Read_: Synapse does
       not peek a room it does not have, and that page exists because this is
-      the common outcome, not a rare one.
+      the common outcome, not a rare one. Note what 24 August 2026 showed: from
+      a `matrix.org` account, a `matrix.org` room is **local** and peeks
+      perfectly. The failure is cross-homeserver, which is narrower than
+      `doc/peeking.md` first put it.
 * [ ] **The message is not an error toast or a spinner that never stops.**
 * [ ] **Pressing _Preview_ again retries.** Go back, press it again — it should
       make the request a second time rather than showing the stale failure.
