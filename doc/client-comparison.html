@@ -1,0 +1,1369 @@
+<title>Commune Among Peers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+  :root {
+    --ground:      #f2f4f5;
+    --surface:     #ffffff;
+    --surface-alt: #e9edee;
+    --line:        #d3dadc;
+    --line-soft:   #e3e8e9;
+    --ink:         #131a1c;
+    --ink-mid:     #4a585c;
+    --ink-soft:    #74848a;
+    --accent:      #0d6f6c;
+    --accent-soft: #d3e8e6;
+    --gone:        #a93a2a;
+    --gone-soft:   #f3ddd8;
+    --part:        #8d6208;
+    --part-soft:   #f2e5c8;
+    --have:        #34694a;
+    --have-soft:   #d9e8de;
+    --meter-off:   #cfd7d9;
+    --off:         #7a4489;
+    --off-soft:    #ecdcf1;
+    --unk:         #8b979b;
+    --unk-soft:    #e6eaeb;
+
+    --f-display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+    --f-body:    "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #10161a;
+      --surface:     #171e22;
+      --surface-alt: #1e262b;
+      --line:        #2c373d;
+      --line-soft:   #232c31;
+      --ink:         #e2e8ea;
+      --ink-mid:     #a3b1b6;
+      --ink-soft:    #7e8f95;
+      --accent:      #52bdb5;
+      --accent-soft: #1c3634;
+      --gone:        #e08573;
+      --gone-soft:   #35211d;
+      --part:        #d8ab48;
+      --part-soft:   #322817;
+      --have:        #79b491;
+      --have-soft:   #1b2b22;
+      --meter-off:   #333e44;
+      --off:         #c99ad8;
+      --off-soft:    #2d2036;
+      --unk:         #7e8f95;
+      --unk-soft:    #232c31;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #10161a;
+    --surface:     #171e22;
+    --surface-alt: #1e262b;
+    --line:        #2c373d;
+    --line-soft:   #232c31;
+    --ink:         #e2e8ea;
+    --ink-mid:     #a3b1b6;
+    --ink-soft:    #7e8f95;
+    --accent:      #52bdb5;
+    --accent-soft: #1c3634;
+    --gone:        #e08573;
+    --gone-soft:   #35211d;
+    --part:        #d8ab48;
+    --part-soft:   #322817;
+    --have:        #79b491;
+    --have-soft:   #1b2b22;
+    --meter-off:   #333e44;
+    --off:         #c99ad8;
+    --off-soft:    #2d2036;
+    --unk:         #7e8f95;
+    --unk-soft:    #232c31;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  a { color: var(--accent); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .eyebrow span:not(:last-child)::after {
+    content: " /";
+    color: var(--ink-soft);
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(2.4rem, 6vw, 3.75rem);
+    line-height: 0.98;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .standfirst {
+    font-size: 1.0625rem;
+    color: var(--ink-mid);
+    max-width: 64ch;
+    margin: 0;
+  }
+  .standfirst code, .sec-sub code, .score-note code, .note-body code {
+    font-family: var(--f-mono);
+    font-size: 0.875em;
+    color: var(--ink);
+  }
+
+  /* ---------- scorecard ---------- */
+
+  .score {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .score-cell {
+    background: var(--surface);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .score-num {
+    font-family: var(--f-display);
+    font-size: 2.75rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-cell.gone .score-num { color: var(--gone); }
+  .score-cell.part .score-num { color: var(--part); }
+  .score-cell.have .score-num { color: var(--have); }
+  .score-cell.offs .score-num { color: var(--off); }
+  .score-label {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .score-note {
+    font-size: 0.8125rem;
+    color: var(--ink-mid);
+    line-height: 1.45;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .sec-head { display: flex; flex-direction: column; gap: 7px; }
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.75rem;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h2 .tick {
+    font-family: var(--f-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  h2 .tick.gone { background: var(--gone-soft); color: var(--gone); }
+  h2 .tick.have { background: var(--have-soft); color: var(--have); }
+  h2 .tick.offs { background: var(--off-soft); color: var(--off); }
+  .sec-sub { color: var(--ink-mid); max-width: 72ch; margin: 0; font-size: 0.9375rem; }
+
+  /* ---------- client strip ---------- */
+
+  .clients {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .client {
+    background: var(--surface);
+    padding: 15px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .client.us { background: var(--accent-soft); }
+  .client-name {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 1.0625rem;
+    line-height: 1.1;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+  .client-key {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+  .client-meta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ink-mid);
+  }
+  .client-meta b { color: var(--ink); font-weight: 500; }
+  .client-good { font-size: 0.8125rem; color: var(--ink-mid); line-height: 1.4; }
+  .client-flag {
+    align-self: flex-start;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: var(--surface-alt);
+    color: var(--ink-mid);
+  }
+  .client-flag.warn { background: var(--part-soft); color: var(--part); }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-mid);
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--ink); }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--ground);
+  }
+  .find {
+    font-family: var(--f-mono);
+    font-size: 12.5px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 2px;
+    min-width: 190px;
+  }
+  .find::placeholder { color: var(--ink-soft); }
+  .count {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-left: auto;
+  }
+
+  /* ---------- legend ---------- */
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-size: 0.8125rem;
+    color: var(--ink-mid);
+  }
+  .legend b {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .swatch.yes { background: var(--have-soft); color: var(--have); }
+  .swatch.partial { background: var(--part-soft); color: var(--part); }
+  .swatch.no { background: var(--gone-soft); color: var(--gone); }
+  .swatch.unknown { background: var(--unk-soft); color: var(--unk); }
+
+  /* ---------- table ---------- */
+
+  .tscroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 0.875rem;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-align: left;
+    padding: 0;
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+  thead th button {
+    all: unset;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 9px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+  }
+  thead th button:hover { color: var(--ink); background: var(--line-soft); }
+  thead th.cl button { text-align: center; }
+  thead th.cl { text-align: center; }
+  thead th.us { background: var(--accent-soft); color: var(--accent); }
+  thead th[aria-sort] button::after {
+    content: " ▾";
+    color: var(--accent);
+  }
+  thead th[aria-sort="ascending"] button::after { content: " ▴"; }
+
+  th.feat, td.feat {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    min-width: 236px;
+    max-width: 300px;
+    white-space: normal;
+  }
+  thead th.feat { z-index: 4; background: var(--surface-alt); }
+
+  tbody tr:nth-child(even) td,
+  tbody tr:nth-child(even) th.feat { background: var(--line-soft); }
+  tbody tr:hover td,
+  tbody tr:hover th.feat { background: var(--accent-soft); }
+
+  tbody th.feat { font-weight: 400; text-align: left; }
+  td, tbody th {
+    padding: 9px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  th.feat { padding: 10px 12px 11px; }
+
+  .fname {
+    font-weight: 600;
+    line-height: 1.3;
+    display: block;
+  }
+  .fnote {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--ink-mid);
+    line-height: 1.4;
+    margin-top: 3px;
+  }
+  .fgroup {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  /* spec tag */
+  td.spec { white-space: nowrap; }
+  .tag {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 6px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .tag.spec { background: var(--accent-soft); color: var(--accent); }
+  .tag.msc, .tag.vendor, .tag.none { background: var(--off-soft); color: var(--off); }
+
+  /* off-spec rows carry a plum edge on the feature cell */
+  tr.offspec th.feat { border-left: 3px solid var(--off); }
+  tr.onspec th.feat { border-left: 3px solid transparent; }
+
+  /* state cells */
+  td.c { text-align: center; padding: 8px 6px; }
+  .cell {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 24px;
+    border-radius: 2px;
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .cell.yes { background: var(--have-soft); color: var(--have); }
+  .cell.partial { background: var(--part-soft); color: var(--part); }
+  .cell.no { background: var(--gone-soft); color: var(--gone); }
+  .cell.unknown { background: var(--unk-soft); color: var(--unk); }
+  .cell.noted { box-shadow: inset 0 -3px 0 currentColor; }
+  td.us-col .cell { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+  /* coverage meter */
+  td.cov { white-space: nowrap; text-align: left; padding-left: 10px; }
+  .meter { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .meter i {
+    display: block;
+    width: 5px;
+    height: 15px;
+    background: var(--meter-off);
+    border-radius: 1px;
+  }
+  .meter i.on { background: var(--have); }
+  .meter i.half { background: linear-gradient(to top, var(--part) 50%, var(--meter-off) 50%); }
+  .covnum {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    color: var(--ink-mid);
+    font-variant-numeric: tabular-nums;
+    margin-left: 7px;
+  }
+  .lag {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--gone);
+    margin-left: 6px;
+  }
+
+  tr.hidden { display: none; }
+  .empty {
+    padding: 26px;
+    color: var(--ink-mid);
+    font-size: 0.9375rem;
+  }
+
+  /* ---------- notes / prose blocks ---------- */
+
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .note {
+    background: var(--surface);
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .note-head {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 1.0625rem;
+    line-height: 1.15;
+  }
+  .note-tag {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .note-body { font-size: 0.875rem; color: var(--ink-mid); line-height: 1.5; }
+  .note-body strong { color: var(--ink); font-weight: 600; }
+
+  .flow { display: flex; flex-direction: column; gap: 14px; }
+  .flow p { margin: 0; color: var(--ink-mid); font-size: 0.9375rem; max-width: 74ch; }
+  .flow p strong { color: var(--ink); }
+
+  .srclist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 0.875rem;
+    color: var(--ink-mid);
+  }
+  .srclist li { padding-left: 16px; position: relative; line-height: 1.45; }
+  .srclist li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--ink-soft);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+
+  @media (max-width: 700px) {
+    .wrap { padding: 40px 16px 72px; gap: 40px; }
+    th.feat, td.feat { min-width: 190px; }
+    .count { margin-left: 0; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Commune 14.1.0</span>
+      <span>main @ 571f2b31</span>
+      <span>10 clients</span>
+      <span>Checked 23 August 2026</span>
+    </div>
+    <h1>What the other clients ship</h1>
+    <p class="standfirst">
+      Commune against nine other Matrix clients, feature by feature. The companion to
+      <a href="https://claude.ai/code/artifact/2ba98ffb-ceec-414a-a304-44030e4a5843">Commune Spec Gaps</a>,
+      which measures the same client against the standard: this one measures it against what people
+      actually have installed. Off-spec features — the ones no version of the Client-Server API
+      requires — carry a plum tag and a plum edge, because most of them are not worth chasing and
+      should be easy to skip past. The column that matters most is <b>Peers</b>: a row where eight
+      other clients ship something and this one doesn't is a stronger argument than any spec section number.
+    </p>
+  </header>
+
+  <div class="score" id="score"></div>
+
+  <section>
+    <div class="sec-head">
+      <h2>The field</h2>
+      <p class="sec-sub">
+        Ten clients, picked to cover the ceiling (Element Web), the deliberately narrow rewrite
+        (Element X), the desktop peers Commune actually sits beside on a Linux machine, two
+        mobile-first apps, and the parent project. Maturity labels are the ones each project
+        claims for itself.
+      </p>
+    </div>
+    <div class="clients" id="clients"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>The matrix <span class="tick offs">plum = off spec</span></h2>
+      <p class="sec-sub">
+        Click any column heading to sort — including a client's own column, which groups that
+        client's gaps together. <b>Peers</b> counts the nine clients other than Commune: a full tick
+        for a yes, a half tick for a partial. Cells with an underline carry a note; hover them.
+        Anything that could not be confirmed from a project's own source, changelog or release notes
+        is marked <b>?</b> rather than guessed.
+      </p>
+    </div>
+
+    <div class="controls">
+      <div class="chips" id="chips" role="group" aria-label="Filter rows"></div>
+      <input class="find" id="find" type="search" placeholder="find a feature…" aria-label="Find a feature">
+      <span class="count" id="count"></span>
+    </div>
+
+    <div class="legend">
+      <b>Cells</b>
+      <span class="lg"><span class="swatch yes">✓</span> ships it</span>
+      <span class="lg"><span class="swatch partial">◐</span> partial</span>
+      <span class="lg"><span class="swatch no">·</span> absent</span>
+      <span class="lg"><span class="swatch unknown">?</span> unverified</span>
+      <b>Spec</b>
+      <span class="lg"><span class="tag spec">Spec</span> a module of the Client-Server API</span>
+      <span class="lg"><span class="tag msc">MSC0000</span> proposal only, not standardised</span>
+      <span class="lg"><span class="tag vendor">Vendor</span> one project's extension</span>
+      <span class="lg"><span class="tag none">Client</span> the spec says nothing either way</span>
+    </div>
+
+    <div class="tscroll">
+      <table id="grid">
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="empty" hidden>Nothing matches that filter.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Everyone but us <span class="tick gone">6 rows</span></h2>
+      <p class="sec-sub">
+        The rows where the field has settled and Commune hasn't. None of these is a judgement
+        call about taste: each is a thing a person moving from any other client expects to find
+        and does not. Ordered by how little room there is to argue.
+      </p>
+    </div>
+    <div class="notes">
+      <div class="note">
+        <span class="note-tag">7 of 9 peers, 1 partial · Spaces</span>
+        <span class="note-head">Spaces</span>
+        <p class="note-body">
+          Every client in this table except Commune’s own parent can browse and join a space. Commune recognises
+          <code>RoomCategory::Space</code> and then hides it, so a person organised around spaces
+          opens the app and finds their rooms scattered or missing. Element X, which drops nearly
+          everything to stay fast, still shipped a read-only version rather than none.
+          <strong>It is also the blocker under two other rows</strong> — authoring a restricted
+          join rule and adding a room to a space both need a space picker first.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">8 of 9 peers · Client-Server API</span>
+        <span class="note-head">Signing up</span>
+        <p class="note-body">
+          Nheko — two maintainers, a C++ client that admits in its own README that most features
+          are missing — has user registration. Commune has login only, so the first thing a new
+          user is told is to go and make the account somewhere else.
+          <strong>The cheapest row here by a distance</strong>, and the only one that costs a user
+          before they have ever seen the timeline.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">8 of 9 peers · m.room.pinned_events</span>
+        <span class="note-head">Pinned messages</span>
+        <p class="note-body">
+          The fork already reads pinned events — but only inside the server notices room, to decide
+          which notice is still active. The generic case — the one every peer but Fractal has — is
+          unbuilt: no pin action, no pinned list, no banner. <strong>The plumbing is there and
+          pointed at one room.</strong>
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">7 of 9 peers · MSC3381 — off spec</span>
+        <span class="note-head">Polls</span>
+        <p class="note-body">
+          The one off-spec row worth reading twice. Polls have never been standardised — eight
+          years of Matrix and they are still a proposal — and yet every client here except Nheko and Fractal
+          ships them, including the conservative KDE one. <strong>A poll sent into a room Commune
+          is in renders as nothing at all.</strong> Skipping it is defensible; not knowing it is
+          missing is not.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">7 of 9 peers · Presence</span>
+        <span class="note-head">Presence</span>
+        <p class="note-body">
+          No online dot, no last-active, nothing published. Most homeservers keep presence switched
+          off, which is the usual defence — but the field disagrees with that defence almost
+          unanimously, and the ones that show it degrade quietly when the server says nothing.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">4 of 9 peers, 2 partial · Threading</span>
+        <span class="note-head">Threads</span>
+        <p class="note-body">
+          The largest job in the table and the one with the least consensus: Element Web, Element
+          Classic, FluffyChat and Nheko have real threads, Element X keeps them behind Labs and
+          calls them incomplete, NeoChat renders a thread's body but names threads a notable
+          exception, SchildiChat Next and Cinny have none. <strong>The only high-value row where
+          being late is still normal.</strong>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Where Commune is ahead <span class="tick have">3 rows</span></h2>
+      <p class="sec-sub">
+        Three rows where at most three peers ship what Commune ships, and enough of the field is
+        confirmed to trust the count. Knocking, the server notices room and OAuth login would
+        qualify too, but too many peers are unverified on those to claim it; in-room search and the
+        full reporting module miss the cut only because the field has caught up.
+      </p>
+    </div>
+    <div class="notes">
+      <div class="note">
+        <span class="note-tag">0 of 9 peers · Server ACLs</span>
+        <span class="note-head">Editing which servers can take part</span>
+        <p class="note-body">
+          <code>m.room.server_acl</code> is in the spec, moderators need it during a raid, and no
+          other client in this table gives you an editor for it. Element will show you the event in
+          its developer tools. <strong>This is the fork's most unusual capability</strong> — and
+          the reason is not that it is hard, it is that everyone else assumed a bot would do it.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">3 of 9 peers, 1 partial · No spec</span>
+        <span class="note-head">Several accounts at once</span>
+        <p class="note-body">
+          Inherited from Fractal, shared outright only with FluffyChat and NeoChat — Nheko manages
+          it from the command line. Element has never done it on any platform, in any generation.
+          The spec has no opinion — this is purely a client decision, and most clients decided
+          against.
+        </p>
+      </div>
+      <div class="note">
+        <span class="note-tag">1 of 9 peers · MSC2545 — off spec</span>
+        <span class="note-head">Sticker and emoji packs you own</span>
+        <p class="note-body">
+          Six of the nine peers can display a pack somebody else made; only Nheko can also author
+          and manage one, and Element routes stickers through an integration manager instead. The
+          fork's first addition, and still an unusual one. <strong>Behind it sit two near
+          misses</strong>: message search inside an encrypted room — a server <code>/search</code>
+          for plaintext rooms and a local index for the rest — which puts Commune level with
+          Element Web and ahead of Element X, which has no in-room search at all; and reporting,
+          where the fork wired up all three endpoints the module defines and most clients wired up
+          one.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>How to read the off-spec rows</h2>
+    </div>
+    <div class="flow">
+      <p>
+        Twelve rows in this table describe things the Client-Server API does not define. They are
+        tagged and edged in plum so they can be skipped, but they are not all the same kind of
+        thing, and the difference decides whether ignoring one is safe.
+      </p>
+      <p>
+        <strong>Proposals everyone implemented anyway.</strong> Polls (MSC3381), voice messages
+        (MSC3245) and custom emoji packs (MSC2545) are unstandardised, universally shipped, and
+        arrive in rooms whether or not this client understands them. Ignoring one of these means
+        rendering someone else's message as a blank or a fallback string.
+      </p>
+      <p>
+        <strong>An architecture, not a feature.</strong> MatrixRTC group calls (MSC4143) and
+        simplified sliding sync (MSC4186) are where Element is taking the protocol next. Both are
+        large, both are moving, and neither is a thing that appears in a room and breaks. These are
+        the safest to leave alone — and the most expensive to adopt late.
+      </p>
+      <p>
+        <strong>One vendor's idea.</strong> Widgets and the integration manager, Jitsi conference
+        calls, and the recent-emoji list are Element inventions of varying age. Two of them are on
+        the way out inside Element itself. <strong>Chasing these is how a client ends up
+        maintaining someone else's deprecations.</strong>
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Method, and what it can't tell you</h2>
+    </div>
+    <div class="flow">
+      <p>
+        The Commune column was read out of this tree, not out of a changelog. The Fractal column is
+        Commune minus what the fork added, cross-checked against the matrix.org ecosystem entry for
+        Fractal, which independently lists spaces, threads, calls and image packs as unsupported.
+      </p>
+      <p>
+        The other eight columns come from each project's own source tree, changelog or release
+        notes wherever a claim could be traced there, and from the matrix.org client directory's
+        per-client feature flags where it could not. Where the two disagreed, the project's own
+        repository won. <strong>Any cell that neither source could settle is marked <b>?</b> — there
+        are 92 of them across 440 cells, and they are honest gaps in this page rather than gaps in
+        those clients.</strong>
+      </p>
+      <p>
+        Two known conflicts are worth naming. The matrix.org directory lists 1:1 calls as
+        unsupported for FluffyChat while FluffyChat's own site advertises them; the app's claim is
+        taken. And NeoChat's README still lists threads and VoIP as its notable exceptions while its
+        source tree carries a thread-body component — hence a partial, not a yes.
+      </p>
+      <ul class="srclist">
+        <li>matrix.org ecosystem client data — <code>content/ecosystem/clients/*.md</code>, read 23 August 2026</li>
+        <li>Nheko <code>CHANGELOG.md</code> and README (Nheko-Reborn/nheko, master)</li>
+        <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
+        <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
+        <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
+        <li>Commune: this tree at <code>571f2b31</code>, plus the ledgers under <code>doc/</code></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>Commune 14.1.0</span>
+    <span>Data current 23 August 2026</span>
+    <span>Companion to Commune Spec Gaps</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CLIENTS = [
+    { k: "commune", n: "Commune", us: true, lang: "Rust / GTK4", plat: "Linux, macOS", by: "this fork", lic: "GPL-3.0", mat: "14.1.0",
+      good: "The client this page is about — a permanent fork of Fractal." },
+    { k: "fractal", n: "Fractal", lang: "Rust / GTK4", plat: "Linux", by: "GNOME World", lic: "GPL-3.0-or-later", mat: "Beta",
+      good: "The parent project. Where a gap appears here, the fork inherited it." },
+    { k: "ew", n: "Element Web", lang: "TypeScript / React", plat: "Web, Linux, macOS, Windows", by: "Element", lic: "AGPL-3.0 / commercial", mat: "Stable",
+      good: "The reference implementation and the practical ceiling for the spec." },
+    { k: "ex", n: "Element X", lang: "Kotlin / Swift + Rust SDK", plat: "Android, iOS", by: "Element", lic: "AGPL-3.0 / commercial", mat: "Stable",
+      good: "The rewrite. Deliberately narrow — its gaps are choices, not backlog." },
+    { k: "ec", n: "Element Classic", lang: "Kotlin / Swift", plat: "Android, iOS", by: "Element", lic: "AGPL-3.0 / commercial", mat: "Maintenance", warn: true,
+      good: "The previous mobile generation. Security fixes only; no new features." },
+    { k: "sc", n: "SchildiChat Next", lang: "Kotlin (Element X fork)", plat: "Android", by: "SpiritCroc", lic: "AGPL-3.0-only", mat: "Beta",
+      good: "Element X plus spaces and tweaks. Inherits Element X's gaps." },
+    { k: "fc", n: "FluffyChat", lang: "Dart / Flutter", plat: "Android, iOS, Web, desktop", by: "Christian Kußowski", lic: "AGPL-3.0-only", mat: "Stable",
+      good: "Mobile-first and feature-broad. A good test of what counts as table stakes." },
+    { k: "nh", n: "Nheko", lang: "C++20 / Qt", plat: "Linux, macOS, Windows", by: "Nheko-Reborn", lic: "GPL-3.0-or-later", mat: "Beta",
+      good: "Two maintainers, native desktop. The closest comparison for effort." },
+    { k: "nc", n: "NeoChat", lang: "C++ / QML, libQuotient", plat: "Linux, Windows, Android", by: "KDE", lic: "GPL-3.0-only", mat: "Beta",
+      good: "The other desktop-environment client. Aims at the whole spec, gets there slowly." },
+    { k: "ci", n: "Cinny", lang: "JavaScript / React", plat: "Web, desktop (Tauri)", by: "Ajay Bura", lic: "AGPL-3.0-only", mat: "Stable",
+      good: "Discord-shaped and popular. Currently mid-rewrite of its SDK." }
+  ];
+
+  var PEERS = CLIENTS.filter(function (c) { return !c.us; });
+
+  // kind: spec | msc | vendor | none
+  var ROWS = [
+    // ---- Messaging
+    { f: "Formatted messages, edits, reactions, replies", g: "Messaging", kind: "spec", tag: "Spec",
+      note: "The floor. Every client here does all four.",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+
+    { f: "Threads", g: "Messaging", kind: "spec", tag: "Threading",
+      note: "Thread list, thread view, per-thread receipts, composer routing.",
+      c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:0, fc:1, nh:1, nc:0.5, ci:0 },
+      cn: { commune:"Threaded messages land in the main timeline as ordinary events; a thread reply is sent as a plain rich reply.",
+            ex:"Behind Labs and described by Element as incomplete.",
+            nc:"A thread's body renders, but the README still names threads a notable exception." } },
+
+    { f: "Polls", g: "Messaging", kind: "msc", tag: "MSC3381",
+      note: "Never standardised; shipped almost everywhere regardless.",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:1, ci:1 },
+      cn: { commune:"m.poll.* is never parsed, so a poll renders as nothing.",
+            nc:"Shipped as an unstable feature." } },
+
+    { f: "Voice messages", g: "Messaging", kind: "msc", tag: "MSC3245",
+      note: "Recording and sending, not just playback.",
+      c: { commune:0.5, fractal:0.5, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:0.5, ci:1 },
+      cn: { commune:"Plays them, with a waveform — there is no recorder in the tree, so none can be sent.",
+            fractal:"Same as Commune: playback only.",
+            nc:"Renders audio; no recorder found in the source tree." } },
+
+    { f: "Location sharing", g: "Messaging", kind: "spec", tag: "Spec",
+      note: "Sending a place, and rendering one that arrives.",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:1, ci:0 },
+      cn: { nc:"Also renders live location." } },
+
+    { f: "Custom emoji and sticker packs", g: "Messaging", kind: "msc", tag: "MSC2545",
+      note: "Sending, displaying and authoring packs.",
+      c: { commune:1, fractal:0, ew:0.5, ex:-1, ec:0.5, sc:0.5, fc:0.5, nh:1, nc:0.5, ci:0.5 },
+      cn: { commune:"Sends, displays and manages packs — the fork's first addition.",
+            ew:"Stickers arrive through an integration manager rather than packs you own.",
+            nh:"Full pack authoring, including deleting packs." } },
+
+    { f: "Pinned messages", g: "Messaging", kind: "spec", tag: "Spec",
+      note: "m.room.pinned_events, in any room.",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Pinned events are read only inside the server notices room, to find the active notice." } },
+
+    { f: "Search the messages of a room", g: "Messaging", kind: "spec", tag: "Search",
+      note: "Including rooms that are encrypted.",
+      c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Server /search for plaintext rooms, a local index for encrypted ones.",
+            ex:"No in-room message search at all — a long-standing open request.",
+            nh:"Entirely local." } },
+
+    { f: "Link previews", g: "Messaging", kind: "spec", tag: "Content repo",
+      note: "The card under a message that has a link.",
+      c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:-1 },
+      cn: { commune:"Stable /media/preview_url only, and never in an encrypted room." } },
+
+    { f: "Read receipts and typing notifications", g: "Messaging", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+
+    // ---- Rooms
+    { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
+      note: "Browsing, joining and organising by space.",
+      c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Spaces are recognised, then hidden: RoomCategory::Space maps to no sidebar section.",
+            ex:"Read-only: view joined spaces, see rooms, accept invitations.",
+            nh:"Shown as a collapsible tree, subspaces included.",
+            sc:"The main reason this fork of Element X exists." } },
+
+    { f: "Peek a public room before joining", g: "Rooms", kind: "spec", tag: "Room previews",
+      note: "Reading the timeline of a world_readable room.",
+      c: { commune:0.5, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
+      cn: { commune:"Name, topic and member count from the summary and hierarchy endpoints — the timeline is never peeked.",
+            ci:"Its join-before-navigate flow." } },
+
+    { f: "Knocking to join a room", g: "Rooms", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:1 },
+      cn: { commune:"Added by the fork, together with the restricted rule editor." } },
+
+    { f: "Restricted join rules", g: "Rooms", kind: "spec", tag: "Restricting membership",
+      note: "A room whose members come from a space.",
+      c: { commune:0.5, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:0.5, nc:-1, ci:0.5 },
+      cn: { commune:"An existing restriction can be edited and knocking toggled over it. Authoring one needs a space picker — see the Spaces row." } },
+
+    { f: "Server ACLs", g: "Rooms", kind: "spec", tag: "Spec",
+      note: "Which servers may take part in a room.",
+      c: { commune:1, fractal:0, ew:0.5, ex:0, ec:0, sc:0, fc:0, nh:-1, nc:-1, ci:0 },
+      cn: { commune:"A full editor, reached from the room details.",
+            ew:"Visible through developer tools; there is no editor." } },
+
+    { f: "Moderation policy lists", g: "Rooms", kind: "spec", tag: "Policy lists",
+      note: "Subscribing to a ban list, or authoring one.",
+      c: { commune:0, fractal:0, ew:0.5, ex:0, ec:0, sc:0, fc:0, nh:-1, nc:-1, ci:0 },
+      cn: { commune:"m.policy.rule.* is never parsed. Ignoring users is manual, one at a time.",
+            ew:"Behind Labs." } },
+
+    { f: "Arbitrary room tags, and tag order", g: "Rooms", kind: "spec", tag: "Room tagging",
+      c: { commune:0.5, fractal:0.5, ew:0.5, ex:0.5, ec:0.5, sc:0.5, fc:0.5, nh:0.5, nc:0.5, ci:0.5 },
+      cn: { commune:"Hard-wired to m.favourite and m.lowpriority; the order field is neither read nor written.",
+            ew:"Favourites and low priority only — the whole field treats tags as two fixed buckets." } },
+
+    { f: "Guest access", g: "Rooms", kind: "spec", tag: "Guest access",
+      note: "Running as a guest, not just toggling the room setting.",
+      c: { commune:0.5, fractal:0.5, ew:0.5, ex:0, ec:0, sc:0, fc:0, nh:0, nc:0, ci:0 },
+      cn: { commune:"A room's guest_access can be set; the client can't run as a guest." } },
+
+    // ---- Calls
+    { f: "One-to-one voice and video calls", g: "Calls", kind: "spec", tag: "VoIP",
+      note: "The Voice over IP module: m.call.*",
+      c: { commune:0.5, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:0, ci:0 },
+      cn: { commune:"Placed, answered and carrying media against Element for Android, across two networks. m.call.negotiate is parsed and ignored.",
+            ex:"Calls are MatrixRTC only — the classic module is not implemented.",
+            fc:"The matrix.org directory still lists this unsupported; FluffyChat's own site advertises it.",
+            nc:"Named in the README as a notable exception." } },
+
+    { f: "Group calls (MatrixRTC)", g: "Calls", kind: "msc", tag: "MSC4143",
+      note: "Where Element is taking real-time next.",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:0, sc:-1, fc:0.5, nh:0, nc:0.5, ci:1 },
+      cn: { commune:"m.rtc.* is not the VoIP module and is not implemented.",
+            ci:"Voice/video rooms, built on the open-sourced Element Call library.",
+            nc:"Shipped as experimental." } },
+
+    { f: "Jitsi conference calls", g: "Calls", kind: "vendor", tag: "Vendor",
+      note: "A widget, and an Element invention on the way out.",
+      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:0, fc:-1, nh:0, nc:-1, ci:0 } },
+
+    { f: "Ringing, and a call in the timeline", g: "Calls", kind: "none", tag: "Client",
+      note: "Sound on an incoming call; a missed call that leaves a trace.",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:0, ci:1 },
+      cn: { commune:"m.call.* is filtered out of the timeline entirely, and an incoming call opens a silent window.",
+            nc:"No calls at all, so nothing to ring for." } },
+
+    // ---- Account
+    { f: "OAuth 2.0 / OIDC login", g: "Account", kind: "spec", tag: "Spec",
+      note: "The next-generation auth API, standardised in v1.15.",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 } },
+
+    { f: "Legacy SSO login", g: "Account", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:0, ec:1, sc:0, fc:1, nh:1, nc:1, ci:1 } },
+
+    { f: "Signing up, and resetting a password", g: "Account", kind: "spec", tag: "Spec",
+      note: "Creating an account without leaving the app.",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Login handles password, SSO and OAuth. There is no sign-up path and no password reset." } },
+
+    { f: "Email and phone on the account", g: "Account", kind: "spec", tag: "Spec",
+      note: "Adding, seeing and removing third-party identifiers.",
+      c: { commune:0, fractal:0, ew:1, ex:-1, ec:1, sc:-1, fc:1, nh:-1, nc:1, ci:1 },
+      cn: { commune:"Account settings defers to “Manage Account” in a browser." } },
+
+    { f: "Invite someone by email", g: "Account", kind: "spec", tag: "Third-party invites",
+      note: "Inviting a person who has not signed up yet.",
+      c: { commune:0, fractal:0, ew:1, ex:-1, ec:1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"The invite page takes Matrix user IDs and nothing else." } },
+
+    { f: "Several accounts at once", g: "Account", kind: "none", tag: "Client",
+      note: "The spec has no opinion; most clients decided against.",
+      c: { commune:1, fractal:1, ew:0, ex:0, ec:0, sc:0, fc:1, nh:0.5, nc:1, ci:0 },
+      cn: { nh:"Separate profiles, from the command line only." } },
+
+    { f: "Signing in a new device by QR code", g: "Account", kind: "msc", tag: "MSC4108",
+      c: { commune:0, fractal:0, ew:1, ex:1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 } },
+
+    // ---- Encryption
+    { f: "End-to-end encryption", g: "Encryption", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { nh:"Mostly stable by its maintainers' own description, and never audited." } },
+
+    { f: "Cross-signing and device verification", g: "Encryption", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+
+    { f: "Key backup and recovery", g: "Encryption", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+
+    { f: "Invisible cryptography", g: "Encryption", kind: "msc", tag: "MSC4153",
+      note: "Verification that stops being something a user has to think about.",
+      c: { commune:-1, fractal:-1, ew:0.5, ex:0.5, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 } },
+
+    // ---- Server
+    { f: "Simplified sliding sync", g: "Server", kind: "msc", tag: "MSC4186",
+      note: "The next-generation sync API.",
+      c: { commune:0, fractal:0, ew:-1, ex:1, ec:0, sc:1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"Nothing in the tree references it; the SDK's classic sync is used.",
+            sc:"Inherited from Element X." } },
+
+    { f: "Reporting a room, a user or an event", g: "Server", kind: "spec", tag: "Reporting content",
+      c: { commune:1, fractal:0.5, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0.5, nc:-1, ci:-1 },
+      cn: { commune:"All three endpoints the module defines, sharing one dialog.",
+            fractal:"Reporting an event only.",
+            nh:"Reporting an event only." } },
+
+    { f: "The server notices room", g: "Server", kind: "spec", tag: "Server notices",
+      note: "Where the homeserver talks to the user.",
+      c: { commune:1, fractal:0, ew:1, ex:-1, ec:1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"Found by its m.server_notice tag, given its own section, and the msgtype is dropped everywhere else." } },
+
+    { f: "Presence", g: "Server", kind: "spec", tag: "Presence",
+      note: "Online dot, last-active, status message.",
+      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Not read, not published, not shown.",
+            nh:"Presence and status messages, when the server has it enabled." } },
+
+    { f: "Ignoring a user", g: "Server", kind: "spec", tag: "Spec",
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+
+    { f: "Notification rules you can edit", g: "Server", kind: "spec", tag: "Push",
+      c: { commune:0.5, fractal:0.5, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Per-room and global toggles; the underlying push rules are not exposed.",
+            ex:"Deliberately simplified." } },
+
+    { f: "Rooms in common with a user", g: "Server", kind: "spec", tag: "Mutual rooms",
+      c: { commune:0, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"GET /_matrix/client/v1/mutual_rooms is never called." } },
+
+    { f: "Policy servers", g: "Server", kind: "spec", tag: "Policy servers",
+      note: "Spam-checked events, standardised in v1.16.",
+      c: { commune:0, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"The m.room.policy state event is neither read nor settable." } },
+
+    { f: "Widgets and the integration manager", g: "Server", kind: "vendor", tag: "Vendor",
+      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:0, fc:-1, nh:0, nc:0, ci:0 } },
+
+    { f: "Recently used emoji", g: "Messaging", kind: "vendor", tag: "Vendor",
+      note: "io.element.recent_emoji in account data.",
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"Added by the fork; it follows Element's account-data key so the list travels." } },
+
+    { f: "OpenID tokens", g: "Server", kind: "spec", tag: "OpenID",
+      note: "Proving your identity to a widget or an integration manager.",
+      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:0, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"Only matters for integrations, and Commune hosts none." } }
+  ];
+
+  var STATE = { "1": "yes", "0.5": "partial", "0": "no", "-1": "unknown" };
+  var GLYPH = { yes: "✓", partial: "◐", no: "·", unknown: "?" };
+  var WORD  = { yes: "ships it", partial: "partial", no: "absent", unknown: "unverified" };
+
+  function stateOf(v) { return STATE[String(v)] || "unknown"; }
+
+  function coverage(row) {
+    var yes = 0, part = 0;
+    PEERS.forEach(function (p) {
+      var s = stateOf(row.c[p.k]);
+      if (s === "yes") yes++;
+      else if (s === "partial") part++;
+    });
+    return { yes: yes, part: part, score: yes + part * 0.5 };
+  }
+
+  ROWS.forEach(function (r, i) {
+    r.i = i;
+    r.cov = coverage(r);
+    var mine = stateOf(r.c.commune);
+    r.known = PEERS.filter(function (p) { return stateOf(r.c[p.k]) !== "unknown"; }).length;
+    r.lacks = (mine === "no" || mine === "partial") && r.cov.yes > 0;
+    r.leads = mine === "yes" && r.cov.yes <= 3 && r.known >= 5;
+    r.offspec = r.kind !== "spec";
+  });
+
+  /* ---------- client strip ---------- */
+
+  var strip = document.getElementById("clients");
+  CLIENTS.forEach(function (c) {
+    var d = document.createElement("div");
+    d.className = "client" + (c.us ? " us" : "");
+    d.innerHTML =
+      '<div class="client-name">' + c.n + ' <span class="client-key">' + c.k + '</span></div>' +
+      '<div class="client-meta"><b>' + c.lang + '</b><br>' + c.plat + '<br>' + c.by + ' · ' + c.lic + '</div>' +
+      '<span class="client-flag' + (c.warn ? " warn" : "") + '">' + c.mat + '</span>' +
+      '<div class="client-good">' + c.good + '</div>';
+    strip.appendChild(d);
+  });
+
+  /* ---------- table head ---------- */
+
+  var head = document.getElementById("head");
+  var COLS = [
+    { id: "f", label: "Feature", cls: "feat" },
+    { id: "g", label: "Group", cls: "grp" },
+    { id: "spec", label: "Spec", cls: "spec" },
+    { id: "cov", label: "Peers", cls: "cov" }
+  ].concat(CLIENTS.map(function (c) {
+    return { id: "c:" + c.k, label: c.n, cls: "cl" + (c.us ? " us" : "") };
+  }));
+
+  COLS.forEach(function (col) {
+    var th = document.createElement("th");
+    th.className = col.cls;
+    th.scope = "col";
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = col.label;
+    b.addEventListener("click", function () { sortBy(col.id); });
+    th.appendChild(b);
+    th.dataset.col = col.id;
+    head.appendChild(th);
+  });
+
+  /* ---------- rendering ---------- */
+
+  var tbody = document.getElementById("body");
+  var countEl = document.getElementById("count");
+  var emptyEl = document.getElementById("empty");
+  var sort = { col: "cov", dir: "desc" };
+  var filter = "all";
+  var query = "";
+
+  function cellHTML(row, key) {
+    var s = stateOf(row.c[key]);
+    var note = row.cn && row.cn[key];
+    var label = WORD[s] + (note ? " — " + note : "");
+    return '<span class="cell ' + s + (note ? " noted" : "") + '" title="' + esc(label) + '" role="img" aria-label="' +
+      esc(label) + '">' + GLYPH[s] + "</span>";
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function meterHTML(row) {
+    var ticks = "";
+    var yes = row.cov.yes, part = row.cov.part;
+    for (var i = 0; i < 9; i++) {
+      if (i < yes) ticks += '<i class="on"></i>';
+      else if (i < yes + part) ticks += '<i class="half"></i>';
+      else ticks += "<i></i>";
+    }
+    var num = row.cov.yes + (row.cov.part ? "+" + row.cov.part : "");
+    var lag = row.lacks && row.cov.score >= 6 ? '<span class="lag">behind</span>' : "";
+    return '<span class="meter" role="img" aria-label="' + row.cov.yes + ' of 9 peers ship it, ' +
+      row.cov.part + ' partial">' + ticks + "</span>" +
+      '<span class="covnum">' + num + "</span>" + lag;
+  }
+
+  function passes(row) {
+    if (filter === "lacks" && !row.lacks) return false;
+    if (filter === "leads" && !row.leads) return false;
+    if (filter === "spec" && row.offspec) return false;
+    if (filter === "off" && !row.offspec) return false;
+    if (query) {
+      var hay = (row.f + " " + row.g + " " + row.tag + " " + (row.note || "")).toLowerCase();
+      if (hay.indexOf(query) === -1) return false;
+    }
+    return true;
+  }
+
+  function rank(v) {
+    var s = stateOf(v);
+    return s === "yes" ? 3 : s === "partial" ? 2 : s === "unknown" ? 1 : 0;
+  }
+
+  function render() {
+    var rows = ROWS.filter(passes);
+
+    rows.sort(function (a, b) {
+      var x, y;
+      if (sort.col === "f") { x = a.f.toLowerCase(); y = b.f.toLowerCase(); }
+      else if (sort.col === "g") { x = a.g; y = b.g; }
+      else if (sort.col === "spec") { x = (a.offspec ? "1" : "0") + a.tag; y = (b.offspec ? "1" : "0") + b.tag; }
+      else if (sort.col === "cov") { x = a.cov.score; y = b.cov.score; }
+      else { var k = sort.col.slice(2); x = rank(a.c[k]); y = rank(b.c[k]); }
+      if (x < y) return sort.dir === "asc" ? -1 : 1;
+      if (x > y) return sort.dir === "asc" ? 1 : -1;
+      return a.i - b.i;
+    });
+
+    tbody.innerHTML = rows.map(function (r) {
+      var cells = CLIENTS.map(function (c) {
+        return '<td class="c' + (c.us ? " us-col" : "") + '">' + cellHTML(r, c.k) + "</td>";
+      }).join("");
+      return '<tr class="' + (r.offspec ? "offspec" : "onspec") + '">' +
+        '<th class="feat" scope="row"><span class="fname">' + esc(r.f) + "</span>" +
+        (r.note ? '<span class="fnote">' + esc(r.note) + "</span>" : "") + "</th>" +
+        '<td class="grp"><span class="fgroup" style="margin:0">' + esc(r.g) + "</span></td>" +
+        '<td class="spec"><span class="tag ' + r.kind + '">' + esc(r.tag) + "</span></td>" +
+        '<td class="cov">' + meterHTML(r) + "</td>" +
+        cells + "</tr>";
+    }).join("");
+
+    emptyEl.hidden = rows.length > 0;
+    countEl.textContent = rows.length + " of " + ROWS.length + " rows";
+
+    Array.prototype.forEach.call(head.children, function (th) {
+      if (th.dataset.col === sort.col) th.setAttribute("aria-sort", sort.dir === "asc" ? "ascending" : "descending");
+      else th.removeAttribute("aria-sort");
+    });
+  }
+
+  function sortBy(col) {
+    if (sort.col === col) sort.dir = sort.dir === "asc" ? "desc" : "asc";
+    else { sort.col = col; sort.dir = (col === "f" || col === "g" || col === "spec") ? "asc" : "desc"; }
+    render();
+  }
+
+  /* ---------- chips ---------- */
+
+  var CHIPS = [
+    { id: "all", label: "All rows" },
+    { id: "lacks", label: "Commune is behind" },
+    { id: "leads", label: "Commune is ahead" },
+    { id: "spec", label: "On spec only" },
+    { id: "off", label: "Off spec only" }
+  ];
+  var chipBox = document.getElementById("chips");
+  CHIPS.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = c.label;
+    b.setAttribute("aria-pressed", String(c.id === "all"));
+    b.addEventListener("click", function () {
+      filter = c.id;
+      Array.prototype.forEach.call(chipBox.children, function (o) {
+        o.setAttribute("aria-pressed", String(o === b));
+      });
+      render();
+    });
+    chipBox.appendChild(b);
+  });
+
+  document.getElementById("find").addEventListener("input", function (e) {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  /* ---------- scorecard ---------- */
+
+  var behind = ROWS.filter(function (r) { return r.lacks && r.cov.score >= 6; }).length;
+  var unanimous = ROWS.filter(function (r) {
+    return r.lacks && PEERS.every(function (p) {
+      return p.k === "fractal" || stateOf(r.c[p.k]) === "yes";
+    });
+  }).length;
+  var ahead = ROWS.filter(function (r) { return r.leads; }).length;
+  var off = ROWS.filter(function (r) { return r.offspec; }).length;
+
+  var SCORE = [
+    { n: behind, cls: "gone", label: "Rows Commune is behind on",
+      note: "Six or more of the nine peers ship it and Commune does not, or does it partly." },
+    { n: unanimous, cls: "gone", label: "Where the field is unanimous",
+      note: "Every peer but Fractal ships it outright — Commune's own parent shares these two gaps." },
+    { n: ahead, cls: "have", label: "Rows Commune leads",
+      note: "Three or fewer peers ship it, and the row is well enough attested to say so." },
+    { n: off, cls: "offs", label: "Off-spec rows",
+      note: "Tagged and edged in plum. Filter them out with the chips below the field." }
+  ];
+  var scoreBox = document.getElementById("score");
+  SCORE.forEach(function (s) {
+    var d = document.createElement("div");
+    d.className = "score-cell " + s.cls;
+    d.innerHTML = '<span class="score-num">' + s.n + "</span>" +
+      '<span class="score-label">' + s.label + "</span>" +
+      '<span class="score-note">' + s.note + "</span>";
+    scoreBox.appendChild(d);
+  });
+
+  render();
+})();
+</script>
