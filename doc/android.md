@@ -149,6 +149,39 @@ cp -n ~/src/gtk/subprojects/packagecache/*.tar.* ~/src/gtk/subprojects/packageca
 
 When builds are eventually made repeatable, one shared cache directory is worth arranging.
 
+### The host's GLib tools are too old for the GLib being built
+
+Cross-compiling needs two GLibs: the target one, built from the `main` wrap, and the *build
+machine's* code generators — `glib-mkenums`, `glib-genmarshal`, `glib-compile-resources` — which
+meson takes from the host. On Ubuntu 24.04 those are GLib **2.80**, while the wrap builds 2.89.
+That gap is not academic: it stopped a build dead.
+
+libadwaita `main` failed to compile with
+
+```text
+../../src/adw-tab-view.c:2617:25: error: use of undeclared identifier 'ADW_TYPE_TAB_VIEW_SHORTCUTS'
+```
+
+which reads like an Android problem and is not one. `adw-tab-view.h` is the only libadwaita header
+that writes `} G_GNUC_FLAG_ENUM AdwTabViewShortcuts;`, and GLib 2.80's `glib-mkenums` does not know
+that macro, so it silently skipped the type: the generated `adw-enums.h` held 25 `ADW_TYPE_`
+entries and not one of the `TAB_VIEW` ones. A missing symbol at the end of a long build, with the
+real fault three steps upstream and no warning anywhere.
+
+The fix costs nothing, because `glib-mkenums` is an architecture-independent Python script and the
+newer GLib is already checked out as a subproject:
+
+```sh
+sed -e 's|@PYTHON@|/usr/bin/python3|' -e 's|@VERSION@|2.89.0|' \
+    subprojects/glib/gobject/glib-mkenums.in > ~/bin/glib-mkenums
+chmod +x ~/bin/glib-mkenums
+PATH="$HOME/bin:$PATH"    # before meson re-detects it, so the build dir must be reconfigured
+```
+
+Worth knowing before S3: Commune's own build runs `glib-compile-resources` and
+`glib-compile-schemas` from the host too. If any of them turn out to be too old, this is the shape
+of the fix — take the tool from the subproject, not from the distribution.
+
 ## What S0 measured
 
 gtk4-demo from GTK `main`, on the `seed_api35` AVD (API 35, x86_64), 23 August 2026:
