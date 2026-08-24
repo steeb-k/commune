@@ -196,10 +196,21 @@ recorded here.
 
 ## Known gaps
 
-* **The soft keyboard does not hide.** Once shown it stays, through `ESC`, through the search
-  being dismissed, and through rotation — where it covers most of a landscape screen. Only the
-  system's own dismiss chevron or BACK puts it away. For a chat app, whose composer takes focus
-  constantly, this needs a proper look before Route A is committed to.
+* **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
+  search bar being dismissed, and through rotation — where it covers most of a landscape screen.
+  Only the system's own dismiss chevron or BACK put it away.
+
+  This is _not_ a missing mechanism, which was the first guess and was wrong. The path is complete
+  end to end: `gtk_im_context_android_focus_out` (`gtk/gtkimcontextandroid.c:469`) →
+  `gtk_im_context_android_update_ime_keyboard` (`:357`) → the cached JNI method
+  `setImeKeyboardState` → `ToplevelActivity.java:154`, which calls
+  `WindowInsetsController.hide(WindowInsets.Type.ime())`. So either gtk4-demo never dropped
+  keyboard focus, or the `hide` was overridden by the `requestFocus()` the show path performs on
+  the same view.
+
+  Which of those it is was not chased down: gtk4-demo's search bar is a poor proxy for a chat
+  composer. **Retest in S3 with a real `AdwEntryRow`/`GtkTextView`** before drawing any conclusion.
+  Record the answer here — for a chat app this is the single most load-bearing input behaviour.
 * The IME comes up unbidden on launch.
 * 136 MB debug APK, unmeasured stripped size.
 * No Rust story (S1).
