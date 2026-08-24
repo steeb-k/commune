@@ -938,6 +938,7 @@ $PW prepare --sdk $HOME/android/sdk --toolchain $HOME/android/sdk/ndk/27.2.12479
     build-aux/android/io.github.steeb_k.Commune.xml
 $PW generate
 sh build-aux/android/patch-manifest.sh      # between generate and build, always
+sh build-aux/android/patch-gtk-ime.sh       # likewise; see "The IME" below
 $PW build
 ```
 
@@ -1100,6 +1101,68 @@ Measured on the emulator with a round trip that was removed before committing:
 57 is the arithmetic working out: 1 version byte, 1 IV length, the 12-byte GCM IV, 27 of plaintext
 and the 16-byte GCM tag.
 
+### The IME, and why no keyboard appeared
+
+Tapping a text field produced no keyboard. `adb shell input text` had made this look like it
+worked, and it does not: that injects key events and bypasses the IME entirely, so it proves the
+widget accepts text and nothing about the path a person uses.
+
+There were two unrelated causes, and separating them mattered because only one of them is ours.
+
+#### GTK tells the IME the field is not a text field
+
+`EditorInfo` arrived as `inputType=0, inputTypeString=NULL` — `InputType.TYPE_NULL`, which means
+"this connection does not take composed text, send hard key events instead". Gboard honours that by
+drawing nothing. `ImeTracker` still reports `onShown`, and `dumpsys input_method` still says
+`mInputShown=true`, so everything claims to be working and the screen stays empty.
+
+The cause is in GTK, not here — `ToplevelActivity.onCreateInputConnection`:
+
+```java
+//outAttrs.inputType = GlibContext.blockForMain(() -> activeImContext.getInputType());
+outAttrs.inputType = InputType.TYPE_NULL;
+```
+
+The real implementation is commented out immediately above the hardcoded value. Everything behind
+it is finished: `ImContext.java` declares `public native int getInputType()`,
+`gtk/gtkimcontextandroid.c` implements it as `_gtk_im_context_android_get_input_type` — mapping
+every `GtkInputPurpose` onto the matching Android constants, password and PIN included — and
+registers it in `im_context_natives[]`. Only the call site is disabled.
+
+`build-aux/android/patch-gtk-ime.sh` restores it, next to `patch-manifest.sh` and for the same
+reason: pixiewood copies the glue's Java into the Gradle project on every `generate`. With the line
+back, `EditorInfo` becomes `inputType=1, inputTypeString=Normal` with autocorrect and learning on,
+and Gboard attaches. The script refuses to run rather than silently doing nothing if the text it
+expects has changed, so a GTK update that fixes this upstream is noticed rather than papered over.
+
+Confirmed GTK-wide, not ours: gtk4-demo produces exactly the same `inputType=0` on the same device.
+That also retires S0's note that the demo's keyboard worked — it does not, on current GTK.
+
+#### The emulator is in physical-keyboard mode
+
+With the above fixed, Gboard attaches but draws a collapsed floating strip — backspace, enter,
+emoji, and a handle — rather than a keyboard. Its menu gives it away: **"Show on-screen keyboard —
+Alt K"**, which is Gboard's _physical keyboard_ toolbar. `dumpsys input` shows a device with
+`KeyboardType: 2` (alphabetic), so Android believes a hardware keyboard is attached and Gboard
+collapses accordingly. Tapping that entry gives the full QWERTY.
+
+**This is not GTK's doing and not Commune's.** The stock Android Settings app, on the same
+emulator, shows the identical floating strip. It is the emulator presenting an alphabetic keyboard
+device, and it affects every application on the device.
+
+`settings put secure show_ime_with_hard_keyboard 1` does not help; it was already `1`.
+
+Two consequences worth knowing before testing input by hand:
+
+* A **host keyboard does not type into this AVD** — `hw.keyboard=no` in `config.ini` means host
+  keystrokes are never delivered to the guest, while a virtual alphabetic device still exists to
+  confuse Gboard. Setting `hw.keyboard=yes` makes physical typing work; the floating toolbar stays,
+  which is then the correct behaviour rather than a bug.
+* Otherwise, reach the keyboard through the handle → **Show on-screen keyboard**.
+
+Neither is evidence about a real phone, which has no keyboard device and should get a normal
+keyboard from the `inputType` fix alone. That remains untested.
+
 ### What has not been exercised
 
 Running the app answers some of what S3 left open and not others.
@@ -1136,6 +1199,11 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
   Which of those it is was not chased down: gtk4-demo's search bar is a poor proxy for a chat
   composer. **Retest in S3 with a real `AdwEntryRow`/`GtkTextView`** before drawing any conclusion.
   Record the answer here — for a chat app this is the single most load-bearing input behaviour.
+
+  **Superseded.** Retesting in S3 found something else entirely underneath: GTK told the IME the
+  field was not a text field at all, so on current GTK there was no keyboard to hide. See
+  [The IME, and why no keyboard appeared](#the-ime-and-why-no-keyboard-appeared). Whether the
+  hiding behaviour is still wrong once a keyboard exists has not been retested.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
 * ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
