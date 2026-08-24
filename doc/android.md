@@ -53,7 +53,7 @@ sudo apt-get install -y \
   libglib-perl libglib-object-introspection-perl libipc-run-perl libjson-perl \
   libset-scalar-perl libxml-libxml-perl libxml-libxslt-perl gir1.2-appstream-1.0 \
   openjdk-17-jdk-headless build-essential glslc gobject-introspection \
-  libglib2.0-dev-bin libxml2-utils ninja-build sassc python3-pip pipx git unzip curl
+  libglib2.0-dev-bin libxml2-utils ninja-build sassc gettext python3-pip pipx git unzip curl
 pipx install meson           # >= 1.9; Ubuntu's 1.3.2 is too old
 
 # Linux SDK, separate from the Windows one
@@ -208,7 +208,26 @@ permission looks like a broken homeserver.
 **librsvg 2.40.22** — the last pre-Rust release, carrying a hand-written meson build. So pixiewood
 sidesteps Rust rather than solving it, and S1 remains genuinely unexplored territory.
 
-**6. Every wrap tracks a moving target.** `glib`, `gtk`, `libadwaita`, `cairo`, `harfbuzz` and
+**6. The pkg-config half of the Rust problem looks solvable.** gtk4-rs issue #1997 says the
+blocker is that Android wants one ninja pass over app and dependencies, which pkg-config-driven
+`-sys` crates cannot join. But `meson setup` writes **48 `*-uninstalled.pc` files** into
+`.pixiewood/bin-x86_64/meson-uninstalled/`, `gtk4-uninstalled.pc` (4.23.3) among them, with `-L`
+and `-I` pointing into the build tree. Their timestamps put them at 19:39:04, with `build.ninja`
+at 19:39:10 and the first real compile at 19:39:56 — that is, **the whole pkg-config view of the
+dependency tree exists before ninja runs a single command.**
+
+So a `custom_target` that runs `cargo build --target x86_64-linux-android` during the ninja phase
+can be handed `PKG_CONFIG_PATH=<builddir>/meson-uninstalled` (with `PKG_CONFIG_LIBDIR` cleared so
+the host's own `.pc` files cannot leak in, and `PKG_CONFIG_ALLOW_CROSS=1`) and see exactly the GTK
+the APK will ship.
+
+This is encouraging, not settled. Two things are still unproven: the target must be ordered after
+the `libgtk-4.so` link steps, since the `.pc` files name libraries ninja has not built yet
+(`depends:` in meson expresses that); and `system-deps`, which gtk4-sys uses, does its own
+cross-compilation and version handling that has not been exercised here. S1 should start from this
+rather than from the issue's pessimism.
+
+**7. Every wrap tracks a moving target.** `glib`, `gtk`, `libadwaita`, `cairo`, `harfbuzz` and
 `fontconfig` are all `revision = main` (or `master`) at `depth = 1`. Two builds a week apart are
 not the same build. When anything is packaged for a hand-out, the revisions have to be pinned and
 recorded here.
