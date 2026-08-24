@@ -8,7 +8,7 @@
 # these cannot be hand-edited once and forgotten, and they are not settings the
 # pixiewood manifest can express.
 #
-# Two changes, for two unrelated reasons.
+# Three changes, for three unrelated reasons.
 #
 # `launchMode`, which pixiewood hardcodes to `standard`
 # (`generate/manifest.xsl:32`). GTK has a single toplevel, and Android stacks a
@@ -26,6 +26,13 @@
 # anything that can run `adb backup`. It stays off even once the Keystore
 # replaces that file: a Keystore key cannot leave the device, so a backup that
 # carried the databases without it would only restore something unreadable.
+#
+# An `intent-filter` for `io.github.steeb-k.commune:`, which pixiewood has no
+# way to express at all. This is the redirect URI OAuth 2.0 and Matrix SSO
+# login use on Android instead of the loopback address other platforms use —
+# see `src/login/local_server.rs` and `doc/android.md`. Without it, the
+# `Intent` the browser sends back after authentication has nothing registered
+# to receive it and Android drops it.
 set -eu
 
 MANIFEST=${1:-.pixiewood/android/app/src/main/AndroidManifest.xml}
@@ -54,13 +61,42 @@ perl -MXML::LibXML -e '
     $activity->setAttributeNS($android, "android:launchMode", "singleTask");
     $application->setAttributeNS($android, "android:allowBackup", "false");
 
+    my $scheme = "io.github.steeb-k.commune";
+    my ($existing) = $xpc->findnodes(
+        qq(//activity/intent-filter/data[\@android:scheme="$scheme"])
+    );
+    if (!$existing) {
+        my $filter = $doc->createElement("intent-filter");
+
+        my $action = $doc->createElement("action");
+        $action->setAttributeNS($android, "android:name", "android.intent.action.VIEW");
+        $filter->appendChild($action);
+
+        for my $category ("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE") {
+            my $node = $doc->createElement("category");
+            $node->setAttributeNS($android, "android:name", $category);
+            $filter->appendChild($node);
+        }
+
+        my $data = $doc->createElement("data");
+        $data->setAttributeNS($android, "android:scheme", $scheme);
+        $filter->appendChild($data);
+
+        $activity->appendChild($filter);
+    }
+
     $doc->toFile($path, 1);
 
-    printf "patched %s: launchMode=singleTask, allowBackup=false\n", $path;
+    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter\n", $path, $scheme;
 ' "$MANIFEST"
 
-# Say so if either did not take, rather than letting a silent no-op through.
-for expected in 'android:launchMode="singleTask"' 'android:allowBackup="false"'; do
+# Say so if any of the three did not take, rather than letting a silent no-op
+# through.
+for expected in \
+    'android:launchMode="singleTask"' \
+    'android:allowBackup="false"' \
+    'android:scheme="io.github.steeb-k.commune"'
+do
     if ! grep -q "$expected" "$MANIFEST"; then
         printf 'expected %s in %s after patching\n' "$expected" "$MANIFEST" >&2
         exit 1
