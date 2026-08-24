@@ -76,7 +76,7 @@ Windows notification backend after all, which changes what M5 is.
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
 | `matrix:` URLs | Works cold and warm; the installer writes the registry key |
-| Notifications | Nothing of ours yet — M5. GLib's own backend cannot carry actions |
+| Notifications | Banners arrive, `src/utils/windows_app_id.rs`. Clicking one does nothing yet |
 
 ## The GTK environment
 
@@ -425,10 +425,22 @@ still has to claim it, and ours never does.
 
 There is a working precedent on this machine, in a sibling project by the same author:
 `~/irohdp/crates/ipn-gui/src/notify.rs`. Nullgate **is** in that registry key, and it does two
-things Commune does not — `SetCurrentProcessExplicitAppUserModelID(APP_ID)` from `shell32`, and an
+things Commune did not — `SetCurrentProcessExplicitAppUserModelID(APP_ID)` from `shell32`, and an
 `HKCU\Software\Classes\AppUserModelId\{APP_ID}` key carrying the `DisplayName` that Windows shows
 in its notification settings. It then sends toasts through `tauri-winrt-notification` rather than
-GLib, using `on_activated` for the click. Read it before writing M5.
+GLib, using `on_activated` for the click.
+
+**Commune now does the first two**, in `src/utils/windows_app_id.rs`, called from `main()` before
+anything can try to notify. With them, a test notification registers
+`io.github.steeb_k.Commune.Devel` as a notification sender — which Windows writes only once a
+toast has been delivered. So banners arrive, and they arrive from the `.zip` as much as from the
+installer, since the process claims the ID itself and does not need a shortcut to have declared
+it.
+
+What is left of M5 is the click. GLib drops the action, so the remaining work is to send through
+`tauri-winrt-notification` instead, carrying the intent in the toast's launch arguments and
+parsing it back against the action's own type — the single-representation rule the macOS port
+established.
 
 ## What differs from Linux
 
@@ -485,9 +497,10 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
-* **M5**: notifications. Not the blank slate the plan assumed — GLib has a Windows backend, it
-  just cannot carry actions, which is the half Commune needs. Start by finding out what it does
-  do.
+* **M5**: the click. Banners now arrive; GLib drops the action that would open the room, so
+  sending has to move to `tauri-winrt-notification`. Nobody has yet confirmed with their own eyes
+  that a banner is on screen — the evidence is the registry key Windows writes when it delivers
+  one, which is strong but is not a photograph.
 * **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.
 
 Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
