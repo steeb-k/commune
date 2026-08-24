@@ -18,6 +18,9 @@ use tokio::{task::AbortHandle, time::sleep};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 
+// Calls are WebRTC over GStreamer, which is not cross-built for Android; see
+// `doc/android.md`.
+#[cfg(not(target_os = "android"))]
 mod calls;
 mod global_account_data;
 mod ignored_users;
@@ -33,9 +36,11 @@ mod user;
 mod user_sessions_list;
 mod verification;
 
+#[cfg(not(target_os = "android"))]
+pub(crate) use self::calls::*;
 pub(crate) use self::{
-    calls::*, global_account_data::*, ignored_users::*, image_packs::*, notifications::*,
-    remote::*, room::*, room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
+    global_account_data::*, ignored_users::*, image_packs::*, notifications::*, remote::*, room::*,
+    room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
     user_sessions_list::*, verification::*,
 };
 use crate::{
@@ -116,6 +121,7 @@ mod imp {
         #[property(get)]
         ignored_users: IgnoredUsers,
         /// The calls of this session.
+        #[cfg(not(target_os = "android"))]
         #[property(get = Self::calls_owned)]
         calls: OnceCell<Calls>,
         /// The list of sessions for this session's user.
@@ -384,11 +390,13 @@ mod imp {
         }
 
         /// The calls of this session.
+        #[cfg(not(target_os = "android"))]
         pub(super) fn calls(&self) -> &Calls {
             self.calls.get_or_init(|| Calls::new(&self.obj()))
         }
 
         /// The owned calls of this session.
+        #[cfg(not(target_os = "android"))]
         fn calls_owned(&self) -> Calls {
             self.calls().clone()
         }
@@ -422,6 +430,7 @@ mod imp {
 
             self.room_list().load().await;
             self.verification_list().init();
+            #[cfg(not(target_os = "android"))]
             self.calls().init();
             self.security.set_session(Some(&*self.obj()));
 

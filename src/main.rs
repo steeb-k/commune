@@ -100,6 +100,9 @@ fn main() {
     #[cfg(target_os = "macos")]
     utils::macos_text_scale::init();
 
+    // GStreamer is not cross-built for Android yet, so there is nothing to
+    // initialize there. See `doc/android.md`.
+    #[cfg(not(target_os = "android"))]
     gst::init().expect("Could not initialize gst");
 
     #[cfg(target_os = "linux")]

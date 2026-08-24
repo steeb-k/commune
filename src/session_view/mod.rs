@@ -3,6 +3,9 @@ use gtk::{gdk, glib, glib::clone};
 use ruma::{OwnedEventId, OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
+// The call view is WebRTC over GStreamer, absent on Android; see
+// `doc/android.md`.
+#[cfg(not(target_os = "android"))]
 mod call_view;
 mod content;
 mod create_direct_chat_dialog;
@@ -15,8 +18,10 @@ mod room_details;
 mod room_history;
 mod sidebar;
 
+#[cfg(not(target_os = "android"))]
+use self::call_view::CallView;
 use self::{
-    call_view::CallView, content::Content, create_direct_chat_dialog::CreateDirectChatDialog,
+    content::Content, create_direct_chat_dialog::CreateDirectChatDialog,
     create_room_dialog::CreateRoomDialog, explore::Explore, invite::Invite,
     invite_request::InviteRequest, media_viewer::MediaViewer, room_details::RoomDetails,
     room_history::RoomHistory, sidebar::Sidebar,
@@ -24,17 +29,21 @@ use self::{
 use crate::{
     Window,
     components::{RoomPreviewDialog, UserProfileDialog},
-    intent::{CallAction, CallActionKind, SessionIntent},
+    intent::SessionIntent,
     prelude::*,
     session::{
         IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
     },
-    spawn,
     utils::{
         key_bindings,
         matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
     },
+};
+#[cfg(not(target_os = "android"))]
+use crate::{
+    intent::{CallAction, CallActionKind},
+    spawn,
 };
 
 mod imp {
@@ -65,6 +74,7 @@ mod imp {
         session: glib::WeakRef<Session>,
         window_active_handler_id: RefCell<Option<glib::SignalHandlerId>>,
         /// The window of the call that is happening, if it is still open.
+        #[cfg(not(target_os = "android"))]
         call_view: RefCell<Option<CallView>>,
     }
 
@@ -295,6 +305,7 @@ mod imp {
 
             self.session.set(session);
 
+            #[cfg(not(target_os = "android"))]
             if let Some(session) = session {
                 self.watch_calls(session);
             }
@@ -308,6 +319,7 @@ mod imp {
         /// call outlives whichever room the person happens to be looking at and
         /// a window is the thing their compositor already knows how to keep on
         /// top, move to another workspace, or put away.
+        #[cfg(not(target_os = "android"))]
         fn watch_calls(&self, session: &Session) {
             let calls = session.calls();
 
@@ -329,6 +341,7 @@ mod imp {
         }
 
         /// Show the call window, making one if there is not one already.
+        #[cfg(not(target_os = "android"))]
         fn present_call_view(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
@@ -655,9 +668,14 @@ mod imp {
                 SessionIntent::ShowIdentityVerification(key) => {
                     self.select_identity_verification_by_id(&key);
                 }
+                // Android never shows a call notification, so no button on one can
+                // be pressed and there is nothing to act on. See `doc/android.md`.
+                #[cfg(not(target_os = "android"))]
                 SessionIntent::CallAction(action) => {
                     self.handle_call_action(&action);
                 }
+                #[cfg(target_os = "android")]
+                SessionIntent::CallAction(_) => {}
             }
         }
 
@@ -666,6 +684,7 @@ mod imp {
         /// The call ID is checked rather than trusted: a notification outlives
         /// the call it is about, and answering "the call that is happening"
         /// would answer whichever one is happening now.
+        #[cfg(not(target_os = "android"))]
         fn handle_call_action(&self, action: &CallAction) {
             let Some(session) = self.session.upgrade() else {
                 return;

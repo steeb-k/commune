@@ -2,12 +2,15 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
+#[cfg(not(target_os = "android"))]
 use tracing::warn;
 
 use super::ContentFormat;
+#[cfg(not(target_os = "android"))]
+use crate::components::VideoPlayer;
 use crate::{
     Window,
-    components::{AnimatedImagePaintable, VideoPlayer},
+    components::AnimatedImagePaintable,
     gettext_f,
     session::Room,
     spawn,
@@ -718,6 +721,21 @@ mod imp {
         }
 
         /// Build the content for the video in the given media message.
+        ///
+        /// Playing a video needs `GStreamer`, which is not cross-built for
+        /// Android, so the row shows the error indicator it already uses for a
+        /// video it could not load. See `doc/android.md`.
+        #[cfg(target_os = "android")]
+        #[allow(
+            clippy::unused_async,
+            reason = "the signature has to match the one the caller awaits"
+        )]
+        async fn build_video(&self, _media_message: VisualMediaMessage) {
+            self.set_error(&gettext("Videos are not supported on this platform"));
+        }
+
+        /// Build the content for the video in the given media message.
+        #[cfg(not(target_os = "android"))]
         async fn build_video(&self, media_message: VisualMediaMessage) {
             let Some(client) = self
                 .room
@@ -774,6 +792,7 @@ mod imp {
         }
 
         /// Handle when the state of the video changed.
+        #[cfg(not(target_os = "android"))]
         fn video_state_changed(&self, player: &VideoPlayer) {
             match player.state() {
                 LoadingState::Initial | LoadingState::Loading => {

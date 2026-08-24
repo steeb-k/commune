@@ -2,7 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, gio, glib, glib::clone};
 use matrix_sdk_ui::timeline::TimelineEventItemId;
 
-use super::{CallRow, EventActionsGroup, MessageRow, RoomHistory, StateRow};
+#[cfg(not(target_os = "android"))]
+use super::CallRow;
+use super::{EventActionsGroup, MessageRow, RoomHistory, StateRow};
 use crate::{
     components::ContextMenuBin,
     prelude::*,
@@ -292,10 +294,17 @@ mod imp {
         fn build_event_widget(&self, event: Event) {
             let obj = self.obj();
 
+            // A call event gets a row of its own only where calls exist. On Android
+            // it falls through to the message row, which reports it as unsupported
+            // like any other content it cannot present. See `doc/android.md`.
+            #[cfg(not(target_os = "android"))]
             if event.is_call_event() {
                 let child = obj.child_or_default::<CallRow>();
                 child.set_event(event);
-            } else if event.is_state_event() {
+                return;
+            }
+
+            if event.is_state_event() {
                 let child = obj.child_or_default::<StateRow>();
                 child.set_event(event);
             } else {
