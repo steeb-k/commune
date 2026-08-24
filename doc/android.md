@@ -769,13 +769,83 @@ Two further consequences, both easy to get wrong:
 * Anything Commune writes via `glib::user_data_dir()` lands on **external** storage. That needs
   checking against the placeholder secret store before S3 logs in — see the gap below.
 
+### The C libraries, one at a time
+
+`doc/android-plan.md` decided to gate gtksourceview and libshumate out together and get an APK
+without either. Looking at what each actually needs, that turns out to be the wrong shape: their
+costs are nothing alike, and one of them is load-bearing.
+
+| Library | What it needs | Already cross-built? | Decision |
+| --- | --- | --- | --- |
+| **gtksourceview-5** | glib, gobject, gio, gtk4, libxml2, fribidi, libpcre2-8; fontconfig and pangoft2 optional | **all of them**, as pixiewood subprojects | **wrap it** |
+| **shumate-1.0** | + `libsoup-3.0`, `json-glib-1.0`, `libprotobuf-c`, `sqlite3` | none of those four | gate it |
+| libwebp | — | n/a: `libwebp-sys` depends on `cc`, so it compiles libwebp itself | drop the meson assertion on Android |
+| sqlite3 | a system library | no `.pc`, but the NDK sysroot ships `libsqlite3.so` | expect `-lsqlite3` to resolve; verify at link time |
+
+The decisive argument is not build cost, it is what gating would cost. **The message composer's
+text entry is a `sourceview::View` with a `sourceview::Buffer`**
+(`message_toolbar/mod.rs:112`, `composer_state.rs:50,61`), using a markdown language spec and an
+Adwaita style scheme. Gating GtkSourceView out means replacing the composer's widget and buffer,
+which is precisely the thing S3 exists to exercise — "send a message" is the test. libshumate, by
+contrast, is one file (`components/media/location_viewer.rs`) plus the location message row.
+
+So GtkSourceView is cross-built, and it was measured rather than hoped for:
+
+| Test | Result |
+| --- | --- |
+| Resolves as a pixiewood subproject from a `.wrap` | yes — `Dependency gtksourceview-5 ... found: YES 5.21.1 (overridden)` |
+| Cross-compiles for `x86_64-linux-android` | yes, **unpatched**, 1115 build targets |
+| Links | yes — `libgtksourceview-5.so`, 2362 ninja steps |
+| Patches or source changes needed | none; five `-Dgtksourceview:*` options |
+
+`subprojects/gtksourceview.wrap` carries it. On every platform other than Android the fallback is
+switched off with `allow_fallback: host_machine.system() == 'android'`, so a Linux contributor
+missing the development package still gets a plain "not found" instead of meson quietly cloning
+GtkSourceView and building it from source for twenty minutes.
+
+Three traps found on the way, none of them about GtkSourceView itself:
+
+* **Its default branch is `master`, not `main`.** libshumate's _is_ `main`. A wrap naming the wrong
+  one fails with `Remote branch main not found in upstream origin`, reported by meson only as
+  `Git command failed`.
+* **meson refuses a `PATH`-discovered pkg-config for a cross build**, saying `Pkg-config binary
+  missing from cross or native file, or env var undefined` and then `Default target is not allowed
+  for cross use`. It has to be named in a cross file's `[binaries]` or in `PKG_CONFIG`. pixiewood's
+  cross files name no `pkgconfig` at all, which is consistent: everything it builds is a subproject,
+  so meson never needs pkg-config. Only cargo does, which is why S1 pointed `PKG_CONFIG_LIBDIR` at
+  `meson-uninstalled` for cargo and not for meson.
+* **Building a library standalone against `meson-uninstalled` does not work**, and it is a dead end
+  worth not repeating. Configure gets as far as `glib-2.0 found: YES 2.89.4` and then dies on
+  `tool variable 'glib_genmarshal' contains erroneous value` — the uninstalled `.pc` advertises code
+  generators at build-tree paths that were never generated there. Inside pixiewood the question does
+  not arise, because a subproject receives GLib as a meson dependency object carrying real targets.
+  Test wraps the way they will be used: as subprojects.
+
 ### Still to do in S3
 
-Untouched so far, and all of it still ahead: the `staticlib` entry point and C stub applied to
-Commune's own `meson.build` (`src/meson.build` currently declares a `cargo-build` target that
-produces and copies a _binary_), the runtime paths above, the metainfo `xmlns`, the
-`launchMode="singleTask"` patch, gtksourceview and libshumate either cross-built or gated for real
-rather than stubbed, and then password login against `testing/local-homeserver.sh`.
+Done so far: the build host, the metainfo `xmlns`, and GtkSourceView cross-built from a wrap.
+
+Still ahead:
+
+* **The `staticlib` entry point and C stub** applied to Commune's own build. `src/meson.build`
+  declares a `cargo-build` target that produces and copies a _binary_; on Android it has to produce
+  a static library that meson links into an `android_exe_type: 'application'` executable together
+  with a stub exporting `main`. This is S1's recipe, which has never been applied to Commune.
+* **GStreamer, which is a harder gate than the plan assumed.** `gst` and its seven siblings are
+  plain entries in `[dependencies]`, not behind any `cfg`, so Commune does not merely lose voice
+  messages and calls without GStreamer — it does not link at all. Ten files touch it
+  (`components/media/{gst_media_stream,video_player,video_player_renderer}.rs`,
+  `session/calls/{pipeline,ringtone}.rs`, `utils/media/{audio,video,mod}.rs`, `main.rs`,
+  `utils/app_bundle.rs`). There is already a `#[cfg(target_os = "macos")]` arm on
+  `gst_media_stream` to extend.
+* **libshumate gated**, which means the location message row and `MediaContentViewer`'s location
+  branch need a path that does not construct a `LocationViewer`.
+* **The runtime paths**, using `XDG_DATA_DIRS` and GLib's accessors rather than the environment.
+* **The `launchMode="singleTask"` patch**, which must survive `pixiewood generate` regenerating
+  `AndroidManifest.xml`.
+* **A pixiewood manifest for Commune**, carrying the `-Dgtksourceview:*` options and the
+  architecture whitelist.
+* Then password login against `testing/local-homeserver.sh`.
 
 ## Known gaps
 
