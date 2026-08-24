@@ -10,13 +10,16 @@
 //! anything that is not this application's UID. A file copied off a rooted
 //! phone is ciphertext, and the key is not in the copy.
 //!
-//! **The application sandbox.** The files sit under `Context.getFilesDir()`,
-//! owned by this application's UID. That is what
-//! [`DataType::Persistent`] resolves to on Android, though only because
-//! `crate::utils` was made to derive it: GTK's glue points `GLib`'s
-//! `XDG_DATA_HOME` at `Context.getExternalFilesDir(null)`, which is external
-//! storage, and using it would put these files somewhere USB and
-//! `MANAGE_EXTERNAL_STORAGE` can reach.
+//! **The application sandbox.** The files sit under
+//! `Context.getNoBackupFilesDir()`, owned by this application's UID. That is
+//! what [`DataType::Persistent`] resolves to on Android, though only because
+//! `crate::utils` was made to derive it, and it took two corrections to get
+//! there. GTK's glue points `GLib`'s `XDG_DATA_HOME` at
+//! `Context.getExternalFilesDir(null)`, which is external storage and would put
+//! these files somewhere USB and `MANAGE_EXTERNAL_STORAGE` can reach; and
+//! `getFilesDir()`, the obvious replacement and the one used until now, is the
+//! directory GTK's glue empties whenever the APK's assets have changed — which
+//! is every build. See `utils::DataType::base_dir_path`.
 //!
 //! **`allowBackup` being off.** pixiewood leaves Android's default of `true`,
 //! which would let `adb backup` and the system's cloud backup carry the files
