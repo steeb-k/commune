@@ -201,7 +201,7 @@ audioconvert audioresample audiorate audioparsers volume level
 videoconvertscale videorate videoparsersbad deinterlace
 wasapi2 gtk4 mediafoundation d3d12 opengl
 isomp4 matroska ogg wavparse subparse
-opus opusparse vorbis mpg123 vpx png jpeg alaw mulaw
+opus opusparse vorbis flac mpg123 vpx png jpeg alaw mulaw
 codecalpha codectimestamper id3demux apetag icydemux soup
 webrtc nice srtp dtls rtp rtpmanager
 "
