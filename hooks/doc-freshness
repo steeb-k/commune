@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# Warn when the documentation is falling behind the code.
+#
+# Two things drift, and neither is visible to the compiler, clippy, the tests
+# or checks-bin:
+#
+#   * A change to `src/` that lands with no change to `doc/`. Every feature in
+#     this fork has a ledger, `doc/eyeball-tests.md` lists what has never been
+#     looked at, and the three HTML pages are the only record of where the fork
+#     stands. A commit that moves any of that and says nothing makes all of them
+#     quietly wrong.
+#
+#   * The `main @ <hash>` in the two HTML mastheads, and the commit count in
+#     `upstream-defects.html`. These name **the newest commit that touched
+#     `src/`** — not HEAD, because a documentation commit cannot name its own
+#     hash and chasing HEAD guarantees the pages are always one behind.
+#
+# This warns and never blocks: some changes to `src/` genuinely need no
+# documentation, and only a person can tell which. It is called from
+# `hooks/pre-commit.hook`, and can be run on its own at any time:
+#
+#     hooks/doc-freshness            # check the committed state
+#     hooks/doc-freshness --staged   # also check what is about to be committed
+
+set -uo pipefail
+
+FORK_POINT=1e5c1cab
+
+act="\e[1;33m"
+pos="\e[32m"
+res="\e[0m"
+
+cd -- "$(git rev-parse --show-toplevel)" || exit 0
+
+warned=0
+warn() {
+  printf "${act}!!${res} %b\n" "$*" >&2
+  warned=1
+}
+
+# ---- the staged half -------------------------------------------------------
+
+if [[ "${1:-}" == "--staged" ]]; then
+  staged=$(git diff --cached --name-only)
+
+  if grep -q '^src/' <<< "$staged" && ! grep -q '^doc/' <<< "$staged"; then
+    warn "This commit changes src/ and no documentation."
+    printf "   Every feature has a ledger under doc/; anything that draws also\n" >&2
+    printf "   belongs in doc/eyeball-tests.md, and a row moving in any of the\n" >&2
+    printf "   three HTML pages goes in this commit, not later.\n" >&2
+    printf "   If none of that applies, carry on — this never blocks.\n" >&2
+  fi
+fi
+
+# ---- the recorded state ----------------------------------------------------
+
+last_src=$(git log -1 --format=%h --abbrev=8 -- src/)
+
+if [[ -n "$last_src" ]]; then
+  count=$(git rev-list --count "$FORK_POINT..$last_src")
+
+  for page in doc/client-comparison.html doc/spec-gaps.html; do
+    [[ -f "$page" ]] || continue
+    recorded=$(grep -o 'main @ [0-9a-f]\{7,\}' "$page" | head -1 | awk '{print $3}')
+
+    if [[ -n "$recorded" && "$recorded" != "$last_src" ]]; then
+      warn "$page says 'main @ $recorded'; the newest src/ commit is $last_src."
+    fi
+  done
+
+  page=doc/upstream-defects.html
+  if [[ -f "$page" ]]; then
+    recorded=$(grep -o 'plus [0-9]\+ commits' "$page" | head -1 | awk '{print $2}')
+
+    if [[ -n "$recorded" && "$recorded" != "$count" ]]; then
+      warn "$page says 'plus $recorded commits'; there are $count up to $last_src."
+    fi
+  fi
+fi
+
+if [[ $warned -eq 0 ]]; then
+  printf "${pos}Documentation is level with the code.${res}\n"
+fi
+
+# Never block a commit over this.
+exit 0
