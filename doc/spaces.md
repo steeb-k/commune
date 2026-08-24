@@ -5,10 +5,11 @@ This file is the ledger for the Spaces module (`m.space`, and the
 behind it, and what to check when rebasing onto a new Fractal release. See
 `fork.md` for why none of this goes upstream.
 
-**All three slices have landed.** The module is still graded `◐` on
-`spec-gaps.html` and that is deliberate: `m.space.parent` is written and never
-read, and a room that has been put into a space cannot be taken out of one from
-here. See _Not done_.
+**The module is finished.** Every event it defines is read and written: a
+space can be made, found, opened, browsed, joined and left; a room can be put
+into one, taken back out, and asked which spaces hold it. What is left under
+_Not done_ is a list of things the specification calls optional and one
+interface decision, each with the reason it was left.
 
 ## Scope of slice 1 — stop hiding them
 
@@ -129,7 +130,8 @@ Three things in it are decisions rather than mechanics:
   not in this space at all.
 * **The space's own chunk is skipped, but read first.** The first room in the
   response is the space itself, and its `children_state` is the only place in
-  the response that carries the `via` servers from each `m.space.child` event.
+  the response that carries the `via` servers — and the `suggested` flag — from
+  each `m.space.child` event.
   Without them a room on another homeserver is unjoinable, so the events are
   read into a map before the rows that need them are built. The space's chunk
   only appears in the first batch, which is why the map is a field and not a
@@ -236,6 +238,61 @@ space**, because the rule is state in the room being restricted. Offering a
 space that would refuse the write is the kind of thing that produces a toast
 instead of an answer.
 
+## Which spaces a room is in
+
+`parent_spaces` (`src/session/room/spaces.rs`) answers it, and the two
+directions are not equally trustworthy — the specification is explicit about
+this and so is the code:
+
+* **A space naming a room as its child settles it.** For every joined space,
+  ask that space for its `m.space.child` under this room's ID. A child with no
+  `via`, or an empty one, is not a child; that is how the relationship is
+  undone.
+* **A room naming a space as its parent does not settle anything on its own.**
+  Anybody can write `m.space.parent` into a room they are in and claim to
+  belong to anywhere. It counts only when whoever wrote it could also have
+  written the child event in that space, which is checked against that space's
+  power levels.
+
+Only **joined** spaces can be listed at all: the state of a space nobody here
+is in is not ours to read, so a room can genuinely be inside a space this never
+mentions. That is a property of the protocol, not a gap.
+
+It is asked once when the details page appears, and again after this page adds
+or removes something. A space that gains or loses the room from another client
+shows up the next time the details are opened — the alternative is watching the
+state of every joined space for one page that is usually closed.
+
+## Taking a room back out
+
+There is no "delete a state event" in Matrix. A relationship is undone by
+writing the event again with nothing in it: `m.space.child` with no `via` is
+not a child. Redacting the event would also work and leaves a hole in the
+space's timeline instead; writing `{}` is what other clients do and what
+`is_valid` reads.
+
+The same asymmetry as adding: the child is the half that matters and the parent
+is best effort. A room whose administrators are somebody else keeps its stale
+`m.space.parent`, and nothing will believe it, because the space no longer
+names it as a child — which is precisely the check above.
+
+## Making one
+
+`CreateRoomDialog` grew a _Kind_ choice at the top. A space is
+`creation_content: {"type": "m.space"}` and nothing else is required, but two
+things come with it:
+
+* **The encryption switch is hidden.** A space has no timeline anybody reads,
+  so encrypting it protects nothing and would only stop its name and topic
+  reaching the people it is for.
+* **`events_default` is raised to 100**, with `m.space.child`, the name, the
+  topic and the avatar dropped to 50. A room where nobody raised the bar is a
+  room anybody can post to, and a space's timeline is never drawn — so a
+  message sent into one is a message nobody will ever see. The state events
+  that make it a space should not be writable by everyone who joins either.
+  The specification does not ask for this; every other client does it, and a
+  space without it behaves like a room with a hidden timeline.
+
 ## Explore stops filtering them out
 
 `ExploreSearchData::as_request` sent `room_types: vec![RoomTypeFilter::Default]`.
@@ -271,8 +328,9 @@ the answer.
 | `data/resources/stylesheet/_session_view.scss` | Slice 2: `.space-children` |
 | `src/components/dialogs/space_picker.rs`, `.blp` | Slice 3: the picker |
 | `src/session/sidebar_data/section/mod.rs`, `sidebar_data/mod.rs` | Slice 3: exporting `RoomCategoryFilter` |
-| `src/session/room/spaces.rs` | Slice 3: `m.space.child` and `m.space.parent` |
-| `src/session_view/room_details/general_page.rs`, `.blp` | Slice 3: the _Spaces_ group |
+| `src/session/room/spaces.rs` | `m.space.child` and `m.space.parent`: written, removed and read back |
+| `src/session_view/room_details/general_page.rs`, `.blp` | The _Spaces_ group: which spaces hold this room, and adding or removing |
+| `src/session_view/create_room_dialog.rs`, `.blp` | Making a space |
 
 ## Rebase guide
 
@@ -297,9 +355,18 @@ the answer.
 7. `SpaceChildren` skips the first room in the `/hierarchy` response by
    comparing room IDs, not by position. If a server ever omits the space's own
    chunk the list still works; it just loses the `via` servers with it.
-8. `add_room_to_space` treats a failed `m.space.parent` as a warning. If a
-   merge makes it an error, adding a room to a space stops working for anybody
-   who is not also an administrator of the room.
+8. `add_room_to_space` and `remove_room_from_space` treat a failed
+   `m.space.parent` as a warning. If a merge makes it an error, putting a room
+   into a space stops working for anybody who is not also an administrator of
+   the room.
+9. `parent_spaces` asks every joined space one question each. That is a state
+   store read rather than a request, so it is cheap, but it is linear in the
+   number of spaces and it runs on the tokio pool. If upstream ever exposes a
+   reverse index, use it.
+10. Creating a space overrides the power levels. If upstream adds its own
+    space creation, take theirs and check it does the same — a space where
+    `events_default` is 0 is a room with an invisible timeline anybody can
+    write into.
 
 ## Not done
 
@@ -314,23 +381,26 @@ the answer.
   not appear, because `m.space.child` is a state event in a room whose timeline
   is not being watched. Reopening the space asks again — and so does _Try
   Again_ after a failure.
-* **`m.space.parent` is written and never read.** A room does not say which
-  spaces it is in anywhere in this client; the only way to see the
-  relationship is to open the space and look at its list. That is the main
-  reason the module is still graded partial.
-* **A room cannot be taken out of a space.** Removing means redacting the
-  `m.space.child`, or writing it with no `via`, and there is nowhere to ask
-  for it: the space page's rows are `PublicRoomRow`, shared with Explore,
-  where such a control would make no sense.
-* **A space cannot be created.** Room creation does not offer
-  `creation_content: {"type": "m.space"}`, so every space this client shows
-  was made somewhere else.
+* **Nesting deeper than one level, again.** A subspace is a row that opens its
+  own page. The specification says nothing about how deep a client draws;
+  this is the one interface decision on the list, and it needs
+  `GtkTreeListModel` and a `GtkTreeExpander` row type, neither of which exists
+  in the tree.
+* **`suggested` is read and not written**, and `order` is neither. Both are
+  annotations the specification marks optional: `suggested` says a space
+  recommends a room, and the badge for it is drawn; `order` decides the
+  sequence of a space's children, and the server already applies it —
+  `/hierarchy` returns children ordered by `order`, then timestamp, then room
+  ID, and the listing takes that order as given. Offering to _set_ either
+  needs a per-child control on a row shared with Explore, where it would make
+  no sense. Neither is a protocol obligation.
 * **The picker replaces a whole allow list.** A room restricted to several
   spaces keeps all of them until somebody picks a space, and then keeps one.
   Expressing "these three and not that one" needs a multi-select picker, and
   nothing has asked for it.
-* **`image-packs.md` Phase 8 is unblocked now** — space pack inheritance was
-  waiting on nothing but a way to know a room is in a space.
+* **`image-packs.md` Phase 8 is unblocked** — space pack inheritance was
+  waiting on nothing but a way to know a room is in a space, and
+  `parent_spaces` is that.
 * **Space invites are ordinary invites.** An invite to a space gets
   `RoomCategory::Invited` and the ordinary `Invite` page, which says nothing
   about it being a space. Correct as far as it goes — accepting it lands the

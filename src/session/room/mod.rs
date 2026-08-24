@@ -59,7 +59,7 @@ pub(crate) use self::{
     member_list::*,
     permissions::*,
     search::{RoomSearch, RoomSearchResult},
-    spaces::add_room_to_space,
+    spaces::{add_room_to_space, parent_spaces, remove_room_from_space},
     timeline::*,
     typing_list::TypingList,
 };

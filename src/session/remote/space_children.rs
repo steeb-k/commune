@@ -26,7 +26,10 @@ const BATCH_SIZE: u32 = 20;
 const MAX_BATCHES: usize = 10;
 
 mod imp {
-    use std::cell::{Cell, OnceCell, RefCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        collections::HashSet,
+    };
 
     use super::*;
 
@@ -45,6 +48,8 @@ mod imp {
         /// The servers to try for each room, from the space's `m.space.child`
         /// events.
         via: RefCell<HashMap<OwnedRoomId, Vec<OwnedServerName>>>,
+        /// The rooms the space suggests, from the same events.
+        suggested: RefCell<HashSet<OwnedRoomId>>,
         /// Whether the listing stopped before the end of the space.
         #[property(get)]
         is_truncated: Cell<bool>,
@@ -129,6 +134,7 @@ mod imp {
             self.list().remove_all();
             self.next_batch.take();
             self.via.borrow_mut().clear();
+            self.suggested.borrow_mut().clear();
             self.set_is_truncated(false);
             self.set_loading_state(LoadingState::Loading);
 
@@ -208,7 +214,7 @@ mod imp {
                     // The first room is the space itself. It is not inside
                     // itself, but its `m.space.child` events are the only place
                     // that says which servers to try for the rooms that are.
-                    self.remember_via(chunk.children_state);
+                    self.remember_children_state(chunk.children_state);
                     continue;
                 }
 
@@ -224,25 +230,32 @@ mod imp {
                     .cloned()
                     .unwrap_or_default();
 
-                new_rooms.push(RemoteRoom::with_data(
-                    session,
-                    MatrixRoomIdUri { id, via },
-                    summary,
-                ));
+                let is_suggested = self.suggested.borrow().contains(&summary.room_id);
+
+                let child = RemoteRoom::with_data(session, MatrixRoomIdUri { id, via }, summary);
+                child.set_is_suggested(is_suggested);
+
+                new_rooms.push(child);
             }
 
             self.list().extend_from_slice(&new_rooms);
         }
 
-        /// Remember the servers named by the given `m.space.child` events.
-        fn remember_via(&self, children_state: Vec<Raw<HierarchySpaceChildEvent>>) {
+        /// Remember what the given `m.space.child` events say about the rooms
+        /// they point at.
+        fn remember_children_state(&self, children_state: Vec<Raw<HierarchySpaceChildEvent>>) {
             let mut via = self.via.borrow_mut();
+            let mut suggested = self.suggested.borrow_mut();
 
             for raw_event in children_state {
                 let Ok(event) = raw_event.deserialize() else {
                     warn!("Could not deserialize `m.space.child` event");
                     continue;
                 };
+
+                if event.content.suggested {
+                    suggested.insert(event.state_key.clone());
+                }
 
                 via.insert(event.state_key, event.content.via);
             }

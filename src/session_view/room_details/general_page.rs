@@ -32,7 +32,7 @@ use crate::{
     prelude::*,
     session::{
         HistoryVisibilityValue, Member, MemberList, MembershipListKind, NotificationsRoomSetting,
-        Room, RoomCategory, add_room_to_space,
+        Room, RoomCategory, add_room_to_space, parent_spaces, remove_room_from_space,
     },
     spawn, spawn_tokio, toast,
     utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
@@ -93,7 +93,13 @@ mod imp {
         #[template_child]
         publish: TemplateChild<SwitchLoadingRow>,
         #[template_child]
+        spaces_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
         add_to_space_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        spaces_loading_row: TemplateChild<adw::ActionRow>,
+        /// The rows naming the spaces this room is in.
+        parent_space_rows: RefCell<Vec<adw::ActionRow>>,
         #[template_child]
         history_visibility: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -373,6 +379,7 @@ mod imp {
             self.update_history_visibility();
             self.update_encryption();
             self.update_upgrade_button();
+            self.update_parent_spaces();
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
@@ -906,6 +913,138 @@ mod imp {
             row.set_is_loading(false);
         }
 
+        /// List the spaces this room is in, again.
+        ///
+        /// Reading it means asking every joined space whether it names this
+        /// room, so it is done once when the page appears and again after this
+        /// page changes something. A space that gains or loses the room
+        /// elsewhere shows up the next time the details are opened.
+        fn update_parent_spaces(&self) {
+            let Some(room) = self.room.obj() else { return };
+
+            for row in self.parent_space_rows.take() {
+                self.spaces_group.remove(&row);
+            }
+            self.spaces_loading_row.set_visible(true);
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let spaces = parent_spaces(&room).await;
+
+                    if imp.room.obj().as_ref() != Some(&room) {
+                        // The page is showing a different room now.
+                        return;
+                    }
+
+                    imp.spaces_loading_row.set_visible(false);
+
+                    let rows = spaces
+                        .into_iter()
+                        .map(|space| imp.build_parent_space_row(&space))
+                        .collect::<Vec<_>>();
+
+                    for row in &rows {
+                        // Keep the row that adds one at the bottom.
+                        imp.spaces_group.remove(&*imp.add_to_space_row);
+                        imp.spaces_group.add(row);
+                        imp.spaces_group.add(&*imp.add_to_space_row);
+                    }
+
+                    imp.parent_space_rows.replace(rows);
+                }
+            ));
+        }
+
+        /// Build the row naming one of the spaces this room is in.
+        fn build_parent_space_row(&self, space: &Room) -> adw::ActionRow {
+            let row = adw::ActionRow::builder()
+                .selectable(false)
+                .title(space.display_name())
+                .build();
+
+            let avatar = Avatar::new();
+            avatar.set_size(24);
+            avatar.set_data(Some(space.avatar_data()));
+            row.add_prefix(&avatar);
+
+            let button = LoadingButton::new();
+            button.set_content_label(gettext("Remove"));
+            button.set_valign(gtk::Align::Center);
+            button.add_css_class("flat");
+            button.update_property(&[gtk::accessible::Property::Description(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "Remove this room from {space}",
+                &[("space", &space.display_name())],
+            ))]);
+
+            // Taking a room out of a space is a state event in the space, the
+            // same permission putting it in needed.
+            button.set_sensitive(
+                space
+                    .permissions()
+                    .is_allowed_to(PowerLevelAction::SendState(StateEventType::SpaceChild)),
+            );
+
+            button.connect_clicked(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[weak]
+                space,
+                move |button| {
+                    let button = button.clone();
+
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        #[weak]
+                        space,
+                        async move {
+                            imp.remove_from_space(&space, &button).await;
+                        }
+                    ));
+                }
+            ));
+
+            row.add_suffix(&button);
+            row
+        }
+
+        /// Take this room back out of the given space.
+        async fn remove_from_space(&self, space: &Room, button: &LoadingButton) {
+            let Some(room) = self.room.obj() else { return };
+
+            button.set_is_loading(true);
+
+            let result = remove_room_from_space(&room, space).await;
+
+            button.set_is_loading(false);
+
+            let obj = self.obj();
+            let space_name = space.display_name();
+
+            if result.is_ok() {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Removed from {space}"),
+                    space = space_name,
+                );
+                self.update_parent_spaces();
+            } else {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Could not remove this room from {space}"),
+                    space = space_name,
+                );
+            }
+        }
+
         /// Put this room inside one of the spaces this account is in.
         #[template_callback]
         async fn add_to_space(&self) {
@@ -945,6 +1084,7 @@ mod imp {
                     gettext("Added to {space}"),
                     space = space_name,
                 );
+                self.update_parent_spaces();
             } else {
                 toast!(
                     obj,

@@ -11,7 +11,12 @@ use matrix_sdk::{
         assign,
     },
 };
-use ruma::events::{InitialStateEvent, room::encryption::RoomEncryptionEventContent};
+use ruma::{
+    api::client::room::create_room::{RoomPowerLevelsContentOverride, v3::CreationContent},
+    events::{InitialStateEvent, TimelineEventType, room::encryption::RoomEncryptionEventContent},
+    room::RoomType,
+    serde::Raw,
+};
 use tracing::error;
 
 use crate::{
@@ -35,9 +40,19 @@ mod imp {
     #[properties(wrapper_type = super::CreateRoomDialog)]
     pub struct CreateRoomDialog {
         #[template_child]
+        heading: TemplateChild<gtk::Label>,
+        #[template_child]
         create_button: TemplateChild<LoadingButton>,
         #[template_child]
         content: TemplateChild<gtk::Box>,
+        #[template_child]
+        kind_space: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        encryption_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        visibility_private_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        visibility_public_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         room_name: TemplateChild<adw::EntryRow>,
         #[template_child]
@@ -151,6 +166,46 @@ mod imp {
             self.create_button.set_sensitive(self.can_create_room());
         }
 
+        /// Whether a space is being made rather than a room.
+        fn is_space(&self) -> bool {
+            self.kind_space.is_active()
+        }
+
+        /// Update the form for the kind of thing being made.
+        #[template_callback]
+        fn update_kind(&self) {
+            let is_space = self.is_space();
+
+            self.heading.set_label(&if is_space {
+                gettext("New Space")
+            } else {
+                gettext("New Room")
+            });
+            self.create_button.set_content_label(if is_space {
+                gettext("_Create Space")
+            } else {
+                gettext("_Create Room")
+            });
+
+            // A space has no timeline anybody reads, so encrypting it protects
+            // nothing and would only stop its name and topic being seen by the
+            // people it is for.
+            self.encryption_group.set_visible(!is_space);
+
+            self.visibility_private_row.set_subtitle(&if is_space {
+                gettext("Only invited people can join this space")
+            } else {
+                gettext("Only invited people can join this room")
+            });
+            self.visibility_public_row.set_subtitle(&if is_space {
+                gettext("Anyone can find and join this space")
+            } else {
+                gettext("Anyone can find and join this room")
+            });
+
+            self.validate_form();
+        }
+
         /// Create the room, if it is allowed.
         #[template_callback]
         async fn create_room(&self) {
@@ -175,6 +230,8 @@ mod imp {
                 .filter(|s| !s.is_empty())
                 .map(ToOwned::to_owned);
 
+            let is_space = self.is_space();
+
             let mut request = assign!(
                 create_room::v3::Request::new(),
                 {
@@ -183,11 +240,34 @@ mod imp {
                 }
             );
 
+            if is_space {
+                // The one thing that makes a space a space.
+                let mut creation_content = CreationContent::new();
+                creation_content.room_type = Some(RoomType::Space);
+                request.creation_content = Raw::new(&creation_content).ok();
+
+                // A space is a room, and a room nobody has raised the bar in
+                // is a room anybody can post to. Its timeline is never drawn,
+                // so a message sent into it is a message nobody will ever see
+                // — and the state events that make it a space are exactly what
+                // should not be writable by everyone who joins.
+                let mut power_levels = RoomPowerLevelsContentOverride::default();
+                power_levels.events_default = Some(100.into());
+                power_levels.events = [
+                    (TimelineEventType::SpaceChild, 50.into()),
+                    (TimelineEventType::RoomAvatar, 50.into()),
+                    (TimelineEventType::RoomName, 50.into()),
+                    (TimelineEventType::RoomTopic, 50.into()),
+                ]
+                .into();
+                request.power_level_content_override = Raw::new(&power_levels).ok();
+            }
+
             if self.visibility_private.is_active() {
                 // The room is private.
                 request.visibility = Visibility::Private;
 
-                if self.encryption.is_active() {
+                if !is_space && self.encryption.is_active() {
                     let event = InitialStateEvent::with_empty_state_key(
                         RoomEncryptionEventContent::with_recommended_defaults(),
                     );
@@ -220,7 +300,11 @@ mod imp {
                     obj.close();
                 }
                 Err(error) => {
-                    error!("Could not create a new room: {error}");
+                    if is_space {
+                        error!("Could not create a new space: {error}");
+                    } else {
+                        error!("Could not create a new room: {error}");
+                    }
                     self.handle_error(&error);
                 }
             }

@@ -45,6 +45,37 @@ template $CreateRoomDialog: $ToastableDialog {
             spacing: 18;
 
             Adw.PreferencesGroup {
+              title: _("Kind");
+
+              Adw.ActionRow {
+                title: _("Room");
+                subtitle: _("A place to talk in");
+                activatable-widget: kind_room;
+
+                [prefix]
+                Gtk.CheckButton kind_room {
+                  valign: center;
+                  active: true;
+                  toggled => $update_kind() swapped;
+                }
+              }
+
+              Adw.ActionRow {
+                // Translators: A space is a collection of rooms, presented as
+                // a folder-like room that other rooms belong to.
+                title: _("Space");
+                subtitle: _("A folder for rooms, with nothing to say in it");
+                activatable-widget: kind_space;
+
+                [prefix]
+                Gtk.CheckButton kind_space {
+                  valign: center;
+                  group: kind_room;
+                }
+              }
+            }
+
+            Adw.PreferencesGroup {
               title: _("Name");
 
               Adw.EntryRow room_name {
@@ -84,7 +115,7 @@ template $CreateRoomDialog: $ToastableDialog {
             Adw.PreferencesGroup {
               title: _("Room Visibility");
 
-              Adw.ActionRow {
+              Adw.ActionRow visibility_private_row {
                 title: _("Private");
                 subtitle: _("Only invited people can join this room");
                 activatable-widget: visibility_private;
@@ -97,7 +128,7 @@ template $CreateRoomDialog: $ToastableDialog {
                 }
               }
 
-              Adw.ActionRow {
+              Adw.ActionRow visibility_public_row {
                 title: _("Public");
                 subtitle: _("Anyone can find and join this room");
                 activatable-widget: visibility_public;
@@ -110,7 +141,7 @@ template $CreateRoomDialog: $ToastableDialog {
               }
             }
 
-            Adw.PreferencesGroup {
+            Adw.PreferencesGroup encryption_group {
               visible: bind visibility_private.active;
               margin-top: 12;
 
