@@ -1,0 +1,122 @@
+// The window controls, on Windows.
+//
+// Everything here hangs off the `.windows` class that `Window::constructed`
+// adds, so none of it reaches another platform even though the stylesheet is
+// one file for all of them.
+//
+// libadwaita draws minimise, maximise and close as circular buttons with a
+// filled background, which is what they look like on a GNOME desktop and
+// nothing like what they look like anywhere on Windows. Windows draws square
+// buttons that are invisible until pointed at, sitting flush in the corner of
+// the window, with the close button turning red. An application that does
+// otherwise reads as foreign before a single message is on screen.
+//
+// Every selector below reaches the buttons as **descendants** of
+// `windowcontrols`, never as children of it. GTK puts a box in between, so a
+// child combinator matches nothing — and it does so silently: the stylesheet
+// still parses, still loads, and simply has no effect.
+
+// How far the outermost button reaches beyond the header bar's own padding, so
+// that its hover fill runs to the very edge of the window rather than stopping
+// short of it. This has to match the padding libadwaita gives the header bar,
+// or a sliver of the header shows through in the corner.
+$window-control-bleed: 6px;
+
+// The width Windows gives a caption button. Ours are a little narrower than the
+// shell's, because the header bar is not as tall as a title bar.
+$window-control-width: 40px;
+
+.windows {
+  windowcontrols {
+    // The controls sit against the corner, so the spacing libadwaita puts
+    // between them belongs to a different design.
+    //
+    // The negative top is what lets the fill reach the top edge of the window
+    // rather than stopping at the header bar's padding. Without it the close
+    // button is clipped by the corner on its right side only, and the red stops
+    // short of the top with a strip of header bar above it — which looks like a
+    // mistake rather than like a caption button.
+    margin: (-$window-control-bleed) 0 0 0;
+    padding: 0;
+  }
+
+  windowcontrols button {
+    // Square, edge to edge, and only visible when pointed at — the three
+    // things that make these read as Windows buttons rather than GNOME ones.
+    border-radius: 0;
+    background: none;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    // The padding matches the upward bleed on `windowcontrols`, so the button's
+    // box grows towards the top of the window while its glyph stays put.
+    padding: $window-control-bleed 0 0 0;
+    // No `min-height`: the button already stretches to the header bar, and
+    // GTK's CSS has no percentages to say so with.
+    min-width: $window-control-width;
+
+    // The circle is drawn by a node inside the button rather than by the
+    // button itself, so clearing the button's own background leaves it behind.
+    > * {
+      background: none;
+      background-image: none;
+      box-shadow: none;
+    }
+
+    &:hover {
+      // Contrasting rather than a fixed grey: this has to work in both themes,
+      // and mixing with the text colour is what makes it follow them.
+      background: color-mix(in srgb, currentColor 12%, transparent);
+    }
+
+    &:active {
+      background: color-mix(in srgb, currentColor 20%, transparent);
+    }
+
+    // A button that is doing nothing should look like it, even if the pointer
+    // was over it when the window lost focus.
+    &:backdrop {
+      background: none;
+    }
+  }
+
+  // The close button is the one Windows colours, and the colour is not the
+  // accent or the destructive colour from the palette — it is Windows' own red,
+  // which people recognise without reading the icon.
+  windowcontrols button.close {
+    &:hover {
+      background: #c42b1c;
+      color: #ffffff;
+    }
+
+    &:active {
+      background: #c84c3f;
+      color: #ffffff;
+    }
+  }
+
+  // Bleed the outermost button past the header bar's padding, so its fill
+  // reaches the window's edge and is cut by the corner rounding the way the
+  // shell's own buttons are.
+  headerbar windowcontrols.end {
+    margin-right: -$window-control-bleed;
+
+    button:last-child {
+      padding-right: $window-control-bleed;
+      min-width: $window-control-width + $window-control-bleed;
+    }
+  }
+
+  // The same on the other side, for anyone whose Windows puts the controls on
+  // the left — an unusual setting, but the layout is theirs to choose and the
+  // corner is just as sharp on that side.
+  headerbar windowcontrols.start {
+    margin-left: -$window-control-bleed;
+
+    button:first-child {
+      padding-left: $window-control-bleed;
+      min-width: $window-control-width + $window-control-bleed;
+    }
+  }
+}
