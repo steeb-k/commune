@@ -1,0 +1,66 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomHistoryPinnedRow: Adw.Bin {
+  Gtk.Box {
+    spacing: 6;
+
+    Gtk.Box {
+      orientation: vertical;
+      spacing: 3;
+      hexpand: true;
+
+      Gtk.Box {
+        spacing: 6;
+
+        $Avatar avatar {
+          size: 24;
+          valign: center;
+        }
+
+        Gtk.Label sender_label {
+          ellipsize: end;
+          xalign: 0;
+          hexpand: true;
+
+          styles [
+            "heading",
+          ]
+        }
+
+        Gtk.Label timestamp_label {
+          valign: center;
+          halign: end;
+
+          styles [
+            "caption",
+            "dimmed",
+            "numeric",
+          ]
+        }
+      }
+
+      Gtk.Label body_label {
+        xalign: 0;
+        wrap: true;
+        wrap-mode: word_char;
+        lines: 3;
+        ellipsize: end;
+      }
+    }
+
+    Gtk.Button unpin_button {
+      valign: center;
+      visible: false;
+      icon-name: "list-remove-symbolic";
+      // Translators: In this string, 'Unpin' is a verb: this removes a message
+      // from the pinned ones.
+      tooltip-text: _("Unpin Message");
+      clicked => $unpin() swapped;
+
+      styles [
+        "flat",
+      ]
+    }
+  }
+}

@@ -115,6 +115,14 @@ mod imp {
         /// Whether this timeline is focused on a single event.
         #[property(get = Self::is_focused)]
         is_focused: PhantomData<bool>,
+        /// Whether this timeline shows the events pinned in the room.
+        pinned: Cell<bool>,
+        /// Whether this timeline shows the events pinned in the room.
+        ///
+        /// Such a timeline is not live, and the SDK refuses to paginate it:
+        /// the pinned events are the whole of it.
+        #[property(get = Self::is_pinned)]
+        is_pinned: PhantomData<bool>,
         /// Whether we are loading events at the start of the timeline.
         #[property(get)]
         is_loading_start: Cell<bool>,
@@ -255,13 +263,16 @@ mod imp {
                 }
             };
             let focused_event_id = self.focused_event_id().cloned();
+            let is_pinned = self.pinned.get();
             let handle = spawn_tokio!(async move {
                 let mut builder = matrix_room
                     .timeline_builder()
                     .event_filter(filter)
                     .add_failed_to_parse(false);
 
-                if let Some(target) = focused_event_id {
+                if is_pinned {
+                    builder = builder.with_focus(TimelineFocus::PinnedEvents);
+                } else if let Some(target) = focused_event_id {
                     builder = builder.with_focus(TimelineFocus::Event {
                         target,
                         num_context_events: MAX_BATCH_SIZE,
@@ -291,6 +302,11 @@ mod imp {
             if !self.is_focused() {
                 // The live timeline is always at the end of the room's history.
                 self.set_has_reached_end(true);
+            }
+            if self.pinned.get() {
+                // The pinned events are the whole of this timeline. The SDK
+                // refuses to paginate it, so never ask.
+                self.set_has_reached_start(true);
             }
 
             let (values, timeline_stream) = matrix_timeline.subscribe().await;
@@ -334,13 +350,14 @@ mod imp {
                 .set(diff_handle.abort_handle())
                 .expect("handle should be uninitialized");
 
-            if !self.is_focused() {
-                // A focused timeline never gets new events and must not move the
-                // read receipt of the user, so it does not need any of this.
+            if self.is_live() {
+                // A timeline that is not live never gets new events and must not
+                // move the read receipt of the user, so it does not need any of
+                // this.
                 self.watch_read_receipts().await;
             }
 
-            if !self.is_focused() && self.preload.get() {
+            if self.is_live() && self.preload.get() {
                 self.preload().await;
             }
 
@@ -362,6 +379,25 @@ mod imp {
         /// Whether this timeline is focused on a single event.
         fn is_focused(&self) -> bool {
             self.focused_event_id().is_some()
+        }
+
+        /// Set whether this timeline shows the events pinned in the room.
+        pub(super) fn set_pinned(&self, pinned: bool) {
+            self.pinned.set(pinned);
+        }
+
+        /// Whether this timeline shows the events pinned in the room.
+        fn is_pinned(&self) -> bool {
+            self.pinned.get()
+        }
+
+        /// Whether this is the live timeline of the room.
+        ///
+        /// A live timeline is the only one that receives new events from sync,
+        /// so it is the only one that may move a read receipt, show who is
+        /// typing, or be preloaded.
+        fn is_live(&self) -> bool {
+            !self.is_focused() && !self.pinned.get()
         }
 
         /// The underlying SDK timeline.
@@ -522,7 +558,9 @@ mod imp {
         /// optimized by the caller of the function.
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
-            self.set_has_reached_start(false);
+            if !self.pinned.get() {
+                self.set_has_reached_start(false);
+            }
             if self.is_focused() {
                 // The live timeline is always at the end of the room's history.
                 self.set_has_reached_end(false);
@@ -919,8 +957,8 @@ mod imp {
 
         /// Add the typing row to the timeline, if it isn't present already.
         fn add_typing_row(&self) {
-            if self.is_focused() {
-                // A focused timeline does not show the typing status.
+            if !self.is_live() {
+                // Only the live timeline shows the typing status.
                 return;
             }
 
@@ -1151,7 +1189,7 @@ glib::wrapper! {
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
     pub(crate) fn new(room: &Room) -> Self {
-        Self::construct(room, None)
+        Self::construct(room, None, false)
     }
 
     /// Construct a new `Timeline` for the given room, focused on the event with
@@ -1161,18 +1199,29 @@ impl Timeline {
     /// both directions, but it never receives new events from sync, so it
     /// cannot replace the live timeline of the room.
     pub(crate) fn new_focused(room: &Room, event_id: OwnedEventId) -> Self {
-        Self::construct(room, Some(event_id))
+        Self::construct(room, Some(event_id), false)
+    }
+
+    /// Construct a new `Timeline` showing the events pinned in the given room.
+    ///
+    /// The SDK builds this one from the room's `m.room.pinned_events`, so it
+    /// follows that state event as it changes. It cannot be paginated — the
+    /// pinned events are the whole of it — and it never receives new events
+    /// from sync.
+    pub(crate) fn new_pinned(room: &Room) -> Self {
+        Self::construct(room, None, true)
     }
 
     /// Construct a new `Timeline` for the given room, optionally focused on the
-    /// event with the given ID.
-    fn construct(room: &Room, focused_event_id: Option<OwnedEventId>) -> Self {
+    /// event with the given ID or showing the room's pinned events.
+    fn construct(room: &Room, focused_event_id: Option<OwnedEventId>, pinned: bool) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
         let imp = obj.imp();
         imp.set_focused_event_id(focused_event_id);
+        imp.set_pinned(pinned);
 
         spawn!(clone!(
             #[weak]
@@ -1414,6 +1463,13 @@ fn show_in_timeline(
                 | AnySyncStateEvent::RoomCreate(_)
                 | AnySyncStateEvent::RoomEncryption(_)
                 | AnySyncStateEvent::RoomThirdPartyInvite(_)
+                // Pinning is an act of moderation and the pinned messages view
+                // does not say who did it, so the room says so instead.
+                | AnySyncStateEvent::RoomPinnedEvents(_)
+                // `update_with_other_state` has written the sentence for this
+                // one since the ACL editor landed, and this list is what kept
+                // it from ever being drawn.
+                | AnySyncStateEvent::RoomServerAcl(_)
         ),
     }
 }
