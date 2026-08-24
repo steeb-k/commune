@@ -186,6 +186,13 @@ objc2-user-notifications = { version = "0.3", default-features = false, features
 ] }
 security-framework = "3"
 
+# Windows-only dependencies.
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security_Credentials",
+] }
+
 [dev-dependencies]
 assert_matches2 = "0.1"
 

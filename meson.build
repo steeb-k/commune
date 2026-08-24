@@ -37,9 +37,9 @@ dependency('gstreamer-sdp-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
 dependency('gstreamer-webrtc-1.0', version: '>= 1.20')
 dependency('gtksourceview-5', version: '>= 5.0.0')
-if host_machine.system() != 'darwin'
-    # glycin decodes images on Linux. macOS uses the `image` crate instead, see
-    # `src/utils/media/image/decoder/`.
+if host_machine.system() == 'linux'
+    # glycin decodes images on Linux. Every other platform uses the `image`
+    # crate instead, see `src/utils/media/image/decoder/`.
     dependency('glycin-2', version: '>= 2.0.0')
     dependency('glycin-gtk4-2', version: '>= 2.0.0')
 endif
@@ -104,12 +104,22 @@ endif
 cargo_target_dir = meson.project_build_root() / 'cargo-target'
 cargo_home = meson.project_build_root() / 'cargo-home'
 
-cargo_env = [
-    'CARGO_HOME=' + cargo_home,
-    'CARGO_TARGET_DIR=' + cargo_target_dir,
-]
+cargo_env = ['CARGO_TARGET_DIR=' + cargo_target_dir]
 
-if host_machine.system() == 'darwin'
+# Keeping the registry and the git checkouts inside the build directory makes a
+# build self-contained, which is worth having — but not at the cost of not
+# building at all. Windows still limits a path to 260 characters for anything
+# that has not opted out, and the libgit2 that cargo checks git dependencies out
+# with is one of those: `matrix-rust-sdk` has a test fixture whose name alone is
+# 96 characters, and rooting the checkout three directories deeper than the
+# default pushes it over. `core.longpaths` does not help, and neither does
+# `net.git-fetch-with-cli`, which changes how cargo fetches but not how it
+# checks out. So Windows uses the user's own `CARGO_HOME`.
+if host_machine.system() != 'windows'
+    cargo_env += 'CARGO_HOME=' + cargo_home
+endif
+
+if host_machine.system() == 'darwin' or host_machine.system() == 'windows'
     # Without these, `gettext-sys` compiles and statically links its own vendored
     # copy of libintl. Point it at the one in the prefix instead, so the binary
     # links the same libintl as everything else it loads.
@@ -217,7 +227,7 @@ endif
 gnome.post_install(
     gtk_update_icon_cache: true,
     glib_compile_schemas: true,
-    # There is no desktop file to register on macOS, and no
+    # Only Linux installs a desktop file, and only Linux has an
     # update-desktop-database to register it with.
-    update_desktop_database: host_machine.system() != 'darwin',
+    update_desktop_database: host_machine.system() == 'linux',
 )

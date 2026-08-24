@@ -3,6 +3,14 @@
     html_favicon_url = "https://raw.githubusercontent.com/steeb-k/commune/main/data/icons/io.github.steeb_k.Commune-symbolic.svg"
 )]
 #![recursion_limit = "256"]
+// A Windows GUI application that asks for a console gets one, and it flashes up
+// behind the window for as long as the app runs. Development builds keep it,
+// because it is where `tracing` writes and where a panic is legible; release
+// builds do without.
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 mod account_chooser_dialog;
 mod account_switcher;

@@ -20,6 +20,8 @@ mod file;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "windows")]
+mod windows;
 
 use self::file::SecretFile;
 use crate::{
@@ -40,6 +42,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_os = "macos")] {
         /// The secret API.
         pub(crate) type Secret = macos::MacosSecret;
+    } else if #[cfg(target_os = "windows")] {
+        /// The secret API.
+        pub(crate) type Secret = windows::WindowsSecret;
     } else {
         /// The secret API.
         pub(crate) type Secret = unimplemented::UnimplementedSecret;
@@ -60,7 +65,7 @@ pub(crate) trait SecretExt {
 }
 
 /// The fallback `Secret` API, to use on platforms where it is unimplemented.
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 mod unimplemented {
     use super::*;
 

@@ -71,6 +71,7 @@ pub(crate) enum DataType {
 impl DataType {
     /// The path of the directory where data should be stored, depending on this
     /// type.
+    #[cfg(not(target_os = "windows"))]
     pub(crate) fn dir_path(self) -> PathBuf {
         let mut path = self.base_dir_path();
         path.push(PROFILE.dir_name().as_ref());
@@ -78,8 +79,35 @@ impl DataType {
         path
     }
 
+    /// The path of the directory where data should be stored, depending on this
+    /// type.
+    ///
+    /// Windows has one per-user location for both types, `%LOCALAPPDATA%`,
+    /// which is where an application keeps state that should not roam to the
+    /// user's other machines — and our databases are far too large to roam.
+    /// There is no system cache directory to pair it with, so the two types are
+    /// told apart by a subdirectory. That puts the profile in the middle of the
+    /// path rather than at the end, which is why this does not share the shape
+    /// above.
+    #[cfg(target_os = "windows")]
+    pub(crate) fn dir_path(self) -> PathBuf {
+        // `glib::user_data_dir()` is `%LOCALAPPDATA%` on Windows. It is used
+        // rather than the variable itself so that a deliberate `XDG_DATA_HOME`
+        // still moves the data, which is how the app is told apart from itself
+        // in tests.
+        let mut path = glib::user_data_dir();
+        path.push(PROFILE.dir_name().as_ref());
+
+        match self {
+            DataType::Persistent => path.push("data"),
+            DataType::Cache => path.push("cache"),
+        }
+
+        path
+    }
+
     /// The path of the platform directory that holds data of this type.
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     fn base_dir_path(self) -> PathBuf {
         match self {
             DataType::Persistent => glib::user_data_dir(),

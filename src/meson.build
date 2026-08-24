@@ -90,6 +90,14 @@ run_command(
 cargo_options = ['--manifest-path', meson.project_source_root() / 'Cargo.toml']
 cargo_build_options = cargo_options
 
+# Windows executables carry the suffix, and an installed `commune` with no
+# `.exe` is a file Windows will not run.
+if host_machine.system() == 'windows'
+    exe_name = meson.project_name() + '.exe'
+else
+    exe_name = meson.project_name()
+endif
+
 if profile == 'Devel'
     rust_target = 'debug'
     message('Building in debug mode')
@@ -105,20 +113,18 @@ if not build_env_only
         'cargo-build',
         build_by_default: true,
         build_always_stale: true,
-        output: meson.project_name(),
+        output: exe_name,
         console: true,
         install: true,
         install_dir: bindir,
         depends: [resources, ui_resources],
         env: cargo_env,
         command: [
-            cargo,
-            'build',
-            cargo_build_options,
-            '&&',
-            'cp',
-            cargo_target_dir / rust_target / meson.project_name(),
+            '../build-aux/cargo-build.sh',
+            cargo.full_path(),
+            cargo_target_dir / rust_target / exe_name,
             '@OUTPUT@',
+            cargo_build_options,
         ],
     )
 
