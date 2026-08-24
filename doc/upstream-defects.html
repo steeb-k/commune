@@ -1,0 +1,796 @@
+<!-- Published at https://claude.ai/code/artifact/3cf082b8-cf5b-4faf-af9a-0a5d4dec3a3c
+     Republish to that URL when this file changes; publishing without it makes
+     a second artifact instead of updating this one. Read the live version
+     first — another session may have edited it. -->
+<title>Fractal's Open Defects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+  :root {
+    --ground:#f2f4f5; --surface:#ffffff; --surface-alt:#e9edee;
+    --line:#d3dadc; --line-soft:#e3e8e9;
+    --ink:#131a1c; --ink-mid:#4a585c; --ink-soft:#74848a;
+    --accent:#0d6f6c; --accent-soft:#d3e8e6;
+    --crit:#8e2f22; --crit-soft:#f2d9d4;
+    --high:#a9542a; --high-soft:#f4e2d5;
+    --med:#8d6208;  --med-soft:#f2e5c8;
+    --low:#5b6b70;  --low-soft:#e4eaeb;
+    --have:#34694a; --have-soft:#d9e8de;
+    --gone:#a93a2a; --gone-soft:#f3ddd8;
+    --part:#8d6208; --part-soft:#f2e5c8;
+    --f-display:"IBM Plex Sans Condensed","Helvetica Neue",Arial,sans-serif;
+    --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#10161a; --surface:#171e22; --surface-alt:#1e262b;
+      --line:#2c373d; --line-soft:#232c31;
+      --ink:#e2e8ea; --ink-mid:#a3b1b6; --ink-soft:#7e8f95;
+      --accent:#52bdb5; --accent-soft:#1c3634;
+      --crit:#e8836e; --crit-soft:#3a1f19;
+      --high:#e0a173; --high-soft:#33241a;
+      --med:#d8ab48;  --med-soft:#322817;
+      --low:#9aabb0;  --low-soft:#232c31;
+      --have:#79b491; --have-soft:#1b2b22;
+      --gone:#e08573; --gone-soft:#35211d;
+      --part:#d8ab48; --part-soft:#322817;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#10161a; --surface:#171e22; --surface-alt:#1e262b;
+    --line:#2c373d; --line-soft:#232c31;
+    --ink:#e2e8ea; --ink-mid:#a3b1b6; --ink-soft:#7e8f95;
+    --accent:#52bdb5; --accent-soft:#1c3634;
+    --crit:#e8836e; --crit-soft:#3a1f19;
+    --high:#e0a173; --high-soft:#33241a;
+    --med:#d8ab48;  --med-soft:#322817;
+    --low:#9aabb0;  --low-soft:#232c31;
+    --have:#79b491; --have-soft:#1b2b22;
+    --gone:#e08573; --gone-soft:#35211d;
+    --part:#d8ab48; --part-soft:#322817;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--ground); color:var(--ink); font-family:var(--f-body);
+         font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; padding:56px 28px 96px;
+          display:flex; flex-direction:column; gap:52px; }
+
+  .masthead { display:flex; flex-direction:column; gap:18px;
+              padding-bottom:30px; border-bottom:2px solid var(--ink); }
+  .eyebrow { font-family:var(--f-mono); font-size:11.5px; font-weight:500;
+             letter-spacing:.13em; text-transform:uppercase; color:var(--accent);
+             display:flex; flex-wrap:wrap; gap:8px 14px; }
+  .eyebrow span:not(:last-child)::after { content:" /"; color:var(--ink-soft); }
+  h1 { font-family:var(--f-display); font-weight:700;
+       font-size:clamp(2.5rem,6.5vw,4rem); line-height:.98;
+       letter-spacing:-.015em; text-wrap:balance; margin:0; }
+  .standfirst { font-size:1.0625rem; color:var(--ink-mid); max-width:64ch; margin:0; }
+  .standfirst code { font-family:var(--f-mono); font-size:.875em; color:var(--ink); }
+
+  .score { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+           gap:1px; background:var(--line); border:1px solid var(--line); }
+  .score-cell { background:var(--surface); padding:20px 22px;
+                display:flex; flex-direction:column; gap:4px; }
+  .score-num { font-family:var(--f-display); font-size:2.75rem; font-weight:700;
+               line-height:1; font-variant-numeric:tabular-nums; }
+  .score-cell.crit .score-num { color:var(--crit); }
+  .score-cell.high .score-num { color:var(--high); }
+  .score-cell.med  .score-num { color:var(--med); }
+  .score-cell.low  .score-num { color:var(--low); }
+  .score-label { font-family:var(--f-mono); font-size:11px; letter-spacing:.1em;
+                 text-transform:uppercase; color:var(--ink-soft); }
+  .score-note { font-size:.8125rem; color:var(--ink-mid); line-height:1.45; }
+
+  section { display:flex; flex-direction:column; gap:20px; }
+  .sec-head { display:flex; flex-direction:column; gap:7px; }
+  h2 { font-family:var(--f-display); font-weight:600; font-size:1.75rem;
+       letter-spacing:-.01em; line-height:1.15; margin:0;
+       display:flex; align-items:baseline; gap:12px; }
+  h2 .tick { font-family:var(--f-mono); font-size:.75rem; font-weight:500;
+             letter-spacing:.08em; padding:3px 8px; border-radius:2px; }
+  h2 .tick.gone { background:var(--gone-soft); color:var(--gone); }
+  h2 .tick.part { background:var(--part-soft); color:var(--part); }
+  h2 .tick.have { background:var(--have-soft); color:var(--have); }
+  .sec-sub { color:var(--ink-mid); max-width:76ch; margin:0; font-size:.9375rem; }
+
+  .tscroll { overflow-x:auto; border:1px solid var(--line); background:var(--surface); }
+  table { border-collapse:collapse; width:100%; min-width:900px; }
+  thead th { position:sticky; top:0; background:var(--surface-alt); text-align:left;
+             font-family:var(--f-mono); font-size:10.5px; font-weight:600;
+             letter-spacing:.11em; text-transform:uppercase; color:var(--ink-mid);
+             padding:11px 16px; border-bottom:1px solid var(--line);
+             white-space:nowrap; z-index:2; }
+  tbody td { padding:14px 16px; border-bottom:1px solid var(--line-soft);
+             vertical-align:top; font-size:.9375rem; }
+  tbody tr:last-child td { border-bottom:none; }
+  .c-id { width:74px; min-width:74px; }
+  .c-id a { font-family:var(--f-mono); font-size:.8125rem; font-weight:500;
+            color:var(--accent); text-decoration:none; white-space:nowrap; }
+  .c-id a:hover { text-decoration:underline; }
+  .c-when { width:132px; min-width:132px; }
+  .c-act { width:96px; min-width:96px; }
+
+  .sev { display:inline-block; font-family:var(--f-mono); font-size:.6875rem;
+         font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+         padding:4px 9px; border-radius:2px; white-space:nowrap; }
+  .sev.crit { background:var(--crit-soft); color:var(--crit); }
+  .sev.high { background:var(--high-soft); color:var(--high); }
+  .sev.med  { background:var(--med-soft);  color:var(--med); }
+  .sev.low  { background:var(--low-soft);  color:var(--low); }
+
+  .feat { font-family:var(--f-display); font-weight:600; font-size:1.0625rem;
+          letter-spacing:-.005em; line-height:1.25; display:block; }
+  .note { display:block; margin-top:5px; color:var(--ink-mid);
+          font-size:.875rem; line-height:1.5; }
+  .note code, .sec-sub code { font-family:var(--f-mono); font-size:.8125em;
+          background:var(--surface-alt); padding:1px 4px; border-radius:2px;
+          color:var(--ink); }
+  .dates { font-family:var(--f-mono); font-size:.75rem; color:var(--ink-mid);
+           line-height:1.5; font-variant-numeric:tabular-nums; }
+  .upd { color:var(--ink-soft); }
+  .cmt { font-family:var(--f-display); font-weight:700; font-size:1.375rem;
+         color:var(--ink); font-variant-numeric:tabular-nums; }
+  .up { display:block; margin-top:3px; font-family:var(--f-mono);
+        font-size:.6875rem; color:var(--accent); }
+
+  .callout { border:1px solid var(--line); background:var(--surface);
+             padding:24px 26px; display:flex; flex-direction:column; gap:12px; }
+  .callout h3 { font-family:var(--f-display); font-weight:600;
+                font-size:1.125rem; margin:0; }
+  .callout p { margin:0; color:var(--ink-mid); font-size:.9375rem; line-height:1.55; }
+  .callout code { font-family:var(--f-mono); font-size:.8125em;
+                  background:var(--surface-alt); padding:1px 4px;
+                  border-radius:2px; color:var(--ink); }
+  .callout ol { margin:0; padding-left:1.2em; color:var(--ink-mid);
+                font-size:.9375rem; line-height:1.6; }
+  .callout ol li { margin-bottom:7px; }
+  .callout ol li::marker { color:var(--accent); font-family:var(--f-mono);
+                           font-size:.8125rem; }
+  .callout strong { color:var(--ink); font-weight:600; }
+
+  footer { border-top:1px solid var(--line); padding-top:22px;
+           font-size:.8125rem; color:var(--ink-soft); line-height:1.6; }
+  footer code { font-family:var(--f-mono); font-size:.92em; color:var(--ink-mid); }
+  a { color:var(--accent); }
+  a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>World/fractal</span>
+      <span>207 open, 70 defects</span>
+      <span>Read 22 Aug 2026</span>
+    </div>
+    <h1>Fractal's open defects</h1>
+    <p class="standfirst">
+      Every open issue on Fractal's tracker labelled Bug, Crash, Regression or Performance,
+      ranked by severity and grouped by whether it can reach Commune. Enhancements and feature
+      requests are excluded — 137 of the 207 open issues — since those are a wish list, not a
+      defect backlog. Commune is Fractal 14.1 plus 101 commits, so the first group is the one
+      that matters.
+    </p>
+  </header>
+
+  <div class="score">
+    <div class="score-cell crit">
+      <div class="score-num">8</div>
+      <div class="score-label">Critical</div>
+      <div class="score-note">Crashes, hangs and freezes. Five reported against 11.1 or later.</div>
+    </div>
+    <div class="score-cell high">
+      <div class="score-num">12</div>
+      <div class="score-label">High</div>
+      <div class="score-note">Loses work, loses your session, or makes a core surface unusable.</div>
+    </div>
+    <div class="score-cell med">
+      <div class="score-num">25</div>
+      <div class="score-label">Medium</div>
+      <div class="score-note">Wrong behaviour you can work around once you know it.</div>
+    </div>
+    <div class="score-cell low">
+      <div class="score-num">25</div>
+      <div class="score-label">Low</div>
+      <div class="score-note">Cosmetic, or a keystroke that does nothing.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h3>Five worth reading before anything else</h3>
+    <ol>
+      <li><strong><a href="https://gitlab.gnome.org/World/fractal/-/issues/1738">#1738</a> — constant backwards pagination.</strong> Roughly 1&nbsp;MB/s of disk writes and a stream of history requests for rooms never opened, all while idle. Nineteen comments, still open, and it is in the event cache rather than the UI, so nothing you have written moves it.</li>
+      <li><strong><a href="https://gitlab.gnome.org/World/fractal/-/issues/1761">#1761</a> — a GIF that kills the app.</strong> Reported against 14.1, which is exactly your base. You have rewritten much of that path, so test it rather than assuming it either way.</li>
+      <li><strong><a href="https://gitlab.gnome.org/World/fractal/-/issues/1756">#1756</a> — completion unfocuses the composer.</strong> You extended this code for <code>:shortcode:</code> completion, so you own the consequences of it now.</li>
+      <li><strong>The scrolling family — <a href="https://gitlab.gnome.org/World/fractal/-/issues/968">#968</a>, <a href="https://gitlab.gnome.org/World/fractal/-/issues/1715">#1715</a>, <a href="https://gitlab.gnome.org/World/fractal/-/issues/1763">#1763</a>, <a href="https://gitlab.gnome.org/World/fractal/-/issues/1100">#1100</a>.</strong> Four issues across four years describing one thing: the timeline's scroll anchoring is wrong. #968 has been open since 2022 and was still being updated this February. Treat them as one bug.</li>
+      <li><strong><a href="https://gitlab.gnome.org/World/fractal/-/issues/1361">#1361</a> and <a href="https://gitlab.gnome.org/World/fractal/-/issues/1746">#1746</a> — the network state machine.</strong> Reports itself offline when it is not, and a captive portal logs the session out entirely. Twenty-four comments on the first, the most on the tracker.</li>
+    </ol>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h2>Reported against a version Commune is built on <span class="tick gone">26</span></h2>
+      <p class="sec-sub">Fractal 13, 14 or 14.1, or verified live in the tree. Commune <em>is</em> 14.1 plus 101 commits, so unless one of those commits happened to touch it, these are yours.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="c-id">Issue</th>
+            <th>Severity</th>
+            <th>What it is</th>
+            <th class="c-when">Reported</th>
+            <th class="c-act">Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1648">#1648</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">fractal crashes receiving many small videos</span><span class="note">Crash on receiving many small videos. Open since 11.1 and still being updated in mid-2026.</span></td>
+            <td class="c-when"><span class="dates">2025-06<br><span class="upd">last touched 2026-07</span></span></td>
+            <td class="c-act"><span class="cmt">8</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1702">#1702</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Fractal crashes when certain videos are in the room</span><span class="note">Crash when certain videos are in the room. Reported against 13.</span></td>
+            <td class="c-when"><span class="dates">2026-01<br><span class="upd">last touched 2026-05</span></span></td>
+            <td class="c-act"><span class="cmt">4</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1761">#1761</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Panic while loading GIFs</span><span class="note">Freeze then exit when re-opening a room containing a particular GIF. Reported against 14.1, which is Commune's base. You have rewritten a lot of this path — decoder API, texture cache, dropped queued requests — so it may already behave differently, but Linux still decodes through glycin.</span></td>
+            <td class="c-when"><span class="dates">2026-08<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1697">#1697</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Crash when playing older audio files</span><span class="note">Crash playing older audio files. Reported against 13. Your audio rework is macOS-only; the Linux path is untouched.</span></td>
+            <td class="c-when"><span class="dates">2025-12<br><span class="upd">last touched 2026-01</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1738">#1738</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Fractal is constantly performing backwards pagination</span><span class="note">Constant backwards pagination against rooms you have never opened: ~1&nbsp;MB/s of disk writes, hundreds of file descriptors, and a stream of requests at the homeserver. Architectural, in the event cache, and the most active thread on the tracker.</span></td>
+            <td class="c-when"><span class="dates">2026-04<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">19</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1663">#1663</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Read status regression</span><span class="note">Rooms mark themselves read, or refuse to. Reported against 12 and still moving in 2026.</span></td>
+            <td class="c-when"><span class="dates">2025-08<br><span class="upd">last touched 2026-05</span></span></td>
+            <td class="c-act"><span class="cmt">18</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1746">#1746</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">fractal get logout if network is blocked by an wifi captive portal</span><span class="note">A captive-portal wifi network logs the session out entirely, rather than failing to sync.</span></td>
+            <td class="c-when"><span class="dates">2026-05<br><span class="upd">last touched 2026-05</span></span></td>
+            <td class="c-act"><span class="cmt">7</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1715">#1715</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Scrolling Randomly Stops in Active Chats</span><span class="note">Scrolling stops responding in an active room. Same family as #1763 and the long-running #968.</span></td>
+            <td class="c-when"><span class="dates">2026-02<br><span class="upd">last touched 2026-07</span></span></td>
+            <td class="c-act"><span class="cmt">6</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1756">#1756</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Triggering completion unfocuses composer and popover isn’t displayed</span><span class="note">Typing <code>#</code> unfocuses the composer and shows no completion popover. Reported against 14, and you have extended exactly this code for <code>:shortcode:</code> completion.</span></td>
+            <td class="c-when"><span class="dates">2026-07<br><span class="upd">last touched 2026-07</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1660">#1660</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">All sessions are shown as &quot;Could Not Initialize Session&quot; when starting into a session that actually could not be initialized</span><span class="note">Every session shows &ldquo;Could Not Initialize Session&rdquo; on start in some conditions. Reported against 12, updated 2026.</span></td>
+            <td class="c-when"><span class="dates">2025-08<br><span class="upd">last touched 2026-06</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1747">#1747</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Timeline doesn’t always wrap correctly</span><span class="note">Messages wrap wrongly in the timeline. The call-row half was fixed in <code>1e5c1cab</code>, which is Commune's own merge base, so you carry that fix — the rest of the issue is still open.</span></td>
+            <td class="c-when"><span class="dates">2026-05<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">16</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1696">#1696</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Corrupted profile pictures in notifications</span><span class="note">Profile pictures come through corrupted in notifications. Reported against 13; touches the image path you have been working in.</span></td>
+            <td class="c-when"><span class="dates">2025-12<br><span class="upd">last touched 2026-04</span></span></td>
+            <td class="c-act"><span class="cmt">7</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1670">#1670</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Unable to forget certain historical rooms</span><span class="note">Certain historical rooms cannot be forgotten. Reported against 12.1.</span></td>
+            <td class="c-when"><span class="dates">2025-08<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">6</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1685">#1685</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Account recovery reported as disabled after restart</span><span class="note">Account recovery reports itself disabled after a restart. Encryption-adjacent, so worth more than its comment count suggests.</span></td>
+            <td class="c-when"><span class="dates">2025-09<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">3</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1646">#1646</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Hang when viewing room permissions</span><span class="note">The window hangs while the room permissions page loads.</span></td>
+            <td class="c-when"><span class="dates">2025-06<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1666">#1666</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Message edits (sometimes) aren&#x27;t displayed</span><span class="note">Message edits sometimes never appear.</span></td>
+            <td class="c-when"><span class="dates">2025-08<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1721">#1721</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Open DM button from timeline profile does nothing</span><span class="note">The Open DM button closes the profile dialog and does nothing else. Logs the debug line and stops.</span></td>
+            <td class="c-when"><span class="dates">2026-02<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1744">#1744</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Second room lookup results in infinite spinner</span><span class="note">Looking a room up a second time in the Join Room dialog spins forever.</span></td>
+            <td class="c-when"><span class="dates">2026-05<br><span class="upd">last touched 2026-05</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1763">#1763</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Room history sometimes endlessly loads after scrolling to the top</span><span class="note">Room history loads endlessly after scrolling to the top, because the scroll position stays pinned. Reported against 14.1.</span></td>
+            <td class="c-when"><span class="dates">2026-08<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1705">#1705</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">visual artefacts whilst scrolling</span><span class="note">Visual artefacts while scrolling.</span></td>
+            <td class="c-when"><span class="dates">2026-01<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1735">#1735</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Reply quote preview maintains improper formatting/styling</span><span class="note">The reply preview keeps the formatting of a previously quoted message — reply to a code block, escape, reply to plain text, and the plain text renders as code.</span></td>
+            <td class="c-when"><span class="dates">2026-04<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1636">#1636</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">SQLite temporary files are not cleaned up when Fractal is closed</span><span class="note">SQLite temporary files are left behind on close.</span></td>
+            <td class="c-when"><span class="dates">2025-05<br><span class="upd">last touched 2025-05</span></span></td>
+            <td class="c-act"><span class="cmt">0</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1714">#1714</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">&quot;Remove Messages&quot; pop-up shows reason textbox when there are no messages to delete</span><span class="note">The Remove Messages dialog offers a reason box when there is nothing to remove.</span></td>
+            <td class="c-when"><span class="dates">2026-02<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1727">#1727</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Incorrect video ratio in send preview and media player</span><span class="note">A 9:16 video is squeezed in the send preview and the player, but correct while uploading.</span></td>
+            <td class="c-when"><span class="dates">2026-03<br><span class="upd">last touched 2026-03</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1743">#1743</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Bad feedback when accepting DM invitation after inviter left</span><span class="note">Accepting a DM invitation whose inviter has already left gives a generic error with no explanation.</span></td>
+            <td class="c-when"><span class="dates">2026-05<br><span class="upd">last touched 2026-05</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1758">#1758</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Clicking the corner of the account switcher highlights the control but does not toggle the account list</span><span class="note">The corner of the account switcher highlights on hover but does not toggle the list.</span></td>
+            <td class="c-when"><span class="dates">2026-07<br><span class="upd">last touched 2026-07</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Probably already fixed here <span class="tick have">1</span></h2>
+      <p class="sec-sub">Reported upstream, and Commune has a commit that names the same mechanism. Confirm rather than assume.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="c-id">Issue</th>
+            <th>Severity</th>
+            <th>What it is</th>
+            <th class="c-when">Reported</th>
+            <th class="c-act">Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1762">#1762</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Media gallery scrolls down on its own</span><span class="note">The media gallery scrolls itself down in a loop. Reported 9 August 2026; your <code>26927ed8</code> of 19 August names the same mechanism — the loading row is last, so filling the list drags the view down — and scrolls back to the newest media on the next tick. Worth confirming, but you likely fixed this independently.</span></td>
+            <td class="c-when"><span class="dates">2026-08<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Older, but the symptom looks alive <span class="tick part">43</span></h2>
+      <p class="sec-sub">Reported against 5 through 12, or before the rewrite but still being discussed years later. Shared code, so most of these carry over — the two marked <strong>verified</strong> I checked against the tree directly.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="c-id">Issue</th>
+            <th>Severity</th>
+            <th>What it is</th>
+            <th class="c-when">Reported</th>
+            <th class="c-act">Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1584">#1584</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Fractal crashes/freezes on launch with error VK_ERROR_OUT_OF_DEVICE_MEMORY</span><span class="note">Crash or freeze at launch with <code>VK_ERROR_OUT_OF_DEVICE_MEMORY</code>. Fourteen comments and no fix. Driver-dependent, so it may never reach you, but it is a launch failure when it does.</span></td>
+            <td class="c-when"><span class="dates">2025-01<br><span class="upd">last touched 2025-02</span></span></td>
+            <td class="c-act"><span class="cmt">14</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1564">#1564</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Pango error and crash at pango-layout.c:4566:process_line: assertion failed</span><span class="note">Pango assertion failure and crash in <code>process_line</code>. Text layout, so it can be triggered by a message someone else sends.</span></td>
+            <td class="c-when"><span class="dates">2024-12<br><span class="upd">last touched 2024-12</span></span></td>
+            <td class="c-act"><span class="cmt">7</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1617">#1617</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Segfault when window size not wide enough</span><span class="note">Segfault when the window is not wide enough. Trivially reachable if it reproduces.</span></td>
+            <td class="c-when"><span class="dates">2025-04<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">6</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1624">#1624</a></td>
+            <td><span class="sev crit">Critical</span></td>
+            <td><span class="feat">Fractal crashing GNOME Shell Filling up Memory</span><span class="note">Fractal fills memory and takes GNOME Shell down with it.</span></td>
+            <td class="c-when"><span class="dates">2025-04<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">5</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1361">#1361</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Offline even though connection is possible</span><span class="note">Reports itself offline while the connection is fine. Twenty-four comments, the most of any open issue, spanning 2024 to late 2025.</span></td>
+            <td class="c-when"><span class="dates">2024-01<br><span class="upd">last touched 2025-10</span></span></td>
+            <td class="c-act"><span class="cmt">24</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/968">#968</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Chat view oscillates up and down when scrolling</span><span class="note">The chat view oscillates up and down while scrolling. Opened in 2022 against the old client, still being updated in February 2026, and eleven upvotes — the symptom survived the rewrite and is the same family as #1715 and #1763.</span></td>
+            <td class="c-when"><span class="dates">2022-04<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">10</span><span class="up">▲&nbsp;11</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1264">#1264</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Crash in room with animated avatar</span><span class="note">Crash in a room with an animated avatar. You have changed animated-image handling substantially, so this is worth re-testing rather than assuming either way.</span></td>
+            <td class="c-when"><span class="dates">2023-10<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">4</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1551">#1551</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Fractal Stops Responding After Adding &quot;large&quot; Account</span><span class="note">The app stops responding after adding a large account. A scale problem you will not hit alone, and will hit the first time anyone else joins.</span></td>
+            <td class="c-when"><span class="dates">2024-11<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1579">#1579</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Crash when dragging room list items</span><span class="note">Crash when dragging room list items.</span></td>
+            <td class="c-when"><span class="dates">2025-01<br><span class="upd">last touched 2025-01</span></span></td>
+            <td class="c-act"><span class="cmt">1</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1398">#1398</a></td>
+            <td><span class="sev high">High</span></td>
+            <td><span class="feat">Frequent crash (usually) soon after start, &quot;Unable to create shared memory pool&quot;</span><span class="note">Frequent crash shortly after start: &ldquo;Unable to create shared memory.&rdquo; Reported against 6, never diagnosed.</span></td>
+            <td class="c-when"><span class="dates">2024-02<br><span class="upd">last touched 2025-02</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/797">#797</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Add spellcheck support</span><span class="note">No spellcheck in the composer. Labelled a regression from 4.x. <strong>Verified absent from the Commune tree</strong> — nothing in <code>src/</code> mentions spellcheck at all.</span></td>
+            <td class="c-when"><span class="dates">2021-06<br><span class="upd">last touched 2026-02</span></span></td>
+            <td class="c-act"><span class="cmt">14</span><span class="up">▲&nbsp;6</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/911">#911</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Scrolling through long threads stuttery</span><span class="note">Scrolling a long room stutters. Opened 2022, updated 2025, eight upvotes.</span></td>
+            <td class="c-when"><span class="dates">2022-01<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">13</span><span class="up">▲&nbsp;8</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/986">#986</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Code blocks stop vertical scrolling</span><span class="note">A code block swallows vertical scrolling, trapping the view.</span></td>
+            <td class="c-when"><span class="dates">2022-04<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">11</span><span class="up">▲&nbsp;5</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1348">#1348</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Reconnect automatically after VPN connection change</span><span class="note">No automatic reconnect after a VPN change. Same family as #1361 and #1746.</span></td>
+            <td class="c-when"><span class="dates">2023-12<br><span class="upd">last touched 2023-12</span></span></td>
+            <td class="c-act"><span class="cmt">9</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1484">#1484</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Raw HTML content within message history accessible names</span><span class="note">Raw HTML leaks into the accessible names of timeline messages, so a screen reader reads markup aloud.</span></td>
+            <td class="c-when"><span class="dates">2024-07<br><span class="upd">last touched 2024-11</span></span></td>
+            <td class="c-act"><span class="cmt">7</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1610">#1610</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Room details not displayed accurately</span><span class="note">Room details show inaccurate information.</span></td>
+            <td class="c-when"><span class="dates">2025-03<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">5</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/695">#695</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Work behind HTTP proxy</span><span class="note">No HTTP proxy support. <strong>Verified absent</strong> — the only proxy references in the tree are D-Bus ones. Matters for anyone behind a corporate or censored network.</span></td>
+            <td class="c-when"><span class="dates">2020-12<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">4</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/865">#865</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Restrict Fractal RAM usage</span><span class="note">Memory use grows without bound and cannot be capped.</span></td>
+            <td class="c-when"><span class="dates">2021-11<br><span class="upd">last touched 2026-04</span></span></td>
+            <td class="c-act"><span class="cmt">4</span><span class="up">▲&nbsp;3</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1261">#1261</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Jump to first unread message</span><span class="note">No way to jump to the first unread message. Twenty upvotes, the highest on the tracker, and labelled a regression from 4.x.</span></td>
+            <td class="c-when"><span class="dates">2023-10<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">4</span><span class="up">▲&nbsp;20</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1375">#1375</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Initial letter default avatars are appended to accessible names of corresponding UI elements</span><span class="note">Default initial-letter avatars are appended to the accessible name of the message, so a screen reader reads the letter as part of the text.</span></td>
+            <td class="c-when"><span class="dates">2024-01<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">4</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1519">#1519</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">window freezes for a few seconds while resizing between narrow/wide mode</span><span class="note">The window freezes for seconds crossing the narrow/wide breakpoint.</span></td>
+            <td class="c-when"><span class="dates">2024-09<br><span class="upd">last touched 2024-10</span></span></td>
+            <td class="c-act"><span class="cmt">2</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1287">#1287</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Repeatedly maximizing the window or resizing the window may cause the application to hang</span><span class="note">Repeatedly maximizing or resizing can hang the app.</span></td>
+            <td class="c-when"><span class="dates">2023-11<br><span class="upd">last touched 2024-10</span></span></td>
+            <td class="c-act"><span class="cmt">1</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1474">#1474</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Messages in new conversation not displayed</span><span class="note">Messages in a brand-new conversation are not displayed.</span></td>
+            <td class="c-when"><span class="dates">2024-06<br><span class="upd">last touched 2024-07</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1576">#1576</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Verification status is inconsistent when initial verification is initiated by other session</span><span class="note">Verification status is inconsistent depending on which side starts the verification.</span></td>
+            <td class="c-when"><span class="dates">2025-01<br><span class="upd">last touched 2025-01</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1595">#1595</a></td>
+            <td><span class="sev med">Medium</span></td>
+            <td><span class="feat">Wrong &quot;no network&quot; banner, initial login hangs</span><span class="note">A wrong &ldquo;no network&rdquo; banner, and the initial login hangs behind it.</span></td>
+            <td class="c-when"><span class="dates">2025-02<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/801">#801</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Weird composer scroll behaviour for multiline messages</span><span class="note">Odd composer scrolling with multiline messages.</span></td>
+            <td class="c-when"><span class="dates">2021-07<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">7</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1126">#1126</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Escape not working in explore view</span><span class="note">Escape does not work in the explore view. Same family as #1385 and #1347 — Escape handling is inconsistent across dialogs.</span></td>
+            <td class="c-when"><span class="dates">2022-12<br><span class="upd">last touched 2025-01</span></span></td>
+            <td class="c-act"><span class="cmt">5</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1347">#1347</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Pressing [Escape] should close full-screen image viewer</span><span class="note">Escape does not close the fullscreen image viewer. Still being updated in August 2026.</span></td>
+            <td class="c-when"><span class="dates">2023-12<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">5</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1385">#1385</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Join Room dialog doesn’t close with escape key</span><span class="note">The Join Room dialog does not close on Escape.</span></td>
+            <td class="c-when"><span class="dates">2024-02<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">5</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1574">#1574</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Weird ordering in room list sidebar after fresh login</span><span class="note">Room list ordering is wrong immediately after a fresh login.</span></td>
+            <td class="c-when"><span class="dates">2024-12<br><span class="upd">last touched 2025-01</span></span></td>
+            <td class="c-act"><span class="cmt">5</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/598">#598</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">composing long messages on mobile</span><span class="note">Composing long messages is awkward on mobile. Updated August 2026.</span></td>
+            <td class="c-when"><span class="dates">2020-02<br><span class="upd">last touched 2026-08</span></span></td>
+            <td class="c-act"><span class="cmt">2</span><span class="up">▲&nbsp;2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1242">#1242</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Timestamps not updated when the timezone changes</span><span class="note">Timestamps are not refreshed when the timezone changes.</span></td>
+            <td class="c-when"><span class="dates">2023-09<br><span class="upd">last touched 2024-07</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1681">#1681</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Linkify breaks with certain links</span><span class="note">Linkification breaks on certain links.</span></td>
+            <td class="c-when"><span class="dates">2025-09<br><span class="upd">last touched 2025-09</span></span></td>
+            <td class="c-act"><span class="cmt">2</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1365">#1365</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">RTL issue with state event</span><span class="note">An RTL layout problem on state events.</span></td>
+            <td class="c-when"><span class="dates">2024-01<br><span class="upd">last touched 2025-02</span></span></td>
+            <td class="c-act"><span class="cmt">1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1379">#1379</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Touchscreen long-press on the message input box does not bring up a context menu</span><span class="note">Long-press on the composer does not raise a context menu on a touchscreen.</span></td>
+            <td class="c-when"><span class="dates">2024-01<br><span class="upd">last touched 2024-02</span></span></td>
+            <td class="c-act"><span class="cmt">1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1439">#1439</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Overlapping mention pills on consecutive lines</span><span class="note">Mention pills overlap across consecutive lines.</span></td>
+            <td class="c-when"><span class="dates">2024-04<br><span class="upd">last touched 2025-08</span></span></td>
+            <td class="c-act"><span class="cmt">1</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1527">#1527</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">ctrl+k doesn&#x27;t work after error pops up</span><span class="note">Ctrl+K stops working once an error banner has appeared.</span></td>
+            <td class="c-when"><span class="dates">2024-10<br><span class="upd">last touched 2024-10</span></span></td>
+            <td class="c-act"><span class="cmt">1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1060">#1060</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Zooming in a map with a touchpad triggers inertial scrolling</span><span class="note">Zooming a map with a touchpad triggers inertial scrolling.</span></td>
+            <td class="c-when"><span class="dates">2022-07<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1100">#1100</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Scrolling doesn&#x27;t stop when you stop scrolling</span><span class="note">Scrolling does not stop when you stop scrolling. Same family as #968.</span></td>
+            <td class="c-when"><span class="dates">2022-10<br><span class="upd">last touched 2023-11</span></span></td>
+            <td class="c-act"><span class="cmt">0</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1179">#1179</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Fails to login: Unable to get local issuer certificate</span><span class="note">Login fails with &ldquo;unable to get local issuer certificate&rdquo; against some servers.</span></td>
+            <td class="c-when"><span class="dates">2023-04<br><span class="upd">last touched 2025-07</span></span></td>
+            <td class="c-act"><span class="cmt">0</span><span class="up">▲&nbsp;1</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1344">#1344</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Hiting enter key in login text fields works but prints warning in console</span><span class="note">Enter in the login fields works but prints a warning.</span></td>
+            <td class="c-when"><span class="dates">2023-12<br><span class="upd">last touched 2023-12</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1408">#1408</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">Close room when filter opened via shortcut in narrow mode</span><span class="note">Opening the filter by shortcut in narrow mode closes the room.</span></td>
+            <td class="c-when"><span class="dates">2024-03<br><span class="upd">last touched 2024-03</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+          <tr>
+            <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1502">#1502</a></td>
+            <td><span class="sev low">Low</span></td>
+            <td><span class="feat">room list drag&amp;drop bug when both mouse buttons pressed</span><span class="note">Room list drag and drop misbehaves with both mouse buttons held.</span></td>
+            <td class="c-when"><span class="dates">2024-08<br><span class="upd">last touched 2025-01</span></span></td>
+            <td class="c-act"><span class="cmt">0</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="callout">
+    <h3>How to read the two judgement columns</h3>
+    <p>
+      <strong>Severity</strong> is mine, not the tracker's — GNOME's GitLab has a severity field
+      and Fractal does not populate it. Critical means it crashes, hangs or freezes. High means it
+      loses your session or makes a core surface unusable. Medium is wrong behaviour with a
+      workaround. Low is cosmetic or a dead keystroke.
+    </p>
+    <p>
+      <strong>Reach</strong> is the grouping. The rewrite shipped as Fractal 5 in 2023, so anything
+      opened before then was filed against a GTK3 codebase that no longer exists — but an old
+      number does not mean a dead issue. #968, #797 and #695 were all opened against 4.x and are
+      all still real, which is why they sit in the middle group rather than being dropped. Where I
+      could settle it by reading the tree instead of guessing, I did, and said so in the row.
+    </p>
+    <p>
+      One caveat on activity: GNOME's GitLab requires authentication to read issue comments, so the
+      counts here are from the issue metadata and I have not read the discussions. A high count
+      means sustained attention, not that the thread contains a diagnosis.
+    </p>
+  </div>
+
+  <footer>
+    Pulled from the GitLab API for <code>World/fractal</code> on 22 August 2026: 207 open issues,
+    of which 70 carry a defect label. Ordered by severity within each group, then by comment count.
+    Commune's base is <code>1e5c1cab</code>, Fractal 14.1, plus 101 commits — the version column is
+    what the reporter filed against, not what has been fixed since.
+  </footer>
+
+</div>
