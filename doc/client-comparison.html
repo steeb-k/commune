@@ -923,14 +923,14 @@
     { f: "Threads", g: "Messaging", kind: "spec", tag: "Threading",
       note: "Thread list, thread view, per-thread receipts, composer routing.",
       c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:0, fc:1, nh:1, nc:0.5, ci:0 },
-      cn: { commune:"Threaded messages land in the main timeline as ordinary events; a thread reply is sent as a plain rich reply.",
+      cn: { commune:"Threaded messages land in the main timeline as ordinary events, and no thread can be listed or opened. Replies do carry the thread relation — the gap is entirely interface.",
             ex:"Behind Labs and described by Element as incomplete.",
             nc:"A thread's body renders, but the README still names threads a notable exception." } },
 
     { f: "Polls", g: "Messaging", kind: "msc", tag: "MSC3381",
       note: "Never standardised; shipped almost everywhere regardless.",
       c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:1, ci:1 },
-      cn: { commune:"m.poll.* is never parsed, so a poll renders as nothing.",
+      cn: { commune:"The SDK parses m.poll.start; our own timeline filter is an allow-list that drops it, so a poll renders as nothing.",
             nc:"Shipped as an unstable feature." } },
 
     { f: "Voice messages", g: "Messaging", kind: "msc", tag: "MSC3245",
@@ -984,7 +984,7 @@
     { f: "Peek a public room before joining", g: "Rooms", kind: "spec", tag: "Room previews",
       note: "Reading the timeline of a world_readable room.",
       c: { commune:0.5, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
-      cn: { commune:"Name, topic and member count from the summary and hierarchy endpoints — the timeline is never peeked.",
+      cn: { commune:"Name, topic and member count from the summary and hierarchy endpoints — the timeline is never peeked, and peeking it needs a renderer of its own since there is no Room to hang one on.",
             ci:"Its join-before-navigate flow." } },
 
     { f: "Knocking to join a room", g: "Rooms", kind: "spec", tag: "Spec",

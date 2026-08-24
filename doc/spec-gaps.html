@@ -532,21 +532,24 @@
         knock one actually turned out to be, what the ACL editor refuses to do, what the emoji
         list cannot reach, why the preview switch had to be a local one, and what the notices
         room cannot tell you until you have joined it.
+        <strong>Reordered on 23 August 2026</strong>, after two of these were measured against
+        the code rather than estimated: registration is cheaper than it looked and peeking is
+        dearer. Both notes are further down.
       </p>
     </div>
     <div class="shortlist">
       <ol>
         <li>
-          <span class="pick-name">Peek a public room before joining</span>
-          <span class="pick-why">The preview dialog shows a name, a topic and a member count. <em>The timeline of a <code>world_readable</code> room is one call away</em>, and the decision to join stops being blind.</span>
-        </li>
-        <li>
-          <span class="pick-name">Invite by email</span>
-          <span class="pick-why">The invite page takes Matrix user IDs and nothing else. <em>Nobody can be invited who has not signed up yet</em>, which is the moment onboarding usually fails.</span>
+          <span class="pick-name">Signing up, and resetting a password</span>
+          <span class="pick-why">Reordered to the top on 23 August 2026: it is the only gap that costs a person <em>before</em> they have seen a timeline, and it is far cheaper than its <em>L</em> suggests. The hard part of registration is user-interactive auth, and that is already built and shipping for changing a password and deactivating an account — including the standard's own web fallback page for every stage this client does not answer natively, which is what covers a captcha, a terms checkbox and an emailed token without inventing anything. What is left is a page, and freeing that dialog from needing a session it does not have yet.</span>
         </li>
         <li>
           <span class="pick-name">Spaces</span>
-          <span class="pick-why">The large one worth paying for, and now the blocker on two other rows. Spaces are recognised, then hidden — <em>anyone organised around spaces cannot use this client</em>.</span>
+          <span class="pick-why">The large one worth paying for, and the blocker on two other rows. Spaces are recognised, then hidden — <em>anyone organised around spaces cannot use this client</em>. It is also three jobs, not one: stopping the sidebar hiding them is a small change on its own, browsing the hierarchy is a second, and a space picker — which is what unblocks authoring a restricted rule — is a third.</span>
+        </li>
+        <li>
+          <span class="pick-name">Peek a public room before joining</span>
+          <span class="pick-why">Moved down on 23 August 2026, for the reason in the note below: <em>the events are one call away, drawing them is not</em>. Still worth building, and best built beside browsing a space, since both are "look at a room you are not in" and both read the same summary.</span>
         </li>
       </ol>
     </div>
@@ -572,8 +575,8 @@
           <tr>
             <td><span class="feat">Threads</span></td>
             <td class="mod">Threading</td>
-            <td class="state">No thread anywhere. Threaded messages land in the main timeline as ordinary events; a reply into a thread is sent as a plain rich reply. Needs a thread list, a thread view, per-thread receipts and composer routing.</td>
-            <td><div class="meter"><span class="meter-label">XL</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></td>
+            <td class="state">No thread anywhere. Threaded messages land in the main timeline as ordinary events, indistinguishable from the rest; a thread is never listed and never opened. Sending is already correct — the SDK forwards the thread relation — so what is missing is a thread list, a thread view, composer routing and per-thread receipts. The SDK carries all four on the wire; the work is interface.</td>
+            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
           </tr>
           <tr>
@@ -593,8 +596,8 @@
           <tr>
             <td><span class="feat">Account registration</span></td>
             <td class="mod">Client-Server API</td>
-            <td class="state">Login handles password, SSO and the in-browser OAuth flow. There is no sign-up path and no password reset: a new user has to create the account elsewhere first.</td>
-            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
+            <td class="state">Login handles password, SSO and the in-browser OAuth flow. There is no sign-up path and no password reset: a new user has to create the account elsewhere first. Cheaper than it looks: the user-interactive auth this needs is already written and already routes every stage it cannot draw to the standard's own fallback page. A dead <em>Create Account</em> button is sitting in the greeter with no action behind it.</td>
+            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
           </tr>
           <tr>
@@ -821,7 +824,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Three corrections, five things now closed, a departure, and two that are not what they look like</h2>
+      <h2>Five corrections, five things now closed, a departure, and two that are not what they look like</h2>
     </div>
     <div class="notes">
       <div class="note closed">
@@ -893,6 +896,60 @@
           two buttons and the fullscreen window were all exercised and behave — the ringback
           going the other way was exercised too, and removed.
           <code>doc/calls.md</code> carries the same list at the top, where it cannot be missed.
+        </p>
+      </div>
+      <div class="note closed">
+        <h3>Correction: a thread reply already carries the thread</h3>
+        <p>
+          An earlier version of this page said that a reply into a thread is sent as a plain
+          rich reply. That was true once and is not true against the SDK this client is pinned
+          to. <code>Timeline::send_reply</code> asks <code>infer_reply</code> what kind of reply
+          to build, and outside a thread-focused timeline it answers
+          <code>EnforceThread::MaybeThreaded</code> — which <em>forwards</em> a thread relation
+          the replied-to event already has rather than dropping it. Replying to a message that
+          lives in a thread puts the reply in that thread, today, with no code of ours involved.
+        </p>
+        <p>
+          The correction matters because it changes what kind of gap threading is. Nothing this
+          client sends is malformed and nothing another client sees is broken by it; the whole
+          of the difference is that this end cannot <em>see</em> a thread. Threaded events sit
+          inline in the main timeline looking like ordinary messages, no thread can be listed,
+          and none can be opened. That is an argument for doing threads carefully rather than
+          urgently — and it moves the row out of the "we are getting this wrong" column, where
+          this page had wrongly put it.
+        </p>
+        <p>
+          The effort estimate moved with it, from XL to L. The protocol half is already carried:
+          a thread-focused timeline, a thread list service with live updates and pagination, a
+          thread summary with its reply count and its own read receipts on every message, and a
+          flag on the live timeline for hiding threaded events once there is somewhere else to
+          read them. <strong>Threading is a stable module of the standard, not a proposal</strong>,
+          and what is left of it here is interface work.
+        </p>
+      </div>
+      <div class="note">
+        <h3>Correction: peeking is not the cheap one</h3>
+        <p>
+          This page listed peeking a <code>world_readable</code> room first under what to build
+          next, on the grounds that the timeline is "one call away". The call is one call away.
+          The timeline is not.
+        </p>
+        <p>
+          Every timeline in this client is built from a room object, and a room object is built
+          from an SDK room — which exists only for rooms sync knows about, meaning rooms already
+          joined, invited to, knocked on or left. A room nobody here has joined has no SDK room,
+          so it can have no timeline, no event objects and none of the message rows that render
+          them. Peeking cannot reuse the stack; it needs a second, smaller one: a model over raw
+          events straight off <code>/messages</code>, and a cut-down row to draw them. The SDK
+          offers no <code>peek</code> to shortcut any of that.
+        </p>
+        <p>
+          The Absent table had this right at <em>M</em> all along — it is the ranked list above
+          that oversold it, and the companion page's framing of it as a near miss that repeated
+          the mistake. It is still worth building. It is not the thing to reach for on an
+          afternoon, and it belongs next to browsing a space, because both are "look at a room
+          you are not in" and both hang off the same summary the client already fetches and
+          currently throws half of away.
         </p>
       </div>
       <div class="note closed">
