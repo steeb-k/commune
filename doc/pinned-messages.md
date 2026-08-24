@@ -132,14 +132,19 @@ messages" would sometimes be a lie.
 2. The state allow-list at the bottom of `show_in_timeline()` is the other half
    of that, and losing it is equally silent: the arm stays and never runs. Both
    `RoomPinnedEvents` and `RoomServerAcl` belong in it.
-3. `is_live()` replaced three `!is_focused()` checks. If upstream adds a fourth
+3. Clicking a pinned message goes through `RoomHistory::focus_on_event()`,
+   which no longer always builds a focused timeline: when the live timeline
+   already holds the message it stays live and the message is highlighted in
+   place. A pinned message is often recent, so this is the common case here.
+   `doc/search.md` carries the argument and the mechanism.
+4. `is_live()` replaced three `!is_focused()` checks. If upstream adds a fourth
    thing that only the live timeline should do, it wants `is_live()`, not
    `!is_focused()`.
-4. If upstream adds its own pinned-events support, this whole approach is
+5. If upstream adds its own pinned-events support, this whole approach is
    superseded and the interesting question is which UI survives. Keep the
    notices-room exclusion in `update_pinned_events()` either way; that one is
    the spec's ask, not a preference.
-5. `TimelineFocus::PinnedEvents` is a unit variant on this SDK pin. Older
+6. `TimelineFocus::PinnedEvents` is a unit variant on this SDK pin. Older
    revisions carried `max_events_to_load` and `max_concurrent_requests`, and a
    `PinnedEventsRoom` trait that no longer exists — if the pin moves backwards,
    this is where it breaks.
