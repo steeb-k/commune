@@ -267,6 +267,15 @@ mod imp {
         server_notice_admin_contact: RefCell<Option<String>>,
         /// The pinned event IDs that `active_server_notice` was computed from.
         pub(super) server_notice_pinned_ids: RefCell<Vec<OwnedEventId>>,
+        /// The event IDs pinned in this room, oldest first.
+        ///
+        /// Empty in the server notices room: there the pinned events are the
+        /// active notices, and the spec asks for them to be shown "through a
+        /// special UI, and not the normal pinned events interface".
+        pub(super) pinned_event_ids: RefCell<Vec<OwnedEventId>>,
+        /// The number of events pinned in this room.
+        #[property(get)]
+        pinned_count: Cell<u32>,
     }
 
     #[glib::object_subclass]
@@ -279,8 +288,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Room {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("room-forgotten").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("room-forgotten").build(),
+                    Signal::builder("pinned-events-changed").build(),
+                ]
+            });
             SIGNALS.as_ref()
         }
     }
@@ -694,6 +707,34 @@ mod imp {
                 self.server_notice_admin_contact.replace(admin_contact);
                 self.obj().notify_server_notice_admin_contact();
             }
+        }
+
+        /// Update the events pinned in this room.
+        ///
+        /// The server notices room is excluded on purpose: there the pinned
+        /// events are the notices that are still active, which the spec asks
+        /// to be shown "through a special UI, and not the normal pinned
+        /// events interface". `update_active_server_notice` is that UI.
+        pub(super) fn update_pinned_events(&self) {
+            let pinned_event_ids = if self.category.get() == RoomCategory::ServerNotice {
+                Vec::new()
+            } else {
+                self.matrix_room().pinned_event_ids().unwrap_or_default()
+            };
+
+            if *self.pinned_event_ids.borrow() == pinned_event_ids {
+                return;
+            }
+
+            let count = pinned_event_ids.len().try_into().unwrap_or(u32::MAX);
+            self.pinned_event_ids.replace(pinned_event_ids);
+
+            if self.pinned_count.get() != count {
+                self.pinned_count.set(count);
+                self.obj().notify_pinned_count();
+            }
+
+            self.obj().emit_by_name::<()>("pinned-events-changed", &[]);
         }
 
         /// Update the category from the SDK.
@@ -1661,6 +1702,7 @@ mod imp {
             self.update_topic();
             self.update_category().await;
             self.update_active_server_notice().await;
+            self.update_pinned_events();
             self.update_is_direct().await;
             self.update_is_marked_unread().await;
             self.update_tombstone();
@@ -2493,6 +2535,58 @@ impl Room {
     }
 
     /// Connect to the signal emitted when the room was forgotten.
+    /// Whether the event with the given ID is pinned in this room.
+    pub(crate) fn is_pinned(&self, event_id: &EventId) -> bool {
+        self.imp()
+            .pinned_event_ids
+            .borrow()
+            .iter()
+            .any(|pinned| pinned == event_id)
+    }
+
+    /// Pin the event with the given ID in this room.
+    pub(crate) async fn pin_event(&self, event_id: OwnedEventId) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.pin_event(&event_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not pin event: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Unpin the event with the given ID in this room.
+    pub(crate) async fn unpin_event(&self, event_id: OwnedEventId) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.unpin_event(&event_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not unpin event: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Connect to the signal emitted when the pinned events of this room
+    /// change.
+    pub(crate) fn connect_pinned_events_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "pinned-events-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+
     pub(crate) fn connect_room_forgotten<F: Fn(&Self) + 'static>(
         &self,
         f: F,

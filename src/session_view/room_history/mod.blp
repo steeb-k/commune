@@ -90,6 +90,18 @@ template $ContentRoomHistory: Adw.Bin {
       }
 
       [end]
+      Gtk.ToggleButton pinned_button {
+        valign: center;
+        icon-name: "view-pin-symbolic";
+        tooltip-text: _("Pinned Messages");
+        visible: bind $show_pinned_button(
+          template.timeline as <$Timeline>.room as <$Room>.pinned-count,
+          template.is-showing-pinned
+        ) as <bool>;
+        active: bind template.is-showing-pinned bidirectional;
+      }
+
+      [end]
       Gtk.MenuButton room_menu {
         valign: center;
         icon-name: "menu-secondary-symbolic";
@@ -189,6 +201,13 @@ template $ContentRoomHistory: Adw.Bin {
           title: _("Search Results");
 
           child: $RoomHistorySearch search_view {};
+        }
+
+        Gtk.StackPage {
+          name: "pinned";
+          title: _("Pinned Messages");
+
+          child: $RoomHistoryPinned pinned_view {};
         }
 
         Gtk.StackPage {

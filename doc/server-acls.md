@@ -100,6 +100,21 @@ The `(true, true)` case matters more than it looks: a change to
 without the fallback it would read as though a server had been unblocked. There
 is a test for exactly that.
 
+## The timeline line was written and never drawn
+
+Corrected on 23 August 2026. `server_acl_message()` and its `RoomServerAcl` arm
+in `update_with_other_state()` were written when this landed, and this file has
+claimed the line exists ever since. It did not: `show_in_timeline()` in
+`src/session/room/timeline/mod.rs` ends with an allow-list of state event types,
+`m.room.server_acl` was not in it, and the event was dropped before it could
+reach a row. The tests for `server_acl_message()` all passed, because they call
+the function directly.
+
+It went into that list alongside `m.room.pinned_events`, which needed the same
+thing — see `pinned-messages.md`. The lesson generalises: an arm in
+`update_with_other_state()` is only half of showing a state event, and the half
+that is missing fails silently in the direction that looks like success.
+
 ## Files
 
 New:
@@ -125,6 +140,9 @@ Integration points, which are where a rebase will conflict:
    state events. Take theirs and re-add the `RoomServerAcl` arm above it rather
    than resolving the hunk whole — a lost arm is silent, it just goes back to
    "An unsupported state event was received."
+   The state allow-list at the bottom of `show_in_timeline()` is the other half
+   and is silent in the worse direction: lose `RoomServerAcl` there and the arm
+   stays, compiles, tests green, and never runs.
 2. `unrestricted_acl()` is load-bearing in two places, `reset()` and
    `update_changed()`. If it ever stops being `allow: ["*"]`, check both.
 3. The subpage's event handler and `Permissions::init_power_levels()` are the

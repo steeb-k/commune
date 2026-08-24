@@ -37,6 +37,7 @@ change to it: `doc/image-packs.md`, `doc/search.md` for message search,
 `doc/gif-search.md`, `doc/reporting.md` for reporting a room or a user,
 `doc/join-rules.md` for editing a restricted room's join rule,
 `doc/server-acls.md` for which servers can take part in a room,
+`doc/pinned-messages.md` for pinning a message in any room,
 `doc/recent-emoji.md` for the quick reactions, `doc/url-previews.md` for
 the card under a message that has a link, `doc/server-notices.md` for the
 room the homeserver talks to the user in, and `doc/calls.md` for one-to-one
@@ -47,6 +48,12 @@ touching it — each carries the design decisions, the
 integration points, and a rebase guide. `doc/rebrand.md` does the same for the
 rename to Commune, and is where to look before touching anything that carries
 the application's name or ID.
+
+`doc/eyeball-tests.md` is the running list of what has been built and never
+looked at on screen — every feature that draws adds to it in the same commit,
+and an entry is struck only once the user reports what they actually saw.
+Nothing in it is verifiable by `cargo check`, clippy, the tests or
+`hooks/checks-bin`.
 
 `doc/testing.md` covers `testing/local-homeserver.sh`, a throwaway Synapse in
 podman. Reach for it before asking the user to test anything that would send a

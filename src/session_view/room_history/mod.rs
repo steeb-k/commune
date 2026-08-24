@@ -20,6 +20,7 @@ mod event_timestamp;
 mod member_timestamp;
 mod message_row;
 mod message_toolbar;
+mod pinned;
 mod read_receipts_list;
 mod search;
 mod state;
@@ -35,6 +36,7 @@ use self::{
     event_timestamp::EventTimestamp,
     message_row::MessageRow,
     message_toolbar::MessageToolbar,
+    pinned::RoomHistoryPinned,
     read_receipts_list::ReadReceiptsList,
     search::RoomHistorySearch,
     state::{StateGroupRow, StateRow},
@@ -121,6 +123,8 @@ mod imp {
         search_view: TemplateChild<RoomHistorySearch>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
+        #[template_child]
+        pinned_view: TemplateChild<RoomHistoryPinned>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
         /// The timeline currently displayed.
@@ -129,6 +133,9 @@ mod imp {
         /// Whether this is the only view visible, i.e. there is no sidebar.
         #[property(get, set)]
         is_only_view: Cell<bool>,
+        /// Whether the pinned messages take the place of the timeline.
+        #[property(get, set = Self::set_is_showing_pinned, explicit_notify)]
+        is_showing_pinned: Cell<bool>,
         /// The members of the current room.
         ///
         /// We hold a strong reference here to keep the list in memory as long
@@ -165,6 +172,7 @@ mod imp {
         #[allow(clippy::too_many_lines)]
         fn class_init(klass: &mut Self::Class) {
             VerificationInfoBar::ensure_type();
+            RoomHistoryPinned::ensure_type();
             RoomHistorySearch::ensure_type();
 
             Self::bind_template(klass);
@@ -315,6 +323,7 @@ mod imp {
             self.init_listview();
             self.init_drop_target();
             self.init_search();
+            self.init_pinned();
 
             self.scroll_btn_revealer
                 .connect_child_revealed_notify(|revealer| {
@@ -422,6 +431,32 @@ mod imp {
                     }
                 }
             ));
+        }
+
+        /// Whether to show the button that opens the pinned messages.
+        ///
+        /// Shown when the room has pinned something, and kept while the pinned
+        /// messages are open even after the last one is unpinned — it is the
+        /// only way back to the timeline, and hiding it there would strand
+        /// whoever did the unpinning on the empty page.
+        ///
+        /// `function` for the same reason as
+        /// [`Self::server_notice_button_label()`].
+        #[template_callback(function)]
+        fn show_pinned_button(pinned_count: u32, is_showing_pinned: bool) -> bool {
+            pinned_count > 0 || is_showing_pinned
+        }
+
+        /// Set whether the pinned messages take the place of the timeline.
+        fn set_is_showing_pinned(&self, is_showing_pinned: bool) {
+            if self.is_showing_pinned.get() == is_showing_pinned {
+                return;
+            }
+
+            self.is_showing_pinned.set(is_showing_pinned);
+
+            self.update_view();
+            self.obj().notify_is_showing_pinned();
         }
 
         /// The label of the button of the server notice banner.
@@ -573,6 +608,24 @@ mod imp {
 
                     // Close the search to show the message in the timeline.
                     imp.search_bar.set_search_mode(false);
+                    imp.obj().focus_on_event(event_id);
+                }
+            ));
+        }
+
+        /// Initialize the view of the pinned messages of the room.
+        fn init_pinned(&self) {
+            self.pinned_view.connect_event_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, event_id| {
+                    let Ok(event_id) = EventId::parse(&event_id) else {
+                        error!("Could not parse event ID of activated pinned message");
+                        return;
+                    };
+
+                    // Close the pinned messages to show the message in the timeline.
+                    imp.set_is_showing_pinned(false);
                     imp.obj().focus_on_event(event_id);
                 }
             ));
@@ -790,6 +843,7 @@ mod imp {
                 self.grouping_model().set_model(Some(timeline.items()));
 
                 self.search_view.set_room(Some(room.clone()));
+                self.pinned_view.set_room(Some(room.clone()));
 
                 if timeline.is_focused() {
                     // The bottom of a focused timeline is not the present, so we must not
@@ -806,7 +860,11 @@ mod imp {
             } else {
                 self.grouping_model().set_model(None::<gio::ListModel>);
                 self.search_view.set_room(None::<Room>);
+                self.pinned_view.set_room(None::<Room>);
             }
+
+            // A room is not left showing the pinned messages of the last one.
+            self.set_is_showing_pinned(false);
 
             self.update_view();
             self.load_more_events_if_needed();
@@ -1089,6 +1147,12 @@ mod imp {
             if self.search_bar.is_search_mode() {
                 // The search results take the place of the timeline.
                 self.stack.set_visible_child_name("search");
+                return;
+            }
+
+            if self.is_showing_pinned.get() {
+                // So do the pinned messages.
+                self.stack.set_visible_child_name("pinned");
                 return;
             }
 
