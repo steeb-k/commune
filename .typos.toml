@@ -1,3 +1,8 @@
+[default]
+# The title of an issue on Fractal's tracker, quoted in doc/upstream-defects.html
+# as the tracker has it. Correcting the quote would misattribute it.
+extend-ignore-re = ["Hiting enter key"]
+
 [default.extend-words]
 gir = "gir"
 inout = "inout"
