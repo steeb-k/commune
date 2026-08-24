@@ -26,7 +26,13 @@
 set -eu
 
 OUT=${1:-$HOME/android/commune-pc}
-MESON_BUILD=${2:-$HOME/src/gtk-android-rust-spike/.pixiewood/bin-x86_64}
+# Default to the libadwaita build: it is the widest real view available, because
+# libadwaita pulls in GTK, which pulls in GLib, Pango, cairo and the rest, so one
+# build tree describes almost everything Commune links against — and it makes
+# `libadwaita-1` a real module rather than a stub. The S1 Rust spike
+# (`~/src/gtk-android-rust-spike`, on the retired Ubuntu host) is the narrower
+# alternative: GTK without libadwaita.
+MESON_BUILD=${2:-$HOME/src/libadwaita/.pixiewood/bin-x86_64}
 UNINSTALLED="$MESON_BUILD/meson-uninstalled"
 
 rm -rf "$OUT"
