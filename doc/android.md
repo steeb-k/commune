@@ -31,7 +31,7 @@ whole route hung on.
 | S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator |
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
-| S3 — Commune login on the emulator | **in progress**; its prerequisite is done — the build host is now Arch, and **libadwaita builds and runs** |
+| S3 — Commune login on the emulator | **in progress** — the host is Arch and libadwaita runs; Commune's own tree now compiles for Android with the media stack gated. What is left is the `staticlib` entry point, and it needs a decision |
 | S4 — GStreamer | not started |
 | S5 — keystore, notifications, SSO, push | not started |
 
@@ -821,31 +821,115 @@ Three traps found on the way, none of them about GtkSourceView itself:
   not arise, because a subproject receives GLib as a meson dependency object carrying real targets.
   Test wraps the way they will be used: as subprojects.
 
+### GStreamer is a wall, not a switch
+
+`doc/android-plan.md` filed GStreamer under features to gate, alongside the camera and
+location stubs. That understated it. `gst` and its seven siblings were plain entries in
+`[dependencies]` with no `cfg` on them, so without GStreamer the tree did not lose voice messages
+and calls — **it did not compile.** 255 errors, in nine files:
+
+| File | Errors | What it is |
+| --- | --- | --- |
+| `session/calls/pipeline.rs` | 102 | the whole WebRTC pipeline |
+| `utils/media/video.rs` | 39 | video metadata and thumbnails |
+| `components/media/video_player_renderer.rs` | 17 | |
+| `components/media/video_player.rs` | 12 | |
+| `session/calls/ringtone.rs` | 10 | |
+| `utils/media/audio.rs` | 8 | duration and waveform |
+| `components/media/location_viewer.rs` | 5 | libshumate, not GStreamer |
+| `utils/media/mod.rs` | 3 | the `Discoverer` helper |
+| `main.rs` | 1 | `gst::init()` |
+
+Gating whole modules rather than individual expressions took that to zero. The gate is
+`cfg(target_os = "android")` and not a Cargo feature: every platform seam in this codebase is
+already shaped that way, and a target cannot be forgotten at the command line the way a feature
+flag can.
+
+Two things made this much less invasive than the error count suggests.
+
+**The app already knows how to say "no".** Every fallback here is one the codebase had already: a
+location message falls through to the same unsupported-event arm that any unknown `msgtype` hits,
+the media viewer's location branch shows the fallback screen it shows for anything it cannot
+display, a video message gets the error badge the row already uses for a video that will not load,
+and the call buttons are hidden by exactly the code that hides them in a room that cannot be
+called. Only one new translatable string was needed, for the video row, because reusing "Could not
+retrieve media" would have been a lie. Nothing new was invented, and there is nothing to unpick in
+S4 beyond deleting the `cfg`s.
+
+**The compiler chains the gating for you, but only in Rust.** Gating a type forces the gating of
+its Rust users, so nothing is missed. Blueprint is the exception, and it fails the other way round:
+a `#[template_callback]` that stops existing does not fail to compile, it fails when the template
+is instantiated. So `place_call` and `build_video` keep their signatures and stay registered, with
+`place_call` a no-op that the hidden buttons can never reach. An orphaned `.blp` for a gated widget
+is inert and harmless — it is compiled into the gresource and never referenced — but a live
+template referencing a gated type would be a runtime crash. That asymmetry is worth remembering
+before gating anything else.
+
+The other libraries sorted themselves out by inspection rather than by trying:
+
+* **libwebp** never needed cross-building. `libwebp-sys` depends on `cc`, so it compiles libwebp
+  itself; the Meson `dependency()` was only ever an assertion, and it is gone on Android.
+* **sqlite3 does** need a real library. `libsqlite3-sys` has no `cc` dependency, so it does _not_
+  vendor a copy. Android ships `libsqlite3.so` in the NDK sysroot but no `.pc` file, so the Meson
+  assertion is gone while the link still needs `-lsqlite3` to resolve. Untested: only linking will
+  say, and nothing has linked yet.
+
+Verified on both targets. `cargo clippy --all-targets` is clean for `x86_64-linux-android`, and the
+Linux build carries exactly the warnings it carried before — the point of the exercise being that
+Linux does not notice any of this.
+
 ### Still to do in S3
 
-Done so far: the build host, the metainfo `xmlns`, and GtkSourceView cross-built from a wrap.
+Done: the build host, the metainfo `xmlns`, GtkSourceView cross-built from a wrap, the media stack
+gated so the tree compiles, and the runtime paths.
 
-Still ahead:
+**The next step needs a decision, which is why it has not been taken.** Everything else in S3 is
+mechanical; this is not.
 
-* **The `staticlib` entry point and C stub** applied to Commune's own build. `src/meson.build`
-  declares a `cargo-build` target that produces and copies a _binary_; on Android it has to produce
-  a static library that meson links into an `android_exe_type: 'application'` executable together
-  with a stub exporting `main`. This is S1's recipe, which has never been applied to Commune.
-* **GStreamer, which is a harder gate than the plan assumed.** `gst` and its seven siblings are
-  plain entries in `[dependencies]`, not behind any `cfg`, so Commune does not merely lose voice
-  messages and calls without GStreamer — it does not link at all. Ten files touch it
-  (`components/media/{gst_media_stream,video_player,video_player_renderer}.rs`,
-  `session/calls/{pipeline,ringtone}.rs`, `utils/media/{audio,video,mod}.rs`, `main.rs`,
-  `utils/app_bundle.rs`). There is already a `#[cfg(target_os = "macos")]` arm on
-  `gst_media_stream` to extend.
-* **libshumate gated**, which means the location message row and `MediaContentViewer`'s location
-  branch need a path that does not construct a `LocationViewer`.
-* **The runtime paths**, using `XDG_DATA_DIRS` and GLib's accessors rather than the environment.
-* **The `launchMode="singleTask"` patch**, which must survive `pixiewood generate` regenerating
-  `AndroidManifest.xml`.
-* **A pixiewood manifest for Commune**, carrying the `-Dgtksourceview:*` options and the
-  architecture whitelist.
-* Then password login against `testing/local-homeserver.sh`.
+#### The entry point, and the shape of the crate
+
+GTK's glue `g_module_symbol`s for `main` in the application's shared object, and S1 established the
+way to satisfy that from Rust: build the Rust as a **`staticlib`**, and let Meson link it into the
+`android_exe_type: 'application'` executable next to a three-line C stub that exports `main`. The
+`staticlib` is the load-bearing part — rustc never links one, so cargo needs only the pkg-config
+_description_ of GTK and not `libgtk-4.so` itself, which is what avoids a circular dependency in
+ninja. A `cdylib` would have to link GTK for real and would reintroduce it.
+
+Commune cannot produce a `staticlib` as it stands, because it is a binary-only crate: `src/main.rs`
+is the crate root and `src/meson.build` has a `cargo-build` target that runs `cargo build` and
+copies the resulting _binary_. A package cannot expose one set of modules as both a bin root and a
+lib root.
+
+The conventional fix is to split the crate — `src/lib.rs` takes the module declarations and a
+`pub fn run()`, and `src/main.rs` shrinks to a call into it — with `crate-type = ["staticlib"]`
+added for Android. It is mechanical and the compiler checks it. What makes it a decision rather
+than a task is the blast radius: **it changes the shape of the crate on every platform**, not just
+this one. The Meson `cargo-build`, `cargo-doc` and `cargo-test` targets all name the binary, CI
+builds it, and Linux, macOS and Windows would all be building a lib plus a thin bin from then on.
+
+The alternatives worth weighing before that is done:
+
+* **Split the crate** as above. One tree, one set of modules, and Android is one more `crate-type`.
+  Touches every platform's build.
+* **A second package in a workspace** whose only job is the Android entry point, depending on the
+  existing one. Leaves the main crate alone, but the main crate still has to become a lib for
+  anything to depend on it, so this mostly moves the same change.
+* **Keep the bin and give it an exported `main`.** Least churn, and it needs checking whether a
+  Rust binary can be made to satisfy `g_module_symbol` at all — S1 never tried it, and the reason
+  it reached for a `staticlib` was the pkg-config/ninja ordering, not the symbol.
+
+Once the entry point exists, what remains is short and dull: a pixiewood manifest for Commune
+carrying the architecture whitelist and the `-Dgtksourceview:*` options, the
+`launchMode="singleTask"` patch (which has to survive `pixiewood generate` rewriting
+`AndroidManifest.xml`), and then password login against `testing/local-homeserver.sh`.
+
+#### Not yet exercised at all
+
+Everything above is compile-time. Nothing in Commune has run on Android, so all of these are
+untested rather than working: whether `-lsqlite3` resolves against the NDK sysroot, whether the
+extracted assets land where `app_bundle.rs` now looks for them, whether
+`glib::user_cache_dir()` returns anything usable, and whether GTK's `ImContext` is good enough for
+the composer — the question S0 left open and the one that decides whether Route A is worth having.
 
 ## Known gaps
 

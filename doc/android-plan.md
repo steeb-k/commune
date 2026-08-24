@@ -149,6 +149,13 @@ Made on 23 August 2026, before any spike:
   first Commune APK builds without gtksourceview, libshumate, GStreamer, calls, camera and
   location, behind one Cargo feature (working name `android-spike`) and the matching Meson
   option. Every gate is temporary and is listed in `doc/android.md` until it is removed.
+
+  **Revised during S3, in two ways.** GtkSourceView is _not_ gated: everything it needs was
+  already a pixiewood subproject, so a wrap cross-builds it unpatched — and gating it would have
+  meant rewriting the message composer, whose text entry is a `sourceview::View`. And the gate is
+  `cfg(target_os = "android")` rather than a Cargo feature, because every platform seam here is
+  already shaped that way and a target cannot be left off a command line. libshumate, GStreamer
+  and calls are gated as planned. See `doc/android.md`.
 * **Secrets: plain file first, Keystore the moment the route is chosen.** During spikes the
   session secret lives in a file under `getFilesDir()` (Android sandboxes it per app, and the
   `SecretFile` machinery already exists). Android Keystore via JNI is the first task of S5
