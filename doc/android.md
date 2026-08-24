@@ -914,9 +914,17 @@ The alternatives worth weighing before that is done:
 * **A second package in a workspace** whose only job is the Android entry point, depending on the
   existing one. Leaves the main crate alone, but the main crate still has to become a lib for
   anything to depend on it, so this mostly moves the same change.
-* **Keep the bin and give it an exported `main`.** Least churn, and it needs checking whether a
-  Rust binary can be made to satisfy `g_module_symbol` at all — S1 never tried it, and the reason
-  it reached for a `staticlib` was the pkg-config/ninja ordering, not the symbol.
+* ~~**Keep the bin and export `main` from it.**~~ Not available, and worth writing down so nobody
+  spends an evening on it: `crate-type` is only a `[lib]` key. A `[[bin]]` is always a `bin`, so
+  there is no way to ask cargo for a `staticlib` or a `cdylib` without a lib target, whatever the
+  symbols look like. The restructure is not a stylistic preference; it is the precondition.
+
+A related note, since it changes what the choice is between. S1 reached for a `staticlib` because
+it sidesteps ninja ordering — rustc never links one, so cargo needs no `libgtk-4.so` — but S1 also
+recorded that the ordering _is_ expressible, with `depends:` in Meson. So a `cdylib` linked
+directly into `jniLibs/`, with no C stub and no Meson link step, is not obviously ruled out. It
+would still need the same lib target, so it is a variation on the first option rather than an
+escape from it.
 
 Once the entry point exists, what remains is short and dull: a pixiewood manifest for Commune
 carrying the architecture whitelist and the `-Dgtksourceview:*` options, the
