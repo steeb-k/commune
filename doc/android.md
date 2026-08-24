@@ -33,7 +33,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **Commune runs on the emulator.** The greeter draws, Log In navigates, and typing reaches Commune's own validation. Logging in against a homeserver has not been tried |
 | S4 — GStreamer | not started |
-| S5 — keystore, notifications, SSO, push | not started |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; notifications, SSO and push not started |
 
 ## Where things are
 
@@ -1056,6 +1056,50 @@ the zip, whose entries added up to only 333 MB. `rm -rf .pixiewood/android/app/b
 and rebuilding gives the real number. Compare `unzip -l` against the file size before believing
 either.
 
+### The secret store
+
+Done before trying to log in, deliberately: a login that wrote a plaintext passphrase to
+semi-public storage would only be manufacturing something to clean up afterwards.
+
+There were two problems here and they were easy to mistake for one.
+
+**Where the file lives.** `DataType::Persistent` was `glib::user_data_dir()`, which the glue points
+at `Context.getExternalFilesDir(null)` — external storage. It is now derived from `XDG_DATA_DIRS`,
+which the glue sets to `Context.getFilesDir()`, and the cache with it, since GLib had no answer for
+that at all. This moves the SDK's SQLite databases too, not only the secret store: sealing the
+passphrase while leaving the message history it encrypts on semi-public storage would have been a
+half-fix.
+
+Deriving rather than asking Android is deliberate. Asking needs a `Context`, a `Context` needs a
+realized toplevel, and sessions are restored before there is a window. If the derivation ever stops
+matching, `crate::utils` panics rather than falling back — a fallback means silently writing
+secrets to external storage again, which is the failure this exists to prevent.
+
+**What is in the file.** AES-256-GCM under a key generated in the Android Keystore. The key is
+never handed out — that is the whole point of the Keystore — so it cannot be copied off the device
+and cannot be used except as this application's UID. Which is also why the encryption happens on
+the Java side through JNI: there is no key material to give a Rust cipher. GCM authenticates as
+well as encrypts, so a tampered file fails to decrypt rather than decrypting to something else, and
+the Keystore chooses the IV, refusing a caller-supplied one.
+
+`src/utils/android.rs` captures the `JavaVM` once, on the GTK thread, because a `JNIEnv` belongs to
+its thread and the secret store runs on a tokio worker through `spawn_tokio!`. It is a separate
+module from the secret store because S5's notifications will want the same thing. The way in is
+`gdk_android_display_get_env()`, public API since GTK 4.18 and declared by hand, since the gtk-rs
+bindings do not cover the Android backend.
+
+Measured on the emulator with a round trip that was removed before committing:
+
+| Test | Result |
+| --- | --- |
+| `DataType::Persistent` | `/data/user/0/io.github.steeb_k.commune/files/commune` — internal |
+| `DataType::Cache` | `/data/user/0/io.github.steeb_k.commune/cache/commune` — internal |
+| Keystore round trip | 27 bytes sealed to 57 and back, byte-identical |
+| The system Keystore really did it | `keystore2` appears in logcat during the call |
+
+57 is the arithmetic working out: 1 version byte, 1 IV length, the 12-byte GCM IV, 27 of plaintext
+and the 16-byte GCM tag.
+
 ### What has not been exercised
 
 Running the app answers some of what S3 left open and not others.
@@ -1094,19 +1138,14 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
   Record the answer here — for a chat app this is the single most load-bearing input behaviour.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
-* **The Android data directory is external storage, and nothing has been decided about it.**
-  `DataType::Persistent` is `glib::user_data_dir()`, which the glue points at
-  `getExternalFilesDir(null)/share` rather than at `getFilesDir()`. Everything the app persists goes
-  there: the SDK's SQLite databases and — worst — the placeholder secret store's plaintext session
-  passphrase. `src/secret/android.rs` used to claim the UID-owned sandbox protected it; that claim
-  was wrong and the file now says so. Choosing the right directory is an S3 task and is cheaper than
-  the Keystore work it precedes.
-* **`glib::user_cache_dir()` on Android is untested and looks wrong.** The glue calls
-  `g_set_user_dirs()` for `XDG_{CONFIG,DATA}_{DIRS,HOME}` and **not** for the cache, so
-  `DataType::Cache` falls back to GLib's default of `$XDG_CACHE_HOME`, else `$HOME/.cache` — and an
-  Android process has neither set to anything useful. This is inference from the source, not a
-  measurement: verify it as soon as Commune runs, because an unwritable cache directory will fail
-  somewhere unhelpful.
+* ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
+  wrong~~. **Both fixed**, see [The secret store](#the-secret-store). Measured on the emulator as
+  `/data/user/0/…/files/commune` and `/data/user/0/…/cache/commune`.
+* **The Keystore key is not bound to user presence.** No `setUserAuthenticationRequired`, so
+  anything running as this UID can decrypt without a lock-screen prompt. Deliberate for now —
+  sessions are restored at startup, before there is a window to prompt over — and the obvious next
+  tightening. Hardware backing is not required either: the Keystore uses secure hardware where the
+  device has it and falls back to software silently, and nothing here refuses that.
 * **`cargo doc` fails on two pre-existing links, and not only for Android.**
   `cargo doc --no-deps --target x86_64-linux-android` errors with `unresolved link to gdk::Texture`
   (`src/utils/media/image/decoder/mod.rs:15`) and warns `redundant explicit link target` (`:22`).
