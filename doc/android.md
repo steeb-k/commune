@@ -21,6 +21,7 @@ whole route hung on.
 * [S1 — Rust on Android works](#s1--rust-on-android-works)
 * [S2 — Commune compiles for Android](#s2--commune-compiles-for-android)
 * [S3 — Commune on Android](#s3--commune-on-android)
+* [S5 — Notifications](#s5--notifications)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -33,7 +34,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | not started |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; notifications and push not started; SSO now has a measured failure to fix rather than a predicted one |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; push not started, and the app is still only delivered to while foregrounded |
 
 ## Where things are
 
@@ -1303,6 +1304,154 @@ at nothing and the app is English-only. Same cause as the schema — an untagged
 `po/meson.build`, where `i18n.gettext()` does the installing and does not obviously take a tag.
 Cosmetic for a spike, and it should be fixed before anyone sees it.
 
+## S5 — Notifications
+
+Notifications on Android were not broken. They were absent, and they said so to nobody.
+
+`GNotification` is the whole of the notification code on every other platform:
+`Notifications::send_notification()` fills in a `gio::Notification` and hands it to
+`g_application_send_notification()`, which finds a backend for it. GIO ships three backends —
+`gtk`, `freedesktop` and `cocoa` — and the first two are D-Bus, which no Android application can
+reach. There is no fourth. So the call there is not a failure that could be logged, it is a
+**silent no-op**: every notification Commune has ever raised on Android went nowhere, quietly, and
+nothing in the code or the logs would ever have said so.
+
+`src/utils/android_notifications.rs` is the replacement, and it is deliberately the same shape as
+`src/utils/macos_notifications.rs` — an `init`/`send`/`withdraw` triple behind the `cfg_if!` in
+`src/session/notifications/mod.rs` — because macOS is the other platform whose notification backend
+GIO cannot serve, and the seam was already cut to that shape.
+
+### Four things the platform demands
+
+**A channel, or nothing is shown.** Since API 26 a notification whose channel does not exist is
+dropped by the system without a word — the same failure mode as having no backend, arrived at
+differently. The channel also owns the importance, the sound and whether the notification may
+interrupt, and the user can retune all of it in system settings afterwards; an application that
+created its channel with a low importance cannot talk its way back up later. So it is created once,
+at `init()`, with `IMPORTANCE_HIGH`, which is what `im.received` and `NotificationPriority::High`
+already asked for elsewhere. The channel ID is `im.received` too, for want of a reason to invent a
+second name for the same thing.
+
+**Permission, at runtime.** `POST_NOTIFICATIONS` arrived in API 33 and this build targets 36, so
+the manifest entry `patch-manifest.sh` now adds earns only the right to ask. `init()` asks and does
+not wait: the answer arrives at `Activity.onRequestPermissionsResult`, which would mean a fourth
+patch to GTK's Java glue for something `checkSelfPermission()` can be asked at any later moment
+anyway. The request needs the `Activity` rather than the application `Context` — the application
+`Context` can be asked whether permission is held, but cannot ask for it — which is why `init()`
+takes the window and is called from `Application::present_main_window()` rather than from
+`lib.rs` next to `android::init()`. Until there is a window there is no `Activity`, and until
+there is an `Activity` there is no `Context` at all.
+
+**A tap has to survive the process.** What a notification carries is a `GAction` name and a
+`GVariant` target, and by the time it is tapped the process that posted it may be long dead — on
+Android that is the ordinary case, not the edge one. So none of it travels in memory. It is written
+into the `Intent`'s URI under the same custom scheme SSO login already registered, as
+`io.github.steeb-k.commune:/notification?action=…&target=…`, and read back in
+`Application::process_uri()`.
+
+**The icon is bytes, not a file.** macOS wants a file URL, so `macos_notifications` writes the
+avatar into the cache and cleans up after itself at startup. `BitmapFactory.decodeByteArray` takes
+the PNG directly out of `gdk::Texture::save_to_png_bytes()`, so nothing here touches the disk and
+there is nothing to clean up.
+
+### The delivery path was already built
+
+The tap path cost almost nothing, and that is the point worth recording: the `intent-filter` in
+`patch-manifest.sh` and the `onNewIntent` override in `patch-gtk-intent.sh` were both built for the
+OAuth 2.0 redirect, and a notification tap needs exactly the same door. A `PendingIntent` naming
+`ToplevelActivity` explicitly — an implicit `ACTION_VIEW` would be offered to every application on
+the device — lands in `onNewIntent`, is handed to `GdkContext.open()`, and arrives at
+`Application::process_uri()` as a URI. Which of the two arrivals it is, is a prefix test.
+
+Two things about that path had to be checked rather than assumed.
+
+`g_uri_parse_params()` is one of the few GLib functions gtk-rs does not bind: the generator gives up
+on its `GHashTable` return and leaves the binding commented out (`glib-0.22.8/src/auto/uri.rs:291`).
+This was found by the compiler, after being written against it. The query is taken apart by hand in
+`android_notifications::tapped_action()` instead, next to the `tap_uri()` that builds it, so the two
+halves of one format sit together.
+
+The escaping has to survive a round trip through `GFile`, not just the wire. `GApplication::open()`
+hands a URI over as a `GFile`, and for an unknown scheme GIO decodes it into a `GDummyFile` and
+re-encodes it on the way out. Printed `GVariant` text is full of what a query cannot carry
+literally — quotes, commas, spaces, colons, an ampersand in a room name — so both halves are
+escaped with `g_uri_escape_string()` and unescaped again on the far side. Measured, not assumed:
+see below.
+
+### What was measured
+
+On the emulator, 24 August 2026, against a real `matrix.org` account.
+
+**The permission prompt is real.** Android showed "Allow Commune to send you notifications?" —
+so the manifest entry took and the request reached the system with the right application name.
+Granting it flips `dumpsys package` to `POST_NOTIFICATIONS: granted=true`.
+
+**The channel exists**, exactly as asked for:
+
+```text
+NotificationChannel{mId='im.received', mName=Messages, mImportance=4, …}
+```
+
+**The tap path was proved before there was anything to tap**, with synthetic `Intent`s. A
+deliberately broken target — `am start -a android.intent.action.VIEW -d
+'io.github.steeb-k.commune:/notification?action=app.show-matrix-id&target=notavariant'` — produced
+`Could not read the target of a tapped notification: 0-11:unknown keyword`, which proves the whole
+chain from `onNewIntent` to the parser runs. A valid one, escaped as `tap_uri()` escapes it, came
+back intact through `GFile` and activated the action with the payload it was given:
+
+```text
+Could not find session to process intent session="test-session"
+  intent=ShowMatrixId(Room(MatrixRoomIdUri { id: "#test:example.org", via: [] }))
+```
+
+Quotes, comma, space, colons and slash all survived. That was the part of this least certain in
+advance and it is now the part least in doubt.
+
+**A real message posts a real notification.** A direct message from another account, with Commune
+foregrounded on the room list:
+
+```text
+tag=mtbcuwGu//matrix:roomid/…/e/…   id=0
+channel=im.received  importance=4  category=msg  flags=AUTO_CANCEL
+icon=Icon(typ=RESOURCE pkg=io.github.steeb_k.commune id=0x7f020001)
+android.title="steeb"  android.text="Hello."
+android.largeIcon=Icon(typ=BITMAP size=96x96)
+contentIntent=PendingIntent{… startActivity}
+isNoisy=true
+```
+
+Every part of that is load-bearing. The small icon is a resource of ours, not the
+`android.R.drawable.stat_notify_chat` fallback, so `getIdentifier("ic_launcher_monochrome")` found
+the drawable pixiewood generates for the launcher's monochrome layer — which is the right shape for
+a status bar icon precisely because it is a silhouette, since Android masks a small icon down to
+its alpha channel and tints it. The large icon decoded to a 96×96 `Bitmap`, so the PNG bytes made
+it across JNI. The tag is the ID `GApplication::send_notification()` would have been given, with
+the `int` left at zero, which is what keeps replace-by-ID and makes `withdraw_notification()`
+addressable. Nothing from our own code appears in logcat: no avatar that failed to decode, no
+missing drawable, no JNI exception.
+
+**Tapping it opened the conversation**, and `AUTO_CANCEL` removed the notification — the record is
+gone from `dumpsys notification` afterwards.
+
+### What this does not do
+
+**The app must be in the foreground.** Android freezes the process the moment it is backgrounded,
+so a message that arrives then is not late, it is not received at all: there is no sync running to
+receive it. Nothing above changes that, and for a chat application it is the larger half of the
+problem. The next piece is a foreground service — chosen over UnifiedPush and FCM because it needs
+no push gateway, no distributor application and no homeserver co-operation, and so can be measured
+here rather than assumed. UnifiedPush remains the better answer for battery and can be added over
+the same `NotificationManager` code, which is why that code takes no position on where a
+notification came from.
+
+**Notification buttons are written but unexercised.** `Notification.Action` is built for the
+`buttons` argument, and the only caller that passes any is the call notification, which is
+`cfg`-gated out on Android along with the rest of GStreamer. So that arm compiles and has never
+run.
+
+**The channel name is untranslated**, like everything else here — see
+[Translations are missing](#what-has-not-been-exercised).
+
 ## Known gaps
 
 * **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
@@ -1375,6 +1524,36 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
   only wraps `rsvg`. HEIC and AVIF would need `libheif`/`libavif` cross-built and wrapped the same
   way before the fallback could reach them here. Not measured yet — no image of an unsupported
   format has been sent to this build.
+* **Eleven icons render as the missing-icon placeholder, because no icon theme is in the APK.**
+  Reported from the emulator as "several of the symbols appear broken", the "Back to Latest"
+  button's among them. It is not a font and it is not the SVG renderer: GTK 4.23 parses symbolic
+  SVGs itself (`gtk/svg/`), and everything Commune ships in its own gresource draws correctly.
+
+  There is no `share/icons` in the installed application at all —
+  `run-as io.github.steeb_k.commune ls files/share` gives `commune fontconfig glib-2.0 gtk-4.0
+  xml` and nothing else — because `adwaita-icon-theme` is not among the wraps in
+  `build-aux/android/io.github.steeb_k.Commune.xml`, and nothing else supplies one. On a desktop it
+  is simply a package that is always installed, which is why this has never come up before.
+
+  So an icon resolves only if Commune ships it (57 in `data/resources/icons/`) or GTK ships it
+  builtin (127 in `gtk/icons/`). Of the 17 names the UI asks for that Commune does not ship, six
+  are in GTK's set and render — `list-add`, `object-select`, `pan-down`, `user-trash`,
+  `view-fullscreen`, `view-more` — and eleven resolve to nothing:
+
+  | Icon | Where it shows |
+  | --- | --- |
+  | `go-last-symbolic` | the "Back to Latest" button, the reported one |
+  | `document-edit-symbolic` | edited-message marker |
+  | `view-more-horizontal-symbolic`, `view-restore-symbolic` | menus and window controls |
+  | `image-missing-symbolic` | the placeholder for a picture that failed to load, itself missing |
+  | `call-start`, `call-stop`, `camera-web`, `camera-disabled`, `microphone-disabled`, `audio-input-microphone` | calls, already gated out with GStreamer |
+
+  Six of the eleven are the call and camera icons, which no reachable code draws while S4 is
+  undone, so the visible damage today is five. The fix is a choice rather than a patch: wrap
+  `adwaita-icon-theme` for pixiewood (it is a Meson project and installs no code, so it is the
+  honest fix and the one that keeps working as the UI grows), or copy the handful of SVGs into
+  `data/resources/icons/` (smaller, but it makes Commune ship icons it would shadow the system
+  theme with on Linux). Not yet done, and worth doing before anyone sees this build.
 * **The TLS trust roots are read from the filesystem rather than verified by Android.** Deliberate,
   measured, and narrower than the platform verifier in ways written down in `src/utils/tls.rs` and
   in [The TLS that never returned](#the-tls-that-never-returned). Replacing it needs the Kotlin
