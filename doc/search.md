@@ -184,6 +184,41 @@ them is a guard on `is_focused()` somewhere:
 the `expect()` in `set_focused_event_id()` is unreachable by construction. If a
 second caller ever appears, that is the thing that breaks.
 
+### A focused timeline is the last resort, not the first
+
+`RoomHistory::focus_on_event()` used to build one unconditionally. It is the
+single entry point for going to a message — a search result, a pinned message, a
+`matrix.to` permalink, and **a click on a desktop notification** — and the first
+rule in the table above is what makes that wrong for the last of them: a focused
+timeline receives no sync events. Clicking the notification for a message that
+had just arrived opened the room in a snapshot of it, announced _Back to Latest_
+for a place you had never left, and then quietly showed nothing new until you
+pressed it. Arriving in a chat room and not seeing the next message is a worse
+failure than the one it was solving.
+
+So the method asks first whether the room's **live** timeline already holds the
+event, with `Timeline::find_event_position()` — the same lookup `scroll_to_event`
+does, and the only "is this loaded" answer either the SDK or this tree offers.
+If it does, the live timeline stays and the event is scrolled to and highlighted
+in place. Only an event that is genuinely not loaded gets a timeline of its own,
+which is the case that mode exists for.
+
+The awkward part is that the answer is not available at the moment of the click:
+the live timeline of a room that has never been opened is still being built, so
+"not found" is not yet an answer. The highlight is therefore a _pending_ target —
+`highlighted_event_id` on `RoomHistory`, alongside the existing
+`focused_scroll_done` machinery — retried from the same `is-empty` and `state`
+handlers that already drive `scroll_to_focused_event_if_needed()`. It gives up
+and builds a focused timeline the moment the timeline is `Ready` and non-empty
+without the event in it; a two-second timeout covers a timeline that never
+becomes ready at all.
+
+The highlight reuses the `focused-event` CSS class rather than inventing a
+second one, and clears itself after three seconds — a permanent highlight on a
+live timeline reads as a selection. Rows built after it is set pick it up in
+`bind_list_item_to_item` like the focused one; rows already on screen are walked
+and updated, which is what `update_target_event_rows()` is for.
+
 ## Two bugs fixed on the way
 
 Both were pre-existing, and both are why the feature is bigger than it looks.
@@ -218,11 +253,11 @@ Integration points, which are where a rebase will conflict:
 | `src/session/room/mod.rs` | `mod search;` and its re-exports |
 | `src/session/room/timeline/mod.rs` | Focused mode: `new_focused()`, `is_focused()`, forward pagination, the guards |
 | `src/session/room/timeline/virtual_item.rs` | The end-of-timeline spinner |
-| `src/session_view/room_history/mod.rs`, `.blp` | Swapping timelines, the search pane, `<primary>F` |
+| `src/session_view/room_history/mod.rs`, `.blp` | Swapping timelines, the search pane, `<primary>F`, and `focus_on_event()` preferring the live timeline with a pending highlight |
 | `src/session_view/mod.rs` | Permalinks open on the event |
 | `src/session_view/content.rs` | Passing the focused event through |
 | `src/session_view/room_details/history_viewer/event.rs` | Uses the event's own timeline, which may be focused |
-| `src/session_view/room_history/event_row.rs` | Highlighting the focused event |
+| `src/session_view/room_history/event_row.rs` | Highlighting the focused event, and now the highlighted one too |
 | `src/utils/grouping_list_model/mod.rs` | The position conversion fix |
 | `data/resources/stylesheet/_room_history.scss` | Focused-event highlight |
 | `src/shortcuts-dialog.blp` | Search Messages, `<primary>F` |

@@ -383,3 +383,54 @@ a second run.
       _Forget_ target is still at the bottom of the sidebar. The section index
       map was rewritten by hand and it is exactly the kind of change that
       moves a section's contents into its neighbour.
+
+## Going to a message without leaving the present — `doc/search.md`
+
+`RoomHistory::focus_on_event()` used to build a focused timeline every time.
+It now prefers the room's **live** timeline whenever that already holds the
+event, and highlights the message in place. Every way of going to a message
+runs through it, so all four need a look, and the one that motivated the
+change is the notification.
+
+**There is no harness for the notification case.** `COMMUNE_TEST_NOTIFICATION=1`
+deliberately carries a room URI, not an event URI, so it takes the room-preview
+path and proves nothing here. It needs a real incoming message while the window
+is unfocused — two accounts, or a phone.
+
+* [ ] **A notification for a brand new message opens the room at the bottom,
+      with no _Back to Latest_ button.** This is the whole point. Before the
+      change the button appeared and the timeline then silently stopped
+      updating.
+* [ ] **And the room keeps updating afterwards.** Send another message from the
+      other account without touching anything: it must appear. This is the half
+      that was actually broken, and it is invisible unless you wait for it.
+* [ ] **The message is highlighted for about three seconds** and then goes back
+      to normal. Watch that it does not stay highlighted, and that it does not
+      look like a selection.
+* [ ] **A read receipt is sent.** The other account should see the message
+      marked read. A focused timeline suppresses receipts on purpose, so this
+      is how you tell which timeline you actually landed in without looking for
+      the button.
+* [ ] **A notification for an old message still gets a focused timeline** —
+      the _Back to Latest_ button appears and works. Scroll a room's history
+      back a long way from the other account's side, or click a notification
+      that has sat unread while thousands of messages arrived. The fallback is
+      the case the focused timeline exists for and it must still work.
+* [ ] **A `matrix.to` permalink to a message near the bottom** stays live and
+      highlights, and one to an old message focuses. Paste one into a room and
+      click it.
+* [ ] **A search result behaves the same way.** A hit on a recent message
+      should now leave you in the live timeline rather than in a snapshot —
+      this is a deliberate change to how search results open, and it is the
+      one most likely to feel wrong to somebody used to the old behaviour.
+* [ ] **A pinned message opens the same way**, which for a recently pinned
+      message means staying live.
+* [ ] **A room that has never been opened in this session.** The live timeline
+      is still being built when the notification is clicked, so the highlight
+      is a pending one. Restart the app, do not open the room, then click a
+      notification for a message in it: it should still land live and
+      highlighted, not focused. If the timeline takes more than two seconds to
+      become ready, it falls back to a focused timeline — no worse than before,
+      but worth noticing if it happens every time.
+* [ ] **Clicking a notification for a room you are already reading** does not
+      jump anywhere unpleasant or steal the scroll position for long.
