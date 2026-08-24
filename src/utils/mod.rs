@@ -49,6 +49,8 @@ mod template_callbacks;
 pub(crate) mod toast;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_app_id;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_notifications;
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,

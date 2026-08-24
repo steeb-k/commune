@@ -85,7 +85,10 @@ fn main() {
     // process has claimed an application user model ID, and it fails silently
     // rather than complaining, so this happens before anything can try.
     #[cfg(target_os = "windows")]
-    utils::windows_app_id::init();
+    {
+        utils::windows_app_id::init();
+        utils::windows_notifications::init();
+    }
 
     // Prepare i18n
     // Safety: `setlocale` is safe to call because the program is single-threaded.
