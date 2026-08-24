@@ -237,21 +237,23 @@ is everything up to the point where the email would arrive.
       which delegates authentication and so never shows that page — use
       _Another Homeserver_ and the local harness. That is behaviour, not a
       fault: `account.matrix.org` carries its own reset.
-* [ ] **The page draws**: title "Reset your password on localhost", the
+* [x] **The page draws**: title "Reset your password on localhost", the
       homeserver URL under it, an explanation, one email row and a _Send Link_
-      button that is insensitive until something is typed.
-* [ ] **A homeserver that cannot send email** says so — "This homeserver cannot
-      send email, so a password cannot be reset here" — rather than showing a
-      raw server message. The local harness has no SMTP, so this is the case it
-      _can_ test.
+      button that is insensitive until something is typed. Seen 24 August 2026 —
+      it was reached and used, which is what produced the answer below.
+* [x] **A homeserver that cannot send email says so.** Seen 24 August 2026:
+      _"Email-based password resets have been disabled on this server"_ — which
+      is Synapse's own sentence under `M_UNKNOWN`, arriving through the
+      catch-all rather than through this fork's `M_THREEPID_DENIED` arm. Good
+      enough that the mapping was left alone; `registration.md` records why.
 * [ ] **An address on no account** says "No account on this homeserver uses that
       email address."
 * [ ] **The stack moves on** to the password half only once the server has
       answered, and the explanation names the address the link went to.
 * [ ] **The strength meter and the confirmation** behave as they do on the
-      other two pages — this is the third caller of the shared helpers, so it is
-      also the check that the shared version did not break the older two.
-      Check Account Settings ▸ Change Password still behaves as well.
+      other two pages. Half seen on 24 August 2026: Account Settings ▸ Change
+      Password works end to end, so the shared helpers did not break the page
+      that existed before them. The reset page's own copy is still unseen.
 * [ ] **Pressing _Reset Password_ before opening the link** says "Open the link
       in the email first, then try again" and leaves the page as it was. This is
       the 401-with-a-UIAA-body case, and it is the most likely thing in the
