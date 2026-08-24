@@ -168,21 +168,20 @@ Registering on a public server leaves a junk account behind.
       pages, the same as a password login. The UIAA dialog should flash past
       without asking anything, because the only stage is `m.login.dummy`. Seen
       24 August 2026 — an account was made and the session came up.
-* [ ] **Registration switched off** says "This homeserver does not allow
-      creating an account", not "Invalid credentials". Set
-      `enable_registration: false` in the container's `homeserver.yaml` and
-      restart it.
 * [ ] **A taken username refused at the last moment** — register `bob` in two
       windows at once, or take the name between the check and the button — says
       "This username is already taken" from the new error mapping.
 * [ ] **Going back cleans the page.** Leave the register page, come back, and
       the three rows should be empty with no leftover green or amber, and the
       meter at zero.
-* [ ] **The registration token page.** `./testing/local-homeserver.sh signup
+* [x] **Registration switched off** says "This homeserver does not allow
+      creating an account", not "Invalid credentials". Seen 24 August 2026.
+* [x] **The registration token page.** `./testing/local-homeserver.sh signup
       token` prints a token; the dialog should show a plain entry with
       _Continue_ insensitive until something is typed. Type the wrong token
       first: the toast should say "The registration token is invalid" and the
-      entry should come back rather than the dialog closing.
+      entry should come back rather than the dialog closing. Seen
+      24 August 2026.
 * [ ] **The terms page**, which has no harness at all — Synapse only asks for
       `m.login.terms` with a `user_consent` block and its template files. A
       check button per policy document, each row with an external-link button
@@ -234,8 +233,10 @@ Synapse sends no email without an SMTP server. What can be checked without one
 is everything up to the point where the email would arrive.
 
 * [ ] **The _Forgot Password?_ link** is on the password login page, under the
-      password row, flat and centred. It should not appear anywhere else, and a
-      homeserver with the OAuth API never shows that page at all.
+      password row, flat and centred. **It cannot be reached on matrix.org**,
+      which delegates authentication and so never shows that page — use
+      _Another Homeserver_ and the local harness. That is behaviour, not a
+      fault: `account.matrix.org` carries its own reset.
 * [ ] **The page draws**: title "Reset your password on localhost", the
       homeserver URL under it, an explanation, one email row and a _Send Link_
       button that is insensitive until something is typed.
