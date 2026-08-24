@@ -223,7 +223,27 @@ tools:
 pwsh -File build-aux\windows\build-msi.ps1 -BundleDir "_build\windows\Commune Devel" -Profile Devel
 ```
 
-The result is `_build\windows\Commune-Devel-<version>-x64.msi`, about 97 MB.
+The result is `_build\windows\Commune-Devel-<version>-x64.msi`.
+
+### What a release build actually weighs
+
+Everything above describes a development build, which is not the size anyone should judge this on.
+Configure a second build directory with `-Dprofile=default` and the numbers come out as:
+
+| | Development | Release |
+| --- | --- | --- |
+| `commune.exe`, as linked | 1198 MB | 1622 MB |
+| `commune.exe`, stripped into the bundle | 271 MB | 154 MB |
+| The bundle | 442 MB | 325 MB |
+| The `.msi` | 97 MB | 87 MB |
+
+The release executable links _larger_ and strips _smaller_, which is what optimisation plus
+`debug = true` looks like: more inlining to describe, and a much smaller program left once the
+DWARF is gone.
+
+A release build takes about eleven minutes for our own crate on top of the dependency tree.
+Changing only `-Dklipy-api-key` re-runs just that final crate — the dependency rlibs are keyed on
+their own inputs and survive — so a rebuild to change the key is minutes, not the full tree.
 
 ### The folder relocates itself
 
@@ -290,6 +310,10 @@ Verified by installing it: 1100 files, the shortcut with
 `matrix:` link opening the app from its installed location — cold, and warm into the instance
 already running. Uninstall removes the files, the shortcut and the registry key.
 
+**A Stable and a Devel install coexist**, which is what the separate upgrade codes are for and had
+been assumed rather than tried. Installing the release `.msi` left the development one in place,
+each in its own directory with its own Start Menu entry.
+
 **User data is deliberately left behind** on uninstall: `%LOCALAPPDATA%\commune[-Devel]` holds the
 account databases, and removing them would mean an uninstall-reinstall silently logs the user out
 of everything. (The uninstall above did not have any to leave — nothing had logged in.)
@@ -302,8 +326,19 @@ afterwards would not reach it, and on the MSI itself.
 
 With no signing metadata — `artifact-signing-metadata.json`, or `$env:ARTIFACT_SIGNING_METADATA` —
 signing is **skipped and the build still succeeds**. That is deliberate: anyone should be able to
-build Commune for Windows, and only whoever holds the certificate can sign it. The artifacts above
-were built that way and are unsigned.
+build Commune for Windows, and only whoever holds the certificate can sign it.
+
+The metadata is machine-local and gitignored: it names a signing account and this repository is
+public. Two things have to be in place besides the file. The **Trusted Signing client tools**,
+for `Azure.CodeSigning.Dlib.dll`, which `sign.ps1` finds by searching the usual install locations.
+And a **credential the metadata does not exclude** — ours excludes eight of the nine, leaving
+`AzureCliCredential`, so an `az login` session is what actually authorises a signature. Signing
+fails rather than silently producing an unsigned artifact if that session has expired.
+
+**Both artifacts have been signed and verified.** `Get-AuthenticodeSignature` reports `Valid` for
+the executable and the `.msi`, countersigned by the Microsoft Public RSA Time Stamping Authority —
+the timestamp being what keeps a signature valid after the certificate expires, rather than
+invalidating everything ever signed with it on that date.
 
 This matters more here than the equivalent did on macOS. There, an ad-hoc signature was enough to
 run and a real identity was out of reach, so the port shipped a tarball to route around Gatekeeper.
@@ -519,12 +554,10 @@ macOS, so the Control-key bindings the Linux build has are already right here.
   [What bit us](#what-bit-us). Run against Element per `doc/calls.md`, from the console.
 * **Whether search actually finds anything.** The indexing errors are gone and the index is built
   in memory, but no search has been run against it from the UI.
-* **Signing an actual artifact.** The pipeline is written and skips cleanly without metadata, but
-  nothing has yet been signed, so neither the signtool invocation nor what SmartScreen makes of
-  the result has been seen. That needs `artifact-signing-metadata.json` and the Trusted Signing
-  client tools.
-* **A release-profile bundle.** Everything so far is a development build; the release profile has
-  never been packaged, and it is what the size and the startup time should actually be judged on.
+* **What SmartScreen makes of it.** The artifacts are signed and verify, but nobody has yet
+  downloaded one through a browser on a machine that has never seen Commune, which is the only way
+  to find out what a stranger is shown. Reputation accrues per certificate and per file, so an
+  early build may still be warned about.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
