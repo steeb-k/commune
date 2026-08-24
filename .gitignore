@@ -35,3 +35,6 @@ __pycache__/
 
 # The throwaway homeserver used by testing/local-homeserver.sh
 testing/.homeserver/
+
+# Meson clones wrap subprojects in here; only the .wrap files are ours.
+/subprojects/*/

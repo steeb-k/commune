@@ -1,0 +1,15 @@
+# Cross-built for Android only. Every library GtkSourceView needs — GLib, GTK,
+# libxml2, fribidi, fontconfig, Pango, PCRE2 — is already a pixiewood subproject,
+# so this builds with nothing but the options in the Android manifest and no
+# patches. Verified against 5.21.1.
+#
+# `master`, not `main`: GtkSourceView has not renamed its default branch, while
+# libshumate has. Both are moving targets, like every other pixiewood wrap, and
+# have to be pinned before anything is packaged.
+[wrap-git]
+url = https://gitlab.gnome.org/GNOME/gtksourceview.git
+revision = master
+depth = 1
+
+[provide]
+dependency_names = gtksourceview-5

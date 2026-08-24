@@ -36,10 +36,17 @@ dependency('gstreamer-play-1.0', version: '>= 1.20')
 dependency('gstreamer-sdp-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
 dependency('gstreamer-webrtc-1.0', version: '>= 1.20')
-dependency('gtksourceview-5', version: '>= 5.0.0')
-if host_machine.system() != 'darwin'
-    # glycin decodes images on Linux. macOS uses the `image` crate instead, see
-    # `src/utils/media/image/decoder/`.
+# Android has no GtkSourceView package, so it builds the one in `subprojects/`.
+# Everywhere else the fallback stays off: a missing development package should say
+# so, not quietly start cloning and building GtkSourceView from git.
+dependency(
+    'gtksourceview-5',
+    version: '>= 5.0.0',
+    allow_fallback: host_machine.system() == 'android',
+)
+if host_machine.system() == 'linux'
+    # glycin decodes images on Linux. Every other platform uses the `image`
+    # crate instead, see `src/utils/media/image/decoder/`.
     dependency('glycin-2', version: '>= 2.0.0')
     dependency('glycin-gtk4-2', version: '>= 2.0.0')
 endif
