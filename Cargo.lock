@@ -757,6 +757,7 @@ dependencies = [
  "url",
  "webp",
  "windows",
+ "windows-core",
  "winresource",
  "zeroize",
 ]

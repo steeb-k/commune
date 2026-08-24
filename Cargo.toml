@@ -14,6 +14,9 @@ ignored = [
     # Used by `build.rs`, inside a `cfg(target_os = "windows")` that
     # cargo-machete does not follow.
     "winresource",
+    # Named only by what `#[implement]` expands to, in
+    # `src/utils/windows_toast_activator.rs`, so no source file mentions it.
+    "windows-core",
 ]
 
 [profile.release]
@@ -197,9 +200,15 @@ windows = { version = "0.62", features = [
     "UI_Notifications",
     "Win32_Foundation",
     "Win32_Security_Credentials",
+    "Win32_System_Com",
     "Win32_System_Registry",
+    "Win32_UI_Notifications",
     "Win32_UI_Shell",
 ] }
+# The `#[implement]` macro that builds the notification activator expands to
+# paths in `windows_core`, so it has to be nameable at the crate root rather
+# than only through `windows::core`.
+windows-core = "0.62"
 
 [dev-dependencies]
 assert_matches2 = "0.1"
