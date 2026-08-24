@@ -68,15 +68,7 @@ zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { version = "0.9", features = ["v1_8"], package = "libadwaita" }
-gst = { version = "0.25", package = "gstreamer" }
-gst_app = { version = "0.25", package = "gstreamer-app" }
-gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
-gst_play = { version = "0.25", package = "gstreamer-play" }
-gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
-gst_video = { version = "0.25", package = "gstreamer-video" }
-gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
-shumate = { version = "0.8", features = ["v1_1"], package = "libshumate" }
 sourceview = { version = "0.11", package = "sourceview5" }
 
 [dependencies.matrix-sdk]
@@ -125,6 +117,26 @@ features = [
     "compat-lax-room-create-deser",
     "compat-lax-room-topic-deser",
 ]
+
+# Everything that needs GStreamer, which is not cross-built for Android.
+#
+# pixiewood builds GTK with `media-gstreamer = 'disabled'` and GStreamer itself
+# has to be cross-compiled separately, which is S4. Until then Android has no
+# media playback, no voice messages and no calls, and these crates cannot even
+# be linked — so they are absent rather than unused. Part of the gtk-rs family
+# above, and still updated together with it.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+gst = { version = "0.25", package = "gstreamer" }
+gst_app = { version = "0.25", package = "gstreamer-app" }
+gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
+gst_play = { version = "0.25", package = "gstreamer-play" }
+gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
+gst_video = { version = "0.25", package = "gstreamer-video" }
+gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
+# libshumate wants libsoup-3.0, json-glib, libprotobuf-c and sqlite3, none of
+# which are cross-built. Unlike GtkSourceView, which is now a wrap, the map is
+# reached from one file and one message row, so Android goes without it.
+shumate = { version = "0.8", features = ["v1_1"], package = "libshumate" }
 
 # The image decoder used where glycin is not available.
 [target.'cfg(not(target_os = "linux"))'.dependencies]

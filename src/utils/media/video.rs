@@ -1,19 +1,42 @@
 //! Collection of methods for videos.
 
+#[cfg(not(target_os = "android"))]
 use gst::prelude::*;
+#[cfg(not(target_os = "android"))]
 use gst_video::prelude::*;
-use gtk::{gdk, gio, glib, glib::clone, prelude::*};
+use gtk::gio;
+#[cfg(not(target_os = "android"))]
+use gtk::{gdk, glib, glib::clone, prelude::*};
 use matrix_sdk::attachment::{BaseVideoInfo, Thumbnail};
+#[cfg(not(target_os = "android"))]
 use tracing::{error, warn};
 
+#[cfg(not(target_os = "android"))]
 use super::{
     image::{Blurhash, TextureThumbnailer},
     load_gstreamer_media_info,
 };
+#[cfg(not(target_os = "android"))]
 use crate::utils::OneshotNotifier;
 
 /// Load information and try to generate a thumbnail for the video in the given
 /// file.
+///
+/// Both the metadata and the thumbnail come from a `GStreamer` pipeline, which
+/// Android does not have, so an outgoing video carries no dimensions, no
+/// duration and no thumbnail. Restoring this belongs to S4, see
+/// `doc/android.md`.
+#[cfg(target_os = "android")]
+pub(crate) async fn load_video_info(
+    _file: &gio::File,
+    _widget: &impl gtk::prelude::IsA<gtk::Widget>,
+) -> (BaseVideoInfo, Option<Thumbnail>) {
+    (BaseVideoInfo::default(), None)
+}
+
+/// Load information and try to generate a thumbnail for the video in the given
+/// file.
+#[cfg(not(target_os = "android"))]
 pub(crate) async fn load_video_info(
     file: &gio::File,
     widget: &impl IsA<gtk::Widget>,
@@ -44,6 +67,7 @@ pub(crate) async fn load_video_info(
 }
 
 /// Generate a thumbnail and a Blurhash for the video in the given file.
+#[cfg(not(target_os = "android"))]
 async fn generate_video_thumbnail_and_blurhash(
     file: &gio::File,
     widget: &gtk::Widget,
@@ -134,6 +158,7 @@ async fn generate_video_thumbnail_and_blurhash(
 }
 
 /// Create a pipeline to get a thumbnail of the first frame.
+#[cfg(not(target_os = "android"))]
 fn create_thumbnailer_pipeline(
     uri: &str,
     notifier: OneshotNotifier<Option<gdk::Texture>>,
@@ -220,6 +245,7 @@ fn create_thumbnailer_pipeline(
 }
 
 /// Convert the given video frame to a `GdkTexture`.
+#[cfg(not(target_os = "android"))]
 fn video_frame_to_texture(
     frame: &gst_video::VideoFrameRef<&gst::BufferRef>,
 ) -> Option<gdk::Texture> {
@@ -241,6 +267,7 @@ fn video_frame_to_texture(
 }
 
 /// Convert the given `GstVideoFormat` to a `GdkMemoryFormat`.
+#[cfg(not(target_os = "android"))]
 fn video_format_to_memory_format(format: gst_video::VideoFormat) -> Option<gdk::MemoryFormat> {
     let format = match format {
         gst_video::VideoFormat::Bgrx => gdk::MemoryFormat::B8g8r8x8,

@@ -17,7 +17,7 @@
 //! whose contents are owned by this application's UID and are unreadable by
 //! other applications. **It does not.** [`secrets_dir()`] resolves through
 //! [`DataType::Persistent`], which is `glib::user_data_dir()`, and GTK's
-//! Android glue points GLib's `XDG_DATA_HOME` at
+//! Android glue points `GLib`'s `XDG_DATA_HOME` at
 //! `Context.getExternalFilesDir(null)/share` — *external* storage
 //! (`gdk/android/gdkandroidruntime.c:271-281`). Only `XDG_DATA_DIRS` is the
 //! internal files directory.

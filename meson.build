@@ -27,32 +27,48 @@ dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
 dependency('gtk4', version: '>= 4.20.2')
 dependency('libadwaita-1', version: '>= 1.8.0')
 
+is_android = host_machine.system() == 'android'
+
 # Please keep these dependencies sorted.
-dependency('gstreamer-1.0', version: '>= 1.20')
-dependency('gstreamer-app-1.0', version: '>= 1.20')
-dependency('gstreamer-base-1.0', version: '>= 1.20')
-dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
-dependency('gstreamer-play-1.0', version: '>= 1.20')
-dependency('gstreamer-sdp-1.0', version: '>= 1.20')
-dependency('gstreamer-video-1.0', version: '>= 1.20')
-dependency('gstreamer-webrtc-1.0', version: '>= 1.20')
+if not is_android
+    # GStreamer is not cross-built for Android, so media playback, voice
+    # messages and calls are all absent there and the crates that need it are
+    # not in the dependency graph at all. See `doc/android.md`.
+    dependency('gstreamer-1.0', version: '>= 1.20')
+    dependency('gstreamer-app-1.0', version: '>= 1.20')
+    dependency('gstreamer-base-1.0', version: '>= 1.20')
+    dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
+    dependency('gstreamer-play-1.0', version: '>= 1.20')
+    dependency('gstreamer-sdp-1.0', version: '>= 1.20')
+    dependency('gstreamer-video-1.0', version: '>= 1.20')
+    dependency('gstreamer-webrtc-1.0', version: '>= 1.20')
+endif
 # Android has no GtkSourceView package, so it builds the one in `subprojects/`.
 # Everywhere else the fallback stays off: a missing development package should say
 # so, not quietly start cloning and building GtkSourceView from git.
-dependency(
-    'gtksourceview-5',
-    version: '>= 5.0.0',
-    allow_fallback: host_machine.system() == 'android',
-)
+dependency('gtksourceview-5', version: '>= 5.0.0', allow_fallback: is_android)
 if host_machine.system() == 'linux'
     # glycin decodes images on Linux. Every other platform uses the `image`
     # crate instead, see `src/utils/media/image/decoder/`.
     dependency('glycin-2', version: '>= 2.0.0')
     dependency('glycin-gtk4-2', version: '>= 2.0.0')
 endif
-dependency('libwebp', version: '>= 1.0.0')
-dependency('shumate-1.0', version: '>= 1.1.0')
-dependency('sqlite3', version: '>= 3.24.0')
+if not is_android
+    # `libwebp-sys` builds libwebp itself with `cc`, so this only ever asserted
+    # that the system copy existed. Android has no system copy and does not need
+    # one.
+    dependency('libwebp', version: '>= 1.0.0')
+    # libshumate wants libsoup-3.0, json-glib, libprotobuf-c and sqlite3, none of
+    # which are cross-built, so Android has no map. See `doc/android.md`.
+    dependency('shumate-1.0', version: '>= 1.1.0')
+endif
+if not is_android
+    # Android ships `libsqlite3.so` in the NDK sysroot but no `.pc` file to find
+    # it with, so this assertion cannot be made there. `libsqlite3-sys` does not
+    # vendor a copy — it has no `cc` dependency — so the link still needs that
+    # system library to resolve; see `doc/android.md`.
+    dependency('sqlite3', version: '>= 3.24.0')
+endif
 
 # When the `build-env` profile is used, we only want to set up the build
 # environment for the sandbox, we will not try to compile the app, so we can

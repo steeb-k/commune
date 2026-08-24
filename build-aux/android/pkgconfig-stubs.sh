@@ -66,26 +66,37 @@ Cflags: -I\${includedir}
 EOF
 }
 
-# Not cross-built yet. The versions are the ones `meson.build` asks for, or
-# above, so that a version check cannot pass here and fail for real later.
+# Not cross-built in the tree this view is taken from. The versions are the ones
+# `meson.build` asks for, or above, so that a version check cannot pass here and
+# fail for real later.
+#
+# `gtksourceview-5` is stubbed even though it now cross-builds for real, from
+# `subprojects/gtksourceview.wrap`: it is a subproject of *Commune's* build, not
+# of the libadwaita build this view is usually taken from. A real
+# `gtksourceview-5.pc` appears once Commune itself is configured, and `stub()`
+# keeps it in preference to this.
 stub libadwaita-1 1.9.1
 stub gtksourceview-5 5.21.0
-stub shumate-1.0 1.5.1
 stub sqlite3 3.46.0
 stub libwebp 1.4.0
 
-for module in 1.0 app-1.0 audio-1.0 base-1.0 check-1.0 controller-1.0 net-1.0 \
-              pbutils-1.0 play-1.0 rtp-1.0 sdp-1.0 tag-1.0 video-1.0 webrtc-1.0; do
-    stub "gstreamer-$module" 1.28.0
-done
-
-# Only needed to check the *Linux* path from a machine without GTK development
-# packages, which is how "Linux stays untouched" is verified here.
+# GStreamer and libshumate are deliberately *absent* for Android rather than
+# stubbed: they are no longer dependencies there at all, so a stub would hide
+# a gate that had been left off. They are still needed to check the Linux path.
 if [ "${WITH_LINUX_ONLY:-0}" = "1" ]; then
+    # Only needed to check the *Linux* path from a machine without GTK
+    # development packages, which is how "Linux stays untouched" is verified.
     stub glycin-2 2.2.0
     stub glycin-gtk4-2 2.2.0
     stub libglycin-2 2.2.0
     stub libglycin-gtk4-2 2.2.0
+    stub shumate-1.0 1.5.1
+
+    for module in 1.0 app-1.0 audio-1.0 base-1.0 check-1.0 controller-1.0 \
+                  net-1.0 pbutils-1.0 play-1.0 rtp-1.0 sdp-1.0 tag-1.0 \
+                  video-1.0 webrtc-1.0; do
+        stub "gstreamer-$module" 1.28.0
+    done
 fi
 
 printf 'total .pc files in %s: %s\n' "$OUT" "$(ls "$OUT" | wc -l)"

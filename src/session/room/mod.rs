@@ -936,6 +936,7 @@ mod imp {
             // room, the client should treat this as a hangup event for any
             // calls that are in progress." They cannot send one from outside
             // the room, so nothing else is coming.
+            #[cfg(not(target_os = "android"))]
             if matches!(
                 event.membership(),
                 MembershipState::Leave | MembershipState::Ban

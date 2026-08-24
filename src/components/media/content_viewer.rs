@@ -3,9 +3,11 @@ use geo_uri::GeoUri;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
+#[cfg(not(target_os = "android"))]
+use super::LocationViewer;
 #[cfg(target_os = "macos")]
 use super::gst_media_stream::GstMediaStream;
-use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource, LocationViewer};
+use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource};
 use crate::{
     MEDIA_FILE_NOTIFIER,
     components::ContextMenuBin,
@@ -268,12 +270,23 @@ mod imp {
         }
 
         /// View the given location as a geo URI.
+        #[cfg(not(target_os = "android"))]
         pub(super) fn view_location(&self, geo_uri: &GeoUri) {
             let location = self.viewer.child_or_default::<LocationViewer>();
 
             location.set_location(geo_uri);
             self.set_visible_child("viewer");
             self.clear();
+        }
+
+        /// View the given location as a geo URI.
+        ///
+        /// Drawing a map needs libshumate, which is not cross-built for
+        /// Android, so this takes the same fallback as any other content the
+        /// viewer cannot display. See `doc/android.md`.
+        #[cfg(target_os = "android")]
+        pub(super) fn view_location(&self, _geo_uri: &GeoUri) {
+            self.show_fallback(ContentType::Other);
         }
 
         /// Update the state of the animated paintable, if any.

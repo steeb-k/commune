@@ -7,6 +7,7 @@ mod caption;
 mod content;
 mod file;
 mod info;
+#[cfg(not(target_os = "android"))]
 mod location;
 mod message_state_stack;
 mod reaction;

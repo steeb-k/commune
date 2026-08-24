@@ -7,6 +7,7 @@ use gtk::{gio, glib, prelude::*};
 use mime::Mime;
 use ruma::UInt;
 
+#[cfg(not(target_os = "android"))]
 use crate::utils::OneshotNotifier;
 
 pub(crate) mod audio;
@@ -98,6 +99,7 @@ impl FileInfo {
 }
 
 /// Load information for the given media file.
+#[cfg(not(target_os = "android"))]
 async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::DiscovererInfo> {
     let timeout = gst::ClockTime::from_seconds(15);
     let discoverer = gst_pbutils::Discoverer::new(timeout).ok()?;

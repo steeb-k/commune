@@ -12,6 +12,7 @@ use ruma::{
 };
 use tracing::{error, warn};
 
+#[cfg(not(target_os = "android"))]
 mod call_row;
 mod divider_row;
 mod event_actions;
@@ -27,8 +28,9 @@ mod title;
 mod typing_row;
 mod verification_info_bar;
 
+#[cfg(not(target_os = "android"))]
+use self::call_row::CallRow;
 use self::{
-    call_row::CallRow,
     divider_row::DividerRow,
     event_actions::*,
     event_row::EventRow,
@@ -43,6 +45,8 @@ use self::{
     verification_info_bar::VerificationInfoBar,
 };
 use super::{RoomDetails, room_details};
+#[cfg(not(target_os = "android"))]
+use crate::session::can_call;
 use crate::{
     Window,
     components::{DragOverlay, confirm_leave_room_dialog, confirm_report_room_dialog},
@@ -50,7 +54,7 @@ use crate::{
     prelude::*,
     session::{
         Event, MemberList, Membership, MembershipListKind, ReceiptPosition, Room,
-        TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind, can_call,
+        TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind,
         is_cannot_leave_server_notice_room,
     },
     spawn, toast,
@@ -386,7 +390,14 @@ mod imp {
         /// room can answer it. The spec says so plainly — "calls should only be
         /// placed to rooms with one other user in them" — so the buttons are
         /// there for a two-person room and nowhere else.
+        ///
+        /// Android has no `GStreamer` and so no calls at all, which this same
+        /// mechanism expresses: the buttons are simply never shown. See
+        /// `doc/android.md`.
         fn update_call_buttons(&self) {
+            #[cfg(target_os = "android")]
+            let can_call = false;
+            #[cfg(not(target_os = "android"))]
             let can_call = self.room().is_some_and(|room| can_call(&room));
 
             self.call_button.set_visible(can_call);
@@ -405,6 +416,20 @@ mod imp {
             self.place_call(true);
         }
 
+        /// Place a call.
+        ///
+        /// Unreachable on Android, where `update_call_buttons` keeps both
+        /// buttons hidden. The two template callbacks above still exist there,
+        /// because the template that references them is bound either way and a
+        /// missing callback would fail at instantiation. See `doc/android.md`.
+        #[cfg(target_os = "android")]
+        #[allow(
+            clippy::unused_self,
+            reason = "the signature has to match the one the callbacks above call"
+        )]
+        fn place_call(&self, _with_video: bool) {}
+
+        #[cfg(not(target_os = "android"))]
         fn place_call(&self, with_video: bool) {
             let Some(room) = self.room() else {
                 return;

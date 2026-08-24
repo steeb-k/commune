@@ -23,12 +23,16 @@ mod notifications_settings;
 pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
 };
-use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
+#[cfg(not(target_os = "android"))]
+use super::{Call, CallState};
+use super::{IdentityVerification, Session, VerificationKey};
+#[cfg(not(target_os = "android"))]
+use crate::intent::{CallAction, CallActionKind};
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
 use crate::{
     Application, Window, gettext_f,
-    intent::{CallAction, CallActionKind, SessionIntent},
+    intent::SessionIntent,
     prelude::*,
     spawn_tokio,
     utils::{
@@ -369,6 +373,7 @@ impl Notifications {
     /// stops ringing, and it carries the two buttons that make it worth
     /// having. The push path's own handling of call invites defers to this
     /// one, so that a ringing call is one notification and not two.
+    #[cfg(not(target_os = "android"))]
     pub(crate) async fn show_incoming_call(&self, call: &Call) {
         if !self.enabled() {
             return;
@@ -429,6 +434,7 @@ impl Notifications {
     }
 
     /// Withdraw the notification for the given call, if it has one.
+    #[cfg(not(target_os = "android"))]
     pub(crate) fn withdraw_incoming_call(&self, call: &Call) {
         let Some(session) = self.session() else {
             return;
@@ -446,6 +452,7 @@ impl Notifications {
     ///
     /// The call ID and not the event ID of the invite: the notification is
     /// withdrawn from the call, which knows the one and not the other.
+    #[cfg(not(target_os = "android"))]
     fn call_notification_id(session_id: &str, call: &Call) -> String {
         format!("{session_id}//call//{}", call.call_id())
     }
