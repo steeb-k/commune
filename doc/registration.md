@@ -1,10 +1,11 @@
 # Signing up, and resetting a password — downstream implementation notes
 
-This file is the ledger for the two halves of getting into an account without
-leaving the app: creating one, and getting back into one whose password is
-gone. It carries what the fork added, the decisions behind it, and what to
-check when rebasing onto a new Fractal release. See `fork.md` for why none of
-this goes upstream.
+This file is the ledger for getting into an account without leaving the app:
+creating one, getting back into one whose password is gone, and — since both
+flows share it — the page that asks which homeserver any of it happens on. It
+carries what the fork added, the decisions behind it, and what to check when
+rebasing onto a new Fractal release. See `fork.md` for why none of this goes
+upstream.
 
 ## Scope
 
@@ -23,6 +24,8 @@ this goes upstream.
   takes, including the encryption setup pages.
 * A _Forgot Password?_ link on the password login page, which asks the
   homeserver to email a link and then takes a new password.
+* A homeserver page that offers `matrix.org` first, for logging in as well as
+  signing up, with the empty entry it used to be behind a second choice.
 
 Upstream has none of it: the greeter's _Create Account_ button was hidden and
 pointed at an `app.create-account` action that existed nowhere in the tree, and
@@ -106,6 +109,46 @@ That is why _Create Account_ goes through the same domain-name entry, the same
 autodiscovery switch and the same "is this even a homeserver" check as logging
 in, with no second copy of any of it.
 
+## The homeserver page offers one now
+
+Upstream's homeserver page is an empty entry, a help line saying "for example
+gnome.org", and nothing else. That asks a question most people cannot answer:
+somebody who has never used Matrix does not have a homeserver in mind, and the
+page will not let them past until they invent one.
+
+So the page is a choice of two rows in a boxed list, with the entry behind the
+second:
+
+* **matrix.org**, checked by default, described as the biggest public
+  homeserver. Choosing it needs no typing and _Next_ takes the focus, so the
+  whole page is one keystroke.
+* **Another Homeserver**, which reveals exactly the page that used to be there —
+  the same entry, the same help line, the same validation.
+
+Both flows get it, because both go through this page. Somebody logging in to an
+account elsewhere picks the second row, the same as somebody signing up
+elsewhere.
+
+Three things fall out of it:
+
+* **`homeserver()` answers for the choice**, not for the entry. When the first
+  row is picked it returns `matrix.org` and the entry is not consulted at all,
+  so a stale value left in it cannot leak into a login.
+* **Auto-discovery is forced on for the default.** The advanced dialog's switch
+  exists so somebody can give a URL instead of a domain name; `matrix.org` is a
+  domain name and is always looked up as one. `use_autodiscovery()` says so in
+  one place, and the _Advanced…_ button is hidden while the default is chosen
+  rather than left there as a control that changes nothing.
+* **`server_name()` moved onto the page.** `Login` used to derive it by asking
+  its own auto-discovery property and sanitising the entry text; the page is the
+  only thing that knows which of the two rows is picked, so it answers instead.
+  That is what puts "Log in to matrix.org" on the next page.
+
+The default is a constant, `DEFAULT_SERVER_NAME`. There is no setting for it and
+no list of suggestions: a second name in that list is a recommendation this fork
+would be making on somebody's behalf, and one default that is obvious to replace
+is a smaller claim than a curated list.
+
 ## `prompt=create` is the whole of the OAuth path
 
 On a server with the OAuth 2.0 API there is no `POST /register` to call — the
@@ -169,6 +212,7 @@ XML and this page is `.blp`.
 | What | Where |
 | --- | --- |
 | The purpose of the flow | `LoginPurpose`, `src/login/mod.rs` |
+| The default homeserver | `DEFAULT_SERVER_NAME`, `src/login/homeserver_page.rs` |
 | The action behind the button | `login.create-account`, `Login::class_init` |
 | The page | `src/login/register_page.rs`, `.blp` |
 | Where the native path forks | `Login::init_matrix_login` |
@@ -189,6 +233,9 @@ XML and this page is `.blp`.
 * **The greeter button.** Upstream keeps it `visible: false` with an
   `app.create-account` action. A rebase that takes their version of
   `greeter.blp` puts the dead button back.
+* **`homeserver_page.blp` is substantially ours** from the choice list down, and
+  `build_client()` lost its `autodiscovery` argument — the page works it out.
+  Taking upstream's version of either brings back the empty entry.
 * **`Login::init_matrix_login` and `init_oauth_login`** each grew a branch at
   the top. Upstream changing what happens after the homeserver page is the
   thing to watch.

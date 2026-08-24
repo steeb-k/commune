@@ -129,39 +129,45 @@ module, so unlike most of the field this can be exercised on a real account.
 
 ## Signing up and resetting a password — `doc/registration.md`
 
-Nothing here has been seen on screen. The whole flow is new drawing code, and
-the greeter button it starts from has never been visible in this fork.
+The sign-up half was run on 24 August 2026 and reported as going well end to
+end. Struck below are the things that run says were seen; the edge cases and
+the ones with no local harness are still open, and the reset half has not been
+touched at all.
 
 Use `testing/local-homeserver.sh` for all of it — it runs with open
 registration, so Synapse asks for `m.login.dummy` and no stage needs input.
 Registering on a public server leaves a junk account behind.
 
-* [ ] **The _Create Account_ button is there at all**, under _Log In_ on the
-      greeter, and is a plain pill rather than a suggested one.
-* [ ] **It leads to the same homeserver page** as logging in, with the same
-      domain entry and the same advanced switch.
-* [ ] **The register page draws**: the title says "Create an account on
+* [x] **The _Create Account_ button is there at all**, under _Log In_ on the
+      greeter, and is a plain pill rather than a suggested one. Seen
+      24 August 2026.
+* [x] **It leads to the same homeserver page** as logging in, with the same
+      domain entry and the same advanced switch. Seen 24 August 2026 — and the
+      thing that page needs is a default, which is the next piece of work.
+* [x] **The register page draws**: the title says "Create an account on
       localhost", the homeserver URL sits under it with the house icon, and
       there are three rows — username, password, confirm password.
       This page is `form-page`-styled but sits in the login flow, so the
       margins and the 24px spacing come from CSS rather than the template;
-      that combination has never been rendered.
-* [ ] **The strength meter fills** as the password gets better, in five
+      that combination had never been rendered. Seen 24 August 2026.
+* [x] **The strength meter fills** as the password gets better, in five
       discrete blocks, and turns green at full. The offsets are added from Rust
-      here rather than from the template — check it looks like the meter on
-      Account Settings ▸ Change Password, not like a single bar.
-* [ ] **The username check says something.** Type a name that exists (`alice`
+      here rather than from the template. Seen 24 August 2026.
+* [x] **The username check says something.** Type a name that exists (`alice`
       after seeding) and the row should go amber with "This username is already
       taken" about half a second after the last keystroke; a free name should
-      go green with no message. Watch that a fast typist does not get the
-      answer for a prefix of what they typed.
-* [ ] **The button is insensitive** until the username has been answered for,
-      the password is at full strength and the confirmation matches — and
-      _sensitive_ on a server that refuses to answer the availability
-      question at all, which is the case the state machine is there for.
-* [ ] **The account is actually created** and lands in the encryption setup
+      go green with no message. Seen 24 August 2026. The fast-typist case — an
+      answer arriving for a prefix of what was typed — was not separately
+      provoked.
+* [x] **The button is insensitive** until the username has been answered for,
+      the password is at full strength and the confirmation matches. Seen
+      24 August 2026. Not seen: that it is _sensitive_ on a server which
+      refuses to answer the availability question at all, which is the case the
+      four-state machine exists for and which the local harness does answer.
+* [x] **The account is actually created** and lands in the encryption setup
       pages, the same as a password login. The UIAA dialog should flash past
-      without asking anything, because the only stage is `m.login.dummy`.
+      without asking anything, because the only stage is `m.login.dummy`. Seen
+      24 August 2026 — an account was made and the session came up.
 * [ ] **Registration switched off** says "This homeserver does not allow
       creating an account", not "Invalid credentials". Set
       `enable_registration: false` in the container's `homeserver.yaml` and
@@ -192,9 +198,34 @@ Registering on a public server leaves a junk account behind.
       form, and a server that does not advertise `prompt=create` should say so
       with a toast instead of opening a browser at all. Nothing in the harness
       speaks OAuth, so this needs `matrix.org` or another real server.
-* [ ] **Nothing regressed in logging in.** The greeter's _Log In_ button, the
-      password path and the SSO path all go through the same code with the
-      purpose left at `LogIn`.
+* [x] **Nothing regressed in logging in.** The greeter's _Log In_ button and
+      the password path go through the same code with the purpose left at
+      `LogIn`. Seen 24 August 2026. The SSO path was not exercised.
+
+### Choosing a homeserver
+
+The page both flows share, reworked on 24 August 2026 after the sign-up run:
+`matrix.org` is offered first and the old entry is behind a second row.
+
+* [ ] **The two rows draw** as a boxed list with radio buttons, matrix.org
+      checked, and the entry hidden underneath.
+* [ ] **Picking _Another Homeserver_ reveals the entry** and puts the cursor in
+      it; picking matrix.org again hides it.
+* [ ] **_Next_ is sensitive immediately**, with nothing typed, and pressing
+      Return goes straight on — the button takes the focus when the page is
+      shown with the default picked.
+* [ ] **The _Advanced…_ button is hidden** while matrix.org is chosen and comes
+      back with the entry. Auto-discovery is meaningless for the default.
+* [ ] **The next page says "Log in to matrix.org"** (or "Create an account on
+      matrix.org"), which is the `server_name()` that moved onto the page.
+* [ ] **A custom homeserver still works both ways** — a domain name with
+      auto-discovery on, and a URL with it off through _Advanced…_. This is the
+      path that used to be the only one, so it is the regression to watch.
+* [ ] **Going back to the greeter and returning** puts the choice back on
+      matrix.org with the entry empty.
+* [ ] **Logging in against the local harness still works**, which now means
+      picking _Another Homeserver_ and typing `localhost:8008` — the flow every
+      other test here starts with.
 
 ### Resetting a password
 
