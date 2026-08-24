@@ -26,6 +26,7 @@ use ruma::{
         sdp_stream_metadata_changed::OriginalSyncCallSdpStreamMetadataChangedEvent,
         select_answer::OriginalSyncCallSelectAnswerEvent,
     },
+    serde::Raw,
 };
 use tracing::debug;
 
@@ -42,7 +43,11 @@ pub(crate) use self::{
     turn::{IceServers, TurnCredentials, load_turn_credentials},
 };
 use super::{JoinRuleValue, Member, Membership, MembershipListKind, Room, Session, UserExt};
-use crate::spawn;
+use crate::{
+    Application,
+    session_list::{SessionInfo, SessionInfoExt},
+    spawn,
+};
 
 /// How long a candidate batch is kept for an invite that has not arrived.
 ///
@@ -216,6 +221,16 @@ impl Calls {
         );
         handle!(OriginalSyncCallNegotiateEvent, Negotiate);
 
+        // What the other end's invite and answer actually carried, when what
+        // they carried did not include stream metadata. See
+        // [`note_missing_stream_metadata`].
+        client.add_event_handler(move |event: Raw<OriginalSyncCallInviteEvent>| async move {
+            note_missing_stream_metadata("invite", &event);
+        });
+        client.add_event_handler(move |event: Raw<OriginalSyncCallAnswerEvent>| async move {
+            note_missing_stream_metadata("answer", &event);
+        });
+
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
@@ -320,13 +335,28 @@ impl Calls {
         let imp = self.imp();
         let state = call.state();
 
+        // A call from an account that is open in this same window is one this
+        // window just placed. This client holds several accounts at once, and
+        // a call from one of them to another is a real call — the window for
+        // it still opens — but ringing and notifying at the person who pressed
+        // the button is not telling them anything they do not know. Measured
+        // on 23 August 2026, where it was indistinguishable from a ringback:
+        // two accounts in one window, and the second one rang.
+        let is_from_this_window = call
+            .remote_member()
+            .is_some_and(|member| is_logged_in_here(member.user_id()));
+
+        if is_from_this_window && state == CallState::Ringing {
+            debug!("Not ringing: the call came from another account in this window");
+        }
+
+        let should_ring = state == CallState::Ringing && !is_from_this_window;
+
         // Only a call coming in. A ringback on the way out was tried and taken
         // out again: a telephone plays one because the caller has nothing to
         // look at, and here the window says `Calling…` in front of them, so all
         // the sound adds is a noise in their own room.
-        let ringtone = (state == CallState::Ringing)
-            .then(Ringtone::incoming)
-            .flatten();
+        let ringtone = should_ring.then(Ringtone::incoming).flatten();
 
         // Replaced rather than stopped and started, so that a call that goes
         // from ringing to connected stops making a noise at the instant it
@@ -338,7 +368,7 @@ impl Calls {
         };
         let notifications = session.notifications();
 
-        if state == CallState::Ringing {
+        if should_ring {
             let call = call.clone();
             spawn!(async move {
                 notifications.show_incoming_call(&call).await;
@@ -760,6 +790,51 @@ pub(crate) fn other_member(room: &Room) -> Option<Member> {
     }
 
     Some(first)
+}
+
+/// Say what a call event carried, when it did not carry stream metadata.
+///
+/// "For backwards compatibility, if `sdp_stream_metadata` is not present in the
+/// initial `m.call.invite` or `m.call.answer` event sent by the other party,
+/// the client should assume that this property is not supported by the other
+/// party." That is the rule and it is followed — but *not supported* and *sent
+/// under the name it had while it was still a proposal* look identical from
+/// here, and only one of those two is something this client could read.
+///
+/// So the names of the fields that did arrive are logged, and nothing else
+/// about them: an SDP is already logged in full elsewhere and there is no
+/// reason to write one twice.
+fn note_missing_stream_metadata(kind: &str, event: &Raw<impl Sized>) {
+    let Ok(Some(content)) =
+        event.get_field::<serde_json::Map<String, serde_json::Value>>("content")
+    else {
+        return;
+    };
+
+    if content.contains_key("sdp_stream_metadata") {
+        return;
+    }
+
+    debug!(
+        "The other party's {kind} carries no stream metadata; its content is {:?}",
+        content.keys().collect::<Vec<_>>()
+    );
+}
+
+/// Whether the given user is logged in to this application.
+///
+/// Not "is this our own user": every account open in this window, since the
+/// point of asking is whether the person being called is the person who placed
+/// the call.
+fn is_logged_in_here(user_id: &UserId) -> bool {
+    let application = Application::default();
+    let sessions = application.session_list();
+
+    (0..sessions.n_items())
+        .filter_map(|position| sessions.item(position).and_downcast::<SessionInfo>())
+        // Named, because `UserExt` is in the prelude and has a `user_id()` of
+        // its own that a `SessionInfo` cannot answer.
+        .any(|session| *SessionInfoExt::user_id(&session) == *user_id)
 }
 
 /// Whether a session description carries video.

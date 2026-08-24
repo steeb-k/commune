@@ -501,6 +501,18 @@ frame or a black rectangle. A remote `audio_muted` does **not** mute the
 incoming audio: unmuting takes a round trip and the words spoken in between
 would be lost.
 
+**Element for Android sends none of this.** Measured on 23 August 2026: its
+answer to a call of ours, and an invite it placed, both arrived with no
+`sdp_stream_metadata` at all. The spec's instruction for that is to assume the
+other party does not support the property — which is followed — and it means
+the badge below can never appear against that client, in either direction.
+What cannot be told apart from here is a peer that does not support it from
+one that sends it under `org.matrix.msc3077.sdp_stream_metadata`, the name it
+had while it was a proposal, so the names of the fields that _did_ arrive are
+logged whenever the stable one is absent. Reading the unstable name as well
+would be in keeping with how this fork treats image packs — read both, write
+the specified one — and is not worth writing until a log says a peer uses it.
+
 **Metadata arrives on four events and all four are read.** It is a property of
 the invite, of the answer and of an `m.call.negotiate` as much as of the event
 named after it, and until 23 August 2026 only the last of those was read — so a
@@ -703,6 +715,18 @@ direction, it was wired up on 23 August 2026, and it was taken out again the
 first time anybody placed a call with it: a telephone plays a ringback because
 the caller has nothing to look at, and here the window is open in front of them
 saying `Calling…`. All the sound added was a noise in the caller's own room.
+
+**And not at the person who placed the call.** This client holds several
+accounts at once, and a call from one of them to another is a real call — the
+window opens, the invite is real, either end can answer. But the person being
+rung at is the person who just pressed the button, in the same window, and
+telling them about it is telling them nothing. So an invite from an account
+that is open in this application rings for nobody and raises no notification.
+
+That one took a log to see. It looks exactly like a ringback that would not go
+away — the sound is the same file — and the first two attempts at a fix were
+aimed at the wrong direction entirely. `is_logged_in_here()` is the test, and
+the log says so when it suppresses.
 
 **The notification is not the push path's.** The homeserver's `.m.rule.call`
 push rule fires for an `m.call.invite` and reaches `show_push()`, which until
