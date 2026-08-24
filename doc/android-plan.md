@@ -96,7 +96,7 @@ the same free ride Windows got from macOS. What is _not_ free:
 
 | Area | Linux today | Android |
 | --- | --- | --- |
-| Entry point | `fn main()` binary | `#[no_mangle] extern "C" fn main(argc, argv)` in a `cdylib`/`staticlib`, no `windows_subsystem` analogue |
+| Entry point | `fn main()` binary | **Done in S3**: the crate is a library with a three-line `main.rs`, built as a `staticlib` and linked by Meson with a C stub. `crate-type` is a `[lib]` key only, so the split was a precondition, not a preference |
 | Logging | stdout | logcat sink |
 | gresources, locale | absolute `PKGDATADIR` | `app_bundle.rs` android arm: `$XDG_DATA_DIRS/commune/*.gresource` (assets extracted by the glue). **Corrected in S3** — this said `XDG_DATA_HOME`, which is external storage and never holds the assets |
 | Data/cache dirs | XDG | **Not** `getFilesDir()`/`getCacheDir()` as assumed: the glue points `XDG_DATA_HOME` at `getExternalFilesDir(null)`, and sets nothing for the cache at all. Both need deciding in S3 — see `doc/android.md` |
@@ -106,7 +106,7 @@ the same free ride Windows got from macOS. What is _not_ free:
 | Camera | aperture/PipeWire | stub; later `ahcsrc` (GStreamer's Android camera source) |
 | Location | ashpd portal | stub (already) |
 | Images | glycin | `image` crate — fine; SVG/HEIC/AVIF/JXL unsupported as on macOS/Windows |
-| Message search | `experimental-search` (SQLite) | should work; `sqlite` bundled by the SDK |
+| Message search | `experimental-search` (SQLite) | **Corrected in S3**: SQLite is _not_ an NDK API and there is no `libsqlite3` in the sysroot, so `rusqlite`'s `bundled` feature compiles it in. Compiles and links; never run |
 | SSO | localhost redirect server | must become an intent-filter redirect (`commune://` or `matrix:` scheme) — `src/login/local_server.rs` cannot receive a browser redirect on Android |
 | gtksourceview, libshumate | packaged | **no pixiewood wraps** — must be added (both are Meson projects, so feasible) or the features gated out for the spike |
 | Background sync | process lives | foreground service or push-only; the app is frozen when backgrounded |
@@ -204,8 +204,11 @@ Each spike is a yes/no gate; stop at the first no and record it in `doc/android.
   lands here — the `staticlib` entry point, runtime paths for gresources and locale, the
   metainfo `xmlns`, a newer build host so libadwaita builds, and either cross-building
   gtksourceview/libshumate or gating them for real rather than stubbing their `.pc` files.
-  **The build host is done** — Arch, with libadwaita cross-compiled and its demo exercised on the
-  emulator, `AdwTabView` included. The rest of the list is untouched.
+  **Done, 24 August 2026 — Commune runs on the emulator.** The greeter draws, Log In navigates,
+  and typing into the homeserver entry reaches Commune's own validation. Logging in against a
+  homeserver has not been tried, so nothing of `matrix-sdk` has run yet; that is what is left of
+  this spike. GtkSourceView is cross-built rather than gated, the crate is now a library with a
+  thin binary on top, and the results are in `doc/android.md`.
   Originally: Cross-build gtksourceview5 and libshumate as wraps
   (or keep them gated), no GStreamer, password login against `testing/local-homeserver.sh`,
   send a message, see the timeline. This is the "is the UI usable on a phone with GTK's
