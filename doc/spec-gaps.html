@@ -497,10 +497,10 @@
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
       on 23 August; calls moved out of Absent the same day, carried audio and video that evening
-      on one network and between two, and left the partial column on 23 August when the last
-      event of the module — <code>m.call.negotiate</code> — was answered. Four parts of that
-      last piece of work have not yet been put in front of a second client, and the note below
-      says which.
+      on one network and between two, and left the partial column when the last event of the
+      module — <code>m.call.negotiate</code> — was answered and then watched working: a camera
+      added to a live voice call, and Element for Android accepting it 850&nbsp;ms later. The
+      note below says which parts of that evening's work are still unwatched.
     </p>
   </header>
 
@@ -844,11 +844,24 @@
         </p>
         <p>
           The reason to send a renegotiation at all is a button that adds the camera to a call
-          placed without one. Nothing in that path writes SDP: the camera goes into the
-          pipeline, <code>webrtcbin</code> notices that what it sends no longer matches what it
-          last described, and the offer comes from its own <code>on-negotiation-needed</code>.
-          The signal is armed only once the call is up, since it fires for the first negotiation
-          of every call as well.
+          placed without one, and that button now works against a real client: the offer went
+          out, Element for Android answered it in 850&nbsp;ms accepting the video section as
+          <code>recvonly</code>, and the camera chain settled into <code>Playing</code> behind
+          it. Nothing in that path writes SDP — the camera goes into the pipeline,
+          <code>webrtcbin</code> notices that what it sends no longer matches what it last
+          described, and the offer comes from its own <code>on-negotiation-needed</code>, armed
+          only once the call is up since it fires for the first negotiation of every call too.
+        </p>
+        <p>
+          It took three attempts, and both wrong ones are the same trap: an element added to a
+          running pipeline must be told what state to be in, and
+          <code>sync_state_with_parent()</code> reads the parent's state at an instant when it
+          is briefly <code>Paused</code> — because the sink being added is prerolling. The first
+          attempt synced every child and pushed the microphone, the speaker and
+          <code>webrtcbin</code> down with it. The second synced only the camera's own elements,
+          and the source landed in <code>Paused</code>, produced nothing, so the sink never
+          prerolled, so the pipeline never left <code>Paused</code>. Naming the state outright
+          has no window to be wrong in.
         </p>
         <p>
           The two interface gaps went with it. A call coming in now rings — the desktop's own
@@ -872,11 +885,14 @@
           does not guess at whether anybody answered.
         </p>
         <p>
-          <strong>Four parts of this have never been put in front of a second client</strong>:
-          the renegotiation in both directions, the button that adds the camera, the rollback
-          when two renegotiations cross, and the row's answered and missed cases. The ringtone
-          and the notification need only an incoming call to see. <code>doc/calls.md</code>
-          carries the same list at the top, where it cannot be missed.
+          <strong>What is still unwatched</strong>: a renegotiation arriving <em>here</em>,
+          which needs a peer whose interface offers to add video mid-call and Element for
+          Android's does not; the rollback when two renegotiations cross; the badge for what the
+          other end muted, since the peer to hand sends no stream metadata at all; and the
+          answered and missed cases of the timeline row. The ringtone, the notification with its
+          two buttons and the fullscreen window were all exercised and behave — the ringback
+          going the other way was exercised too, and removed.
+          <code>doc/calls.md</code> carries the same list at the top, where it cannot be missed.
         </p>
       </div>
       <div class="note closed">

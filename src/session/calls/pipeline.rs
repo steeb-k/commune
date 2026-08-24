@@ -9,6 +9,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU32, Ordering},
     },
+    time::Duration,
 };
 
 use futures_channel::mpsc;
@@ -42,6 +43,12 @@ pub(crate) enum PipelineError {
     #[error("{0}")]
     Other(&'static str),
 }
+
+/// How long the camera is given to settle before its state is worth reading.
+///
+/// Everything read sooner than this is mid-transition, and a state on its way
+/// somewhere says nothing about where it ends up.
+const SETTLED_STATE_DELAY: Duration = Duration::from_secs(1);
 
 /// The audio payload type we offer, from the static range.
 const OPUS_PAYLOAD_TYPE: i32 = 111;
@@ -355,42 +362,67 @@ impl CallPipeline {
         // pipeline itself is doing, and an element in `Null` produces nothing:
         // the camera would never open and the self-view would stay black.
         //
-        // **Only the new ones.** `sync_state_with_parent()` sets an element to
-        // whatever state the parent is in *at that moment*, and a live source
-        // being added makes the pipeline go briefly back to `Paused` while it
-        // prerolls. Syncing every child during that window pushes the whole
-        // call — the microphone, the speaker, `webrtcbin` — down to `Paused`
-        // along with it. Measured on 23 August 2026: two elements of the new
-        // camera chain reached `Playing`, and everything after them, including
-        // the audio that had been carrying the call for fourteen seconds, was
-        // set to `Paused`.
+        // **`Playing`, said outright, and only to the new ones.**
+        //
+        // `sync_state_with_parent()` is the usual way to do this and it cannot
+        // be used here: it sets an element to whatever state the parent is in
+        // _at that moment_, and adding a sink that has to preroll takes the
+        // pipeline to `Paused` for as long as prerolling takes. Anything
+        // synced inside that window is set to `Paused` too — and when the
+        // thing set to `Paused` is the camera, it produces nothing, so the
+        // sink never prerolls, so the pipeline never leaves `Paused`. The two
+        // wait for each other for the rest of the call.
+        //
+        // Measured on 23 August 2026, twice. The first time the loop ran over
+        // every child and took the microphone, the speaker and `webrtcbin`
+        // down with it. The second time it ran over the camera's own elements
+        // only, and half of them — the source among them — still ended in
+        // `Paused`, with the pipeline never returning to `Playing` again.
+        // Naming the state we want has no window to be wrong in.
         //
         // `children()` and not `iterate_elements()` for a second reason: a
         // `GstIterator` can ask to be resynced when the bin changes underneath
         // it, and a plain `while let Ok(Some(_))` loop reads that request as
         // the end of the list.
+        let mut added = Vec::new();
+
         for element in self.pipeline.children() {
             if existing.contains(element.name().as_str()) {
                 continue;
             }
 
-            if let Err(error) = element.sync_state_with_parent() {
+            if let Err(error) = element.set_state(gst::State::Playing) {
                 warn!("Could not start {} for the camera: {error}", element.name());
                 return Err(error.into());
             }
+
+            added.push(element);
         }
 
-        // What state each of them actually reached, because a black self-view
-        // and a working one differ only here and nothing else says which.
-        for element in self.pipeline.children() {
-            let (_, current, pending) = element.state(gst::ClockTime::ZERO);
-            debug!(
-                "After adding the camera, {} is {current:?} (pending {pending:?})",
-                element.name()
-            );
+        // And the pipeline itself, which the new sink's preroll took out of
+        // `Playing`. Setting it again cannot demote anything — it is the state
+        // everything is already going to.
+        if let Err(error) = self.pipeline.set_state(gst::State::Playing) {
+            warn!("Could not put the call back into Playing after adding the camera: {error}");
+            return Err(error.into());
         }
 
         debug!("The camera is in the pipeline; waiting for webrtcbin to ask for an offer");
+
+        // What state each of them settled at, a moment later. Taken here and
+        // not immediately, because immediately is mid-transition and every
+        // state read then is a state on its way somewhere: it was that dump
+        // that made the first of the two faults above look like the second.
+        // A black self-view and a working one differ nowhere else.
+        glib::timeout_add_local_once(SETTLED_STATE_DELAY, move || {
+            for element in &added {
+                let (_, current, pending) = element.state(gst::ClockTime::ZERO);
+                debug!(
+                    "A second after adding the camera, {} is {current:?} (pending {pending:?})",
+                    element.name()
+                );
+            }
+        });
 
         Ok(())
     }
