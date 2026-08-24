@@ -9,7 +9,6 @@ use matrix_sdk::{
         ClientRegistrationData,
         registration::{ApplicationType, ClientMetadata, Localized, OAuthGrantType},
     },
-    sanitize_server_name,
     utils::local_server::LocalServerRedirectHandle,
 };
 use ruma::{
@@ -314,8 +313,7 @@ mod imp {
             }
 
             // If the client was dropped, try to recreate it.
-            let autodiscovery = self.autodiscovery.get();
-            let client = self.homeserver_page.build_client(autodiscovery).await.ok();
+            let client = self.homeserver_page.build_client().await.ok();
             self.set_client(client.clone());
 
             client
@@ -533,12 +531,9 @@ mod imp {
             self.navigation.push_by_tag(LoginPage::Register.tag());
         }
 
-        /// The name of the server that was typed, when it is one.
+        /// The name of the server that was chosen, when it is a domain name.
         fn server_name(&self) -> Option<OwnedServerName> {
-            self.autodiscovery
-                .get()
-                .then(|| self.homeserver_page.homeserver())
-                .and_then(|s| sanitize_server_name(&s).ok())
+            self.homeserver_page.server_name()
         }
 
         /// Show the page to log in with the browser with the given data.
