@@ -478,10 +478,10 @@ impl CheckCmd {
             let count = not_translatable.len();
 
             if count == 1 {
-                print_error("Found 1 file with translatable strings not present in POTFILES.in:");
+                print_error("Found 1 file in POTFILES.in with no translatable strings:");
             } else {
                 print_error(&format!(
-                    "Found {count} files with translatable strings not present in POTFILES.in:"
+                    "Found {count} files in POTFILES.in with no translatable strings:"
                 ));
             }
         }
