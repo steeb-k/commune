@@ -127,7 +127,7 @@ module, so unlike most of the field this can be exercised on a real account.
       from a second client rather than trusting it.
 * [ ] **Turning it back on** makes you online again without restarting.
 
-## Signing up — `doc/registration.md`
+## Signing up and resetting a password — `doc/registration.md`
 
 Nothing here has been seen on screen. The whole flow is new drawing code, and
 the greeter button it starts from has never been visible in this fork.
@@ -195,3 +195,36 @@ Registering on a public server leaves a junk account behind.
 * [ ] **Nothing regressed in logging in.** The greeter's _Log In_ button, the
       password path and the SSO path all go through the same code with the
       purpose left at `LogIn`.
+
+### Resetting a password
+
+Nothing here has been seen, and there is **no local harness for any of it** —
+Synapse sends no email without an SMTP server. What can be checked without one
+is everything up to the point where the email would arrive.
+
+* [ ] **The _Forgot Password?_ link** is on the password login page, under the
+      password row, flat and centred. It should not appear anywhere else, and a
+      homeserver with the OAuth API never shows that page at all.
+* [ ] **The page draws**: title "Reset your password on localhost", the
+      homeserver URL under it, an explanation, one email row and a _Send Link_
+      button that is insensitive until something is typed.
+* [ ] **A homeserver that cannot send email** says so — "This homeserver cannot
+      send email, so a password cannot be reset here" — rather than showing a
+      raw server message. The local harness has no SMTP, so this is the case it
+      _can_ test.
+* [ ] **An address on no account** says "No account on this homeserver uses that
+      email address."
+* [ ] **The stack moves on** to the password half only once the server has
+      answered, and the explanation names the address the link went to.
+* [ ] **The strength meter and the confirmation** behave as they do on the
+      other two pages — this is the third caller of the shared helpers, so it is
+      also the check that the shared version did not break the older two.
+      Check Account Settings ▸ Change Password still behaves as well.
+* [ ] **Pressing _Reset Password_ before opening the link** says "Open the link
+      in the email first, then try again" and leaves the page as it was. This is
+      the 401-with-a-UIAA-body case, and it is the most likely thing in the
+      whole flow to be wrong.
+* [ ] **The whole thing, end to end**, on a homeserver that does send email:
+      the new password works, and every other session is logged out.
+* [ ] **Going back and returning** empties both halves and starts at the email
+      step again.

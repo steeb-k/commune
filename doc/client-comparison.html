@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ 59dcc516</span>
+      <span>main @ 0bddedb0</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -688,14 +688,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Everyone but us <span class="tick gone">4 rows</span></h2>
+      <h2>Everyone but us <span class="tick gone">3 rows</span></h2>
       <p class="sec-sub">
         The rows where the field has settled and Commune hasn't. None of these is a judgement
         call about taste: each is a thing a person moving from any other client expects to find
         and does not. Ordered by how little room there is to argue.
-        <strong>Two rows left this section on 23 August 2026</strong> — pinned messages and
-        presence — and their notes are gone rather than struck; what they became is in the table
-        above, in the Commune cell of each.
+        <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
+        presence, and signing up with the password reset that went with it. Their notes are gone
+        rather than struck; what they became is in the table above, in the Commune cell of each.
       </p>
     </div>
     <div class="notes">
@@ -709,17 +709,6 @@
           everything to stay fast, still shipped a read-only version rather than none.
           <strong>It is also the blocker under two other rows</strong> — authoring a restricted
           join rule and adding a room to a space both need a space picker first.
-        </p>
-      </div>
-      <div class="note">
-        <span class="note-tag">8 of 9 peers · Client-Server API</span>
-        <span class="note-head">Resetting a password</span>
-        <p class="note-body">
-          Signing up was the whole of this row until 23 August 2026 and is now built: the greeter's
-          <em>Create Account</em> button leads somewhere, and the interactive authentication the
-          server asks for was already written. What is left is the other half —
-          <strong>somebody who has forgotten their password still has to go and find a browser</strong>,
-          and unlike sign-up that is a thing which happens to people who are already users.
         </p>
       </div>
       <div class="note">
@@ -856,7 +845,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>59dcc516</code> and the registration work committed on top of it, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>0bddedb0</code> and the password reset work committed on top of it, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -1038,8 +1027,8 @@
 
     { f: "Signing up, and resetting a password", g: "Account", kind: "spec", tag: "Spec",
       note: "Creating an account without leaving the app.",
-      c: { commune:0.5, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Signing up landed 23 August 2026 — a username and password page on a native homeserver, prompt=create in the browser on an OAuth one, and the standard's fallback page for any stage this client cannot draw. Resetting a forgotten password is the half still missing." } },
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Both halves landed 23 August 2026. Signing up: a username and password page on a native homeserver, prompt=create in the browser on an OAuth one, native pages for the token and terms stages, the standard's fallback page for a captcha. Resetting: a Forgot Password? link that asks the homeserver to email a link, then takes a new password. None of it has been watched on screen yet." } },
 
     { f: "Email and phone on the account", g: "Account", kind: "spec", tag: "Spec",
       note: "Adding, seeing and removing third-party identifiers.",

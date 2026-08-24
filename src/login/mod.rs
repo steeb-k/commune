@@ -30,6 +30,7 @@ mod in_browser_page;
 mod local_server;
 mod method_page;
 mod register_page;
+mod reset_password_page;
 mod session_setup_view;
 
 use self::{
@@ -40,6 +41,7 @@ use self::{
     local_server::spawn_local_server,
     method_page::LoginMethodPage,
     register_page::LoginRegisterPage,
+    reset_password_page::LoginResetPasswordPage,
     session_setup_view::SessionSetupView,
 };
 use crate::{
@@ -59,6 +61,8 @@ enum LoginPage {
     Method,
     /// The page to create an account.
     Register,
+    /// The page to set a new password after forgetting one.
+    ResetPassword,
     /// The page to log in with the browser.
     InBrowser,
     /// The session setup stack.
@@ -75,6 +79,7 @@ impl LoginPage {
             Self::Homeserver => LoginHomeserverPage::TAG,
             Self::Method => LoginMethodPage::TAG,
             Self::Register => LoginRegisterPage::TAG,
+            Self::ResetPassword => LoginResetPasswordPage::TAG,
             Self::InBrowser => LoginInBrowserPage::TAG,
             Self::SessionSetup => SessionSetupView::TAG,
             Self::Completed => "completed",
@@ -90,6 +95,7 @@ impl LoginPage {
             LoginHomeserverPage::TAG => Self::Homeserver,
             LoginMethodPage::TAG => Self::Method,
             LoginRegisterPage::TAG => Self::Register,
+            LoginResetPasswordPage::TAG => Self::ResetPassword,
             LoginInBrowserPage::TAG => Self::InBrowser,
             SessionSetupView::TAG => Self::SessionSetup,
             "completed" => Self::Completed,
@@ -130,6 +136,8 @@ mod imp {
         #[template_child]
         register_page: TemplateChild<LoginRegisterPage>,
         #[template_child]
+        reset_password_page: TemplateChild<LoginResetPasswordPage>,
+        #[template_child]
         in_browser_page: TemplateChild<LoginInBrowserPage>,
         #[template_child]
         done_button: TemplateChild<gtk::Button>,
@@ -169,6 +177,10 @@ mod imp {
 
             klass.install_action("login.create-account", None, |obj, _, _| {
                 obj.imp().start_create_account();
+            });
+
+            klass.install_action("login.reset-password", None, |obj, _, _| {
+                obj.imp().show_reset_password_page();
             });
         }
 
@@ -215,6 +227,7 @@ mod imp {
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
                 LoginPage::Register => self.register_page.grab_focus(),
+                LoginPage::ResetPassword => self.reset_password_page.grab_focus(),
                 LoginPage::InBrowser => self.in_browser_page.grab_focus(),
                 LoginPage::SessionSetup => {
                     if let Some(session_setup) = self.session_setup() {
@@ -284,6 +297,7 @@ mod imp {
                     self.drop_session();
                     self.method_page.clean();
                     self.register_page.clean();
+                    self.reset_password_page.clean();
                 }
                 LoginPage::Method => {
                     // Drop the session because it is bound to the account.
@@ -490,6 +504,27 @@ mod imp {
             self.navigation.push_by_tag(LoginPage::Method.tag());
         }
 
+        /// Show the page to set a new password after forgetting one.
+        ///
+        /// Only reachable from the password login page, which only a homeserver
+        /// with the native API ever shows.
+        fn show_reset_password_page(&self) {
+            let Some(client) = self.client.borrow().clone() else {
+                return;
+            };
+
+            let server_name = self.server_name();
+
+            self.reset_password_page
+                .update(&client.homeserver(), server_name.as_ref());
+            self.navigation.push_by_tag(LoginPage::ResetPassword.tag());
+        }
+
+        /// Go back to the previous page.
+        pub(super) fn pop_page(&self) {
+            self.navigation.pop();
+        }
+
         /// Show the page to create an account on the given homeserver.
         fn show_register_page(&self, homeserver: &Url) {
             let server_name = self.server_name();
@@ -585,6 +620,7 @@ mod imp {
             self.homeserver_page.clean();
             self.method_page.clean();
             self.register_page.clean();
+            self.reset_password_page.clean();
 
             // Clean data.
             self.purpose.set(LoginPurpose::LogIn);
@@ -659,6 +695,11 @@ impl Login {
     /// Create the session after a successful login.
     async fn create_session(&self) {
         self.imp().create_session().await;
+    }
+
+    /// Go back to the previous page.
+    fn pop_page(&self) {
+        self.imp().pop_page();
     }
 }
 
