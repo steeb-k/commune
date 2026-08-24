@@ -20,6 +20,8 @@ use tempfile::NamedTempFile;
 use tokio::task::{AbortHandle, JoinHandle};
 use tracing::error;
 
+#[cfg(target_os = "android")]
+pub(crate) mod android;
 pub(crate) mod app_bundle;
 pub(crate) mod expression;
 mod expression_list_model;
@@ -79,11 +81,51 @@ impl DataType {
     }
 
     /// The path of the platform directory that holds data of this type.
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "android")))]
     fn base_dir_path(self) -> PathBuf {
         match self {
             DataType::Persistent => glib::user_data_dir(),
             DataType::Cache => glib::user_cache_dir(),
+        }
+    }
+
+    /// The path of the platform directory that holds data of this type.
+    ///
+    /// `GLib`'s XDG answers are wrong here in both directions, and the
+    /// persistent one is wrong in a way that matters.
+    ///
+    /// GTK's Android glue sets `XDG_DATA_HOME` — what `glib::user_data_dir()`
+    /// returns — to `Context.getExternalFilesDir(null)/share`. That is
+    /// *external* storage: not readable by other ordinary applications under
+    /// scoped storage, but exposed over USB/MTP, reachable by anything holding
+    /// `MANAGE_EXTERNAL_STORAGE`, and possibly on removable media. The session
+    /// databases and the secret store both sit under this directory, so leaving
+    /// it there would put the message history and the passphrase that encrypts
+    /// it somewhere the application sandbox does not reach.
+    ///
+    /// The glue sets nothing at all for the cache, so `glib::user_cache_dir()`
+    /// falls back to `$HOME/.cache`, and an Android process has no useful
+    /// `HOME`.
+    ///
+    /// What the glue does give us is `XDG_DATA_DIRS`, set to
+    /// `Context.getFilesDir()/share` — internal storage, owned by this
+    /// application's UID. Everything here is derived from that, because asking
+    /// Android directly needs a `Context`, and a `Context` needs a realized
+    /// toplevel, which does not exist when the first session is restored.
+    #[cfg(target_os = "android")]
+    fn base_dir_path(self) -> PathBuf {
+        // `getFilesDir()` and `getCacheDir()` are siblings on Android:
+        // `<data>/files` and `<data>/cache`.
+        let files_dir = android_files_dir();
+
+        match self {
+            DataType::Persistent => files_dir,
+            DataType::Cache => {
+                let data_dir = files_dir
+                    .parent()
+                    .expect("the Android files directory should have a parent");
+                data_dir.join("cache")
+            }
         }
     }
 
@@ -105,6 +147,38 @@ impl DataType {
 
         path
     }
+}
+
+/// The path of `Context.getFilesDir()`, derived from what GTK's Android glue
+/// told `GLib`.
+///
+/// # Panics
+///
+/// If `XDG_DATA_DIRS` is not the single `<files>/share` entry the glue sets.
+///
+/// Carrying on with `glib::user_data_dir()` instead would be possible and is
+/// exactly what must not happen: that path is external storage, so a quiet
+/// fallback would put the databases and the secret store back where this code
+/// exists to move them from. A panic is loud and obvious; the alternative is
+/// silent and wrong.
+#[cfg(target_os = "android")]
+fn android_files_dir() -> PathBuf {
+    let data_dirs = glib::system_data_dirs();
+
+    let share_dir = data_dirs
+        .first()
+        .expect("XDG_DATA_DIRS should be set by GTK's Android glue");
+
+    assert!(
+        share_dir.file_name().is_some_and(|name| name == "share"),
+        "expected XDG_DATA_DIRS to be `<files>/share`, got {}",
+        share_dir.display()
+    );
+
+    share_dir
+        .parent()
+        .expect("`<files>/share` should have a parent")
+        .to_owned()
 }
 
 /// Replace variables in the given string with the given dictionary.
