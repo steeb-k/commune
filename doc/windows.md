@@ -61,7 +61,7 @@ timeline, media playback and calls. Those are the rest of M1.
 | Data directories | `%LOCALAPPDATA%\commune[-Devel]\{data,cache}` |
 | Console window | Suppressed in release builds only, `src/main.rs` |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
-| System 12/24h clock | Locale-derived at startup, never updates live |
+| System 12/24h clock | Read from `sShortTime` at startup, `src/system_settings/windows.rs` |
 | Camera QR scanning | Stubbed, returns no cameras |
 | Relocatable folder, `.zip` | `build-aux/windows/bundle.sh` |
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
@@ -352,6 +352,11 @@ to pair with `%LOCALAPPDATA%`, so the two are told apart by a subdirectory. `%LO
 than `%APPDATA%` because the latter roams to the user's other machines and our databases are far
 too large for that.
 
+**The clock format comes from a setting, not from the locale.** Windows lets somebody choose
+12- or 24-hour independently of their region, and the locale does not reflect that choice, so
+`src/system_settings/windows.rs` reads `sShortTime` directly. Linux watches the portal and updates
+live; this is read once at startup, as macOS is.
+
 **Sessions live in the Credential Manager**, one generic credential per session, named
 `{APP_ID}/{session id}`. The design is the macOS Keychain's, for the same reason: neither store can
 be searched on free-form attributes, so the session metadata is serialised into the credential blob
@@ -389,8 +394,9 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
-* **M4**: polish. Dark mode already follows the system with no work; the taskbar icon, drag and
-  drop, and IME are unverified.
+* **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
+  format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
+  the embedded icon has been confirmed present in the executable but not seen in a taskbar.
 * **M5**: WinRT toast notifications. GLib has no win32 `GNotification` backend at all, so there is
   nothing to repair — only something to write.
 * **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.

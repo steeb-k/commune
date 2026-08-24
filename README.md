@@ -177,10 +177,10 @@ under it; `build-aux/macos/setup-conda-macos.sh` builds all of those from source
 conda-forge packages none of them.
 
 On Windows the portals do not apply either. Secrets go to the Credential Manager, the 12h/24h
-format is read from the locale at startup, and location sharing and camera QR scanning are not
-available. GStreamer is needed on the same terms as macOS, but every piece of it — gst-plugin-gtk4,
-`webrtcbin`, libnice and libsrtp2 — is a package in MSYS2's UCRT64 repository rather than something
-to build.
+format is read at startup from the setting Windows keeps for it, and location sharing and camera
+QR scanning are not available. GStreamer is needed on the same terms as macOS, but every piece of
+it — gst-plugin-gtk4, `webrtcbin`, libnice and libsrtp2 — is a package in MSYS2's UCRT64 repository
+rather than something to build.
 
 ### Storing secrets
 
