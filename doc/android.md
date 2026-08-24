@@ -31,9 +31,9 @@ whole route hung on.
 | S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator |
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
-| S3 — Commune login on the emulator | **Commune runs on the emulator.** The greeter draws, Log In navigates, and typing reaches Commune's own validation. Logging in against a homeserver has not been tried |
+| S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | not started |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; notifications, SSO and push not started |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; notifications and push not started; SSO now has a measured failure to fix rather than a predicted one |
 
 ## Where things are
 
@@ -1163,6 +1163,77 @@ Two consequences worth knowing before testing input by hand:
 Neither is evidence about a real phone, which has no keyboard device and should get a normal
 keyboard from the `inputType` fix alone. That remains untested.
 
+### The TLS that never returned
+
+Discovery hung. Entering a homeserver and pressing **Next** left the button spinning with nothing
+in logcat at all — no error, no warning, no request.
+
+The panic hook installed for the Keystore work is what broke it open. `lib.rs` wraps the default
+hook and sends the message through `tracing`, so what had been silence became one line:
+
+```text
+panicked at rustls-platform-verifier-0.7.0/src/android.rs:90:10:
+Expect rustls-platform-verifier to be initialized
+```
+
+That crate panics rather than returning an error when it has not been given a JVM handle and a
+`Context`, and it does so inside whichever tokio task was making the request. The task dies, its
+`JoinHandle` never resolves, and the caller waits forever. A hang was the only symptom a panic
+could have had here.
+
+The plan had this one coming: it lists "the `rustls-platform-verifier`/`ndk-context` JVM-context
+dance" among the things S3 would have to settle. What the plan did not anticipate was that
+settling it properly is not currently possible.
+
+**Why it cannot simply be initialized.** `reqwest`'s `rustls` feature enables the platform verifier
+unconditionally — there is no root-store feature to select instead — and verification calls into a
+Kotlin class, `org.rustls.platformverifier.CertificateVerifier`, which has to be built into the
+APK. That component is [not on Maven][gh115], and it is not in the published crate either: 0.7.0
+ships `src/`, `examples/` and licences and nothing else. Using it means vendoring the component out
+of the crate's git repository and teaching pixiewood's generated Gradle project to find it.
+
+[gh115]: https://github.com/rustls/rustls-platform-verifier/issues/115
+
+**What was done instead.** `src/utils/tls.rs` configures the TLS itself. Android keeps its system
+trust store as ordinary PEM files under `/system/etc/security/cacerts`, readable by any application
+— 145 of them on the test device — so the roots are read from there and handed to `rustls`. The
+verifier is still linked and is simply never asked anything. Two call sites route through it:
+`utils::http::CLIENT` for the non-Matrix fetches, and `LoginHomeserverPage::client_builder`, which
+now passes `.http_client(…)` so that `matrix-sdk` does not build its own.
+
+This was a choice between imperfect options and it is worth being honest about which parts are
+worse. The roots are the device's own, so they follow system updates rather than the build date —
+that is the whole of what it buys. Against that: `rustls` does the verifying rather than Android,
+so certificate transparency policy, operator-configured pinning and the per-app network security
+config do not apply, though `rustls`'s own path building and hostname checking still do. And
+user-installed CAs are invisible, because they live in `/data/misc/user/0/cacerts-added` where an
+application cannot read them. That last one matches Android's default since Nougat rather than
+departing from it, but it does mean **an intercepting proxy will not work**, which is worth knowing
+before anyone tries a self-signed local homeserver. The real verifier remains the right end state.
+
+One trap cost a build cycle and now carries a comment: `reqwest` downcasts what
+`use_preconfigured_tls` is given to `Option<rustls::ClientConfig>` _exactly_, so handing it an
+`Arc<ClientConfig>` is refused at runtime with "Unknown TLS backend passed to
+`use_preconfigured_tls`". The static holds a bare config and callers clone it, which is cheap
+because the expensive parts inside are already refcounted.
+
+### Logging in works
+
+With the TLS fixed, a password login against a homeserver completes and the session opens.
+
+That is a larger result than it sounds, because it is the first thing to exercise the whole stack
+at once rather than one piece of it. `matrix-sdk` ran, which means the bundled SQLite store
+created its database and the crypto stack generated and persisted its keys; the Keystore-sealed
+secret store wrote and read back a real session; the trust roots verified a real certificate chain;
+and the text that started it was typed into an `AdwEntryRow` through the patched IME. Every S3
+subsystem is on that path.
+
+`matrix.org` itself does not get that far, and should not be expected to: it authenticates through
+OAuth 2.0, so `discover_login_api` finds server metadata and hands off to the browser flow. That
+needs the redirect the plan has always listed as unimplemented — see [Known gaps](#known-gaps).
+Discovery against it does succeed, which is what proves the TLS fix; the flow then stops where the
+plan said it would.
+
 ### What has not been exercised
 
 Running the app answers some of what S3 left open and not others.
@@ -1171,11 +1242,14 @@ Running the app answers some of what S3 left open and not others.
 `Datadir: /data/user/0/…/files/share/commune` — and `gio::Resource::load` did not fail, so
 `XDG_DATA_DIRS` was the right choice. Text entry reaches Commune's own logic.
 
-**Still open.** Logging in against a homeserver has not been tried, so nothing of `matrix-sdk`,
-the SQLite store or the crypto stack has run. `glib::user_cache_dir()` is still untested and still
-looks wrong — the glue sets no cache directory at all. The soft keyboard's behaviour with a real
-`GtkTextView` composer, which is S0's oldest open question, needs a logged-in session to test
-properly; the homeserver entry is an `AdwEntryRow` and is not the same thing.
+**Also answered, later.** A password login against a homeserver now completes — see
+[Logging in works](#logging-in-works) — so `matrix-sdk`, the SQLite store and the crypto stack have
+all run.
+
+**Still open.** `glib::user_cache_dir()` is still untested and still looks wrong — the glue sets no
+cache directory at all. The soft keyboard's behaviour with a real `GtkTextView` composer, which is
+S0's oldest open question, is now reachable from a logged-in session but has not been tested; the
+homeserver entry is an `AdwEntryRow` and is not the same thing.
 
 **Translations are missing.** `files/share` has no `locale` directory, so `bindtextdomain` points
 at nothing and the app is English-only. Same cause as the schema — an untagged install — but in
@@ -1227,3 +1301,12 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
   release build with stripping has not been measured, and neither has an `aarch64` one.
 * GStreamer is not built at all: pixiewood's cross file sets `media-gstreamer = 'disabled'` for
   GTK, so voice messages, video and calls are all out of reach until S4.
+* **OAuth 2.0 / SSO login cannot complete.** `src/login/local_server.rs` listens on localhost for
+  the browser to redirect back, which no browser on Android will do for another application's
+  loopback. It needs an intent-filter and a custom scheme instead. This was in the plan from the
+  start; reaching the authentication page on `matrix.org` is the first time it has actually been
+  hit. Password login is unaffected.
+* **The TLS trust roots are read from the filesystem rather than verified by Android.** Deliberate,
+  measured, and narrower than the platform verifier in ways written down in `src/utils/tls.rs` and
+  in [The TLS that never returned](#the-tls-that-never-returned). Replacing it needs the Kotlin
+  component vendored into the APK.
