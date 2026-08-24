@@ -71,7 +71,7 @@ Windows notification backend after all, which changes what M5 is.
 | Console window | Suppressed in release builds only, `src/main.rs` |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
 | System 12/24h clock | Read from `sShortTime` at startup, `src/system_settings/windows.rs` |
-| Camera QR scanning | Stubbed, returns no cameras |
+| Camera QR scanning | **Declined**, not missing — the other three verification methods suffice |
 | Relocatable folder, `.zip` | `build-aux/windows/bundle.sh` |
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
@@ -536,7 +536,11 @@ macOS, so the Control-key bindings the Linux build has are already right here.
   Decline, and Decline was seen declining the call at both ends; a notification leaves the
   notification centre as soon as its room is read. No `IconUri` is written and none is wanted —
   the sender's avatar is the picture a chat notification should carry.
-* **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.
+
+M6, camera QR scanning, is **not** on this list. It was declined rather than deferred: scanning is
+one of four ways to verify an identity, the other three work without a camera, and QR verification
+already works here in the direction where the phone does the scanning. `doc/windows-plan.md` has
+the reasoning, and the route it would take if the decision is ever revisited.
 
 Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
 picks, and whether the popover-on-a-separate-surface problem that troubles the macOS sticker picker

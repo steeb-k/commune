@@ -17,7 +17,7 @@ All of this work lives on the `windows-port` branch until `main` is free to take
 * [M3 — signed WiX 5 `.msi`](#m3--signed-wix-5-msi)
 * [M4 — polish](#m4--polish)
 * [M5 — notifications via WinRT toasts](#m5--notifications-via-winrt-toasts)
-* [M6 — stretch: camera QR scanning](#m6--stretch-camera-qr-scanning)
+* [M6 — camera QR scanning](#m6--camera-qr-scanning)
 * [Dependencies and recipes](#dependencies-and-recipes)
 * [Docs and ledger updates](#docs-and-ledger-updates)
 * [Risks and open questions](#risks-and-open-questions)
@@ -396,7 +396,48 @@ Verify: the macOS M5 list, translated — a message with the window backgrounded
 with the avatar; clicking it opens the right room in the right session, warm and cold; a
 notification for a room that is read disappears; nothing asks twice across two rebuilds.
 
-## M6 — stretch: camera QR scanning
+## M6 — camera QR scanning
+
+**Declined.** Not deferred, not owed — decided against, and the reasoning is below so that it does
+not have to be had again.
+
+Scanning a QR code is one of four ways to verify an identity, and `load_supported_verification
+_methods` in `src/session/verification/mod.rs` offers the other three whether or not there is a
+camera:
+
+```rust
+let mut methods = vec![
+    VerificationMethod::SasV1,          // compare emoji
+    VerificationMethod::QrCodeShowV1,   // we display a QR code
+    VerificationMethod::ReciprocateV1,  // they scan ours, we confirm
+];
+if has_cameras {
+    methods.push(VerificationMethod::QrCodeScanV1);  // we scan theirs
+}
+```
+
+So **QR verification already works on Windows**, in the direction where the phone does the
+scanning. What the camera would add is the other direction, and three things argue against it:
+
+* **The ergonomics are backwards.** A laptop webcam points at the person using it. Scanning with
+  it means holding a phone up to the lid at the right distance and angle, while the reverse —
+  point the phone already in your hand at the monitor — is what people do without being asked.
+* **The case that justifies it on Linux does not exist here.** Commune targets mobile Linux, where
+  the camera is the primary sensor and the phone _is_ the Commune device, so scanning is the only
+  direction available. Windows has no such form factor.
+* **The absence already degrades correctly.** `QrCodeScanV1` is simply not advertised, so there is
+  no dead button and no broken path. The stub that reports no cameras is a complete answer rather
+  than a placeholder.
+
+Against that, the cost is a real module: a Media Foundation pipeline, a viewfinder widget
+subclass, `rqrr` decoding on a throttled appsink, camera privacy handling, and the
+`mediafoundation` and `d3d12` plugins in the bundle — to duplicate a path that works.
+
+If it is ever reopened, it should be because someone wants it on **macOS**, where the same
+argument applies but the same hardware assumptions do not necessarily hold. The sketch that was
+here is kept below for that.
+
+### The route, if it is ever wanted
 
 The macOS M4 sketch with the Media Foundation source swapped in — none of the macOS one exists
 yet either, so whichever platform goes first writes the pattern.
