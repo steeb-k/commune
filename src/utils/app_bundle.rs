@@ -4,10 +4,10 @@
 //! install prefix into [`RESOURCES_FILE`], [`UI_RESOURCES_FILE`] and
 //! [`LOCALEDIR`], and the app is only ever run from that prefix.
 //!
-//! macOS and Android each have a reason that cannot work, and they are not the
-//! same reason: a `.app` is relocatable, so its prefix is not known when it is
-//! built, while an Android package has a prefix that is known and wrong. Both
-//! are below.
+//! macOS and Android each have a reason that cannot work, and the reasons are
+//! not the same one: a `.app` has a prefix that cannot be known when it is
+//! built, and an Android package has one that is known and wrong. Both arms are
+//! below.
 //!
 //! A macOS `.app` is relocatable — the user drags it wherever they like — so
 //! nothing about its location can be known when it is built. Everything it
@@ -105,13 +105,13 @@ pub(crate) fn init() -> RuntimePaths {
 ///
 /// What actually happens is that everything under that staging directory is
 /// packed into the APK's `assets/`, and GTK's Java glue extracts it to
-/// `Context.getFilesDir()` before calling `main`. The glue then tells GLib
+/// `Context.getFilesDir()` before calling `main`. The glue then tells `GLib`
 /// where that is, so the directory is already known — it only has to be asked
 /// for.
 ///
-/// It has to be asked of **GLib**, not the environment. The glue calls
+/// It has to be asked of **`GLib`**, not the environment. The glue calls
 /// `g_set_user_dirs()` (`gdk/android/gdkandroidruntime.c:277`), which sets
-/// GLib's own idea of the XDG directories and never touches `environ`, so
+/// `GLib`'s own idea of the XDG directories and never touches `environ`, so
 /// `std::env::var("XDG_DATA_DIRS")` sees nothing at all.
 ///
 /// And it has to be `XDG_DATA_DIRS`, not `XDG_DATA_HOME`. The glue points the
@@ -120,9 +120,9 @@ pub(crate) fn init() -> RuntimePaths {
 /// `getExternalFilesDir(null)/share` — external storage, which never receives
 /// them.
 ///
-/// Nothing here sets an environment variable, unlike the macOS arm: GLib finds
-/// the GSettings schemas under `XDG_DATA_DIRS/glib-2.0/schemas` by itself, and
-/// that is exactly where pixiewood compiles them to.
+/// Nothing here sets an environment variable, unlike the macOS arm: `GLib`
+/// finds the `GSettings` schemas under `XDG_DATA_DIRS/glib-2.0/schemas` by
+/// itself, and that is exactly where pixiewood compiles them to.
 #[cfg(target_os = "android")]
 mod android {
     use gtk::glib;
