@@ -192,8 +192,13 @@ machine, not the build machine.
 So the real conclusion is about the build host, not about a shim: **Ubuntu 24.04 is too old to
 build GTK and libadwaita `main`.** The options are a newer distribution in WSL (25.10, Fedora,
 Arch — GTK's own CI uses a rolling image), a container, or a GLib built and installed natively so
-that `/usr/bin` genuinely carries the newer tools. That decision is open; it does not block S1,
-which needs GTK and not libadwaita.
+that `/usr/bin` genuinely carries the newer tools.
+
+The sequencing this implies matters. GTK `main` itself builds fine here — nothing in it uses
+`G_GNUC_FLAG_ENUM` — so **S1 is not blocked**: the Rust spike needs GTK and a C stub, not
+libadwaita. But **Commune is a libadwaita application**, so this must be solved before S3, and the
+shims above are not the way. Treat "move the build host to a newer distribution" as a prerequisite
+of S3 rather than as a problem to be worked around.
 
 Worth knowing before S3: Commune's own build runs `glib-compile-resources` and
 `glib-compile-schemas` from the host too. If any of them turn out to be too old, this is the shape
