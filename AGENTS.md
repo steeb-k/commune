@@ -55,6 +55,12 @@ the application's name or ID.
 than a feature, and `doc/macos-plan.md` is the plan that produced the second of
 them.
 
+`doc/gap-closing-plan.md` is the plan for the round of work in progress — the
+order the remaining gaps are being closed in, and why. Its "Where this got to"
+section is kept current and is the thing to read before picking that work up
+again; the ledgers say what exists, only the plan says what is next and what it
+was repriced from.
+
 Three of the ledgers are HTML pages rather than Markdown, and they are the ones
 that get forgotten: `doc/client-comparison.html` (Commune against nine other
 clients), `doc/spec-gaps.html` (Commune against the Client-Server API) and
