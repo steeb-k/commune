@@ -57,6 +57,7 @@ src/components/dialogs/message_dialogs.rs
 src/components/dialogs/peek_row.rs
 src/components/dialogs/room_preview.blp
 src/components/dialogs/room_preview.rs
+src/components/dialogs/space_picker.blp
 src/components/dialogs/user_profile.blp
 src/components/image_pack_editor/image_row.blp
 src/components/image_pack_editor/mod.blp

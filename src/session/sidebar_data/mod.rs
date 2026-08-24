@@ -9,5 +9,5 @@ pub use self::{
     item::SidebarItem,
     item_list::SidebarItemList,
     list_model::SidebarListModel,
-    section::{SidebarSection, SidebarSectionName},
+    section::{RoomCategoryFilter, SidebarSection, SidebarSectionName},
 };

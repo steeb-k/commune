@@ -34,6 +34,7 @@ components/dialogs/auth/registration_token_page.blp
 components/dialogs/auth/terms_page.blp
 components/dialogs/peek_row.blp
 components/dialogs/room_preview.blp
+components/dialogs/space_picker.blp
 components/dialogs/toastable.blp
 components/dialogs/user_profile.blp
 components/image_pack_editor/image_row.blp

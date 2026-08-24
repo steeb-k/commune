@@ -5,9 +5,9 @@ This file is the ledger for the Spaces module (`m.space`, and the
 behind it, and what to check when rebasing onto a new Fractal release. See
 `fork.md` for why none of this goes upstream.
 
-**This feature is being built in three slices and two have landed.** The third
-is named at the bottom under _Not done_, and the HTML ledgers grade the row
-`◐`, not `●`, on purpose.
+**This feature is being built in three slices.** The first two are below; the
+third is being built now and its first half — the space picker — has landed.
+The HTML ledgers grade the row `◐`, not `●`, on purpose.
 
 ## Scope of slice 1 — stop hiding them
 
@@ -173,6 +173,32 @@ forgotten.
 peeking is what reads it — see `peeking.md`, which was built on top of it the
 same day, and which also added `is-encrypted` from the same summary.
 
+## Slice 3, first half — a space picker
+
+`SpacePickerDialog` (`src/components/dialogs/space_picker.rs`) asks the person
+which of their spaces they mean. It is a dialog rather than a subpage because
+it has two callers already and neither shares a navigation stack with the
+other: the restricted join rule editor (`doc/join-rules.md`) and — next — the
+action that puts a room into a space.
+
+* The model is the session's `RoomList` behind three filters:
+  `RoomCategoryFilter` on `RoomCategory::Space`, a `GtkStringFilter` for the
+  search box, and a `GtkCustomFilter` that leaves out one room the caller
+  names. `RoomCategoryFilter` is the sidebar's own filter, which had to be
+  exported from `session::sidebar_data`; it was written for exactly this shape
+  of question and there was no reason to write a second one.
+* Rows are plain `AdwActionRow`s with an `Avatar` prefix, bound with
+  `bind_model`. No new row widget: a space has a name, an alias and a picture,
+  and `AdwActionRow` draws all three.
+* **The exclusion matters.** A room restricted to itself admits nobody new, and
+  a space cannot be put inside itself. The caller passes the room and the
+  picker drops it.
+* The answer comes back through a `futures_channel::oneshot`, resolved either
+  by activating a row or by `AdwDialogImpl::closed` — so dismissing the dialog
+  releases the caller with `None` rather than leaving a future hanging.
+  `utils::OneshotNotifier` could not be used: it requires `T: Send`, and a
+  `Room` is a GObject.
+
 ## Explore stops filtering them out
 
 `ExploreSearchData::as_request` sent `room_types: vec![RoomTypeFilter::Default]`.
@@ -206,6 +232,8 @@ the answer.
 | `src/session_view/explore/public_room_row.rs`, `.blp` | The _Space_ marker; made reusable in slice 2 |
 | `src/session/remote/space_children.rs` | Slice 2: the `/hierarchy` listing |
 | `data/resources/stylesheet/_session_view.scss` | Slice 2: `.space-children` |
+| `src/components/dialogs/space_picker.rs`, `.blp` | Slice 3: the picker |
+| `src/session/sidebar_data/section/mod.rs`, `sidebar_data/mod.rs` | Slice 3: exporting `RoomCategoryFilter` |
 
 ## Rebase guide
 
@@ -244,10 +272,14 @@ the answer.
   not appear, because `m.space.child` is a state event in a room whose timeline
   is not being watched. Reopening the space asks again — and so does _Try
   Again_ after a failure.
-* **Slice 3 — a space picker and `m.space.child`.** Nothing in the tree reads
-  or writes `m.space.child` or `m.space.parent` today, so no room can be put
-  into a space from here, and the restricted join rule editor still cannot name
-  a space. That is also what unblocks `image-packs.md` Phase 8.
+* **Slice 3, second half — writing `m.space.child`.** The picker exists and the
+  restricted join rule editor uses it, but nothing in the tree still writes
+  `m.space.child` or `m.space.parent`, so no room can be put into a space from
+  here. That is also what unblocks `image-packs.md` Phase 8.
+* **The picker replaces a whole allow list.** A room restricted to several
+  spaces keeps all of them until somebody picks a space, and then keeps one.
+  Expressing "these three and not that one" needs a multi-select picker, and
+  nothing has asked for it.
 * **Space invites are ordinary invites.** An invite to a space gets
   `RoomCategory::Invited` and the ordinary `Invite` page, which says nothing
   about it being a space. Correct as far as it goes — accepting it lands the
