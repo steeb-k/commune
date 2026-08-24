@@ -1,58 +1,53 @@
-//! Secret backend using a file in the application's own data directory.
+//! Secret backend storing each session sealed with an Android Keystore key.
 //!
-//! # This is a placeholder, not a secure store
+//! # What protects the session
 //!
-//! Android's real answer for this is the Keystore, reached through JNI, and
-//! that is what a build handed to anyone must use. This backend exists so that
-//! the port can log in and be exercised before the JNI plumbing exists; it
-//! writes the session — including the passphrase that encrypts the local
-//! databases — as plain JSON.
+//! Three things, and it is worth being precise about which does what.
 //!
-//! Replacing this is tracked as the first task of S5 in `doc/android-plan.md`.
-//! The `SecretExt` surface is the seam: only this file changes.
+//! **The Keystore key.** The payload is encrypted with AES-256-GCM using a key
+//! generated inside the Android Keystore and never handed to us — see
+//! [`keystore`]. It cannot be read out of the device, and it cannot be used by
+//! anything that is not this application's UID. A file copied off a rooted
+//! phone is ciphertext, and the key is not in the copy.
 //!
-//! # Where this actually writes, which is worse than intended
+//! **The application sandbox.** The files sit under `Context.getFilesDir()`,
+//! owned by this application's UID. That is what
+//! [`DataType::Persistent`] resolves to on Android, though only because
+//! `crate::utils` was made to derive it: GTK's glue points `GLib`'s
+//! `XDG_DATA_HOME` at `Context.getExternalFilesDir(null)`, which is external
+//! storage, and using it would put these files somewhere USB and
+//! `MANAGE_EXTERNAL_STORAGE` can reach.
 //!
-//! This file was written believing it landed under `Context.getFilesDir()`,
-//! whose contents are owned by this application's UID and are unreadable by
-//! other applications. **It does not.** [`secrets_dir()`] resolves through
-//! [`DataType::Persistent`], which is `glib::user_data_dir()`, and GTK's
-//! Android glue points `GLib`'s `XDG_DATA_HOME` at
-//! `Context.getExternalFilesDir(null)/share` — *external* storage
-//! (`gdk/android/gdkandroidruntime.c:271-281`). Only `XDG_DATA_DIRS` is the
-//! internal files directory.
+//! **`allowBackup` being off.** pixiewood leaves Android's default of `true`,
+//! which would let `adb backup` and the system's cloud backup carry the files
+//! away. `build-aux/android/patch-manifest.sh` turns it off after every
+//! `pixiewood generate`. Even with it on the ciphertext would be useless
+//! without the key, but there is no reason to hand it out.
 //!
-//! An app-specific external directory is a weaker boundary than the sandbox:
-//! other ordinary applications cannot read it under scoped storage, but it is
-//! exposed over USB/MTP, reachable by anything holding
-//! `MANAGE_EXTERNAL_STORAGE`, and may live on removable media. It is not the
-//! UID-owned private directory the sandbox argument depends on.
+//! # What does not
 //!
-//! One related hole is closed rather than merely noted: pixiewood leaves
-//! `android:allowBackup` at Android's default of `true`, which would let
-//! `adb backup` and the system's cloud backup carry this file off the device.
-//! `build-aux/android/patch-manifest.sh` turns it off after every
-//! `pixiewood generate`.
+//! The key is not bound to the user being present: no
+//! `setUserAuthenticationRequired`, so anything running as this UID can decrypt
+//! without a lock-screen prompt. That is deliberate for now — Commune restores
+//! sessions at startup, before there is a window to prompt over — and it is the
+//! obvious next tightening if sessions ever become worth an unlock.
 //!
-//! So the honest description of the present posture is a plaintext passphrase
-//! on semi-public storage. The directory is worth fixing on its own, ahead of
-//! the Keystore work — but not only here: every [`DataType::Persistent`]
-//! consumer, the SDK's own databases included, writes to the same place, so
-//! this is a decision about the Android data directory rather than about this
-//! file. Tracked in `doc/android.md` under S3.
-//!
-//! Even with the directory corrected, this is not equivalent to hardware-backed
-//! key storage, does not survive a rooted device, and is not what the Keystore
-//! would give us.
+//! Hardware backing is not guaranteed either. The Keystore uses secure hardware
+//! where the device has it and falls back to software otherwise, and nothing
+//! here refuses the software case.
 //!
 //! # Layout
 //!
-//! One file per session, `secrets.d/<session id>.json`, next to the per-session
-//! data directories rather than inside them, so that enumerating sessions does
-//! not mean walking every session's database. The payload is the same
-//! `version: 1` document the macOS backend stores in the Keychain. It is
-//! duplicated rather than shared because the two backends should be free to
-//! diverge.
+//! One file per session, `secrets.d/<session id>.sealed`, next to the
+//! per-session data directories rather than inside them, so that enumerating
+//! sessions does not mean walking every session's database. Inside is the
+//! [`keystore`] envelope wrapping the same `version: 1` JSON document the macOS
+//! backend stores in the Keychain.
+//!
+//! The document is duplicated from the macOS backend rather than shared,
+//! because the two should be free to diverge.
+
+mod keystore;
 
 use std::{
     fs, io,
@@ -67,6 +62,12 @@ use zeroize::{Zeroize, Zeroizing};
 
 use super::{SecretError, SecretExt, StoredSession};
 use crate::{spawn_tokio, utils::DataType};
+
+/// The extension of a stored session file.
+///
+/// Not `.json`: what is on disk is a [`keystore`] envelope, and calling it JSON
+/// would invite someone to open it and wonder why it is not.
+const FILE_EXTENSION: &str = "sealed";
 
 /// The version of the payload format that this version of the application
 /// writes.
@@ -155,7 +156,7 @@ fn secrets_dir() -> PathBuf {
 
 /// The path of the file holding the session with the given ID.
 fn session_path(id: &str) -> PathBuf {
-    secrets_dir().join(format!("{id}.json"))
+    secrets_dir().join(format!("{id}.{FILE_EXTENSION}"))
 }
 
 /// Retrieve every session stored on disk.
@@ -182,7 +183,10 @@ fn restore_sessions_inner() -> Result<Vec<StoredSession>, SecretError> {
         };
 
         let path = entry.path();
-        if path.extension().is_none_or(|extension| extension != "json") {
+        if path
+            .extension()
+            .is_none_or(|extension| extension != FILE_EXTENSION)
+        {
             continue;
         }
 
@@ -199,9 +203,14 @@ fn restore_sessions_inner() -> Result<Vec<StoredSession>, SecretError> {
 
 /// Read a [`StoredSession`] from the file at the given path.
 fn session_from_file(path: &Path) -> Result<StoredSession, String> {
-    let data = Zeroizing::new(
-        fs::read(path).map_err(|error| format!("could not read session data: {error}"))?,
-    );
+    let sealed = fs::read(path).map_err(|error| format!("could not read session data: {error}"))?;
+
+    // A failure here is not the same as a malformed file: it also happens when
+    // the Keystore key is gone, which is what the user sees after clearing the
+    // app's data or restoring to a different device. Either way this session
+    // cannot be recovered, and the caller drops it with a warning.
+    let data = keystore::decrypt(&sealed)
+        .map_err(|error| format!("could not decrypt session data: {error}"))?;
 
     let secret: FileSecret =
         serde_json::from_slice(&data).map_err(|error| format!("invalid session data: {error}"))?;
@@ -250,12 +259,14 @@ fn store_session_inner(session: &StoredSession) -> Result<(), SecretError> {
         passphrase: session.passphrase.as_str().to_owned(),
     };
 
-    let mut payload =
+    let mut plaintext =
         serde_json::to_vec(&secret).map_err(|error| SecretError::Service(error.to_string()))?;
-    let result = write_session_file(&dir, &session.id, &payload);
-    payload.zeroize();
+    let sealed = keystore::encrypt(&plaintext);
+    plaintext.zeroize();
 
-    result
+    let sealed = sealed.map_err(|error| SecretError::Service(error.to_string()))?;
+
+    write_session_file(&dir, &session.id, &sealed)
 }
 
 /// Write the payload for the given session ID, atomically.
@@ -264,8 +275,8 @@ fn store_session_inner(session: &StoredSession) -> Result<(), SecretError> {
 /// an interrupted write cannot leave a half-written session behind — losing the
 /// passphrase would mean losing the account's local data.
 fn write_session_file(dir: &Path, id: &str, payload: &[u8]) -> Result<(), SecretError> {
-    let final_path = dir.join(format!("{id}.json"));
-    let temp_path = dir.join(format!("{id}.json.tmp"));
+    let final_path = dir.join(format!("{id}.{FILE_EXTENSION}"));
+    let temp_path = dir.join(format!("{id}.{FILE_EXTENSION}.tmp"));
 
     let write = || -> io::Result<()> {
         fs::write(&temp_path, payload)?;

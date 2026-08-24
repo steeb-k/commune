@@ -149,6 +149,18 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     utils::macos_text_scale::init();
 
+    // Capture the Java VM while we are still on the thread GTK gave a `JNIEnv`
+    // to. The secret store needs it from a tokio worker, which has no env of
+    // its own and cannot borrow this one, so this has to happen here and not
+    // where it is used. It needs a display, so it must follow `gtk::init()`.
+    #[cfg(target_os = "android")]
+    if let Err(error) = utils::android::init() {
+        // Not fatal on its own: what fails without it is the secret store, and
+        // that reports its own failure with a message about sessions rather
+        // than about JNI.
+        tracing::error!("Could not reach the Java VM: {error}");
+    }
+
     // GStreamer is not cross-built for Android yet, so there is nothing to
     // initialize there. See `doc/android.md`.
     #[cfg(not(target_os = "android"))]

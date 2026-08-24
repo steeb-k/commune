@@ -156,6 +156,10 @@ image = { version = "0.25.5", default-features = false, features = [
 
 # Android-only dependencies.
 [target.'cfg(target_os = "android")'.dependencies]
+# The Android Keystore is a Java API and there is no other way to reach it: the
+# keys are non-extractable by design, so the encryption has to happen on the
+# other side of JNI rather than with key material handed back to us.
+jni = "0.21"
 # `tracing` has nowhere to go on Android without a logcat sink.
 paranoid-android = "0.2"
 # Never used directly. It is here to turn on `bundled` for the `rusqlite` that
