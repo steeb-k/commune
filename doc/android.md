@@ -130,6 +130,25 @@ The debug APK is **136 MB** — unstripped, and carrying both demos GTK builds. 
 `Unable to strip the following libraries, packaging them as they are:` and then all 32 `.so`s.
 A release build with stripping is the number that matters, and has not been measured.
 
+### `prepare` downloads, and hangs quietly when a download fails
+
+Not every subproject is a git wrap; some are tarballs fetched during `meson setup`. One of them,
+`pixman`, comes from `cairographics.org`, which timed out repeatedly from WSL on the second build
+of the day. meson does not fail on this — it retries "after a delay", forever, so `prepare` looks
+like a slow configure rather than a stall. Ten minutes of nothing is the symptom;
+`.pixiewood/bin-x86_64/meson-logs/meson-log.txt` is where it says so.
+
+Two things follow. Watch that log rather than the process list when `prepare` seems slow. And
+because every project gets its own `subprojects/packagecache`, a tarball already fetched for one
+build can be copied into the next to skip the download entirely:
+
+```sh
+cp -n ~/src/gtk/subprojects/packagecache/*.tar.* ~/src/gtk/subprojects/packagecache/*.zip \
+      ~/src/<project>/subprojects/packagecache/
+```
+
+When builds are eventually made repeatable, one shared cache directory is worth arranging.
+
 ## What S0 measured
 
 gtk4-demo from GTK `main`, on the `seed_api35` AVD (API 35, x86_64), 23 August 2026:
