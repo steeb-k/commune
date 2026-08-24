@@ -185,14 +185,16 @@ Each spike is a yes/no gate; stop at the first no and record it in `doc/android.
   in WSL. In short: a `staticlib` crate built by a meson `custom_target`, a three-line C stub
   providing `main`, and `PKG_CONFIG_LIBDIR` pointed at meson's `meson-uninstalled`. gtk4-rs needed
   no patches. Route A is no longer blocked on an unknown.
-* **S2 — Commune compiles for `x86_64-linux-android`.** Next. Two things S1 turned up feed
-  straight into it: the metainfo needs the appstream `xmlns` before pixiewood will read it, and
-  the host GLib problem must be solved before libadwaita builds at all (so before S3).
-  Originally: `cargo check` only, no APK: add the
-  android cfg arms (entry, logging, data dirs, `UnimplementedSecret` → a temporary file
-  secret), gate gtksourceview/shumate behind a feature, take the `aws-lc-rs` → `ring` fallback
-  if needed. Measures how much of the 110k lines is actually platform-dirty.
-* **S3 — Commune login on the emulator.** Cross-build gtksourceview5 and libshumate as wraps
+* **S2 — Commune compiles for `x86_64-linux-android`.** **Done, 23 August 2026 — it passed on the
+  first attempt, unmodified.** Almost none of the codebase turned out to be platform-dirty, and
+  `aws-lc-sys` cross-compiled without the `ring` fallback this plan reserved. Two arms were added
+  (a placeholder file-backed secret store, a logcat sink) and the feature gating this step
+  budgeted for was not needed to compile at all. See `doc/android.md`.
+* **S3 — Commune login on the emulator.** Next, and now the hard one: everything S2 deferred
+  lands here — the `staticlib` entry point, runtime paths for gresources and locale, the
+  metainfo `xmlns`, a newer build host so libadwaita builds, and either cross-building
+  gtksourceview/libshumate or gating them for real rather than stubbing their `.pc` files.
+  Originally: Cross-build gtksourceview5 and libshumate as wraps
   (or keep them gated), no GStreamer, password login against `testing/local-homeserver.sh`,
   send a message, see the timeline. This is the "is the UI usable on a phone with GTK's
   IME" test. Screenshots into the ledger.
