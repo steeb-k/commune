@@ -34,8 +34,15 @@ Two of the plan's open questions have been answered by experiment, both favourab
   in. So the warm path of M3 already works, and all that scheme handling still needs is the
   registry key an installer writes.
 
+The **Credential Manager backend is exercised** by
+`secret::windows::tests::a_session_survives_a_round_trip`, which stores a session, reads every
+field back, and deletes it. That test writes to the real credential store, because the API has no
+notion of another one; it is worth the intrusion because this is the only place in the application
+that hands raw pointers to the operating system, and everything it protects is lost if it is wrong.
+`cargo nextest run` is 156 tests, all passing, and `meson test` passes.
+
 What has **not** been exercised is everything that needs an account: logging in, syncing, the
-timeline, media playback, calls, and the Credential Manager round trip. Those are the rest of M1.
+timeline, media playback and calls. Those are the rest of M1.
 
 | Area | State |
 | --- | --- |
@@ -43,7 +50,7 @@ timeline, media playback, calls, and the Credential Manager round trip. Those ar
 | Runtime paths | Meson's compile-time constants; no bundle yet |
 | Image decoding | `image` crate, shared with macOS via `cfg(not(target_os = "linux"))` |
 | Video and audio playback | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
-| Secrets | Windows Credential Manager, `src/secret/windows.rs` — written, not yet exercised |
+| Secrets | Windows Credential Manager, `src/secret/windows.rs`, round-tripped by a test |
 | Data directories | `%LOCALAPPDATA%\commune[-Devel]\{data,cache}` |
 | Console window | Suppressed in release builds only, `src/main.rs` |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
@@ -257,10 +264,11 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 
 * **The rest of M1**: everything that needs an account. Logging in with a password, SSO login
   (`src/login/local_server.rs` binds localhost, so expect a Defender firewall prompt), syncing,
-  the timeline, image thumbnails and animated GIFs, video and voice-message playback, and the
-  Credential Manager round trip — write a session, quit, relaunch, and see it restored. Calls have
-  every element they need present (`webrtcbin`, `nicesrc`, `dtlssrtpenc`, `srtpenc`, `opusenc`) and
-  should be run against Element per `doc/calls.md`.
+  the timeline, image thumbnails and animated GIFs, and video and voice-message playback. Session
+  restore is the one to watch, since it is the only part of the Credential Manager path the test
+  does not cover: log in, quit, relaunch, and see the session come back. Calls have every element
+  they need present (`webrtcbin`, `nicesrc`, `dtlssrtpenc`, `srtpenc`, `opusenc`) and should be run
+  against Element per `doc/calls.md`.
 * **M2**: a relocatable, signed folder and `.zip`. Windows relocates GLib, GdkPixbuf and GStreamer
   by the location of the DLL rather than by environment variables, so this should need much less
   than the macOS bundle did — but that is an expectation, not a measurement.
