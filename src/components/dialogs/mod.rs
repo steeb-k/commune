@@ -1,5 +1,6 @@
 mod auth;
 mod message_dialogs;
+mod peek_row;
 mod room_preview;
 mod toastable;
 mod user_profile;

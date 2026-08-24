@@ -54,6 +54,7 @@ src/components/dialogs/auth/registration_token_page.blp
 src/components/dialogs/auth/terms_page.blp
 src/components/dialogs/auth/terms_page.rs
 src/components/dialogs/message_dialogs.rs
+src/components/dialogs/peek_row.rs
 src/components/dialogs/room_preview.blp
 src/components/dialogs/room_preview.rs
 src/components/dialogs/user_profile.blp

@@ -181,3 +181,8 @@ audio-player waveform {
     color: var(--accent-color);
   }
 }
+
+// The messages of a room read without joining it.
+.room-peek row {
+  padding: 12px;
+}

@@ -965,8 +965,9 @@
 
     { f: "Peek a public room before joining", g: "Rooms", kind: "spec", tag: "Room previews",
       note: "Reading the timeline of a world_readable room.",
-      c: { commune:0.5, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
-      cn: { commune:"Name, topic and member count from the summary and hierarchy endpoints — the timeline is never peeked, and peeking it needs a renderer of its own since there is no Room to hang one on.",
+      c: { commune:1, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
+      cn: { commune:"A Preview button in the room preview dialog and on every row of Explore and of a space page, reading the last twenty messages straight off /messages. Plain text and no media, deliberately: nothing here fetches a picture out of a room you have not joined. Usually answers with an error for a room on another homeserver, which is Synapse and not us.",
+            fractal:"Name, topic and member count only.",
             ci:"Its join-before-navigate flow." } },
 
     { f: "Knocking to join a room", g: "Rooms", kind: "spec", tag: "Spec",

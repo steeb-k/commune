@@ -99,7 +99,27 @@ renaming it would put every future upstream change to that file into a path
 conflict and its strings are referenced by path in thirty-odd catalogues.
 `RemoteRoom` also keeps `world_readable` now, which item 7 needs.
 
-**Next: item 7 (peek a `world_readable` room).**
+**Item 7 (peeking) is done and committed**, the same day. It went the way the
+plan's own correction 4 said it would — a model over raw events off
+`/messages`, a cut-down row, a page on `RoomPreviewDialog` — plus one thing the
+plan did not name: the affordance also hangs off `PublicRoomRow`, so it is in
+Explore and on every space page row, which is where people decide. Two
+departures worth knowing:
+
+* **Nothing on the preview fetches media.** No avatars, no images, plain text
+  only. `AvatarImageSafetySetting::MediaPreviews` exists for exactly this
+  worry and takes a `Room`, which a peeked room does not have; rather than
+  reimplement the setting against nothing, the preview fetches nothing.
+* **Most previews fail, and that is Synapse.** It will not peek a room it does
+  not already have, so a `world_readable` room on another homeserver answers
+  with an error. The page says so and the failure is logged at `debug`, not
+  `warn`.
+
+The harness needed one more room: `Readable Room` is `world_readable` but alice
+made it, so she is in it and gets the room rather than a preview.
+`seed_peekable_room()` adds bob's `Peekable Room` behind a marker of its own.
+
+**Next: item 8 (spaces slice 3 — a space picker and `m.space.child`).**
 
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
 pinned messages and presence marked as shipped in `client-comparison.html`, both
@@ -123,7 +143,8 @@ drift: they go in the feature's own commit.**
 | 5. Spaces, slice 1 | `69002a14`, `1427c68c` | done; only the sidebar section seen |
 | Space children in the harness | `6e4079ab` | done |
 | 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
-| 7–11 | — | not started |
+| 7. Peeking | (this round) | done, **unseen** |
+| 8–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

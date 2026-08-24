@@ -274,7 +274,7 @@ one_.
 
 Everything except the last group runs against `testing/local-homeserver.sh`,
 which seeds a public space called **Test Space** (`#test-space:localhost`,
-created by alice) with five rooms inside it, one for each shape a listing has
+created by alice) with six rooms inside it, one for each shape a listing has
 to draw:
 
 | Room | Why it is there |
@@ -283,10 +283,12 @@ to draw:
 | `Restricted Room` | alice has joined it too, and it names the space in its join rule |
 | `Bobs Room` | bob made it and alice never joined — the button should say _Join_ |
 | `Sub Space` | a space inside a space — where the one-level limit shows |
-| `Readable Room` | `world_readable`, with a message in it, for peeking later |
+| `Readable Room` | `world_readable`, but alice's own, so she is in it |
+| `Peekable Room` | `world_readable` and bob's — the one alice can preview |
 
 Naming a space in a join rule is **not** the same as being a child of it, so
-`seed_space_children()` writes the `m.space.child` events. It runs outside the
+`seed_space_children()` writes the `m.space.child` events, and
+`seed_peekable_room()` adds the last of them. Both run outside the
 `seeded.json` gate, which means an existing server picks the children up:
 
 ```sh
@@ -351,16 +353,17 @@ a second run.
 
 Slice 2. All of this is on the space page, below the topic.
 
-* [ ] **The five seeded rooms appear** under a _Rooms_ heading: Public Room,
-      Restricted Room, Bobs Room, Sub Space and Readable Room. Not four, not
-      six, and **not Test Space itself** — the space is the first room the
-      endpoint returns and it is skipped on purpose.
+* [ ] **The six seeded rooms appear** under a _Rooms_ heading: Public Room,
+      Restricted Room, Bobs Room, Sub Space, Readable Room and Peekable Room.
+      Not five, not seven, and **not Test Space itself** — the space is the
+      first room the endpoint returns and it is skipped on purpose.
 * [ ] **A spinner shows first and is replaced.** Select the space from a cold
       start. If the spinner stays forever the request failed silently; if the
       page is blank the stack landed on the wrong child.
-* [ ] **The buttons say the right thing.** As alice: _View_ on Public Room and
-      Restricted Room, _Join_ on Bobs Room and Readable Room. As bob, who is in
-      Bobs Room and not the others, the two swap over. This is
+* [ ] **The buttons say the right thing.** As alice: _View_ on Public Room,
+      Restricted Room and Readable Room, _Join_ on Bobs Room and Peekable Room.
+      As bob, who is in Bobs Room and Peekable Room and not the others, they
+      swap over. This is
       `RoomListRoomInfo`, and a button that says _Join_ for a room you are
       already in means the identifiers are not matching.
 * [ ] **_View_ opens the room.** Clicking it selects that room in the sidebar
@@ -452,6 +455,76 @@ Slice 2. All of this is on the space page, below the topic.
       _Forget_ target is still at the bottom of the sidebar. The section index
       map was rewritten by hand and it is exactly the kind of change that
       moves a section's contents into its neighbour.
+
+## Reading a room without joining it — `doc/peeking.md`
+
+Round 3, item 7. A room whose history is `world_readable` can be read by
+anybody, and Commune now offers that as a **Preview** — in the room preview
+dialog, and on every row of Explore and of a space page.
+
+### Setting up
+
+`testing/local-homeserver.sh` seeds **Peekable Room** inside `Test Space`: bob's
+room, `world_readable`, with two messages in it. It is bob's on purpose —
+`Readable Room` is `world_readable` too but alice created it, so she is a member
+and gets the room rather than a preview of it. Everything else in the harness is
+`shared` history, which is not the same thing and must **not** offer a preview.
+
+```sh
+testing/local-homeserver.sh up
+```
+
+`seed_peekable_room()` has a marker of its own, so a server seeded before this
+existed picks the room up without a reset. Log in as alice.
+
+### Where the button is, and is not
+
+* [ ] **A _Preview_ button appears on Peekable Room's row**, on the Test Space
+      page, beside _Join_.
+* [ ] **It does not appear on any other row.** Readable Room is
+      `world_readable` but joined; Public Room and Restricted Room are joined;
+      Bobs Room and Sub Space are not `world_readable`. A button on any of
+      those means a flag is being read wrong, and that is the half of this
+      check worth caring about.
+* [ ] **It does not appear once the room is joined.** Join Peekable Room and
+      look at the row again: _View_, and no _Preview_.
+* [ ] **The same button is in the room preview dialog.** Ctrl+K or _+_ →
+      _Join a Room_, enter `#peekable-room:localhost`, and the details page
+      should show _Preview_ next to _Join_.
+* [ ] **An encrypted room never offers it.** Nothing in the harness is both
+      encrypted and `world_readable`; if you can make one from another client,
+      the button must stay hidden.
+
+### The preview itself
+
+* [ ] **Pressing _Preview_ shows the two seeded messages**, oldest first, each
+      with a sender name and a timestamp.
+* [ ] **The sender is named, not numbered.** It should read bob's display name,
+      not `@bob:localhost` — that fallback is what a room with no lazy-loaded
+      member events gets.
+* [ ] **There are no avatars and no images**, by design. A message with a
+      picture in it shows its fallback text. If an avatar appears, something is
+      fetching media from a room that has not been joined.
+* [ ] **The line above the list says nobody can see you looking.**
+* [ ] **_Join_ is on the preview page too**, and joining from there works and
+      closes the dialog on the room.
+* [ ] **Back goes to the details, not out.** From the preview, the back arrow
+      should land on the room's details page; from there it goes to the entry
+      page, or closes if the dialog was opened on a room.
+* [ ] **Opening it from a row lands straight on the preview**, with the details
+      one press of Back away.
+
+### When it cannot be read
+
+* [ ] **A room on another homeserver says so.** Try a `world_readable` room on
+      matrix.org from the local harness. Expect _Cannot Be Read_: Synapse does
+      not peek a room it does not have, and that page exists because this is
+      the common outcome, not a rare one.
+* [ ] **The message is not an error toast or a spinner that never stops.**
+* [ ] **Pressing _Preview_ again retries.** Go back, press it again — it should
+      make the request a second time rather than showing the stale failure.
+* [ ] **A room with no messages says _Nothing to Read_** rather than showing an
+      empty list. Make an empty `world_readable` room from another client.
 
 ## Going to a message without leaving the present — `doc/search.md`
 

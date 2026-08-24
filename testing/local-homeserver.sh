@@ -656,6 +656,62 @@ seed_space_children() {
   log "Test Space now holds five rooms, one of them a subspace."
 }
 
+# Put a room alice can read but has not joined inside Test Space.
+#
+# `Readable Room` is world_readable too, but alice created it, so she is a
+# member and the client offers her the room rather than a preview of it. This
+# one is bob's, which is the only way to get the case peeking is actually for.
+#
+# It has a marker of its own rather than riding on `space_children`, so a
+# server seeded before this existed picks it up on the next `up`.
+seed_peekable_room() {
+  local alice bob space peekable_room
+
+  [ -f "$STATE" ] || return 0
+
+  space=$(jq -r '.space // empty' "$STATE")
+  [ -n "$space" ] || return 0
+
+  if [ "$(jq -r '.peekable_room // empty' "$STATE")" != "" ]; then
+    log "Test Space already holds a room alice can peek."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] && [ -n "$bob" ] || return 0
+
+  log "Adding a room alice can read without joining…"
+
+  peekable_room=$(create_room "$bob" '{
+    "name": "Peekable Room",
+    "preset": "public_chat",
+    "room_alias_name": "peekable-room",
+    "initial_state": [{
+      "type": "m.room.history_visibility",
+      "state_key": "",
+      "content": {"history_visibility": "world_readable"}
+    }]
+  }')
+  [ -n "$peekable_room" ] || return 0
+
+  send_text "$bob" "$peekable_room" peekable1 \
+    '{"msgtype": "m.text", "body": "Alice can read this without joining."}'
+  send_text "$bob" "$peekable_room" peekable2 \
+    '{"msgtype": "m.text", "body": "So can anybody else who finds the room."}'
+
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$space/state/m.space.child/$peekable_room" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"via": ["localhost"]}' >/dev/null \
+    || warn "the server refused to add $peekable_room to the space"
+
+  jq --arg peekable_room "$peekable_room" \
+     '. + {$peekable_room}' \
+     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Test Space now holds six rooms."
+}
+
 # --------------------------------------------------------------- notices ----
 
 # Send a server notice to alice and put her in the room.
@@ -1208,6 +1264,7 @@ case "${1:-up}" in
     seed
     seed_direct_chat
     seed_space_children
+    seed_peekable_room
     send_notice || true
     summary
     ;;
