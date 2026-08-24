@@ -487,12 +487,12 @@
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ b6570c23</span>
+      <span>main @ 59dcc516</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
       Every module in the v1.19 Client-Server API, checked against the tree. Thirteen gaps:
-      nine with no implementation at all, four implemented partly. Effort is measured in UI
+      eight with no implementation at all, five implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -502,18 +502,20 @@
       added to a live voice call, and Element for Android accepting it 850&nbsp;ms later. The
       note below says which parts of that evening's work are still unwatched. Presence left
       Absent on 23 August too, and Pinned Events — a module this page had never listed in either
-      direction — was built the same day and joins the implemented column.
+      direction — was built the same day and joins the implemented column. Signing up followed
+      it: registration moved out of Absent, and what is left of that row is resetting a forgotten
+      password.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">9</div>
+      <div class="score-num">8</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">4</div>
+      <div class="score-num">5</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
@@ -543,8 +545,8 @@
     <div class="shortlist">
       <ol>
         <li>
-          <span class="pick-name">Signing up, and resetting a password</span>
-          <span class="pick-why">Reordered to the top on 23 August 2026: it is the only gap that costs a person <em>before</em> they have seen a timeline, and it is far cheaper than its <em>L</em> suggests. The hard part of registration is user-interactive auth, and that is already built and shipping for changing a password and deactivating an account — including the standard's own web fallback page for every stage this client does not answer natively, which is what covers a captcha, a terms checkbox and an emailed token without inventing anything. What is left is a page, and freeing that dialog from needing a session it does not have yet.</span>
+          <span class="pick-name">Resetting a password</span>
+          <span class="pick-why">What is left of the row that was at the top of this list: signing up was built on 23 August 2026, and it cost a page plus freeing the authentication dialog from a session it does not have yet — the estimate held. Reset is the smaller half and the one that happens to people who are already users. It needs the request-token half of a third-party-identifier layer, which does not exist anywhere in this tree yet, and the native/OAuth split the deactivate-account page already establishes.</span>
         </li>
         <li>
           <span class="pick-name">Spaces</span>
@@ -560,7 +562,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">9 modules</span></h2>
+      <h2>Absent <span class="tick gone">8 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -593,13 +595,6 @@
             <td><span class="feat">Invite by email</span></td>
             <td class="mod">Third-party invites</td>
             <td class="state">The invite subpage takes Matrix user IDs only. No identity-server flow, so nobody can be invited who hasn't got an account yet — a real gap when onboarding people.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Account registration</span></td>
-            <td class="mod">Client-Server API</td>
-            <td class="state">Login handles password, SSO and the in-browser OAuth flow. There is no sign-up path and no password reset: a new user has to create the account elsewhere first. Cheaper than it looks: the user-interactive auth this needs is already written and already routes every stage it cannot draw to the standard's own fallback page. A dead <em>Create Account</em> button is sitting in the greeter with no action behind it.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
           </tr>
@@ -645,13 +640,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">5 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Every one of these is a
         gap in coverage rather than a choice: the last deliberate departure, image packs
         writing unstable names, was closed on 22 August 2026. Two of them are waiting on the
-        same thing — a way to pick a space. Voice over IP was the fifth of these until
-        23 August 2026, and the row it left behind is now a note further down.
+        same thing — a way to pick a space. Voice over IP left this column on 23 August 2026 and
+        the row it left behind is now a note further down; account registration arrived in it
+        from Absent the same day, halved into a password reset.
       </p>
     </div>
     <div class="tscroll">
@@ -666,6 +662,13 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Password reset</span></td>
+            <td class="mod">Client-Server API</td>
+            <td class="state">Creating an account was built on 23 August 2026 — a page for a username and a password on a homeserver with the native API, <code>prompt=create</code> in the browser on one with the OAuth 2.0 API, and the standard's own fallback page for any authentication stage this client does not draw itself. What is left of the row is the opposite direction: somebody who has forgotten their password. That needs <code>POST /account/password/email/requestToken</code>, and there is no third-party-identifier layer anywhere in the tree to hang it on — only half of one is needed, which is why it is a separate commit rather than the whole "email and phone on the account" row.</td>
+            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
+          </tr>
           <tr>
             <td><span class="feat">Restricted join rule</span></td>
             <td class="mod">Restricting room membership</td>
@@ -701,13 +704,13 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">17 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">18 touch the protocol</span></h2>
       <p class="sec-sub">
 182 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Seventeen additions do touch the protocol,
+        rebrand, which the spec has no opinion about. Eighteen additions do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
-        the fifteen that a module covers follow it, and the other two are in space the standard
+        the sixteen that a module covers follow it, and the other two are in space the standard
         leaves empty. Two of them — the server access list and the quick reactions — were closed
         on 22 August and left out of this table until 23 August; the notes further down had them
         all along, which is how they went unmissed and uncounted at the same time.
@@ -729,6 +732,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Creating an account</span></td>
+            <td class="mod">Client-Server API<br>OAuth 2.0 API</td>
+            <td class="state">Upstream ships a hidden <em>Create Account</em> button wired to an action that exists nowhere. Both halves of the standard are answered now. On a native homeserver: <code>POST /register</code> driven through the user-interactive authentication dialog, so <code>m.login.dummy</code> passes without asking anything, a captcha or a terms checkbox goes to <code>GET /auth/{type}/fallback/web</code> — the spec's own page, not an invented UI — and <code>GET /register/available</code> is asked as the username is typed, advisory only, since the endpoint is rate-limited and optional. On an OAuth 2.0 homeserver: the same in-browser flow logging in uses, with OpenID Connect's <code>prompt=create</code>, refused up front unless the server lists <code>create</code> in <code>prompt_values_supported</code>.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen yet.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">Pinned messages in every room</span></td>
             <td class="mod">Pinned Events</td>
@@ -1272,7 +1281,7 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>b6570c23</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>59dcc516</code> and the registration work committed over that, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link
@@ -1280,7 +1289,8 @@
     banner and a filter, the Voice over IP module carried from nothing to every event it
     defines — the last of them, <code>m.call.negotiate</code>, on 23 August — a message made
     pinnable in every room and the Pinned Events module counted for the first time, presence read
-    and shown and its publishing given an off switch, every local
+    and shown and its publishing given an off switch, an account made creatable from the greeter,
+    every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
     Client-Server API at <code>spec.matrix.org/v1.19</code>, and module names follow its own section

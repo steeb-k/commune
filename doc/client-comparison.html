@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ b6570c23</span>
+      <span>main @ 59dcc516</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -713,13 +713,13 @@
       </div>
       <div class="note">
         <span class="note-tag">8 of 9 peers · Client-Server API</span>
-        <span class="note-head">Signing up</span>
+        <span class="note-head">Resetting a password</span>
         <p class="note-body">
-          Nheko — two maintainers, a C++ client that admits in its own README that most features
-          are missing — has user registration. Commune has login only, so the first thing a new
-          user is told is to go and make the account somewhere else.
-          <strong>The cheapest row here by a distance</strong>, and the only one that costs a user
-          before they have ever seen the timeline.
+          Signing up was the whole of this row until 23 August 2026 and is now built: the greeter's
+          <em>Create Account</em> button leads somewhere, and the interactive authentication the
+          server asks for was already written. What is left is the other half —
+          <strong>somebody who has forgotten their password still has to go and find a browser</strong>,
+          and unlike sign-up that is a thing which happens to people who are already users.
         </p>
       </div>
       <div class="note">
@@ -856,7 +856,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>b6570c23</code>, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>59dcc516</code> and the registration work committed on top of it, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -1038,8 +1038,8 @@
 
     { f: "Signing up, and resetting a password", g: "Account", kind: "spec", tag: "Spec",
       note: "Creating an account without leaving the app.",
-      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Login handles password, SSO and OAuth. There is no sign-up path and no password reset." } },
+      c: { commune:0.5, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Signing up landed 23 August 2026 — a username and password page on a native homeserver, prompt=create in the browser on an OAuth one, and the standard's fallback page for any stage this client cannot draw. Resetting a forgotten password is the half still missing." } },
 
     { f: "Email and phone on the account", g: "Account", kind: "spec", tag: "Spec",
       note: "Adding, seeing and removing third-party identifiers.",

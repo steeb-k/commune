@@ -104,6 +104,8 @@ src/login/method_page.blp
 src/login/method_page.rs
 src/login/mod.blp
 src/login/mod.rs
+src/login/register_page.blp
+src/login/register_page.rs
 src/login/session_setup_view.blp
 src/macos_menu_bar.blp
 src/secret/linux.rs
