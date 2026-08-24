@@ -3,6 +3,8 @@ use tracing::error;
 
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "windows")]
+mod windows;
 
 /// The clock format setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, glib::Enum)]
@@ -16,6 +18,13 @@ pub enum ClockFormat {
 
 impl Default for ClockFormat {
     fn default() -> Self {
+        // Windows keeps a setting of its own that the locale does not reflect,
+        // so ask it before falling back to reading the locale.
+        #[cfg(target_os = "windows")]
+        if let Some(clock_format) = windows::clock_format() {
+            return clock_format;
+        }
+
         // Use the locale's default clock format as a fallback.
         let local_formatted_time = glib::DateTime::now_local()
             .and_then(|d| d.format("%X"))

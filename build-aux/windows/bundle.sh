@@ -395,7 +395,10 @@ echo "bundle: $BUNDLE ($size, $count files)"
 ################################################################################
 
 if [ "$WANT_ZIP" = 1 ]; then
-    archive="$OUT_DIR/$BUNDLE_NAME${VERSION:+-$VERSION}.zip"
+    # The folder inside keeps the space, because that is the name a user sees.
+    # The archive does not: a downloaded file with a space in its name is one
+    # more thing to quote on every command line it ever appears on.
+    archive="$OUT_DIR/$(printf '%s' "$BUNDLE_NAME" | tr ' ' '-')${VERSION:+-$VERSION}-x64.zip"
     echo "bundle: writing $archive"
     rm -f "$archive"
     (cd "$OUT_DIR" && zip -qr "$(basename "$archive")" "$BUNDLE_NAME")
