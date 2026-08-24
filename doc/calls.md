@@ -4,14 +4,21 @@ This file is the ledger for one-to-one calls: what the fork added, the
 decisions behind it, and what to check when rebasing onto a new Fractal
 release. See `fork.md` for why none of this goes upstream.
 
-**Status: calls work, and the module is not finished.** Placed and answered
-against Element for Android on 23 August 2026, carrying audio and video: on
-one network at 21:13, and between two — the phone on mobile data, a relay
-outside both — at 23:04, where `Checking` became `Connected` in six hundred
-milliseconds. Offer, answer, `select_answer`, candidates, hangup and muting
-all behave. What is not done is `m.call.negotiate`, call history in the
-timeline, and any sound or notification when a call comes in; the last section
-lists them.
+**Status: every event the module defines is now handled, and the last three
+additions have not been exercised against another client.** Placed and
+answered against Element for Android on 23 August 2026, carrying audio and
+video: on one network at 21:13, and between two — the phone on mobile data, a
+relay outside both — at 23:04, where `Checking` became `Connected` in six
+hundred milliseconds. Offer, answer, `select_answer`, candidates, hangup and
+muting all behave.
+
+Written on 23 August 2026 and **not yet proven against a second client**:
+`m.call.negotiate` in both directions, the button that adds the camera to a
+call placed without one, the ringtone and the notification that come with an
+incoming call, and the row a call leaves in the timeline. Each has its own
+section below saying what it does and what about it is untested. Nothing is
+left of the module that this client does not answer; what is left out on
+purpose is DTMF and screen sharing, and the last section says why.
 
 The evening that produced this is worth a sentence of warning: five separate
 faults, four of which looked identical from here — ICE reaching `Checking` and
@@ -28,9 +35,10 @@ Commune against Element.
 
 The Voice over IP module of the Client-Server API as written: `m.call.invite`,
 `m.call.candidates`, `m.call.answer`, `m.call.select_answer`, `m.call.reject`,
-`m.call.hangup` and `m.call.sdp_stream_metadata_changed`, version `1`, carrying
-WebRTC between exactly two devices. Audio and video, placed and answered, in a
-window of its own.
+`m.call.hangup`, `m.call.negotiate` and `m.call.sdp_stream_metadata_changed`,
+version `1`, carrying WebRTC between exactly two devices. Audio and video,
+placed and answered, in a window of its own, with a row in the room afterwards
+saying what became of it.
 
 Not in scope, and not the same thing: MatrixRTC and Element Call. Those are
 `m.rtc.*`, an SFU, and a set of proposals rather than a module of v1.19. The
@@ -493,6 +501,95 @@ frame or a black rectangle. A remote `audio_muted` does **not** mute the
 incoming audio: unmuting takes a round trip and the words spoken in between
 would be lost.
 
+**Metadata arrives on four events and all four are read.** It is a property of
+the invite, of the answer and of an `m.call.negotiate` as much as of the event
+named after it, and until 23 August 2026 only the last of those was read — so a
+call answered by somebody whose microphone was already off looked, from here,
+like a call with a working microphone. `apply_stream_metadata()` is now what
+all four go through. An empty map is not "nothing is muted": the spec says to
+read the absence of the property as the other end not supporting it, so an
+empty one changes nothing rather than clearing what an earlier event said. Only
+`m.usermedia` streams are counted, because a purpose this client does not know
+is one the spec asks it to ignore.
+
+**And the mute is said out loud.** A camera going off shows as an avatar, which
+on its own is indistinguishable from a call that has stopped working, and a
+microphone going off has nothing to show at all — so the window carries a badge
+over the picture saying which of the two it was, in the words of the person who
+did it: "Alice muted their microphone". Both directions of the module's
+asymmetry end up visible: what we mute goes out as metadata, and what they mute
+comes back as a sentence.
+
+## Renegotiation
+
+`m.call.negotiate` is the one event the module defines that this client did not
+answer until 23 August 2026. It is a call being described again after it is
+established — adding video to a voice call, hold and resume, an ICE restart —
+and it carries **both halves**: an offer first and then an answer, in two
+events of the same type, told apart only by the `type` of the description
+inside them.
+
+Receiving one is the part that matters for conformance, and it is a straight
+path: apply their offer, answer it from inside the promise of
+`set-remote-description` for the same reason the first answer is made there,
+and send the answer back as another `m.call.negotiate`. An answer to an offer
+of ours is applied and nothing is sent.
+
+Three things are worth knowing about it:
+
+* **A renegotiation that fails does not end the call.** The media that was
+  flowing before it carries on flowing, and hanging up because a camera could
+  not be added would take away a working call over an optional extra. Failures
+  are logged and the call is left alone.
+* **A renegotiation is refused before the call is established.** "This event is
+  sent by either party after the call is established" — and applying a second
+  description on top of one still in flight is how a call that was about to
+  connect stops instead.
+* **A stale one is dropped.** `m.call.negotiate` carries a `lifetime` like an
+  invite does, and one that expired on the way here describes the call as it
+  was. `is_stale()` is now shared by both.
+
+**Politeness is the callee's.** Two offers can cross, and WebRTC's perfect
+negotiation settles it without either end asking the other: "the callee is
+always the polite party", so the callee rolls its own offer back and takes
+theirs, and the caller ignores theirs and lets its own stand. Both ends run the
+same rule and reach the same answer, exactly as glare does one layer up. The
+rollback is `set-local-description` with a description of type `rollback`;
+`webrtcbin` accepts the type and this path has never been exercised, because
+reaching it takes two people adding video in the same second.
+
+## Adding the camera to a call that was placed without one
+
+The reason to send a renegotiation at all, and the only thing in this client
+that does. The button appears in a connected call with no video section, and
+what it does is put the camera into the pipeline: `enable_video()` builds the
+same chain `add_video_source()` builds at setup, links it to a new
+`webrtcbin` sink pad — a new transceiver — and syncs every element with the
+parent, because everything added to a pipeline arrives in `Null` however the
+pipeline itself is doing.
+
+Nothing there writes SDP. `webrtcbin` notices that what it sends no longer
+matches what it last described and emits `on-negotiation-needed`, and that is
+what makes the offer. The signal is **armed only once the call is connected**:
+it fires for the first negotiation of every call as well, which this client
+drives by hand, and honouring that one would put a second offer on the wire for
+every call placed.
+
+A camera that is not there is refused rather than renegotiated: without one,
+`add_video_source()` falls back to a receive-only section, which is the right
+answer while the sections are still being chosen and the wrong one here — the
+other end was never asked for video, so a section to receive it in would carry
+nothing.
+
+An offer of ours that goes unanswered clears itself after thirty seconds.
+Without that, one lost renegotiation leaves the call unable to attempt another
+for as long as it lasts, and the call carries on working so nothing else would
+ever notice.
+
+**Untested against another client.** It compiles, the pipeline work is the same
+work that builds a video call from the start, and no second device has been
+pointed at it.
+
 ## Four things seen on screen, and none of them visible to the compiler
 
 **The self-view is a `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`.** A
@@ -559,6 +656,88 @@ Video is a `gtk4paintablesink` and its `paintable`, the same way
 second `gtk4paintablesink` on a `tee` off the camera, before the encoder, so
 the preview is what the camera sees rather than what the far end will get.
 
+**The video page waits for video, not for a paintable.** The remote paintable
+exists from the moment the pipeline does and has nothing to draw until a
+decoded video pad is attached to its sink, so a voice call that switched on the
+paintable's existence showed an empty rectangle where the other person's face
+goes. `PipelineEvent::RemoteVideo` is sent when that pad is attached, and it is
+what the window switches on — which is also what makes a call that gains video
+partway through show it without anything else having to notice.
+
+**Fullscreen** is a button in the header bar, `F11`, or a double click on the
+picture. Going fullscreen hides the header bar, which is where that button
+lives, so a second one appears over the picture: `Escape` is the other way out
+and a screen with no keyboard has to have one. The double click is wired in
+Rust rather than in the template — a template callback's arguments are checked
+at run time and only at run time, and `pressed` has three of them.
+
+## Ringing
+
+A window on its own is not enough. It opens behind whatever is on screen, on
+whichever workspace the client happens to be on, and a call nobody is looking
+at rings for ninety seconds and is gone.
+
+**The sound is the desktop's own.** The freedesktop sound theme names both
+events this needs — `phone-incoming-call` for a call arriving and
+`phone-outgoing-calling` for the ringback of one going out — so `Ringtone`
+finds the file under `<data dir>/sounds/<theme>/stereo/` and loops it on a
+`playbin3`, looping being what turns one ring into a ringing telephone. The
+theme comes from `org.gnome.desktop.sound`, which is looked up in the schema
+source first because constructing a `gio::Settings` for a schema that is not
+installed aborts the process. `event-sounds` set to false is honoured: the
+person who switched the desktop's sounds off switched this one off too, and the
+notification still arrives. A theme with neither event is silent and says so in
+the log — no beep of our own invention. **macOS has no such theme, so macOS
+does not ring.**
+
+**The notification is not the push path's.** The homeserver's `.m.rule.call`
+push rule fires for an `m.call.invite` and reaches `show_push()`, which until
+now dropped it as an event of unexpected type — that is why there was no
+notification at all. It could have been given a body there, and it is not:
+`Calls` owns this one, because it has to be withdrawn the moment the call stops
+ringing and it carries **Answer** and **Decline** buttons, which want an app
+action rather than a room to open. `show_push()` now returns early for a call
+invite with a comment saying so, and the two cannot end up as two notifications
+for one call.
+
+The buttons go through a new `SessionIntent::CallAction`, carrying the call ID.
+The ID is checked and not trusted: a notification outlives the call it is about
+— it can sit in a notification centre for an hour — and answering "the call
+that is happening" would answer whichever one happens to be happening now.
+
+## The call in the timeline
+
+A call used to leave nothing behind. The whole of `m.call.*` was filtered out
+of the timeline, so a missed call was gone the moment the window closed, and
+the spec asks for the opposite in the one case where this client does not ring:
+"when clients suppress ringing for an incoming call invite, they SHOULD still
+display the call invite in the room and annotate that it was ignored".
+
+`m.call.invite` is now shown, and only the invite. The SDK gives a timeline
+item for exactly that one — `TimelineItemContent::CallInvite`, a unit variant
+carrying nothing — and none for the answer, the hangup or the reject, which is
+just as well: a dozen rows for one call is not history, it is a log.
+
+What became of the call is not in the invite, so it comes from `Calls`, which
+watches every `m.call.*` event the session sees whether or not it is in the
+call — a call answered on another device is still one the room has to describe.
+`note_outcome()` keeps one enum per call ID, bounded at 256 and never written
+to disk, and `merge_outcome()` is the whole of the logic: a hangup means the
+call is over, so on its own it says nobody answered, unless an answer came
+first — every call ends with a hangup, and without that rule every call in the
+timeline would end up saying it was missed.
+
+The row's own facts come back out of the event's JSON, since the SDK's item
+carries none: the call ID, and whether the offer had a video section, because
+whether a call is a video call is in its SDP and nowhere else. In an encrypted
+room that JSON is the decrypted event, which is what makes this work in the
+rooms calls actually happen in.
+
+**A call from before the client was running has no outcome and the row says so
+in what it leaves out**: "Incoming call from Alice." rather than a guess at
+whether she was answered. Nothing here is persisted, and inventing an answer
+would be worse than a row that only repeats what the invite said.
+
 ## Files
 
 Integration points, which are where a rebase will conflict:
@@ -569,10 +748,15 @@ Integration points, which are where a rebase will conflict:
 | `src/session_view/call_view/` | All of it, new |
 | `src/session/mod.rs` | The `calls` property, and `init()` in `prepare()` |
 | `src/session/room/mod.rs` | `handle_member_event()` tells `Calls` when somebody leaves |
-| `src/session_view/mod.rs` | Opening the window when a call appears |
+| `src/session_view/mod.rs` | Opening the window when a call appears; `handle_call_action()` |
 | `src/session_view/room_history/mod.rs` | The two header buttons and when they are shown |
 | `src/session_view/room_history/mod.blp` | The buttons themselves |
-| `data/resources/stylesheet/_session_view.scss` | `call-button`, `call-self-view` |
+| `src/session_view/room_history/call_row.rs` | The `m.call.invite` row, beside the `m.rtc.notification` one it already drew |
+| `src/session/room/timeline/mod.rs` | `show_in_timeline()` lets `m.call.invite` through |
+| `src/session/room/timeline/event/mod.rs` | `is_call_event()`, and `call_invite()` reading the event's own JSON |
+| `src/session/notifications/mod.rs` | `show_incoming_call()`, its withdrawal, buttons on a notification, and the early return for a call invite in `show_push()` |
+| `src/intent.rs`, `src/application.rs` | `SessionIntent::CallAction` and the app action behind it |
+| `data/resources/stylesheet/_session_view.scss` | `call-button`, `call-self-view`, `call-badge` |
 | `Cargo.toml`, `meson.build` | `gstreamer-webrtc` and `gstreamer-sdp` |
 | `testing/local-homeserver.sh` | The coturn container and the TURN check |
 
@@ -783,34 +967,49 @@ reflexive candidate, `denied-peer-ip` covering the server's own address, and a
 relay port range that had to be moved. A free account elsewhere would have put
 the one client bug in plain sight.
 
-## What is not done, and what is left out on purpose
+## What is written and not proven
 
-The module carries a call. These are the parts of it that do not.
+Every event in the module is answered. What follows is written, compiled and
+never put in front of another client, which is not the same as working.
 
-1. **Renegotiation.** `m.call.negotiate` is parsed by ruma and not handled
-   here at all, so a call that renegotiates mid-flight — which is what adding
-   video to a voice call looks like from the other end — will not follow. This
-   is the one thing the spec defines that the code does not answer, and the
-   only reason this feature is still counted as partial.
-2. **`autoaudiosrc` and `autovideosrc` under a portal.** On a sandboxed
+1. **`m.call.negotiate`, both halves.** Receiving an offer and answering it,
+   and applying the answer to one of ours. The natural way to see it is to
+   turn on video from Element in the middle of a voice call.
+2. **Adding the camera mid-call**, and the offer `webrtcbin` makes when the
+   transceiver appears.
+3. **The rollback when two renegotiations cross.** Reaching it takes two people
+   pressing the same button in the same second, and `webrtcbin`'s handling of a
+   `rollback` description has not been watched.
+4. **The ringtone and the notification.** Both are local: no second client is
+   needed to see them, only an incoming call.
+5. **The row in the timeline.** The unknown-outcome case — a call from before
+   the client started — is the only one that can be seen without placing a
+   call.
+
+And the older list of things nothing here has been able to exercise:
+
+1. **`autoaudiosrc` and `autovideosrc` under a portal.** On a sandboxed
    desktop the camera wants `pipewiresrc` through the portal, and
    `autovideosrc` may pick a `v4l2src` that cannot open the device. On the
    machine this was built on — an IPU6 camera on Arch — `autovideosrc` opened
    it and the frames were fine, so this is not a given failure, only an
    untested one.
-3. **A second answering device.** `select_answer` and `AnsweredElsewhere` are
+2. **A second answering device.** `select_answer` and `AnsweredElsewhere` are
    written and have never had two devices to exercise them.
-4. **macOS.** Everything above was measured on Linux. `doc/macos.md` records
-   what had to be built by hand to make `webrtcbin` exist there at all.
+3. **macOS.** Everything above was measured on Linux. `doc/macos.md` records
+   what had to be built by hand to make `webrtcbin` exist there at all, and
+   the ringtone is silent there for want of a freedesktop sound theme.
 
-Also absent on purpose:
+Absent on purpose:
 
-* **DTMF.** The spec allows sending it; there is nothing in this client that
-  would want to.
+* **DTMF.** Not a Matrix event at all: "Matrix clients can send DTMF as
+  specified by WebRTC", which means RFC 4733 telephone-events in the RTP. The
+  spec allows it and requires nothing; there is nothing in this client that
+  would want to send one, and a bridge that wants to receive one is not a
+  thing this client talks to.
 * **Screen sharing.** A second stream with `purpose: m.screenshare`. The
   metadata plumbing is there for it, the pipeline is not.
-* **Call history in the timeline.** The events are filtered out of the
-  timeline entirely, so a missed call leaves no trace once the window is
-  closed. That is the next thing worth building.
-* **Ringing.** No sound, and no notification. An incoming call opens a window,
-  which is not enough if the client is on another workspace.
+* **Persisted call history.** What became of a call lives in memory for as long
+  as the session does. A client that was not running when a call happened
+  cannot know how it ended, and the row says only what the invite said rather
+  than guessing.
