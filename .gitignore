@@ -29,6 +29,7 @@ build-flatpak*/
 # Dynamically-generated files
 src/config.rs
 hooks/checks-bin
+hooks/checks-bin.exe
 
 # Python bytecode from the image pack tool
 __pycache__/

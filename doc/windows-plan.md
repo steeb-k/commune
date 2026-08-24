@@ -33,7 +33,7 @@ for free: the image decoder abstraction (`src/utils/media/image/decoder/`, glyci
 camera and location fallbacks, the `SystemSettings` fallback, `key_bindings::PRIMARY_MASK` (already
 `CONTROL_MASK` off macOS), and the unconditional `gtk::FileLauncher`.
 
-What Windows does *not* inherit:
+What Windows does _not_ inherit:
 
 * **Secrets panic.** `src/secret/mod.rs` falls to `UnimplementedSecret` outside Linux/macOS.
 * **The build system requires glycin.** `meson.build:40` and the desktop-file/D-Bus blocks in
@@ -135,7 +135,7 @@ Linux and macOS must stay untouched in behaviour.
 5. **Data dirs** (now, before any Windows user data exists). `src/utils/mod.rs`: a
    `cfg(target_os = "windows")` branch that puts both types under one folder, the way Windows
    applications do it: `%LOCALAPPDATA%\{PROFILE.dir_name}\data` and
-   `…\{PROFILE.dir_name}\cache` (`glib::user_data_dir()` *is* `%LOCALAPPDATA%`; the cache
+   `…\{PROFILE.dir_name}\cache` (`glib::user_data_dir()` _is_ `%LOCALAPPDATA%`; the cache
    answer is the one that must not be used as-is). This needs `dir_path()` itself to gain a
    windows arm, since the profile segment sits in the middle rather than at the end. Record the
    paths in `doc/rebrand.md`.

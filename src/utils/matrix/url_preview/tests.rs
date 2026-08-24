@@ -103,7 +103,7 @@ fn html_mention_before_a_link() {
 
 #[test]
 fn html_link_in_code_is_not_previewed() {
-    assert_eq!(html(r#"<code>https://example.org/post</code>"#), None);
+    assert_eq!(html(r"<code>https://example.org/post</code>"), None);
     assert_eq!(
         html(r#"<pre><code><a href="https://example.org/post">x</a></code></pre>"#),
         None

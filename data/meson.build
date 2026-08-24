@@ -1,9 +1,10 @@
 subdir('icons')
 
 # Desktop file
-# This is an XDG concept: macOS gets its application metadata from the bundle's
-# Info.plist instead, see `build-aux/macos/`.
-if host_machine.system() != 'darwin'
+# This is an XDG concept. macOS gets its application metadata from the bundle's
+# Info.plist (`build-aux/macos/`), Windows from the resources the executable
+# carries and the installer's registry keys (`build-aux/windows/`).
+if host_machine.system() == 'linux'
     desktop_conf = configuration_data()
     desktop_conf.set('icon', application_id)
     desktop_file = i18n.merge_file(
@@ -92,8 +93,9 @@ endif
 
 # D-Bus service file
 # D-Bus activation is how the `matrix:` URI scheme reaches a running instance on
-# Linux. macOS uses LaunchServices and `CFBundleURLTypes` instead.
-if host_machine.system() != 'darwin'
+# Linux. macOS uses LaunchServices and `CFBundleURLTypes` instead, Windows the
+# `matrix` key the installer writes under `HKCU\Software\Classes`.
+if host_machine.system() == 'linux'
     service_conf = configuration_data()
     service_conf.set('application_id', application_id)
     service_conf.set('bindir', bindir)

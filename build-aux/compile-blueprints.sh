@@ -42,6 +42,14 @@
 
 set -e
 
+# blueprint-compiler is a Python program, and it opens the `.blp` files without
+# naming an encoding, so Python uses the one the locale implies. On Windows that
+# is cp1252, and every blueprint with a typographic quote or an accent in it
+# fails to decode — reported as a compiler crash, several screens from the cause.
+# UTF-8 mode makes `open()` mean UTF-8 regardless of locale. It is a no-op where
+# the locale was already UTF-8, which is everywhere else.
+export PYTHONUTF8=1
+
 compiler="$1"
 shift
 output_dir="$1"
