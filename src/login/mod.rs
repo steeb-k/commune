@@ -12,7 +12,14 @@ use matrix_sdk::{
     sanitize_server_name,
     utils::local_server::LocalServerRedirectHandle,
 };
-use ruma::{OwnedServerName, api::client::session::get_login_types::v3::LoginType, serde::Raw};
+use ruma::{
+    OwnedServerName,
+    api::client::{
+        discovery::get_authorization_server_metadata::v1::Prompt,
+        session::get_login_types::v3::LoginType,
+    },
+    serde::Raw,
+};
 use tracing::warn;
 use url::Url;
 
@@ -22,6 +29,7 @@ mod homeserver_page;
 mod in_browser_page;
 mod local_server;
 mod method_page;
+mod register_page;
 mod session_setup_view;
 
 use self::{
@@ -31,6 +39,7 @@ use self::{
     in_browser_page::{LoginInBrowserData, LoginInBrowserPage},
     local_server::spawn_local_server,
     method_page::LoginMethodPage,
+    register_page::LoginRegisterPage,
     session_setup_view::SessionSetupView,
 };
 use crate::{
@@ -48,6 +57,8 @@ enum LoginPage {
     Homeserver,
     /// The page to select a login method.
     Method,
+    /// The page to create an account.
+    Register,
     /// The page to log in with the browser.
     InBrowser,
     /// The session setup stack.
@@ -63,6 +74,7 @@ impl LoginPage {
             Self::Greeter => Greeter::TAG,
             Self::Homeserver => LoginHomeserverPage::TAG,
             Self::Method => LoginMethodPage::TAG,
+            Self::Register => LoginRegisterPage::TAG,
             Self::InBrowser => LoginInBrowserPage::TAG,
             Self::SessionSetup => SessionSetupView::TAG,
             Self::Completed => "completed",
@@ -77,12 +89,23 @@ impl LoginPage {
             Greeter::TAG => Self::Greeter,
             LoginHomeserverPage::TAG => Self::Homeserver,
             LoginMethodPage::TAG => Self::Method,
+            LoginRegisterPage::TAG => Self::Register,
             LoginInBrowserPage::TAG => Self::InBrowser,
             SessionSetupView::TAG => Self::SessionSetup,
             "completed" => Self::Completed,
             _ => panic!("Unknown LoginPage: {tag}"),
         }
     }
+}
+
+/// What the login flow is being used for.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+enum LoginPurpose {
+    /// Logging into an account that exists.
+    #[default]
+    LogIn,
+    /// Creating an account, then logging into it.
+    CreateAccount,
 }
 
 mod imp {
@@ -105,12 +128,16 @@ mod imp {
         #[template_child]
         method_page: TemplateChild<LoginMethodPage>,
         #[template_child]
+        register_page: TemplateChild<LoginRegisterPage>,
+        #[template_child]
         in_browser_page: TemplateChild<LoginInBrowserPage>,
         #[template_child]
         done_button: TemplateChild<gtk::Button>,
         /// Whether auto-discovery is enabled.
         #[property(get, set = Self::set_autodiscovery, construct, explicit_notify, default = true)]
         autodiscovery: Cell<bool>,
+        /// What this flow is being used for.
+        purpose: Cell<LoginPurpose>,
         /// The Matrix client used to log in.
         client: RefCell<Option<Client>>,
         /// The session that was just logged in.
@@ -138,6 +165,10 @@ mod imp {
 
             klass.install_action_async("login.open-advanced", None, |obj, _, _| async move {
                 obj.imp().open_advanced_dialog().await;
+            });
+
+            klass.install_action("login.create-account", None, |obj, _, _| {
+                obj.imp().start_create_account();
             });
         }
 
@@ -183,6 +214,7 @@ mod imp {
                 LoginPage::Greeter => self.greeter.grab_focus(),
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
+                LoginPage::Register => self.register_page.grab_focus(),
                 LoginPage::InBrowser => self.in_browser_page.grab_focus(),
                 LoginPage::SessionSetup => {
                     if let Some(session_setup) = self.session_setup() {
@@ -223,6 +255,15 @@ mod imp {
             self.obj().notify_autodiscovery();
         }
 
+        /// Start creating an account.
+        ///
+        /// The homeserver page is the same one the log-in flow uses; what
+        /// happens after it is what differs.
+        fn start_create_account(&self) {
+            self.purpose.set(LoginPurpose::CreateAccount);
+            self.navigation.push_by_tag(LoginPage::Homeserver.tag());
+        }
+
         /// Get the session setup view, if any.
         pub(super) fn session_setup(&self) -> Option<SessionSetupView> {
             self.navigation
@@ -242,6 +283,7 @@ mod imp {
                     // Drop the session because it is bound to the homeserver and account.
                     self.drop_session();
                     self.method_page.clean();
+                    self.register_page.clean();
                 }
                 LoginPage::Method => {
                     // Drop the session because it is bound to the account.
@@ -305,16 +347,31 @@ mod imp {
                 return;
             };
 
+            let create_account = self.purpose.get() == LoginPurpose::CreateAccount;
+            if create_account && !self.supports_oauth_account_creation(&client).await {
+                toast!(
+                    self.obj(),
+                    gettext("This homeserver does not allow creating an account from here")
+                );
+                return;
+            }
+
             let Ok((redirect_uri, local_server_handle)) = spawn_local_server().await else {
                 return;
             };
 
             let oauth = client.oauth();
             let handle = spawn_tokio!(async move {
-                oauth
-                    .login(redirect_uri, None, Some(client_registration_data()), None)
-                    .build()
-                    .await
+                let mut builder =
+                    oauth.login(redirect_uri, None, Some(client_registration_data()), None);
+
+                if create_account {
+                    // The standard's own way to say "this person has no account
+                    // yet", from OpenID Connect's prompt=create.
+                    builder = builder.prompt(vec![Prompt::Create]);
+                }
+
+                builder.build().await
             });
 
             let authorization_data = match handle.await.expect("task was not aborted") {
@@ -338,6 +395,13 @@ mod imp {
                 return;
             };
 
+            if self.purpose.get() == LoginPurpose::CreateAccount {
+                // Whether the homeserver allows registration, and what it asks
+                // for, is only answered by the register endpoint itself.
+                self.show_register_page(&client.homeserver());
+                return;
+            }
+
             let matrix_auth = client.matrix_auth();
             let handle = spawn_tokio!(async move { matrix_auth.get_login_types().await });
 
@@ -358,11 +422,7 @@ mod imp {
                 .any(|login_type| matches!(login_type, LoginType::Sso(_)));
 
             if supports_password {
-                let server_name = self
-                    .autodiscovery
-                    .get()
-                    .then(|| self.homeserver_page.homeserver())
-                    .and_then(|s| sanitize_server_name(&s).ok());
+                let server_name = self.server_name();
 
                 self.show_method_page(&client.homeserver(), server_name.as_ref(), supports_sso);
             } else {
@@ -399,6 +459,25 @@ mod imp {
             }
         }
 
+        /// Whether the homeserver says it can create an account in the
+        /// browser.
+        ///
+        /// A server that does not advertise `create` among its prompts is
+        /// allowed to ignore the parameter, which would silently show a log-in
+        /// page to somebody who has no account.
+        async fn supports_oauth_account_creation(&self, client: &Client) -> bool {
+            let oauth = client.oauth();
+            let handle = spawn_tokio!(async move { oauth.server_metadata().await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(metadata) => metadata.prompt_values_supported.contains(&Prompt::Create),
+                Err(error) => {
+                    warn!("Could not get authorization server metadata: {error}");
+                    false
+                }
+            }
+        }
+
         /// Show the page to chose a login method with the given data.
         fn show_method_page(
             &self,
@@ -409,6 +488,22 @@ mod imp {
             self.method_page
                 .update(homeserver, server_name, supports_sso);
             self.navigation.push_by_tag(LoginPage::Method.tag());
+        }
+
+        /// Show the page to create an account on the given homeserver.
+        fn show_register_page(&self, homeserver: &Url) {
+            let server_name = self.server_name();
+
+            self.register_page.update(homeserver, server_name.as_ref());
+            self.navigation.push_by_tag(LoginPage::Register.tag());
+        }
+
+        /// The name of the server that was typed, when it is one.
+        fn server_name(&self) -> Option<OwnedServerName> {
+            self.autodiscovery
+                .get()
+                .then(|| self.homeserver_page.homeserver())
+                .and_then(|s| sanitize_server_name(&s).ok())
         }
 
         /// Show the page to log in with the browser with the given data.
@@ -489,8 +584,10 @@ mod imp {
             // Clean pages.
             self.homeserver_page.clean();
             self.method_page.clean();
+            self.register_page.clean();
 
             // Clean data.
+            self.purpose.set(LoginPurpose::LogIn);
             self.set_autodiscovery(true);
             self.drop_client();
             self.drop_session();

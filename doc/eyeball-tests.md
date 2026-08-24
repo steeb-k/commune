@@ -126,3 +126,61 @@ module, so unlike most of the field this can be exercised on a real account.
       is the half that was never optional before, so it is worth confirming
       from a second client rather than trusting it.
 * [ ] **Turning it back on** makes you online again without restarting.
+
+## Signing up — `doc/registration.md`
+
+Nothing here has been seen on screen. The whole flow is new drawing code, and
+the greeter button it starts from has never been visible in this fork.
+
+Use `testing/local-homeserver.sh` for all of it — it runs with open
+registration, so Synapse asks for `m.login.dummy` and no stage needs input.
+Registering on a public server leaves a junk account behind.
+
+* [ ] **The _Create Account_ button is there at all**, under _Log In_ on the
+      greeter, and is a plain pill rather than a suggested one.
+* [ ] **It leads to the same homeserver page** as logging in, with the same
+      domain entry and the same advanced switch.
+* [ ] **The register page draws**: the title says "Create an account on
+      localhost", the homeserver URL sits under it with the house icon, and
+      there are three rows — username, password, confirm password.
+      This page is `form-page`-styled but sits in the login flow, so the
+      margins and the 24px spacing come from CSS rather than the template;
+      that combination has never been rendered.
+* [ ] **The strength meter fills** as the password gets better, in five
+      discrete blocks, and turns green at full. The offsets are added from Rust
+      here rather than from the template — check it looks like the meter on
+      Account Settings ▸ Change Password, not like a single bar.
+* [ ] **The username check says something.** Type a name that exists (`alice`
+      after seeding) and the row should go amber with "This username is already
+      taken" about half a second after the last keystroke; a free name should
+      go green with no message. Watch that a fast typist does not get the
+      answer for a prefix of what they typed.
+* [ ] **The button is insensitive** until the username has been answered for,
+      the password is at full strength and the confirmation matches — and
+      _sensitive_ on a server that refuses to answer the availability
+      question at all, which is the case the state machine is there for.
+* [ ] **The account is actually created** and lands in the encryption setup
+      pages, the same as a password login. The UIAA dialog should flash past
+      without asking anything, because the only stage is `m.login.dummy`.
+* [ ] **Registration switched off** says "This homeserver does not allow
+      creating an account", not "Invalid credentials". Set
+      `enable_registration: false` in the container's `homeserver.yaml` and
+      restart it.
+* [ ] **A taken username refused at the last moment** — register `bob` in two
+      windows at once, or take the name between the check and the button — says
+      "This username is already taken" from the new error mapping.
+* [ ] **Going back cleans the page.** Leave the register page, come back, and
+      the three rows should be empty with no leftover green or amber, and the
+      meter at zero.
+* [ ] **The fallback page**, for a stage this client does not draw: a server
+      with a terms requirement or a registration token should show the
+      homeserver's own web page inside the dialog. Untested — the harness has
+      no such stage configured yet.
+* [ ] **The OAuth path**, which needs a server with the OAuth 2.0 API: the
+      browser should open the server's _sign-up_ form rather than its sign-in
+      form, and a server that does not advertise `prompt=create` should say so
+      with a toast instead of opening a browser at all. Nothing in the harness
+      speaks OAuth, so this needs `matrix.org` or another real server.
+* [ ] **Nothing regressed in logging in.** The greeter's _Log In_ button, the
+      password path and the SSO path all go through the same code with the
+      purpose left at `LogIn`.
