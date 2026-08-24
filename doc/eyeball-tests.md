@@ -55,21 +55,27 @@ drawing code.
 * [x] **The pinned view lists them.** Seen 23 August 2026 and reported as
       looking right. The lazy build — on first opening, not on entering the
       room — was not separately checked and is not visible anyway.
-* [ ] **Clicking a row jumps to the message** in the timeline and closes the
-      pinned view.
-* [ ] **The unpin button on a row works and does not also jump.** Still open:
-      the 23 August pass unpinned from the timeline's context menu, not from
-      the button in the pinned view. The row is `single-click-activate` and the
-      button is a child of it; if GTK does not let the button claim the click,
-      unpinning will also navigate away. A known risk, not a hypothetical.
+* [x] **Clicking a row jumps to the message** in the timeline and closes the
+      pinned view. Seen 23 August 2026.
+* [x] **The unpin button on a row works and does not also jump.** Seen
+      23 August 2026 — the button claims the click, the row does not activate
+      behind it. The risk was real and did not land.
+* [ ] **The unpin button's icon reads as "unpin".** It was
+      `list-remove-symbolic` on first pass and read as a stray horizontal rule;
+      changed to `close-symbolic`, which is what `removable_row.blp` and the
+      explore server row already use for taking an item off a list. Not a
+      wastebasket on purpose: the context menu's _Remove_ redacts the message,
+      and a wastebasket here would read as that. Needs another look.
 * [ ] **Unpinning the last message _while the pinned view is open_** leaves
       the toggle visible and shows the empty page, rather than hiding the only
       way back. Unpinning from the timeline with the view closed correctly
       hides the toggle, and that much was seen on 23 August 2026 — this is the
       other case.
 * [ ] **The empty page** — `view-pin-symbolic`, "No Pinned Messages".
-* [ ] **The timeline sentence**: "{user} pinned a message." / "unpinned a
-      message." / "changed the pinned messages."
+* [x] **The timeline sentence**: "{user} pinned a message." / "unpinned a
+      message." Seen 23 August 2026. The third case, "changed the pinned
+      messages", needs a reorder or a simultaneous pin-and-unpin and has not
+      been seen.
 * [ ] **The server notices room is unaffected**: its pinned events still raise
       the notice banner and must not appear in a pinned messages view. The
       toggle should never appear in that room.

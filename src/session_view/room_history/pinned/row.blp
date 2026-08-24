@@ -51,14 +51,20 @@ template $RoomHistoryPinnedRow: Adw.Bin {
 
     Gtk.Button unpin_button {
       valign: center;
+      halign: center;
       visible: false;
-      icon-name: "list-remove-symbolic";
+      // The same icon the rest of the tree uses to take an item off a list —
+      // see `removable_row.blp` and the explore server row. Deliberately not a
+      // wastebasket: the context menu's Remove redacts the message, and a
+      // wastebasket here would read as that rather than as unpinning.
+      icon-name: "close-symbolic";
       // Translators: In this string, 'Unpin' is a verb: this removes a message
       // from the pinned ones.
       tooltip-text: _("Unpin Message");
       clicked => $unpin() swapped;
 
       styles [
+        "circular",
         "flat",
       ]
     }
