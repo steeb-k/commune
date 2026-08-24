@@ -76,7 +76,7 @@ Windows notification backend after all, which changes what M5 is.
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
 | `matrix:` URLs | Works cold and warm; the installer writes the registry key |
-| Notifications | Our own WinRT toasts, `src/utils/windows_notifications.rs`; clicks work |
+| Notifications | Our own WinRT toasts; avatar, buttons, withdrawal, and clicks when closed |
 
 ## The GTK environment
 
@@ -484,11 +484,18 @@ HKCU\Software\Classes\CLSID\{7DC899BF-…}\LocalServer32
     (Default)       "…\commune.exe" -Embedding
 ```
 
-A click while Commune runs is delivered to the toast's `Activated` event. A click that has to
-start it first goes through COM: Windows reads `LocalServer32`, starts the executable with
-`-Embedding`, and calls `INotificationActivationCallback::Activate` once the process registers its
-class factory. `Application::run` drops `-Embedding` before `GApplication` sees it, since
-`HANDLES_OPEN` would otherwise take it for a file to open and refuse to start.
+**Every** click goes through COM, running or not. Windows reads `LocalServer32`, starts the
+executable with `-Embedding` if nothing is already serving the class, and calls
+`INotificationActivationCallback::Activate`. `Application::run` drops `-Embedding` before
+`GApplication` sees it, since `HANDLES_OPEN` would otherwise take it for a file to open and refuse
+to start.
+
+A toast also offers an `Activated` event for the process that sent it, and handling that **as
+well** is a mistake worth not repeating: a process that has registered the class serves it itself
+rather than having another started, so both paths fire and every warm click acts twice. It looked
+correct for as long as the actions were idempotent — declining a declined call declines it,
+opening an open room opens it — and it was found by reading a log after a test that had passed,
+not by anything going visibly wrong. Answering a call twice would not have been idempotent.
 
 One wrinkle from all of this living under one AUMID per profile: `LocalServer32` is rewritten from
 `current_exe()` on every launch, so **whichever build ran last is the one a cold click starts**.
@@ -524,11 +531,11 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
-* **The notification details nobody has looked at yet.** Buttons are emitted into the toast's
-  `<actions>` but no notification that carries any — a ringing call — has been raised on Windows.
-  Neither has a withdrawal: read a room with a notification pending and watch it leave the
-  notification centre. And the toast is attributed with our name but no icon, because the
-  `IconUri` value that would give it one is not written.
+* **M5 is finished**, and nothing is outstanding on it. Banners carry the sender's avatar; a
+  click opens the room whether or not Commune was running; an incoming call raises Answer and
+  Decline, and Decline was seen declining the call at both ends; a notification leaves the
+  notification centre as soon as its room is read. No `IconUri` is written and none is wanted —
+  the sender's avatar is the picture a chat notification should carry.
 * **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.
 
 Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
