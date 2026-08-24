@@ -24,12 +24,13 @@ use self::{
 use crate::{
     Window,
     components::{RoomPreviewDialog, UserProfileDialog},
-    intent::SessionIntent,
+    intent::{CallAction, CallActionKind, SessionIntent},
     prelude::*,
     session::{
         IdentityVerification, Room, RoomCategory, RoomList, Session, SidebarItemList,
         SidebarListModel, VerificationKey,
     },
+    spawn,
     utils::{
         key_bindings,
         matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri, VisualMediaMessage},
@@ -654,7 +655,45 @@ mod imp {
                 SessionIntent::ShowIdentityVerification(key) => {
                     self.select_identity_verification_by_id(&key);
                 }
+                SessionIntent::CallAction(action) => {
+                    self.handle_call_action(&action);
+                }
             }
+        }
+
+        /// Act on a button of the notification for a ringing call.
+        ///
+        /// The call ID is checked rather than trusted: a notification outlives
+        /// the call it is about, and answering "the call that is happening"
+        /// would answer whichever one is happening now.
+        fn handle_call_action(&self, action: &CallAction) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let calls = session.calls();
+            let Some(call) = calls.active_call() else {
+                return;
+            };
+
+            if call.call_id().as_str() != action.call_id {
+                return;
+            }
+
+            match action.kind {
+                CallActionKind::Show => {}
+                CallActionKind::Answer => {
+                    spawn!(async move {
+                        calls.accept_active_call().await;
+                    });
+                }
+                CallActionKind::Decline => call.reject(),
+            }
+
+            // Whatever the button was, the window is what the person expects
+            // to see next: answered, it is the call; declined, it says so and
+            // closes on its own.
+            self.present_call_view();
         }
 
         /// Show the given `MatrixIdUri`.

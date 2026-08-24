@@ -74,6 +74,20 @@ pub(crate) enum PipelineEvent {
     },
     /// No more ICE candidates will be gathered.
     IceGatheringDone,
+    /// The session has to be negotiated again.
+    ///
+    /// `webrtcbin` says this whenever what the pipeline sends stops matching
+    /// what the last offer described — adding the camera to a call that was
+    /// placed without it, most of all. It is only acted on once the call is
+    /// up: the same signal fires for the first negotiation of every call,
+    /// which is already driven by hand.
+    NegotiationNeeded,
+    /// The other party's video is being drawn.
+    ///
+    /// The remote paintable exists from the moment the pipeline does, so it is
+    /// not a sign that any video is coming. This is: a decoded video stream
+    /// has been attached to the sink, and frames are on their way.
+    RemoteVideo,
     /// Media is flowing.
     Connected,
     /// The connection failed, either while establishing it or after.
@@ -147,6 +161,12 @@ pub(crate) struct CallPipeline {
     /// Zero until their description says otherwise, which is the answer for
     /// every peer that accepts the first section we offer.
     remote_transport_index: Arc<AtomicU32>,
+    /// Whether `on-negotiation-needed` is to be listened to.
+    ///
+    /// `webrtcbin` emits it for the first negotiation as well, which this
+    /// client drives itself; acting on that one would put a second offer on
+    /// the wire for every call placed.
+    renegotiation_armed: Arc<AtomicBool>,
 }
 
 impl Drop for CallPipeline {
@@ -260,6 +280,7 @@ impl CallPipeline {
             remote_transport_index: Arc::new(AtomicU32::new(0)),
             remote_addresses: Arc::new(Mutex::new(HashSet::new())),
             local_mids: Arc::new(Mutex::new(Vec::new())),
+            renegotiation_armed: Arc::new(AtomicBool::new(false)),
         };
 
         for kind in media {
@@ -289,6 +310,74 @@ impl CallPipeline {
     /// Where our own camera is drawn, if there is one.
     pub(crate) fn local_paintable(&self) -> Option<&gdk::Paintable> {
         self.local_paintable.as_ref()
+    }
+
+    /// Listen to `webrtcbin` asking for a negotiation.
+    ///
+    /// Called once the first one is done. Before that the signal fires for the
+    /// offer this client is already making by hand, and honouring it would put
+    /// a second offer on the wire for every call.
+    pub(crate) fn arm_renegotiation(&self) {
+        self.renegotiation_armed.store(true, Ordering::Relaxed);
+    }
+
+    /// Add the camera to a call that was placed without one.
+    ///
+    /// The new source is linked to a new sink pad, which is a new transceiver,
+    /// which is what makes `webrtcbin` ask for a negotiation — and that ask is
+    /// how the offer gets made. Nothing here writes SDP.
+    pub(crate) fn enable_video(&mut self) -> Result<(), PipelineError> {
+        if self.has_video() {
+            return Ok(());
+        }
+
+        // [`Self::add_video_source`] answers a missing camera with a
+        // receive-only section, which is right while the sections are still
+        // being chosen and wrong here: the other end was never asked for
+        // video, so a section to receive it in carries nothing.
+        gst::ElementFactory::make("autovideosrc")
+            .build()
+            .map_err(|_| PipelineError::Other("there is no camera to add"))?;
+
+        self.add_video_source()?;
+        self.media.push(MediaKind::Video);
+
+        // Everything added to a pipeline arrives in `Null`, whatever the
+        // pipeline itself is doing, and a source in `Null` produces nothing.
+        let mut elements = self.pipeline.iterate_elements();
+        while let Ok(Some(element)) = elements.next() {
+            element.sync_state_with_parent()?;
+        }
+
+        debug!("The camera is in the pipeline; waiting for webrtcbin to ask for an offer");
+
+        Ok(())
+    }
+
+    /// Undo a local offer that has not been answered.
+    ///
+    /// Perfect negotiation's move for the polite party: an offer of ours and
+    /// one of theirs crossed, and ours is the one that gives way. `webrtcbin`
+    /// is asked to roll back to `stable` so that theirs can be applied.
+    ///
+    /// Untested against a peer, because it takes two clients renegotiating in
+    /// the same second to reach it.
+    pub(crate) fn rollback_local_description(&self) {
+        let Ok(message) = gst_sdp::SDPMessage::parse_buffer(b"") else {
+            return;
+        };
+        let rollback =
+            gst_webrtc::WebRTCSessionDescription::new(gst_webrtc::WebRTCSDPType::Rollback, message);
+
+        debug!("Rolling back our own offer in favour of theirs");
+        let promise = gst::Promise::with_change_func(|reply| {
+            if let Err(error) = reply {
+                warn!("webrtcbin would not roll back our offer: {error:?}");
+            }
+        });
+
+        self.webrtcbin
+            .emit_by_name::<()>("set-local-description", &[&rollback, &promise]);
     }
 
     /// Add the microphone to the pipeline, encoded and packetised for the wire.
@@ -561,11 +650,29 @@ impl CallPipeline {
                 None
             });
 
+        // Renegotiation, and only renegotiation: the first offer of a call is
+        // made by hand, and `webrtcbin` asks for that one too.
+        let negotiation_sender = sender.clone();
+        let armed = self.renegotiation_armed.clone();
+        self.webrtcbin
+            .connect("on-negotiation-needed", false, move |_| {
+                if !armed.load(Ordering::Relaxed) {
+                    debug!("webrtcbin wants a negotiation; this one is ours to make");
+                    return None;
+                }
+
+                debug!("webrtcbin says the session has to be negotiated again");
+                let _ = negotiation_sender.unbounded_send(PipelineEvent::NegotiationNeeded);
+
+                None
+            });
+
         self.watch_states(&sender);
 
         // Incoming media arrives as a new pad per stream, still packetised.
         let pipeline = self.pipeline.downgrade();
         let error_sender = sender.clone();
+        let media_sender = sender.clone();
         self.webrtcbin.connect_pad_added(move |_, pad| {
             if pad.direction() != gst::PadDirection::Src {
                 return;
@@ -574,7 +681,7 @@ impl CallPipeline {
                 return;
             };
 
-            if let Err(error) = attach_receiver(&pipeline, pad, &remote_video_sink) {
+            if let Err(error) = attach_receiver(&pipeline, pad, &remote_video_sink, &media_sender) {
                 error!("Could not play an incoming stream: {error}");
                 let _ = error_sender.unbounded_send(PipelineEvent::Error(error.to_string()));
             }
@@ -986,17 +1093,19 @@ fn attach_receiver(
     pipeline: &gst::Pipeline,
     pad: &gst::Pad,
     remote_video_sink: &gst::Element,
+    sender: &mpsc::UnboundedSender<PipelineEvent>,
 ) -> Result<(), PipelineError> {
     let decodebin = gst::ElementFactory::make("decodebin").build()?;
 
     let pipeline_weak = pipeline.downgrade();
     let video_sink = remote_video_sink.clone();
+    let sender = sender.clone();
     decodebin.connect_pad_added(move |_, pad| {
         let Some(pipeline) = pipeline_weak.upgrade() else {
             return;
         };
 
-        if let Err(error) = attach_decoded_pad(&pipeline, pad, &video_sink) {
+        if let Err(error) = attach_decoded_pad(&pipeline, pad, &video_sink, &sender) {
             error!("Could not play a decoded stream: {error}");
         }
     });
@@ -1019,6 +1128,7 @@ fn attach_decoded_pad(
     pipeline: &gst::Pipeline,
     pad: &gst::Pad,
     remote_video_sink: &gst::Element,
+    sender: &mpsc::UnboundedSender<PipelineEvent>,
 ) -> Result<(), PipelineError> {
     let Some(caps) = pad.current_caps() else {
         return Ok(());
@@ -1061,6 +1171,12 @@ fn attach_decoded_pad(
         }
 
         link_into(pad, &queue)?;
+
+        // Now, and not when the pipeline was built: the paintable has existed
+        // since then and has had nothing to draw. A call that starts with
+        // audio and gains video partway through says so here.
+        debug!("The other party's video is attached to the sink");
+        let _ = sender.unbounded_send(PipelineEvent::RemoteVideo);
     }
 
     Ok(())

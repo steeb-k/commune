@@ -1,9 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone};
+use gtk::{gdk, glib, glib::clone};
 
 use crate::{
     components::Avatar,
+    gettext_f,
     prelude::*,
     session::{Call, CallEndReason, CallState, Calls},
     spawn,
@@ -20,6 +21,22 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session_view/call_view/mod.ui")]
     #[properties(wrapper_type = super::CallView)]
     pub struct CallView {
+        #[template_child]
+        toolbar_view: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        toast_overlay: TemplateChild<adw::ToastOverlay>,
+        #[template_child]
+        leave_fullscreen_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        remote_status: TemplateChild<gtk::Box>,
+        #[template_child]
+        remote_microphone_icon: TemplateChild<gtk::Image>,
+        #[template_child]
+        remote_camera_icon: TemplateChild<gtk::Image>,
+        #[template_child]
+        remote_status_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        add_video_button: TemplateChild<gtk::Button>,
         #[template_child]
         stage: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -64,6 +81,24 @@ mod imp {
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+
+            klass.add_binding_action(
+                gdk::Key::F11,
+                gdk::ModifierType::empty(),
+                "call.toggle-fullscreen",
+            );
+            klass.add_binding_action(
+                gdk::Key::Escape,
+                gdk::ModifierType::empty(),
+                "call.leave-fullscreen",
+            );
+
+            klass.install_action("call.toggle-fullscreen", None, |obj, _, _| {
+                obj.set_fullscreened(!obj.is_fullscreen());
+            });
+            klass.install_action("call.leave-fullscreen", None, |obj, _, _| {
+                obj.set_fullscreened(false);
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -73,6 +108,41 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for CallView {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            // Fullscreen hides the header bar, and the header bar is where the
+            // way out of fullscreen lives — so a second one is revealed with
+            // it, for a screen with no keyboard to press Escape on.
+            self.obj().connect_fullscreened_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_fullscreen();
+                }
+            ));
+
+            // Double-clicking the picture, which is what every video player
+            // does. Built here rather than in the template: a template
+            // callback's arguments are checked at run time and only at run
+            // time, and this one has three of them.
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(gdk::BUTTON_PRIMARY);
+            gesture.connect_pressed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, n_press, _, _| {
+                    if n_press == 2 {
+                        let obj = imp.obj();
+                        obj.set_fullscreened(!obj.is_fullscreen());
+                    }
+                }
+            ));
+            self.stage.add_controller(gesture);
+
+            self.update_fullscreen();
+        }
+
         fn dispose(&self) {
             if let Some(source) = self.duration_tick.take() {
                 source.remove();
@@ -171,6 +241,30 @@ mod imp {
                     self,
                     move |_| {
                         imp.update_video();
+                        imp.update_remote_status();
+                    }
+                )),
+                call.connect_is_remote_microphone_muted_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_remote_status();
+                    }
+                )),
+                call.connect_has_remote_video_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_video();
+                    }
+                )),
+                call.connect_has_video_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_buttons();
+                        imp.update_video();
+                        imp.update_remote_status();
                     }
                 )),
                 call.connect_is_microphone_muted_notify(clone!(
@@ -213,7 +307,58 @@ mod imp {
             self.update_controls();
             self.update_buttons();
             self.update_video();
+            self.update_remote_status();
             self.update_duration_tick();
+        }
+
+        /// Show or hide what fullscreen takes away.
+        fn update_fullscreen(&self) {
+            let fullscreen = self.obj().is_fullscreen();
+
+            self.toolbar_view.set_reveal_top_bars(!fullscreen);
+            self.leave_fullscreen_button.set_visible(fullscreen);
+        }
+
+        /// Say what the other end has turned off.
+        ///
+        /// Their camera going off shows as an avatar, which on its own looks
+        /// like a call that stopped working; their microphone going off has
+        /// nothing to show at all. Both are things they did on purpose and
+        /// expect the other person to be able to see.
+        fn update_remote_status(&self) {
+            let borrowed = self.call.borrow();
+            let Some(call) = borrowed.as_ref() else {
+                self.remote_status.set_visible(false);
+                return;
+            };
+
+            let established = matches!(call.state(), CallState::Connecting | CallState::Connected);
+            let microphone_muted = established && call.is_remote_microphone_muted();
+            let camera_muted = established && call.has_video() && call.is_remote_camera_muted();
+            drop(borrowed);
+
+            let name = self.remote_name();
+            let text = match (microphone_muted, camera_muted) {
+                // Translators: Do NOT translate the content between '{' and
+                // '}', this is a variable name.
+                (true, true) => gettext_f(
+                    "{user} turned off their microphone and camera",
+                    &[("user", &name)],
+                ),
+                // Translators: Do NOT translate the content between '{' and
+                // '}', this is a variable name.
+                (true, false) => gettext_f("{user} muted their microphone", &[("user", &name)]),
+                // Translators: Do NOT translate the content between '{' and
+                // '}', this is a variable name.
+                (false, true) => gettext_f("{user} turned off their camera", &[("user", &name)]),
+                (false, false) => String::new(),
+            };
+
+            self.remote_microphone_icon.set_visible(microphone_muted);
+            self.remote_camera_icon.set_visible(camera_muted);
+            self.remote_status_label.set_label(&text);
+            self.remote_status
+                .set_visible(microphone_muted || camera_muted);
         }
 
         /// Refresh the avatar and the name.
@@ -353,8 +498,12 @@ mod imp {
 
             // A call with no video section has no camera button: turning off
             // something that was never on is a control that does nothing.
+            // What it has instead, once it is up, is a button that adds one —
+            // which renegotiates the session rather than unmuting anything.
             let has_video = call.has_video() && call.local_paintable().is_some();
             self.camera_button.set_visible(has_video);
+            self.add_video_button
+                .set_visible(!call.has_video() && call.state() == CallState::Connected);
 
             let camera_muted = call.is_camera_muted();
             self.camera_button.set_active(camera_muted);
@@ -381,10 +530,15 @@ mod imp {
 
             let remote_paintable = call.remote_paintable();
 
+            // `has_remote_video`, not the paintable: the paintable exists from
+            // the moment the pipeline does, and a voice call that showed the
+            // video page would be showing an empty rectangle where the other
+            // person's face goes.
+            //
             // The other end tells us when they mute their camera, and the spec
             // asks that it be honoured locally rather than shown as a frozen
             // frame or a black rectangle.
-            let show_remote_video = remote_paintable.is_some()
+            let show_remote_video = call.has_remote_video()
                 && !call.is_remote_camera_muted()
                 && matches!(call.state(), CallState::Connecting | CallState::Connected);
 
@@ -428,6 +582,21 @@ mod imp {
         fn toggle_microphone(&self) {
             if let Some(call) = self.call.borrow().as_ref() {
                 call.set_is_microphone_muted(self.microphone_button.is_active());
+            }
+        }
+
+        #[template_callback]
+        fn add_video(&self) {
+            let Some(call) = self.call.borrow().clone() else {
+                return;
+            };
+
+            if !call.add_video() {
+                // The reason is in the log; what the person needs is to know
+                // that the button did nothing, since the call carries on
+                // either way.
+                self.toast_overlay
+                    .add_toast(adw::Toast::new(&gettext("Could not turn on the camera")));
             }
         }
 

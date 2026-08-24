@@ -5,7 +5,7 @@ template $CallView: Adw.Window {
   default-width: 420;
   default-height: 560;
 
-  content: Adw.ToolbarView {
+  content: Adw.ToolbarView toolbar_view {
     [top]
     Adw.HeaderBar {
       [title]
@@ -16,169 +16,251 @@ template $CallView: Adw.Window {
         title: bind template.title;
         subtitle: bind template.status;
       }
+
+      [end]
+      Gtk.Button fullscreen_button {
+        icon-name: "view-fullscreen-symbolic";
+        tooltip-text: _("Fullscreen");
+        action-name: "call.toggle-fullscreen";
+
+        accessibility {
+          label: _("Show the call fullscreen");
+        }
+      }
     }
 
-    content: Gtk.Overlay {
-      Gtk.Stack stage {
-        transition-type: crossfade;
-        vexpand: true;
-        hexpand: true;
+    content: Adw.ToastOverlay toast_overlay {
+      child: Gtk.Overlay {
+        Gtk.Stack stage {
+          transition-type: crossfade;
+          vexpand: true;
+          hexpand: true;
 
-        Gtk.StackPage {
-          name: "person";
+          Gtk.StackPage {
+            name: "person";
 
-          child: Adw.StatusPage person_page {
-            vexpand: true;
+            child: Adw.StatusPage person_page {
+              vexpand: true;
 
-            child: $Avatar remote_avatar {
-              size: 128;
-              accessible-role: presentation;
+              child: $Avatar remote_avatar {
+                size: 128;
+                accessible-role: presentation;
+              };
             };
-          };
-        }
-
-        Gtk.StackPage {
-          name: "video";
-
-          child: Gtk.Picture remote_picture {
-            content-fit: contain;
-            vexpand: true;
-            hexpand: true;
-          };
-        }
-      }
-
-      [overlay]
-      Gtk.Revealer self_view_revealer {
-        halign: end;
-        valign: start;
-        margin-top: 12;
-        margin-end: 12;
-        transition-type: crossfade;
-
-        // A `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`. A Picture takes
-        // the natural size of its paintable, and a camera's paintable is as
-        // big as the camera — so the self-view filled the whole window and
-        // covered the person being called. `width-request` is a minimum, not a
-        // maximum, and does not help. An Image with `pixel-size` pins the box
-        // and scales the frame inside it.
-        child: Gtk.Image self_picture {
-          pixel-size: 120;
-
-          styles [
-            "call-self-view",
-          ]
-
-          accessibility {
-            label: _("Your own camera");
           }
-        };
-      }
 
-      [overlay]
-      Gtk.Stack controls {
-        halign: center;
-        valign: end;
-        margin-bottom: 24;
-        transition-type: crossfade;
+          Gtk.StackPage {
+            name: "video";
 
-        Gtk.StackPage {
-          name: "incoming";
-
-          child: Gtk.Box {
-            spacing: 18;
-
-            Gtk.Button decline_button {
-              icon-name: "call-stop-symbolic";
-              tooltip-text: _("Decline");
-              clicked => $decline() swapped;
-
-              styles [
-                "destructive-action",
-                "circular",
-                "call-button",
-              ]
-
-              accessibility {
-                label: _("Decline the call");
-              }
-            }
-
-            Gtk.Button accept_button {
-              icon-name: "call-start-symbolic";
-              tooltip-text: _("Answer");
-              clicked => $accept() swapped;
-
-              styles [
-                "suggested-action",
-                "circular",
-                "call-button",
-              ]
-
-              accessibility {
-                label: _("Answer the call");
-              }
-            }
-          };
+            child: Gtk.Picture remote_picture {
+              content-fit: contain;
+              vexpand: true;
+              hexpand: true;
+            };
+          }
         }
 
-        Gtk.StackPage {
-          name: "in-call";
+        [overlay]
+        Gtk.Box top_overlay {
+          halign: start;
+          valign: start;
+          margin-top: 12;
+          margin-start: 12;
+          spacing: 6;
 
-          child: Gtk.Box {
-            spacing: 18;
-
-            Gtk.ToggleButton microphone_button {
-              tooltip-text: _("Mute Microphone");
-              toggled => $toggle_microphone() swapped;
-
-              styles [
-                "circular",
-                "call-button",
-              ]
-            }
-
-            Gtk.ToggleButton camera_button {
-              tooltip-text: _("Turn Off Camera");
-              toggled => $toggle_camera() swapped;
-
-              styles [
-                "circular",
-                "call-button",
-              ]
-            }
-
-            Gtk.Button hangup_button {
-              icon-name: "call-stop-symbolic";
-              tooltip-text: _("End Call");
-              clicked => $hangup() swapped;
-
-              styles [
-                "destructive-action",
-                "circular",
-                "call-button",
-              ]
-
-              accessibility {
-                label: _("End the call");
-              }
-            }
-          };
-        }
-
-        Gtk.StackPage {
-          name: "ended";
-
-          child: Gtk.Button close_button {
-            label: _("Close");
-            clicked => $close_window() swapped;
+          // The only way out of fullscreen on a machine with no keyboard: the
+          // header bar, which carries the other one, is hidden while fullscreen.
+          Gtk.Button leave_fullscreen_button {
+            icon-name: "view-restore-symbolic";
+            tooltip-text: _("Leave Fullscreen");
+            visible: false;
+            action-name: "call.leave-fullscreen";
 
             styles [
-              "pill",
+              "osd",
+              "circular",
             ]
+
+            accessibility {
+              label: _("Leave fullscreen");
+            }
+          }
+
+          Gtk.Box remote_status {
+            spacing: 6;
+            visible: false;
+            valign: center;
+
+            styles [
+              "call-badge",
+            ]
+
+            Gtk.Image remote_microphone_icon {
+              icon-name: "microphone-disabled-symbolic";
+              visible: false;
+            }
+
+            Gtk.Image remote_camera_icon {
+              icon-name: "camera-disabled-symbolic";
+              visible: false;
+            }
+
+            Gtk.Label remote_status_label {
+              ellipsize: end;
+            }
+          }
+        }
+
+        [overlay]
+        Gtk.Revealer self_view_revealer {
+          halign: end;
+          valign: start;
+          margin-top: 12;
+          margin-end: 12;
+          transition-type: crossfade;
+
+          // A `Gtk.Image` with `pixel-size`, not a `Gtk.Picture`. A Picture takes
+          // the natural size of its paintable, and a camera's paintable is as
+          // big as the camera — so the self-view filled the whole window and
+          // covered the person being called. `width-request` is a minimum, not a
+          // maximum, and does not help. An Image with `pixel-size` pins the box
+          // and scales the frame inside it.
+          child: Gtk.Image self_picture {
+            pixel-size: 120;
+
+            styles [
+              "call-self-view",
+            ]
+
+            accessibility {
+              label: _("Your own camera");
+            }
           };
         }
-      }
+
+        [overlay]
+        Gtk.Stack controls {
+          halign: center;
+          valign: end;
+          margin-bottom: 24;
+          transition-type: crossfade;
+
+          Gtk.StackPage {
+            name: "incoming";
+
+            child: Gtk.Box {
+              spacing: 18;
+
+              Gtk.Button decline_button {
+                icon-name: "call-stop-symbolic";
+                tooltip-text: _("Decline");
+                clicked => $decline() swapped;
+
+                styles [
+                  "destructive-action",
+                  "circular",
+                  "call-button",
+                ]
+
+                accessibility {
+                  label: _("Decline the call");
+                }
+              }
+
+              Gtk.Button accept_button {
+                icon-name: "call-start-symbolic";
+                tooltip-text: _("Answer");
+                clicked => $accept() swapped;
+
+                styles [
+                  "suggested-action",
+                  "circular",
+                  "call-button",
+                ]
+
+                accessibility {
+                  label: _("Answer the call");
+                }
+              }
+            };
+          }
+
+          Gtk.StackPage {
+            name: "in-call";
+
+            child: Gtk.Box {
+              spacing: 18;
+
+              Gtk.ToggleButton microphone_button {
+                tooltip-text: _("Mute Microphone");
+                toggled => $toggle_microphone() swapped;
+
+                styles [
+                  "circular",
+                  "call-button",
+                ]
+              }
+
+              Gtk.ToggleButton camera_button {
+                tooltip-text: _("Turn Off Camera");
+                toggled => $toggle_camera() swapped;
+
+                styles [
+                  "circular",
+                  "call-button",
+                ]
+              }
+
+              // A call placed without video has no camera to mute, and adding
+              // one is a different thing entirely: it renegotiates the session.
+              Gtk.Button add_video_button {
+                icon-name: "camera-web-symbolic";
+                tooltip-text: _("Turn On Camera");
+                visible: false;
+                clicked => $add_video() swapped;
+
+                styles [
+                  "circular",
+                  "call-button",
+                ]
+
+                accessibility {
+                  label: _("Add video to the call");
+                }
+              }
+
+              Gtk.Button hangup_button {
+                icon-name: "call-stop-symbolic";
+                tooltip-text: _("End Call");
+                clicked => $hangup() swapped;
+
+                styles [
+                  "destructive-action",
+                  "circular",
+                  "call-button",
+                ]
+
+                accessibility {
+                  label: _("End the call");
+                }
+              }
+            };
+          }
+
+          Gtk.StackPage {
+            name: "ended";
+
+            child: Gtk.Button close_button {
+              label: _("Close");
+              clicked => $close_window() swapped;
+
+              styles [
+                "pill",
+              ]
+            };
+          }
+        }
+      };
     };
   };
 }

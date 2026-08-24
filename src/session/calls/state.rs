@@ -30,6 +30,26 @@ impl CallState {
     }
 }
 
+/// What became of a call, as far as the room can tell.
+///
+/// Not [`CallEndReason`], which is about a call this client was in and is
+/// phrased for the person who was in it. This is about any call the room has
+/// seen — including one that rang on another device — and it is what the row
+/// in the timeline says afterwards.
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[enum_type(name = "CallOutcome")]
+pub enum CallOutcome {
+    /// An invite was seen and nothing has happened to it yet.
+    #[default]
+    Ringing,
+    /// Somebody answered it.
+    Answered,
+    /// Somebody said no to it.
+    Declined,
+    /// It stopped ringing without being answered.
+    Missed,
+}
+
 /// Why a call ended.
 ///
 /// This is what the interface says, which is not the same thing as the `reason`

@@ -9,7 +9,10 @@ use matrix_sdk_ui::timeline::{
 };
 use ruma::{
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
-    events::{AnySyncTimelineEvent, TimelineEventType, receipt::Receipt},
+    events::{
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent, TimelineEventType,
+        call::invite::CallInviteEventContent, receipt::Receipt,
+    },
     serde::Raw,
 };
 use serde::{Deserialize, de::IgnoredAny};
@@ -649,8 +652,29 @@ impl Event {
     pub(crate) fn is_call_event(&self) -> bool {
         matches!(
             self.item().content(),
-            TimelineItemContent::RtcNotification { .. }
+            TimelineItemContent::RtcNotification { .. } | TimelineItemContent::CallInvite
         )
+    }
+
+    /// The content of this event, if it is an invite to a one-to-one call.
+    ///
+    /// The SDK's timeline item for an `m.call.invite` carries nothing at all —
+    /// it is a unit variant — so what the row needs comes back out of the
+    /// event's own JSON. In an encrypted room that JSON is the decrypted
+    /// event, which is what makes this work in the rooms calls happen in.
+    pub(crate) fn call_invite(&self) -> Option<CallInviteEventContent> {
+        if !matches!(self.item().content(), TimelineItemContent::CallInvite) {
+            return None;
+        }
+
+        let AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::CallInvite(
+            SyncMessageLikeEvent::Original(event),
+        )) = self.raw()?.deserialize().ok()?
+        else {
+            return None;
+        };
+
+        Some(event.content)
     }
 
     /// Whether this is a state event.

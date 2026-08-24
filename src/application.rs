@@ -235,6 +235,29 @@ mod imp {
                         obj.imp().process_session_intent(session_id, intent);
                     })
                     .build(),
+                // Answer, decline or show the call that is ringing. This is the action
+                // triggered by the buttons on the notification about it.
+                gio::ActionEntry::builder(SessionIntent::CALL_ACTION_ACTION_NAME)
+                    .parameter_type(Some(&SessionIntent::static_variant_type()))
+                    .activate(|obj: &super::Application, _, variant| {
+                        debug!(
+                            "`{}` action activated",
+                            SessionIntent::CALL_ACTION_APP_ACTION_NAME
+                        );
+
+                        let Some((session_id, intent)) =
+                            variant.and_then(SessionIntent::call_action_from_variant)
+                        else {
+                            error!(
+                                "Activated `{}` action without the proper payload",
+                                SessionIntent::CALL_ACTION_APP_ACTION_NAME
+                            );
+                            return;
+                        };
+
+                        obj.imp().process_session_intent(session_id, intent);
+                    })
+                    .build(),
                 // Show an identity verification. This is the action triggered when clicking a
                 // notification about a new verification.
                 gio::ActionEntry::builder(SessionIntent::SHOW_IDENTITY_VERIFICATION_ACTION_NAME)

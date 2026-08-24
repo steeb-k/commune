@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::BTreeMap, time::Duration};
 
 use futures_util::StreamExt;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -13,6 +13,7 @@ use ruma::{
             candidates::{CallCandidatesEventContent, Candidate},
             hangup::{CallHangupEventContent, Reason},
             invite::CallInviteEventContent,
+            negotiate::CallNegotiateEventContent,
             reject::CallRejectEventContent,
             sdp_stream_metadata_changed::CallSdpStreamMetadataChangedEventContent,
             select_answer::CallSelectAnswerEventContent,
@@ -65,6 +66,14 @@ const CANDIDATE_BATCH_AFTER_INVITE: Duration = Duration::from_secs(2);
 /// Half a second: here there is no natural pause, and every one of them is
 /// between the two people and hearing each other.
 const CANDIDATE_BATCH_AFTER_ANSWER: Duration = Duration::from_millis(500);
+
+/// How long a renegotiation of ours is valid for.
+///
+/// Shorter than an invite's lifetime, and for the opposite reason: nobody has
+/// to decide anything. The call is already up, both ends are at their screens,
+/// and an offer that goes unanswered for this long has been lost rather than
+/// left to ring.
+const NEGOTIATE_LIFETIME: Duration = Duration::from_secs(30);
 
 /// The `VoIP` version we speak.
 ///
@@ -126,6 +135,20 @@ mod imp {
         /// Whether the other party has muted their camera.
         #[property(get)]
         pub(super) is_remote_camera_muted: Cell<bool>,
+        /// Whether the other party has muted their microphone.
+        ///
+        /// Shown and not acted on: the spec asks that their audio not be muted
+        /// locally, since unmuting takes a round trip and the words said in
+        /// between would be lost.
+        #[property(get)]
+        pub(super) is_remote_microphone_muted: Cell<bool>,
+        /// Whether the other party's video is actually being drawn.
+        ///
+        /// Not the same as [`Self::has_video`], which is about the sections
+        /// this call negotiated. A video call whose other end has no camera
+        /// negotiates video and never carries any.
+        #[property(get)]
+        pub(super) has_remote_video: Cell<bool>,
         /// The picture of the other party.
         #[property(get)]
         pub(super) remote_paintable: RefCell<Option<gdk::Paintable>>,
@@ -154,6 +177,10 @@ mod imp {
         pub(super) local_stream_id: RefCell<Option<String>>,
         /// Whether we have chosen which answer to use.
         pub(super) answer_selected: Cell<bool>,
+        /// Whether a renegotiation offer of ours is waiting for an answer.
+        pub(super) local_offer_pending: Cell<bool>,
+        /// The timeout that gives up on a renegotiation nobody answered.
+        pub(super) negotiation_timeout: RefCell<Option<glib::SourceId>>,
     }
 
     #[glib::object_subclass]
@@ -219,6 +246,9 @@ mod imp {
                 source.remove();
             }
             if let Some(source) = self.ice_failure_timeout.take() {
+                source.remove();
+            }
+            if let Some(source) = self.negotiation_timeout.take() {
                 source.remove();
             }
         }
@@ -298,11 +328,10 @@ impl Call {
         imp.remote_party_id.replace(remote_party_id);
         imp.state.set(CallState::Ringing);
         imp.pending_offer.replace(Some(content.offer.clone()));
-        imp.has_video.set(
-            content.offer.sdp.contains("\r\nm=video ") || content.offer.sdp.contains("\nm=video "),
-        );
+        imp.has_video.set(super::sdp_has_video(&content.offer.sdp));
 
         obj.set_remote_member_from(sender);
+        obj.apply_stream_metadata(&content.sdp_stream_metadata);
         obj.arm_lifetime_timeout();
 
         obj
@@ -455,6 +484,42 @@ impl Call {
         self.end(end_reason);
     }
 
+    /// Turn the camera on partway through a call placed without one.
+    ///
+    /// The one thing in this client that asks for a renegotiation: the camera
+    /// goes into the pipeline, `webrtcbin` notices that what it sends no
+    /// longer matches what it last offered, and the offer that follows leaves
+    /// as an `m.call.negotiate`. Nothing here writes SDP.
+    ///
+    /// Returns whether the camera was added.
+    pub(crate) fn add_video(&self) -> bool {
+        let imp = self.imp();
+
+        if self.has_video() || self.state() != CallState::Connected {
+            return false;
+        }
+
+        let mut borrowed = imp.pipeline.borrow_mut();
+        let Some(pipeline) = &mut *borrowed else {
+            return false;
+        };
+
+        if let Err(error) = pipeline.enable_video() {
+            warn!("Could not add the camera to the call: {error}");
+            return false;
+        }
+
+        imp.local_paintable
+            .replace(pipeline.local_paintable().cloned());
+        imp.has_video.set(true);
+        drop(borrowed);
+
+        self.notify_local_paintable();
+        self.notify_has_video();
+
+        true
+    }
+
     /// Take ownership of a pipeline and start listening to it.
     fn adopt_pipeline(
         &self,
@@ -559,6 +624,9 @@ impl Call {
             PipelineEvent::Connected => {
                 if let Some(pipeline) = &mut *self.imp().pipeline.borrow_mut() {
                     pipeline.note_media();
+                    // From here on, `webrtcbin` asking for a negotiation is a
+                    // renegotiation, and this client answers those.
+                    pipeline.arm_renegotiation();
                 }
 
                 // A failure it recovered from, which is the whole reason the
@@ -587,6 +655,12 @@ impl Call {
                     if self.is_microphone_muted() || self.is_camera_muted() {
                         self.send_stream_metadata();
                     }
+                }
+            }
+            PipelineEvent::NegotiationNeeded => self.send_renegotiation_offer(),
+            PipelineEvent::RemoteVideo => {
+                if !self.imp().has_remote_video.replace(true) {
+                    self.notify_has_remote_video();
                 }
             }
             PipelineEvent::ConnectionFailed => self.handle_connection_failed(),
@@ -692,13 +766,126 @@ impl Call {
         self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_ANSWER);
     }
 
+    /// Offer the other end a new session description.
+    ///
+    /// Called when `webrtcbin` says the session no longer matches what it last
+    /// described, which in this client means the camera was turned on midway
+    /// through a voice call.
+    fn send_renegotiation_offer(&self) {
+        let imp = self.imp();
+
+        if !matches!(self.state(), CallState::Connecting | CallState::Connected) {
+            return;
+        }
+
+        if imp.local_offer_pending.get() {
+            debug!("A renegotiation of ours is already waiting for an answer");
+            return;
+        }
+
+        let borrowed = imp.pipeline.borrow();
+        let Some(pipeline) = &*borrowed else {
+            return;
+        };
+
+        // A dedicated channel, because the description that comes back is
+        // neither an invite nor an answer and the general handler would send
+        // it as one.
+        let (event_sender, mut events) = futures_channel::mpsc::unbounded();
+        pipeline.create_offer(event_sender);
+        drop(borrowed);
+
+        imp.local_offer_pending.set(true);
+
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                while let Some(event) = events.next().await {
+                    match event {
+                        PipelineEvent::LocalDescription { sdp, .. } => {
+                            obj.send_negotiate(sdp, false);
+                        }
+                        other => obj.handle_pipeline_event(other),
+                    }
+                }
+            }
+        ));
+    }
+
+    /// Send one half of a renegotiation.
+    ///
+    /// `m.call.negotiate` carries both halves: an offer first, and the answer
+    /// to it in an event of the same type. The two are told apart by the
+    /// `type` of the description, which is the only thing that says which one
+    /// this is.
+    fn send_negotiate(&self, sdp: String, is_answer: bool) {
+        let kind = if is_answer { "answer" } else { "offer" };
+        let mut content = CallNegotiateEventContent::version_1(
+            self.call_id().clone(),
+            self.party_id().clone(),
+            UInt::try_from(NEGOTIATE_LIFETIME.as_millis() as u64).unwrap_or(UInt::MAX),
+            SessionDescription::new(kind.to_owned(), sdp),
+        );
+        content.sdp_stream_metadata = self.stream_metadata();
+
+        debug!(
+            "Sending a renegotiation {kind} for call {} with {} media section(s)",
+            self.call_id(),
+            content.description.sdp.matches("\r\nm=").count()
+                + usize::from(content.description.sdp.starts_with("m="))
+        );
+
+        self.send(AnyMessageLikeEventContent::CallNegotiate(content));
+
+        // A new section can bring new candidates with it, and nothing else
+        // would ever send them: the batch that followed the invite has long
+        // since gone out and gathering finished with it.
+        self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_ANSWER);
+
+        if !is_answer {
+            self.arm_negotiation_timeout();
+        }
+    }
+
+    /// Stop waiting for an answer to a renegotiation of ours.
+    ///
+    /// Without this, a renegotiation the other end never answers leaves the
+    /// call unable to attempt another one for as long as it lasts — and the
+    /// call itself carries on perfectly well, so nothing else would ever
+    /// notice.
+    fn arm_negotiation_timeout(&self) {
+        let imp = self.imp();
+
+        if let Some(source) = imp.negotiation_timeout.take() {
+            source.remove();
+        }
+
+        let source = glib::timeout_add_local_once(
+            NEGOTIATE_LIFETIME,
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move || {
+                    let imp = obj.imp();
+                    imp.negotiation_timeout.take();
+
+                    if imp.local_offer_pending.replace(false) {
+                        warn!("A renegotiation of ours went unanswered");
+                    }
+                }
+            ),
+        );
+        imp.negotiation_timeout.replace(Some(source));
+    }
+
     /// The metadata for the one stream we send.
     ///
     /// One stream, always `m.usermedia`. Screen sharing would be a second one,
     /// and is not implemented; a client that receives a stream it was not told
     /// about is asked by the spec to ignore it, so sending one silently would
     /// be worse than sending none.
-    fn stream_metadata(&self) -> std::collections::BTreeMap<String, StreamMetadata> {
+    fn stream_metadata(&self) -> BTreeMap<String, StreamMetadata> {
         let Some(stream_id) = self.imp().local_stream_id.borrow().clone() else {
             return Default::default();
         };
@@ -841,7 +1028,7 @@ impl Call {
         &self,
         sender: &UserId,
         party_id: Option<&OwnedVoipId>,
-        answer: &SessionDescription,
+        content: &CallAnswerEventContent,
     ) {
         if !self.is_outgoing() || self.state() != CallState::Dialing {
             return;
@@ -851,6 +1038,11 @@ impl Call {
         }
 
         let imp = self.imp();
+        let answer = &content.answer;
+
+        // What they say about their own microphone and camera arrives with the
+        // answer, before either of them has been muted.
+        self.apply_stream_metadata(&content.sdp_stream_metadata);
 
         debug!(
             "Answer for call {} from party {:?}",
@@ -894,6 +1086,107 @@ impl Call {
         imp.answer_selected.set(true);
         self.cancel_lifetime_timeout();
         self.set_state(CallState::Connecting);
+    }
+
+    /// Handle an `m.call.negotiate` from the other end.
+    ///
+    /// A call that is already up, described again: this is what adding video to
+    /// a voice call, putting a call on hold or restarting ICE looks like from
+    /// the other end. Both halves of it are this event — an offer first, then
+    /// an answer of the same type — and which half this is comes from the
+    /// `type` of the description.
+    pub(super) fn handle_negotiate(
+        &self,
+        sender: &UserId,
+        party_id: &OwnedVoipId,
+        content: &CallNegotiateEventContent,
+    ) {
+        if !self.is_remote_party(sender, Some(party_id)) {
+            return;
+        }
+
+        if !matches!(self.state(), CallState::Connecting | CallState::Connected) {
+            // "This event is sent by either party after the call is
+            // established": before that there is a description in flight
+            // already, and applying a second one on top of it is how a call
+            // that was about to connect stops.
+            debug!("Ignoring a renegotiation of a call that is not established yet");
+            return;
+        }
+
+        self.apply_stream_metadata(&content.sdp_stream_metadata);
+
+        let imp = self.imp();
+        let is_answer = content.description.session_type == "answer";
+        let borrowed = imp.pipeline.borrow();
+        let Some(pipeline) = &*borrowed else {
+            return;
+        };
+
+        debug!(
+            "Renegotiation {} for call {} from party {party_id}",
+            content.description.session_type,
+            self.call_id()
+        );
+
+        if is_answer {
+            if !imp.local_offer_pending.replace(false) {
+                debug!("Ignoring a renegotiation answer to an offer that is not ours");
+                return;
+            }
+
+            if let Some(source) = imp.negotiation_timeout.take() {
+                source.remove();
+            }
+
+            if let Err(error) = pipeline.set_remote_description(&content.description.sdp, true) {
+                // A renegotiation that fails is not a call that fails. What
+                // was flowing before it is still flowing, and hanging up
+                // would take away a working call over a camera that could not
+                // be added.
+                warn!("Could not take the renegotiation answer: {error}");
+            }
+
+            return;
+        }
+
+        // An offer, and possibly one that crossed an offer of ours. Perfect
+        // negotiation settles that without either end asking the other: "the
+        // callee is always the polite party", and the polite party is the one
+        // that gives way.
+        if imp.local_offer_pending.get() {
+            if self.is_outgoing() {
+                debug!("A renegotiation offer crossed ours; as the caller, ours stands");
+                return;
+            }
+
+            debug!("A renegotiation offer crossed ours; as the callee, ours gives way");
+            pipeline.rollback_local_description();
+            imp.local_offer_pending.set(false);
+        }
+
+        let (event_sender, mut events) = futures_channel::mpsc::unbounded();
+
+        if let Err(error) = pipeline.answer_remote_offer(&content.description.sdp, event_sender) {
+            warn!("Could not take the renegotiation offer: {error}");
+            return;
+        }
+        drop(borrowed);
+
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                while let Some(event) = events.next().await {
+                    match event {
+                        PipelineEvent::LocalDescription { sdp, .. } => {
+                            obj.send_negotiate(sdp, true);
+                        }
+                        other => obj.handle_pipeline_event(other),
+                    }
+                }
+            }
+        ));
     }
 
     /// Handle an `m.call.candidates` from the other end.
@@ -996,21 +1289,60 @@ impl Call {
         &self,
         sender: &UserId,
         party_id: &OwnedVoipId,
-        metadata: &std::collections::BTreeMap<String, StreamMetadata>,
+        metadata: &BTreeMap<String, StreamMetadata>,
     ) {
         if !self.is_remote_party(sender, Some(party_id)) {
             return;
         }
 
+        self.apply_stream_metadata(metadata);
+    }
+
+    /// Take what the other end says about the streams it is sending.
+    ///
+    /// Four events carry this and all four mean the same thing: the invite,
+    /// the answer, a renegotiation, and the one whose only job is to carry it
+    /// when nothing else has to be negotiated.
+    fn apply_stream_metadata(&self, metadata: &BTreeMap<String, StreamMetadata>) {
+        if metadata.is_empty() {
+            // "For backwards compatibility, if `sdp_stream_metadata` is not
+            // present ... the client should assume that this property is not
+            // supported by the other party." Not "everything is unmuted": a
+            // client that never sends this has told us nothing, and forgetting
+            // what an earlier event said would be inventing an answer.
+            return;
+        }
+
+        // "If a stream has a `purpose` of an unknown type, it should also be
+        // ignored." Screen sharing is the other purpose the spec names and is
+        // not implemented here, so the only stream this client has an opinion
+        // about is the one with the person in it.
+        let mut video_muted = false;
+        let mut audio_muted = false;
+
+        for stream in metadata
+            .values()
+            .filter(|stream| stream.purpose == StreamPurpose::UserMedia)
+        {
+            video_muted |= stream.video_muted;
+            audio_muted |= stream.audio_muted;
+        }
+
+        let imp = self.imp();
+
         // The spec asks that a muted camera be muted locally too, so that the
         // other person sees an avatar rather than the last frame we were sent
         // or a black rectangle. It asks the opposite for audio, because
-        // unmuting takes a round trip and the words in between would be lost.
-        let video_muted = metadata.values().any(|metadata| metadata.video_muted);
-
-        if self.imp().is_remote_camera_muted.get() != video_muted {
-            self.imp().is_remote_camera_muted.set(video_muted);
+        // unmuting takes a round trip and the words in between would be lost —
+        // so their microphone is shown and not acted on.
+        if imp.is_remote_camera_muted.get() != video_muted {
+            imp.is_remote_camera_muted.set(video_muted);
             self.notify_is_remote_camera_muted();
+        }
+
+        if imp.is_remote_microphone_muted.get() != audio_muted {
+            imp.is_remote_microphone_muted.set(audio_muted);
+            self.notify_is_remote_microphone_muted();
         }
     }
 
