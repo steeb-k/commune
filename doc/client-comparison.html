@@ -1,3 +1,7 @@
+<!-- Published at https://claude.ai/code/artifact/efcd6da4-b0b7-4cc5-a864-5ca27ace13a4
+     Republish to that URL when this file changes; publishing without it makes
+     a second artifact instead of updating this one. Read the live version
+     first — another session may have edited it. -->
 <title>Commune Among Peers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -611,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ 571f2b31</span>
+      <span>main @ 8d709086</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -1017,8 +1021,8 @@
     // ---- Calls
     { f: "One-to-one voice and video calls", g: "Calls", kind: "spec", tag: "VoIP",
       note: "The Voice over IP module: m.call.*",
-      c: { commune:0.5, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:0, ci:0 },
-      cn: { commune:"Placed, answered and carrying media against Element for Android, across two networks. m.call.negotiate is parsed and ignored.",
+      c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:0, ci:0 },
+      cn: { commune:"Placed, answered and carrying media against Element for Android, across two networks. Every event the module defines is answered, m.call.negotiate included; renegotiation has not yet faced a second client.",
             ex:"Calls are MatrixRTC only — the classic module is not implemented.",
             fc:"The matrix.org directory still lists this unsupported; FluffyChat's own site advertises it.",
             nc:"Named in the README as a notable exception." } },
@@ -1036,8 +1040,8 @@
 
     { f: "Ringing, and a call in the timeline", g: "Calls", kind: "none", tag: "Client",
       note: "Sound on an incoming call; a missed call that leaves a trace.",
-      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:0, ci:1 },
-      cn: { commune:"m.call.* is filtered out of the timeline entirely, and an incoming call opens a silent window.",
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:0, ci:1 },
+      cn: { commune:"The desktop's own sound theme, a notification carrying Answer and Decline, and an m.call.invite row saying what became of the call. Silent on macOS, which has no freedesktop sound theme.",
             nc:"No calls at all, so nothing to ring for." } },
 
     // ---- Account
