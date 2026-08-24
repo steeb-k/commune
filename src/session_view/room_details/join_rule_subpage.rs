@@ -11,8 +11,8 @@ use ruma::events::{
 
 use crate::{
     components::{
-        CheckLoadingRow, LoadingButton, SpacePickerDialog, UnsavedChangesResponse,
-        unsaved_changes_dialog,
+        CheckLoadingRow, LoadingButton, SpacePickerDialog, SpaceRequirement,
+        UnsavedChangesResponse, unsaved_changes_dialog,
     },
     prelude::*,
     session::{JoinRuleValue, Room},
@@ -243,7 +243,15 @@ mod imp {
 
             // A room restricted to itself would admit nobody new, and a space
             // cannot be the answer to its own membership question.
-            let Some(space) = SpacePickerDialog::choose(&*self.obj(), &session, Some(&room)).await
+            // Pointing a join rule at a space needs no power in it: the rule
+            // is state in the room being restricted, not in the space.
+            let Some(space) = SpacePickerDialog::choose(
+                &*self.obj(),
+                &session,
+                Some(&room),
+                SpaceRequirement::Joined,
+            )
+            .await
             else {
                 return;
             };

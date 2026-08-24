@@ -5,9 +5,10 @@ This file is the ledger for the Spaces module (`m.space`, and the
 behind it, and what to check when rebasing onto a new Fractal release. See
 `fork.md` for why none of this goes upstream.
 
-**This feature is being built in three slices.** The first two are below; the
-third is being built now and its first half — the space picker — has landed.
-The HTML ledgers grade the row `◐`, not `●`, on purpose.
+**All three slices have landed.** The module is still graded `◐` on
+`spec-gaps.html` and that is deliberate: `m.space.parent` is written and never
+read, and a room that has been put into a space cannot be taken out of one from
+here. See _Not done_.
 
 ## Scope of slice 1 — stop hiding them
 
@@ -199,6 +200,42 @@ action that puts a room into a space.
   `utils::OneshotNotifier` could not be used: it requires `T: Send`, and a
   `Room` is a GObject.
 
+## Slice 3, second half — putting a room into a space
+
+`add_room_to_space` (`src/session/room/spaces.rs`) writes both halves of the
+relationship, and they are not equally important.
+
+* **`m.space.child`, in the space**, is the one that counts. `/hierarchy` is
+  built from it; a space carrying no child event for a room does not contain
+  that room, whatever the room claims. This one is allowed to fail loudly.
+* **`m.space.parent`, in the room**, is how the room claims which space it
+  belongs to. It needs power **in the room** rather than in the space — a
+  different permission, often a different person — so a failure is a line in
+  the log and nothing more. The room is in the space either way.
+
+`canonical` is left `false` on the parent event. It means "this is the room's
+main space", and nothing here knows whether the room already has one; claiming
+it would be a guess with consequences for other clients.
+
+The `via` lists are not interchangeable: the child's names servers that can
+reach the **room**, the parent's names servers that can reach the **space**.
+Both come from `matrix_sdk::Room::route()`, which already leaves out the
+servers a room's ACL excludes.
+
+### Where it is offered
+
+A _Spaces_ group on the room details general page, with one row,
+_Add to Space…_. Hidden for a direct chat, like the rest of that half of the
+page.
+
+The picker filters to spaces this account may write state in —
+`SpaceRequirement::CanHoldRooms`, which asks the room's permissions for
+`SendState(SpaceChild)`. That is the difference between this caller and the
+join rule editor: **pointing a join rule at a space needs no power in the
+space**, because the rule is state in the room being restricted. Offering a
+space that would refuse the write is the kind of thing that produces a toast
+instead of an answer.
+
 ## Explore stops filtering them out
 
 `ExploreSearchData::as_request` sent `room_types: vec![RoomTypeFilter::Default]`.
@@ -234,6 +271,8 @@ the answer.
 | `data/resources/stylesheet/_session_view.scss` | Slice 2: `.space-children` |
 | `src/components/dialogs/space_picker.rs`, `.blp` | Slice 3: the picker |
 | `src/session/sidebar_data/section/mod.rs`, `sidebar_data/mod.rs` | Slice 3: exporting `RoomCategoryFilter` |
+| `src/session/room/spaces.rs` | Slice 3: `m.space.child` and `m.space.parent` |
+| `src/session_view/room_details/general_page.rs`, `.blp` | Slice 3: the _Spaces_ group |
 
 ## Rebase guide
 
@@ -258,6 +297,9 @@ the answer.
 7. `SpaceChildren` skips the first room in the `/hierarchy` response by
    comparing room IDs, not by position. If a server ever omits the space's own
    chunk the list still works; it just loses the `via` servers with it.
+8. `add_room_to_space` treats a failed `m.space.parent` as a warning. If a
+   merge makes it an error, adding a room to a space stops working for anybody
+   who is not also an administrator of the room.
 
 ## Not done
 
@@ -272,14 +314,23 @@ the answer.
   not appear, because `m.space.child` is a state event in a room whose timeline
   is not being watched. Reopening the space asks again — and so does _Try
   Again_ after a failure.
-* **Slice 3, second half — writing `m.space.child`.** The picker exists and the
-  restricted join rule editor uses it, but nothing in the tree still writes
-  `m.space.child` or `m.space.parent`, so no room can be put into a space from
-  here. That is also what unblocks `image-packs.md` Phase 8.
+* **`m.space.parent` is written and never read.** A room does not say which
+  spaces it is in anywhere in this client; the only way to see the
+  relationship is to open the space and look at its list. That is the main
+  reason the module is still graded partial.
+* **A room cannot be taken out of a space.** Removing means redacting the
+  `m.space.child`, or writing it with no `via`, and there is nowhere to ask
+  for it: the space page's rows are `PublicRoomRow`, shared with Explore,
+  where such a control would make no sense.
+* **A space cannot be created.** Room creation does not offer
+  `creation_content: {"type": "m.space"}`, so every space this client shows
+  was made somewhere else.
 * **The picker replaces a whole allow list.** A room restricted to several
   spaces keeps all of them until somebody picks a space, and then keeps one.
   Expressing "these three and not that one" needs a multi-select picker, and
   nothing has asked for it.
+* **`image-packs.md` Phase 8 is unblocked now** — space pack inheritance was
+  waiting on nothing but a way to know a room is in a space.
 * **Space invites are ordinary invites.** An invite to a space gets
   `RoomCategory::Invited` and the ordinary `Invite` page, which says nothing
   about it being a space. Correct as far as it goes — accepting it lands the

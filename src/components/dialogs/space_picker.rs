@@ -1,6 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
 use gtk::glib;
+use ruma::events::{StateEventType, room::power_levels::PowerLevelAction};
 use tracing::error;
 
 use crate::{
@@ -9,8 +10,24 @@ use crate::{
     session::{Room, RoomCategory, RoomCategoryFilter, Session},
 };
 
+/// What a space has to be able to do to be worth offering.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpaceRequirement {
+    /// Any space that was joined.
+    ///
+    /// Pointing a join rule at a space needs no power in it — the rule lives
+    /// in the room being restricted.
+    #[default]
+    Joined,
+    /// Only the spaces this account may put a room into.
+    ///
+    /// Writing `m.space.child` is a state event in the space, so it needs
+    /// power there.
+    CanHoldRooms,
+}
+
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -39,6 +56,8 @@ mod imp {
         filtered: RefCell<Option<gtk::FilterListModel>>,
         /// The room to leave out of the list, if any.
         excluded: RefCell<Option<Room>>,
+        /// What a space has to be able to do to be offered.
+        requirement: Cell<SpaceRequirement>,
         /// The sender waiting for a choice.
         sender: RefCell<Option<oneshot::Sender<Option<Room>>>>,
     }
@@ -94,26 +113,36 @@ mod imp {
                 .ignore_case(true)
                 .build();
 
-            // A room cannot usefully be restricted to itself, and a space
-            // cannot be put inside itself.
-            let exclusion_filter = gtk::CustomFilter::new(glib::clone!(
+            // A room cannot usefully be restricted to itself, a space cannot
+            // be put inside itself, and a space this account cannot write
+            // state in is not an answer to "where shall I put this room".
+            let usable_filter = gtk::CustomFilter::new(glib::clone!(
                 #[weak(rename_to = imp)]
                 self,
                 #[upgrade_or]
                 true,
                 move |item| {
-                    let Some(excluded) = imp.excluded.borrow().clone() else {
-                        return true;
+                    let Some(room) = item.downcast_ref::<Room>() else {
+                        return false;
                     };
 
-                    item.downcast_ref::<Room>() != Some(&excluded)
+                    if imp.excluded.borrow().as_ref() == Some(room) {
+                        return false;
+                    }
+
+                    match imp.requirement.get() {
+                        SpaceRequirement::Joined => true,
+                        SpaceRequirement::CanHoldRooms => room
+                            .permissions()
+                            .is_allowed_to(PowerLevelAction::SendState(StateEventType::SpaceChild)),
+                    }
                 }
             ));
 
             let filter = gtk::EveryFilter::new();
             filter.append(category_filter);
             filter.append(search_filter.clone());
-            filter.append(exclusion_filter);
+            filter.append(usable_filter);
 
             let by_name = gtk::StringSorter::builder()
                 .expression(Room::this_expression("display-name"))
@@ -162,9 +191,14 @@ mod imp {
             self.update_stack();
         }
 
-        /// Set the room to leave out of the list.
-        pub(super) fn set_excluded(&self, room: Option<&Room>) {
-            self.excluded.replace(room.cloned());
+        /// Set what the list is being chosen from, and for.
+        pub(super) fn set_constraints(
+            &self,
+            excluded: Option<&Room>,
+            requirement: SpaceRequirement,
+        ) {
+            self.excluded.replace(excluded.cloned());
+            self.requirement.set(requirement);
 
             if let Some(filter) = self
                 .filtered
@@ -243,20 +277,22 @@ impl SpacePickerDialog {
     /// Ask the user to choose one of the spaces they have joined.
     ///
     /// `excluded` is left out of the list, for the cases where a room must not
-    /// be offered itself.
+    /// be offered itself, and `requirement` says what a space has to be able
+    /// to do to be worth showing.
     ///
     /// Returns `None` if the dialog was dismissed without a choice.
     pub(crate) async fn choose(
         parent: &impl IsA<gtk::Widget>,
         session: &Session,
         excluded: Option<&Room>,
+        requirement: SpaceRequirement,
     ) -> Option<Room> {
         let dialog = glib::Object::builder::<Self>()
             .property("session", session)
             .build();
 
         let imp = dialog.imp();
-        imp.set_excluded(excluded);
+        imp.set_constraints(excluded, requirement);
 
         let receiver = imp.listen();
         dialog.present(Some(parent));

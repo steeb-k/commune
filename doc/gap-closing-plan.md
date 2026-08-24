@@ -136,8 +136,17 @@ names three jobs under it and the first two are separable from the third, so:
   `Option<MatrixJoinRule>` — the plan's own warning was right, the `None` arm
   became reachable, and falling back to a rule the person did not pick is worse
   than refusing to save. This closed the restricted join rule row on its own.
-* **Writing `m.space.child`** — not started. That is what actually puts a room
-  into a space, and what unblocks `image-packs.md` Phase 8.
+* **Writing `m.space.child`** — done. `add_room_to_space`
+  (`src/session/room/spaces.rs`) writes the child in the space and the parent
+  in the room, and the two are not equals: the child decides whether the space
+  contains the room and is allowed to fail loudly; the parent needs power in
+  the **room** rather than in the space, so a failure there is a warning and
+  the operation still succeeds. `canonical` is left false, because it claims to
+  be the room's main space and nothing here knows whether it has one. Offered
+  as _Add to Space…_ in a new _Spaces_ group on the room details general page,
+  with the picker set to `SpaceRequirement::CanHoldRooms` — a different
+  question from the join rule editor's, which needs no power in the space at
+  all. This unblocks `image-packs.md` Phase 8.
 
 Two things worth knowing before the second half:
 
@@ -148,7 +157,14 @@ Two things worth knowing before the second half:
   than the restricted rule itself. `update_knock_sensitive` gates on
   `knock_restricted_join_rule` now.
 
-**Next: the second half of item 8 — `m.space.child`.**
+**Round 3 is finished.** The Spaces module is still graded partial and the
+reason is narrower than it was: `m.space.parent` is written and never read, so
+a room never says which spaces it is in; and a room cannot be taken back out of
+a space. Neither is in this plan. `client-comparison.html` grades the row whole
+while `spec-gaps.html` does not, which is the two pages measuring different
+things and is left standing on purpose.
+
+**Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
 
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
 pinned messages and presence marked as shipped in `client-comparison.html`, both
@@ -173,8 +189,8 @@ drift: they go in the feature's own commit.**
 | Space children in the harness | `6e4079ab` | done |
 | 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
 | 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
-| 8a. Space picker, restricted rule | (this round) | done, **unseen** |
-| 8b. `m.space.child` | — | not started |
+| 8a. Space picker, restricted rule | `b60baf66`, `640b1576` | done, **unseen** |
+| 8b. `m.space.child` | (this round) | done, **unseen** |
 | 9–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**

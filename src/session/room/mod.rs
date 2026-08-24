@@ -46,6 +46,7 @@ mod member;
 mod member_list;
 mod permissions;
 mod search;
+mod spaces;
 mod timeline;
 mod typing_list;
 
@@ -58,6 +59,7 @@ pub(crate) use self::{
     member_list::*,
     permissions::*,
     search::{RoomSearch, RoomSearchResult},
+    spaces::add_room_to_space,
     timeline::*,
     typing_list::TypingList,
 };

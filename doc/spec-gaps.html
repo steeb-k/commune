@@ -512,7 +512,9 @@
       <code>world_readable</code> flag that came with it: the last twenty messages of a room
       that says anybody may read them are now read, without joining. And Restricting Room
       Membership closed with the space picker the third slice of spaces begins with: a
-      restriction could be kept before and can be created now.
+      restriction could be kept before and can be created now. The third slice finished the
+      same day with <code>m.space.child</code>, so a room can be put into a space — the module
+      stays in the partial column for a narrower reason than before, given at its row.
     </p>
   </header>
 
@@ -555,8 +557,8 @@
     <div class="shortlist">
       <ol>
         <li>
-          <span class="pick-name">Spaces — half a slice left</span>
-          <span class="pick-why">The large one worth paying for, and the blocker on two other rows. It was always three jobs rather than one, and <strong>two and a half were done on 24 August 2026</strong>: the sidebar no longer hides spaces, a space page lists the rooms inside it with a button to open or join each, and there is a space picker — which closed the restricted join rule row on its own. What is left is the writing half: <code>m.space.child</code>, so a room can be put <em>into</em> a space rather than only pointed at one.</span>
+          <span class="pick-name">Spaces — reading a room's own parents</span>
+          <span class="pick-why"><strong>All three slices landed on 24 August 2026</strong>, and this is what is left of the row rather than the row itself: <code>m.space.parent</code> is written and never read, so a room never says which spaces it belongs to, and a room put into a space cannot be taken out again. Both are small next to what has been done, and both are what stops the module counting as whole.</span>
         </li>
         <li>
           <span class="pick-name">Threads</span>
@@ -665,7 +667,7 @@
           <tr>
             <td><span class="feat">Spaces</span></td>
             <td class="mod">Spaces</td>
-            <td class="state">Two of three slices, both on 24 August 2026: a joined space has its own sidebar section, opens a page of its own instead of an empty timeline, can be left, and is listed and labelled in the public directory — and that page now walks <code>/hierarchy</code> and lists the rooms inside, each with a button that opens it if you have joined and joins it if you have not. One level deep: a subspace is a row that opens its own page rather than an expander. What is missing is the writing half — nothing writes <code>m.space.child</code>, so no room can be put into a space from here, and there is no picker for the restricted-join-rule editor to call.</td>
+            <td class="state">All three slices, on 24 August 2026: a joined space has its own sidebar section and a page of its own instead of an empty timeline, that page walks <code>/hierarchy</code> and lists the rooms inside — each with a button that opens it if you have joined and joins it if you have not — the public directory lists and labels spaces, there is a picker that asks which space you mean, and <code>m.space.child</code> is written, so a room can be put into one. What keeps this partial is narrower now: <strong><code>m.space.parent</code> is written and never read</strong>, so a room never says which spaces it is in; a room cannot be taken back out of a space; nesting is walked one page at a time rather than drawn as a tree, which would need <code>GtkTreeListModel</code>; and a space cannot be created here, since room creation does not offer <code>creation_content</code>.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
           </tr>
@@ -690,7 +692,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">21 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">22 touch the protocol</span></h2>
       <p class="sec-sub">
 209 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
@@ -735,6 +737,12 @@
             <td class="mod">Spaces<br>Restricting room membership</td>
             <td class="state">A restricted join rule points at a space, and until 24 August 2026 this client could keep one and never make one: the choice was hidden unless the room was already restricted, because building an allow list means picking a space and nothing here could ask which. <code>SpacePickerDialog</code> asks — the session's room list filtered to <code>RoomCategory::Space</code> by the sidebar's own <code>RoomCategoryFilter</code>, with the room being edited left out, since a room restricted to itself admits nobody new. The choice is now offered to any room whose version carries the rule, which is version 8 and up, and knocking over it is gated separately on version 10, where <code>knock_restricted</code> arrived. <strong>An allow list of several spaces is carried over whole</strong> when only the knock switch moves — dropping one would quietly lock people out — and replaced entirely when a space is picked, which the ledger records rather than the interface pretending otherwise. The computation returns no rule at all for the membership choice with nothing chosen, rather than falling back to a rule the person did not pick.</td>
             <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Putting a room into a space</span></td>
+            <td class="mod">Spaces</td>
+            <td class="state">Nothing in this tree wrote <code>m.space.child</code> or <code>m.space.parent</code> before 24 August 2026, so a space could be read and never built. Both are written now, and they are not treated as equals: the child, in the space, is what <code>/hierarchy</code> is built from and what decides whether the space contains the room, so it is allowed to fail loudly; the parent, in the room, needs power <em>in the room</em> rather than in the space — a different permission and often a different person — so a failure there is logged and the operation still succeeds. <code>canonical</code> is left false on the parent, because it claims to be the room's main space and nothing here knows whether the room already has one. The two <code>via</code> lists are not interchangeable and are not shared: the child's names servers that reach the room, the parent's names servers that reach the space, both from the SDK's <code>route()</code>, which already drops what a room's ACL excludes. The picker only offers spaces this account may write state in, which is a different question from the one the join rule editor asks.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note"><code>m.space.parent</code> is written and never read back.</span></td>
           </tr>
           <tr>
             <td><span class="feat">Creating an account, and getting back into one</span></td>
@@ -1307,7 +1315,7 @@
     recoverable from an email, the spaces somebody is already in given a sidebar section and a
     page that lists what is inside them instead of being hidden, a room that says anybody may
     read it finally read without joining, a restricted join rule made creatable rather than only
-    preservable,
+    preservable, a room put into a space for the first time,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the

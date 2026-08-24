@@ -25,13 +25,14 @@ use super::{MemberRow, RoomDetails, UpgradeDialog, UpgradeInfo};
 use crate::{
     Window,
     components::{
-        Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SwitchLoadingRow,
+        Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SpacePickerDialog,
+        SpaceRequirement, SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
     session::{
         HistoryVisibilityValue, Member, MemberList, MembershipListKind, NotificationsRoomSetting,
-        Room, RoomCategory,
+        Room, RoomCategory, add_room_to_space,
     },
     spawn, spawn_tokio, toast,
     utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
@@ -91,6 +92,8 @@ mod imp {
         guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         publish: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        add_to_space_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         history_visibility: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -901,6 +904,56 @@ mod imp {
             }
 
             row.set_is_loading(false);
+        }
+
+        /// Put this room inside one of the spaces this account is in.
+        #[template_callback]
+        async fn add_to_space(&self) {
+            let Some(room) = self.room.obj() else { return };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            // Writing `m.space.child` is a state event in the space, so only
+            // the spaces this account can write in are worth offering — and a
+            // space cannot be put inside itself.
+            let Some(space) = SpacePickerDialog::choose(
+                &*self.obj(),
+                &session,
+                Some(&room),
+                SpaceRequirement::CanHoldRooms,
+            )
+            .await
+            else {
+                return;
+            };
+
+            self.add_to_space_row.set_sensitive(false);
+
+            let result = add_room_to_space(&room, &space).await;
+
+            self.add_to_space_row.set_sensitive(true);
+
+            let obj = self.obj();
+            let space_name = space.display_name();
+
+            if result.is_ok() {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Added to {space}"),
+                    space = space_name,
+                );
+            } else {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Could not add this room to {space}"),
+                    space = space_name,
+                );
+            }
         }
 
         /// Toggle whether the room is published in the room directory.

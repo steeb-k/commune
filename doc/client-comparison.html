@@ -688,7 +688,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Everyone but us <span class="tick gone">3 rows</span></h2>
+      <h2>Everyone but us <span class="tick gone">2 rows</span></h2>
       <p class="sec-sub">
         The rows where the field has settled and Commune hasn't. None of these is a judgement
         call about taste: each is a thing a person moving from any other client expects to find
@@ -696,30 +696,29 @@
         <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
         presence, and signing up with the password reset that went with it. Their notes are gone
         rather than struck; what they became is in the table above, in the Commune cell of each.
-        <strong>Spaces went from absent to partial on 24 August 2026</strong>, and took two and a
-        half of its three slices the same day — the last half being the space picker, which
-        closed the restricted join rules row on its own. It stays here until it is whole: a
-        feature you can read but not organise with is still a gap.
+        <strong>Spaces left this section on 24 August 2026</strong>, after all three of its
+        slices landed the same day. Its note is struck rather than deleted, because the two
+        pages disagree about it on purpose and the disagreement is worth keeping.
       </p>
     </div>
     <div class="notes">
       <div class="note">
-        <span class="note-tag">7 of 9 peers, 1 partial · Spaces</span>
-        <span class="note-head">Spaces</span>
+        <span class="note-tag">closed 24 August 2026 · Spaces</span>
+        <span class="note-head">Spaces <span style="font-weight:400;color:var(--ink-soft)">— done</span></span>
         <p class="note-body">
           Every client in this table except Commune’s own parent can browse and join a space.
-          <strong>Five sixths of this landed on 24 August 2026</strong>: a space has its own
-          sidebar section, opening one shows a page rather than an empty timeline, that page
-          lists the rooms inside and lets each be opened or joined, it can be left, the public
-          directory lists and labels them instead of filtering them out, and there is a picker
-          that asks which space you mean. Commune is past Element X’s read-only browsing.
-          What is missing is the word <em>organising</em>: nothing writes
-          <code>m.space.child</code>, so <strong>no room can be put into a space from
-          Commune</strong>. Nesting is walked one page at a time rather than drawn as a tree,
-          which is where Nheko is still ahead.
-          <strong>One of the two rows it blocked is now closed</strong> — a restricted join rule
-          can be authored — and the other, adding a room to a space, is what the last half of
-          this is.
+          Every client in this table except Commune’s own parent could browse and join a space,
+          and Commune could not. <strong>All of that changed on 24 August 2026</strong>: a space
+          has its own sidebar section, opening one shows a page listing the rooms inside with a
+          button to open or join each, the public directory lists and labels them, a picker asks
+          which space you mean, and <code>m.space.child</code> is written — so a room can be put
+          into a space, not only found in one. Both rows this blocked are closed: a restricted
+          join rule can be authored, and adding a room to a space is the thing itself.
+          <strong>The spec page still grades the module partial</strong>, for reasons this page
+          does not measure: <code>m.space.parent</code> is written and never read, so a room
+          never says which spaces it is in, and a room cannot be taken back out of one. Nesting
+          is walked a page at a time rather than drawn as a tree, which is where Nheko is still
+          ahead, and making a space has to happen in another client.
         </p>
       </div>
       <div class="note">
@@ -959,8 +958,8 @@
     // ---- Rooms
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
-      c: { commune:0.5, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Joined spaces have a sidebar section and a page that lists the rooms inside them, each of which can be opened or joined from there. A subspace opens its own page — there is no tree. There is a space picker now, so a room can be restricted to a space; what is still missing is m.space.child, so no room can be put into one.",
+      c: { commune:1, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"A sidebar section, a page listing the rooms inside with a button to open or join each, a picker, and m.space.child — so a room can be put into a space as well as found in one. A subspace opens its own page rather than expanding: there is no tree. Two things are still missing and are why the spec page grades this partial: a room never says which spaces it is in, and cannot be taken back out of one. Making a space has to happen elsewhere.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },
