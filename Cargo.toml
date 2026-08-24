@@ -195,6 +195,7 @@ windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Security_Credentials",
     "Win32_System_Registry",
+    "Win32_UI_Shell",
 ] }
 
 [dev-dependencies]

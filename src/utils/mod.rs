@@ -47,6 +47,8 @@ pub(crate) mod sourceview;
 pub(crate) mod string;
 mod template_callbacks;
 pub(crate) mod toast;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_app_id;
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,
