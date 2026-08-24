@@ -12,19 +12,23 @@ relay outside both — at 23:04, where `Checking` became `Connected` in six
 hundred milliseconds. Offer, answer, `select_answer`, candidates, hangup and
 muting all behave.
 
-Written on 23 August 2026, and exercised against Element for Android the same
-evening: **a renegotiation of ours is answered by a real client**. At 01:22 the
-camera went into a voice call, the `m.call.negotiate` carrying the new offer
-went out, and Element's answer came back 540 ms later having accepted the video
-section as `recvonly` — it agreed to receive a camera it has no control to send
-one back from. What has still never happened is a renegotiation arriving _at_
-this client, since nothing in that peer's interface would send one.
+Written on 23 August 2026, and **the camera was added to a live voice call
+against Element for Android the same evening**. The `m.call.negotiate` carrying
+the new offer went out, Element's answer came back 850 ms later having accepted
+the video section as `recvonly` — it agreed to receive a camera it has no
+control to send one back from — and a second later every element the camera
+brought with it had settled at `Playing`, the self-view included. That took
+three attempts, and the section on adding a camera says what the first two got
+wrong. What has still never happened is a renegotiation arriving _at_ this
+client, since nothing in that peer's interface would send one.
 
-Not yet proven at all: the ringtone and the notification (local, and needing
-only an incoming call), the row a call leaves in the timeline, and the rollback
-that settles two renegotiations crossing. Each has its own section below.
-Nothing is left of the module that this client does not answer; what is left
-out on purpose is DTMF and screen sharing, and the last section says why.
+The ringtone, the notification with its two buttons, and the fullscreen window
+were all exercised the same evening and behave. What has not been seen work is
+the badge saying the other end muted something — the peer to hand sends no
+stream metadata at all — the answered and missed cases of the row a call leaves
+in the room, and the rollback that settles two renegotiations crossing. Nothing
+is left of the module that this client does not answer; what is left out on
+purpose is DTMF and screen sharing, and the last section says why.
 
 The evening that produced this is worth a sentence of warning: five separate
 faults, four of which looked identical from here — ICE reaching `Checking` and
@@ -610,6 +614,19 @@ the camera included, the microphone and `webrtcbin` included — was set to
 inside, and it is why the pipeline's own state changes are logged now: one
 line saying `Paused` beats thirty saying nothing.
 
+Syncing only the new elements fixed the audio and not the camera, because the
+same trap is one level down: the sink this adds has to preroll, the pipeline
+sits in `Paused` while it does, and the source synced during that window is set
+to `Paused` — so it produces nothing, so the sink never prerolls, so the
+pipeline never leaves `Paused`. The two wait for each other for the rest of the
+call, and the log said so in one line: `The pipeline is now Paused`, and never
+another state change after it. **So the state is named rather than read**:
+every new element is set to `Playing` outright and the pipeline is put back to
+`Playing` behind them. Measured settling a second later, which is also why that
+dump is taken a second later — every state read at the instant of the change is
+a state on its way somewhere, and reading those is what made the first fault
+look like the second.
+
 `children()` and not `iterate_elements()` for a second reason: a `GstIterator`
 can ask to be resynced when the bin changes underneath it, and the obvious
 `while let Ok(Some(_))` loop reads that request as the end of the list.
@@ -632,10 +649,12 @@ Without that, one lost renegotiation leaves the call unable to attempt another
 for as long as it lasts, and the call carries on working so nothing else would
 ever notice.
 
-**Half of it is proven.** Element for Android answered the offer this makes and
-accepted the video, which is the protocol half. Whether the camera reaches the
-far end depends on the paragraph above being right, and on that peer's
-interface deciding to draw video in a call it thinks is a voice call.
+**Proven, on 23 August 2026 at 01:49.** The offer went out, Element answered in
+850 ms accepting the video as `recvonly`, and a second later every element of
+the camera chain — `autovideosrc` and the self-view sink included — was in
+`Playing`, with the pipeline back in `Playing` behind them. Whether that peer
+_draws_ the video it agreed to receive is its own business; the call carries
+it.
 
 ## Four things seen on screen, and none of them visible to the compiler
 
@@ -1033,22 +1052,21 @@ the one client bug in plain sight.
 
 ## What is written and not proven
 
-Every event in the module is answered. What follows is written, compiled and
-never put in front of another client, which is not the same as working.
+Every event in the module is answered, and most of what was written on
+23 August 2026 has now been watched working. What follows has not.
 
-1. **`m.call.negotiate`, both halves.** Receiving an offer and answering it,
-   and applying the answer to one of ours. The natural way to see it is to
-   turn on video from Element in the middle of a voice call.
-2. **Adding the camera mid-call**, and the offer `webrtcbin` makes when the
-   transceiver appears.
-3. **The rollback when two renegotiations cross.** Reaching it takes two people
+1. **A renegotiation arriving here.** Ours is sent and answered; the reverse
+   needs a peer whose interface offers to add video to a call in progress, and
+   Element for Android's does not. Two Communes on two machines would do it.
+2. **The rollback when two renegotiations cross.** Reaching it takes two people
    pressing the same button in the same second, and `webrtcbin`'s handling of a
    `rollback` description has not been watched.
-4. **The ringtone and the notification.** Both are local: no second client is
-   needed to see them, only an incoming call.
-5. **The row in the timeline.** The unknown-outcome case — a call from before
-   the client started — is the only one that can be seen without placing a
-   call.
+3. **The badge for what the other end muted.** Our half goes out and is logged
+   going out; the peer to hand sends no stream metadata at all, so there has
+   never been anything to draw. Commune against Commune would settle it.
+4. **The row in the timeline, past the unknown case.** A call from before the
+   client started draws correctly. Answered, missed and declined have not been
+   read off a screen.
 
 And the older list of things nothing here has been able to exercise:
 

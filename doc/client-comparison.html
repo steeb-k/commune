@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ 8d709086</span>
+      <span>main @ HEADHASH</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -1022,7 +1022,7 @@
     { f: "One-to-one voice and video calls", g: "Calls", kind: "spec", tag: "VoIP",
       note: "The Voice over IP module: m.call.*",
       c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:0, ci:0 },
-      cn: { commune:"Placed, answered and carrying media against Element for Android, across two networks. Every event the module defines is answered, m.call.negotiate included — though Element for Android offers no control that would send one, so the receiving side of a renegotiation is still unexercised.",
+      cn: { commune:"Placed, answered and carrying media against Element for Android, across two networks. Every event the module defines is answered: the camera can be added to a live voice call and Element accepted the renegotiation in 850ms. Element offers no control that would send one back, so a renegotiation arriving here is still unexercised.",
             ex:"Calls are MatrixRTC only — the classic module is not implemented.",
             fc:"The matrix.org directory still lists this unsupported; FluffyChat's own site advertises it.",
             nc:"Named in the README as a notable exception." } },
@@ -1041,7 +1041,7 @@
     { f: "Ringing, and a call in the timeline", g: "Calls", kind: "none", tag: "Client",
       note: "Sound on an incoming call; a missed call that leaves a trace.",
       c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:0, ci:1 },
-      cn: { commune:"The desktop's own sound theme for a call coming in, a notification carrying Answer and Decline, and an m.call.invite row saying what became of the call. No ringback going out, on purpose. Silent on macOS, which has no freedesktop sound theme.",
+      cn: { commune:"The desktop's own sound theme for a call coming in, a notification carrying Answer and Decline — both seen working — and an m.call.invite row saying what became of the call. No ringback going out, on purpose. Silent on macOS, which has no freedesktop sound theme.",
             nc:"No calls at all, so nothing to ring for." } },
 
     // ---- Account
