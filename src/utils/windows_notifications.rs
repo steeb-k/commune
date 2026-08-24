@@ -257,7 +257,7 @@ fn clicked_payload(args: Option<&IInspectable>) -> Option<String> {
 /// Reading the target back against the type the action declares, rather than
 /// against whatever the string happens to parse as, is what makes the intent
 /// types the only description of the payload.
-fn activate(payload: &str) {
+pub(super) fn activate(payload: &str) {
     let Some((action, target)) = unpack(payload) else {
         error!("Could not open a notification: its payload has no action");
         return;

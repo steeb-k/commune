@@ -88,6 +88,9 @@ fn main() {
     {
         utils::windows_app_id::init();
         utils::windows_notifications::init();
+        // Before the main loop, so that a Commune started *by* a notification
+        // click is already serving the class when Windows calls it.
+        utils::windows_toast_activator::init();
     }
 
     // Prepare i18n

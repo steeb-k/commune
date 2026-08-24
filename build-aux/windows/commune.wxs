@@ -105,6 +105,13 @@
                   WorkingDirectory="BinDir"
                   Icon="AppIcon">
           <ShortcutProperty Key="System.AppUserModel.ID" Value="$(AppId)" />
+          <!-- The class Windows activates when a notification is clicked while
+               Commune is not running. The application writes this to the
+               registry for itself as well, so that an unpacked .zip behaves the
+               same way; declaring it here too is what the documentation asks
+               for, and costs nothing. -->
+          <ShortcutProperty Key="System.AppUserModel.ToastActivatorCLSID"
+                            Value="{7DC899BF-5566-4BDF-8169-77118EFC646B}" />
         </Shortcut>
         <RegistryValue Root="HKCU" Key="Software\$(AppId)" Name="startmenu"
                        Type="integer" Value="1" KeyPath="yes" />

@@ -683,7 +683,24 @@ impl Application {
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
         info!("Datadir: {}", paths.pkgdata_dir().display());
 
+        #[cfg(not(target_os = "windows"))]
         ApplicationExtManual::run(self);
+
+        // Windows starts us with `-Embedding` when a notification is clicked
+        // and nothing is serving the activator class yet. `GApplication` has
+        // `HANDLES_OPEN`, so it would take that for something to open and
+        // refuse to start over an argument it cannot make sense of.
+        #[cfg(target_os = "windows")]
+        {
+            let args = std::env::args_os()
+                .map(|argument| argument.to_string_lossy().into_owned())
+                .filter(|argument| {
+                    !crate::utils::windows_toast_activator::is_embedding_argument(argument)
+                })
+                .collect::<Vec<_>>();
+
+            ApplicationExtManual::run_with_args(self, &args);
+        }
     }
 }
 

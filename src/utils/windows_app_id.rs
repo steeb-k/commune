@@ -26,7 +26,7 @@ use windows::{
         },
         UI::Shell::SetCurrentProcessExplicitAppUserModelID,
     },
-    core::{HSTRING, w},
+    core::{HSTRING, PCWSTR},
 };
 
 use crate::{APP_ID, APP_NAME, AppProfile, PROFILE};
@@ -54,17 +54,49 @@ pub(crate) fn init() {
     }
 }
 
+/// The key under `HKEY_CURRENT_USER` where Windows keeps what it knows about
+/// our application user model ID.
+pub(super) fn app_user_model_key() -> String {
+    format!("Software\\Classes\\AppUserModelId\\{APP_ID}")
+}
+
 /// Give the ID a name, so that Windows has something to call us.
 ///
 /// This is what System Settings shows beside the switch for our notifications,
 /// and what a toast is attributed to. Without it the raw ID is shown, which
 /// reads as a bug rather than as an application.
 fn register_display_name() -> windows::core::Result<()> {
-    let subkey = HSTRING::from(format!("Software\\Classes\\AppUserModelId\\{APP_ID}"));
+    // The profile rides in the name for the same reason it rides in the
+    // application ID: a development build and a stable one can both be
+    // installed, and two switches both labelled "Commune" would be a coin toss.
+    //
+    // Spelled out rather than taken from `AppProfile`'s `Display`, which is
+    // lower case because it is used to build identifiers. This is a name, and
+    // it has to match the one the installer puts on the Start Menu shortcut.
+    let name = match PROFILE {
+        AppProfile::Stable => APP_NAME.to_owned(),
+        AppProfile::Beta => format!("{APP_NAME} Beta"),
+        AppProfile::Devel => format!("{APP_NAME} Devel"),
+    };
+
+    write_string_value(&app_user_model_key(), Some("DisplayName"), &name)
+}
+
+/// Write a string to the registry under `HKEY_CURRENT_USER`, creating the key
+/// if it is not there.
+///
+/// A `None` value name writes the key's default value, which is what the
+/// older parts of the registry — `LocalServer32` among them — are addressed by.
+pub(super) fn write_string_value(
+    subkey: &str,
+    value_name: Option<&str>,
+    value: &str,
+) -> windows::core::Result<()> {
+    let subkey = HSTRING::from(subkey);
     let mut key = HKEY::default();
 
-    // SAFETY: the two strings outlive the call, and `key` is a valid place to
-    // write the handle. It is closed on both paths below.
+    // SAFETY: the strings outlive the call, and `key` is a valid place to write
+    // the handle. It is closed on every path out below.
     unsafe {
         RegCreateKeyExW(
             HKEY_CURRENT_USER,
@@ -80,27 +112,20 @@ fn register_display_name() -> windows::core::Result<()> {
     }
     .ok()?;
 
-    // The profile rides in the name for the same reason it rides in the
-    // application ID: a development build and a stable one can both be
-    // installed, and two switches both labelled "Commune" would be a coin toss.
-    //
-    // Spelled out rather than taken from `AppProfile`'s `Display`, which is
-    // lower case because it is used to build identifiers. This is a name, and
-    // it has to match the one the installer puts on the Start Menu shortcut.
-    let name = HSTRING::from(match PROFILE {
-        AppProfile::Stable => APP_NAME.to_owned(),
-        AppProfile::Beta => format!("{APP_NAME} Beta"),
-        AppProfile::Devel => format!("{APP_NAME} Devel"),
-    });
-
+    let value = HSTRING::from(value);
     // `RegSetValueExW` wants a `REG_SZ` as bytes, including the terminator.
-    // SAFETY: `name` is a null-terminated wide string of `len() + 1` units, and
-    // the slice borrows it for no longer than the call below.
+    // SAFETY: `value` is a null-terminated wide string of `len() + 1` units,
+    // and the slice borrows it for no longer than the call below.
     let bytes =
-        unsafe { std::slice::from_raw_parts(name.as_ptr().cast::<u8>(), (name.len() + 1) * 2) };
+        unsafe { std::slice::from_raw_parts(value.as_ptr().cast::<u8>(), (value.len() + 1) * 2) };
+
+    let name = value_name.map(HSTRING::from);
+    let name = name
+        .as_ref()
+        .map_or(PCWSTR::null(), |name| PCWSTR(name.as_ptr()));
 
     // SAFETY: `key` is open, and `bytes` is the wide string described above.
-    let result = unsafe { RegSetValueExW(key, w!("DisplayName"), None, REG_SZ, Some(bytes)) };
+    let result = unsafe { RegSetValueExW(key, name, None, REG_SZ, Some(bytes)) };
 
     // SAFETY: `key` came from the successful `RegCreateKeyExW` above and is
     // closed exactly once.
