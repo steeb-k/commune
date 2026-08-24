@@ -54,6 +54,12 @@ joining is what still works.
 This is why the failure is logged at `debug` and not `warn`: it is the expected
 outcome, not a fault.
 
+**It is narrower than that first sounded, though.** Peeking a `matrix.org` room
+from a `matrix.org` account works, because the room is local to the homeserver
+being asked — seen on 24 August 2026. The rule is about the homeserver you are
+on, not about the room being somebody else's: most rooms a person wants to
+preview are on the server they are already using.
+
 ## What is deliberately not drawn
 
 The row (`components/dialogs/peek_row.rs`) shows a sender name, a timestamp and
