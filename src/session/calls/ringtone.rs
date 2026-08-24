@@ -1,11 +1,15 @@
 //! The sound a call makes before somebody picks it up.
 //!
-//! The freedesktop sound theme names both of them — `phone-incoming-call` for
-//! a call arriving and `phone-outgoing-calling` for the ringback of one going
-//! out — so this plays the theme the desktop is already using rather than a
-//! sound of our own. A theme that names neither is silent, which is the same
-//! answer as a machine with no speakers: worth logging, not worth inventing a
-//! beep for.
+//! The freedesktop sound theme names the event this needs —
+//! `phone-incoming-call` — so this plays the theme the desktop is already
+//! using rather than a sound of our own. A theme that does not name it is
+//! silent, which is the same answer as a machine with no speakers: worth
+//! logging, not worth inventing a beep for.
+//!
+//! Only calls coming in. The theme has `phone-outgoing-calling` for the other
+//! direction and it is deliberately not used: a telephone plays a ringback
+//! because the caller has nothing to look at, and here the window says
+//! `Calling…` in front of them.
 
 use std::path::PathBuf;
 
@@ -15,9 +19,6 @@ use tracing::{debug, warn};
 
 /// The sound theme event for a call coming in.
 const INCOMING_SOUND: &str = "phone-incoming-call";
-
-/// The sound theme event for a call going out.
-const OUTGOING_SOUND: &str = "phone-outgoing-calling";
 
 /// The theme every freedesktop system has, and the one the specification says
 /// to fall back to.
@@ -39,11 +40,6 @@ impl Ringtone {
     /// Ring for a call that is coming in.
     pub(crate) fn incoming() -> Option<Self> {
         Self::play(INCOMING_SOUND)
-    }
-
-    /// Ring back for a call that is going out.
-    pub(crate) fn outgoing() -> Option<Self> {
-        Self::play(OUTGOING_SOUND)
     }
 
     /// Start the given sound theme event, on a loop.

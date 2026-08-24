@@ -568,6 +568,15 @@ same chain `add_video_source()` builds at setup, links it to a new
 parent, because everything added to a pipeline arrives in `Null` however the
 pipeline itself is doing.
 
+**Everything added to a playing pipeline arrives in `Null`**, and an element in
+`Null` produces nothing — so every child is synced with the parent afterwards.
+That sync is done over `children()` and not `iterate_elements()`: a
+`GstIterator` can ask to be resynced when the bin changes underneath it, and
+the obvious `while let Ok(Some(_))` loop reads that request as the end of the
+list, leaving everything after it in `Null` and the self-view black. Which
+state each child actually reached is logged, because a black self-view and a
+working one differ nowhere else.
+
 Nothing there writes SDP. `webrtcbin` notices that what it sends no longer
 matches what it last described and emits `on-negotiation-needed`, and that is
 what makes the offer. The signal is **armed only once the call is connected**:
@@ -677,18 +686,23 @@ A window on its own is not enough. It opens behind whatever is on screen, on
 whichever workspace the client happens to be on, and a call nobody is looking
 at rings for ninety seconds and is gone.
 
-**The sound is the desktop's own.** The freedesktop sound theme names both
-events this needs — `phone-incoming-call` for a call arriving and
-`phone-outgoing-calling` for the ringback of one going out — so `Ringtone`
+**The sound is the desktop's own.** The freedesktop sound theme names the event
+this needs — `phone-incoming-call` — so `Ringtone`
 finds the file under `<data dir>/sounds/<theme>/stereo/` and loops it on a
 `playbin3`, looping being what turns one ring into a ringing telephone. The
 theme comes from `org.gnome.desktop.sound`, which is looked up in the schema
 source first because constructing a `gio::Settings` for a schema that is not
 installed aborts the process. `event-sounds` set to false is honoured: the
 person who switched the desktop's sounds off switched this one off too, and the
-notification still arrives. A theme with neither event is silent and says so in
+notification still arrives. A theme without that event is silent and says so in
 the log — no beep of our own invention. **macOS has no such theme, so macOS
 does not ring.**
+
+**Only calls coming in.** The theme has `phone-outgoing-calling` for the other
+direction, it was wired up on 23 August 2026, and it was taken out again the
+first time anybody placed a call with it: a telephone plays a ringback because
+the caller has nothing to look at, and here the window is open in front of them
+saying `Calling…`. All the sound added was a noise in the caller's own room.
 
 **The notification is not the push path's.** The homeserver's `.m.rule.call`
 push rule fires for an `m.call.invite` and reaches `show_push()`, which until

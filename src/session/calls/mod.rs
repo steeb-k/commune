@@ -320,15 +320,17 @@ impl Calls {
         let imp = self.imp();
         let state = call.state();
 
-        let ringtone = match state {
-            CallState::Ringing => Ringtone::incoming(),
-            CallState::Dialing => Ringtone::outgoing(),
-            _ => None,
-        };
+        // Only a call coming in. A ringback on the way out was tried and taken
+        // out again: a telephone plays one because the caller has nothing to
+        // look at, and here the window says `Calling…` in front of them, so all
+        // the sound adds is a noise in their own room.
+        let ringtone = (state == CallState::Ringing)
+            .then(Ringtone::incoming)
+            .flatten();
 
-        // Replaced rather than stopped and started: the two sounds are
-        // different files, and a call that goes from ringing to connected has
-        // to stop making a noise at the instant it does.
+        // Replaced rather than stopped and started, so that a call that goes
+        // from ringing to connected stops making a noise at the instant it
+        // does.
         imp.ringtone.replace(ringtone);
 
         let Some(session) = self.session() else {
