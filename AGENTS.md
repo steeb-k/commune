@@ -40,8 +40,9 @@ change to it: `doc/image-packs.md`, `doc/search.md` for message search,
 `doc/recent-emoji.md` for the quick reactions, `doc/url-previews.md` for
 the card under a message that has a link, `doc/server-notices.md` for the
 room the homeserver talks to the user in, and `doc/calls.md` for one-to-one
-voice and video calls — that last one is unfinished, and says so at the
-top. Read the one for a feature before
+voice and video calls — that last one answers every event in its module, and
+its top says which parts have never been put in front of a second client.
+Read the one for a feature before
 touching it — each carries the design decisions, the
 integration points, and a rebase guide. `doc/rebrand.md` does the same for the
 rename to Commune, and is where to look before touching anything that carries
