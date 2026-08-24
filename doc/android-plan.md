@@ -163,8 +163,8 @@ Made on 23 August 2026, before any spike:
 
 Each spike is a yes/no gate; stop at the first no and record it in `doc/android.md`.
 
-* **S0 — pixiewood baseline in WSL.** Nothing of Commune's; establishes the toolchain and the
-  emulator round-trip. Half a day.
+* **S0 — pixiewood baseline in WSL.** **Done, 23 August 2026** — results in `doc/android.md`.
+  Nothing of Commune's; establishes the toolchain and the emulator round-trip. Half a day.
   1. In WSL: `apt install meson ninja-build openjdk-17-jdk-headless sassc libxml2-utils
      libglib2.0-dev-bin gettext` plus the Perl modules pixiewood's README lists for Debian;
      check `meson --version` ≥ 1.9 (use `pip install meson` if Ubuntu's is older).
@@ -180,7 +180,12 @@ Each spike is a yes/no gate; stop at the first no and record it in `doc/android.
   6. New `build-aux/android/probe-env.sh` in the shape of the macOS and Windows probes, and
      the start of `doc/android.md` with the versions, the manifest used, the wall-clock of the
      GTK build, and what the demos got wrong on the emulator.
-* **S1 — Rust hello-world APK.** The make-or-break spike, in a throwaway repo outside
+* **S1 — Rust hello-world APK.** **Read `doc/android.md` first.** S0 changed this spike's
+  starting assumptions: stock meson already has `android_exe_type`, libadwaita already
+  carries the guard that uses it, and `meson setup` writes a complete set of
+  `*-uninstalled.pc` files — `gtk4-uninstalled.pc` among them — before ninja runs a single
+  command, which is most of what step 2 below expected to have to discover.
+  The make-or-break spike, in a throwaway repo outside
   Commune (`~/gtk-android-rust-spike`), so nothing is designed before it is known to link.
   One to three days.
   1. A Meson project with `subprojects/` prepared by pixiewood (glib, cairo, harfbuzz,
