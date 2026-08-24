@@ -23,12 +23,12 @@ mod notifications_settings;
 pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
 };
-use super::{IdentityVerification, Session, VerificationKey};
+use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
 use crate::{
     Application, Window, gettext_f,
-    intent::SessionIntent,
+    intent::{CallAction, CallActionKind, SessionIntent},
     prelude::*,
     spawn_tokio,
     utils::{
@@ -123,6 +123,26 @@ impl Notifications {
         intent: &SessionIntent,
         icon: Option<&gdk::Texture>,
     ) {
+        Self::send_notification_with_buttons(id, title, body, session_id, intent, icon, &[]);
+    }
+
+    /// Helper method to create a notification carrying buttons.
+    ///
+    /// Each button is a label and the intent it carries. macOS gets the
+    /// notification without them: `UNUserNotificationCenter` has its own way
+    /// of attaching actions, and it is not this one.
+    fn send_notification_with_buttons(
+        id: &str,
+        title: &str,
+        body: &str,
+        session_id: &str,
+        intent: &SessionIntent,
+        icon: Option<&gdk::Texture>,
+        #[cfg_attr(target_os = "macos", allow(unused_variables))] buttons: &[(
+            String,
+            SessionIntent,
+        )],
+    ) {
         // Truncate the body if necessary.
         let body = if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
             let mut body = body[..end].trim_end().to_owned();
@@ -149,6 +169,14 @@ impl Notifications {
 
                 if let Some(notification_icon) = icon {
                     notification.set_icon(notification_icon);
+                }
+
+                for (label, intent) in buttons {
+                    notification.add_button_with_target_value(
+                        label,
+                        intent.app_action_name(),
+                        Some(&intent.to_variant_with_session_id(session_id.to_owned())),
+                    );
                 }
 
                 Application::default().send_notification(Some(id), &notification);
@@ -235,6 +263,14 @@ impl Notifications {
                 return;
             }
         };
+
+        if is_call_invite(&event) {
+            // The push rule `.m.rule.call` fires for these, and the calls
+            // module has already rung, notified, and armed the withdrawal for
+            // when the ringing stops. Notifying again here would be a second
+            // notification for one call, and one that nothing ever takes away.
+            return;
+        }
 
         let is_direct = room.direct_member().is_some();
         let sender_id = event.sender();
@@ -324,6 +360,94 @@ impl Notifications {
             .entry(room_id)
             .or_default()
             .insert(id);
+    }
+
+    /// Show a notification for a call that is ringing.
+    ///
+    /// Not the push path, though the homeserver's push rules fire for the same
+    /// `m.call.invite`: a call notification is withdrawn the moment the call
+    /// stops ringing, and it carries the two buttons that make it worth
+    /// having. The push path's own handling of call invites defers to this
+    /// one, so that a ringing call is one notification and not two.
+    pub(crate) async fn show_incoming_call(&self, call: &Call) {
+        if !self.enabled() {
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let room = call.room();
+        let title = call
+            .remote_member()
+            .map_or_else(|| room.display_name(), |member| member.display_name());
+        let body = if call.has_video() {
+            gettext("Incoming video call")
+        } else {
+            gettext("Incoming call")
+        };
+
+        let icon = room.avatar_data().as_notification_icon(false).await;
+
+        if call.state() != CallState::Ringing {
+            // Drawing the avatar took a moment, and in that moment the call was
+            // answered, declined or hung up. A notification for it now would
+            // be one nothing ever withdraws.
+            return;
+        }
+
+        let session_id = session.session_id();
+        let id = Self::call_notification_id(session_id, call);
+        let call_id = call.call_id().as_str().to_owned();
+        let intent = |kind| {
+            SessionIntent::CallAction(CallAction {
+                call_id: call_id.clone(),
+                kind,
+            })
+        };
+
+        Self::send_notification_with_buttons(
+            &id,
+            &title,
+            &body,
+            session_id,
+            &intent(CallActionKind::Show),
+            icon.as_ref(),
+            &[
+                (gettext("Decline"), intent(CallActionKind::Decline)),
+                (gettext("Answer"), intent(CallActionKind::Answer)),
+            ],
+        );
+
+        self.imp()
+            .push
+            .borrow_mut()
+            .entry(room.room_id().to_owned())
+            .or_default()
+            .insert(id);
+    }
+
+    /// Withdraw the notification for the given call, if it has one.
+    pub(crate) fn withdraw_incoming_call(&self, call: &Call) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let id = Self::call_notification_id(session.session_id(), call);
+        Self::withdraw_notification(&id);
+
+        if let Some(ids) = self.imp().push.borrow_mut().get_mut(call.room().room_id()) {
+            ids.remove(&id);
+        }
+    }
+
+    /// The ID of the notification for the given call.
+    ///
+    /// The call ID and not the event ID of the invite: the notification is
+    /// withdrawn from the call, which knows the one and not the other.
+    fn call_notification_id(session_id: &str, call: &Call) -> String {
+        format!("{session_id}//call//{}", call.call_id())
     }
 
     /// Show a notification for the room that is on screen.
@@ -641,6 +765,21 @@ pub(crate) fn own_invite_notification_body(
     } else {
         None
     }
+}
+
+/// Whether the given event is an invite to a one-to-one call.
+fn is_call_invite(event: &AnySyncOrStrippedTimelineEvent) -> bool {
+    let AnySyncOrStrippedTimelineEvent::Sync(sync_event) = event else {
+        return false;
+    };
+    let AnySyncTimelineEvent::MessageLike(message_event) = &**sync_event else {
+        return false;
+    };
+
+    matches!(
+        message_event.original_content(),
+        Some(AnyMessageLikeEventContent::CallInvite(_))
+    )
 }
 
 /// Generate the notification body for a call, if it is an invite for

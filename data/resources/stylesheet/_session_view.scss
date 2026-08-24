@@ -226,6 +226,15 @@ sidebar {
   -gtk-icon-size: 24px;
 }
 
+.call-badge {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  // The same ground as the self-view, for the same reason: it sits over video
+  // that can be any colour at all.
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
 .call-self-view {
   border-radius: vendor.$card_radius;
   // A frame, so that a dark self-view over a dark call is still a rectangle

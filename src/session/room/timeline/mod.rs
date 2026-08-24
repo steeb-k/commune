@@ -1374,7 +1374,16 @@ fn show_in_timeline(
                 }
             }
             AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
-            | AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Original(_)) => true,
+            | AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Original(_))
+            // A call leaves a row where it happened. The rest of the module's
+            // events are signalling and would be a dozen rows for one call;
+            // the invite is the one that says a call took place, and the row
+            // it draws says what became of it.
+            //
+            // Shown whether or not it rang: "when clients suppress ringing for
+            // an incoming call invite, they SHOULD still display the call
+            // invite in the room and annotate that it was ignored".
+            | AnySyncMessageLikeEvent::CallInvite(SyncMessageLikeEvent::Original(_)) => true,
             AnySyncMessageLikeEvent::RtcNotification(SyncMessageLikeEvent::Original(ev)) => {
                 ev.sender == own_user_id
                     || ev.content.mentions.as_ref().is_some_and(|mentions| {

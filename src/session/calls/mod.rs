@@ -7,13 +7,21 @@
 
 use std::time::{Duration, Instant};
 
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::room::Room as MatrixRoom;
 use ruma::{
-    OwnedRoomId, OwnedVoipId, UserId,
+    Int, OwnedRoomId, OwnedVoipId, UInt, UserId,
     events::call::{
-        answer::OriginalSyncCallAnswerEvent, candidates::OriginalSyncCallCandidatesEvent,
-        hangup::OriginalSyncCallHangupEvent, invite::OriginalSyncCallInviteEvent,
+        answer::OriginalSyncCallAnswerEvent,
+        candidates::OriginalSyncCallCandidatesEvent,
+        hangup::{OriginalSyncCallHangupEvent, Reason},
+        invite::OriginalSyncCallInviteEvent,
+        negotiate::OriginalSyncCallNegotiateEvent,
         reject::OriginalSyncCallRejectEvent,
         sdp_stream_metadata_changed::OriginalSyncCallSdpStreamMetadataChangedEvent,
         select_answer::OriginalSyncCallSelectAnswerEvent,
@@ -23,12 +31,14 @@ use tracing::debug;
 
 mod call;
 mod pipeline;
+mod ringtone;
 mod state;
 mod turn;
 
+use self::ringtone::Ringtone;
 pub(crate) use self::{
     call::Call,
-    state::{CallEndReason, CallState},
+    state::{CallEndReason, CallOutcome, CallState},
     turn::{IceServers, TurnCredentials, load_turn_credentials},
 };
 use super::{JoinRuleValue, Member, Membership, MembershipListKind, Room, Session, UserExt};
@@ -47,6 +57,13 @@ const EARLY_CANDIDATE_LIFETIME: Duration = Duration::from_secs(30);
 /// belongs to a call this session is not in.
 const MAX_EARLY_CANDIDATE_BATCHES: usize = 8;
 
+/// How many calls are remembered for the sake of the rows in the timeline.
+///
+/// What is remembered is one enum per call, so the number is a bound rather
+/// than a budget: it is there so that a session left running for a week does
+/// not keep every call the account ever saw.
+const MAX_REMEMBERED_OUTCOMES: usize = 256;
+
 /// Everything that arrives about a call.
 ///
 /// One enum rather than seven handlers on the far side, so that the hop onto
@@ -60,6 +77,7 @@ enum CallSignal {
     Reject(Box<OriginalSyncCallRejectEvent>),
     SelectAnswer(Box<OriginalSyncCallSelectAnswerEvent>),
     StreamMetadata(Box<OriginalSyncCallSdpStreamMetadataChangedEvent>),
+    Negotiate(Box<OriginalSyncCallNegotiateEvent>),
 }
 
 /// A candidate batch that arrived before the invite it belongs to.
@@ -80,7 +98,13 @@ struct EarlyCandidates {
 }
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{
+        cell::RefCell,
+        collections::{HashMap, VecDeque},
+        sync::LazyLock,
+    };
+
+    use glib::subclass::Signal;
 
     use super::*;
 
@@ -100,6 +124,19 @@ mod imp {
         pub(super) turn_credentials: RefCell<TurnCredentials>,
         /// Candidates that arrived before the invite they belong to.
         pub(super) early_candidates: RefCell<Vec<EarlyCandidates>>,
+        /// The sound the call that is happening is making, if it is making
+        /// one.
+        pub(super) ringtone: RefCell<Option<Ringtone>>,
+        /// What became of the calls this session has seen.
+        ///
+        /// Keyed by call ID, which is what the invite in the timeline carries.
+        /// Nothing here is written to disk: a client that was not running when
+        /// a call happened has no way to know what became of it, and saying so
+        /// is better than guessing.
+        pub(super) outcomes: RefCell<HashMap<OwnedVoipId, CallOutcome>>,
+        /// The order the outcomes were first noted in, so that the oldest can
+        /// be forgotten.
+        pub(super) outcome_order: RefCell<VecDeque<OwnedVoipId>>,
     }
 
     #[glib::object_subclass]
@@ -109,7 +146,21 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Calls {}
+    impl ObjectImpl for Calls {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    // The call ID, so that a row can tell whether the change
+                    // is about the call it is showing.
+                    Signal::builder("call-outcome-changed")
+                        .param_types([String::static_type()])
+                        .build(),
+                ]
+            });
+
+            SIGNALS.as_ref()
+        }
+    }
 
     impl Calls {
         fn set_session(&self, session: &Session) {
@@ -163,6 +214,7 @@ impl Calls {
             OriginalSyncCallSdpStreamMetadataChangedEvent,
             StreamMetadata
         );
+        handle!(OriginalSyncCallNegotiateEvent, Negotiate);
 
         spawn!(clone!(
             #[weak(rename_to = obj)]
@@ -236,10 +288,14 @@ impl Calls {
         // to arrive than the batch that followed it.
         self.replay_early_candidates(&call);
 
+        self.update_ringing(&call);
+
         call.connect_state_notify(clone!(
             #[weak(rename_to = obj)]
             self,
             move |call| {
+                obj.update_ringing(call);
+
                 if !call.state().is_ended() {
                     return;
                 }
@@ -253,6 +309,41 @@ impl Calls {
                 }
             }
         ));
+    }
+
+    /// Make the noise that goes with the state of the call, and stop making it.
+    ///
+    /// A window is not enough on its own: it opens behind whatever is on
+    /// screen, on whichever workspace the client happens to be on, and a call
+    /// that nobody is looking at rings for ninety seconds and is gone.
+    fn update_ringing(&self, call: &Call) {
+        let imp = self.imp();
+        let state = call.state();
+
+        let ringtone = match state {
+            CallState::Ringing => Ringtone::incoming(),
+            CallState::Dialing => Ringtone::outgoing(),
+            _ => None,
+        };
+
+        // Replaced rather than stopped and started: the two sounds are
+        // different files, and a call that goes from ringing to connected has
+        // to stop making a noise at the instant it does.
+        imp.ringtone.replace(ringtone);
+
+        let Some(session) = self.session() else {
+            return;
+        };
+        let notifications = session.notifications();
+
+        if state == CallState::Ringing {
+            let call = call.clone();
+            spawn!(async move {
+                notifications.show_incoming_call(&call).await;
+            });
+        } else {
+            notifications.withdraw_incoming_call(call);
+        }
     }
 
     /// Keep a candidate batch whose call has not appeared.
@@ -326,8 +417,96 @@ impl Calls {
         self.active_call().filter(|call| call.call_id() == call_id)
     }
 
+    /// What became of the call with the given ID, if this session saw it.
+    pub(crate) fn outcome(&self, call_id: &str) -> Option<CallOutcome> {
+        self.imp()
+            .outcomes
+            .borrow()
+            .get(&OwnedVoipId::from(call_id.to_owned()))
+            .copied()
+    }
+
+    /// Note what has happened to a call.
+    ///
+    /// Every call the room shows, not only the one this client is in: a call
+    /// answered on another device is one the timeline still has to describe,
+    /// and the events that say so arrive here either way.
+    fn note_outcome(&self, call_id: &OwnedVoipId, outcome: CallOutcome) {
+        let imp = self.imp();
+        let mut outcomes = imp.outcomes.borrow_mut();
+        let previous = outcomes.get(call_id).copied();
+
+        let outcome = merge_outcome(previous, outcome);
+
+        if previous == Some(outcome) {
+            return;
+        }
+
+        if previous.is_none() {
+            let mut order = imp.outcome_order.borrow_mut();
+            order.push_back(call_id.clone());
+
+            while order.len() > MAX_REMEMBERED_OUTCOMES {
+                if let Some(forgotten) = order.pop_front() {
+                    outcomes.remove(&forgotten);
+                }
+            }
+        }
+
+        outcomes.insert(call_id.clone(), outcome);
+        drop(outcomes);
+
+        self.emit_by_name::<()>("call-outcome-changed", &[&call_id.as_str().to_owned()]);
+    }
+
+    /// Connect to the outcome of a call changing.
+    pub(crate) fn connect_call_outcome_changed<F: Fn(&Self, String) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "call-outcome-changed",
+            true,
+            closure_local!(move |obj: Self, call_id: String| {
+                f(&obj, call_id);
+            }),
+        )
+    }
+
     /// Act on a call event.
     fn handle_signal(&self, room_id: &OwnedRoomId, signal: CallSignal) {
+        // What the timeline says about a call afterwards is built here, from
+        // the same events the call itself is made of.
+        match &signal {
+            CallSignal::Invite(event) => {
+                self.note_outcome(&event.content.call_id, CallOutcome::Ringing);
+            }
+            CallSignal::Answer(event) => {
+                self.note_outcome(&event.content.call_id, CallOutcome::Answered);
+            }
+            CallSignal::SelectAnswer(event) => {
+                self.note_outcome(&event.content.call_id, CallOutcome::Answered);
+            }
+            CallSignal::Reject(event) => {
+                self.note_outcome(&event.content.call_id, CallOutcome::Declined);
+            }
+            CallSignal::Hangup(event) => {
+                // A hangup is only ever the end of the call; whether anybody
+                // answered it first is what [`Self::note_outcome`] keeps. The
+                // one reason that says something on its own is the busy
+                // signal, which is a refusal spelled as a hangup.
+                let outcome = if event.content.reason == Reason::UserBusy {
+                    CallOutcome::Declined
+                } else {
+                    CallOutcome::Missed
+                };
+                self.note_outcome(&event.content.call_id, outcome);
+            }
+            CallSignal::Candidates(_)
+            | CallSignal::StreamMetadata(_)
+            | CallSignal::Negotiate(_) => {}
+        }
+
         match signal {
             CallSignal::Invite(event) => self.handle_invite(room_id, &event),
             CallSignal::Answer(event) => {
@@ -335,7 +514,7 @@ impl Calls {
                     call.handle_answer(
                         &event.sender,
                         event.content.party_id.as_ref(),
-                        &event.content.answer,
+                        &event.content,
                     );
                 }
             }
@@ -376,6 +555,19 @@ impl Calls {
                         &event.content.party_id,
                         &event.content.sdp_stream_metadata,
                     );
+                }
+            }
+            CallSignal::Negotiate(event) => {
+                if let Some(call) = self.call_with_id(&event.content.call_id) {
+                    if is_stale(event.unsigned.age, event.content.lifetime) {
+                        // A description that expired on the way here describes
+                        // a call as it was, and applying it would take the
+                        // call back to a state neither end is in.
+                        debug!("Ignoring a renegotiation that is no longer valid");
+                        return;
+                    }
+
+                    call.handle_negotiate(&event.sender, &event.content.party_id, &event.content);
                 }
             }
         }
@@ -568,16 +760,46 @@ pub(crate) fn other_member(room: &Room) -> Option<Member> {
     Some(first)
 }
 
+/// Whether a session description carries video.
+///
+/// There is no field for it: an `m.call.invite` says what it offers in its SDP
+/// and nowhere else, so what "a video call" means is a media section for video
+/// in the offer.
+pub(crate) fn sdp_has_video(sdp: &str) -> bool {
+    sdp.contains("\r\nm=video ") || sdp.contains("\nm=video ") || sdp.starts_with("m=video ")
+}
+
+/// What one call outcome becomes when another is learned.
+///
+/// Split out from [`Calls::note_outcome`] because the ordering is the whole of
+/// the logic and the rest is bookkeeping.
+fn merge_outcome(previous: Option<CallOutcome>, next: CallOutcome) -> CallOutcome {
+    match (previous, next) {
+        // A call that was answered and then hung up ended; it was not missed.
+        // Every call ends with a hangup, so without this every call in the
+        // timeline would end up saying that nobody answered.
+        (Some(CallOutcome::Answered), CallOutcome::Missed) => CallOutcome::Answered,
+        // The invite arrives once, and its echo says nothing new.
+        (Some(previous), CallOutcome::Ringing) => previous,
+        (_, next) => next,
+    }
+}
+
 /// Whether an invite is too old to ring for.
+fn is_expired(event: &OriginalSyncCallInviteEvent) -> bool {
+    is_stale(event.unsigned.age, event.content.lifetime)
+}
+
+/// Whether an event with a lifetime is past it.
 ///
 /// The `age` the homeserver put on the event is used rather than its timestamp,
 /// which is the spec's reason as well: a client with a wrong clock would
-/// otherwise discard every invite, or none of them.
-fn is_expired(event: &OriginalSyncCallInviteEvent) -> bool {
-    let Some(age) = event.unsigned.age else {
-        // No age means we cannot tell. Ringing is the recoverable mistake of
-        // the two — the other end hangs up and the ringing stops — where not
-        // ringing loses the call in silence.
+/// otherwise discard every event of this kind, or none of them.
+fn is_stale(age: Option<Int>, lifetime: UInt) -> bool {
+    let Some(age) = age else {
+        // No age means we cannot tell. Acting is the recoverable mistake of the
+        // two — an invite that should not have rung is hung up by the other
+        // end — where not acting loses the call in silence.
         return false;
     };
 
@@ -585,7 +807,7 @@ fn is_expired(event: &OriginalSyncCallInviteEvent) -> bool {
         return false;
     };
 
-    age >= u64::from(event.content.lifetime)
+    age >= u64::from(lifetime)
 }
 
 #[cfg(test)]
@@ -629,5 +851,62 @@ mod tests {
     fn an_invite_with_no_age_is_rung_for() {
         // Not ringing is the mistake that loses a call without saying so.
         assert!(!is_expired(&invite_with_age(None)));
+    }
+
+    #[test]
+    fn an_offer_with_a_video_section_is_a_video_call() {
+        assert!(sdp_has_video(
+            "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n"
+        ));
+        assert!(sdp_has_video("v=0\nm=video 9 UDP/TLS/RTP/SAVPF 96\n"));
+    }
+
+    #[test]
+    fn an_offer_with_only_audio_is_not() {
+        assert!(!sdp_has_video("v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n"));
+    }
+
+    #[test]
+    fn a_rejected_video_section_still_counts_as_one() {
+        // `m=video 0` is a section the other end refused, and it is still a
+        // call that was placed with video in it.
+        assert!(sdp_has_video("v=0\r\nm=video 0 UDP/TLS/RTP/SAVPF 96\r\n"));
+    }
+
+    #[test]
+    fn the_word_video_on_its_own_is_not_a_media_section() {
+        assert!(!sdp_has_video("v=0\r\na=rtpmap:96 VP8/90000 video\r\n"));
+    }
+
+    #[test]
+    fn a_call_that_was_answered_and_hung_up_is_not_a_missed_call() {
+        assert_eq!(
+            merge_outcome(Some(CallOutcome::Answered), CallOutcome::Missed),
+            CallOutcome::Answered
+        );
+    }
+
+    #[test]
+    fn a_call_that_was_never_answered_is() {
+        assert_eq!(
+            merge_outcome(Some(CallOutcome::Ringing), CallOutcome::Missed),
+            CallOutcome::Missed
+        );
+    }
+
+    #[test]
+    fn the_echo_of_an_invite_does_not_undo_what_followed_it() {
+        assert_eq!(
+            merge_outcome(Some(CallOutcome::Declined), CallOutcome::Ringing),
+            CallOutcome::Declined
+        );
+    }
+
+    #[test]
+    fn an_invite_for_a_call_nothing_is_known_about_is_ringing() {
+        assert_eq!(
+            merge_outcome(None, CallOutcome::Ringing),
+            CallOutcome::Ringing
+        );
     }
 }
