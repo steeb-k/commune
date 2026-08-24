@@ -4,16 +4,15 @@ use gtk::glib;
 use matrix_sdk::{
     Error,
     authentication::oauth::OAuthAuthorizationData,
-    utils::{
-        UrlOrQuery,
-        local_server::{LocalServerRedirectHandle, QueryString},
-    },
+    utils::{UrlOrQuery, local_server::QueryString},
 };
 use tokio::task::AbortHandle;
 use tracing::{error, warn};
 use url::Url;
 
-use super::Login;
+use super::{Login, local_server::RedirectHandle};
+#[cfg(target_os = "android")]
+use crate::utils::android;
 use crate::{APP_NAME, prelude::*, spawn_tokio, toast};
 
 mod imp {
@@ -33,7 +32,7 @@ mod imp {
         #[property(get, set, nullable)]
         login: glib::WeakRef<Login>,
         /// A handle to the local server to wait for the redirect.
-        local_server_handle: RefCell<Option<LocalServerRedirectHandle>>,
+        local_server_handle: RefCell<Option<RedirectHandle>>,
         /// The login data to use.
         data: RefCell<Option<LoginInBrowserData>>,
         /// The abort handle for the ongoing task.
@@ -78,11 +77,7 @@ mod imp {
     #[gtk::template_callbacks]
     impl LoginInBrowserPage {
         /// Set up this page with the given local server and data.
-        pub(super) fn set_up(
-            &self,
-            local_server_handle: LocalServerRedirectHandle,
-            data: LoginInBrowserData,
-        ) {
+        pub(super) fn set_up(&self, local_server_handle: RedirectHandle, data: LoginInBrowserData) {
             self.clean();
             self.local_server_handle.replace(Some(local_server_handle));
             self.data.replace(Some(data));
@@ -95,10 +90,25 @@ mod imp {
                 return;
             };
 
-            if let Err(error) = gtk::UriLauncher::new(data.url().as_str())
-                .launch_future(self.obj().root().and_downcast_ref::<gtk::Window>())
+            let window = self.obj().root().and_downcast::<gtk::Window>();
+
+            // `gtk::UriLauncher` has no Android backend: `gtkurilauncher.c`
+            // falls through to GIO's app-info registry, which is empty there,
+            // so nothing opens. The `ACTION_VIEW` `Intent` it would have sent
+            // is built and launched by hand instead.
+            #[cfg(target_os = "android")]
+            let result = match &window {
+                Some(window) => android::launch_uri(window, data.url().as_str())
+                    .map_err(|error| error.to_string()),
+                None => Err("no window to launch the URI from".to_owned()),
+            };
+            #[cfg(not(target_os = "android"))]
+            let result = gtk::UriLauncher::new(data.url().as_str())
+                .launch_future(window.as_ref())
                 .await
-            {
+                .map_err(|error| error.to_string());
+
+            if let Err(error) = result {
                 error!("Could not launch URI: {error}");
                 toast!(self.obj(), gettext("Could not open URL"));
                 return;
@@ -255,11 +265,7 @@ impl LoginInBrowserPage {
     }
 
     /// Set up this page with the given local server and data.
-    pub(super) fn set_up(
-        &self,
-        local_server_handle: LocalServerRedirectHandle,
-        data: LoginInBrowserData,
-    ) {
+    pub(super) fn set_up(&self, local_server_handle: RedirectHandle, data: LoginInBrowserData) {
         self.imp().set_up(local_server_handle, data);
     }
 }

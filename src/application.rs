@@ -467,6 +467,20 @@ mod imp {
         /// Process the given URI.
         fn process_uri(&self, uri: &str) {
             debug!(uri, "Processing URI…");
+
+            // The OAuth 2.0 / Matrix SSO redirect on Android: no browser there
+            // will follow a redirect back to another app's loopback listener,
+            // so login uses this custom scheme instead, and the `Intent` for it
+            // arrives through the same path as a `matrix:` link. It is not one,
+            // so it is intercepted here rather than handed to `MatrixIdUri`.
+            #[cfg(target_os = "android")]
+            if uri.starts_with(crate::login::ANDROID_REDIRECT_URI) {
+                if !crate::utils::android::deliver_oauth_redirect(uri.to_owned()) {
+                    warn!("Received an OAuth 2.0 / SSO redirect with no login flow waiting");
+                }
+                return;
+            }
+
             match MatrixIdUri::parse(uri) {
                 Ok(matrix_id) => {
                     self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id));

@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "android"))]
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use adw::{prelude::*, subclass::prelude::*};
@@ -10,7 +11,6 @@ use matrix_sdk::{
         registration::{ApplicationType, ClientMetadata, Localized, OAuthGrantType},
     },
     sanitize_server_name,
-    utils::local_server::LocalServerRedirectHandle,
 };
 use ruma::{OwnedServerName, api::client::session::get_login_types::v3::LoginType, serde::Raw};
 use tracing::warn;
@@ -24,12 +24,16 @@ mod local_server;
 mod method_page;
 mod session_setup_view;
 
+/// Re-exported for `Application::process_uri`, which has to recognize the
+/// redirect before it ever reaches this module.
+#[cfg(target_os = "android")]
+pub(crate) use self::local_server::ANDROID_REDIRECT_URI;
 use self::{
     advanced_dialog::LoginAdvancedDialog,
     greeter::Greeter,
     homeserver_page::LoginHomeserverPage,
     in_browser_page::{LoginInBrowserData, LoginInBrowserPage},
-    local_server::spawn_local_server,
+    local_server::{RedirectHandle, spawn_local_server},
     method_page::LoginMethodPage,
     session_setup_view::SessionSetupView,
 };
@@ -414,7 +418,7 @@ mod imp {
         /// Show the page to log in with the browser with the given data.
         fn show_in_browser_page(
             &self,
-            local_server_handle: LocalServerRedirectHandle,
+            local_server_handle: RedirectHandle,
             data: LoginInBrowserData,
         ) {
             self.in_browser_page.set_up(local_server_handle, data);
@@ -567,21 +571,46 @@ impl Login {
 
 /// Client registration data for the OAuth 2.0 API.
 fn client_registration_data() -> ClientRegistrationData {
-    // Register the IPv4 and IPv6 localhost APIs as we use a local server for the
-    // redirection.
-    let ipv4_localhost_uri = Url::parse(&format!("http://{}/", Ipv4Addr::LOCALHOST))
-        .expect("IPv4 localhost address should be a valid URL");
-    let ipv6_localhost_uri = Url::parse(&format!("http://[{}]/", Ipv6Addr::LOCALHOST))
-        .expect("IPv6 localhost address should be a valid URL");
+    // Everywhere but Android, register the IPv4 and IPv6 localhost APIs, since
+    // that is what the local server redirects to. On Android there is no local
+    // server — see `local_server::RedirectHandle` — so the fixed custom-scheme
+    // URI it uses instead is registered, and it alone, since it has to match
+    // exactly what the authorization request sends.
+    #[cfg(not(target_os = "android"))]
+    let redirect_uris = {
+        let ipv4_localhost_uri = Url::parse(&format!("http://{}/", Ipv4Addr::LOCALHOST))
+            .expect("IPv4 localhost address should be a valid URL");
+        let ipv6_localhost_uri = Url::parse(&format!("http://[{}]/", Ipv6Addr::LOCALHOST))
+            .expect("IPv6 localhost address should be a valid URL");
+        vec![ipv4_localhost_uri, ipv6_localhost_uri]
+    };
+    #[cfg(target_os = "android")]
+    let redirect_uris = vec![
+        Url::parse(local_server::ANDROID_REDIRECT_URI)
+            .expect("Android redirect URI should be a valid URL"),
+    ];
 
+    // Everywhere but Android, `client_uri` is just the project's homepage.
+    // matrix.org's authorization server (matrix-authentication-service)
+    // additionally requires it for a native client whose redirect scheme is
+    // not `https`: its `client_registration.rego` policy checks that the
+    // scheme's dot-separated labels, read left to right, start with
+    // `client_uri`'s host read right to left — the reverse-DNS convention the
+    // scheme itself follows. `github.com` reversed is `com.github`, which is
+    // not a prefix of `io.github.steeb-k.commune`, so registration is refused
+    // with `invalid_redirect_uri` if this stays the plain homepage URL.
+    // `steeb-k.github.io` reversed is `io.github.steeb-k`, which is — the same
+    // domain `ANDROID_REDIRECT_URI`'s scheme is derived from.
+    #[cfg(target_os = "android")]
+    let client_uri =
+        Url::parse("https://steeb-k.github.io/").expect("Android client URI should be a valid URL");
+    #[cfg(not(target_os = "android"))]
     let client_uri =
         Url::parse(APP_HOMEPAGE_URL).expect("application homepage URL should be a valid URL");
 
     let mut client_metadata = ClientMetadata::new(
         ApplicationType::Native,
-        vec![OAuthGrantType::AuthorizationCode {
-            redirect_uris: vec![ipv4_localhost_uri, ipv6_localhost_uri],
-        }],
+        vec![OAuthGrantType::AuthorizationCode { redirect_uris }],
         Localized::new(client_uri, None),
     );
     client_metadata.client_name = Some(Localized::new(APP_NAME.to_owned(), None));
