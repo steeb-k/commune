@@ -487,18 +487,20 @@
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ 3cf0c942</span>
+      <span>main @ db7b0d5c</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Fifteen gaps:
-      ten with no implementation at all, five implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Fourteen gaps:
+      ten with no implementation at all, four implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
-      on 23 August; calls moved out of Absent the same day and were seen carrying audio and video
-      that evening, on one network and between two, leaving a smaller row about what the module
-      still does not do.
+      on 23 August; calls moved out of Absent the same day, carried audio and video that evening
+      on one network and between two, and left the partial column on 23 August when the last
+      event of the module — <code>m.call.negotiate</code> — was answered. Four parts of that
+      last piece of work have not yet been put in front of a second client, and the note below
+      says which.
     </p>
   </header>
 
@@ -509,14 +511,14 @@
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">5</div>
+      <div class="score-num">4</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">32</div>
+      <div class="score-num">33</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews and server notices.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices and one-to-one calls.</div>
     </div>
   </div>
 
@@ -644,13 +646,13 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">5 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Every one of these is a
         gap in coverage rather than a choice: the last deliberate departure, image packs
         writing unstable names, was closed on 22 August 2026. Two of them are waiting on the
-        same thing — a way to pick a space — and the first one carries the one part of a module
-        this fork implements that the spec defines and the code does not answer.
+        same thing — a way to pick a space. Voice over IP was the fifth of these until
+        23 August 2026, and the row it left behind is now a note further down.
       </p>
     </div>
     <div class="tscroll">
@@ -665,13 +667,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="feat">Voice and video calls</span></td>
-            <td class="mod">Voice over IP</td>
-            <td class="state">Placed, answered and carrying media, against Element for Android: audio and video on one network, and a call between two networks with the phone on mobile data — <code>Checking</code> to <code>Connected</code> in 600&nbsp;ms. What the spec defines and this does not answer is <code>m.call.negotiate</code>: a call that renegotiates mid-flight, which is what adding video to a voice call looks like from the other end, is parsed and ignored. DTMF is allowed by the spec and deliberately absent. Two gaps are interface rather than protocol: <code>m.call.*</code> is filtered out of the timeline entirely, so a missed call leaves no trace once the window is closed, and an incoming call opens a window with no sound and no notification behind it. Group calls are not this module and are not here: <code>m.rtc.*</code> is MatrixRTC, which v1.19 does not define.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
           <tr>
             <td><span class="feat">Restricted join rule</span></td>
             <td class="mod">Restricting room membership</td>
@@ -707,14 +702,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">12 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">13 touch the protocol</span></h2>
       <p class="sec-sub">
-107 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
-        on 18 August 2026, plus the work still in the tree. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Twelve additions do touch the protocol, and
-        this is how each of them sits against it. Since 22 August none of them is off spec: the
-        ten that a module covers follow it, and the other two are in space the standard leaves
-        empty.
+169 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
+        on 18 August 2026. Most of it is the macOS port and the
+        rebrand, which the spec has no opinion about. Thirteen additions do touch the protocol,
+        and this is how each of them sits against it. Since 22 August none of them is off spec:
+        the eleven that a module covers follow it, and the other two are in space the standard
+        leaves empty.
       </p>
       <div class="legend">
         <div><span class="chip on">On spec</span> follows the module as written</div>
@@ -733,6 +728,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">One-to-one voice and video calls</span></td>
+            <td class="mod">Voice over IP</td>
+            <td class="state">The whole module, which upstream does not implement at all: <code>webrtcbin</code> behind <code>m.call.invite</code>, <code>candidates</code>, <code>answer</code>, <code>select_answer</code>, <code>reject</code>, <code>hangup</code>, <code>sdp_stream_metadata_changed</code> and — since 23 August 2026 — <code>negotiate</code>, in both of its halves. Version 1 throughout, so party IDs, the busy hangup, the glare rule and the invite's <code>lifetime</code> measured by the event's <code>age</code>. Renegotiation follows WebRTC's perfect negotiation, where the callee is the polite party; a renegotiation that fails leaves a working call alone. Placed and answered against Element for Android, audio and video, on one network and between two. DTMF is not a Matrix event — RFC&nbsp;4733 in the RTP, allowed and never required — and is absent on purpose, as is screen sharing.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Four parts written on 23 August have never faced a second client.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">Reporting a room and a user</span></td>
             <td class="mod">Reporting Content</td>
@@ -820,9 +821,61 @@
 
   <section>
     <div class="sec-head">
-      <h2>Three corrections, four things now closed, a departure, and two that are not what they look like</h2>
+      <h2>Three corrections, five things now closed, a departure, and two that are not what they look like</h2>
     </div>
     <div class="notes">
+      <div class="note closed">
+        <h3>Closed: the call module answers every event it defines</h3>
+        <p>
+          <code>m.call.negotiate</code> was the one thing the spec defined and this client did
+          not answer — a call described again after it is established, which is what adding
+          video to a voice call looks like from the other end. Both of its halves are handled
+          now: their offer is applied and answered with another <code>negotiate</code>, and an
+          answer to one of ours is applied. A renegotiation that fails leaves the call alone,
+          because the media that was flowing before it is still flowing and hanging up over a
+          camera that could not be added takes away a working call.
+        </p>
+        <p>
+          Two ends can offer at the same moment, and WebRTC's perfect negotiation settles it
+          without either asking the other: the callee is the polite party, so it rolls its own
+          offer back and takes theirs. That is the same shape as the glare rule one layer up,
+          and it has never been reached — it takes two people pressing the same button in the
+          same second.
+        </p>
+        <p>
+          The reason to send a renegotiation at all is a button that adds the camera to a call
+          placed without one. Nothing in that path writes SDP: the camera goes into the
+          pipeline, <code>webrtcbin</code> notices that what it sends no longer matches what it
+          last described, and the offer comes from its own <code>on-negotiation-needed</code>.
+          The signal is armed only once the call is up, since it fires for the first negotiation
+          of every call as well.
+        </p>
+        <p>
+          The two interface gaps went with it. A call now rings — the desktop's own sound theme,
+          <code>phone-incoming-call</code> and the ringback that goes with it, honouring
+          <code>event-sounds</code> and silent on macOS, which has no such theme — and raises a
+          notification carrying <em>Answer</em> and <em>Decline</em>. The push rule
+          <code>.m.rule.call</code> was already firing for the invite and being dropped as an
+          event of unexpected type; it now defers to the calls module, which is the half that
+          can withdraw the notification when the ringing stops. And <code>m.call.invite</code>
+          is no longer filtered out of the timeline, so a call leaves a row saying what became
+          of it — which is also the spec's ask for the one case where this client does not ring:
+          "when clients suppress ringing for an incoming call invite, they SHOULD still display
+          the call invite in the room and annotate that it was ignored".
+        </p>
+        <p>
+          What that row cannot say: a call from before the client was running has no outcome.
+          Nothing about a call is written to disk, so the row repeats what the invite said and
+          does not guess at whether anybody answered.
+        </p>
+        <p>
+          <strong>Four parts of this have never been put in front of a second client</strong>:
+          the renegotiation in both directions, the button that adds the camera, the rollback
+          when two renegotiations cross, and the row's answered and missed cases. The ringtone
+          and the notification need only an incoming call to see. <code>doc/calls.md</code>
+          carries the same list at the top, where it cannot be missed.
+        </p>
+      </div>
       <div class="note closed">
         <h3>Correction: knocking was always settable</h3>
         <p>
@@ -1023,7 +1076,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Already conformant <span class="tick have">32 modules</span></h2>
+      <h2>Already conformant <span class="tick have">33 modules</span></h2>
       <p class="sec-sub">
         For context on where the effort has gone. Encryption in particular is complete: cross-signing,
         SAS and QR verification, recovery through secret storage, and key import/export.
@@ -1062,6 +1115,7 @@
       <span>Server ACLs</span>
       <span>Recently used emoji</span>
       <span>Server Notices</span>
+      <span>Voice over IP</span>
     </div>
   </section>
 
@@ -1078,12 +1132,13 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>3b8efb40</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>db7b0d5c</code>, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link
     previews added against the stable endpoint only, the server notices room given a section, a
-    banner and a filter, the Voice over IP module written but not yet exercised, every local
+    banner and a filter, the Voice over IP module carried from nothing to every event it
+    defines — the last of them, <code>m.call.negotiate</code>, on 23 August — every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
     Client-Server API at <code>spec.matrix.org/v1.19</code>, and module names follow its own section
