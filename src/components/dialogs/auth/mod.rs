@@ -5,6 +5,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 use matrix_sdk::{Error, encryption::CrossSigningResetAuthType};
 use ruma::{
+    OwnedUserId,
     api::{
         MatrixVersion, OutgoingRequestExt, SupportedVersions,
         auth_scheme::SendAccessToken,
@@ -40,15 +41,18 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/auth/mod.ui")]
-    #[properties(wrapper_type = super::AuthDialog)]
     pub struct AuthDialog {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
-        /// The parent session.
-        #[property(get, set, construct_only)]
-        session: glib::WeakRef<Session>,
+        /// The client to authenticate with.
+        client: OnceCell<matrix_sdk::Client>,
+        /// The ID of the user being authenticated.
+        ///
+        /// `None` while registering: the account does not exist yet, so there
+        /// is nobody to identify to the password stage.
+        user_id: OnceCell<Option<OwnedUserId>>,
         /// Whether this dialog is presented.
         is_presented: Cell<bool>,
         /// The current state of the authentication.
@@ -86,7 +90,6 @@ mod imp {
         }
     }
 
-    #[glib::derived_properties]
     impl ObjectImpl for AuthDialog {
         fn dispose(&self) {
             if let Some(abort_handle) = self.abort_handle.take() {
@@ -100,6 +103,22 @@ mod imp {
     impl ToastableDialogImpl for AuthDialog {}
 
     impl AuthDialog {
+        /// Set the client to authenticate with, and the user it authenticates.
+        ///
+        /// Called once, by the constructors.
+        pub(super) fn init(&self, client: matrix_sdk::Client, user_id: Option<OwnedUserId>) {
+            self.client.set(client).expect("client is set once");
+            self.user_id.set(user_id).expect("user ID is set once");
+        }
+
+        /// The client to authenticate with.
+        fn client(&self) -> Result<matrix_sdk::Client, AuthError> {
+            self.client.get().cloned().ok_or_else(|| {
+                error!("Could not get the client of the authentication dialog");
+                AuthError::Unknown
+            })
+        }
+
         /// The notifier to signal to perform the current stage.
         fn notifier(&self) -> &OneshotNotifier<Option<()>> {
             self.notifier
@@ -121,9 +140,7 @@ mod imp {
             Fut: Future<Output = Result<Response, Error>> + Send + 'static,
             FN: Fn(matrix_sdk::Client, Option<AuthData>) -> Fut + Send + Sync + 'static + Clone,
         {
-            let Some(client) = self.session.upgrade().map(|s| s.client()) else {
-                return Err(AuthError::Unknown);
-            };
+            let client = self.client()?;
 
             // Perform the request once, to see if UIAA if required.
             let callback_clone = callback.clone();
@@ -163,9 +180,7 @@ mod imp {
             &self,
             parent: &gtk::Widget,
         ) -> Result<(), AuthError> {
-            let Some(encryption) = self.session.upgrade().map(|s| s.client().encryption()) else {
-                return Err(AuthError::Unknown);
-            };
+            let encryption = self.client()?.encryption();
 
             let handle = spawn_tokio!(async move { encryption.reset_cross_signing().await });
             let result = self.await_tokio_task(handle).await?;
@@ -385,16 +400,12 @@ mod imp {
 
         /// Get the fallback URL for the given state.
         async fn fallback_url(&self, state: &AuthState) -> Result<String, AuthError> {
-            let Some(session) = self.session.upgrade() else {
-                return Err(AuthError::Unknown);
-            };
-
             let uiaa_session = state.session.clone().ok_or(AuthError::MissingSessionId)?;
 
             let request =
                 get_uiaa_fallback_page::v3::Request::new(state.stage.clone(), uiaa_session);
 
-            let client = session.client();
+            let client = self.client()?;
             let homeserver = client.homeserver();
 
             let handle =
@@ -453,12 +464,10 @@ mod imp {
                         })?
                         .password();
 
-                    let user_id = self
-                        .session
-                        .upgrade()
-                        .ok_or(AuthError::Unknown)?
-                        .user_id()
-                        .clone();
+                    let Some(user_id) = self.user_id.get().cloned().flatten() else {
+                        error!("Could not perform the password stage without a user ID");
+                        return Err(AuthError::MissingUserId);
+                    };
 
                     AuthData::Password(assign!(
                         Password::new(UserIdentifier::Matrix(user_id.into()), password),
@@ -503,8 +512,19 @@ glib::wrapper! {
 }
 
 impl AuthDialog {
+    /// Construct an `AuthDialog` for the given logged-in session.
     pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
+        Self::for_client(session.client(), Some(session.user_id().clone()))
+    }
+
+    /// Construct an `AuthDialog` for the given client.
+    ///
+    /// The user ID is `None` when there is no account yet, which is the case
+    /// while registering one.
+    pub fn for_client(client: matrix_sdk::Client, user_id: Option<OwnedUserId>) -> Self {
+        let obj: Self = glib::Object::new();
+        obj.imp().init(client, user_id);
+        obj
     }
 
     /// Authenticate the user to the server via an interactive authentication
@@ -598,6 +618,13 @@ pub enum AuthError {
     /// The ID of the UIAA session is missing for a stage that requires it.
     #[error("The ID of the session is missing")]
     MissingSessionId,
+
+    /// The ID of the user is missing for a stage that requires it.
+    ///
+    /// The password stage identifies the user to the homeserver, so it cannot
+    /// be performed while registering.
+    #[error("The ID of the user is missing")]
+    MissingUserId,
 
     /// The user cancelled the authentication.
     #[error("The user cancelled the authentication")]
