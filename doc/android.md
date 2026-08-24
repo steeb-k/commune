@@ -1230,9 +1230,53 @@ subsystem is on that path.
 
 `matrix.org` itself does not get that far, and should not be expected to: it authenticates through
 OAuth 2.0, so `discover_login_api` finds server metadata and hands off to the browser flow. That
-needs the redirect the plan has always listed as unimplemented — see [Known gaps](#known-gaps).
-Discovery against it does succeed, which is what proves the TLS fix; the flow then stops where the
-plan said it would.
+needs the redirect the plan has always listed as unimplemented — see
+[OAuth 2.0 / SSO login on Android](#oauth-20--sso-login-on-android). Discovery against it does
+succeed, which is what proves the TLS fix; the flow then stops where the plan said it would.
+
+### OAuth 2.0 / SSO login on Android
+
+The redirect [Logging in works](#logging-in-works) stopped at is built now, and measured against
+the real thing: `matrix.org`.
+
+**Three separate breaks, not one.** The plan's own note — "it needs an intent-filter and a custom
+scheme" — undersold it once the pieces were built and tried against a live server.
+
+1. **The browser never opened.** `gtk::UriLauncher` has no Android backend at all —
+   `gtkurilauncher.c` falls through to `gtk_show_uri_full`, which asks GIO's app-info registry for a
+   handler, and that registry is empty on Android. `src/utils/android.rs::launch_uri()` builds the
+   `ACTION_VIEW` `Intent` by hand over JNI and launches it through
+   `gdk_android_toplevel_launch_activity`, the same entry point `gtk::FileLauncher` already used for
+   its own Android intents (`gtkfilelauncher.c:511`).
+2. **The app id's own redirect scheme doesn't parse.** A URI scheme is `ALPHA *( ALPHA / DIGIT / "+"
+   / "-" / "." )` (RFC 3986 §3.1); `io.github.steeb_k.Commune`'s underscore is not in that set, and
+   `url` confirms it by refusing to parse `io.github.steeb_k.commune:/…`. The redirect URI is
+   `io.github.steeb-k.commune:/oauth2redirect` instead — the real domain the app id is derived from,
+   `steeb-k.github.io`, which has no underscore to begin with.
+3. **A redirect into a running Commune was dropped.** `patch-manifest.sh` sets
+   `launchMode="singleTask"` (see [above](#the-manifest-patch-which-is-done)), so a second launch
+   resumes the running Activity through `onNewIntent` rather than `onCreate` — and
+   `ToplevelActivity` had no `onNewIntent` at all, so the redirect's `Intent` arrived and was never
+   read. `build-aux/android/patch-gtk-intent.sh` adds it, doing what `onCreate` already does with an
+   incoming `Intent`.
+
+None of these three is reachable in isolation from `local_server.rs` alone — each one hides the
+next, so each was only found by fixing the one before it and trying again against a real server.
+
+**What matrix.org's server added on top.** With all three fixed, dynamic client registration
+against `matrix.org` still failed: `invalid_redirect_uri`. matrix-authentication-service's
+`client_registration.rego` policy requires that, for a native client's non-`https` redirect URI, the
+registered `client_uri`'s host — read as reverse-DNS labels — be a _prefix_ of the redirect scheme's
+own dot-separated labels. `github.com` reversed is `com.github`, not a prefix of
+`io.github.steeb-k.commune`; `client_uri` is `https://steeb-k.github.io/` on Android for exactly
+this reason — the same domain the scheme already reverses to.
+
+**Confirmed against `matrix.org`, live, on the emulator, with a real account.** Commune launches
+Chrome with the real authorization URL, matrix.org's client registration accepts it,
+`account.matrix.org/login` renders in full, and — completed by hand, not by this automation, since
+it needed a real account — the login itself completes: the redirect reaches `onNewIntent` →
+`Application::process_uri` → `android::deliver_oauth_redirect`, and the session opens. Every part
+of the chain this section describes is now measured, not predicted. SSO login on Android works.
 
 ### What has not been exercised
 
@@ -1247,9 +1291,12 @@ Running the app answers some of what S3 left open and not others.
 all run.
 
 **Still open.** `glib::user_cache_dir()` is still untested and still looks wrong — the glue sets no
-cache directory at all. The soft keyboard's behaviour with a real `GtkTextView` composer, which is
-S0's oldest open question, is now reachable from a logged-in session but has not been tested; the
-homeserver entry is an `AdwEntryRow` and is not the same thing.
+cache directory at all.
+
+**Also answered, later still.** The soft keyboard's behaviour with a real `GtkTextView` composer,
+S0's oldest open question, is no longer open — see
+[The soft keyboard did not hide itself](#known-gaps) in Known gaps. `BACK` hides it correctly with
+a real session and a real composer.
 
 **Translations are missing.** `files/share` has no `locale` directory, so `bindtextdomain` points
 at nothing and the app is English-only. Same cause as the schema — an untagged install — but in
@@ -1276,8 +1323,21 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
 
   **Superseded.** Retesting in S3 found something else entirely underneath: GTK told the IME the
   field was not a text field at all, so on current GTK there was no keyboard to hide. See
-  [The IME, and why no keyboard appeared](#the-ime-and-why-no-keyboard-appeared). Whether the
-  hiding behaviour is still wrong once a keyboard exists has not been retested.
+  [The IME, and why no keyboard appeared](#the-ime-and-why-no-keyboard-appeared).
+
+  **Retested again, 24 August 2026, with a real session and a real `sourceview::View` composer.**
+  Typed into the composer in a real room; `dumpsys input_method` showed `mInputShown=true`. The
+  system **BACK** button hides it correctly: `mInputShown` goes to `false`, the composer keeps
+  focus, the typed text is untouched, and the room stays open. That is the behaviour that matters —
+  the ordinary gesture of dismissing the keyboard to see the timeline while composing works.
+
+  Two things this does not settle. It was measured against the emulator's own collapsed toolbar,
+  not a full soft keyboard — see
+  [The emulator is in physical-keyboard mode](#the-emulator-is-in-physical-keyboard-mode) — since
+  Gboard still treats this AVD as having a physical one; a device or an AVD without that quirk
+  would be the stronger test. And **`ESC`** does not behave like `BACK`: it triggers GTK's own
+  back-navigation and leaves the room entirely rather than only dismissing the IME. Not itself a
+  bug, just a reason not to read `ESC` and `BACK` as equivalent here.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
 * ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
@@ -1301,11 +1361,20 @@ Cosmetic for a spike, and it should be fixed before anyone sees it.
   release build with stripping has not been measured, and neither has an `aarch64` one.
 * GStreamer is not built at all: pixiewood's cross file sets `media-gstreamer = 'disabled'` for
   GTK, so voice messages, video and calls are all out of reach until S4.
-* **OAuth 2.0 / SSO login cannot complete.** `src/login/local_server.rs` listens on localhost for
-  the browser to redirect back, which no browser on Android will do for another application's
-  loopback. It needs an intent-filter and a custom scheme instead. This was in the plan from the
-  start; reaching the authentication page on `matrix.org` is the first time it has actually been
-  hit. Password login is unaffected.
+* ~~OAuth 2.0 / SSO login cannot complete.~~ **Fixed and confirmed against a real `matrix.org`
+  account**, see [OAuth 2.0 / SSO login on Android](#oauth-20--sso-login-on-android).
+* **Unsupported image filetypes will surface here too, and the fix has not been ported.**
+  `src/utils/media/image/decoder/mod.rs` is the seam this port shares with macOS and Windows — see
+  the table entry in `doc/android-plan.md`. Windows hit "Image format not supported" for SVG, HEIC
+  and AVIF and fixed it by falling back to GdkPixbuf for whatever the `image` crate does not
+  recognise (`0454830b`, `git log -1 --format=%B 0454830b` in the `windows-port`/main lineage), but
+  that commit is not on this branch: `android-port` is based on `main` from before it, and the plan
+  has always said this branch waits to be rebased onto `windows-port`. Porting the fix is not
+  necessarily enough on its own, either — the fallback only helps for formats GdkPixbuf actually has
+  a loader for, and pixiewood's dependency list (`build-aux/android/io.github.steeb_k.Commune.xml`)
+  only wraps `rsvg`. HEIC and AVIF would need `libheif`/`libavif` cross-built and wrapped the same
+  way before the fallback could reach them here. Not measured yet — no image of an unsupported
+  format has been sent to this build.
 * **The TLS trust roots are read from the filesystem rather than verified by Android.** Deliberate,
   measured, and narrower than the platform verifier in ways written down in `src/utils/tls.rs` and
   in [The TLS that never returned](#the-tls-that-never-returned). Replacing it needs the Kotlin
