@@ -48,13 +48,16 @@ notion of another one; it is worth the intrusion because this is the only place 
 that hands raw pointers to the operating system, and everything it protects is lost if it is wrong.
 `cargo nextest run` is 156 tests, all passing, and `meson test` passes.
 
-**Logging in works**, against a real homeserver, and syncing and the timeline with it.
+**Logging in works**, against a real homeserver, and syncing and the timeline with it. So does
+**session restore** — quit and relaunch and the session comes back out of the Credential Manager —
+which completes that path end to end, since restoring is the one part the round-trip test could
+not cover.
 
 Three things came out of that first session with an account, and none of them is what it looked
 like at first glance. They are written up in [What bit us](#what-bit-us): calls fail over Remote
-Desktop for want of a microphone and not for want of a port; message search is broken by room IDs
-that Windows will not accept as directory names; and GLib turns out to have a Windows notification
-backend after all, which changes what M5 is.
+Desktop for want of a microphone and not for want of a port; the message search index cannot live
+on disk here, because a room ID is not a legal Windows file name; and GLib turns out to have a
+Windows notification backend after all, which changes what M5 is.
 
 | Area | State |
 | --- | --- |
@@ -63,7 +66,7 @@ backend after all, which changes what M5 is.
 | Image decoding | `image` crate, shared with macOS via `cfg(not(target_os = "linux"))` |
 | Video and audio playback | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
 | Secrets | Windows Credential Manager, `src/secret/windows.rs`, round-tripped by a test |
-| Message search | **Broken** — a room ID cannot be a directory name here, see below |
+| Message search | In-memory index — it cannot be stored on disk here, see below |
 | Data directories | `%LOCALAPPDATA%\commune[-Devel]\{data,cache}` |
 | Console window | Suppressed in release builds only, `src/main.rs` |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
@@ -374,18 +377,26 @@ wrong, and nothing about it has been shown to be right either — this test says
 Worth fixing regardless: what reaches the user is "Could not open device", naming a backend nobody
 chose. "No microphone was found" is what happened.
 
-**Message search is broken, by a room ID in a path.** Every sync logs, once per room:
+**The message search index cannot live on disk, because a room ID is not a legal file name.**
+Every sync used to log, once per room:
 
 ```text
 Failed to handle events for indexing: IoError 'Os { code: 123, kind: InvalidFilename … }'
   while create directory in: '…\cache\<session>\search_index\!kTpl…:matrix.kzenjak.com'
 ```
 
-The search index gives each room a directory named after its room ID, and a room ID contains a
-colon, which Windows does not allow in a file name. This is `matrix-sdk`'s `experimental-search`
-code rather than ours, and the failure is contained — syncing and the timeline are unaffected, and
-only search is lost — but it fires on every batch of events for every room, so the log is full of
-it. It needs either a fix upstream or the feature turned off for this target.
+The index gives each room a directory named after its room ID —
+`self.path.join(self.room_id.as_str())` in `matrix-sdk-search` — and a room ID contains a colon,
+which Windows will not accept in a file name. There is no hook for us in between: the SDK is
+handed a base directory and appends the room ID itself.
+
+So on Windows `search_index_store()` in `src/utils/matrix/mod.rs` returns
+`SearchIndexStoreKind::InMemory` instead of the encrypted directory the other platforms use. The
+index is then built from the event cache as events arrive, so search covers what has been synced
+this run. Two things are given up: the index does not survive a restart, and with it goes the
+encryption at rest that a stored index needed in the first place — an in-memory index has nothing
+at rest to protect. It should go away if the SDK ever names those directories with something legal
+everywhere.
 
 **GLib does have a Windows notification backend**, which the plan assumed it did not:
 
@@ -434,15 +445,15 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 
 ## Not done yet
 
-* **The rest of M1.** Logging in and syncing are done. Still owed: image thumbnails and animated
-  GIFs, video and voice-message playback, and session restore — the last being the one to watch,
-  since it is the only part of the Credential Manager path the round-trip test does not cover.
-  Log in, quit, relaunch, and see the session come back.
+* **The rest of M1.** Logging in, syncing and session restore are all done — the last completing
+  the Credential Manager path end to end, since restoring is the one part the round-trip test
+  could not cover. Still owed: image thumbnails and animated GIFs, and video and voice-message
+  playback.
 * **Calls, from a machine that has a microphone.** Every element they need is present, and the
   signalling half already works; the pipeline half has never had a capture device to open. See
   [What bit us](#what-bit-us). Run against Element per `doc/calls.md`, from the console.
-* **The search index**, which fails on every room because a room ID cannot be a Windows directory
-  name. Upstream fix, or the feature disabled for this target.
+* **Whether search actually finds anything.** The indexing errors are gone and the index is built
+  in memory, but no search has been run against it from the UI.
 * **Signing an actual artifact.** The pipeline is written and skips cleanly without metadata, but
   nothing has yet been signed, so neither the signtool invocation nor what SmartScreen makes of
   the result has been seen. That needs `artifact-signing-metadata.json` and the Trusted Signing

@@ -1,6 +1,6 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{borrow::Cow, fmt, str::FromStr};
+use std::{borrow::Cow, fmt, path::Path, str::FromStr};
 
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
@@ -183,6 +183,38 @@ impl UserFacingError for ClientSetupError {
     }
 }
 
+/// Where the message search index for a session should live.
+///
+/// Everywhere but Windows this is a directory in the cache, encrypted with the
+/// same passphrase as the databases so that message bodies are not readable at
+/// rest. The search index can always be rebuilt from the event cache, which is
+/// why the cache directory is the right place for it.
+#[cfg(not(target_os = "windows"))]
+fn search_index_store(cache_path: &Path, passphrase: &str) -> SearchIndexStoreKind {
+    SearchIndexStoreKind::EncryptedDirectory(cache_path.join("search_index"), passphrase.to_owned())
+}
+
+/// Where the message search index for a session should live.
+///
+/// On Windows it cannot live on disk at all. The SDK gives each room a
+/// directory named after its room ID — `self.path.join(self.room_id.as_str())`
+/// in `matrix-sdk-search` — and a room ID contains a colon, which Windows will
+/// not accept in a file name. Every room fails to index, once per batch of
+/// events, and the only visible symptom is a log full of
+/// `InvalidFilename` errors and a search that finds nothing.
+///
+/// An in-memory index works and is not a large concession: it is built from the
+/// event cache as events arrive, so search covers what has been synced this
+/// run. What is lost is the index surviving a restart, and the encryption at
+/// rest that a stored index needed in the first place.
+///
+/// This should go away if the SDK ever names those directories with something
+/// that is legal on every platform.
+#[cfg(target_os = "windows")]
+fn search_index_store(_cache_path: &Path, _passphrase: &str) -> SearchIndexStoreKind {
+    SearchIndexStoreKind::InMemory
+}
+
 /// Create a [`Client`] with the given stored session.
 pub(crate) async fn client_with_stored_session(
     session: StoredSession,
@@ -191,9 +223,6 @@ pub(crate) async fn client_with_stored_session(
     let has_refresh_token = tokens.refresh_token.is_some();
     let data_path = session.data_path();
     let cache_path = session.cache_path();
-    // The search index can always be rebuilt from the event cache, so it belongs
-    // in the cache directory.
-    let search_index_path = cache_path.join("search_index");
 
     let StoredSession {
         homeserver,
@@ -223,6 +252,9 @@ pub(crate) async fn client_with_stored_session(
         auto_enable_backups: false,
     };
 
+    // Worked out before the builder takes ownership of `cache_path`.
+    let search_index_store = search_index_store(&cache_path, &passphrase);
+
     let mut client_builder = Client::builder()
         .homeserver_url(homeserver)
         .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
@@ -231,12 +263,7 @@ pub(crate) async fn client_with_stored_session(
         // https://gitlab.gnome.org/World/fractal/-/issues/934
         .request_config(RequestConfig::new().retry_limit(2).force_auth())
         .with_encryption_settings(encryption_settings)
-        // Store the message search index encrypted with the same passphrase as the
-        // databases, so that message bodies are not readable at rest.
-        .search_index_store(SearchIndexStoreKind::EncryptedDirectory(
-            search_index_path,
-            passphrase.to_string(),
-        ));
+        .search_index_store(search_index_store);
 
     if has_refresh_token {
         client_builder = client_builder.handle_refresh_tokens();
