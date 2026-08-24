@@ -179,6 +179,17 @@ sidebar {
   }
 }
 
+// Space
+.space-children {
+  row {
+    padding: 12px;
+  }
+
+  .padded-button {
+    min-width: 64px;
+  }
+}
+
 .explore-servers-popover list {
   background-color: transparent;
   color: inherit;

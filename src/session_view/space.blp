@@ -22,17 +22,15 @@ template $ContentSpace: Adw.Bin {
       hscrollbar-policy: never;
 
       child: Adw.Clamp {
-        maximum-size: 444;
-        tightening-threshold: 300;
-        vexpand: true;
+        maximum-size: 600;
+        tightening-threshold: 400;
         margin-top: 24;
         margin-bottom: 24;
         margin-start: 24;
         margin-end: 24;
 
         child: Gtk.Box {
-          valign: center;
-          halign: center;
+          valign: start;
           spacing: 24;
           orientation: vertical;
 
@@ -40,16 +38,18 @@ template $ContentSpace: Adw.Bin {
             label: _("Space");
           }
 
-          $Avatar avatar {
-            size: 150;
-            data: bind template.room as <$Room>.avatar-data;
-            watched-room: bind template.room;
-            watched-safety-setting: "invite-avatars";
-            accessible-role: "presentation";
-          }
-
           Gtk.Box {
+            spacing: 12;
             orientation: vertical;
+
+            $Avatar avatar {
+              size: 96;
+              halign: center;
+              data: bind template.room as <$Room>.avatar-data;
+              watched-room: bind template.room;
+              watched-safety-setting: "invite-avatars";
+              accessible-role: "presentation";
+            }
 
             Gtk.Label {
               wrap: true;
@@ -73,32 +73,122 @@ template $ContentSpace: Adw.Bin {
                 "dimmed",
               ]
             }
+
+            Gtk.Label room_topic {
+              wrap: true;
+              wrap-mode: word_char;
+              justify: center;
+              use-markup: true;
+              label: bind template.room as <$Room>.topic-linkified;
+              visible: bind $string_not_empty(template.room as <$Room>.topic-linkified) as <bool>;
+
+              styles [
+                "dimmed",
+                "body",
+              ]
+            }
           }
 
-          Gtk.Label room_topic {
-            wrap: true;
-            wrap-mode: word_char;
-            justify: center;
-            use-markup: true;
-            label: bind template.room as <$Room>.topic-linkified;
-            visible: bind $string_not_empty(template.room as <$Room>.topic-linkified) as <bool>;
+          Gtk.Stack children_stack {
+            transition-type: crossfade;
+            vhomogeneous: false;
 
-            styles [
-              "dimmed",
-              "body",
-            ]
-          }
+            Gtk.StackPage {
+              name: "loading";
+              title: _("Loading");
 
-          Gtk.Label {
-            wrap: true;
-            wrap-mode: word_char;
-            justify: center;
-            label: _("A space groups rooms together. The rooms in this one cannot be listed here yet — open them from the sidebar, or find them with Explore.");
+              child: Adw.Spinner {
+                height-request: 32;
+              };
+            }
 
-            styles [
-              "dimmed",
-              "body",
-            ]
+            Gtk.StackPage {
+              name: "empty";
+              title: _("No Rooms");
+
+              child: Gtk.Label {
+                wrap: true;
+                wrap-mode: word_char;
+                justify: center;
+                label: _("There are no rooms in this space yet.");
+
+                styles [
+                  "dimmed",
+                  "body",
+                ]
+              };
+            }
+
+            Gtk.StackPage {
+              name: "error";
+              title: _("Error");
+
+              child: Gtk.Box {
+                spacing: 12;
+                orientation: vertical;
+
+                Gtk.Label {
+                  wrap: true;
+                  wrap-mode: word_char;
+                  justify: center;
+                  label: _("The rooms in this space could not be listed.");
+
+                  styles [
+                    "dimmed",
+                    "body",
+                  ]
+                }
+
+                Gtk.Button {
+                  halign: center;
+                  label: _("Try Again");
+                  clicked => $retry_children() swapped;
+                }
+              };
+            }
+
+            Gtk.StackPage {
+              name: "list";
+              title: _("Rooms");
+
+              child: Gtk.Box {
+                spacing: 12;
+                orientation: vertical;
+
+                Gtk.Label {
+                  xalign: 0;
+                  // Translators: This is a heading above the list of rooms
+                  // that are inside a space.
+                  label: _("Rooms");
+
+                  styles [
+                    "heading",
+                  ]
+                }
+
+                Gtk.ListBox children_list {
+                  selection-mode: none;
+
+                  styles [
+                    "boxed-list",
+                    "space-children",
+                  ]
+                }
+
+                Gtk.Label truncated_label {
+                  visible: false;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  xalign: 0;
+                  label: _("This space holds more rooms than are listed here.");
+
+                  styles [
+                    "dimmed",
+                    "caption",
+                  ]
+                }
+              };
+            }
           }
         };
       };

@@ -265,18 +265,29 @@ is everything up to the point where the email would arrive.
 
 ## Spaces — `doc/spaces.md`
 
-Round 3, slice 1: spaces stop being invisible. Nothing here browses what is
-_inside_ a space — that is slice 2 — so every check below is about a space
-being present, openable, leavable and findable.
+Round 3. Slice 1 made spaces stop being invisible; slice 2 made the space page
+list the rooms inside one. The slice 1 checks are about a space being present,
+openable, leavable and findable; the slice 2 checks are under _What is inside
+one_.
 
 ### Setting up
 
 Everything except the last group runs against `testing/local-homeserver.sh`,
-which already seeds a public space called **Test Space** (`#test-space:localhost`,
-created by alice). Note it has **no child rooms**: `Restricted Room` and
-`Knock Restricted Room` name the space in their join rule, which is not the
-same as being in it. So an empty space is the case under test here, and that is
-the right case for slice 1.
+which seeds a public space called **Test Space** (`#test-space:localhost`,
+created by alice) with five rooms inside it, one for each shape a listing has
+to draw:
+
+| Room | Why it is there |
+| --- | --- |
+| `Public Room` | alice has joined it — the button should say _View_ |
+| `Restricted Room` | alice has joined it too, and it names the space in its join rule |
+| `Bobs Room` | bob made it and alice never joined — the button should say _Join_ |
+| `Sub Space` | a space inside a space — where the one-level limit shows |
+| `Readable Room` | `world_readable`, with a message in it, for peeking later |
+
+Naming a space in a join rule is **not** the same as being a child of it, so
+`seed_space_children()` writes the `m.space.child` events. It runs outside the
+`seeded.json` gate, which means an existing server picks the children up:
 
 ```sh
 testing/local-homeserver.sh up        # or `reset` for a clean slate
@@ -324,9 +335,8 @@ a second run.
 * [ ] **The header bar is the same height as every other page's.** Switch
       between a room, Explore and the space with the sidebar visible. It was
       added to the size group by hand and the array's length is a literal.
-* [ ] **The body**: a large avatar, the name in large type, the canonical
-      alias `#test-space:localhost` under it, and the sentence saying the rooms
-      inside cannot be listed yet.
+* [ ] **The body**: an avatar, the name in large type, the canonical alias
+      `#test-space:localhost` under it, and the list of rooms below that.
 * [ ] **A space with no topic hides the topic label** rather than leaving a
       gap — and a space _with_ one shows it. Set one from another client, or
       check against a space on matrix.org.
@@ -336,6 +346,61 @@ a second run.
 * [ ] **No dead controls.** There is no _Room Details_, no composer, no member
       list. If any of the room-history header bar buttons appear on this page,
       the wrong page is being shown.
+
+### What is inside one
+
+Slice 2. All of this is on the space page, below the topic.
+
+* [ ] **The five seeded rooms appear** under a _Rooms_ heading: Public Room,
+      Restricted Room, Bobs Room, Sub Space and Readable Room. Not four, not
+      six, and **not Test Space itself** — the space is the first room the
+      endpoint returns and it is skipped on purpose.
+* [ ] **A spinner shows first and is replaced.** Select the space from a cold
+      start. If the spinner stays forever the request failed silently; if the
+      page is blank the stack landed on the wrong child.
+* [ ] **The buttons say the right thing.** As alice: _View_ on Public Room and
+      Restricted Room, _Join_ on Bobs Room and Readable Room. As bob, who is in
+      Bobs Room and not the others, the two swap over. This is
+      `RoomListRoomInfo`, and a button that says _Join_ for a room you are
+      already in means the identifiers are not matching.
+* [ ] **_View_ opens the room.** Clicking it selects that room in the sidebar
+      and shows its timeline.
+* [ ] **_Join_ joins it, in place.** Click _Join_ on Bobs Room: the button
+      shows its loading state, the room appears in the sidebar under _Rooms_,
+      and the button on the space page turns into _View_ **without reopening
+      the page**. That last part is the live half of `RoomListRoomInfo`; if it
+      needs a revisit to update, the handler is not connected.
+* [ ] **Sub Space is marked as a space** — the dimmed grid icon and the word
+      _Space_ — and its button behaves like any other room's.
+* [ ] **Sub Space opens its own page.** _View_ it (join it first if need be)
+      and you land on a second space page, for Sub Space, with its own —
+      empty — room list. This is how nesting is walked, one page at a time.
+* [ ] **An empty space says so.** Sub Space has no children, so its page
+      should read "There are no rooms in this space yet." rather than showing a
+      spinner or an empty heading.
+* [ ] **Each row shows what it should**: avatar, name, topic where there is
+      one, canonical alias where there is one, and a member count. A room with
+      no topic must not leave a gap.
+* [ ] **Switching between two spaces swaps the lists.** Select Test Space, then
+      Sub Space, then Test Space again. The second page must never show the
+      first page's rooms, even for an instant — the list is cleared before the
+      new request goes out, and the response of a space you have navigated away
+      from is dropped.
+* [ ] **The list survives a reselect.** Leave the space page, come back: the
+      rooms are still there, or are fetched again, but never half of them.
+* [ ] **No truncation notice on a small space.** "This space holds more rooms
+      than are listed here." should be **invisible** for Test Space. It only
+      belongs on a space with more than 200 rooms, which the harness has no way
+      to make — check it on matrix.org if you find one.
+* [ ] **The error state is reachable and recoverable.** Stop the homeserver
+      (`testing/local-homeserver.sh down`), open a space you have not opened
+      this session: the page should say the rooms could not be listed and offer
+      _Try Again_. Bring the server back up and press it — the list should
+      fill in. A dead-end error page is the failure here.
+* [ ] **A space on matrix.org lists its rooms too.** This is the check that
+      the `via` servers are being read: a real space holds rooms on other
+      homeservers, and joining one of those from the list is what fails if the
+      `m.space.child` events were not parsed.
 
 ### Leaving one, and not re-filing one
 
@@ -371,13 +436,17 @@ a second run.
       there too. The local harness has one space and one shape of summary; a
       real directory is where a missing `room_type` shows up.
 
-### Invites, and what slice 1 deliberately does not change
+### Invites, and what these slices deliberately do not change
 
 * [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
       invite page. As bob, have alice invite you to Test Space. Accepting it
       should drop the space into the Spaces section on the next sync; declining
       should behave like declining a room. The invite page says nothing about
       it being a space, which is known and recorded in `spaces.md`.
+* [ ] **A room added to a space while its page is open does not appear.**
+      Known, and recorded in `spaces.md` under _Not done_: the listing is
+      fetched once. Reselecting the space should pick the new room up. This
+      check exists so the behaviour is not re-reported as a bug.
 * [ ] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
       Historical and the drag-and-drop between them all still work; the
       _Forget_ target is still at the bottom of the sidebar. The section index
