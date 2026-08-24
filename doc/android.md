@@ -927,9 +927,27 @@ would still need the same lib target, so it is a variation on the first option r
 escape from it.
 
 Once the entry point exists, what remains is short and dull: a pixiewood manifest for Commune
-carrying the architecture whitelist and the `-Dgtksourceview:*` options, the
-`launchMode="singleTask"` patch (which has to survive `pixiewood generate` rewriting
-`AndroidManifest.xml`), and then password login against `testing/local-homeserver.sh`.
+carrying the architecture whitelist and the `-Dgtksourceview:*` options, and then password login
+against `testing/local-homeserver.sh`.
+
+#### The manifest patch, which is done
+
+`build-aux/android/patch-manifest.sh` runs between `pixiewood generate` and `pixiewood build`. It
+exists because pixiewood rewrites `AndroidManifest.xml` from `generate/manifest.xsl` every time,
+so neither of these can be hand-edited once, and neither is something the pixiewood manifest can
+express. Tested against the Adwaita demo's generated manifest: idempotent, still well-formed, and
+the intent filter, `gtk.android.lib_name` metadata and `REORDER_TASKS` permission all survive.
+
+* **`launchMode`, `standard` → `singleTask`.** S0 found this and it is unchanged: GTK has one
+  toplevel, Android stacks a new Activity per launch, and returning from the launcher otherwise
+  shows an empty white window in front of the working one.
+* **`allowBackup`, `true` → `false`.** This one is new, and it matters more than it looks.
+  pixiewood leaves Android's default in place, and that default lets `adb backup` and the system's
+  cloud backup copy the application's private files off the device — including, right now, the
+  plaintext file holding the passphrase that encrypts the local databases. The secret store's
+  documentation had assumed backup was disabled; it was not. It stays disabled after the Keystore
+  work too: a Keystore key cannot leave the device, so a backup carrying the databases without it
+  would restore something unreadable.
 
 #### Not yet exercised at all
 

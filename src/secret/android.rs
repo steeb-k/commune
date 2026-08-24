@@ -28,6 +28,12 @@
 //! `MANAGE_EXTERNAL_STORAGE`, and may live on removable media. It is not the
 //! UID-owned private directory the sandbox argument depends on.
 //!
+//! One related hole is closed rather than merely noted: pixiewood leaves
+//! `android:allowBackup` at Android's default of `true`, which would let
+//! `adb backup` and the system's cloud backup carry this file off the device.
+//! `build-aux/android/patch-manifest.sh` turns it off after every
+//! `pixiewood generate`.
+//!
 //! So the honest description of the present posture is a plaintext passphrase
 //! on semi-public storage. The directory is worth fixing on its own, ahead of
 //! the Keystore work — but not only here: every [`DataType::Persistent`]
