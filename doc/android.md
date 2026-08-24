@@ -34,7 +34,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | not started |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; push not started, and the app is still only delivered to while foregrounded |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 
 ## Where things are
 
@@ -940,11 +940,23 @@ $PW prepare --sdk $HOME/android/sdk --toolchain $HOME/android/sdk/ndk/27.2.12479
 $PW generate
 sh build-aux/android/patch-manifest.sh      # between generate and build, always
 sh build-aux/android/patch-gtk-ime.sh       # likewise; see "The IME" below
+sh build-aux/android/patch-gtk-intent.sh    # likewise; see the SSO section
+sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground service
 $PW build
 ```
 
+All four patches run between every `generate` and `build`. `generate` rewrites the manifest from
+its own XSL each time, and the Java ones write into `subprojects/gtk`, which a re-extracted wrap
+loses. Each script is a no-op when its change is already in place, so running them all every time
+is the cheap and correct habit.
+
 About eleven minutes from cold on this machine, most of it Cargo. The APK lands in
 `.pixiewood/android/app/build/outputs/apk/debug/app-x86_64-debug.apk`.
+
+When only the Rust has changed, `ninja src/libcommune.a` in `.pixiewood/bin-x86_64` is the fast
+loop, and the loud one: meson's wrapper truncates compiler output in `pixiewood build`, so a Rust
+error there arrives as a `FAILED: [code=101]` line with the diagnostic cut off, while ninja on its
+own prints it in full.
 
 `build-aux/android/io.github.steeb_k.Commune.xml` is the pixiewood manifest. Two things in it are
 worth knowing. The `xi:include` reads the **built** metainfo, so the architecture it names has to
@@ -1433,16 +1445,84 @@ missing drawable, no JNI exception.
 **Tapping it opened the conversation**, and `AUTO_CANCEL` removed the notification — the record is
 gone from `dumpsys notification` afterwards.
 
-### What this does not do
+### Syncing while Commune is not on screen
 
-**The app must be in the foreground.** Android freezes the process the moment it is backgrounded,
-so a message that arrives then is not late, it is not received at all: there is no sync running to
-receive it. Nothing above changes that, and for a chat application it is the larger half of the
-problem. The next piece is a foreground service — chosen over UnifiedPush and FCM because it needs
-no push gateway, no distributor application and no homeserver co-operation, and so can be measured
-here rather than assumed. UnifiedPush remains the better answer for battery and can be added over
-the same `NotificationManager` code, which is why that code takes no position on where a
-notification came from.
+Everything above only matters while the app is being looked at, because Android freezes an
+application's process as soon as none of it is visible. A message that arrives then is not late; it
+is not received at all, since the sync loop is a tokio task in this process and a frozen process
+runs nothing.
+
+Of the three ways out, the foreground service is the one that can be measured here: it needs no
+push gateway, no distributor application and no co-operation from the homeserver, so it works
+against any server, including one that has never heard of us. UnifiedPush is better for battery and
+worse for moving parts, and FCM needs Play services, a Firebase project and Gradle changes
+pixiewood cannot express. Both remain possible on top of this — `android_notifications` takes no
+position on where a notification came from — which is the point of doing this one first.
+
+**The service does nothing**, and that is not laziness. The sync loop is already running in this
+process; all a foreground service has to do to keep it running is exist. So `SyncService.java`
+holds no state and starts no work, and every decision about when it should exist is in
+`utils::android_sync_service`: started when a session appears, stopped when the last one goes. Both
+callers are moments when Commune is on screen, which is required — since API 31 a background
+process calling `startForegroundService()` gets `ForegroundServiceStartNotAllowedException`. Not a
+real constraint, since a frozen Commune cannot call anything, but it does decide where the call
+goes.
+
+**Where the Java had to live is decided by pixiewood, not by us.** It symlinks exactly one
+directory into the Gradle project — `org/gtk/android` out of `java-sources`, GTK's own glue
+(`pixiewood:715-717`) — and offers an application no way to add a package of its own.
+`java-sources` cannot be redirected either, because only that one subdirectory is linked, so
+pointing it at a directory of ours would mean vendoring GTK's five glue classes and keeping them in
+step by hand. So `SyncService.java` is copied in beside the glue by a fourth patch script,
+`patch-gtk-service.sh`, and its package is a consequence of that layout rather than a claim about
+whose code it is.
+
+Its user-visible text travels as `Intent` extras rather than as Java resources, because the
+translations are on the Rust side: `gettext` runs against Commune's own catalogues and Java has no
+way to reach them.
+
+**Measured.** The service starts with the session — `isForeground=true foregroundId=1
+types=0x00000001`, which is `FOREGROUND_SERVICE_TYPE_DATA_SYNC` — on a `sync` channel of its own at
+`IMPORTANCE_LOW`, so the ongoing notification is silent and can be muted without muting messages. A
+direct message sent while the app was backgrounded, in a window bookended by `TO_BACK` and
+`TO_FRONT` transitions fifty-two seconds apart, arrived and posted a notification. Before this it
+would not have arrived at all.
+
+**The six-hour cap is the reason push is still the answer.** Android 15 gives a `dataSync`
+foreground service six hours in any twenty-four, then calls `onTimeout()`, and a service still
+running when the grace period ends is killed with an ANR. `SyncService` stops itself there, and
+Commune goes back to receiving only while on screen until it is next opened. So this buys most of a
+day, not a permanent connection. UnifiedPush is not an optimisation of it; it is the thing this is
+standing in for.
+
+### The directory GTK empties, which cost a session twice
+
+Testing the service turned up something older and worse than anything it changed.
+
+Persistent data was under `Context.getFilesDir()`, which S3 chose over external storage and wrote
+down as settled. That directory belongs to GTK's glue.
+`SystemFilesystem.writeResources()` compares a fingerprint in the APK against the copy on disk and,
+when they differ, calls `doWriteResources()` — which runs `cleanDirectory(getFilesDir())` before
+extracting, and `cleanDirectory` recurses and deletes everything it finds.
+
+The fingerprint differs on every build. So **every install of a new build wiped the secret store,
+the SDK's databases and the message history, and logged the account out**, with nothing in the log
+to say so. It presents as an app that has forgotten who you are, and it was read twice as a session
+that failed to restore before the cause was found — once at the start of this work, once after the
+notification build was installed.
+
+`getNoBackupFilesDir()` — `<data>/no_backup`, a sibling of `files` and `cache` — is never looked at
+by the glue, so the fix is to be out of its way rather than to race it. It is also the right
+directory on its own merits: the databases are sealed with a Keystore key that cannot leave the
+device, `patch-manifest.sh` already forces `allowBackup="false"` for that reason, and this is what
+Android provides for data that must not be backed up. The cache stays at `getCacheDir()`, which the
+glue does not touch. There is nothing to migrate, because anything at the old path was destroyed by
+the build that would have carried the migration.
+
+The general lesson is worth more than the fix: **`getFilesDir()` is GTK's on this port, not
+Commune's.** Anything of ours that is put there is on borrowed time.
+
+### What this does not do
 
 **Notification buttons are written but unexercised.** `Notification.Action` is built for the
 `buttons` argument, and the only caller that passes any is the call notification, which is
