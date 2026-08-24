@@ -155,6 +155,9 @@ has to carry inside the code:
   string, so a change has to be made in all three or they diverge. The Windows
   one is deliberately not translated: it is read in among entries written by
   other applications in Windows' own list of credentials.
+* `build.rs` — `ProductName`, `FileDescription` and `CompanyName`, which are
+  what the Windows Properties dialog and Task Manager show. The product name
+  comes from Meson so that it carries the profile.
 * `login/local_server.rs` — the OAuth "you can go back now" page.
 * `identity_verification_view/no_supported_methods_page.rs` — four strings.
 * `account_settings/encryption_page/import_export_keys_subpage.rs` — the
