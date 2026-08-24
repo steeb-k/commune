@@ -200,6 +200,12 @@ mod imp {
                 self.obj().add_css_class("devel");
             }
 
+            // Windows draws its own window controls in a way libadwaita's
+            // stylesheet does not describe, so the stylesheet says what they
+            // should look like here and this is what turns those rules on.
+            #[cfg(target_os = "windows")]
+            self.obj().add_css_class("windows");
+
             self.load_window_size();
             self.update_forwarded_session_actions();
 
