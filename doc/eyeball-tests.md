@@ -43,23 +43,30 @@ names as never having faced a second client.
 Nothing in this feature has been seen on screen yet. Every item below is new
 drawing code.
 
-* [ ] **The header toggle appears** when a room has a pinned message, and only
-      then. It is next to the search button and uses `view-pin-symbolic`.
-* [ ] **Pin from the context menu.** Right-click a message → _Pin_. The entry
-      is only there with the power level for `m.room.pinned_events`.
-* [ ] **The menu keeps up.** Pin a message, then reopen its context menu: it
-      must now say _Unpin_, not _Pin_. This is the `pinned-events-changed`
-      handler in `EventRow`, and it is the most likely thing to be wrong.
-* [ ] **The pinned view lists them** — avatar, sender, timestamp, body — and
-      the list is built lazily, on first opening, not on entering the room.
+* [x] **The header toggle appears** when a room has a pinned message, and only
+      then. Seen 23 August 2026: pinning raised the icon, unpinning from the
+      timeline took it away again.
+* [x] **Pin from the context menu.** Seen 23 August 2026. Not yet seen: that
+      the entry is _absent_ without the power level for `m.room.pinned_events`,
+      which needs a room where we are not the moderator.
+* [x] **The menu keeps up.** Seen 23 August 2026 — the same message was
+      unpinned from its context menu straight after being pinned, so the entry
+      had flipped. The `pinned-events-changed` handler in `EventRow` works.
+* [x] **The pinned view lists them.** Seen 23 August 2026 and reported as
+      looking right. The lazy build — on first opening, not on entering the
+      room — was not separately checked and is not visible anyway.
 * [ ] **Clicking a row jumps to the message** in the timeline and closes the
       pinned view.
-* [ ] **The unpin button on a row works and does not also jump.** The row is
-      `single-click-activate` and the button is a child of it; if GTK does not
-      let the button claim the click, unpinning will also navigate away. This
-      is a known risk, not a hypothetical.
-* [ ] **Unpinning the last message** leaves the toggle visible and shows the
-      empty page, rather than hiding the only way back.
+* [ ] **The unpin button on a row works and does not also jump.** Still open:
+      the 23 August pass unpinned from the timeline's context menu, not from
+      the button in the pinned view. The row is `single-click-activate` and the
+      button is a child of it; if GTK does not let the button claim the click,
+      unpinning will also navigate away. A known risk, not a hypothetical.
+* [ ] **Unpinning the last message _while the pinned view is open_** leaves
+      the toggle visible and shows the empty page, rather than hiding the only
+      way back. Unpinning from the timeline with the view closed correctly
+      hides the toggle, and that much was seen on 23 August 2026 — this is the
+      other case.
 * [ ] **The empty page** — `view-pin-symbolic`, "No Pinned Messages".
 * [ ] **The timeline sentence**: "{user} pinned a message." / "unpinned a
       message." / "changed the pinned messages."
