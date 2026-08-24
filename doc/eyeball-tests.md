@@ -90,18 +90,28 @@ drawing code.
 Nothing here has been seen on screen. The user's homeserver runs the Presence
 module, so unlike most of the field this can be exercised on a real account.
 
-* [ ] **A badge appears on member list avatars** for people who are around —
-      green for online, amber for idle — and does not appear for people who
-      are offline or whose server says nothing.
+* [x] **A badge appears** for people who are around, green for online. Seen
+      23 August 2026 on a profile page. Amber for idle, and the absence of a
+      badge for offline, are not yet seen.
+* [ ] **The badge sits on the avatar's corner.** It did not on first pass: the
+      overlay filled the space the avatar widget was given rather than hugging
+      the avatar, so on a profile page the dot landed a few hundred pixels to
+      the right. Fixed with `halign`/`valign` on the overlay — check the corner
+      is right at size 24, 32 and 128, and check the fix did not move any
+      avatar that was relying on being stretched.
+* [ ] **A badge appears in the member list** specifically.
 * [ ] **The badge scales.** It is sized from the avatar, a third of it clamped
       to 8–24px. Check it at size 32 in the member list and at size 128 on a
       profile page; the failure modes are a smudge on the big one and a dot
       covering the initials on the small one.
 * [ ] **The badge has a ring** in the window colour, so it reads as sitting on
       the avatar rather than as part of the picture.
+* [ ] **A direct chat's sidebar row carries the other person's badge**, and an
+      ordinary room's does not. Added on 23 August 2026 after the first pass
+      left it out; the room's avatar mirrors its `direct_member`.
 * [ ] **The badge appears nowhere else** — not on inline mentions, read
-      receipts, the typing row, pickers, message rows or room avatars. It is
-      opt-in and only two sites opted in.
+      receipts, the typing row, the New Direct Chat picker, message rows or
+      ordinary room avatars. It is opt-in and three sites opted in.
 * [ ] **A profile page shows the status message** when the person set one, and
       shows nothing rather than an empty gap when they did not.
 * [ ] **It changes live.** Go idle or online in another client on the same

@@ -414,6 +414,22 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref().is_own_user()
     }
 
+    /// Whether this user is around, as far as their homeserver says.
+    fn presence(&self) -> Presence {
+        self.upcast_ref().presence()
+    }
+
+    /// Connect to the signal emitted when it changes whether this user is
+    /// around.
+    fn connect_presence_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId
+    where
+        Self: Sized,
+    {
+        self.upcast_ref().connect_presence_notify(move |user| {
+            f(user.downcast_ref().expect("user is of the expected type"));
+        })
+    }
+
     /// Set the name of this user.
     fn set_name(&self, name: Option<String>) {
         let user = self.upcast_ref();

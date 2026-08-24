@@ -4,7 +4,14 @@ using Adw 1;
 template $Avatar: Adw.Bin {
   notify::scale-factor => $update_scale_factor() swapped;
 
+  // The overlay hugs the avatar rather than filling the space this widget was
+  // given, so the badge lands on the avatar's own corner. Without this it goes
+  // to the right edge of whatever container the avatar happens to sit in,
+  // which on a profile page is a long way away.
   child: Gtk.Overlay {
+    halign: center;
+    valign: center;
+
     child: Adw.Avatar avatar {
       show-initials: true;
       text: bind template.data as <$AvatarData>.display-name;

@@ -62,7 +62,7 @@ pub(crate) use self::{
     typing_list::TypingList,
 };
 use super::{
-    IdentityVerification, Session, User, notifications::NotificationsRoomSetting,
+    IdentityVerification, Presence, Session, User, notifications::NotificationsRoomSetting,
     room_list::RoomMetainfo,
 };
 use crate::{
@@ -187,6 +187,10 @@ mod imp {
         /// there is only one other member.
         #[property(get)]
         direct_member: RefCell<Option<Member>>,
+        /// The member whose presence this room's avatar is carrying, and the
+        /// handler watching it.
+        direct_member_watched: RefCell<Option<Member>>,
+        direct_member_presence_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The live timeline of this room.
         #[property(get)]
         live_timeline: OnceCell<Timeline>,
@@ -1232,6 +1236,43 @@ mod imp {
             self.direct_member.replace(member);
             self.obj().notify_direct_member();
             self.update_avatar();
+            self.update_direct_member_presence();
+        }
+
+        /// Carry the presence of the other person onto this room's avatar, if
+        /// this is a direct chat.
+        ///
+        /// A direct chat is the one room where the room *is* a person, so its
+        /// avatar answers the same question a member's does. Any other room
+        /// stays at `Presence::Unknown` and so draws no badge.
+        fn update_direct_member_presence(&self) {
+            let obj = self.obj();
+            let avatar_data = obj.avatar_data();
+
+            if let Some(handler) = self.direct_member_presence_handler.take() {
+                avatar_data.set_presence(Presence::default());
+
+                if let Some(member) = self.direct_member_watched.take() {
+                    member.disconnect(handler);
+                }
+            }
+
+            let direct_member = self.direct_member.borrow().clone();
+            let Some(direct_member) = direct_member else {
+                return;
+            };
+
+            let handler = direct_member.connect_presence_notify(clone!(
+                #[weak]
+                avatar_data,
+                move |member| {
+                    avatar_data.set_presence(member.presence());
+                }
+            ));
+
+            avatar_data.set_presence(direct_member.presence());
+            self.direct_member_presence_handler.replace(Some(handler));
+            self.direct_member_watched.replace(Some(direct_member));
         }
 
         /// The ID of the other user, if this is a direct chat and there is only

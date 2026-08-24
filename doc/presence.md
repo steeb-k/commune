@@ -77,9 +77,22 @@ such places. `Avatar` then draws the badge only when the site asked for it with
 `show-presence`, which is off by default.
 
 Opt-in because most of those places are not asking the question. An inline
-mention, a read receipt, an invite picker, a permissions picker and a room's
-own avatar do not want a dot; the member list and a profile page do. Two sites
-are opted in today.
+mention, a read receipt, an invite picker, a permissions picker and an ordinary
+room's avatar do not want a dot. Three sites are opted in: the member list, a
+profile page, and the sidebar row of a direct chat.
+
+The direct chat one is not a user's avatar at all — it is the room's. A direct
+chat is the one room that _is_ a person, so `Room` mirrors its `direct_member`'s
+presence onto its own avatar data, the same way it already borrows that
+member's picture when the room has none. Every other room stays at
+`Presence::Unknown` and so draws nothing, which is why the sidebar can opt in
+wholesale rather than per row.
+
+The overlay carrying the badge has to hug the avatar — `halign: center` on it —
+or it fills whatever the avatar widget was given and the badge lands at the
+right edge of the container instead. On a profile page that is a few hundred
+pixels from the avatar. This was wrong on the first pass and is the kind of
+thing only a screenshot catches.
 
 `OverlappingAvatars` is the one that could not have it anyway: it crops its
 children, so a badge in the corner would be cut in half.
@@ -116,8 +129,6 @@ children, so a badge in the corner would be cut in half.
   "last seen four minutes ago" label has to tick, and a static one is a small
   lie that gets larger the longer the page is open. The values are in
   `UserPresence` for whoever wants to build that.
-* **No presence on the sidebar row of a direct chat.** The row binds the
-  room's avatar data, not the other person's, so this is not a one-line change.
 * **No presence on message rows.** Deliberate: a dot per message is noise, and
   the sender's state now is not the sender's state when they wrote it.
 * **You cannot set your own status message.** The switch is binary. Sending one
