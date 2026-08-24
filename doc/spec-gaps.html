@@ -851,10 +851,13 @@
           of every call as well.
         </p>
         <p>
-          The two interface gaps went with it. A call now rings — the desktop's own sound theme,
-          <code>phone-incoming-call</code> and the ringback that goes with it, honouring
+          The two interface gaps went with it. A call coming in now rings — the desktop's own
+          sound theme, <code>phone-incoming-call</code>, honouring
           <code>event-sounds</code> and silent on macOS, which has no such theme — and raises a
-          notification carrying <em>Answer</em> and <em>Decline</em>. The push rule
+          notification carrying <em>Answer</em> and <em>Decline</em>. A call going out makes no
+          sound: the theme has a ringback and it was taken out again the first time anybody
+          placed a call with it, since the window is already open in front of the caller saying
+          <em>Calling…</em>. The push rule
           <code>.m.rule.call</code> was already firing for the invite and being dropped as an
           event of unexpected type; it now defers to the calls module, which is the half that
           can withdraw the notification when the ringing stops. And <code>m.call.invite</code>

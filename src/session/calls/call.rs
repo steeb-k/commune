@@ -908,6 +908,16 @@ impl Call {
             return;
         }
 
+        debug!(
+            "Telling the other party that our microphone is {} and our camera is {}",
+            if self.is_microphone_muted() {
+                "muted"
+            } else {
+                "live"
+            },
+            if self.is_camera_muted() { "off" } else { "on" },
+        );
+
         let content = CallSdpStreamMetadataChangedEventContent::new(
             self.call_id().clone(),
             self.party_id().clone(),
@@ -1304,6 +1314,23 @@ impl Call {
     /// the answer, a renegotiation, and the one whose only job is to carry it
     /// when nothing else has to be negotiated.
     fn apply_stream_metadata(&self, metadata: &BTreeMap<String, StreamMetadata>) {
+        // Logged including the empty case, because "they muted and we did not
+        // notice" and "they never said anything" are the same silence from
+        // here, and only one of them is ours to fix.
+        debug!(
+            "The other party describes {} stream(s): {:?}",
+            metadata.len(),
+            metadata
+                .iter()
+                .map(|(id, stream)| (
+                    id.as_str(),
+                    stream.purpose.as_str(),
+                    stream.audio_muted,
+                    stream.video_muted
+                ))
+                .collect::<Vec<_>>()
+        );
+
         if metadata.is_empty() {
             // "For backwards compatibility, if `sdp_stream_metadata` is not
             // present ... the client should assume that this property is not

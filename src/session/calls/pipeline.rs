@@ -343,10 +343,30 @@ impl CallPipeline {
         self.media.push(MediaKind::Video);
 
         // Everything added to a pipeline arrives in `Null`, whatever the
-        // pipeline itself is doing, and a source in `Null` produces nothing.
-        let mut elements = self.pipeline.iterate_elements();
-        while let Ok(Some(element)) = elements.next() {
-            element.sync_state_with_parent()?;
+        // pipeline itself is doing, and an element in `Null` produces nothing:
+        // the camera would never open and the self-view would stay black.
+        //
+        // `children()`, not `iterate_elements()`. A `GstIterator` can ask to be
+        // resynced when the bin changes underneath it, and a plain
+        // `while let Ok(Some(_))` loop treats that request as the end of the
+        // list — so the elements after the change are silently left in `Null`.
+        // A snapshot cannot do that. Syncing an element that is already playing
+        // is a no-op, so the ones from the original pipeline cost nothing.
+        for element in self.pipeline.children() {
+            if let Err(error) = element.sync_state_with_parent() {
+                warn!("Could not start {} for the camera: {error}", element.name());
+                return Err(error.into());
+            }
+        }
+
+        // What state each of them actually reached, because a black self-view
+        // and a working one differ only here and nothing else says which.
+        for element in self.pipeline.children() {
+            let (_, current, pending) = element.state(gst::ClockTime::ZERO);
+            debug!(
+                "After adding the camera, {} is {current:?} (pending {pending:?})",
+                element.name()
+            );
         }
 
         debug!("The camera is in the pipeline; waiting for webrtcbin to ask for an offer");
