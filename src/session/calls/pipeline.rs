@@ -339,6 +339,15 @@ impl CallPipeline {
             .build()
             .map_err(|_| PipelineError::Other("there is no camera to add"))?;
 
+        // Names, because what has to be told apart is what was here before
+        // from what the camera brought with it.
+        let existing = self
+            .pipeline
+            .children()
+            .iter()
+            .map(|element| element.name().to_string())
+            .collect::<HashSet<_>>();
+
         self.add_video_source()?;
         self.media.push(MediaKind::Video);
 
@@ -346,13 +355,25 @@ impl CallPipeline {
         // pipeline itself is doing, and an element in `Null` produces nothing:
         // the camera would never open and the self-view would stay black.
         //
-        // `children()`, not `iterate_elements()`. A `GstIterator` can ask to be
-        // resynced when the bin changes underneath it, and a plain
-        // `while let Ok(Some(_))` loop treats that request as the end of the
-        // list — so the elements after the change are silently left in `Null`.
-        // A snapshot cannot do that. Syncing an element that is already playing
-        // is a no-op, so the ones from the original pipeline cost nothing.
+        // **Only the new ones.** `sync_state_with_parent()` sets an element to
+        // whatever state the parent is in *at that moment*, and a live source
+        // being added makes the pipeline go briefly back to `Paused` while it
+        // prerolls. Syncing every child during that window pushes the whole
+        // call — the microphone, the speaker, `webrtcbin` — down to `Paused`
+        // along with it. Measured on 23 August 2026: two elements of the new
+        // camera chain reached `Playing`, and everything after them, including
+        // the audio that had been carrying the call for fourteen seconds, was
+        // set to `Paused`.
+        //
+        // `children()` and not `iterate_elements()` for a second reason: a
+        // `GstIterator` can ask to be resynced when the bin changes underneath
+        // it, and a plain `while let Ok(Some(_))` loop reads that request as
+        // the end of the list.
         for element in self.pipeline.children() {
+            if existing.contains(element.name().as_str()) {
+                continue;
+            }
+
             if let Err(error) = element.sync_state_with_parent() {
                 warn!("Could not start {} for the camera: {error}", element.name());
                 return Err(error.into());
@@ -788,8 +809,24 @@ impl CallPipeline {
     ) -> Result<(), PipelineError> {
         let bus = self.pipeline.bus().expect("a pipeline always has a bus");
         let bus_sender = sender;
+        let pipeline = self.pipeline.clone();
         let guard = bus
             .add_watch_local(move |_, message| {
+                // The pipeline's own state, and only its own: a call whose
+                // audio stops when the camera is added stops because of this,
+                // and nothing else in the log would say so.
+                if let gst::MessageView::StateChanged(changed) = message.view()
+                    && changed
+                        .src()
+                        .is_some_and(|src| src == pipeline.upcast_ref::<gst::Object>())
+                {
+                    debug!(
+                        "The pipeline is now {:?} (was {:?})",
+                        changed.current(),
+                        changed.old()
+                    );
+                }
+
                 if let gst::MessageView::Error(error) = message.view() {
                     // The debug string is where the reason is. `GStreamer`
                     // reports a failed negotiation as "Internal data stream

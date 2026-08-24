@@ -12,13 +12,19 @@ relay outside both — at 23:04, where `Checking` became `Connected` in six
 hundred milliseconds. Offer, answer, `select_answer`, candidates, hangup and
 muting all behave.
 
-Written on 23 August 2026 and **not yet proven against a second client**:
-`m.call.negotiate` in both directions, the button that adds the camera to a
-call placed without one, the ringtone and the notification that come with an
-incoming call, and the row a call leaves in the timeline. Each has its own
-section below saying what it does and what about it is untested. Nothing is
-left of the module that this client does not answer; what is left out on
-purpose is DTMF and screen sharing, and the last section says why.
+Written on 23 August 2026, and exercised against Element for Android the same
+evening: **a renegotiation of ours is answered by a real client**. At 01:22 the
+camera went into a voice call, the `m.call.negotiate` carrying the new offer
+went out, and Element's answer came back 540 ms later having accepted the video
+section as `recvonly` — it agreed to receive a camera it has no control to send
+one back from. What has still never happened is a renegotiation arriving _at_
+this client, since nothing in that peer's interface would send one.
+
+Not yet proven at all: the ringtone and the notification (local, and needing
+only an incoming call), the row a call leaves in the timeline, and the rollback
+that settles two renegotiations crossing. Each has its own section below.
+Nothing is left of the module that this client does not answer; what is left
+out on purpose is DTMF and screen sharing, and the last section says why.
 
 The evening that produced this is worth a sentence of warning: five separate
 faults, four of which looked identical from here — ICE reaching `Checking` and
@@ -581,13 +587,32 @@ parent, because everything added to a pipeline arrives in `Null` however the
 pipeline itself is doing.
 
 **Everything added to a playing pipeline arrives in `Null`**, and an element in
-`Null` produces nothing — so every child is synced with the parent afterwards.
-That sync is done over `children()` and not `iterate_elements()`: a
-`GstIterator` can ask to be resynced when the bin changes underneath it, and
-the obvious `while let Ok(Some(_))` loop reads that request as the end of the
-list, leaving everything after it in `Null` and the self-view black. Which
-state each child actually reached is logged, because a black self-view and a
-working one differ nowhere else.
+`Null` produces nothing — so the new elements are synced with the parent
+afterwards.
+
+**The new ones, and only the new ones.** `sync_state_with_parent()` sets an
+element to whatever state the parent is in _at that moment_, and adding a live
+source makes the pipeline drop briefly back to `Paused` while it prerolls.
+Syncing every child during that window pushes the whole call down with it.
+Measured on 23 August 2026, in a call that had been carrying audio for fourteen
+seconds:
+
+```text
+capsfilter5, rtpvp8pay0, vp8enc0, capsfilter4, videoscale0, ...  Playing
+gtk4paintablesink1                                               Ready
+autovideosrc1, valve0, tee0, queue3, videoconvert0, capsfilter3  Paused
+autoaudiosrc0, opusenc0, volume0, decodebin0, webrtc             Paused
+```
+
+Two elements of the new chain reached `Playing`, and everything after them —
+the camera included, the microphone and `webrtcbin` included — was set to
+`Paused` behind them. That is what a black self-view looks like from the
+inside, and it is why the pipeline's own state changes are logged now: one
+line saying `Paused` beats thirty saying nothing.
+
+`children()` and not `iterate_elements()` for a second reason: a `GstIterator`
+can ask to be resynced when the bin changes underneath it, and the obvious
+`while let Ok(Some(_))` loop reads that request as the end of the list.
 
 Nothing there writes SDP. `webrtcbin` notices that what it sends no longer
 matches what it last described and emits `on-negotiation-needed`, and that is
@@ -607,9 +632,10 @@ Without that, one lost renegotiation leaves the call unable to attempt another
 for as long as it lasts, and the call carries on working so nothing else would
 ever notice.
 
-**Untested against another client.** It compiles, the pipeline work is the same
-work that builds a video call from the start, and no second device has been
-pointed at it.
+**Half of it is proven.** Element for Android answered the offer this makes and
+accepted the video, which is the protocol half. Whether the camera reaches the
+far end depends on the paragraph above being right, and on that peer's
+interface deciding to draw video in a call it thinks is a voice call.
 
 ## Four things seen on screen, and none of them visible to the compiler
 
