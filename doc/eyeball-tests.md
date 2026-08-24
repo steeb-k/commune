@@ -555,6 +555,72 @@ Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
 * [ ] **The row goes insensitive while it works** and comes back afterwards,
       whether it succeeded or not.
 
+### Which spaces a room is in
+
+* [ ] **The _Spaces_ group lists them.** Add `Invite Room` to `Test Space`,
+      then reopen its details: a row naming `Test Space`, with its avatar.
+* [ ] **A room in no space lists none** — just the _Add to Space…_ row.
+* [ ] **The looking-for-them row does not stay.** A spinner row appears while
+      the spaces are asked and goes when they answer. If it never goes, the
+      read failed silently.
+* [ ] **A room in two spaces lists both.** Add the same room to `Sub Space` as
+      well.
+* [ ] **A space you are not in is not listed**, even when it holds the room.
+      This cannot be helped and is not a fault: the state of a space nobody
+      here has joined cannot be read. Check it by having bob add one of alice's
+      rooms to a space alice is not in.
+* [ ] **A room that only claims a parent is not believed.** From another
+      client, write an `m.space.parent` into a room pointing at a space that
+      does **not** name it as a child, as a user with no power in that space.
+      It must not appear. This is the specification's own rule and the check
+      most worth doing, because getting it wrong lets any room claim to be
+      anywhere.
+* [ ] **…unless whoever claimed it could have made it true.** Same test, but
+      write the parent event as somebody who can send `m.space.child` in that
+      space. It should appear.
+
+### Taking a room back out
+
+* [ ] **Each row has a _Remove_ button**, and pressing it takes the room out of
+      that space: the row goes, a toast says so, and the space's own page no
+      longer lists the room when reopened.
+* [ ] **Another client agrees.** The `m.space.child` should now be an empty
+      object rather than gone — Matrix has no way to delete a state event.
+* [ ] **The button is insensitive without permission.** As bob, in a space he
+      does not administer that holds a room he can see, the row appears and the
+      button does not work.
+* [ ] **Adding it back works**, and the room reappears in the space.
+
+### Making a space
+
+* [ ] **The new-room dialog offers a _Kind_.** _Room_ is selected; picking
+      _Space_ changes the heading to _New Space_ and the button to
+      _Create Space_.
+* [ ] **The encryption switch disappears for a space** and comes back for a
+      room.
+* [ ] **The visibility subtitles say "space"** rather than "room".
+* [ ] **Creating a private space works**, and it lands in the _Spaces_ sidebar
+      section rather than in _Rooms_ — this is the check that
+      `creation_content` really carried `type: m.space`.
+* [ ] **Creating a public space works** and takes an address, the same as a
+      room.
+* [ ] **Nobody can post in it.** From another client, look at the new space's
+      power levels: `events_default` should be 100, with `m.space.child`, the
+      name, the topic and the avatar at 50. A space anybody can post into is
+      a room with a hidden timeline.
+* [ ] **The new space accepts rooms.** Add a room to it from that room's
+      details, and open the space to see it.
+
+### Suggested rooms
+
+* [ ] **A suggested child is marked.** From another client, set
+      `"suggested": true` on one of `Test Space`'s `m.space.child` events. That
+      room's row on the space page should show a star and the word
+      _Suggested_.
+* [ ] **No other row shows it**, on the space page or in Explore. The flag
+      belongs to the relationship, not to the room, so a room listed anywhere
+      else must never carry it.
+
 ### Old rooms
 
 * [ ] **A room too old for restricted rules does not offer it.** Restricted

@@ -239,6 +239,16 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
     description: _("A space groups rooms together. Putting this room in one lets the people in that space find it.");
     visible: bind $invert_boolean(template.room as <$Room>.is-direct) as <bool>;
 
+    Adw.ActionRow spaces_loading_row {
+      selectable: false;
+      title: _("Looking…");
+
+      [suffix]
+      Adw.Spinner {
+        valign: center;
+      }
+    }
+
     Adw.ActionRow add_to_space_row {
       activatable: true;
       selectable: false;

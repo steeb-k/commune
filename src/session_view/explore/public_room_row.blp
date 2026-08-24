@@ -87,6 +87,29 @@ template $PublicRoomRow: Adw.Bin {
           ]
         }
 
+        Gtk.Box suggested_box {
+          halign: center;
+          spacing: 6;
+
+          Gtk.Image {
+            icon-name: "starred-symbolic";
+
+            styles [
+              "dimmed",
+            ]
+          }
+
+          Gtk.Label {
+            // Translators: A space can mark some of the rooms in it as
+            // suggested, meaning worth joining first.
+            label: _("Suggested");
+
+            styles [
+              "dimmed",
+            ]
+          }
+        }
+
         Gtk.Box space_box {
           halign: center;
           spacing: 6;

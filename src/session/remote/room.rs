@@ -74,6 +74,13 @@ mod imp {
         /// Whether this room is encrypted.
         #[property(get)]
         is_encrypted: Cell<bool>,
+        /// Whether the space this room was listed from suggests it.
+        ///
+        /// This belongs to the `m.space.child` event rather than to the room,
+        /// so it is only ever true for a room that came from a space's
+        /// hierarchy.
+        #[property(get, set)]
+        is_suggested: Cell<bool>,
         /// The information about this room in the room list.
         #[property(get)]
         room_list_info: RoomListRoomInfo,

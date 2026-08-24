@@ -157,12 +157,26 @@ Two things worth knowing before the second half:
   than the restricted rule itself. `update_knock_sensitive` gates on
   `knock_restricted_join_rule` now.
 
-**Round 3 is finished.** The Spaces module is still graded partial and the
-reason is narrower than it was: `m.space.parent` is written and never read, so
-a room never says which spaces it is in; and a room cannot be taken back out of
-a space. Neither is in this plan. `client-comparison.html` grades the row whole
-while `spec-gaps.html` does not, which is the two pages measuring different
-things and is left standing on purpose.
+**Round 3 is finished, and then the module was.** The plan's three slices left
+three things behind — a space could not be made, a room could not be taken back
+out of one, and `m.space.parent` was written and never read. On the user's
+instruction those were built rather than logged, in one commit past the plan:
+
+* **Making a space** is `creation_content: {"type": "m.space"}`, plus two
+  things the spec does not ask for and every client does: the encryption switch
+  hidden, and `events_default` raised to 100 so a space is not a room with an
+  invisible timeline anybody can post into.
+* **Taking a room out** writes `m.space.child` with nothing in it. Matrix has
+  no way to delete a state event and a child with no `via` is not a child.
+* **Which spaces hold a room** follows the spec's asymmetry: the space's own
+  child event settles it; the room's parent claim counts only when whoever
+  wrote it could have written the child, checked against that space's power
+  levels. Only joined spaces can answer, which is the protocol and not a gap.
+* `suggested` is read and drawn; `order` is applied by the server.
+
+Spaces is in the implemented column of `spec-gaps.html` now, and what is left
+in `spaces.md` under _Not done_ is one interface decision (no tree) and two
+optional annotations nobody has asked to write.
 
 **Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
 
@@ -190,7 +204,8 @@ drift: they go in the feature's own commit.**
 | 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
 | 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
 | 8a. Space picker, restricted rule | `b60baf66`, `640b1576` | done, **unseen** |
-| 8b. `m.space.child` | (this round) | done, **unseen** |
+| 8b. `m.space.child` | `37d318aa`, `9db20bfa` | done, **unseen** |
+| Finishing the module | (this round) | done, **unseen** |
 | 9–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**

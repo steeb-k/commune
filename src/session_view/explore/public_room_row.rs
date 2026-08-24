@@ -38,6 +38,8 @@ mod imp {
         #[template_child]
         space_box: TemplateChild<gtk::Box>,
         #[template_child]
+        suggested_box: TemplateChild<gtk::Box>,
+        #[template_child]
         button: TemplateChild<LoadingButton>,
         #[template_child]
         preview_button: TemplateChild<gtk::Button>,
@@ -171,6 +173,9 @@ mod imp {
                 .set_tooltip_text(Some(&members_count_tooltip));
 
             self.space_box.set_visible(room.is_space());
+            // Only a room that came from a space's hierarchy can be suggested;
+            // the flag belongs to the `m.space.child` event, not to the room.
+            self.suggested_box.set_visible(room.is_suggested());
         }
 
         /// Update the join/view button of this row.
