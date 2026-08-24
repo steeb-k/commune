@@ -38,6 +38,7 @@ src/application.rs
 src/components/action_button.blp
 src/components/avatar/editable.blp
 src/components/avatar/editable.rs
+src/components/avatar/mod.rs
 src/components/camera/qrcode_scanner.blp
 src/components/camera/qrcode_scanner.rs
 src/components/camera/viewfinder.rs

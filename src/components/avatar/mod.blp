@@ -4,8 +4,26 @@ using Adw 1;
 template $Avatar: Adw.Bin {
   notify::scale-factor => $update_scale_factor() swapped;
 
-  child: Adw.Avatar avatar {
-    show-initials: true;
-    text: bind template.data as <$AvatarData>.display-name;
+  child: Gtk.Overlay {
+    child: Adw.Avatar avatar {
+      show-initials: true;
+      text: bind template.data as <$AvatarData>.display-name;
+    };
+
+    // The badge saying whether the owner is around. Hidden unless the site
+    // asked for it and the homeserver said something, so an avatar in a picker
+    // or a room's avatar is unchanged.
+    [overlay]
+    Gtk.Image presence_badge {
+      visible: false;
+      halign: end;
+      valign: end;
+      icon-name: "dot-symbolic";
+      accessible-role: presentation;
+
+      styles [
+        "presence-badge",
+      ]
+    }
   };
 }

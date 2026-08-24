@@ -38,6 +38,7 @@ change to it: `doc/image-packs.md`, `doc/search.md` for message search,
 `doc/join-rules.md` for editing a restricted room's join rule,
 `doc/server-acls.md` for which servers can take part in a room,
 `doc/pinned-messages.md` for pinning a message in any room,
+`doc/presence.md` for who is around and whether you say that you are,
 `doc/recent-emoji.md` for the quick reactions, `doc/url-previews.md` for
 the card under a message that has a link, `doc/server-notices.md` for the
 room the homeserver talks to the user in, and `doc/calls.md` for one-to-one

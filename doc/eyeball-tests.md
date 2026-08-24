@@ -84,3 +84,35 @@ drawing code.
 * [ ] **Nothing regressed in the live timeline.** `is_live()` replaced three
       `!is_focused()` checks: read receipts still move, the typing row still
       appears, and the timeline still preloads.
+
+## Presence — `doc/presence.md`
+
+Nothing here has been seen on screen. The user's homeserver runs the Presence
+module, so unlike most of the field this can be exercised on a real account.
+
+* [ ] **A badge appears on member list avatars** for people who are around —
+      green for online, amber for idle — and does not appear for people who
+      are offline or whose server says nothing.
+* [ ] **The badge scales.** It is sized from the avatar, a third of it clamped
+      to 8–24px. Check it at size 32 in the member list and at size 128 on a
+      profile page; the failure modes are a smudge on the big one and a dot
+      covering the initials on the small one.
+* [ ] **The badge has a ring** in the window colour, so it reads as sitting on
+      the avatar rather than as part of the picture.
+* [ ] **The badge appears nowhere else** — not on inline mentions, read
+      receipts, the typing row, pickers, message rows or room avatars. It is
+      opt-in and only two sites opted in.
+* [ ] **A profile page shows the status message** when the person set one, and
+      shows nothing rather than an empty gap when they did not.
+* [ ] **It changes live.** Go idle or online in another client on the same
+      account, or ask somebody to, and watch the badge follow without a
+      restart.
+* [ ] **Somebody who has not moved still gets a badge.** This is the store
+      read: sync only sends presence when it changes, so a person who was
+      already online before Commune started would otherwise have none until
+      they did something.
+* [ ] **The switch is in Account Settings ▸ Privacy and starts on.** Turning it
+      off should make you go offline for other clients within a moment — this
+      is the half that was never optional before, so it is worth confirming
+      from a second client rather than trusting it.
+* [ ] **Turning it back on** makes you online again without restarting.
