@@ -39,6 +39,14 @@
 # earns the right to ask, which `utils::android_notifications` does once the
 # window exists. Without the entry the request is refused outright and every
 # notification is dropped silently.
+#
+# And the foreground service: `FOREGROUND_SERVICE`, the typed
+# `FOREGROUND_SERVICE_DATA_SYNC` that API 34 additionally requires, and the
+# `<service>` element itself. Without the element the service cannot be started
+# at all; without the typed permission `startForeground` throws
+# `SecurityException` at the moment it is called, which is inside the service
+# and therefore a crash rather than a failed call. See
+# `src/utils/android_sync_service.rs` and `build-aux/android/SyncService.java`.
 set -eu
 
 MANIFEST=${1:-.pixiewood/android/app/src/main/AndroidManifest.xml}
@@ -94,29 +102,52 @@ perl -MXML::LibXML -e '
     # `uses-permission` is a child of <manifest>, not of <application>, and
     # Android ignores one that is put in the wrong place rather than refusing
     # the build.
-    my $permission = "android.permission.POST_NOTIFICATIONS";
-    my ($granted) = $xpc->findnodes(
-        qq(/manifest/uses-permission[\@android:name="$permission"])
+    my @permissions = (
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
     );
-    if (!$granted) {
+    for my $permission (@permissions) {
+        my ($granted) = $xpc->findnodes(
+            qq(/manifest/uses-permission[\@android:name="$permission"])
+        );
+        next if $granted;
+
         my $node = $doc->createElement("uses-permission");
         $node->setAttributeNS($android, "android:name", $permission);
         $doc->documentElement->insertBefore($node, $application);
     }
 
+    # The service goes inside <application>, beside the activity.
+    my $service_name = "org.gtk.android.SyncService";
+    my ($service) = $xpc->findnodes(
+        qq(//application/service[\@android:name="$service_name"])
+    );
+    if (!$service) {
+        my $node = $doc->createElement("service");
+        $node->setAttributeNS($android, "android:name", $service_name);
+        # Nothing outside Commune has any business starting it.
+        $node->setAttributeNS($android, "android:exported", "false");
+        $node->setAttributeNS($android, "android:foregroundServiceType", "dataSync");
+        $application->appendChild($node);
+    }
+
     $doc->toFile($path, 1);
 
-    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter, %s\n",
-        $path, $scheme, $permission;
+    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter, %d permissions, %s\n",
+        $path, $scheme, scalar(@permissions), $service_name;
 ' "$MANIFEST"
 
-# Say so if any of the four did not take, rather than letting a silent no-op
+# Say so if any of them did not take, rather than letting a silent no-op
 # through.
 for expected in \
     'android:launchMode="singleTask"' \
     'android:allowBackup="false"' \
     'android:scheme="io.github.steeb-k.commune"' \
-    'android:name="android.permission.POST_NOTIFICATIONS"'
+    'android:name="android.permission.POST_NOTIFICATIONS"' \
+    'android:name="android.permission.FOREGROUND_SERVICE"' \
+    'android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"' \
+    'android:name="org.gtk.android.SyncService"'
 do
     if ! grep -q "$expected" "$MANIFEST"; then
         printf 'expected %s in %s after patching\n' "$expected" "$MANIFEST" >&2
