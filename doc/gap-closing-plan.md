@@ -42,7 +42,8 @@ spec"); **threads go all three slices**, since only the third flips the row and 
 ## Where this got to
 
 **Rounds 1 and 2 are done, committed and seen on screen.** Round 3 (spaces,
-sliced, with peeking) is under way.
+sliced, with peeking) is under way — **slices 1 and 2 are committed and none of
+either has been seen on screen beyond the sidebar section.**
 
 **Round 3 slice 1 (item 5) is done and committed** — `69002a14`, with the
 masthead refresh in `1427c68c`. clippy, `cargo test` and `hooks/checks-bin` all
@@ -76,10 +77,29 @@ bindings in `space.blp` failed to resolve and the application **aborted at
 startup**. clippy, the tests and `checks-bin` all passed with that in the tree.
 `doc/spaces.md`'s rebase guide records it.
 
-**Next: slice 2 (item 6).** Note before starting: `testing/local-homeserver.sh`
-seeds `Test Space` with **no children** — the restricted rooms only name it in
-their join rule — so the harness needs `m.space.child` events added before there
-is anything to browse.
+**Round 3 slice 2 (item 6) is done and committed** — `41136eeb`, masthead
+refresh in `d47f99ed`, preceded by the harness work in `6e4079ab`. `Test Space`
+had **no children** — the restricted rooms only named it in their join rule — so
+`seed_space_children()` writes the `m.space.child` events for five rooms, one
+per case a listing must draw. Nothing in slice 2 has been seen on screen.
+
+**The plan was wrong about where the work goes, and the ledger records why.**
+Item 6 says to lift the `limit: 1` in
+`RemoteRoom::load_data_from_space_hierarchy`. That method is the fallback for
+`load_data_from_summary` and only runs on a `404` from the MSC3266 summary
+endpoint, which Synapse implements — so widening it would have shipped an empty
+page on every homeserver worth testing against. The fallback is untouched and
+the listing is a new object, `SpaceChildren`
+(`src/session/remote/space_children.rs`): `/hierarchy` at `max_depth: 1`, the
+space's own chunk skipped but read first for the `via` servers its
+`m.space.child` events carry, ten batches of twenty and then a visible
+truncation notice. Rows are `PublicRoomRow`, now `pub(super)` and reused
+verbatim — the name is wrong for a space child and stays wrong, because
+renaming it would put every future upstream change to that file into a path
+conflict and its strings are referenced by path in thirty-odd catalogues.
+`RemoteRoom` also keeps `world_readable` now, which item 7 needs.
+
+**Next: item 7 (peek a `world_readable` room).**
 
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
 pinned messages and presence marked as shipped in `client-comparison.html`, both
@@ -101,7 +121,9 @@ drift: they go in the feature's own commit.**
 | 4. Password reset | `b5d4ae74` | done, seen as far as a server without SMTP allows |
 | Homeserver default | `5d24e432` | done, unseen |
 | 5. Spaces, slice 1 | `69002a14`, `1427c68c` | done; only the sidebar section seen |
-| 6–11 | — | not started |
+| Space children in the harness | `6e4079ab` | done |
+| 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
+| 7–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 
