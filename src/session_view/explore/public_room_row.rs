@@ -36,6 +36,8 @@ mod imp {
         #[template_child]
         members_count_box: TemplateChild<gtk::Box>,
         #[template_child]
+        space_box: TemplateChild<gtk::Box>,
+        #[template_child]
         button: TemplateChild<LoadingButton>,
         /// The room displayed by this row.
         #[property(get, set= Self::set_room, explicit_notify)]
@@ -165,6 +167,8 @@ mod imp {
             );
             self.members_count_box
                 .set_tooltip_text(Some(&members_count_tooltip));
+
+            self.space_box.set_visible(room.is_space());
         }
 
         /// Update the join/view button of this row.

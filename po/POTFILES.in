@@ -134,6 +134,7 @@ src/session_view/create_direct_chat_dialog/mod.rs
 src/session_view/create_room_dialog.blp
 src/session_view/create_room_dialog.rs
 src/session_view/explore/mod.blp
+src/session_view/explore/public_room_row.blp
 src/session_view/explore/public_room_row.rs
 src/session_view/explore/server_row.blp
 src/session_view/explore/servers_popover.blp
@@ -234,6 +235,7 @@ src/session_view/sidebar/mod.rs
 src/session_view/sidebar/room_row.rs
 src/session_view/sidebar/row.rs
 src/session_view/sidebar/section_row.rs
+src/session_view/space.blp
 src/shortcuts-dialog.blp
 src/user_facing_error.rs
 src/utils/klipy.rs

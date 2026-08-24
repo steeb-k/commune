@@ -55,6 +55,13 @@ template $Content: Adw.NavigationPage {
     }
 
     Gtk.StackPage {
+      name: "space";
+      title: _("Space");
+
+      child: $ContentSpace space {};
+    }
+
+    Gtk.StackPage {
       name: "explore";
       title: _("Explore Rooms");
 
