@@ -1,7 +1,7 @@
 use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 use gtk::gio;
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
@@ -26,6 +26,8 @@ pub(crate) use self::notifications_settings::{
 use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_notifications;
 use crate::{
     Application, Window, gettext_f,
     intent::{CallAction, CallActionKind, SessionIntent},
@@ -160,6 +162,27 @@ impl Notifications {
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::send(id, title, &body, action, &target_value, icon);
+            } else if #[cfg(target_os = "windows")] {
+                let buttons = buttons
+                    .iter()
+                    .map(|(label, intent)| {
+                        (
+                            label.clone(),
+                            intent.to_variant_with_session_id(session_id.to_owned()),
+                            intent.app_action_name().to_owned(),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                windows_notifications::send(
+                    id,
+                    title,
+                    &body,
+                    action,
+                    &target_value,
+                    icon,
+                    &buttons,
+                );
             } else {
                 let notification = gio::Notification::new(title);
                 notification.set_category(Some("im.received"));
@@ -189,6 +212,8 @@ impl Notifications {
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::withdraw(id);
+            } else if #[cfg(target_os = "windows")] {
+                windows_notifications::withdraw(id);
             } else {
                 Application::default().withdraw_notification(id);
             }
