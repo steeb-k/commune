@@ -3,8 +3,10 @@
 This is the ledger for the Android port: what exists, what was measured, and what bit us on the
 way. `doc/android-plan.md` is the route that was intended; this file is what actually happened.
 
-The port is **exploratory**. Nothing of Commune runs on Android yet. What S0 established is that
-the toolchain works and that GTK itself is in better shape on Android than expected.
+The port is **exploratory**. Nothing of Commune runs on Android yet. S0 established that the
+toolchain works and that GTK is in better shape on Android than expected; S1 established that a
+GTK application written in Rust can be an Android package at all, which was the open question the
+whole route hung on.
 
 ## Contents
 
@@ -15,6 +17,7 @@ the toolchain works and that GTK itself is in better shape on Android than expec
 * [Building a demo APK](#building-a-demo-apk)
 * [What S0 measured](#what-s0-measured)
 * [Findings that change the plan](#findings-that-change-the-plan)
+* [S1 — Rust on Android works](#s1--rust-on-android-works)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -23,8 +26,8 @@ the toolchain works and that GTK itself is in better shape on Android than expec
 | Spike | State |
 | --- | --- |
 | S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator; the libadwaita demo does **not** build on this host (see below) |
-| S1 — Rust hello-world APK | not started; the make-or-break spike |
-| S2 — Commune `cargo check` for Android | not started |
+| S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
+| S2 — Commune `cargo check` for Android | next |
 | S3 — Commune login on the emulator | not started |
 | S4 — GStreamer | not started |
 | S5 — keystore, notifications, SSO, push | not started |
@@ -286,6 +289,136 @@ rather than from the issue's pessimism.
 `fontconfig` are all `revision = main` (or `master`) at `depth = 1`. Two builds a week apart are
 not the same build. When anything is packaged for a hand-out, the revisions have to be pinned and
 recorded here.
+
+## S1 — Rust on Android works
+
+**The make-or-break spike passed.** A GTK4 application written in Rust runs as an Android APK,
+with Rust closures handling input, mutating Rust state and driving GTK widgets. gtk4-rs itself
+needed no patches: `glib 0.22.8`, `gio`, `cairo-rs`, `graphene-rs`, `gdk-pixbuf`, `pango`,
+`gdk4 0.11.4`, `gsk4` and `gtk4 0.11.4` all cross-compiled for `x86_64-linux-android` unmodified.
+
+The spike lives outside this repository, at `~/src/gtk-android-rust-spike` in WSL, because nothing
+should be designed into Commune before it is known to link. What follows is the part worth keeping.
+
+### What was measured
+
+| Test | Result |
+| --- | --- |
+| gtk4-rs cross-compiles for `x86_64-linux-android` | yes, unpatched, against the Android GTK 4.23.3 |
+| Rust `staticlib` links into the APK's shared object | yes — `librust-spike.so`, 14.9 MB |
+| App launches | yes; logcat shows `rust_spike_main entered`, then `window presented` |
+| Rust closure runs on tap | yes; three taps logged `Rust answered 1/2/3 time(s)`, label updated to match |
+| Rotation | no crash, same pid, and the counter went 3 → **4** rather than resetting |
+| Debug APK size | 141 MB (unstripped, as with gtk4-demo) |
+
+That the counter survived rotation matters more than it looks: the Activity is recreated, but the
+GTK thread and the Rust state it owns live in the process, which outlives it.
+
+### How the Rust is wired in
+
+Issue [gtk4-rs#1997][] frames the problem as two things — Rust does not export `main`, and
+pkg-config-driven `-sys` crates cannot join Android's single ninja pass. Both turned out to be
+straightforwardly solvable.
+
+**The entry point** is a three-line C stub, because GTK's glue `g_module_symbol`s for `main`:
+
+```c
+int rust_spike_main (void);
+
+int
+main (int argc, char **argv, char **envp)
+{
+  (void) argc; (void) argv; (void) envp;
+  return rust_spike_main ();
+}
+```
+
+**The library is a `staticlib`**, and that is the whole trick. rustc never links a staticlib, so
+cargo does not need `libgtk-4.so` to exist — it needs only the pkg-config _description_ of it,
+which meson writes at configure time. No dependency edge is required between the cargo target and
+GTK's own link steps, and meson performs the one real link:
+
+```meson
+build_rust = find_program('build-rust.sh')
+
+rust_static = custom_target('rustspike-static',
+  output: 'librustspike.a',
+  command: [build_rust, meson.project_source_root(), meson.project_build_root(), '@OUTPUT@'],
+  build_by_default: true,
+  console: true,
+)
+
+# `sources:` is what orders the cargo run before the executable link.
+rust_dep = declare_dependency(
+  link_args: [rust_static.full_path(), '-llog', '-ldl', '-lm'],
+  sources: [rust_static],
+)
+
+exe_kwargs = {}
+if meson.version().version_compare('>= 1.8.0') and host_machine.system() == 'android'
+  exe_kwargs += {'android_exe_type': 'application'}
+endif
+
+executable('rust-spike', 'stub.c',
+  dependencies: [gtk_dep, rust_dep],
+  install: true,
+  kwargs: exe_kwargs,
+)
+```
+
+**The pkg-config view** is the other half. `PKG_CONFIG_LIBDIR` _replaces_ the search path rather
+than extending it, so pointing it at meson's `meson-uninstalled` directory means an Android build
+physically cannot pick up a `.pc` from `/usr`:
+
+```sh
+PKG_CONFIG_PATH="$BUILD/meson-uninstalled"
+PKG_CONFIG_LIBDIR="$BUILD/meson-uninstalled"
+export PKG_CONFIG_PATH PKG_CONFIG_LIBDIR
+export PKG_CONFIG_ALLOW_CROSS=1
+
+TOOL=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
+export CC_x86_64_linux_android="$TOOL/x86_64-linux-android31-clang"
+export AR_x86_64_linux_android="$TOOL/llvm-ar"
+export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$TOOL/x86_64-linux-android31-clang"
+
+cargo build --release --target x86_64-linux-android --target-dir "$BUILD/cargo-target"
+```
+
+pkg-config resolves `gtk4` from `gtk4-uninstalled.pc` by its own uninstalled-package convention —
+no renaming needed — and the whole `Requires` chain follows: glib 2.89.4, pango 1.58.2,
+cairo 1.18.5, gdk-pixbuf 2.43.3, graphene 1.11.1.
+
+One trap worth naming: meson passes `@OUTPUT@` **relative to the build directory**, which is
+ninja's working directory. A script that `cd`s into the source tree before copying its artefact
+will silently write it to the wrong place and the build will fail later with a missing file.
+Resolve the output path before changing directory.
+
+**Logging.** `println!` goes nowhere on Android. The spike declares
+`__android_log_write` and links `-llog`, which puts Rust output in logcat under its own tag
+(`adb logcat -s RustSpike`). GTK's own `g_log`/`g_print` are already redirected to logcat by
+`gdkandroidruntime.c`, so Commune's `tracing` subscriber has two plausible sinks to choose from.
+
+### The appstream namespace, which will bite Commune
+
+`pixiewood generate` finds the application id with the XPath
+`/pw:app/pw:metainfo/meta:component/meta:id`, where `meta` is bound to
+`https://specifications.freedesktop.org/metainfo/1.0`. A metainfo file **without that namespace
+declared on `<component>` does not match**, and the error names XInclude rather than the
+namespace:
+
+```text
+Unable to find component id in manifest, if you are using XInclude ensure that the path is correct
+```
+
+GTK's own `org.gtk.Demo4.appdata.xml.in` declares
+`xmlns="https://specifications.freedesktop.org/metainfo/1.0"`. **Commune's does not** —
+`data/io.github.steeb_k.Commune.metainfo.xml.in.in` opens with a bare
+`<component type="desktop-application">`, which is the ordinary way to write appstream metadata and
+is accepted everywhere else. S3 will have to add the namespace, or teach the manifest to point at a
+copy that has it. Adding it upstream-style is harmless to the Linux build and is the cheaper of the
+two.
+
+[gtk4-rs#1997]: https://github.com/gtk-rs/gtk4-rs/issues/1997
 
 ## Known gaps
 
