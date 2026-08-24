@@ -278,6 +278,14 @@ Three decisions:
   homeserver is the only thing that knows which addresses are on which
   accounts, and a client that refuses an address the server would have accepted
   is worse than one that asks.
+* **A server with no mail configuration answers `M_UNKNOWN`, not
+  `M_THREEPID_DENIED`.** Measured against Synapse on 24 August 2026: it says
+  _"Email-based password resets have been disabled on this server"_ under the
+  catch-all error code, so the sentence a person sees is the homeserver's own,
+  printed verbatim by `to_user_facing()`. That reads better than anything this
+  client could invent, so it stays. The `M_THREEPID_DENIED` arm is for the
+  servers that use the code the spec defines for refusing an address, and it
+  was not the one exercised here.
 * **`send_attempt` goes up only when the user asks again.** That is what the
   field is for — it tells the homeserver "send another email" apart from "this
   is a retry of a request that may have been lost". The secret is kept across a
