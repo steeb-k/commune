@@ -398,18 +398,37 @@ encryption at rest that a stored index needed in the first place — an in-memor
 at rest to protect. It should go away if the SDK ever names those directories with something legal
 everywhere.
 
-**GLib does have a Windows notification backend**, which the plan assumed it did not:
+**GLib does have a Windows notification backend**, which the plan assumed it did not, and it is a
+modern one. `strings libgio-2.0-0.dll` names `GWin32NotificationBackend`, and beside it only
+`RoActivateInstance` and `api-ms-win-core-winrt-l1-1-0.dll` — so it is WinRT toasts, the same API
+M5 was going to reach for. That is the opposite of macOS, where a backend existed but was
+deprecated past usefulness.
+
+It will not carry an action, though:
 
 ```text
 GLib-GIO-WARNING: Notification actions are unsupported by this Windows backend
 ```
 
-That is worth knowing before M5 starts, because it changes the milestone. A banner presumably
-appears; what does not work is the part Commune depends on, since every notification it sends
-carries a default action with a `GVariant` target and exists to be clicked. So M5 is a repair of
-something half-working rather than a build from nothing — the same shape macOS turned out to have,
-and for the same reason. **Step 0 of that milestone is now to look at what the existing backend
-actually does**: whether a banner appears at all, and whether it survives being clicked.
+which is precisely the half Commune depends on — every notification it sends sets a default action
+with a `GVariant` target and exists to be clicked.
+
+And nothing is delivered. After a test notification, `HKCU\…\Notifications\Settings` lists 34
+applications and Commune is not among them; that key is what Windows writes when an application
+first delivers a toast. Installing the MSI and launching from its AUMID shortcut did not change
+it.
+
+**The reason is not the shortcut.** An unpackaged process has no AUMID of its own —
+`GetApplicationUserModelId` returns `APPMODEL_ERROR_NO_APPLICATION` — and nothing in Commune ever
+gives it one. A shortcut declaring an AUMID makes the ID valid to register against; the process
+still has to claim it, and ours never does.
+
+There is a working precedent on this machine, in a sibling project by the same author:
+`~/irohdp/crates/ipn-gui/src/notify.rs`. Nullgate **is** in that registry key, and it does two
+things Commune does not — `SetCurrentProcessExplicitAppUserModelID(APP_ID)` from `shell32`, and an
+`HKCU\Software\Classes\AppUserModelId\{APP_ID}` key carrying the `DisplayName` that Windows shows
+in its notification settings. It then sends toasts through `tauri-winrt-notification` rather than
+GLib, using `on_activated` for the click. Read it before writing M5.
 
 ## What differs from Linux
 

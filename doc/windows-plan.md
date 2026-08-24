@@ -315,6 +315,52 @@ The macOS M5 experiments transfer almost one-to-one; reread them before starting
   (`COMMUNE_TEST_NOTIFICATION`, described in `doc/macos.md`). GLib has **no** win32
   `GNotification` backend, so the expected result is silence with no error — record it and move
   on. There is no version of "maybe GLib handles it" to chase here.
+
+  **Answered, and the premise was wrong in both directions.** GLib does have a backend, and it is
+  not a legacy one: `strings libgio-2.0-0.dll` names `GWin32NotificationBackend`, and the only
+  other things it names beside it are `RoActivateInstance` and
+  `api-ms-win-core-winrt-l1-1-0.dll` — so it is WinRT toasts, the same modern API this milestone
+  was going to reach for. That is the opposite of macOS, where the backend existed but was
+  deprecated past usefulness.
+
+  What it will not do is carry an action:
+
+  ```text
+  GLib-GIO-WARNING: Notification actions are unsupported by this Windows backend
+  ```
+
+  That is precisely the half Commune depends on. Every notification it sends sets a default action
+  with a `GVariant` target and exists to be clicked, so a banner that cannot be clicked is not a
+  notification we can ship.
+
+  And nothing was delivered: after a test notification, `HKCU\…\Notifications\Settings` lists 34
+  applications and Commune is not among them — the key Windows creates when an application first
+  delivers a toast. Launching from the MSI's AUMID shortcut did not change that.
+
+  **Why, and it is not the shortcut.** An unpackaged process has no AUMID of its own —
+  `GetApplicationUserModelId` returns `APPMODEL_ERROR_NO_APPLICATION` — and nothing in Commune
+  ever gives it one. A shortcut declaring an AUMID is what makes the ID *valid to register
+  against*; the running process still has to claim it.
+
+  There is a worked precedent on this machine, in a sibling project of the same author
+  (`~/irohdp`, `crates/ipn-gui/src/notify.rs`), and it is worth reading before writing any of
+  this. Nullgate **is** in that registry key, and what it does is two things Commune does not:
+
+  * `SetCurrentProcessExplicitAppUserModelID(APP_ID)` from `shell32`, early, so the process claims
+    the ID.
+  * an `HKCU\Software\Classes\AppUserModelId\{APP_ID}` key with a `DisplayName`, which is what
+    Windows shows in its notification settings — written by the app itself, so it does not depend
+    on having been installed.
+
+  It then sends toasts with `tauri-winrt-notification` rather than through GLib, with
+  `on_activated` for the click, and its comment records a second reason to bypass GLib that this
+  investigation did not reach: GLib's backend "spawns a confusing second notification-area icon
+  beside the tray icon".
+
+  So the shape below is right, but two of its assumptions are not: the AUMID has to be claimed in
+  process rather than merely declared by the installer, and `tauri-winrt-notification` is a
+  shorter route to the same place than hand-rolling `ToastNotificationManager` — already proven
+  here, on this Windows, by this author.
 * New `src/utils/windows_notifications.rs` behind the existing dispatch in
   `src/session/notifications/mod.rs` — the two-way macOS `cfg_if!` at `:141` and `:162` becomes
   three-way. Linux keeps `GNotification` untouched.
@@ -332,7 +378,10 @@ The macOS M5 experiments transfer almost one-to-one; reread them before starting
   arguments and is parsed back against `action_parameter_type()` — the same single-representation
   rule the macOS port established.
 * **Toasts require the installed app.** The bare `.zip` has no AUMID shortcut, so it gets no
-  toasts; document that as the trade rather than growing a first-run shortcut writer.
+  toasts; document that as the trade rather than growing a first-run shortcut writer. **Worth
+  re-testing rather than assuming**, now that the AUMID turns out to be claimed in process and the
+  `AppUserModelId` class key can be written by the app itself: the `.zip` may need nothing from an
+  installer after all.
 * One thing macOS fought that does not exist here: signing identity churn. The Azure certificate
   is stable, so notification permission survives rebuilds by construction.
 
