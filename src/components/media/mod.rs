@@ -2,8 +2,9 @@ mod animated_image_paintable;
 mod audio_player;
 mod content_viewer;
 // GTK only has a media backend of its own where it was built against
-// GStreamer, which the conda-forge build we use on macOS was not.
-#[cfg(target_os = "macos")]
+// GStreamer, which neither the conda-forge build we use on macOS nor the MSYS2
+// one we use on Windows was. Where it is missing, we play media ourselves.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod gst_media_stream;
 mod location_viewer;
 mod video_player;
