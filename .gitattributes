@@ -9,6 +9,13 @@ hooks export-ignore
 .rustfmt.toml export-ignore
 .typos.toml export-ignore
 
-# The Android build scripts run in WSL from this Windows checkout, and a POSIX
-# shell will not run a script with CRLF line endings.
-build-aux/android/*.sh text eol=lf
+# A POSIX shell will not run a script with CRLF line endings: the shebang comes
+# out as `bash\r`, and the error names that rather than the script, so it reads
+# as a missing interpreter instead of a mangled file.
+#
+# This rule was `build-aux/android/*.sh`, which was too narrow. The Android
+# build runs Meson against this Windows checkout, and
+# `build-aux/compile-blueprints.sh` — which every platform's build calls — came
+# out with CRLF and stopped the build 2654 targets in. None of these are ever
+# run by a Windows shell, so all of them can simply be LF.
+*.sh text eol=lf

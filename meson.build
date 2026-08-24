@@ -1,10 +1,29 @@
 project(
     'commune',
-    'rust',
     version: '14.1',
     license: 'GPL-3.0-or-later',
     meson_version: '>= 1.4',
 )
+
+is_android = host_machine.system() == 'android'
+
+# Meson never compiles any Rust itself: `src/meson.build` drives Cargo through
+# `custom_target`, and the only reason to declare the language is that Meson
+# then finds and reports a `rustc` up front instead of failing later.
+#
+# On Android that check asks the wrong question. Declaring the language makes
+# Meson look for a `rustc` for the *host* machine, which the cross files
+# pixiewood writes do not name, and it fails with `'rust' compiler binary not
+# defined in cross file [binaries] section`. Cargo cross-compiles on its own
+# with `--target` and needs nothing from Meson to do it.
+#
+# Android needs a C compiler instead, for exactly one file:
+# `build-aux/android/stub.c`, the `main` that GTK's glue looks up.
+if is_android
+    add_languages('c', native: false)
+else
+    add_languages('rust', native: false)
+endif
 
 fs = import('fs')
 gnome = import('gnome')
@@ -22,12 +41,13 @@ if pre_release_version != ''
 endif
 full_version = version
 
+# Android links these into the shared object itself, because Cargo hands over a
+# `staticlib` and Meson performs the one real link. Everywhere else they are
+# assertions that the libraries exist, and Cargo's `-sys` crates do the linking.
 glib_dep = dependency('glib-2.0', version: '>= 2.82')  # update when changing gtk version
-dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
-dependency('gtk4', version: '>= 4.20.2')
-dependency('libadwaita-1', version: '>= 1.8.0')
-
-is_android = host_machine.system() == 'android'
+gio_dep = dependency('gio-2.0', version: '>= 2.82')  # always same version as glib
+gtk_dep = dependency('gtk4', version: '>= 4.20.2')
+adw_dep = dependency('libadwaita-1', version: '>= 1.8.0')
 
 # Please keep these dependencies sorted.
 if not is_android
@@ -46,7 +66,11 @@ endif
 # Android has no GtkSourceView package, so it builds the one in `subprojects/`.
 # Everywhere else the fallback stays off: a missing development package should say
 # so, not quietly start cloning and building GtkSourceView from git.
-dependency('gtksourceview-5', version: '>= 5.0.0', allow_fallback: is_android)
+sourceview_dep = dependency(
+    'gtksourceview-5',
+    version: '>= 5.0.0',
+    allow_fallback: is_android,
+)
 if host_machine.system() == 'linux'
     # glycin decodes images on Linux. Every other platform uses the `image`
     # crate instead, see `src/utils/media/image/decoder/`.
@@ -63,11 +87,38 @@ if not is_android
     dependency('shumate-1.0', version: '>= 1.1.0')
 endif
 if not is_android
-    # Android ships `libsqlite3.so` in the NDK sysroot but no `.pc` file to find
-    # it with, so this assertion cannot be made there. `libsqlite3-sys` does not
-    # vendor a copy — it has no `cc` dependency — so the link still needs that
-    # system library to resolve; see `doc/android.md`.
+    # Android builds its own; see the `rusqlite` entry in `Cargo.toml` and the
+    # Android block below.
     dependency('sqlite3', version: '>= 3.24.0')
+endif
+
+if is_android
+    cc = meson.get_compiler('c')
+
+    # SQLite is deliberately absent from this list. Android has it, but not as
+    # an NDK API — there is no `libsqlite3.so` anywhere in the sysroot — so
+    # nothing native can link against the platform's copy. `Cargo.toml` turns on
+    # `rusqlite`'s `bundled` feature for Android instead, which compiles SQLite
+    # into the static library Cargo hands over, so by the time Meson links there
+    # is nothing left to find.
+
+    # `__android_log_write`, which is where `tracing` output goes. `dl` and `m`
+    # are what the Rust standard library and the vendored C in `aws-lc-sys`,
+    # `libwebp-sys` and now `libsqlite3-sys` expect to find.
+    log_dep = cc.find_library('log')
+    dl_dep = cc.find_library('dl')
+    m_dep = cc.find_library('m')
+
+    android_deps = [
+        adw_dep,
+        dl_dep,
+        gio_dep,
+        glib_dep,
+        gtk_dep,
+        log_dep,
+        m_dep,
+        sourceview_dep,
+    ]
 endif
 
 # When the `build-env` profile is used, we only want to set up the build
@@ -131,6 +182,63 @@ cargo_env = [
     'CARGO_HOME=' + cargo_home,
     'CARGO_TARGET_DIR=' + cargo_target_dir,
 ]
+
+if is_android
+    # Meson knows how to cross-compile and Cargo does not know that Meson is
+    # doing it, so everything Cargo needs to target Android has to be handed
+    # over explicitly. Without this it would quietly build for the machine doing
+    # the building and produce an archive that cannot be linked.
+    cpu = host_machine.cpu_family()
+    if cpu == 'x86_64'
+        rust_triple = 'x86_64-linux-android'
+    elif cpu == 'aarch64'
+        rust_triple = 'aarch64-linux-android'
+    elif cpu == 'x86'
+        rust_triple = 'i686-linux-android'
+    elif cpu == 'arm'
+        rust_triple = 'armv7-linux-androideabi'
+    else
+        error('No Rust target for Android CPU family "' + cpu + '"')
+    endif
+
+    # Cargo spells these with underscores and in capitals.
+    triple_env = rust_triple.replace('-', '_')
+    triple_upper = triple_env.to_upper()
+
+    # The NDK's clang, as Meson resolved it from pixiewood's cross file, and the
+    # rest of the toolchain that sits beside it. The `cc` crates in `aws-lc-sys`,
+    # `libsqlite3-sys` and `libwebp-sys` compile real C and need all of it.
+    ndk_bin = fs.parent(cc.cmd_array()[0])
+
+    # Cargo's `-sys` crates resolve GTK and friends through pkg-config, and the
+    # only description of the ones being built here is the `-uninstalled.pc`
+    # files Meson writes at configure time — before ninja compiles anything,
+    # which is exactly why a `staticlib` works. `PKG_CONFIG_LIBDIR` *replaces*
+    # the search path rather than extending it, so the host's own `/usr` `.pc`
+    # files cannot leak into an Android build and quietly satisfy something.
+    uninstalled = meson.project_build_root() / 'meson-uninstalled'
+
+    cargo_env += [
+        'PKG_CONFIG_PATH=' + uninstalled,
+        'PKG_CONFIG_LIBDIR=' + uninstalled,
+        'PKG_CONFIG_ALLOW_CROSS=1',
+        'CC_' + triple_env + '=' + cc.cmd_array()[0],
+        'AR_' + triple_env + '=' + ndk_bin / 'llvm-ar',
+        'CARGO_TARGET_' + triple_upper + '_LINKER=' + cc.cmd_array()[0],
+    ]
+
+    cargo_build_options_android = [
+        '--target',
+        rust_triple,
+        # `[profile.release] debug = true` is deliberate for desktop, where the
+        # symbols cost disk and buy backtraces. Here they are ruinous: they made
+        # a 3.4 GB static library and a 1.6 GB APK, which Gradle then reported it
+        # could not strip. An Android build takes its diagnostics from logcat
+        # instead, so nothing is lost by leaving them out.
+        '--config',
+        'profile.release.debug=false',
+    ]
+endif
 
 if host_machine.system() == 'darwin'
     # Without these, `gettext-sys` compiles and statically links its own vendored

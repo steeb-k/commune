@@ -38,3 +38,14 @@ testing/.homeserver/
 
 # Meson clones wrap subprojects in here; only the .wrap files are ours.
 /subprojects/*/
+
+# pixiewood generates the Android build tree in here.
+.pixiewood/
+
+# `pixiewood prepare` writes one wrap per dependency named in the Android
+# manifest, and rewrites them every time it runs. Only the wraps we author are
+# ours to keep.
+/subprojects/*.wrap
+!/subprojects/gtksourceview.wrap
+/subprojects/.wraplock
+/.buildconfig
