@@ -499,6 +499,12 @@ existed picks the room up without a reset. Log in as alice.
 
 * [ ] **Pressing _Preview_ shows the two seeded messages**, oldest first, each
       with a sender name and a timestamp.
+* [ ] **The room's name is on the page**, above the line about nobody seeing
+      you. The heading above that belongs to the dialog and says _Join a Room_
+      on every page, so this is the only thing saying which room you are in.
+* [ ] **A room with more messages than fit opens at the newest**, not the
+      oldest — the same end every other timeline here opens at. The harness
+      cannot show this with two messages; use a busy room on matrix.org.
 * [ ] **The sender is named, not numbered.** It should read bob's display name,
       not `@bob:localhost` — that fallback is what a room with no lazy-loaded
       member events gets.

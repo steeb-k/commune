@@ -90,6 +90,21 @@ message search uses, so a preview shows the current text of a message and not
 both versions. Redacted messages fall out of the list entirely, which is
 correct.
 
+## The page says which room, and opens at the end
+
+Two things the first version got wrong, both found by looking at it against
+matrix.org rather than the harness:
+
+* **The heading belongs to the dialog, not the page.** It reads _Join a Room_
+  on every page of the stack, which is right for the entry page and for the
+  details — the details draw the name themselves — and left the preview with
+  no room name anywhere on it. `peek_room_name` is that name.
+* **The messages arrive oldest first and the page opened on them.** What
+  somebody wants from a preview is what the room is saying _now_, which is the
+  same end every other timeline here opens at. The scroll happens on an idle,
+  because the adjustment does not know how tall the list is until it has been
+  laid out.
+
 ## Twenty messages, once
 
 `PEEK_LIMIT` is 20 and there is no scrollback: the peek is loaded once when the
@@ -103,7 +118,7 @@ re-enters when the state is `Error`.
 | --- | --- |
 | `src/session/remote/room_peek.rs` | `RoomPeek` and `PeekedMessage`: the request, the sender names, the list |
 | `src/components/dialogs/peek_row.rs`, `peek_row.blp` | One message, three labels |
-| `src/components/dialogs/room_preview.rs`, `.blp` | The _Preview_ button, the `peek` page, the back stack |
+| `src/components/dialogs/room_preview.rs`, `.blp` | The _Preview_ button, the `peek` page, its room name and scroll position, the back stack |
 | `src/session_view/explore/public_room_row.rs`, `.blp` | The same button on a row, in Explore and on a space page |
 | `src/session/remote/room.rs` | `is-encrypted`, beside slice 2's `is-world-readable` |
 | `data/resources/stylesheet/_components.scss` | `.room-peek` |
@@ -123,6 +138,8 @@ re-enters when the state is `Error`.
    preview away as it lands.
 4. `PublicRoomRow` has three callers' worth of buttons on one line now. It is
    also used by the space page — see `spaces.md`.
+5. The dialog's fixed heading is `Join a Room` on all four pages. If upstream
+   ever makes it follow the page, `peek_room_name` becomes a duplicate.
 
 ## Not done
 

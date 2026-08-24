@@ -55,7 +55,11 @@ mod imp {
         #[template_child]
         view_or_join_btn: TemplateChild<LoadingButton>,
         #[template_child]
+        peek_room_name: TemplateChild<gtk::Label>,
+        #[template_child]
         peek_stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        peek_scrolled_window: TemplateChild<gtk::ScrolledWindow>,
         #[template_child]
         peek_list: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -448,9 +452,17 @@ mod imp {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
-            let Some(room_id) = self.room.borrow().as_ref().and_then(RemoteRoom::room_id) else {
+            let Some(room) = self.room.borrow().clone() else {
                 return;
             };
+            let Some(room_id) = room.room_id() else {
+                return;
+            };
+
+            // The heading above belongs to the dialog and always reads
+            // "Join a Room", so without this the page never says which room is
+            // being read.
+            self.peek_room_name.set_label(&room.display_name());
 
             self.peek.set_room(&session, room_id);
             self.set_visible_page("peek");
@@ -468,6 +480,27 @@ mod imp {
             };
 
             self.peek_stack.set_visible_child_name(name);
+
+            if name == "list" {
+                self.scroll_peek_to_end();
+            }
+        }
+
+        /// Scroll the messages of the previewed room to the last of them.
+        ///
+        /// They arrive oldest first, and what somebody wants from a preview is
+        /// what the room is saying now — the same end every other timeline
+        /// here opens at. The adjustment only knows how tall the list is once
+        /// it has been laid out, hence the idle.
+        fn scroll_peek_to_end(&self) {
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    let adjustment = imp.peek_scrolled_window.vadjustment();
+                    adjustment.set_value(adjustment.upper() - adjustment.page_size());
+                }
+            ));
         }
 
         /// View or join the room that was previewed.

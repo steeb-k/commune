@@ -217,7 +217,19 @@ template $RoomPreviewDialog: $ToastableDialog {
 
         child: Gtk.Box {
           orientation: vertical;
-          spacing: 12;
+          spacing: 6;
+
+          Gtk.Label peek_room_name {
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            margin-start: 24;
+            margin-end: 24;
+
+            styles [
+              "title-4",
+            ]
+          }
 
           Gtk.Label {
             wrap: true;
@@ -225,6 +237,7 @@ template $RoomPreviewDialog: $ToastableDialog {
             justify: center;
             margin-start: 24;
             margin-end: 24;
+            margin-bottom: 6;
             label: _("Anybody can read this room without joining it. Nobody in it can see that you are looking.");
 
             styles [
@@ -266,7 +279,7 @@ template $RoomPreviewDialog: $ToastableDialog {
             Gtk.StackPage {
               name: "list";
 
-              child: Gtk.ScrolledWindow {
+              child: Gtk.ScrolledWindow peek_scrolled_window {
                 hscrollbar-policy: never;
                 vexpand: true;
 
