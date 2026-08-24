@@ -537,6 +537,42 @@ One wrinkle from all of this living under one AUMID per profile: `LocalServer32`
 Run the development build and then click a notification from the installed one, and the
 development build opens. Harmless, and only confusing if you have both.
 
+**The window does not snap, and getting it to is a project rather than a fix.**
+
+Aero Snap, Win+Arrow and Snap Layouts are not features an application asks for: Windows offers
+them to any window whose styles say it can be resized. GTK's win32 backend gives a client-side
+decorated toplevel `WS_VISIBLE | WS_CLIPSIBLINGS | WS_MINIMIZEBOX` and nothing else, so Windows
+decides ours is fixed-size and declines. Three ways of changing its mind were tried and measured,
+and each failed differently:
+
+| Attempt | Result |
+| --- | --- |
+| `WS_MAXIMIZEBOX \| WS_SYSMENU` | Geometry fine. **Still no snapping** — the missing style is the one that means resizable. |
+| Add `WS_THICKFRAME` | Snapping works. Windows reserves a non-client frame, GDK expects the client area to be the whole window, and the two recompute against each other until the window has shrunk to 410×344 and walked off the screen. |
+| Add a `WM_NCCALCSIZE` handler giving the client area back | Size stops shrinking. The window now **drifts**: 17064, then 19731, then 21684 on successive snaps. |
+
+There is also a second, quieter fact. GTK keeps its shadow **inside** the `HWND`: the window's
+visible content starts 25 pixels below the top of the window rectangle. `DwmGetWindowAttribute`
+reports no frame at all, because the shadow is GTK's own drawing rather than a system frame — so
+measuring with DWM says everything is fine when it is not. A snapped window would fill its tile
+with the `HWND` and sit visibly inset from it.
+
+Two more things worth knowing before anyone tries again. GDK recomputes the window styles from its
+own idea of the decorations **every time it lays the surface out**, so setting them once at
+`realize` or after `map` is undone moments later; they have to be re-asserted on each layout.
+And `AdwApplicationWindow` cannot take the other route — the one where `GTK_CSD=0` gives the
+window a real frame and Windows handles all of this itself — because it forces client-side
+decorations and aborts if its title bar is removed. That route needs a plain
+`gtk::ApplicationWindow`, which means giving up `AdwToolbarView`, the toast overlay and the
+breakpoints, Windows-only, in a file that has to rebase against upstream Fractal.
+
+So the honest position is that snapping needs the whole Chromium-style custom frame —
+`WM_NCCALCSIZE`, `WM_NCHITTEST` for the drag region and the maximise button, and the position
+handling the drift above is a symptom of. That is a known, solved problem; there is a worked
+implementation of it in a sibling project on the author's machine
+(`~/webkit`, `browser/crates/ephemera-host-win32/src/frame.rs`) to read rather than rediscover. It
+is simply a larger piece of work than it looks, and the port does not otherwise need it.
+
 **A release build has no console.** `src/main.rs` sets `windows_subsystem = "windows"` only when
 `debug_assertions` is off, so a development build keeps the console that `tracing` writes to.
 
@@ -561,6 +597,10 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
+* **Window snapping**, which is deliberately not attempted rather than merely absent. Three
+  approaches were measured and each broke the window in its own way; see
+  [What differs from Linux](#what-differs-from-linux) for what happened and what it would really
+  take.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
