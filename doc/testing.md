@@ -58,7 +58,10 @@ what fetches the page.
 
 | Room | Why |
 | --- | --- |
-| Test Space | the space the restricted rooms point at |
+| Test Space | the space the restricted rooms point at, and the one with rooms in it |
+| Sub Space | a space inside Test Space, which is where the one-level nesting limit shows |
+| Readable Room | `world_readable`, with a message in it — what peeking is for |
+| Bobs Room | inside the space and **not** joined by alice, so its row offers to join rather than to view |
 | Restricted Room | `restricted` to the space — the case the join rule row is for |
 | Knock Restricted Room | the same with `knock_restricted`, so both switch positions are visible without changing anything first |
 | Invite Room | plain `invite`, for comparison, with a message in it to report |
@@ -72,8 +75,17 @@ what fetches the page.
 Three accounts: `alice` owns the rooms, `bob` is a second member to report and
 be reported, `admin` is a Synapse admin so reports can be read back.
 
-The direct chat is made outside the `seeded.json` gate, so a homeserver that
-was seeded before it existed gets one on the next `up`. It is not needed for
+**Naming a space in a join rule is not the same as being in it.** Until
+24 August 2026 nothing wrote `m.space.child`, so Test Space existed and was
+empty, and the restricted rooms only referred to it. `seed_space_children()`
+now puts five rooms in it — Public Room and Restricted Room, which alice has
+joined, plus the three above — which is the set a space browser has to draw:
+somewhere to view, somewhere to join, a subspace, and something readable
+without joining.
+
+The direct chat and the space's children are made outside the `seeded.json`
+gate, so a homeserver that was seeded before either existed gets them on the
+next `up`. It is not needed for
 the call buttons — those go by the member count, so every room alice and bob
 share has them — but it is where anybody testing calls looks first.
 

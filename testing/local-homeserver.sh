@@ -575,6 +575,87 @@ seed_direct_chat() {
   log "Direct chat is $dm"
 }
 
+# -------------------------------------------------------- space children ----
+
+# Put rooms inside `Test Space`.
+#
+# The seed creates the space and two rooms whose join rule *names* it, which is
+# not the same as being in it: `m.space.child` is what puts a room in a space,
+# and nothing did that, so browsing the space found an empty one. The four
+# children below are the four cases a space browser has to draw:
+#
+#   * a room alice has already joined, so the row offers to view it;
+#   * a room she has not, created by bob, so the row offers to join it;
+#   * a subspace, which is where the deliberate one-level limit shows;
+#   * a `world_readable` room, which is what peeking needs.
+#
+# Idempotent, and outside the `seeded.json` gate like `seed_direct_chat`, so a
+# homeserver seeded before this existed gets the children on the next `up`.
+seed_space_children() {
+  local alice bob space child
+  [ -f "$STATE" ] || return 0
+
+  space=$(jq -r '.space // empty' "$STATE")
+  [ -n "$space" ] || return 0
+
+  if [ "$(jq -r '.space_children // empty' "$STATE")" = true ]; then
+    log "Test Space already has children."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] || return 0
+
+  log "Putting rooms inside Test Space…"
+
+  local sub_space readable_room bob_room
+  sub_space=$(create_room "$alice" '{
+    "name": "Sub Space",
+    "creation_content": {"type": "m.space"},
+    "preset": "public_chat",
+    "room_alias_name": "sub-space"
+  }')
+  readable_room=$(create_room "$alice" '{
+    "name": "Readable Room",
+    "preset": "public_chat",
+    "room_alias_name": "readable-room",
+    "initial_state": [{
+      "type": "m.room.history_visibility",
+      "state_key": "",
+      "content": {"history_visibility": "world_readable"}
+    }]
+  }')
+  bob_room=$(create_room "$bob" '{
+    "name": "Bobs Room",
+    "preset": "public_chat",
+    "room_alias_name": "bobs-room"
+  }')
+
+  send_text "$alice" "$readable_room" readable1 \
+    '{"msgtype": "m.text", "body": "Anyone can read this without joining."}'
+
+  # The space itself is alice's, so she can write its children whoever owns the
+  # room being added. `via` is not optional: a child without it is ignored.
+  for child in "$(jq -r .public_room "$STATE")" "$(jq -r .restricted "$STATE")" \
+               "$sub_space" "$readable_room" "$bob_room"; do
+    [ -n "$child" ] && [ "$child" != null ] || continue
+
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$space/state/m.space.child/$child" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{"via": ["localhost"]}' >/dev/null \
+      || warn "the server refused to add $child to the space"
+  done
+
+  jq --arg sub_space "$sub_space" \
+     --arg readable_room "$readable_room" \
+     --arg bob_room "$bob_room" \
+     '. + {$sub_space, $readable_room, $bob_room, space_children: true}' \
+     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Test Space now holds five rooms, one of them a subspace."
+}
+
 # --------------------------------------------------------------- notices ----
 
 # Send a server notice to alice and put her in the room.
@@ -1126,6 +1207,7 @@ case "${1:-up}" in
     ensure_turn_config
     seed
     seed_direct_chat
+    seed_space_children
     send_notice || true
     summary
     ;;

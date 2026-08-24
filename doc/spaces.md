@@ -145,7 +145,11 @@ line to add, and peeking is what needs it.
 
 ## Not done
 
-* **Slice 2 — browsing a space.** `RemoteRoom::load_data_from_space_hierarchy`
+* **Slice 2 — browsing a space.** The harness is ready for it:
+  `seed_space_children()` puts five rooms in `Test Space` — one to view, one to
+  join, a subspace and a `world_readable` room — since naming a space in a join
+  rule is not the same as being a child of it, and nothing wrote
+  `m.space.child` until then. `RemoteRoom::load_data_from_space_hierarchy`
   already calls `get_hierarchy::v1` with `limit: 1` and throws the children
   away; lifting the limit and keeping the chunks is the work, plus a child row
   with a View/Join button off `RoomListRoomInfo`. One level of nesting only —
@@ -161,10 +165,5 @@ line to add, and peeking is what needs it.
   `RoomCategory::Invited` and the ordinary `Invite` page, which says nothing
   about it being a space. Correct as far as it goes — accepting it lands the
   space in the Spaces section — but the page could say what it is.
-* **The local harness seeds a space with nothing in it.**
-  `testing/local-homeserver.sh` creates `Test Space` and two rooms whose join
-  rule _names_ it, which is not the same as being a child of it. Slice 2 needs
-  `m.space.child` events added to the seeding before there is anything to
-  browse.
 * **No space ordering.** `m.space.child` carries an `order` field; without
   slice 3 there is nothing to order.
