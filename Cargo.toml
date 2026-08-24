@@ -171,6 +171,12 @@ paranoid-android = "0.2"
 # application wanting SQLite ships its own. Only Android turns this on, so every
 # other platform still links the system library exactly as before.
 rusqlite = { version = "0.40", features = ["bundled"] }
+# `reqwest`'s rustls feature always brings `rustls-platform-verifier`, which
+# panics on Android until a Kotlin component that is not published anywhere is
+# built into the APK. `src/utils/tls.rs` configures the TLS itself instead, from
+# the device's own trust store, which needs rustls directly.
+rustls = "0.23"
+rustls-pemfile = "2"
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]

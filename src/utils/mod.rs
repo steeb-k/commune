@@ -48,6 +48,7 @@ mod single_item_list_model;
 pub(crate) mod sourceview;
 pub(crate) mod string;
 mod template_callbacks;
+pub(crate) mod tls;
 pub(crate) mod toast;
 
 pub(crate) use self::{
