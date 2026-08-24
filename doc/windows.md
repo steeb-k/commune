@@ -48,8 +48,13 @@ notion of another one; it is worth the intrusion because this is the only place 
 that hands raw pointers to the operating system, and everything it protects is lost if it is wrong.
 `cargo nextest run` is 156 tests, all passing, and `meson test` passes.
 
-What has **not** been exercised is everything that needs an account: logging in, syncing, the
-timeline, media playback and calls. Those are the rest of M1.
+**Logging in works**, against a real homeserver, and syncing and the timeline with it.
+
+Three things came out of that first session with an account, and none of them is what it looked
+like at first glance. They are written up in [What bit us](#what-bit-us): calls fail over Remote
+Desktop for want of a microphone and not for want of a port; message search is broken by room IDs
+that Windows will not accept as directory names; and GLib turns out to have a Windows notification
+backend after all, which changes what M5 is.
 
 | Area | State |
 | --- | --- |
@@ -58,6 +63,7 @@ timeline, media playback and calls. Those are the rest of M1.
 | Image decoding | `image` crate, shared with macOS via `cfg(not(target_os = "linux"))` |
 | Video and audio playback | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
 | Secrets | Windows Credential Manager, `src/secret/windows.rs`, round-tripped by a test |
+| Message search | **Broken** — a room ID cannot be a directory name here, see below |
 | Data directories | `%LOCALAPPDATA%\commune[-Devel]\{data,cache}` |
 | Console window | Suppressed in release builds only, `src/main.rs` |
 | Location sharing | Stubbed, `is_available()` is false and the UI hides it |
@@ -67,7 +73,7 @@ timeline, media playback and calls. Those are the rest of M1.
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
 | `matrix:` URLs | Works cold and warm; the installer writes the registry key |
-| Notifications | Nothing yet — M5. GLib has no win32 backend at all |
+| Notifications | Nothing of ours yet — M5. GLib's own backend cannot carry actions |
 
 ## The GTK environment
 
@@ -344,6 +350,56 @@ then fails the formatting check at once, which reads as the tree being unformatt
 the checkout disagreeing with the formatter. `.gitattributes` now pins the working tree to LF for
 everyone.
 
+**Calls fail over Remote Desktop, and it is not the port.** A call sets up correctly — webrtcbin
+gathers its candidates and an `m.call.answer` goes out — and then dies with
+`The call pipeline failed: Could not open device`, blamed on `GstOpenalSrc`. OpenAL is a red
+herring: `autoaudiosrc` tries sources in rank order, and openalsrc at 128 is simply the last one
+left after `wasapi2src` (257) and `wasapisrc` (256) have both failed. Asked directly, `wasapisrc`
+says what is actually wrong:
+
+```text
+Failed to get default device
+```
+
+There is no capture device, because **an RDP session does not get the machine's audio hardware**.
+`$SESSIONNAME` is `RDP-Tcp#0`, the only endpoint the session can see is "Remote Audio", and the
+`Microphone` the registry lists as active belongs to the console session. Microphone redirection
+is off by default in the RDP client, and webcams are not redirected at all without being asked
+for.
+
+So calls have to be tested **from the physical console**, or from an RDP client with audio
+recording and camera redirection both turned on. Nothing about the pipeline has been shown to be
+wrong, and nothing about it has been shown to be right either — this test says neither.
+
+Worth fixing regardless: what reaches the user is "Could not open device", naming a backend nobody
+chose. "No microphone was found" is what happened.
+
+**Message search is broken, by a room ID in a path.** Every sync logs, once per room:
+
+```text
+Failed to handle events for indexing: IoError 'Os { code: 123, kind: InvalidFilename … }'
+  while create directory in: '…\cache\<session>\search_index\!kTpl…:matrix.kzenjak.com'
+```
+
+The search index gives each room a directory named after its room ID, and a room ID contains a
+colon, which Windows does not allow in a file name. This is `matrix-sdk`'s `experimental-search`
+code rather than ours, and the failure is contained — syncing and the timeline are unaffected, and
+only search is lost — but it fires on every batch of events for every room, so the log is full of
+it. It needs either a fix upstream or the feature turned off for this target.
+
+**GLib does have a Windows notification backend**, which the plan assumed it did not:
+
+```text
+GLib-GIO-WARNING: Notification actions are unsupported by this Windows backend
+```
+
+That is worth knowing before M5 starts, because it changes the milestone. A banner presumably
+appears; what does not work is the part Commune depends on, since every notification it sends
+carries a default action with a `GVariant` target and exists to be clicked. So M5 is a repair of
+something half-working rather than a build from nothing — the same shape macOS turned out to have,
+and for the same reason. **Step 0 of that milestone is now to look at what the existing backend
+actually does**: whether a banner appears at all, and whether it survives being clicked.
+
 ## What differs from Linux
 
 **Data lives in one directory.** `%LOCALAPPDATA%\commune-Devel\data` and `…\cache`, rather than the
@@ -378,13 +434,15 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 
 ## Not done yet
 
-* **The rest of M1**: everything that needs an account. Logging in with a password, SSO login
-  (`src/login/local_server.rs` binds localhost, so expect a Defender firewall prompt), syncing,
-  the timeline, image thumbnails and animated GIFs, and video and voice-message playback. Session
-  restore is the one to watch, since it is the only part of the Credential Manager path the test
-  does not cover: log in, quit, relaunch, and see the session come back. Calls have every element
-  they need present (`webrtcbin`, `nicesrc`, `dtlssrtpenc`, `srtpenc`, `opusenc`) and should be run
-  against Element per `doc/calls.md`.
+* **The rest of M1.** Logging in and syncing are done. Still owed: image thumbnails and animated
+  GIFs, video and voice-message playback, and session restore — the last being the one to watch,
+  since it is the only part of the Credential Manager path the round-trip test does not cover.
+  Log in, quit, relaunch, and see the session come back.
+* **Calls, from a machine that has a microphone.** Every element they need is present, and the
+  signalling half already works; the pipeline half has never had a capture device to open. See
+  [What bit us](#what-bit-us). Run against Element per `doc/calls.md`, from the console.
+* **The search index**, which fails on every room because a room ID cannot be a Windows directory
+  name. Upstream fix, or the feature disabled for this target.
 * **Signing an actual artifact.** The pipeline is written and skips cleanly without metadata, but
   nothing has yet been signed, so neither the signtool invocation nor what SmartScreen makes of
   the result has been seen. That needs `artifact-signing-metadata.json` and the Trusted Signing
@@ -397,8 +455,9 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
-* **M5**: WinRT toast notifications. GLib has no win32 `GNotification` backend at all, so there is
-  nothing to repair — only something to write.
+* **M5**: notifications. Not the blank slate the plan assumed — GLib has a Windows backend, it
+  just cannot carry actions, which is the half Commune needs. Start by finding out what it does
+  do.
 * **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.
 
 Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
