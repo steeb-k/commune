@@ -137,8 +137,20 @@ ninja -C _build
 meson install -C _build
 ```
 
-The app builds and runs, and `matrix:` links already reach a running instance. There is no
-packaging yet, and nothing that needs an account has been exercised. See
+Two more targets package it, and a PowerShell script builds the installer:
+
+```sh
+meson compile -C _build windows-bundle    # a relocatable Commune folder
+meson compile -C _build windows-zip       # ... and a .zip beside it
+```
+
+```powershell
+pwsh -File build-aux\windows\build-msi.ps1 -BundleDir "_build\windows\Commune Devel"
+```
+
+The folder runs with nothing but `C:\Windows` on `PATH`, and the per-user MSI needs no
+administrator. Both are signed when Azure Trusted Signing metadata is present and built unsigned
+when it is not. Nothing that needs an account has been exercised yet. See
 [`doc/windows.md`](doc/windows.md) for the environment, the six things that bit us on the way, and
 what is still owed.
 
