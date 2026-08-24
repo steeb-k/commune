@@ -148,6 +148,45 @@ else
     remember missing 'meson>=1.9'
 fi
 
+header 'Host GLib code generators'
+table_header
+# Cross-compiling uses two GLibs: the target one, built from the `main` wrap,
+# and the *build machine's* generators, which meson takes from the host and
+# bakes into build.ninja as absolute paths. That last part is why this belongs
+# in a probe: a host whose tools are too old cannot be worked around with PATH
+# or pkg-config shims, so it has to be caught before a build starts.
+#
+# The bar is `G_GNUC_FLAG_ENUM` (`Since: 2.88`), which libadwaita's
+# adw-tab-view.h uses. An older glib-mkenums does not skip the type, it reads
+# the macro as the type's *name* — generating ADW_TYPE_G_GNUC_FLAG_ENUM and
+# failing hundreds of targets later on a symbol nobody ever wrote. Probe the
+# behaviour rather than the version, because the behaviour is what breaks.
+tool_check glib-mkenums required --version
+tool_check glib-compile-resources required --version
+tool_check glib-compile-schemas required --version
+
+if have glib-mkenums; then
+    _gver=$(glib-mkenums --version 2>/dev/null | sed -n '1s/.*version //p')
+    _probe_hdr=$(mktemp 2>/dev/null) || _probe_hdr=''
+    if [ -n "$_probe_hdr" ]; then
+        cat > "$_probe_hdr" <<'PROBE_EOF'
+typedef enum {
+  PROBE_FLAG_NONE = 0,
+  PROBE_FLAG_ONE  = 1 << 0,
+} G_GNUC_FLAG_ENUM ProbeFlagEnum;
+PROBE_EOF
+        _probe_name=$(glib-mkenums --fhead '' --eprod '@EnumName@' "$_probe_hdr" 2>/dev/null \
+            | grep -c '^ProbeFlagEnum$')
+        rm -f "$_probe_hdr"
+        if [ "$_probe_name" = '1' ]; then
+            row 'G_GNUC_FLAG_ENUM' 'yes' "${_gver:-unknown}" '>= 2.88' 'ok'
+        else
+            row 'G_GNUC_FLAG_ENUM' 'no' "${_gver:-unknown}" '>= 2.88' 'TOO OLD'
+            remember missing 'glib-mkenums>=2.88 (libadwaita will not build)'
+        fi
+    fi
+fi
+
 header 'Perl modules (pixiewood)'
 table_header
 perl_check Glib

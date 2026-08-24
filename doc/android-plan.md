@@ -98,8 +98,8 @@ the same free ride Windows got from macOS. What is _not_ free:
 | --- | --- | --- |
 | Entry point | `fn main()` binary | `#[no_mangle] extern "C" fn main(argc, argv)` in a `cdylib`/`staticlib`, no `windows_subsystem` analogue |
 | Logging | stdout | logcat sink |
-| gresources, locale | absolute `PKGDATADIR` | `app_bundle.rs` android arm: `$XDG_DATA_HOME/commune/*.gresource` (assets extracted by the glue) |
-| Data/cache dirs | XDG | `getFilesDir()`/`getCacheDir()` — GLib's XDG answers are already redirected by the glue; verify `user_cache_dir()` |
+| gresources, locale | absolute `PKGDATADIR` | `app_bundle.rs` android arm: `$XDG_DATA_DIRS/commune/*.gresource` (assets extracted by the glue). **Corrected in S3** — this said `XDG_DATA_HOME`, which is external storage and never holds the assets |
+| Data/cache dirs | XDG | **Not** `getFilesDir()`/`getCacheDir()` as assumed: the glue points `XDG_DATA_HOME` at `getExternalFilesDir(null)`, and sets nothing for the cache at all. Both need deciding in S3 — see `doc/android.md` |
 | Secrets | oo7 / Secret Service | `UnimplementedSecret` panics. Needs Android Keystore via JNI, or (spike) a file under `getFilesDir()` with the SDK's store encryption — SecretFile already exists for tokens |
 | Notifications | GNotification (D-Bus) | none in GLib; `NotificationManager` via JNI, plus FCM/UnifiedPush for background — the largest Android-only chunk |
 | Media | GTK GStreamer backend | pixiewood's GTK is built `-Dmedia-gstreamer=disabled`; GStreamer itself must be cross-built (Cerbero) — voice messages, video, and **calls** all hang on it |
@@ -140,6 +140,9 @@ Made on 23 August 2026, before any spike:
 
 * **Host: WSL Ubuntu-24.04**, already on the machine, with the emulator (`seed_api35`) on the
   Windows side. pixiewood runs in WSL; the APK is installed with the Windows `adb`.
+  **Superseded during S3: the host is now WSL `archlinux`.** Ubuntu 24.04's GLib code generators
+  are 2.80 and cannot build libadwaita `main`, which needs `G_GNUC_FLAG_ENUM` (`Since: 2.88`). The
+  emulator arrangement is unchanged. See `doc/android.md`.
 * **Architecture: `x86_64` first**, because that is what the emulator runs and nothing about
   the route is arch-specific. `aarch64` is added the day a device is plugged in.
 * **Gate features to reach a baseline.** Unless a spike finds a structural impediment, the
@@ -190,10 +193,12 @@ Each spike is a yes/no gate; stop at the first no and record it in `doc/android.
   `aws-lc-sys` cross-compiled without the `ring` fallback this plan reserved. Two arms were added
   (a placeholder file-backed secret store, a logcat sink) and the feature gating this step
   budgeted for was not needed to compile at all. See `doc/android.md`.
-* **S3 — Commune login on the emulator.** Next, and now the hard one: everything S2 deferred
+* **S3 — Commune login on the emulator.** In progress, and the hard one: everything S2 deferred
   lands here — the `staticlib` entry point, runtime paths for gresources and locale, the
   metainfo `xmlns`, a newer build host so libadwaita builds, and either cross-building
   gtksourceview/libshumate or gating them for real rather than stubbing their `.pc` files.
+  **The build host is done** — Arch, with libadwaita cross-compiled and its demo exercised on the
+  emulator, `AdwTabView` included. The rest of the list is untouched.
   Originally: Cross-build gtksourceview5 and libshumate as wraps
   (or keep them gated), no GStreamer, password login against `testing/local-homeserver.sh`,
   send a message, see the timeline. This is the "is the UI usable on a phone with GTK's

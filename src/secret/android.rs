@@ -1,4 +1,4 @@
-//! Secret backend using a file in the application's private storage.
+//! Secret backend using a file in the application's own data directory.
 //!
 //! # This is a placeholder, not a secure store
 //!
@@ -8,15 +8,36 @@
 //! writes the session — including the passphrase that encrypts the local
 //! databases — as plain JSON.
 //!
-//! What it does rely on is the application sandbox: everything under
-//! `Context.getFilesDir()` is owned by this application's UID and is not
-//! readable by other applications. On a device that has not been rooted, and
-//! with `android:allowBackup` disabled, that is a meaningful boundary. It is
-//! not equivalent to hardware-backed key storage, it does not survive a rooted
-//! device, and it is not what the Keystore would give us.
-//!
 //! Replacing this is tracked as the first task of S5 in `doc/android-plan.md`.
 //! The `SecretExt` surface is the seam: only this file changes.
+//!
+//! # Where this actually writes, which is worse than intended
+//!
+//! This file was written believing it landed under `Context.getFilesDir()`,
+//! whose contents are owned by this application's UID and are unreadable by
+//! other applications. **It does not.** [`secrets_dir()`] resolves through
+//! [`DataType::Persistent`], which is `glib::user_data_dir()`, and GTK's
+//! Android glue points GLib's `XDG_DATA_HOME` at
+//! `Context.getExternalFilesDir(null)/share` — *external* storage
+//! (`gdk/android/gdkandroidruntime.c:271-281`). Only `XDG_DATA_DIRS` is the
+//! internal files directory.
+//!
+//! An app-specific external directory is a weaker boundary than the sandbox:
+//! other ordinary applications cannot read it under scoped storage, but it is
+//! exposed over USB/MTP, reachable by anything holding
+//! `MANAGE_EXTERNAL_STORAGE`, and may live on removable media. It is not the
+//! UID-owned private directory the sandbox argument depends on.
+//!
+//! So the honest description of the present posture is a plaintext passphrase
+//! on semi-public storage. The directory is worth fixing on its own, ahead of
+//! the Keystore work — but not only here: every [`DataType::Persistent`]
+//! consumer, the SDK's own databases included, writes to the same place, so
+//! this is a decision about the Android data directory rather than about this
+//! file. Tracked in `doc/android.md` under S3.
+//!
+//! Even with the directory corrected, this is not equivalent to hardware-backed
+//! key storage, does not survive a rooted device, and is not what the Keystore
+//! would give us.
 //!
 //! # Layout
 //!
