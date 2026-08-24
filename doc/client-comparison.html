@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ 4eb53e53</span>
+      <span>main @ b6570c23</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -688,11 +688,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Everyone but us <span class="tick gone">6 rows</span></h2>
+      <h2>Everyone but us <span class="tick gone">4 rows</span></h2>
       <p class="sec-sub">
         The rows where the field has settled and Commune hasn't. None of these is a judgement
         call about taste: each is a thing a person moving from any other client expects to find
         and does not. Ordered by how little room there is to argue.
+        <strong>Two rows left this section on 23 August 2026</strong> — pinned messages and
+        presence — and their notes are gone rather than struck; what they became is in the table
+        above, in the Commune cell of each.
       </p>
     </div>
     <div class="notes">
@@ -720,16 +723,6 @@
         </p>
       </div>
       <div class="note">
-        <span class="note-tag">8 of 9 peers · m.room.pinned_events</span>
-        <span class="note-head">Pinned messages</span>
-        <p class="note-body">
-          The fork already reads pinned events — but only inside the server notices room, to decide
-          which notice is still active. The generic case — the one every peer but Fractal has — is
-          unbuilt: no pin action, no pinned list, no banner. <strong>The plumbing is there and
-          pointed at one room.</strong>
-        </p>
-      </div>
-      <div class="note">
         <span class="note-tag">7 of 9 peers · MSC3381 — off spec</span>
         <span class="note-head">Polls</span>
         <p class="note-body">
@@ -738,15 +731,6 @@
           ships them, including the conservative KDE one. <strong>A poll sent into a room Commune
           is in renders as nothing at all.</strong> Skipping it is defensible; not knowing it is
           missing is not.
-        </p>
-      </div>
-      <div class="note">
-        <span class="note-tag">7 of 9 peers · Presence</span>
-        <span class="note-head">Presence</span>
-        <p class="note-body">
-          No online dot, no last-active, nothing published. Most homeservers keep presence switched
-          off, which is the usual defence — but the field disagrees with that defence almost
-          unanimously, and the ones that show it degrade quietly when the server says nothing.
         </p>
       </div>
       <div class="note">
@@ -872,7 +856,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>571f2b31</code>, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>b6570c23</code>, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -954,8 +938,8 @@
 
     { f: "Pinned messages", g: "Messaging", kind: "spec", tag: "Spec",
       note: "m.room.pinned_events, in any room.",
-      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Pinned events are read only inside the server notices room, to find the active notice." } },
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Built 23 August 2026: pin and unpin from a message's context menu, a pinned list behind a header toggle, and a timeline line naming who pinned what. The server notices room keeps the separate UI the spec asks for." } },
 
     { f: "Search the messages of a room", g: "Messaging", kind: "spec", tag: "Search",
       note: "Including rooms that are encrypted.",
@@ -1110,8 +1094,8 @@
 
     { f: "Presence", g: "Server", kind: "spec", tag: "Presence",
       note: "Online dot, last-active, status message.",
-      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Not read, not published, not shown.",
+      c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Built 23 August 2026: a badge on the avatar in the member list, on a profile and on a direct chat's row, the status message on a profile, and a switch for publishing your own — which is an off switch, since /sync has been publishing it all along. The last-active time is read and not drawn; idle is a badge colour instead.",
             nh:"Presence and status messages, when the server has it enabled." } },
 
     { f: "Ignoring a user", g: "Server", kind: "spec", tag: "Spec",

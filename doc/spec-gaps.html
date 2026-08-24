@@ -487,12 +487,12 @@
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ 4eb53e53</span>
+      <span>main @ b6570c23</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Fourteen gaps:
-      ten with no implementation at all, four implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Thirteen gaps:
+      nine with no implementation at all, four implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -500,13 +500,15 @@
       on one network and between two, and left the partial column when the last event of the
       module — <code>m.call.negotiate</code> — was answered and then watched working: a camera
       added to a live voice call, and Element for Android accepting it 850&nbsp;ms later. The
-      note below says which parts of that evening's work are still unwatched.
+      note below says which parts of that evening's work are still unwatched. Presence left
+      Absent on 23 August too, and Pinned Events — a module this page had never listed in either
+      direction — was built the same day and joins the implemented column.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">10</div>
+      <div class="score-num">9</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
@@ -516,9 +518,9 @@
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">33</div>
+      <div class="score-num">35</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices and one-to-one calls.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence and one-to-one calls.</div>
     </div>
   </div>
 
@@ -528,7 +530,8 @@
       <p class="sec-sub">
         Ranked by value against effort, not by spec order. Everything that stood above these has
         been built — reporting a room or a user, the knock rule, server ACLs, the recently used
-        emoji, link previews and now server notices — and the notes further down say what the
+        emoji, link previews, server notices, and on 23 August 2026 pinned messages and
+        presence — and the notes further down say what the
         knock one actually turned out to be, what the ACL editor refuses to do, what the emoji
         list cannot reach, why the preview switch had to be a local one, and what the notices
         room cannot tell you until you have joined it.
@@ -557,7 +560,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">10 modules</span></h2>
+      <h2>Absent <span class="tick gone">9 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -611,13 +614,6 @@
             <td><span class="feat">Moderation policy lists</span></td>
             <td class="mod">Moderation policy lists</td>
             <td class="state">No subscribing to a ban list, no authoring one. <code>m.policy.rule.*</code> events are never parsed. Ignoring users is per-account and manual, one user at a time.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Presence</span></td>
-            <td class="mod">Presence</td>
-            <td class="state">Not read, not published, not shown. No online dot, no last-active, no status message. Most homeservers keep it switched off anyway.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
@@ -705,13 +701,13 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">13 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">15 touch the protocol</span></h2>
       <p class="sec-sub">
-169 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
+182 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Thirteen additions do touch the protocol,
+        rebrand, which the spec has no opinion about. Fifteen additions do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
-        the eleven that a module covers follow it, and the other two are in space the standard
+        the thirteen that a module covers follow it, and the other two are in space the standard
         leaves empty.
       </p>
       <div class="legend">
@@ -731,6 +727,18 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Pinned messages in every room</span></td>
+            <td class="mod">Pinned Events</td>
+            <td class="state">Upstream reads <code>m.room.pinned_events</code> in one place — the server notices room, to find which notice is still active — and offers nothing anywhere else. Any message can now be pinned and unpinned from its context menu, subject to the power level the state event needs, and the list of them is a <code>PinnedEvents</code>-focused timeline rather than a hand-rolled list, so it decrypts, follows edits and redactions and resolves senders like any other. The notices room keeps the separate UI the Server Notices module asks for and never appears in the ordinary list. A change to the event is a sentence in the timeline now — who pinned, unpinned or reordered — where before it drew nothing.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">The pinned focus cannot be paginated; the SDK refuses it.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Who is around, and whether you say so</span></td>
+            <td class="mod">Presence</td>
+            <td class="state">A badge on the avatar in the member list, on a profile and on a direct chat's sidebar row, and the status message on the profile. Read from the top-level <code>presence</code> field of <code>/sync</code>, and from the state store for anybody who has not moved since this client started — sync only sends presence when it changes. A server that publishes nothing draws nothing, which is not the same as offline and is kept apart in the model. The publishing half was never optional: <code>set_presence</code> is a query parameter on <code>/sync</code> that marks the client online when it is omitted, so every sync this fork has ever made has published presence. The switch in Privacy is therefore an off switch, and it defaults to on because that is what the client has always done.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note"><code>last_active_ago</code> is read and not drawn.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">One-to-one voice and video calls</span></td>
             <td class="mod">Voice over IP</td>
@@ -813,7 +821,7 @@
       </table>
     </div>
     <p class="sec-sub">
-      The rest of the 107 commits stay clear of the protocol: the macOS port — its own
+      The rest of the 182 commits stay clear of the protocol: the macOS port — its own
       <code style="font-family:var(--f-mono);font-size:0.875em">GtkMediaStream</code> for audio and
       video, an image-decoder API with a pure-Rust backend, Keychain storage, the menu bar, the
       bundle, icons and fonts — plus the rebrand to Commune, the media history viewer's age
@@ -824,9 +832,48 @@
 
   <section>
     <div class="sec-head">
-      <h2>Five corrections, five things now closed, a departure, and two that are not what they look like</h2>
+      <h2>Five corrections, seven things now closed, a departure, and two that are not what they look like</h2>
     </div>
     <div class="notes">
+      <div class="note closed">
+        <h3>Closed: a pinned message, in a module this page had missed</h3>
+        <p>
+          Pinned Events appeared in neither column of this page until 23 August 2026 — not
+          absent, not implemented, simply uncounted — while <code>m.room.pinned_events</code> was
+          being read the whole time, in the one room where the spec asks for a different
+          interface entirely. That is the census error worth naming: a module can be half-built
+          by accident and go unmeasured because the half that exists belongs to another module's
+          requirements.
+        </p>
+        <p>
+          The two readers are siblings now and neither is a generalisation of the other. The
+          notices room collapses its pinned events to one banner, because the module says active
+          notices must be shown "through a special UI, and not the normal pinned events
+          interface"; every other room gets the ordinary list, and the notices room is hard-coded
+          out of it. Merging them would put a notice into the ordinary list, which is the one
+          thing the spec forbids here.
+        </p>
+      </div>
+      <div class="note closed">
+        <h3>Closed: presence, and the switch that turned out to be an off switch</h3>
+        <p>
+          The plan for this said the publishing half would go behind a setting defaulting to off,
+          on the grounds that it is a wasted request on a server with the module disabled. It is
+          not a request. <code>set_presence</code> is a query parameter on <code>/sync</code>, and
+          the spec says omitting it marks the client online — the SDK's sync presence starts at
+          <code>Online</code> and every sync carries it. So this fork, and upstream Fractal
+          before it, has published presence on every sync either has ever made. Defaulting the
+          switch off would have silently taken users offline for everybody watching them.
+        </p>
+        <p>
+          On the read side the interesting decision is that unknown is not offline. A server
+          running the module says <code>offline</code> out loud; a server without it says nothing,
+          and the two are different facts. They are drawn the same — no badge — because asking a
+          person to tell those apart from a dot is asking them to diagnose a homeserver. The
+          distinction is kept in the model, where it is cheap, for a profile page that might one
+          day say it in words.
+        </p>
+      </div>
       <div class="note closed">
         <h3>Closed: the call module answers every event it defines</h3>
         <p>
@@ -1084,7 +1131,8 @@
           name, not who created it — and it is checked before <code>m.favourite</code> and
           <code>m.lowpriority</code>, because putting the room above every ordinary one is the
           whole point. Active notices are the pinned ones, so those raise a banner over the
-          timeline instead of going into a pinned events list the client does not have.
+          timeline instead of going into the ordinary pinned messages list — which this client
+          does have since 23 August 2026, and which that room is kept out of.
         </p>
         <p>
           The second: <em>"Events with a <code>m.server_notice</code> msgtype outside of the
@@ -1152,7 +1200,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Already conformant <span class="tick have">33 modules</span></h2>
+      <h2>Already conformant <span class="tick have">35 modules</span></h2>
       <p class="sec-sub">
         For context on where the effort has gone. Encryption in particular is complete: cross-signing,
         SAS and QR verification, recovery through secret storage, and key import/export.
@@ -1192,6 +1240,8 @@
       <span>Recently used emoji</span>
       <span>Server Notices</span>
       <span>Voice over IP</span>
+      <span>Pinned Events</span>
+      <span>Presence</span>
     </div>
   </section>
 
@@ -1208,13 +1258,15 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>4eb53e53</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>b6570c23</code>, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link
     previews added against the stable endpoint only, the server notices room given a section, a
     banner and a filter, the Voice over IP module carried from nothing to every event it
-    defines — the last of them, <code>m.call.negotiate</code>, on 23 August — every local
+    defines — the last of them, <code>m.call.negotiate</code>, on 23 August — a message made
+    pinnable in every room and the Pinned Events module counted for the first time, presence read
+    and shown and its publishing given an off switch, every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
     Client-Server API at <code>spec.matrix.org/v1.19</code>, and module names follow its own section

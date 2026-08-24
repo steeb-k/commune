@@ -50,6 +50,17 @@ integration points, and a rebase guide. `doc/rebrand.md` does the same for the
 rename to Commune, and is where to look before touching anything that carries
 the application's name or ID.
 
+Three of the ledgers are HTML pages rather than Markdown, and they are the ones
+that get forgotten: `doc/client-comparison.html` (Commune against nine other
+clients), `doc/spec-gaps.html` (Commune against the Client-Server API) and
+`doc/upstream-defects.html` (Fractal's open defect tracker). **A commit that
+moves a row in any of them updates them in the same commit, not at the end of a
+round and not when somebody notices.** A feature that ships without them is a
+feature that has silently made all three pages lie — they are the only record of
+where this fork stands, and they are read as current. Each carries a comment at
+its top with the artifact URL it is published to; re-publish to that URL rather
+than making a second artifact.
+
 `doc/eyeball-tests.md` is the running list of what has been built and never
 looked at on screen — every feature that draws adds to it in the same commit,
 and an entry is struck only once the user reports what they actually saw.
