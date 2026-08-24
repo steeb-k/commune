@@ -308,6 +308,13 @@ Devel and Stable install side by side.
 
 ## M5 — notifications via WinRT toasts
 
+**Done.** Banners arrive with the sender's avatar, and clicking one opens the room it names —
+whether or not Commune is running. `doc/windows.md` records what was built. Three things went
+differently from the sketch below, all noted in place: the AUMID has to be claimed in process and
+not merely declared by the installer, `tauri-winrt-notification` was rejected because it cannot
+withdraw a notification, and `CustomActivator` in the registry replaced the shortcut property so
+that an unpacked `.zip` behaves like an installed copy.
+
 The macOS M5 experiments transfer almost one-to-one; reread them before starting
 (`doc/macos-plan.md` M5, `doc/macos.md`).
 

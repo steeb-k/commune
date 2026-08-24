@@ -24,7 +24,8 @@ causes on a rebase. See `fork.md` for why this tree is a fork at all.
 | Windows cache | `%LOCALAPPDATA%\commune[-Devel]\cache` |
 | Windows Credential Manager | Target name = `{application ID}/{session ID}` |
 | Windows install location | `%LOCALAPPDATA%\Programs\Commune[ Devel]`, per-user |
-| Windows AUMID | The application ID, declared on the Start Menu shortcut |
+| Windows AUMID | The application ID, claimed by the app and declared on the shortcut |
+| Windows toast activator | CLSID `{7DC899BF-5566-4BDF-8169-77118EFC646B}` |
 
 ### The Windows GUIDs, which are permanent
 
@@ -42,11 +43,15 @@ reason they differ.
 | Devel | `2CF39ACA-5B32-47B8-B73F-91BC3C2512BB` |
 | Beta | `7974C0E9-61F9-4533-90FD-D6C70EC3AA4C` |
 
-One more is reserved rather than used: `7DC899BF-5566-4BDF-8169-77118EFC646B`
-is the toast activator CLSID, the COM class Windows will activate when somebody
-clicks a notification that starts the app rather than one that arrives while it
-is running. It is fixed now so that the installer does not have to change when
-notifications are written.
+One more is not an upgrade code but is just as permanent:
+`7DC899BF-5566-4BDF-8169-77118EFC646B` is the toast activator CLSID, the COM
+class Windows activates when somebody clicks a notification that has to start
+the app rather than one that arrives while it is running. Changing it orphans
+the `HKCU\Software\Classes\CLSID\{…}` entry of everyone who has ever run
+Commune. It appears in three places, which have to agree:
+`src/utils/windows_toast_activator.rs`, the `ToastActivatorCLSID` shortcut
+property in `build-aux/windows/commune.wxs`, and the `CustomActivator` value
+the application writes for itself.
 
 ### Why `steeb_k`
 

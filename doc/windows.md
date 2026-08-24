@@ -19,7 +19,7 @@ it was built; this file records what actually exists, what is stubbed, and what 
 
 ## State today
 
-**M0, M2 and M3 are done, and M1 is most of the way there.** The tree builds for
+**M0, M2, M3 and M5 are done, and M1 is most of the way there.** The tree builds for
 `x86_64-pc-windows-gnu`, and
 `cargo check`, `cargo clippy --all-targets -- -D warnings`, nightly `cargo fmt --check`,
 `cargo deny`, `cargo machete`, `cargo sort`, `typos`, `rumdl` and the pre-commit hook all pass.
@@ -76,7 +76,7 @@ Windows notification backend after all, which changes what M5 is.
 | Installer | Per-user WiX 5 MSI, `build-aux/windows/{commune.wxs,build-msi.ps1}` |
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
 | `matrix:` URLs | Works cold and warm; the installer writes the registry key |
-| Notifications | Banners arrive, `src/utils/windows_app_id.rs`. Clicking one does nothing yet |
+| Notifications | Our own WinRT toasts, `src/utils/windows_notifications.rs`; clicks work |
 
 ## The GTK environment
 
@@ -431,16 +431,19 @@ in its notification settings. It then sends toasts through `tauri-winrt-notifica
 GLib, using `on_activated` for the click.
 
 **Commune now does the first two**, in `src/utils/windows_app_id.rs`, called from `main()` before
-anything can try to notify. With them, a test notification registers
-`io.github.steeb_k.Commune.Devel` as a notification sender — which Windows writes only once a
-toast has been delivered. So banners arrive, and they arrive from the `.zip` as much as from the
-installer, since the process claims the ID itself and does not need a shortcut to have declared
-it.
+anything can try to notify. That alone was enough for banners to start arriving — and to arrive
+from the `.zip` as much as from the installer, since the process claims the ID itself rather than
+needing a shortcut to have declared it.
 
-What is left of M5 is the click. GLib drops the action, so the remaining work is to send through
-`tauri-winrt-notification` instead, carrying the intent in the toast's launch arguments and
-parsing it back against the action's own type — the single-representation rule the macOS port
-established.
+**The sending moved off GLib entirely**, to `src/utils/windows_notifications.rs`, which talks to
+`ToastNotificationManager`. Not because GLib's backend is the wrong API — it is the same one — but
+because reaching it directly is the only way to the parts GLib does not expose: the `launch`
+payload that survives a click, `<actions>` for buttons, `appLogoOverride` for the sender's avatar,
+and `ToastNotificationHistory` for withdrawing a notification when its room is read.
+
+That last one decided the route. `tauri-winrt-notification`, which is otherwise a shorter path and
+is what Nullgate uses, **cannot withdraw a notification at all** — and Commune withdraws in five
+places. The `windows` crate was already a dependency, so going direct added none.
 
 ## What differs from Linux
 
@@ -467,6 +470,30 @@ code as macOS, same reason.
 **Images decode with the `image` crate** rather than glycin, shared with macOS through
 `cfg(not(target_os = "linux"))`. The same formats are unsupported: **SVG, HEIC, AVIF and JXL** in
 the timeline report "Image format not supported" per image.
+
+**Notifications are ours rather than GLib's**, and clicking one works whether or not Commune is
+running. Three registry entries make that true, all written by the application itself at startup
+so that an unpacked `.zip` behaves like an installed copy:
+
+```text
+HKCU\Software\Classes\AppUserModelId\{APP_ID}
+    DisplayName     the name System Settings shows beside our switch
+    CustomActivator the CLSID below — what ties the class to our notifications
+
+HKCU\Software\Classes\CLSID\{7DC899BF-…}\LocalServer32
+    (Default)       "…\commune.exe" -Embedding
+```
+
+A click while Commune runs is delivered to the toast's `Activated` event. A click that has to
+start it first goes through COM: Windows reads `LocalServer32`, starts the executable with
+`-Embedding`, and calls `INotificationActivationCallback::Activate` once the process registers its
+class factory. `Application::run` drops `-Embedding` before `GApplication` sees it, since
+`HANDLES_OPEN` would otherwise take it for a file to open and refuse to start.
+
+One wrinkle from all of this living under one AUMID per profile: `LocalServer32` is rewritten from
+`current_exe()` on every launch, so **whichever build ran last is the one a cold click starts**.
+Run the development build and then click a notification from the installed one, and the
+development build opens. Harmless, and only confusing if you have both.
 
 **A release build has no console.** `src/main.rs` sets `windows_subsystem = "windows"` only when
 `debug_assertions` is off, so a development build keeps the console that `tracing` writes to.
@@ -497,10 +524,11 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
-* **M5**: the click. Banners now arrive; GLib drops the action that would open the room, so
-  sending has to move to `tauri-winrt-notification`. Nobody has yet confirmed with their own eyes
-  that a banner is on screen — the evidence is the registry key Windows writes when it delivers
-  one, which is strong but is not a photograph.
+* **The notification details nobody has looked at yet.** Buttons are emitted into the toast's
+  `<actions>` but no notification that carries any — a ringing call — has been raised on Windows.
+  Neither has a withdrawal: read a room with a notification pending and watch it leave the
+  notification centre. And the toast is attributed with our name but no icon, because the
+  `IconUri` value that would give it one is not written.
 * **M6**: camera QR scanning. `mfvideosrc` and `mfdeviceprovider` are both present.
 
 Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
@@ -521,6 +549,11 @@ rebase, in rough order:
   nothing and the macOS port had `!= 'darwin'`.
 * `src/components/media/{mod.rs,audio_player/mod.rs,content_viewer.rs}` — the `any(macos, windows)`
   cfgs, which a rebase will happily narrow back to macOS.
+* `src/application.rs` — the `-Embedding` filter in `run()`, which is three lines inside a method
+  upstream owns and which nothing will fail loudly without: a cold notification click simply stops
+  working.
+* `src/session/notifications/mod.rs` — the Windows arm of the two `cfg_if!` dispatches, which a
+  rebase will narrow back to macOS-or-GLib.
 * `build-aux/compile-blueprints.sh` — one `export` line in a file upstream owns.
 * `build.rs` — a file upstream does not have at all, so a rebase will not conflict with it, but
   the `Cargo.toml` build-dependency and the cargo-machete ignore that go with it are in files
