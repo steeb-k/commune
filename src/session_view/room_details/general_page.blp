@@ -232,6 +232,27 @@ template $RoomDetailsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup spaces_group {
+    // Translators: A space is a collection of rooms, presented as a
+    // folder-like room that other rooms belong to.
+    title: _("Spaces");
+    description: _("A space groups rooms together. Putting this room in one lets the people in that space find it.");
+    visible: bind $invert_boolean(template.room as <$Room>.is-direct) as <bool>;
+
+    Adw.ActionRow add_to_space_row {
+      activatable: true;
+      selectable: false;
+      title: _("Add to Space…");
+      activated => $add_to_space() swapped;
+
+      [suffix]
+      Gtk.Image {
+        icon-name: "go-next-symbolic";
+        accessible-role: presentation;
+      }
+    }
+  }
+
   Adw.PreferencesGroup {
     title: _("Advanced Information");
 

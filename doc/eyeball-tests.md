@@ -456,10 +456,11 @@ Slice 2. All of this is on the space page, below the topic.
       map was rewritten by hand and it is exactly the kind of change that
       moves a section's contents into its neighbour.
 
-## Choosing a space, and restricting a room to one — `doc/join-rules.md`
+## Choosing a space, restricting a room to one, and putting one in — `doc/join-rules.md`, `doc/spaces.md`
 
-Round 3, slice 3, first half. The client can now ask which space you mean, and
-_Who Can Join_ uses it to build a restricted rule rather than only to keep one.
+Round 3, slice 3. The client can now ask which space you mean; _Who Can Join_
+uses it to build a restricted rule rather than only to keep one, and the room
+details use it to put a room into a space.
 
 ### Setting up
 
@@ -516,6 +517,43 @@ testing/local-homeserver.sh up
 * [ ] **A room with no permission shows the space and no arrow.** As bob in a
       room he cannot administer, _Who Can Join_ should still say which space,
       with the row not activatable.
+
+### Putting a room into a space
+
+Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
+
+* [ ] **The _Spaces_ group is on the general page** of any room that is not a
+      direct chat, under _Access and Visibility_, with one row.
+* [ ] **It is absent from a direct chat.** Open the details of the alice–bob
+      chat: no _Spaces_ group.
+* [ ] **_Add to Space…_ opens the picker**, listing `Test Space` and
+      `Sub Space` — the spaces alice made, and so can write in.
+* [ ] **A space you cannot write in is not offered.** As bob, who is in no
+      space he administers, the picker should be empty and say so. If alice
+      invites bob to `Test Space` without giving him power, it must stay
+      empty — this is the check that `SendState(SpaceChild)` is really being
+      asked, and the one most likely to be wrong.
+* [ ] **The room being added is not offered itself.** Open the details of
+      `Test Space` and press _Add to Space…_: only `Sub Space`.
+* [ ] **Adding `Invite Room` to `Test Space` says so**, with a toast naming the
+      space.
+* [ ] **The room appears in the space.** Open `Test Space` from the sidebar —
+      the list should now hold `Invite Room` as well. It will not appear while
+      the space page is already open; the listing is fetched once, which is
+      recorded in `spaces.md`.
+* [ ] **Another client agrees.** Check from Element that `Test Space` has an
+      `m.space.child` for the room, and that the room has an `m.space.parent`
+      for the space with `canonical` absent or false.
+* [ ] **Adding a room somebody else administers still works.** Have bob make a
+      room, have alice join it without power, and add it to `Test Space` from
+      alice's client. The `m.space.child` needs power in the **space**, which
+      alice has; the `m.space.parent` needs power in the **room**, which she
+      does not, so it should be skipped with a warning in the log and the
+      operation should still report success.
+* [ ] **Adding a room twice is harmless** — the state event is simply written
+      again.
+* [ ] **The row goes insensitive while it works** and comes back afterwards,
+      whether it succeeded or not.
 
 ### Old rooms
 

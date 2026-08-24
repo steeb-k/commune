@@ -10,7 +10,7 @@ pub(crate) use self::{
     auth::{AuthDialog, AuthError},
     message_dialogs::*,
     room_preview::RoomPreviewDialog,
-    space_picker::SpacePickerDialog,
+    space_picker::{SpacePickerDialog, SpaceRequirement},
     toastable::{ToastableDialog, ToastableDialogExt, ToastableDialogImpl},
     user_profile::UserProfileDialog,
 };
