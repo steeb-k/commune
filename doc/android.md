@@ -18,6 +18,7 @@ whole route hung on.
 * [What S0 measured](#what-s0-measured)
 * [Findings that change the plan](#findings-that-change-the-plan)
 * [S1 — Rust on Android works](#s1--rust-on-android-works)
+* [S2 — Commune compiles for Android](#s2--commune-compiles-for-android)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -27,8 +28,8 @@ whole route hung on.
 | --- | --- |
 | S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator; the libadwaita demo does **not** build on this host (see below) |
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
-| S2 — Commune `cargo check` for Android | next |
-| S3 — Commune login on the emulator | not started |
+| S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
+| S3 — Commune login on the emulator | next |
 | S4 — GStreamer | not started |
 | S5 — keystore, notifications, SSO, push | not started |
 
@@ -419,6 +420,93 @@ copy that has it. Adding it upstream-style is harmless to the Linux build and is
 two.
 
 [gtk4-rs#1997]: https://github.com/gtk-rs/gtk4-rs/issues/1997
+
+## S2 — Commune compiles for Android
+
+**`cargo check --target x86_64-linux-android` passed on the first attempt**, on an unmodified
+tree, with three warnings — all of them from the `UnimplementedSecret` stub the `cfg_if!` was
+falling through to. `cargo clippy --all-targets` for Android is clean too.
+
+That is the answer to the question S2 was posed to ask. **Almost none of the 110k lines is platform
+-dirty.** The macOS and Windows ports cut most of their seams at `not(target_os = "linux")` rather
+than at a named platform, and Android inherits every one of them: the `image`-crate decoder, the
+camera and location fallbacks, the `SystemSettings` fallback, `PRIMARY_MASK`, the unconditional
+`FileLauncher`. The Cargo target tables do the same — `aperture`, `ashpd`, `glycin` and `oo7` are
+all behind `cfg(target_os = "linux")` and simply do not appear in an Android build.
+
+### The known risk did not materialise
+
+`doc/android-plan.md` named **`aws-lc-sys`** as the thing most likely to stop S2, with a fallback to
+the SDK's `ring` provider. It was not needed:
+
+```text
+target/x86_64-linux-android/debug/build/aws-lc-sys-*/out/libaws_lc_0_44_0_crypto.a
+```
+
+`aws-lc-sys v0.44.0` cross-compiled its C crypto library for Android with nothing but the NDK
+`CC`/`AR` environment variables set. `matrix-sdk` keeps `rustls-aws-lc-rs`; no feature change, no
+divergence from the desktop builds on the crypto path — which is exactly where divergence would
+have been least welcome.
+
+Everything else in the stack came along quietly: the whole of `matrix-sdk` including
+`matrix-sdk-crypto`, `matrix-sdk-sqlite` and `matrix-sdk-search` (tantivy), `ruma`, `reqwest`,
+`rustls-platform-verifier`, and the gtk-rs family up to `libadwaita`, `sourceview5` and
+`libshumate`.
+
+### How the check was run without the libraries existing
+
+`cargo check` never links. A `-sys` crate's build script needs the pkg-config _module_ to exist
+with an acceptable version; it never opens the library. So the check runs against the real `.pc`
+files from the S1 GTK build plus **stubs** for everything not yet cross-built — libadwaita,
+gtksourceview, libshumate, the GStreamer modules, sqlite3, libwebp:
+
+```sh
+prefix=/nonexistent-android-stub
+Name: gstreamer-1.0
+Version: 1.28.0
+Libs: -L${libdir} -lgstreamer-1.0
+```
+
+`build-aux/android/pkgconfig-stubs.sh` regenerates the whole directory. This is honest for S2,
+whose question is "does the Rust compile", and dishonest for anything else: it proves nothing about
+linking, and nothing about those libraries existing on a device. S3 must either cross-build them or
+gate them out for real.
+
+The same trick, with `glycin-2` stubs added, verifies the **Linux** path still compiles after the
+Android changes — `cargo check --target x86_64-unknown-linux-gnu` is clean, `aperture`, `ashpd`,
+`oo7` and `glycin` included. That is how "Linux must stay untouched" is checked from a machine with
+no GTK development packages installed.
+
+### What was actually changed
+
+Two arms, both small, because there was nothing else to fix:
+
+* **`src/secret/android.rs`** — sessions as one JSON file each under
+  `<data>/secrets.d/<id>.json`, written atomically, `0600` in a `0700` directory, carrying the same
+  `version: 1` payload the macOS Keychain backend stores. `src/secret/mod.rs` gains the `cfg_if!`
+  arm; `unimplemented` stays for other platforms.
+
+  **This is a placeholder and the file says so at the top.** It leans on the application sandbox —
+  `getFilesDir()` is owned by the application's UID — and nothing else. The passphrase that
+  encrypts the local databases is in plain JSON. Android Keystore through JNI is the real answer
+  and is the first task of S5; the `SecretExt` surface is the seam, so only that one file changes.
+  Nothing may be handed to anyone before it does.
+* **`src/main.rs`** — a `paranoid_android` logcat layer under `cfg(target_os = "android")`. An
+  Android application has no stdout, so the existing subscriber would have written into nothing.
+  `adb logcat -s Commune` reads it back.
+
+### What compiling does not mean
+
+It compiles; it has never run. `fn main()` is still a `fn main()` — S1's C stub and `staticlib`
+wiring have not been applied to Commune, so there is no APK yet. Nothing has been done about the
+gresource and locale paths, which are still Meson's compile-time absolutes, about GStreamer being
+absent, or about the SSO redirect. Those are S3.
+
+One warning is left in the Android clippy run, and it is not ours:
+`src/utils/matrix/url_preview/tests.rs:106` trips `unnecessary hashes around raw string literal`.
+It is pre-existing test code and this host's clippy (1.96) is newer than the one the project's
+pre-commit hook runs, which is the whole of the explanation. It appears in the Linux check too and
+is left alone.
 
 ## Known gaps
 
