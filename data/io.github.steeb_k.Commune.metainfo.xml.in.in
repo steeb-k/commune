@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2019 Daniel Garcia Moreno <danigm@gnome.org> -->
 <!-- Copyright 2022 Julian Sparber <julian@sparber.net> -->
-<component type="desktop-application">
+<component type="desktop-application" xmlns="https://specifications.freedesktop.org/metainfo/1.0">
   <id>@app-id@</id>
   <launchable type="desktop-id">@app-id@.desktop</launchable>
   <name>Commune</name>
