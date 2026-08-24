@@ -304,3 +304,64 @@ fn store_session_inner(session: &StoredSession) -> Result<(), SecretError> {
 
     result.map_err(|error| SecretError::Service(error.message()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::RUNTIME;
+
+    /// Store a session, read it back, and delete it.
+    ///
+    /// This writes to the real Credential Manager, because the API has no
+    /// notion of a store to test against — there is only the user's own. What
+    /// keeps that acceptable is that the session ID is one nothing else will
+    /// generate, that every assertion is about that one credential and ignores
+    /// whatever else is in the store, and that the test deletes what it wrote.
+    /// A credential left behind by a run that panicked is recognisable by its
+    /// name and safe to remove.
+    ///
+    /// It is worth the intrusion: this module is the only place in the
+    /// application that hands raw pointers to the operating system, and
+    /// everything it protects — every account on the machine — is lost if it is
+    /// wrong.
+    #[test]
+    fn a_session_survives_a_round_trip() {
+        let id = format!("test-{}", std::process::id());
+        let session = StoredSession {
+            homeserver: "https://example.org".parse().expect("URL is valid"),
+            user_id: "@alice:example.org".try_into().expect("user ID is valid"),
+            device_id: "ADEVICEID".into(),
+            id: id.clone(),
+            client_id: Some(ClientId::new("a-client-id".to_owned())),
+            passphrase: Zeroizing::new("a-passphrase".to_owned()),
+        };
+
+        RUNTIME
+            .block_on(WindowsSecret::store_session(session.clone()))
+            .expect("storing the session should succeed");
+
+        let restored = RUNTIME
+            .block_on(WindowsSecret::restore_sessions())
+            .expect("restoring sessions should succeed")
+            .into_iter()
+            .find(|restored| restored.id == id);
+
+        // Delete before asserting, so that a mismatch does not also leave the
+        // credential behind.
+        RUNTIME.block_on(WindowsSecret::delete_session(&session));
+
+        let restored = restored.expect("the stored session should be found again");
+        assert_eq!(restored.homeserver, session.homeserver);
+        assert_eq!(restored.user_id, session.user_id);
+        assert_eq!(restored.device_id, session.device_id);
+        assert_eq!(restored.client_id, session.client_id);
+        assert_eq!(restored.passphrase.as_str(), session.passphrase.as_str());
+
+        let after_delete = RUNTIME
+            .block_on(WindowsSecret::restore_sessions())
+            .expect("restoring sessions should succeed")
+            .into_iter()
+            .any(|restored| restored.id == id);
+        assert!(!after_delete, "the session should be gone once deleted");
+    }
+}
