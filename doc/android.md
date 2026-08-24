@@ -22,7 +22,7 @@ the toolchain works and that GTK itself is in better shape on Android than expec
 
 | Spike | State |
 | --- | --- |
-| S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator |
+| S0 — pixiewood baseline | **done**, gtk4-demo runs on the emulator; the libadwaita demo does **not** build on this host (see below) |
 | S1 — Rust hello-world APK | not started; the make-or-break spike |
 | S2 — Commune `cargo check` for Android | not started |
 | S3 — Commune login on the emulator | not started |
@@ -168,15 +168,32 @@ that macro, so it silently skipped the type: the generated `adw-enums.h` held 25
 entries and not one of the `TAB_VIEW` ones. A missing symbol at the end of a long build, with the
 real fault three steps upstream and no warning anywhere.
 
-The fix costs nothing, because `glib-mkenums` is an architecture-independent Python script and the
-newer GLib is already checked out as a subproject:
+The obvious fixes do not work, and it is worth knowing why before reaching for them. `glib-mkenums`
+is an architecture-independent Python script, and the newer GLib is already checked out as a
+subproject, so two shims suggest themselves — and both fail:
 
-```sh
-sed -e 's|@PYTHON@|/usr/bin/python3|' -e 's|@VERSION@|2.89.0|' \
-    subprojects/glib/gobject/glib-mkenums.in > ~/bin/glib-mkenums
-chmod +x ~/bin/glib-mkenums
-PATH="$HOME/bin:$PATH"    # before meson re-detects it, so the build dir must be reconfigured
+* Generating 2.89's `glib-mkenums` into `~/bin` and putting it first on `PATH`.
+* Copying the host `glib-2.0.pc` with `bindir` repointed at that directory, on `PKG_CONFIG_PATH`
+  (`pkg-config --variable=glib_mkenums glib-2.0` then correctly answers `~/bin/glib-mkenums`).
+
+Neither changes anything, because meson's `gnome.mkenums_simple()` resolves the tool once and bakes
+an **absolute path** into `build.ninja`:
+
+```text
+build src/adw-enums.h: CUSTOM_COMMAND ... ../../src/adw-tab-view.h | /usr/bin/glib-mkenums
 ```
+
+That is with a build directory deleted and reconfigured from scratch, with both shims in place. The
+lookup meson uses for native GObject tooling does not consult `PATH`, and did not take the
+`PKG_CONFIG_PATH` override either. A meson `--native-file` carrying a `[binaries]` entry would do
+it, but pixiewood only ever passes `--cross-file`, and cross-file binaries describe the host
+machine, not the build machine.
+
+So the real conclusion is about the build host, not about a shim: **Ubuntu 24.04 is too old to
+build GTK and libadwaita `main`.** The options are a newer distribution in WSL (25.10, Fedora,
+Arch — GTK's own CI uses a rolling image), a container, or a GLib built and installed natively so
+that `/usr/bin` genuinely carries the newer tools. That decision is open; it does not block S1,
+which needs GTK and not libadwaita.
 
 Worth knowing before S3: Commune's own build runs `glib-compile-resources` and
 `glib-compile-schemas` from the host too. If any of them turn out to be too old, this is the shape
