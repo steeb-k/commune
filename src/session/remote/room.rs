@@ -71,6 +71,9 @@ mod imp {
         /// Whether this room can be read without joining it.
         #[property(get)]
         is_world_readable: Cell<bool>,
+        /// Whether this room is encrypted.
+        #[property(get)]
+        is_encrypted: Cell<bool>,
         /// The information about this room in the room list.
         #[property(get)]
         room_list_info: RoomListRoomInfo,
@@ -280,6 +283,16 @@ mod imp {
             self.obj().notify_is_world_readable();
         }
 
+        /// Set whether this room is encrypted.
+        fn set_is_encrypted(&self, is_encrypted: bool) {
+            if self.is_encrypted.get() == is_encrypted {
+                return;
+            }
+
+            self.is_encrypted.set(is_encrypted);
+            self.obj().notify_is_encrypted();
+        }
+
         /// Set the loading state.
         pub(super) fn set_loading_state(&self, loading_state: LoadingState) {
             if self.loading_state.get() == loading_state {
@@ -306,6 +319,7 @@ mod imp {
             self.set_join_rule(&data.join_rule);
             self.set_is_space(matches!(data.room_type, Some(RoomType::Space)));
             self.set_is_world_readable(data.world_readable);
+            self.set_is_encrypted(data.encryption.is_some());
 
             if let Some(image) = self.obj().avatar_data().image() {
                 image.set_uri_and_info(data.avatar_url, None);

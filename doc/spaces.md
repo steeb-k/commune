@@ -170,9 +170,8 @@ forgotten.
 ### `world_readable` is kept now
 
 `RemoteRoom::set_data` used to drop it. It is one line and one property, and
-nothing reads it yet: peeking is what will. It is here because it belongs to
-the same summary that slice 2 already parses, and adding it later would mean
-touching the same three places again.
+peeking is what reads it — see `peeking.md`, which was built on top of it the
+same day, and which also added `is-encrypted` from the same summary.
 
 ## Explore stops filtering them out
 
@@ -237,8 +236,9 @@ the answer.
 * **Nesting deeper than one level.** A subspace is a row that opens its own
   page. Drawing its rooms underneath it needs `GtkTreeListModel` and
   `GtkTreeExpander`, which nothing in the tree uses yet.
-* **Peeking a `world_readable` room.** Slice 2 keeps the flag; nothing reads
-  it. See `peeking.md` when it exists.
+* ~~Peeking a `world_readable` room.~~ Built on top of slice 2's flag; see
+  `peeking.md`. `PublicRoomRow` carries the _Preview_ button, so it is on every
+  space page row as well as in Explore.
 * **The listing is not live.** `SpaceChildren` asks once, when the page is
   first given the space. A room added to the space while it is on screen does
   not appear, because `m.space.child` is a state event in a room whose timeline

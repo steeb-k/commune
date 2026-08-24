@@ -73,6 +73,20 @@ template $PublicRoomRow: Adw.Bin {
           ]
         }
 
+        Gtk.Button preview_button {
+          visible: false;
+          valign: center;
+          // Translators: This is a verb, as in 'Preview Room'. It opens the
+          // last messages of a room that can be read without joining it.
+          label: _("Preview");
+          clicked => $preview() swapped;
+
+          styles [
+            "padded-button",
+            "flat",
+          ]
+        }
+
         Gtk.Box space_box {
           halign: center;
           spacing: 6;
