@@ -8,3 +8,7 @@ build-aux/io.github.steeb_k.Commune.json export-ignore
 hooks export-ignore
 .rustfmt.toml export-ignore
 .typos.toml export-ignore
+
+# The Android build scripts run in WSL from this Windows checkout, and a POSIX
+# shell will not run a script with CRLF line endings.
+build-aux/android/*.sh text eol=lf
