@@ -109,6 +109,8 @@ src/login/mod.blp
 src/login/mod.rs
 src/login/register_page.blp
 src/login/register_page.rs
+src/login/reset_password_page.blp
+src/login/reset_password_page.rs
 src/login/session_setup_view.blp
 src/macos_menu_bar.blp
 src/secret/linux.rs
@@ -239,4 +241,5 @@ src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs
 src/utils/media/image/mod.rs
 src/utils/media/mod.rs
+src/utils/password.rs
 src/window.blp

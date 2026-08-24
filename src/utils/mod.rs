@@ -41,6 +41,7 @@ mod macros;
 pub(crate) mod matrix;
 pub(crate) mod media;
 pub(crate) mod notifications;
+pub(crate) mod password;
 mod placeholder_object;
 mod single_item_list_model;
 pub(crate) mod sourceview;

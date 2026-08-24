@@ -1,8 +1,10 @@
-# Signing up — downstream implementation notes
+# Signing up, and resetting a password — downstream implementation notes
 
-This file is the ledger for creating an account from inside the app: what the
-fork added, the decisions behind it, and what to check when rebasing onto a new
-Fractal release. See `fork.md` for why none of this goes upstream.
+This file is the ledger for the two halves of getting into an account without
+leaving the app: creating one, and getting back into one whose password is
+gone. It carries what the fork added, the decisions behind it, and what to
+check when rebasing onto a new Fractal release. See `fork.md` for why none of
+this goes upstream.
 
 ## Scope
 
@@ -19,11 +21,12 @@ Fractal release. See `fork.md` for why none of this goes upstream.
   drawn here rather than in the browser.
 * Straight into the session once it exists — the same path a password login
   takes, including the encryption setup pages.
+* A _Forgot Password?_ link on the password login page, which asks the
+  homeserver to email a link and then takes a new password.
 
-Password reset is _not_ here yet; it is the other half of this row and is
-tracked in the plan. Upstream has neither half: the greeter's
-_Create Account_ button was hidden and pointed at an `app.create-account`
-action that existed nowhere in the tree.
+Upstream has none of it: the greeter's _Create Account_ button was hidden and
+pointed at an `app.create-account` action that existed nowhere in the tree, and
+the word "reset" appears in its source only for cross-signing keys.
 
 ## The dialog had to stop needing a session
 
@@ -174,6 +177,8 @@ XML and this page is `.blp`.
 | The token stage page | `src/components/dialogs/auth/registration_token_page.rs` |
 | The terms stage page | `src/components/dialogs/auth/terms_page.rs` |
 | Which stages are drawn natively | `AuthState::next`, and `AuthDialog::page` |
+| The reset page | `src/login/reset_password_page.rs`, `.blp` |
+| The password meter, shared | `src/utils/password.rs` |
 | Error messages | `src/user_facing_error.rs` |
 
 ## Rebase guide
@@ -197,14 +202,82 @@ XML and this page is `.blp`.
 
 ## What is not built
 
-* **Password reset.** The other half of the row.
 * **A native captcha or emailed-token stage.** Both go to the spec's fallback
   page, which is the correct standard answer and not a shortcut.
-* **Email or phone at sign-up.** The registration request supports 3PID
-  binding; nothing in the tree has a 3PID layer, and reset needs only half of
-  one.
+* **Email or phone on the account.** The registration request supports 3PID
+  binding, and account settings still cannot show, add or remove an identifier.
+  Reset needs only the request-token half of that layer, and that is all this
+  builds; the row for the rest is still open.
+* **Resetting by phone number.** `requestToken` has an msisdn twin and the same
+  `AuthData` shape covers it. It needs a phone number entry with country codes
+  to be worth anything, and nobody has asked.
 * **A generated username.** `POST /register` will invent a localpart if the
   request omits one. The page always sends what was typed.
+
+## Resetting a password is two requests and one secret
+
+`POST /account/password/email/requestToken` and then `POST /account/password`,
+with a `client_secret` that ties them together. Both are unauthenticated — the
+whole point is that the person cannot log in — so both go through
+`client.send()` rather than through `Account`, which needs a session.
+
+The page is one navigation page with a two-page stack: the address, then the new
+password. It does not move on until the homeserver has answered with a session
+ID, because without one there is nothing to send the second request with.
+
+Three decisions:
+
+* **The address is not validated here.** Anything non-empty is sent. The
+  homeserver is the only thing that knows which addresses are on which
+  accounts, and a client that refuses an address the server would have accepted
+  is worse than one that asks.
+* **`send_attempt` goes up only when the user asks again.** That is what the
+  field is for — it tells the homeserver "send another email" apart from "this
+  is a retry of a request that may have been lost". The secret is kept across a
+  resend, since it is what identifies the session, and a new address starts a
+  new one.
+* **`logout_devices` is left at `true`**, which is the endpoint's default, and
+  is written out anyway rather than left implicit. Somebody who could not log in
+  has had a password they did not control for as long as that lasted; every
+  other session going is the point rather than a side effect.
+
+**The "not yet" case is the interesting one.** Until the link in the email is
+opened, `POST /account/password` answers 401 with a UIAA body rather than
+succeeding. That is not a failure and is not shown as one: the toast says to
+open the link and try again, and the button comes back. Only a non-UIAA error is
+reported as an error.
+
+`AuthData::EmailIdentity` cannot be built from its fields — `EmailIdentity` is
+`non_exhaustive` outside ruma — so it goes through `AuthData::new()` with the
+`threepid_creds` object the spec describes. `ThirdpartyIdCredentials::new()`
+does have a constructor, and is what gets serialized into it.
+
+## Nothing about reset is drawn for an OAuth homeserver
+
+`deactivate_account_subpage.rs` establishes the split this was going to mirror:
+on a server with the OAuth 2.0 API, send the user to
+`account_management_url_with_action(...)` instead of doing it in-app. It turns
+out there is nothing to mirror. The _Forgot Password?_ link lives on the
+password login page, and that page is only ever shown by
+`Login::init_matrix_login()` — a homeserver with the OAuth API goes to the
+in-browser page and never sees it. The server's own sign-in page is where such a
+person resets a password, which is the same place we would have sent them.
+
+So the OAuth branch is unreachable rather than unwritten. If the method page
+ever appears on an OAuth server, this is the thing that has to grow a branch.
+
+## One password meter, three pages
+
+Changing a password, signing up and resetting a password all ask somebody to
+invent a password, and all three say the same five things about it in the same
+widgets. The third copy was the one too many: `utils::password` now holds
+`draw_password_validity()` and `draw_password_confirmation()`, and all three
+pages call them. `validate_password()` in `utils::matrix` is unchanged — it is
+about the specification's advice on passwords, where this is about GTK.
+
+The level bar's offsets are added from Rust in both new pages, because Blueprint
+has no syntax for `<offsets>`; that is also why `change_password_subpage.ui` is
+still XML.
 
 ## Testing
 
@@ -226,3 +299,9 @@ written and has never been drawn.
 Do not try registration variants against a public homeserver — it leaves junk
 accounts behind. `matrix.org` has registration behind a captcha, which is worth
 one run through the fallback page and no more.
+
+**Password reset has no local harness either.** Synapse only sends email with an
+SMTP server configured, and the harness has none. Against `matrix.org` the first
+half is safe to exercise on an account you own — asking for the email — and the
+second half changes a real password and logs out every other session, so do that
+knowing it.

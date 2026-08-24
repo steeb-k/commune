@@ -79,6 +79,7 @@ login/in_browser_page.blp
 login/method_page.blp
 login/mod.blp
 login/register_page.blp
+login/reset_password_page.blp
 login/session_setup_view.blp
 macos_menu_bar.blp
 session_view/call_view/mod.blp
