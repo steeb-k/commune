@@ -180,6 +180,17 @@ mod imp {
             };
 
             window.present();
+
+            // The first thing on Android that can reach the Java side: until
+            // there is a window there is no `Activity`, and until there is an
+            // `Activity` there is no `Context` to create the notification
+            // channel against or to ask for permission through. Doing it on
+            // every present rather than only the first is deliberate — both
+            // halves are idempotent, and this way a window recreated after the
+            // process was killed sets them up again.
+            #[cfg(target_os = "android")]
+            crate::utils::android_notifications::init(window.upcast_ref::<gtk::Window>());
+
             window
         }
 
@@ -481,12 +492,59 @@ mod imp {
                 return;
             }
 
+            // A tapped notification, which arrives the same way for the same
+            // reason: `NotificationManager` can only carry an `Intent`, so the
+            // action and target a `GNotification` would have held in memory are
+            // written into a URI instead. See `utils::android_notifications`.
+            #[cfg(target_os = "android")]
+            if uri.starts_with(crate::utils::android_notifications::NOTIFICATION_URI) {
+                self.open_notification(uri);
+                return;
+            }
+
             match MatrixIdUri::parse(uri) {
                 Ok(matrix_id) => {
                     self.select_session_for_intent(SessionIntent::ShowMatrixId(matrix_id));
                 }
                 Err(error) => warn!("Invalid Matrix URI: {error}"),
             }
+        }
+
+        /// Activate the application action a tapped notification names.
+        ///
+        /// The action is addressed by the name it was posted under and its
+        /// target is read back against the type that action declares, rather
+        /// than against whatever the text happens to parse as — which is what
+        /// keeps `SessionIntent` the only description of the payload. The same
+        /// reasoning as `utils::macos_notifications`, which does this for the
+        /// same reason on the other platform without `GNotification`.
+        #[cfg(target_os = "android")]
+        fn open_notification(&self, uri: &str) {
+            let Some((action, target)) = crate::utils::android_notifications::tapped_action(uri)
+            else {
+                warn!("Ignoring a tapped notification that carries no action");
+                return;
+            };
+
+            // The action was stored with the `app.` prefix it is addressed by,
+            // but activating it on the application itself wants the bare name.
+            let name = action.strip_prefix("app.").unwrap_or(&action);
+
+            let Some(parameter_type) = self.obj().action_parameter_type(name) else {
+                error!("Could not open a notification: no `{name}` action takes a target");
+                return;
+            };
+
+            let variant = match glib::Variant::parse(Some(&parameter_type), &target) {
+                Ok(variant) => variant,
+                Err(error) => {
+                    error!("Could not read the target of a tapped notification: {error}");
+                    return;
+                }
+            };
+
+            debug!(action = name, "Opening a tapped notification");
+            self.obj().activate_action(name, Some(&variant));
         }
 
         /// Select a session to handle the given intent as soon as possible.

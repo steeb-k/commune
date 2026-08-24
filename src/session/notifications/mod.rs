@@ -1,7 +1,7 @@
 use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "android")))]
 use gtk::gio;
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
@@ -28,6 +28,8 @@ use super::{Call, CallState};
 use super::{IdentityVerification, Session, VerificationKey};
 #[cfg(not(target_os = "android"))]
 use crate::intent::{CallAction, CallActionKind};
+#[cfg(target_os = "android")]
+use crate::utils::android_notifications;
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
 use crate::{
@@ -164,6 +166,30 @@ impl Notifications {
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::send(id, title, &body, action, &target_value, icon);
+            } else if #[cfg(target_os = "android")] {
+                // `Notification.Action` takes the same shape of payload as the
+                // notification itself does, so the intents are flattened into
+                // it here rather than `SessionIntent` reaching that far down.
+                let buttons = buttons
+                    .iter()
+                    .map(|(label, intent)| {
+                        (
+                            label.clone(),
+                            intent.app_action_name().to_owned(),
+                            intent.to_variant_with_session_id(session_id.to_owned()),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                android_notifications::send(
+                    id,
+                    title,
+                    &body,
+                    action,
+                    &target_value,
+                    icon,
+                    &buttons,
+                );
             } else {
                 let notification = gio::Notification::new(title);
                 notification.set_category(Some("im.received"));
@@ -193,6 +219,8 @@ impl Notifications {
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::withdraw(id);
+            } else if #[cfg(target_os = "android")] {
+                android_notifications::withdraw(id);
             } else {
                 Application::default().withdraw_notification(id);
             }
