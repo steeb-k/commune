@@ -24,10 +24,10 @@
 //! type the action itself declares. One representation, and the intent types
 //! stay the only description of the payload.
 //!
-//! **Only while the application is running.** A click that has to start
-//! Commune first is delivered to a COM class registered as the toast's
-//! activator, which does not exist yet; until it does, such a click starts the
-//! application and is then dropped. See `doc/windows.md`.
+//! Clicks are not handled here at all. They arrive through the COM class in
+//! [`super::windows_toast_activator`], which Windows calls whether or not
+//! Commune is already running — a running process serves the class itself, so
+//! there is no second path to keep in step with this one.
 
 use std::{fs, path::PathBuf};
 
@@ -35,11 +35,8 @@ use gtk::{gdk, gio, glib, prelude::*};
 use tracing::{debug, error, warn};
 use windows::{
     Data::Xml::Dom::XmlDocument,
-    Foundation::TypedEventHandler,
-    UI::Notifications::{
-        ToastActivatedEventArgs, ToastNotification, ToastNotificationManager, ToastNotifier,
-    },
-    core::{HSTRING, IInspectable, Interface},
+    UI::Notifications::{ToastNotification, ToastNotificationManager, ToastNotifier},
+    core::HSTRING,
 };
 
 use crate::{APP_ID, utils::DataType};
@@ -231,25 +228,14 @@ fn show(notifier: &ToastNotifier, document: &XmlDocument, id: &str) -> windows::
     toast.SetTag(&HSTRING::from(tag_for(id)))?;
     toast.SetGroup(&HSTRING::from(GROUP))?;
 
-    toast.Activated(&TypedEventHandler::<ToastNotification, IInspectable>::new(
-        |_toast, args| {
-            if let Some(payload) = clicked_payload(args.as_ref()) {
-                activate(&payload);
-            }
-            Ok(())
-        },
-    ))?;
-
+    // No `Activated` handler here. It fires for a click while Commune is
+    // running — but so does the COM activator, because a process that has
+    // registered the class serves it itself rather than having another one
+    // started. Handling both made every warm click act twice, which stayed
+    // invisible only because the actions so far are idempotent: declining a
+    // call twice declines it, opening a room twice opens it. Answering twice
+    // would not have been.
     notifier.Show(&toast)
-}
-
-/// What the click handed back: the toast's own `launch`, or a button's
-/// `arguments`.
-fn clicked_payload(args: Option<&IInspectable>) -> Option<String> {
-    let args = args?.cast::<ToastActivatedEventArgs>().ok()?;
-    let arguments = args.Arguments().ok()?.to_string_lossy();
-
-    (!arguments.is_empty()).then_some(arguments)
 }
 
 /// Carry out what a clicked notification asked for.
