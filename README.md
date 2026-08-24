@@ -124,6 +124,24 @@ not been exercised by hand yet; camera QR scanning and location sharing are stub
 [`doc/macos.md`](doc/macos.md) for the full story, the environment probe, the list of what still
 has to be tested, and what is stubbed.
 
+### Windows
+
+The GTK stack comes from **MSYS2's UCRT64** repository, and everything is built from a UCRT64
+shell. That is a mingw-ABI toolchain, so the build uses MSYS2's own Rust rather than an MSVC
+rustup; `build-aux/windows/probe-env.sh` reports on the whole environment and names what is
+missing. With it in place the usual Meson build works:
+
+```sh
+meson setup _build -Dprofile=development --prefix=$MINGW_PREFIX
+ninja -C _build
+meson install -C _build
+```
+
+The app builds and runs, and `matrix:` links already reach a running instance. There is no
+packaging yet, and nothing that needs an account has been exercised. See
+[`doc/windows.md`](doc/windows.md) for the environment, the six things that bit us on the way, and
+what is still owed.
+
 ## Runtime Dependencies
 
 On top of the dependencies required at build time and checked by Meson, Commune depends on the
@@ -145,6 +163,12 @@ locale at startup, and location sharing and camera QR scanning are not available
 still needed, including gst-plugin-gtk4 and — for calls — `webrtcbin` and the libnice and libsrtp2
 under it; `build-aux/macos/setup-conda-macos.sh` builds all of those from source, because
 conda-forge packages none of them.
+
+On Windows the portals do not apply either. Secrets go to the Credential Manager, the 12h/24h
+format is read from the locale at startup, and location sharing and camera QR scanning are not
+available. GStreamer is needed on the same terms as macOS, but every piece of it — gst-plugin-gtk4,
+`webrtcbin`, libnice and libsrtp2 — is a package in MSYS2's UCRT64 repository rather than something
+to build.
 
 ### Storing secrets
 

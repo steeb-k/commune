@@ -173,6 +173,13 @@ The macOS port has its own environment, built with conda-forge rather than Homeb
 set of platform differences. Both are documented in [`doc/macos.md`](doc/macos.md); start there
 rather than with the instructions above.
 
+### Windows
+
+The Windows port is built from an MSYS2 UCRT64 shell against MSYS2's GTK, which means MSYS2's Rust
+rather than an MSVC rustup. That, the tooling that has to be installed separately, and the handful
+of things that behave differently are documented in [`doc/windows.md`](doc/windows.md); start
+there rather than with the instructions above.
+
 ## Pre-commit
 
 We expect all code contributions to be correctly formatted. To help with that, a pre-commit hook
