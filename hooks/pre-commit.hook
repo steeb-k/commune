@@ -11,6 +11,10 @@ res="\e[0m"
 echo "-- Pre-commit checks --"
 echo "To ignore these checks next time, run: git commit --no-verify"
 echo ""
+
+# Documentation drift. Warns, never blocks — see hooks/doc-freshness.
+hooks/doc-freshness --staged
+echo ""
 if hooks/checks-bin --git-staged; then
     echo ""
     echo -e "Pre-commit checks result: ${pos}ok${res}"

@@ -51,6 +51,10 @@ integration points, and a rebase guide. `doc/rebrand.md` does the same for the
 rename to Commune, and is where to look before touching anything that carries
 the application's name or ID.
 
+`doc/flatpak.md` and `doc/macos.md` cover packaging and the macOS port rather
+than a feature, and `doc/macos-plan.md` is the plan that produced the second of
+them.
+
 Three of the ledgers are HTML pages rather than Markdown, and they are the ones
 that get forgotten: `doc/client-comparison.html` (Commune against nine other
 clients), `doc/spec-gaps.html` (Commune against the Client-Server API) and
@@ -61,6 +65,13 @@ feature that has silently made all three pages lie — they are the only record 
 where this fork stands, and they are read as current. Each carries a comment at
 its top with the artifact URL it is published to; re-publish to that URL rather
 than making a second artifact.
+
+Their mastheads name **the newest commit that touched `src/`**, not `HEAD`: a
+documentation commit cannot name its own hash, so chasing `HEAD` would leave the
+pages permanently one behind. `upstream-defects.html` counts commits up to that
+same one. `hooks/doc-freshness` checks both, and warns when a commit changes
+`src/` and no documentation at all; the pre-commit hook runs it, and it never
+blocks, because only a person can tell which change genuinely needs no ledger.
 
 `doc/eyeball-tests.md` is the running list of what has been built and never
 looked at on screen — every feature that draws adds to it in the same commit,
