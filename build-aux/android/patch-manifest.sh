@@ -33,6 +33,12 @@
 # see `src/login/local_server.rs` and `doc/android.md`. Without it, the
 # `Intent` the browser sends back after authentication has nothing registered
 # to receive it and Android drops it.
+#
+# And `POST_NOTIFICATIONS`, which pixiewood declares nothing of. Since API 33
+# this is a runtime permission, so the entry does not grant anything — it only
+# earns the right to ask, which `utils::android_notifications` does once the
+# window exists. Without the entry the request is refused outright and every
+# notification is dropped silently.
 set -eu
 
 MANIFEST=${1:-.pixiewood/android/app/src/main/AndroidManifest.xml}
@@ -85,17 +91,32 @@ perl -MXML::LibXML -e '
         $activity->appendChild($filter);
     }
 
+    # `uses-permission` is a child of <manifest>, not of <application>, and
+    # Android ignores one that is put in the wrong place rather than refusing
+    # the build.
+    my $permission = "android.permission.POST_NOTIFICATIONS";
+    my ($granted) = $xpc->findnodes(
+        qq(/manifest/uses-permission[\@android:name="$permission"])
+    );
+    if (!$granted) {
+        my $node = $doc->createElement("uses-permission");
+        $node->setAttributeNS($android, "android:name", $permission);
+        $doc->documentElement->insertBefore($node, $application);
+    }
+
     $doc->toFile($path, 1);
 
-    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter\n", $path, $scheme;
+    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter, %s\n",
+        $path, $scheme, $permission;
 ' "$MANIFEST"
 
-# Say so if any of the three did not take, rather than letting a silent no-op
+# Say so if any of the four did not take, rather than letting a silent no-op
 # through.
 for expected in \
     'android:launchMode="singleTask"' \
     'android:allowBackup="false"' \
-    'android:scheme="io.github.steeb-k.commune"'
+    'android:scheme="io.github.steeb-k.commune"' \
+    'android:name="android.permission.POST_NOTIFICATIONS"'
 do
     if ! grep -q "$expected" "$MANIFEST"; then
         printf 'expected %s in %s after patching\n' "$expected" "$MANIFEST" >&2

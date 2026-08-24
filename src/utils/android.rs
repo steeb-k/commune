@@ -30,7 +30,7 @@ use gtk::{
 };
 use jni::{
     AttachGuard, JNIEnv, JavaVM,
-    objects::{JObject, JValue},
+    objects::{GlobalRef, JObject, JValue},
 };
 use tokio::sync::oneshot;
 use tracing::debug;
@@ -56,10 +56,27 @@ unsafe extern "C" {
         intent: jni::sys::jobject,
         error: *mut *mut glib::ffi::GError,
     ) -> glib::ffi::gboolean;
+
+    /// `toplevel`'s Android `Activity`.
+    ///
+    /// Returns a new local reference, made with the `JNIEnv` of the thread GTK
+    /// runs on (`gdkandroidtoplevel.c:671`), so this may only be called from
+    /// there and what it returns belongs to that thread. Public API since GTK
+    /// 4.18, declared here for the same reason as the two above.
+    fn gdk_android_toplevel_get_activity(toplevel: *mut c_void) -> jni::sys::jobject;
 }
 
 /// The `JavaVM` for this process.
 static JAVA_VM: OnceLock<JavaVM> = OnceLock::new();
+
+/// The application `Context`, captured the first time one is asked for.
+///
+/// The application `Context` rather than the `Activity`'s own because it
+/// outlives any `Activity`: Android destroys and recreates one on a
+/// configuration change, and a system service held against a dead `Activity`
+/// leaks it. Nothing here needs the `Activity`'s theme or window, which is the
+/// only reason to prefer it.
+static APPLICATION_CONTEXT: OnceLock<GlobalRef> = OnceLock::new();
 
 /// The errors that can occur reaching the Java side.
 #[derive(Debug, thiserror::Error)]
@@ -77,6 +94,15 @@ pub(crate) enum AndroidJniError {
     /// an activity as a parent of.
     #[error("window has no surface")]
     NoSurface,
+
+    /// There is no window to take an `Activity` from, because the application
+    /// has none open yet.
+    #[error("no active window")]
+    NoWindow,
+
+    /// The toplevel of a window that has one has no `Activity` behind it.
+    #[error("window has no activity")]
+    NoActivity,
 
     /// `gdk_android_toplevel_launch_activity` refused to start the activity —
     /// most likely `ActivityNotFoundException`, thrown when nothing on the
@@ -141,7 +167,80 @@ where
     let vm = JAVA_VM.get().ok_or(AndroidJniError::NoJavaVm)?;
     let mut guard = vm.attach_current_thread().map_err(AndroidJniError::from)?;
 
-    f(&mut guard)
+    let result = f(&mut guard);
+
+    // A call that threw comes back as `Error::JavaException` with the exception
+    // still pending, and the next JNI call made on this thread with one pending
+    // aborts the process. So clearing it is not tidiness, it is what keeps a
+    // Java-side failure to a failed call. `exception_describe` puts the stack
+    // trace in logcat, which is the only place it would otherwise be readable.
+    if guard.exception_check().unwrap_or(false) {
+        let _ = guard.exception_describe();
+        let _ = guard.exception_clear();
+    }
+
+    result
+}
+
+/// The Android `Activity` behind the given window.
+///
+/// Must be called on the GTK thread: the reference comes out of the `JNIEnv`
+/// GTK made for itself, and a local reference belongs to the thread that made
+/// it. It is promoted to a global one here so that what is returned does not.
+pub(crate) fn activity(window: &gtk::Window) -> Result<GlobalRef, AndroidJniError> {
+    let surface = window.surface().ok_or(AndroidJniError::NoSurface)?;
+    let toplevel_ptr: *mut gdk::ffi::GdkSurface = surface.to_glib_none().0;
+
+    // SAFETY: `toplevel_ptr` is the surface of a live `gtk::Window`, which on
+    // the Android backend is always a `GdkAndroidToplevel`.
+    let activity = unsafe { gdk_android_toplevel_get_activity(toplevel_ptr.cast()) };
+    if activity.is_null() {
+        return Err(AndroidJniError::NoActivity);
+    }
+
+    with_env(|env| {
+        // SAFETY: the reference was made by GTK for this thread, which is the
+        // thread this runs on, and ownership of it passes to us — the
+        // `JObject` deletes it when it drops.
+        let activity = unsafe { JObject::from_raw(activity) };
+
+        Ok(env.new_global_ref(&activity)?)
+    })
+}
+
+/// The application `Context`, captured on first use and kept.
+///
+/// The first call must be on the GTK thread and with a window open, since that
+/// is what [`activity()`] needs; every call after it is free and works from
+/// anywhere.
+pub(crate) fn application_context() -> Result<&'static GlobalRef, AndroidJniError> {
+    if let Some(context) = APPLICATION_CONTEXT.get() {
+        return Ok(context);
+    }
+
+    let window = gtk::gio::Application::default()
+        .and_downcast::<gtk::Application>()
+        .and_then(|application| application.active_window())
+        .ok_or(AndroidJniError::NoWindow)?;
+    let activity = activity(&window)?;
+
+    let context = with_env(|env| {
+        let context = env
+            .call_method(
+                activity.as_obj(),
+                "getApplicationContext",
+                "()Landroid/content/Context;",
+                &[],
+            )?
+            .l()?;
+
+        Ok::<_, AndroidJniError>(env.new_global_ref(&context)?)
+    })?;
+
+    debug!("Captured the application context");
+
+    // A second caller racing us is fine; the context is the same either way.
+    Ok(APPLICATION_CONTEXT.get_or_init(|| context))
 }
 
 /// Launch `uri` in a browser, as a new `Activity` with `window`'s as parent.
