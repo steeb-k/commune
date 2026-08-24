@@ -9,7 +9,7 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{IdentityVerification, Room, Session};
+use super::{IdentityVerification, Presence, Room, Session};
 use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
@@ -62,6 +62,16 @@ mod imp {
         #[property(get)]
         is_ignored: Cell<bool>,
         ignored_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// Whether this user is around, as far as their homeserver says.
+        ///
+        /// [`Presence::Unknown`] unless the homeserver runs the Presence
+        /// module, which most do not.
+        #[property(get, builder(Presence::default()))]
+        presence: Cell<Presence>,
+        /// The message this user set to go with their presence, if any.
+        #[property(get)]
+        presence_status_message: RefCell<Option<String>>,
+        presence_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -82,10 +92,14 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(session) = self.session.get()
-                && let Some(handler) = self.ignored_handler.take()
-            {
-                session.ignored_users().disconnect(handler);
+            if let Some(session) = self.session.get() {
+                if let Some(handler) = self.ignored_handler.take() {
+                    session.ignored_users().disconnect(handler);
+                }
+
+                if let Some(handler) = self.presence_handler.take() {
+                    session.presence_list().disconnect(handler);
+                }
             }
         }
     }
@@ -142,6 +156,24 @@ mod imp {
             self.is_ignored.set(ignored_users.contains(user_id));
             self.ignored_handler.replace(Some(ignored_handler));
 
+            let presence_list = session.presence_list();
+            let presence_handler = presence_list.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, changed_user_id| {
+                    if changed_user_id == imp.user_id().as_str() {
+                        imp.update_presence();
+                    }
+                }
+            ));
+            self.presence_handler.replace(Some(presence_handler));
+
+            // Sync only carries presence when it changes, so a user who has
+            // not moved since this client started has none until they do. What
+            // earlier syncs delivered is in the store.
+            presence_list.load(user_id.clone());
+            self.update_presence();
+
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -149,6 +181,23 @@ mod imp {
                     imp.init_is_verified().await;
                 }
             ));
+        }
+
+        /// Update what is known about whether this user is around.
+        fn update_presence(&self) {
+            let obj = self.obj();
+            let known = self.session().presence_list().get(self.user_id());
+
+            if self.presence.get() != known.presence {
+                self.presence.set(known.presence);
+                obj.avatar_data().set_presence(known.presence);
+                obj.notify_presence();
+            }
+
+            if *self.presence_status_message.borrow() != known.status_message {
+                self.presence_status_message.replace(known.status_message);
+                obj.notify_presence_status_message();
+            }
         }
 
         /// Set whether this user has a display name set.

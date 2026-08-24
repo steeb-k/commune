@@ -21,6 +21,7 @@ template $UserPage: Adw.NavigationPage {
 
           $Avatar avatar {
             size: 128;
+            show-presence: true;
             accessible-role: presentation;
           }
 
@@ -36,6 +37,24 @@ template $UserPage: Adw.NavigationPage {
 
               styles [
                 "title-1",
+              ]
+            }
+
+            // What the user set to go with their presence. Absent on almost
+            // every homeserver, since most keep the module switched off.
+            Gtk.Label presence_status_message {
+              wrap: true;
+              wrap-mode: word_char;
+              justify: center;
+              visible: bind $string_not_empty(
+                template.user as <$User>.presence-status-message
+              ) as <bool>;
+              label: bind $unwrap_string_or_empty(
+                template.user as <$User>.presence-status-message
+              ) as <string>;
+
+              styles [
+                "dimmed",
               ]
             }
 

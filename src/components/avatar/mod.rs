@@ -1,4 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
 
 mod crop_circle;
@@ -16,7 +17,7 @@ pub use self::{
 };
 use crate::{
     components::AnimatedImagePaintable,
-    session::Room,
+    session::{Presence, Room},
     utils::{BoundObject, BoundObjectWeakRef, CountedRef},
 };
 
@@ -59,6 +60,8 @@ mod imp {
     pub struct Avatar {
         #[template_child]
         avatar: TemplateChild<adw::Avatar>,
+        #[template_child]
+        presence_badge: TemplateChild<gtk::Image>,
         /// The [`AvatarData`] displayed by this widget.
         #[property(get, set = Self::set_data, explicit_notify, nullable)]
         data: BoundObject<AvatarData>,
@@ -68,6 +71,15 @@ mod imp {
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
         size: PhantomData<i32>,
+        /// Whether to show a badge saying that the owner of this avatar is
+        /// around.
+        ///
+        /// Off by default, and opted into by the few places where knowing is
+        /// worth the ink: the member list, a user's profile and the row of a
+        /// direct chat. A picker, a read receipt or an inline mention is not
+        /// one of them.
+        #[property(get, set = Self::set_show_presence, explicit_notify)]
+        show_presence: Cell<bool>,
         /// The safety setting to watch to decide whether the image of the
         /// avatar should be displayed.
         #[property(get, set = Self::set_watched_safety_setting, explicit_notify, builder(AvatarImageSafetySetting::default()))]
@@ -147,7 +159,59 @@ mod imp {
             self.avatar.set_size(size);
 
             self.update_paintable();
+            self.update_presence_badge();
             self.obj().notify_size();
+        }
+
+        /// Set whether to show a badge saying the owner of this avatar is
+        /// around.
+        fn set_show_presence(&self, show_presence: bool) {
+            if self.show_presence.get() == show_presence {
+                return;
+            }
+
+            self.show_presence.set(show_presence);
+
+            self.update_presence_badge();
+            self.obj().notify_show_presence();
+        }
+
+        /// Update the badge saying whether the owner of this avatar is around.
+        fn update_presence_badge(&self) {
+            let presence = self
+                .data
+                .obj()
+                .map(|data| data.presence())
+                .unwrap_or_default();
+
+            let badge = &*self.presence_badge;
+            badge.remove_css_class("online");
+            badge.remove_css_class("unavailable");
+
+            if !self.show_presence.get() || !presence.is_visible() {
+                badge.set_visible(false);
+                return;
+            }
+
+            match presence {
+                Presence::Online => badge.add_css_class("online"),
+                Presence::Unavailable => badge.add_css_class("unavailable"),
+                // `is_visible()` has already ruled the rest out.
+                Presence::Unknown | Presence::Offline => unreachable!(),
+            }
+
+            // The badge has to grow with the avatar it sits on: a fixed dot is
+            // a smudge at size 128 and covers the initials at size 24.
+            let size = self.size();
+            let pixel_size = if size > 0 { (size / 3).clamp(8, 24) } else { 8 };
+            badge.set_pixel_size(pixel_size);
+
+            badge.set_tooltip_text(Some(&match presence {
+                Presence::Online => gettext("Online"),
+                Presence::Unavailable => gettext("Idle"),
+                Presence::Unknown | Presence::Offline => unreachable!(),
+            }));
+            badge.set_visible(true);
         }
 
         /// Set the safety setting to watch to decide whether the image of the
@@ -296,11 +360,19 @@ mod imp {
                         imp.update_image();
                     }
                 ));
+                let presence_handler = data.connect_presence_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_presence_badge();
+                    }
+                ));
 
-                self.data.set(data, vec![image_handler]);
+                self.data.set(data, vec![image_handler, presence_handler]);
             }
 
             self.update_image();
+            self.update_presence_badge();
             self.obj().notify_data();
         }
 

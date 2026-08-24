@@ -114,6 +114,15 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup {
+    title: _("Privacy");
+
+    Adw.SwitchRow share_presence_row {
+      title: _("Share When You Are Online");
+      subtitle: _("Tell your homeserver that you are here while this app is running. It has no effect on a homeserver that does not keep presence, which most do not.");
+    }
+  }
+
   Adw.PreferencesGroup gif_search_group {
     visible: false;
     title: _("Composer");

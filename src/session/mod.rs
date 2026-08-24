@@ -23,6 +23,7 @@ mod global_account_data;
 mod ignored_users;
 mod image_packs;
 mod notifications;
+mod presence;
 mod remote;
 mod room;
 mod room_list;
@@ -35,8 +36,8 @@ mod verification;
 
 pub(crate) use self::{
     calls::*, global_account_data::*, ignored_users::*, image_packs::*, notifications::*,
-    remote::*, room::*, room_list::*, security::*, session_settings::*, sidebar_data::*, user::*,
-    user_sessions_list::*, verification::*,
+    presence::*, remote::*, room::*, room_list::*, security::*, session_settings::*,
+    sidebar_data::*, user::*, user_sessions_list::*, verification::*,
 };
 use crate::{
     Application,
@@ -115,6 +116,9 @@ mod imp {
         /// The ignored users API for this session.
         #[property(get)]
         ignored_users: IgnoredUsers,
+        /// What the homeserver has said about who is around.
+        #[property(get)]
+        presence_list: PresenceList,
         /// The calls of this session.
         #[property(get = Self::calls_owned)]
         calls: OnceCell<Calls>,
@@ -182,6 +186,7 @@ mod imp {
             let obj = self.obj();
 
             self.ignored_users.set_session(Some(obj.clone()));
+            self.presence_list.set_session(Some(obj.clone()));
             self.notifications.set_session(Some(obj.clone()));
             self.user_sessions.init(&obj, obj.user_id().clone());
 

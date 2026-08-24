@@ -23,7 +23,7 @@ use crate::{
     prelude::*,
     session::{Member, Membership, Permissions, Room, User},
     toast,
-    utils::BoundObject,
+    utils::{BoundObject, TemplateCallbacks},
 };
 
 mod imp {
@@ -94,6 +94,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_css_name("user-page");
         }
