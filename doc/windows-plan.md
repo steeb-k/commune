@@ -157,6 +157,9 @@ away, but the target is not its happiest path. If it will not build, the fallbac
 SDK's crypto-provider feature to ring for this target — verify the feature name against the pinned
 SDK revision before assuming it exists.
 
+**It was not a risk at all.** With cmake installed the whole dependency tree, `aws-lc-sys`
+included, compiled without a word. No fallback was needed and none was written.
+
 Verify from a UCRT64 shell: `sh build-aux/windows/probe-env.sh`;
 `meson setup _build -Dprofile=development`;
 `CARGO_TARGET_DIR=_build/cargo-target cargo check && cargo clippy --all-targets -- -D warnings`;
@@ -177,9 +180,10 @@ Goal: log in, timeline images work.
    * **GTK media backend**: if the probe found no GStreamer media backend module, widen the macOS
      `gst_media_stream` seam — the `cfg(target_os = "macos")` in
      `src/components/media/{mod.rs,audio_player/mod.rs,content_viewer.rs}` becomes
-     macOS-or-Windows.
+     macOS-or-Windows. **Needed: there is no `lib/gtk-4.0` directory at all.** The seam was
+     widened; nothing in `GstMediaStream` turned out to be macOS-specific.
    * **Shumate vector renderer**: if the packaged 1.5.1 lacks it, build libshumate 1.6 in UCRT64
-     (recipe below).
+     (recipe below). **Not needed: the packaged 1.5.1 has it.**
    * **GSK renderer quirks**: note which renderer win32 picked; if rendering glitches,
      `GSK_RENDERER=gl` is the first lever. Record either way.
    * **The `visual_media_row_model` test** is already `cfg(all(test, not(target_os = "macos")))`
@@ -190,6 +194,17 @@ Goal: log in, timeline images work.
    Options if it is broken: MSYS2 packages `dbus`, and GDBus on win32 knows the `autolaunch:`
    address; or a named mutex plus a local socket in `main()` that forwards the command line.
    Thirty minutes of experiment, recorded in `doc/windows.md`, decides which.
+
+   **Answered: it works, and so does the URI forwarding on top of it.** A second invocation with
+   no arguments exits on its own and leaves one window. A second invocation carrying
+   `matrix:u/alice:example.org` reached the first instance's `Application::open`, came out as
+   `ShowMatrixId(User("@alice:example.org"))`, and was refused only for want of a logged-in
+   session. So none of the fallbacks are needed, and the warm path of [M3](#m3--signed-wix-5-msi)
+   is done before its milestone starts — what is left there is the registry key for the cold one.
+
+   One caution for whoever repeats this: a first instance that fails to start makes the second
+   one look like a second primary, because it is one. Check that the first is actually running
+   before concluding anything.
 
 Verify: password login; SSO login (`src/login/local_server.rs` binds localhost — expect a
 Defender firewall prompt); send and receive text; image thumbnail, animated GIF, sticker pack;

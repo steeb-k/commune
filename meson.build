@@ -135,6 +135,33 @@ if host_machine.system() == 'darwin' or host_machine.system() == 'windows'
     endif
 endif
 
+if host_machine.system() == 'windows'
+    # The name a user reads in the Properties dialog and in Task Manager, and
+    # the icon Explorer, the taskbar and Alt-Tab draw. Windows keeps both inside
+    # the executable, so `build.rs` compiles them in and this is where it is
+    # told what to compile — the profile decides which of the two icons it is,
+    # and only Meson knows the profile.
+    if profile == 'Stable'
+        windows_app_name = 'Commune'
+        windows_appicon = 'assets/appicon.svg'
+    else
+        windows_app_name = 'Commune ' + profile
+        windows_appicon = 'assets/appicon-devel.svg'
+    endif
+
+    windows_icon = meson.project_build_root() / 'windows' / 'commune.ico'
+    run_command(
+        'bash',
+        meson.project_source_root() / 'build-aux' / 'windows' / 'make-ico.sh',
+        meson.project_source_root() / windows_appicon,
+        windows_icon,
+        check: true,
+    )
+
+    cargo_env += 'COMMUNE_WINDOWS_ICON=' + windows_icon
+    cargo_env += 'COMMUNE_WINDOWS_NAME=' + windows_app_name
+endif
+
 if profile == 'Devel'
     vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD', check: false).stdout().strip()
     if vcs_tag == ''
@@ -222,6 +249,25 @@ if host_machine.system() == 'darwin'
     run_target('macos-bundle', command: macos_bundle_command)
     run_target('macos-dmg', command: macos_bundle_command + ['--dmg'])
     run_target('macos-tarball', command: macos_bundle_command + ['--tarball'])
+endif
+
+# Windows packaging. Same reasoning as the darwin block above: the folder is
+# assembled out of a staged `meson install` of whatever this build directory was
+# configured as, and `bundle.sh` names the result after the profile.
+if host_machine.system() == 'windows'
+    windows_bundle_command = [
+        'bash',
+        meson.project_source_root() / 'build-aux' / 'windows' / 'bundle.sh',
+        '--build-dir', meson.project_build_root(),
+        '--app-id', application_id,
+        '--app-name', 'Commune',
+        '--version', version,
+        '--profile', profile,
+        '--executable', meson.project_name(),
+    ]
+
+    run_target('windows-bundle', command: windows_bundle_command)
+    run_target('windows-zip', command: windows_bundle_command + ['--zip'])
 endif
 
 gnome.post_install(
