@@ -69,6 +69,25 @@ static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
 static MEDIA_FILE_NOTIFIER: LazyLock<OneshotNotifier> =
     LazyLock::new(|| OneshotNotifier::new("MEDIA_FILE_NOTIFIER"));
 
+/// The symbol `build-aux/android/stub.c` calls from its `main`.
+///
+/// GTK's glue looks up `main` in the application's shared object and calls it,
+/// and Rust does not export a `main` of its own. Rather than try to make it,
+/// the library exports this and a three-line C `main` next to it calls in —
+/// which is also how the library gets linked into the shared object in the
+/// first place, since Meson performs that link and Cargo only supplies the
+/// `staticlib`.
+///
+/// Returning `0` unconditionally is honest: [`run()`] either panics or comes
+/// back after the application has quit normally, so there is no failure left to
+/// report by the time this returns.
+#[cfg(target_os = "android")]
+#[unsafe(no_mangle)]
+pub extern "C" fn commune_main() -> std::ffi::c_int {
+    run();
+    0
+}
+
 /// Set the process up and run the application until it quits.
 ///
 /// This is what used to be `main()`. It must be called on the thread the

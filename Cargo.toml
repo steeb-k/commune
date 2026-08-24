@@ -9,6 +9,10 @@ publish = false
 
 [package.metadata.cargo-machete]
 ignored = [
+    # Never called; present on Android only, to turn on `bundled` for the
+    # `rusqlite` that `matrix-sdk-sqlite` depends on. See the Android section
+    # below for why that is necessary.
+    "rusqlite",
     # Used by the SecretFile API.
     "serde_bytes",
 ]
@@ -154,6 +158,15 @@ image = { version = "0.25.5", default-features = false, features = [
 [target.'cfg(target_os = "android")'.dependencies]
 # `tracing` has nowhere to go on Android without a logcat sink.
 paranoid-android = "0.2"
+# Never used directly. It is here to turn on `bundled` for the `rusqlite` that
+# `matrix-sdk-sqlite` pulls in, which makes `libsqlite3-sys` compile SQLite from
+# source rather than look for a system one.
+#
+# Android does have SQLite, but not as an NDK API: there is no `libsqlite3.so`
+# anywhere in the NDK sysroot, so nothing native can link against it and every
+# application wanting SQLite ships its own. Only Android turns this on, so every
+# other platform still links the system library exactly as before.
+rusqlite = { version = "0.40", features = ["bundled"] }
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]
