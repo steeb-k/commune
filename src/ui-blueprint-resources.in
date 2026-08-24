@@ -30,6 +30,8 @@ components/crypto/recovery_setup_view.blp
 components/dialogs/auth/in_browser_page.blp
 components/dialogs/auth/mod.blp
 components/dialogs/auth/password_page.blp
+components/dialogs/auth/registration_token_page.blp
+components/dialogs/auth/terms_page.blp
 components/dialogs/room_preview.blp
 components/dialogs/toastable.blp
 components/dialogs/user_profile.blp

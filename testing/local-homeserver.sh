@@ -37,6 +37,8 @@
 #   ./testing/local-homeserver.sh notice  # send another server notice to alice
 #   ./testing/local-homeserver.sh limit on|off  # cross the MAU limit, so Synapse
 #                                         # sends and pins a notice of its own
+#   ./testing/local-homeserver.sh signup open|token|off  # what a new account has
+#                                         # to get past
 #   ./testing/local-homeserver.sh check   # verify the endpoints server-side
 #   ./testing/local-homeserver.sh reports # show what the admin has received
 #   ./testing/local-homeserver.sh down    # stop the server, keep the data
@@ -701,6 +703,100 @@ YAML
   fi
 }
 
+# ----------------------------------------------------------------- signup ----
+
+# Decide what a new account has to get past.
+#
+# `up` leaves registration open with no verification, so Synapse asks for
+# `m.login.dummy` and the authentication dialog answers it without drawing
+# anything. That is the happy path, and it hides the dialog completely — so the
+# other two modes exist to make it appear:
+#
+#   * `token` requires `m.login.registration_token` and prints a token to use.
+#     That is a stage Commune draws itself.
+#   * `off` refuses registration entirely, which is the `M_FORBIDDEN` case — the
+#     one that must not say "Invalid credentials".
+#
+# The terms stage (`m.login.terms`) is not here: Synapse only asks for it with a
+# `user_consent` block pointing at template files it renders itself, which is
+# more homeserver configuration than this harness has any other reason to carry.
+# Commune draws that stage too, and it has never been seen.
+signup() {
+  local mode=${1:-open}
+  local config=$DATA/homeserver.yaml
+  [ -f "$config" ] || die "No homeserver configuration; run './testing/local-homeserver.sh up' first"
+
+  # Drop the block this command added before, so every mode is the same
+  # operation with different contents.
+  python3 - "$config" <<'SIGNUP_PY'
+import re, sys
+path = sys.argv[1]
+text = open(path).read()
+text = re.sub(r"\n# Added by testing/local-homeserver\.sh \(signup\)\.\n(?:.*\n)*?# End signup\.\n", "\n", text)
+open(path, "w").write(text)
+SIGNUP_PY
+
+  case "$mode" in
+    open)
+      log "Leaving registration open, with no stage the user can see…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: true
+enable_registration_without_verification: true
+registration_requires_token: false
+# End signup.
+YAML
+      ;;
+    token)
+      log "Requiring a registration token…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: true
+enable_registration_without_verification: true
+registration_requires_token: true
+# End signup.
+YAML
+      ;;
+    off)
+      log "Switching registration off…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: false
+# End signup.
+YAML
+      ;;
+    *)
+      die "Unknown signup mode '$mode'. Try: open, token, off"
+      ;;
+  esac
+
+  podman restart "$CONTAINER" >/dev/null
+  wait_for_server
+
+  if [ "$mode" = token ]; then
+    local admin token
+    admin=$(login admin admin-is-testing)
+    [ -n "$admin" ] || die "Could not log in as admin"
+
+    # Three uses, because getting a token wrong on the first try is one of the
+    # things worth watching.
+    token=$(curl -sf -X POST "$HS/_synapse/admin/v1/registration_tokens/new" \
+      -H "Authorization: Bearer $admin" -H 'Content-Type: application/json' \
+      -d '{"uses_allowed": 3}' | jq -r .token)
+
+    if [ -z "$token" ] || [ "$token" = null ]; then
+      warn "Could not mint a registration token; is the admin account still there?"
+    else
+      log "Registration token, good for three accounts: $token"
+    fi
+  fi
+
+  log "Now use Create Account on the greeter, against homeserver localhost:$PORT."
+}
+
 # ------------------------------------------------------------------ check ----
 
 # Confirm the server accepts what Commune sends, so that a failure in the app is
@@ -1048,6 +1144,10 @@ case "${1:-up}" in
     need podman; need curl; need jq; need python3
     limit "${2:-on}"
     ;;
+  signup)
+    need podman; need curl; need jq; need python3
+    signup "${2:-open}"
+    ;;
   check)
     need podman; need curl; need jq
     [ -f "$STATE" ] || die "Nothing seeded yet; run './testing/local-homeserver.sh up' first"
@@ -1069,6 +1169,6 @@ case "${1:-up}" in
     log "Homeserver and its data are gone."
     ;;
   *)
-    die "Unknown command '$1'. Try: up, notice, limit, turn, check, reports, down, clean"
+    die "Unknown command '$1'. Try: up, notice, limit, signup, turn, check, reports, down, clean"
     ;;
 esac

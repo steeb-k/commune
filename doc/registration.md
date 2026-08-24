@@ -14,6 +14,9 @@ Fractal release. See `fork.md` for why none of this goes upstream.
 * On a homeserver with the OAuth 2.0 API: the same in-browser flow the log-in
   path already uses, with `prompt=create` so the server opens its sign-up form
   rather than its sign-in form.
+* Pages for the two authentication stages a homeserver actually asks a new
+  account for — a registration token, and agreeing to its policy documents —
+  drawn here rather than in the browser.
 * Straight into the session once it exists — the same path a password login
   takes, including the encryption setup pages.
 
@@ -25,8 +28,8 @@ action that existed nowhere in the tree.
 ## The dialog had to stop needing a session
 
 `AuthDialog` runs the whole UIAA stage loop and is the reason registration is
-cheap here — it already answers `m.login.password` and `m.login.dummy` natively
-and sends every other stage to the spec's own fallback page,
+cheap here — it already answered `m.login.password` and `m.login.dummy` natively
+and sent every other stage to the spec's own fallback page,
 `GET /_matrix/client/v3/auth/{type}/fallback/web`, which is the standard's
 answer to a captcha, a terms checkbox or an emailed token.
 
@@ -42,6 +45,42 @@ Only one stage needs the user ID — `m.login.password`, which identifies the
 user to the homeserver — and it cannot appear in a registration flow for that
 same reason. It gets `AuthError::MissingUserId` rather than the catch-all, so a
 server that asks for it anyway leaves something legible in the log.
+
+## Two stages are drawn here, and the rest still go to the web page
+
+`m.login.registration_token` and `m.login.terms` are the two stages a
+homeserver actually asks a new account for, so they became pages of their own
+rather than trips to the fallback page:
+
+* **The token page** is the password page with a plain entry: the token is not
+  a secret to be hidden from the person typing it, and it usually arrives by
+  message from whoever runs the server. A wrong one comes back as the same
+  stage again, and the dialog now says "The registration token is invalid"
+  instead of "An unexpected error occurred".
+* **The terms page** is a check button per policy document, each with a link
+  that opens it, and the _Agree_ button stays insensitive until every one is
+  checked. The policies come from the flow's `params`, not the stage's, which
+  is why `page()` now takes the whole `UiaaInfo` — `AuthState` only carries the
+  stage.
+
+`AuthState::next` prefers both of them the way it already preferred password,
+SSO and dummy, so a flow that offers a native stage and a web-only one takes
+the native one.
+
+Three things are deliberately not native. `m.login.recaptcha` and
+`m.login.email.identity` keep going to
+`GET /auth/{type}/fallback/web`, because a captcha is a Google widget and an
+emailed token needs a 3PID layer this tree does not have. And a terms stage
+whose params do not parse, or carry no policies at all, falls back to that same
+page rather than showing an empty list — a server that asks for agreement is
+owed an answer it can recognise.
+
+**Policy documents come in translations**, keyed by language tag, and the spec
+notes that servers write both `en-US` and `en_US`. `preferred_translation()`
+normalises both spellings, walks `glib::language_names()` in order, tries the
+bare language before moving on, then falls back to English and finally to
+whatever is there. A policy with no translation at all is dropped from the list:
+agreeing to a document nobody can read is worse than not offering it.
 
 ## The greeter's action is `login.create-account`, not `app.create-account`
 
@@ -132,6 +171,9 @@ XML and this page is `.blp`.
 | Where the native path forks | `Login::init_matrix_login` |
 | Where the OAuth path forks | `Login::init_oauth_login` |
 | The session-free dialog | `AuthDialog::for_client`, `src/components/dialogs/auth/mod.rs` |
+| The token stage page | `src/components/dialogs/auth/registration_token_page.rs` |
+| The terms stage page | `src/components/dialogs/auth/terms_page.rs` |
+| Which stages are drawn natively | `AuthState::next`, and `AuthDialog::page` |
 | Error messages | `src/user_facing_error.rs` |
 
 ## Rebase guide
@@ -145,6 +187,9 @@ XML and this page is `.blp`.
 * **`Login::init_matrix_login` and `init_oauth_login`** each grew a branch at
   the top. Upstream changing what happens after the homeserver page is the
   thing to watch.
+* **`AuthDialog::page()` takes a `UiaaInfo`** now, not just an `AuthState`. If
+  upstream adds a stage page, it gets the params for free; if it changes the
+  signature back, the terms policies are what breaks.
 * **`Prompt`** comes from
   `ruma::api::client::discovery::get_authorization_server_metadata::v1`. If the
   SDK grows a `prompt` argument on `OAuth::login()` itself, prefer that over
@@ -153,9 +198,8 @@ XML and this page is `.blp`.
 ## What is not built
 
 * **Password reset.** The other half of the row.
-* **Native pages for the terms and registration-token stages.** Both go to the
-  spec's fallback page today, which works and is standard, but leaves the app
-  for a page that does not match it.
+* **A native captcha or emailed-token stage.** Both go to the spec's fallback
+  page, which is the correct standard answer and not a shortcut.
 * **Email or phone at sign-up.** The registration request supports 3PID
   binding; nothing in the tree has a 3PID layer, and reset needs only half of
   one.
@@ -164,10 +208,20 @@ XML and this page is `.blp`.
 
 ## Testing
 
-`testing/local-homeserver.sh` already runs with `enable_registration` and
+`testing/local-homeserver.sh` runs with `enable_registration` and
 `enable_registration_without_verification`, so Synapse asks for
 `m.login.dummy` and the account is created without a stage the user can see.
-That is the happy path; it does not exercise the fallback page.
+That is the happy path, and it hides the dialog completely.
+
+`./testing/local-homeserver.sh signup token` makes the server require a
+registration token and prints one, which is the only way to see the token page
+without a public homeserver. `signup off` refuses registration, which is the
+`M_FORBIDDEN` path. `signup open` puts it back.
+
+**The terms page has no harness.** Synapse asks for `m.login.terms` only with a
+`user_consent` block pointing at template files it renders itself, and that is
+more homeserver configuration than the rest of this harness needs. The page is
+written and has never been drawn.
 
 Do not try registration variants against a public homeserver — it leaves junk
 accounts behind. `matrix.org` has registration behind a captcha, which is worth

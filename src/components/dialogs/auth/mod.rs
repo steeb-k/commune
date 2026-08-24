@@ -10,8 +10,8 @@ use ruma::{
         MatrixVersion, OutgoingRequestExt, SupportedVersions,
         auth_scheme::SendAccessToken,
         client::uiaa::{
-            AuthData, AuthType, Dummy, FallbackAcknowledgement, Password, UiaaInfo, UserIdentifier,
-            get_uiaa_fallback_page,
+            AuthData, AuthType, Dummy, FallbackAcknowledgement, LoginTermsParams, Password,
+            RegistrationToken, Terms, UiaaInfo, UserIdentifier, get_uiaa_fallback_page,
         },
     },
     assign,
@@ -21,8 +21,13 @@ use tracing::{error, warn};
 
 mod in_browser_page;
 mod password_page;
+mod registration_token_page;
+mod terms_page;
 
-use self::{in_browser_page::AuthDialogInBrowserPage, password_page::AuthDialogPasswordPage};
+use self::{
+    in_browser_page::AuthDialogInBrowserPage, password_page::AuthDialogPasswordPage,
+    registration_token_page::AuthDialogRegistrationTokenPage, terms_page::AuthDialogTermsPage,
+};
 use crate::{
     components::ToastableDialog, prelude::*, session::Session, spawn_tokio, toast,
     utils::OneshotNotifier,
@@ -305,7 +310,7 @@ mod imp {
             if is_same_state {
                 self.retry_current_stage(&next_state.stage, uiaa_info);
             } else {
-                let (next_page, default_widget) = self.page(&next_state).await?;
+                let (next_page, default_widget) = self.page(&next_state, uiaa_info).await?;
                 self.show_page(next_page, &default_widget, parent);
                 self.state.replace(Some(next_state));
             }
@@ -324,10 +329,16 @@ mod imp {
             if let Some(error) = &uiaa_info.auth_error {
                 warn!("Could not perform authentication stage: {}", error.message);
 
-                if matches!(stage, AuthType::Password) {
-                    toast!(self.stack, gettext("The password is invalid."));
-                } else {
-                    toast!(self.stack, gettext("An unexpected error occurred."));
+                match stage {
+                    AuthType::Password => {
+                        toast!(self.stack, gettext("The password is invalid."));
+                    }
+                    AuthType::RegistrationToken => {
+                        toast!(self.stack, gettext("The registration token is invalid."));
+                    }
+                    _ => {
+                        toast!(self.stack, gettext("An unexpected error occurred."));
+                    }
                 }
             }
 
@@ -335,6 +346,12 @@ mod imp {
             if let Some(page) = self.current_page.borrow().as_ref() {
                 if let Some(password_page) = page.downcast_ref::<AuthDialogPasswordPage>() {
                     password_page.retry();
+                } else if let Some(token_page) =
+                    page.downcast_ref::<AuthDialogRegistrationTokenPage>()
+                {
+                    token_page.retry();
+                } else if let Some(terms_page) = page.downcast_ref::<AuthDialogTermsPage>() {
+                    terms_page.retry();
                 } else if let Some(in_browser_page) = page.downcast_ref::<AuthDialogInBrowserPage>()
                 {
                     in_browser_page.retry();
@@ -385,17 +402,57 @@ mod imp {
         /// Get the page for the given state.
         ///
         /// Returns a `(page, default_widget)` tuple.
-        async fn page(&self, state: &AuthState) -> Result<(gtk::Widget, gtk::Widget), AuthError> {
-            if state.stage == AuthType::Password {
-                let page = AuthDialogPasswordPage::new();
-                let default_widget = page.default_widget().clone();
-                Ok((page.upcast(), default_widget))
-            } else {
-                let fallback_url = self.fallback_url(state).await?;
-                let page = AuthDialogInBrowserPage::new(fallback_url);
-                let default_widget = page.default_widget().clone();
-                Ok((page.upcast(), default_widget))
+        async fn page(
+            &self,
+            state: &AuthState,
+            uiaa_info: &UiaaInfo,
+        ) -> Result<(gtk::Widget, gtk::Widget), AuthError> {
+            match state.stage {
+                AuthType::Password => {
+                    let page = AuthDialogPasswordPage::new();
+                    let default_widget = page.default_widget().clone();
+                    Ok((page.upcast(), default_widget))
+                }
+                AuthType::RegistrationToken => {
+                    let page = AuthDialogRegistrationTokenPage::new();
+                    let default_widget = page.default_widget().clone();
+                    Ok((page.upcast(), default_widget))
+                }
+                AuthType::Terms => {
+                    // The policies are in the params of the flow, not of the
+                    // stage, so they arrive with the info rather than the state.
+                    let params = match uiaa_info.params::<LoginTermsParams>(&AuthType::Terms) {
+                        Ok(Some(params)) => params,
+                        Ok(None) => {
+                            warn!("Terms stage without policies, falling back to the web page");
+                            return self.in_browser_page(state).await;
+                        }
+                        Err(error) => {
+                            warn!("Could not deserialize the policies of the terms stage: {error}");
+                            return self.in_browser_page(state).await;
+                        }
+                    };
+
+                    let page = AuthDialogTermsPage::new(&params.policies);
+                    let default_widget = page.default_widget().clone();
+                    Ok((page.upcast(), default_widget))
+                }
+                _ => self.in_browser_page(state).await,
             }
+        }
+
+        /// Get the page sending the user to the homeserver's own fallback page
+        /// for the given state.
+        ///
+        /// Returns a `(page, default_widget)` tuple.
+        async fn in_browser_page(
+            &self,
+            state: &AuthState,
+        ) -> Result<(gtk::Widget, gtk::Widget), AuthError> {
+            let fallback_url = self.fallback_url(state).await?;
+            let page = AuthDialogInBrowserPage::new(fallback_url);
+            let default_widget = page.default_widget().clone();
+            Ok((page.upcast(), default_widget))
         }
 
         /// Get the fallback URL for the given state.
@@ -474,6 +531,27 @@ mod imp {
                         { session: state.session }
                     ))
                 }
+                AuthType::RegistrationToken => {
+                    let token = self
+                        .current_page
+                        .borrow()
+                        .as_ref()
+                        .and_then(|page| page.downcast_ref::<AuthDialogRegistrationTokenPage>())
+                        .ok_or_else(|| {
+                            error!(
+                                "Could not get token because current page is not registration token page"
+                            );
+                            AuthError::Unknown
+                        })?
+                        .token();
+
+                    AuthData::RegistrationToken(assign!(RegistrationToken::new(token), {
+                        session: state.session
+                    }))
+                }
+                AuthType::Terms => AuthData::Terms(assign!(Terms::new(), {
+                    session: state.session
+                })),
                 AuthType::Dummy => AuthData::Dummy(assign!(Dummy::new(), {
                     session: state.session
                 })),
@@ -588,7 +666,14 @@ impl AuthState {
         // Now get the first stage that we support.
         let mut next_stage = None;
         for stage in stages {
-            if matches!(stage, AuthType::Password | AuthType::Sso | AuthType::Dummy) {
+            if matches!(
+                stage,
+                AuthType::Password
+                    | AuthType::Sso
+                    | AuthType::Dummy
+                    | AuthType::RegistrationToken
+                    | AuthType::Terms
+            ) {
                 // We found a supported stage.
                 next_stage = Some(stage);
                 break;
