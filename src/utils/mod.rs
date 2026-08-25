@@ -626,9 +626,27 @@ impl From<NamedTempFile> for File {
 }
 
 /// The directory where to put temporary files.
+///
+/// Not `glib::user_runtime_dir()` on Android. GTK's glue sets `XDG_DATA_DIRS`,
+/// `XDG_DATA_HOME`, `XDG_CONFIG_DIRS` and `XDG_CONFIG_HOME`, and nothing else,
+/// so that call falls through to `glib::user_cache_dir()` and then to
+/// `$HOME/.cache` — the fallback [`DataType::base_dir_path`] already describes,
+/// reached here by a path that had not been changed with it.
+///
+/// The symptom was not an error message. Every media file the viewer opened
+/// failed with `ENOENT`, the viewer took its empty state, and a picture opened
+/// from a room showed as a black screen.
 static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
-    let mut dir = glib::user_runtime_dir();
-    dir.push(PROFILE.dir_name().as_ref());
+    #[cfg(target_os = "android")]
+    let dir = DataType::Cache.dir_path().join("tmp");
+
+    #[cfg(not(target_os = "android"))]
+    let dir = {
+        let mut dir = glib::user_runtime_dir();
+        dir.push(PROFILE.dir_name().as_ref());
+        dir
+    };
+
     dir.into_boxed_path()
 });
 
@@ -639,9 +657,13 @@ static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
 pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io::Error> {
     RUNTIME
         .spawn_blocking(move || {
+            // `create_dir_all`, not `create_dir`: the parent is not guaranteed to
+            // exist. On Android nothing has created the cache directory when the
+            // first attachment is opened, and `create_dir` fails with `ENOENT`
+            // rather than creating it.
             let dir = TMP_DIR.as_ref();
             if !dir.exists()
-                && let Err(error) = fs::create_dir(dir)
+                && let Err(error) = fs::create_dir_all(dir)
                 && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
             {
                 return Err(error);
