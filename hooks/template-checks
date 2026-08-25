@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Check that every widget template agrees with the Rust that builds it.
+
+A `.blp` and the `.rs` that loads it are two halves of one class, and nothing
+joins them up: the compiler sees the template as a string, and the failures
+land at runtime, on the widget's first construction, as an abort or a panic.
+That is exactly the bug that stopped `ContentSpace` from being drawn at all on
+24 August 2026, and it passed clippy, the tests and every one of `checks-bin`'s
+fifteen checks on the way in.
+
+Four ways the halves can disagree, all of them fatal and none of them visible
+until the widget is built:
+
+  * a `=> $handler()` in the template with no `#[template_callback] fn handler`
+    in the Rust;
+  * a template with handlers whose `class_init` never calls
+    `Self::bind_template_callbacks`;
+  * a template using one of `TemplateCallbacks`' global closures — the
+    `$string_not_empty(…)` kind — whose `class_init` never calls
+    `TemplateCallbacks::bind_template_callbacks`;
+  * a `#[template_child]` naming an object the template does not declare.
+
+The `.blp` is paired with its `.rs` through the resource path each declares, not
+through the file name, because several templates are loaded by a file of another
+name.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+WORKSPACE = Path(__file__).resolve().parent.parent
+SRC = WORKSPACE / "src"
+RESOURCE_PREFIX = "/org/gnome/Fractal/ui/"
+
+# `clicked => $foo() swapped;`
+HANDLER_RE = re.compile(r"=>\s*\$([a-z_][a-z0-9_]*)\s*\(")
+# `visible: bind $string_not_empty(…) as <bool>;`
+BIND_CALL_RE = re.compile(r"bind\s+\$([a-z_][a-z0-9_]*)\s*\(")
+# `child: Gtk.ListBox children_list {`, `$Avatar avatar {`, `Adw.Bin foo {`
+OBJECT_ID_RE = re.compile(
+    r"^\s*(?:[a-z][a-z0-9-]*:\s*)?\$?[A-Z][A-Za-z0-9_.]*\s+([a-z_][a-z0-9_]*)\s*\{",
+    re.MULTILINE,
+)
+# `menu room_row_menu {` — a menu can be a template child too.
+MENU_ID_RE = re.compile(r"^\s*menu\s+([a-z_][a-z0-9_]*)\s*\{", re.MULTILINE)
+TEMPLATE_RESOURCE_RE = re.compile(r'#\[template\(\s*resource\s*=\s*"([^"]+)"', re.DOTALL)
+FN_NAME_RE = re.compile(r"\bfn\s+([a-z_][a-z0-9_]*)")
+
+
+def global_callbacks() -> set[str]:
+    """The closures `TemplateCallbacks` makes available to every template."""
+    path = SRC / "utils" / "template_callbacks.rs"
+    if not path.is_file():
+        return set()
+
+    text = path.read_text()
+    names = set()
+
+    for match in re.finditer(r"#\[template_callback[^\]]*\]", text):
+        rest = text[match.end() :]
+        name = FN_NAME_RE.search(rest)
+        if name:
+            names.add(name.group(1))
+
+    return names
+
+
+class RustTemplate:
+    """The Rust half of a widget template."""
+
+    def __init__(self, path: Path, resource: str, text: str):
+        self.path = path
+        self.resource = resource
+        self.text = text
+        self.callbacks = self._callbacks()
+        self.children = self._children()
+        # Two spellings of the same call are in use across the tree.
+        self.binds_own_callbacks = (
+            "Self::bind_template_callbacks" in text
+            or "Self::Type::bind_template_callbacks" in text
+        )
+        self.binds_global_callbacks = (
+            "TemplateCallbacks::bind_template_callbacks" in text
+        )
+
+    def _callbacks(self) -> set[str]:
+        names = set()
+
+        for match in re.finditer(r"#\[template_callback[^\]]*\]", self.text):
+            name = FN_NAME_RE.search(self.text[match.end() :])
+            if name:
+                names.add(name.group(1))
+
+        return names
+
+    def _children(self) -> set[str]:
+        names = set()
+
+        for match in re.finditer(r"#\[template_child[^\]]*\]", self.text):
+            # The field follows the attribute, possibly behind a visibility.
+            rest = self.text[match.end() :]
+            field = re.search(r"(?:pub(?:\([^)]*\))?\s+)?([a-z_][a-z0-9_]*)\s*:", rest)
+            if field:
+                names.add(field.group(1))
+
+        return names
+
+
+def rust_templates() -> dict[str, RustTemplate]:
+    """Every Rust file that loads a template, by the resource it loads."""
+    templates = {}
+
+    for path in sorted(SRC.rglob("*.rs")):
+        text = path.read_text()
+
+        for match in TEMPLATE_RESOURCE_RE.finditer(text):
+            templates[match.group(1)] = RustTemplate(path, match.group(1), text)
+
+    return templates
+
+
+def resource_of(blueprint: Path) -> str:
+    """The resource path a blueprint compiles to."""
+    relative = blueprint.relative_to(SRC).with_suffix(".ui")
+    return RESOURCE_PREFIX + relative.as_posix()
+
+
+def strip_comments(text: str) -> str:
+    """Blueprint text with its comments taken out."""
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    return re.sub(r"//[^\n]*", "", text)
+
+
+def check() -> list[str]:
+    globals_available = global_callbacks()
+    rust = rust_templates()
+    problems = []
+
+    for blueprint in sorted(SRC.rglob("*.blp")):
+        text = strip_comments(blueprint.read_text())
+
+        if not re.search(r"^\s*template\s", text, re.MULTILINE):
+            # Menus and other loose definitions, with no widget behind them.
+            continue
+
+        resource = resource_of(blueprint)
+        relative = blueprint.relative_to(WORKSPACE)
+        template = rust.get(resource)
+
+        if template is None:
+            problems.append(
+                f"{relative}: no Rust file declares "
+                f'`#[template(resource = "{resource}")]`'
+            )
+            continue
+
+        rust_relative = template.path.relative_to(WORKSPACE)
+
+        handlers = set(HANDLER_RE.findall(text))
+        for handler in sorted(handlers - template.callbacks):
+            problems.append(
+                f"{relative}: `{handler}` is not a "
+                f"`#[template_callback]` in {rust_relative}"
+            )
+
+        if handlers and not template.binds_own_callbacks:
+            problems.append(
+                f"{rust_relative}: {relative} has signal handlers, so "
+                "`class_init` must call `Self::bind_template_callbacks`"
+            )
+
+        used_globals = {
+            name
+            for name in BIND_CALL_RE.findall(text)
+            if name not in template.callbacks
+        }
+        for name in sorted(used_globals - globals_available):
+            problems.append(
+                f"{relative}: `{name}` is neither a `#[template_callback]` in "
+                f"{rust_relative} nor one of `TemplateCallbacks`' closures"
+            )
+
+        if used_globals & globals_available and not template.binds_global_callbacks:
+            problems.append(
+                f"{rust_relative}: {relative} uses "
+                f"{', '.join('`' + n + '`' for n in sorted(used_globals))}, so "
+                "`class_init` must call "
+                "`TemplateCallbacks::bind_template_callbacks`"
+            )
+
+        ids = set(OBJECT_ID_RE.findall(text)) | set(MENU_ID_RE.findall(text))
+        for child in sorted(template.children - ids):
+            problems.append(
+                f"{rust_relative}: `#[template_child] {child}` names nothing "
+                f"in {relative}"
+            )
+
+    return problems
+
+
+def main() -> int:
+    problems = check()
+
+    if not problems:
+        print("\033[32mEvery widget template agrees with its Rust.\033[0m")
+        return 0
+
+    count = len(problems)
+    noun = "disagreement" if count == 1 else "disagreements"
+    print(f"\033[1;31merror:\033[0m {count} template {noun}:")
+    for problem in problems:
+        print(f"  {problem}")
+    print()
+    print("Each of these is a crash the moment the widget is built.")
+
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
