@@ -38,7 +38,7 @@ whole route hung on.
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
-| S4 — GStreamer | **steps 0 and 1 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 19 plugins are registered, and **a voice message gets a duration and a waveform on the emulator** through the same code every other platform runs. Measured for opus-in-ogg, wav, mp3 and flac. Still missing: AAC, playback (GTK is built with `media-gstreamer = 'disabled'`) and all video. The plan and every measurement are in `doc/android-media-plan.md` |
+| S4 — GStreamer | **steps 0, 1 and 2 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 28 plugins are registered, and **audio and video both play on the emulator** through the same code every other platform runs. A voice message plays through OpenSL ES; an mp4 previews, sends and plays in the timeline, as does one that was already in the room. GTK's own `media-gstreamer` turned out not to be needed: `GstMediaStream`, written for macOS, covers Android too. Still missing: hardware decode via `androidmedia`, and calls. The plan and every measurement are in `doc/android-media-plan.md` |
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
@@ -1004,6 +1004,7 @@ sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground servi
 sh build-aux/android/patch-gtk-input-purpose.sh  # likewise; see the input purpose
 sh build-aux/android/patch-gtk-ime-selection.sh  # likewise; see S9
 sh build-aux/android/patch-gtk-ime-reset.sh      # likewise; see S9
+sh build-aux/android/patch-gtk-jni-attach.sh     # likewise; see the attachment crash below
 $PW build
 ```
 
@@ -1029,6 +1030,68 @@ is the cheap and correct habit.
 
 About eleven minutes from cold on this machine, most of it Cargo. The APK lands in
 `.pixiewood/android/app/build/outputs/apk/debug/app-x86_64-debug.apk`.
+
+### Picking an attachment crashed the application, and sending one never worked
+
+_Found and fixed 25 August 2026_ (`3600ca3c`, `f1765ed`), while trying to get a video into a room
+to test S4 step 2. Two separate defects, neither about media, both hit by every attachment of every
+type. They are here rather than in `doc/android-media-plan.md` for that reason.
+
+#### The crash: a `GFile` vfunc on a thread with no JVM
+
+```text
+F libc  : Fatal signal 11 (SIGSEGV), fault addr 0x0
+F DEBUG : #00 libgtk-4.so (gdk_android_content_file_query_info+497)
+F DEBUG : #01 libgio-2.0.so (g_file_query_info+376)
+F DEBUG : #02 libgio-2.0.so (query_info_async_thread+94)
+F DEBUG : #03 libgio-2.0.so (g_task_thread_pool_thread+66)
+```
+
+`gdk_android_get_env` returns NULL for a thread that was never attached to the JVM, and its callers
+dereference that unchecked — 29 of them in `gdkandroidcontentfile.c` alone, beginning with
+`(*env)->PushLocalFrame`. **GIO guarantees those callers run on such a thread**:
+`GdkAndroidContentFile` implements the synchronous `GFile` vfuncs and none of the `_async` ones, so
+GIO supplies the async variants by running the synchronous vfunc in a `GTask` thread pool. This is
+not a race — it is the documented design of both halves, meeting badly.
+
+Patched downstream as `build-aux/android/patch-gtk-jni-attach.sh`: `gdk_android_get_env` attaches
+the thread rather than returning NULL, with a `pthread_key` destructor to detach at thread exit,
+since ART aborts a thread that exits while still attached. That fixes all 29 call sites at once,
+where using the existing `gdk_android_get_thread_env` guard would mean editing each. The script's
+header carries the argument in full, including why the classloader difference does not matter here.
+
+#### The send: a `content://` file has no usable URI and no real path
+
+With the crash gone, sending still failed, and the thumbnail with it:
+
+```text
+W Commune : commune::utils::media::video: Could not initialize pipeline for video thumbnail
+E Commune : Could not send file: Invalid attachment data
+```
+
+One cause, two faces. A file the picker returns is a `content://` URI:
+
+* **`GStreamer` cannot resolve it.** `GdkAndroidContentFile` is not a GVfs backend, so nothing
+  handles the scheme. The preview, `GstDiscoverer` and the thumbnailer are all given `file.uri()`.
+* **`g_file_get_path` lies about it.** GTK answers with `Uri.getPath()`, so
+  `content://…/document/video%3A1000000034` becomes `/document/video:1000000034` — absolute-looking
+  and pointing at nothing. `AttachmentSource::File` does `fs::read` on it and reports
+  `InvalidAttachmentData`, which is that error exactly.
+
+Fixed in Commune rather than in GTK, because a `GFile` that is genuinely not on the filesystem is
+allowed to exist and the caller has to cope: `send_file_inner` checks the path rather than trusting
+it, and copies the file once when it is not real. Everywhere else the path is real and nothing is
+copied.
+
+Two consequences of the copy, both found by testing rather than by reading:
+
+* The upload takes the **bytes**, not the copy's path, because `matrix-sdk` names an attachment
+  after the file it read and the copy has a generated name.
+* The dialog is **told** the content type rather than sniffing it, because a temporary file has no
+  extension for `g_content_type_guess`, and every attachment previewed as "File not Viewable".
+
+The wider point: **this port has never been able to send an attachment**, of any type. It went
+unnoticed because the crash arrived first and looked like the whole story.
 
 ### Every attachment open was black, and it was a directory that did not exist
 

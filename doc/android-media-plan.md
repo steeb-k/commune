@@ -491,3 +491,100 @@ The 24 MiB the APK grew is almost all symbol table, not code — see the packagi
 * **Video.** Thumbnails and metadata need `videoconvertscale` and a decoder; `androidmedia` is the
   interesting option, and it needs the same JNIEnv and Context that GTK's own backend does. That is
   one problem, not two, and it is the next step.
+
+## Step 2 — playback and video, 25 August 2026
+
+Done, and the plan above was wrong about what it would take. It assumed GTK's own
+`media-gstreamer` backend, and therefore assumed the JNIEnv and Context that pixiewood's cross file
+cites for keeping that backend disabled. Neither is needed for playback.
+
+### The backend we needed was already in the repository
+
+`src/components/media/gst_media_stream.rs` is a `gst_play::Play` rendering into
+`gtk4paintablesink`, wrapped as a `gtk::MediaStream`. It was written for macOS, whose conda-forge
+GTK has no media backend either, and its module comment says as much. Android is the same
+situation, so it is the same code: the gates that said macOS now say macOS or Android, and
+`GtkVideo` and `GtkMediaControls` work on top of it unchanged.
+
+That also explains a symptom that looked unrelated. **Audio rows showed `00:00` because that label
+is the position, not the duration, and it never moved** — `gtk::MediaFile` had no backend, so
+pressing play did nothing and reported nothing. Nothing was wrong with the waveform work from step
+1; there was simply no player under it.
+
+### Six plugins, and one built here
+
+| plugin | for |
+| --- | --- |
+| `libav` | the decoders, in software. Also closes the AAC gap step 1 left open |
+| `videoconvertscale`, `videoparsersbad` | what `decodebin3` reaches for around a decoder |
+| `volume`, `autodetect`, `opensles` | the output side |
+| `audiofx`, `deinterlace` | `scaletempo` and `deinterlace`, which `GstPlay` and `playsink` ask for by name and warn about without |
+
+`opensles` is worth a line of its own: OpenSL ES is an NDK API, so unlike MediaCodec it needs
+nothing from Java, and audio output cost no JNI work at all.
+
+`gtk4paintablesink` is not in the tarball and cannot be — it is the one plugin in this application
+that depends on GTK, so Cerbero has nothing to build it against. Every other platform finds it at
+run time; the GNOME runtime ships it and so does conda-forge. Here it is built as a crate,
+`gst-plugin-gtk4`, and registered statically like everything else. Same plugin, same source.
+
+### Two things the link needed
+
+`.la` files carry bare `-l` flags as well as archive paths, and the resolver dropped every one of
+them. Most are already on the line — `-llog`, `-landroid`, `-lm`, `-latomic` come with the NDK, and
+`-liconv` is answered by bionic — but nothing else asks for `-lOpenSLES`, and without it
+`openslessink` does not link. The resolver now passes through the ones on a named list, so a plugin
+needing a system library says so through its own `.la` rather than through a special case in
+`meson.build`.
+
+And `gst_modules` needs one entry per GStreamer crate the Rust builds against, plus
+`gstreamer-gl-1.0` for `gst-plugin-gtk4`, which depends on the `gstreamer-gl` crate unconditionally
+and so references `gst_gl_*` whatever its features say. Nothing in the plugin list reaches those
+archives. A missing entry is a wall of undefined symbols at the end of a seven-minute build, which
+is how this was found.
+
+### `androidmedia` has a known obstacle and a known way through
+
+The hardware codecs stay out, but no longer for the reason the plan gave. `androidmedia` wants
+`gst_android_get_application_class_loader`, which GStreamer core defines in `gstandroid.c.o` — and
+that object also defines `JNI_OnLoad`, which GTK already defines in `gdkandroidruntime.c`.
+Referencing the one drags in the other and the link fails on a duplicate symbol. **Nothing pulling
+that object in is exactly why static GStreamer links at all today.**
+
+The way through, untried: an archive member is only extracted to satisfy an _undefined_ symbol, so
+defining `gst_android_get_application_class_loader` ourselves leaves `gstandroid.c.o` unreferenced
+and the collision never happens. `gdk_android_initialize` is handed the application classloader,
+which is precisely what that function has to return. `libav` decodes the same formats in software
+today, so this is a performance and battery question rather than a correctness one.
+
+### What was measured
+
+On the emulator, in a real room:
+
+* An opus voice message **plays**. OpenSL ES opens a track, the position counts up and the waveform
+  fills behind it.
+* An mp4 picked from storage previews in the send dialog, uploads, and **plays in the timeline**
+  with a correct `00:05` duration badge — so `GstDiscoverer` and the thumbnailer ran too.
+* A video that was already in the room plays as well, which is the receiving path rather than the
+  sending one.
+* `GStreamer 1.28.6, 28 plugins registered`, and no missing-element warnings.
+
+### Two defects found on the way, neither of them GStreamer
+
+Both are recorded in `doc/android.md`, because neither is about media.
+
+1. **Picking any attachment crashed the application**, in `gdk_android_content_file_query_info`.
+   Patched downstream as `build-aux/android/patch-gtk-jni-attach.sh`.
+2. **Sending any attachment failed**, because a `content://` file has no URI GStreamer can resolve
+   and no path that exists.
+
+The second is worth stating plainly: **sending attachments had never worked on this port**, for any
+file type. Video was only what happened to be tried.
+
+### Not done
+
+* **Hardware decode**, per `androidmedia` above.
+* **A GL path for `gtk4paintablesink`.** Its GL features are off, so frames go through system memory
+  rather than staying on the GPU. Nothing was measured about the cost; a 320x240 test clip proves
+  nothing about a phone camera video.
+* **Calls**, which are `gst_sdp` and `gst_webrtc` and their own step.
