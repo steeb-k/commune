@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 5e34a831</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 4e6c0041</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -884,7 +884,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3 class='wrecks'>Leaving one, and not re-filing one</h3><p><em>Destructive. Leave it until the rest of this section is done — it takes away the spaces the checks above need, and getting them back means rejoining <code>#test-space:localhost</code> and <code>#sub-space:localhost</code> from Explore.</em></p><div class="chk" data-id="kdca0cfe22c" data-state="" data-lead="The space row has a menu at all.">
+</div><h3 class='wrecks'>Leaving one, and not re-filing one</h3><p><em>Destructive. Leave it until the rest of this section is done — it takes away the spaces the checks above need. <code>testing/local-homeserver.sh up</code> puts them back: it rejoins what can be rejoined and rebuilds <code>Sub Space</code> if it has to, because <strong>a room whose last member leaves is destroyed and cannot be re-entered by anybody</strong>. Bob is seeded into both spaces to stop that, and the repair exists for the servers that lost one before he was.</em></p><div class="chk" data-id="kdca0cfe22c" data-state="" data-lead="The space row has a menu at all.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
