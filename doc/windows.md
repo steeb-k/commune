@@ -421,8 +421,8 @@ wrong, and nothing about it has been shown to be right either — this test says
 Worth fixing regardless: what reaches the user is "Could not open device", naming a backend nobody
 chose. "No microphone was found" is what happened.
 
-**GSK renders through software (Cairo), and this may be the same RDP session being the same kind of
-witness against itself.** `GSK_DEBUG=renderer` names the reason directly:
+**GSK renders through software (Cairo), and it is not RDP being RDP.** `GSK_DEBUG=renderer` names
+the reason directly:
 
 ```text
 Not using Vulkan: platform is not Wayland
@@ -433,13 +433,25 @@ Using renderer 'GskCairoRenderer' for surface 'GdkWin32Toplevel'
 ```
 
 Both of GTK's accelerated renderers need DirectComposition on win32, and this session does not have
-it, so every frame is drawn on the CPU rather than the GPU. Nothing about this is broken — Commune
-runs, and ran through the whole snapping and emoji work above, entirely on the software path without
-incident — but it is a real difference in how the app performs, and the same session that has no
-microphone (above) is exactly the kind of session that might not be handed GPU compositing either.
-Untested: whether DirectComposition is available **from the physical console**, which is the only way
-to tell a genuine gap in the port from another thing this machine's Remote Desktop session does not
-have.
+it, so every frame is drawn on the CPU rather than the GPU. The first guess was that this was one
+more thing an RDP session does not get, the way the microphone above is — RDP's device redirection
+is well known for being partial. That guess does not survive the obvious test. Reconnecting over
+RustDesk, which drives the real console session rather than opening a new one — confirmed with
+`WTSGetActiveConsoleSessionId()`, not the session's own `$env:SESSIONNAME`, which turned out to be
+stale, still reading the RDP connection this shell was originally opened under — changed nothing:
+`GskCairoRenderer` still. So this is not a remoting artifact at all. It is either this machine's own
+graphics stack (a VM without a DirectComposition-capable adapter would look exactly like this,
+locally or remoted) or a genuine gap in the port, and telling those apart needs a machine confirmed
+to have DirectComposition to compare against — not merely physical presence at this one, which the
+test above already stands in for. Nothing about this is broken in the meantime — Commune runs, and
+ran through the whole snapping and emoji work above, entirely on the software path without incident
+— but it is a real difference in how the app performs.
+
+One thing RustDesk did change: unlike RDP, it hands over the **real webcam**, confirmed working.
+That is a device-redirection question, not a compositor one, and driving the real console session is
+exactly what fixes it — the same reasoning the microphone finding above already predicts. Audio has
+not been checked the same way yet; if it also works over RustDesk, calls can finally be tested
+without physical presence at all.
 
 **The message search index cannot live on disk, because a room ID is not a legal file name.**
 Every sync used to log, once per room:
