@@ -188,6 +188,12 @@ sidebar {
   .padded-button {
     min-width: 64px;
   }
+
+  // The expander that opens a subspace sits beside the row rather than
+  // inside it, so the row's own padding would push it out of line.
+  treeexpander {
+    padding-right: 6px;
+  }
 }
 
 .explore-servers-popover list {

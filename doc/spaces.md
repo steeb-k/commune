@@ -6,10 +6,9 @@ behind it, and what to check when rebasing onto a new Fractal release. See
 `fork.md` for why none of this goes upstream.
 
 **The module is finished.** Every event it defines is read and written: a
-space can be made, found, opened, browsed, joined and left; a room can be put
-into one, taken back out, and asked which spaces hold it. What is left under
-_Not done_ is a list of things the specification calls optional and one
-interface decision, each with the reason it was left.
+space can be made, found, opened, browsed to any depth, joined and left; a room
+can be put into one, taken back out, and asked which spaces hold it. What is
+left under _Not done_ is two annotations the specification calls optional.
 
 ## Scope of slice 1 — stop hiding them
 
@@ -124,24 +123,23 @@ row is a `RemoteRoom` with no conversion in between.
 
 Three things in it are decisions rather than mechanics:
 
-* **`max_depth: 1`.** The endpoint walks the tree depth-first and will happily
-  return grandchildren. There is nowhere to put them — see _one level only_
-  below — so asking for them would mean drawing rooms in a flat list that are
-  not in this space at all.
-* **The space's own chunk is skipped, but read first.** The first room in the
-  response is the space itself, and its `children_state` is the only place in
-  the response that carries the `via` servers — and the `suggested` flag — from
-  each `m.space.child` event.
-  Without them a room on another homeserver is unjoinable, so the events are
-  read into a map before the rows that need them are built. The space's chunk
-  only appears in the first batch, which is why the map is a field and not a
-  local.
+* **No `max_depth`.** The endpoint walks the whole tree depth-first and returns
+  every room with the `m.space.child` events of the spaces among them, so one
+  walk has everything. That is what makes opening a subspace cost nothing —
+  see _Opening a subspace_ below. Asking level by level would have meant a
+  request per expansion, or a request per subspace row merely displayed.
+* **Every chunk is read, and the summaries and the edges are kept apart.** A
+  room's summary says what it is; a space's `children_state` says what it holds
+  and how to reach each one. The `via` servers and the `suggested` flag belong
+  to the **edge**, not to the room — a room reachable from two spaces can be
+  described differently by each — so they are stored per parent rather than on
+  the room.
 * **Ten batches of twenty, and then it stops.** A space can hold thousands of
   rooms and the endpoint paginates; something has to end the loop. When the
   cap is hit the list says so — `truncated_label`, _"This space holds more
   rooms than are listed here."_ — rather than quietly looking complete.
 
-### The rows are `PublicRoomRow`, and the name stays wrong
+### The name of the row stays wrong
 
 A space child needs an avatar, a name, a topic, an alias, a member count, a
 _Space_ marker and a View/Join button off `RoomListRoomInfo`. That is
@@ -158,17 +156,32 @@ The `.explore .padded-button` and `.public-rooms row` rules are scoped to the
 Explore page, so `.space-children` in `_session_view.scss` repeats them. If the
 row ever grows a third home, that is the point to hoist them.
 
-### One level only
+### Opening a subspace
 
-A subspace is drawn as an ordinary row. Joined, its button says _View_, and
-viewing it selects it in the sidebar, which lands on _its_ space page with
-_its_ children. So the tree is walkable, one page at a time, without a tree
-widget.
+A subspace has an expander. Opening it draws the rooms inside it underneath,
+indented, and they have expanders of their own. Nothing is requested: the whole
+hierarchy arrived in the first walk, and `SpaceChild::children` slices it.
 
-Real nesting — an expander per subspace, children drawn underneath — needs
-`GtkTreeListModel` and a `GtkTreeExpander` row type, neither of which exists
-anywhere in the tree. That is deferred, and it is deferred rather than
-forgotten.
+`GtkTreeListModel` and `GtkTreeExpander` are the first of their kind in this
+tree. Three things about them are worth knowing before touching this again:
+
+* **`GtkTreeListModel` asks once.** It calls the create function to learn
+  whether a row can be opened, and remembers the answer. A row told "nothing
+  in here" stays a leaf for good — which is why the rows are built only after
+  the whole walk finishes, rather than growing batch by batch as they used to.
+  A subspace whose own chunk had not arrived yet would be a permanent leaf.
+* **`autoexpand` is off.** A space can hold hundreds of rooms across its
+  subspaces, and none of them was asked for.
+* **A hierarchy is a graph, not a tree.** A room can be in several spaces, a
+  space can be in several spaces, and nothing in the protocol forbids a loop.
+  Each row therefore carries the spaces walked through to reach it, and a
+  space already among them is not offered again — otherwise `A → B → A` opens
+  forever. The create function is given the item and not the path, which is
+  why the path is on the item.
+
+The rows are still `PublicRoomRow`, now inside a `GtkTreeExpander`. A room in
+two places in the hierarchy is drawn in both, which is what the hierarchy says
+and what every other client does.
 
 ### `world_readable` is kept now
 
@@ -352,9 +365,11 @@ the answer.
 6. `explore/public_room_row.rs` is `pub(super)` and has a second caller now. An
    upstream change to what `set_room` expects breaks the space page too, and
    the compiler will only point at Explore's copy of the call.
-7. `SpaceChildren` skips the first room in the `/hierarchy` response by
-   comparing room IDs, not by position. If a server ever omits the space's own
-   chunk the list still works; it just loses the `via` servers with it.
+7. The hierarchy is built from the `m.space.child` events rather than from the
+   order of the `rooms` array, so a server that returns them in a different
+   order changes nothing. A room in `children_state` with no summary in
+   `rooms` is skipped: the server could not reach it and there is nothing to
+   draw.
 8. `add_room_to_space` and `remove_room_from_space` treat a failed
    `m.space.parent` as a warning. If a merge makes it an error, putting a room
    into a space stops working for anybody who is not also an administrator of
@@ -370,9 +385,6 @@ the answer.
 
 ## Not done
 
-* **Nesting deeper than one level.** A subspace is a row that opens its own
-  page. Drawing its rooms underneath it needs `GtkTreeListModel` and
-  `GtkTreeExpander`, which nothing in the tree uses yet.
 * ~~Peeking a `world_readable` room.~~ Built on top of slice 2's flag; see
   `peeking.md`. `PublicRoomRow` carries the _Preview_ button, so it is on every
   space page row as well as in Explore.
@@ -381,19 +393,15 @@ the answer.
   not appear, because `m.space.child` is a state event in a room whose timeline
   is not being watched. Reopening the space asks again — and so does _Try
   Again_ after a failure.
-* **Nesting deeper than one level, again.** A subspace is a row that opens its
-  own page. The specification says nothing about how deep a client draws;
-  this is the one interface decision on the list, and it needs
-  `GtkTreeListModel` and a `GtkTreeExpander` row type, neither of which exists
-  in the tree.
-* **`suggested` is read and not written**, and `order` is neither. Both are
-  annotations the specification marks optional: `suggested` says a space
-  recommends a room, and the badge for it is drawn; `order` decides the
-  sequence of a space's children, and the server already applies it —
-  `/hierarchy` returns children ordered by `order`, then timestamp, then room
-  ID, and the listing takes that order as given. Offering to _set_ either
-  needs a per-child control on a row shared with Explore, where it would make
-  no sense. Neither is a protocol obligation.
+* **`suggested` and `order` are read and not written.** Both are annotations
+  the specification marks optional. `suggested` says a space recommends a
+  room, and the badge for it is drawn. `order` decides the sequence of a
+  space's children, and the listing sorts by it — `order`, then the time the
+  event was sent, then the room ID, which is the algorithm the specification
+  gives; the events in `children_state` are a set, so the sort cannot be left
+  to the server the way it can for the flat `rooms` array. Offering to _set_
+  either needs a per-child control on a row shared with Explore, where it
+  would make no sense, and neither is a protocol obligation.
 * **The picker replaces a whole allow list.** A room restricted to several
   spaces keeps all of them until somebody picks a space, and then keeps one.
   Expressing "these three and not that one" needs a multi-select picker, and
