@@ -77,6 +77,7 @@ Windows notification backend after all, which changes what M5 is.
 | Signing | `build-aux/windows/sign.ps1`, Azure Trusted Signing; skipped without metadata |
 | `matrix:` URLs | Works cold and warm; the installer writes the registry key |
 | Notifications | Our own WinRT toasts; avatar, buttons, withdrawal, and clicks when closed |
+| Window snapping | Native Win32 frame subclass; Aero Snap, Win+Arrow and Snap Layouts all work — `src/utils/windows_frame.rs` |
 
 ## The GTK environment
 
@@ -537,41 +538,61 @@ One wrinkle from all of this living under one AUMID per profile: `LocalServer32`
 Run the development build and then click a notification from the installed one, and the
 development build opens. Harmless, and only confusing if you have both.
 
-**The window does not snap, and getting it to is a project rather than a fix.**
+**The window snaps.** Aero Snap, Win+Arrow and Snap Layouts all work. Three earlier attempts at
+this failed in three different ways — shrinking to 410×344 and walking off the screen, then
+drifting by thousands of pixels on successive snaps, both traced to GTK keeping its shadow
+**inside** the `HWND` so a client-side-decorated (CSD) toplevel and Windows' own frame recompute
+against each other forever. The route that actually works gives up CSD entirely rather than fight
+it.
 
-Aero Snap, Win+Arrow and Snap Layouts are not features an application asks for: Windows offers
-them to any window whose styles say it can be resized. GTK's win32 backend gives a client-side
-decorated toplevel `WS_VISIBLE | WS_CLIPSIBLINGS | WS_MINIMIZEBOX` and nothing else, so Windows
-decides ours is fixed-size and declines. Three ways of changing its mind were tried and measured,
-and each failed differently:
+`Window` (`src/window.rs`) is a plain, server-side-decorated `gtk::ApplicationWindow` **on Windows
+only** — `GTK_CSD=0` in `src/main.rs`, and `src/window-windows.blp` in place of `src/window.blp`,
+rooting the template at `Gtk.ApplicationWindow` instead of `Adw.ApplicationWindow` — with a small
+Win32 subclass, `src/utils/windows_frame.rs`, installed on the `HWND` before the window is shown.
+It answers `WM_NCCALCSIZE` to keep the system's left/right/bottom resize borders while dropping the
+caption (the header bar stands in for it, drawn in the client area same as always), and
+`WM_NCHITTEST` to say which client pixels are the drag region (`HTCAPTION`, so Windows does the
+move: drag-to-snap, double-click maximise, the system menu) and the maximise button
+(`HTMAXBUTTON`, the only thing that raises the Snap Layouts flyout). GDK gives an SSD toplevel the
+right frame styles on its own and never takes them back, so nothing here has to fight the
+every-layout style recomputation that sank the CSD attempts.
 
-| Attempt | Result |
-| --- | --- |
-| `WS_MAXIMIZEBOX \| WS_SYSMENU` | Geometry fine. **Still no snapping** — the missing style is the one that means resizable. |
-| Add `WS_THICKFRAME` | Snapping works. Windows reserves a non-client frame, GDK expects the client area to be the whole window, and the two recompute against each other until the window has shrunk to 410×344 and walked off the screen. |
-| Add a `WM_NCCALCSIZE` handler giving the client area back | Size stops shrinking. The window now **drifts**: 17064, then 19731, then 21684 on successive snaps. |
+`AdwApplicationWindow` cannot take this route: `gtk_window_set_titlebar()` enables CSD
+unconditionally regardless of `GTK_CSD`, and `AdwApplicationWindow` always sets an invisible
+titlebar gizmo at construction and aborts if it is ever replaced. There is no flag for it — the
+window has to not be one.
 
-There is also a second, quieter fact. GTK keeps its shadow **inside** the `HWND`: the window's
-visible content starts 25 pixels below the top of the window rectangle. `DwmGetWindowAttribute`
-reports no frame at all, because the shadow is GTK's own drawing rather than a system frame — so
-measuring with DWM says everything is fine when it is not. A snapped window would fill its tile
-with the `HWND` and sit visibly inset from it.
+**The accepted cost**: `adw_dialog_present()` puts a dialog inside its parent window only when
+that window is an `AdwWindow` or `AdwApplicationWindow`. With a plain `gtk::ApplicationWindow`,
+every `present()` call in `src/` — account settings, room details, the account chooser, every
+alert — becomes a separate floating window instead of an in-window sheet. This is libadwaita's
+documented fallback rather than a break: those windows keep their own header bar and CSD, and are
+modal, transient and non-resizable. It is a real, visible, Windows-only difference in how the app
+feels, taken on purpose in exchange for snapping.
 
-Two more things worth knowing before anyone tries again. GDK recomputes the window styles from its
-own idea of the decorations **every time it lays the surface out**, so setting them once at
-`realize` or after `map` is undone moments later; they have to be re-asserted on each layout.
-And `AdwApplicationWindow` cannot take the other route — the one where `GTK_CSD=0` gives the
-window a real frame and Windows handles all of this itself — because it forces client-side
-decorations and aborts if its title bar is removed. That route needs a plain
-`gtk::ApplicationWindow`, which means giving up `AdwToolbarView`, the toast overlay and the
-breakpoints, Windows-only, in a file that has to rebase against upstream Fractal.
+Two bugs only showed up once a real header bar was on screen, and both trace to the same cause:
+Commune gives every page of `main_stack` its own header bar (loading, login, session, error), where
+the implementation this was ported from — a single-window browser shell — has exactly one.
 
-So the honest position is that snapping needs the whole Chromium-style custom frame —
-`WM_NCCALCSIZE`, `WM_NCHITTEST` for the drag region and the maximise button, and the position
-handling the drift above is a symptom of. That is a known, solved problem; there is a worked
-implementation of it in a sibling project on the author's machine
-(`~/webkit`, `browser/crates/ephemera-host-win32/src/frame.rs`) to read rather than rediscover. It
-is simply a larger piece of work than it looks, and the port does not otherwise need it.
+* Hovering the maximise button could light up, or fail to clear, a **different page's** maximise
+  button: a naive search for a `.maximize`-classed button found the first one anywhere in the
+  window rather than the one actually under the pointer, since GTK keeps every page's widgets built
+  whether or not that page is visible. Fixed by having the hit tester stash the specific button it
+  resolved (from `window.pick()`, which already only returns what is actually hit-testable), and
+  having the hover watcher act on that one instead of searching the tree afresh.
+* Moving the pointer from minimize or close straight into maximise left them looking hovered.
+  Crossing from client territory into the maximise button's non-client rectangle does not reliably
+  deliver GTK the crossing notification it needs to clear a button's own prelight state, so
+  `window.rs` clears the sibling window-control buttons by hand whenever the maximise button
+  reports itself hovered.
+* `GtkWindowControls`'s own maximise/restore icon swap was not observed to update on this
+  configuration — plausibly because essentially nothing ships a server-side-decorated toplevel on
+  Windows for it to have been exercised against. `Window` now sets the icon and tooltip itself on
+  every `notify::maximized`, rather than trust it.
+
+There is a worked reference implementation this was ported from, in a sibling project on the
+author's machine: `~/webkit`, `browser/crates/ephemera-host-win32/src/frame.rs`, ported against the
+`windows` crate rather than its hand-rolled bindings since Commune already depends on it.
 
 **A release build has no console.** `src/main.rs` sets `windows_subsystem = "windows"` only when
 `debug_assertions` is off, so a development build keeps the console that `tracing` writes to.
@@ -597,10 +618,6 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
-* **Window snapping**, which is deliberately not attempted rather than merely absent. Three
-  approaches were measured and each broke the window in its own way; see
-  [What differs from Linux](#what-differs-from-linux) for what happened and what it would really
-  take.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
   format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
   the embedded icon has been confirmed present in the executable but not seen in a taskbar.
@@ -642,3 +659,12 @@ rebase, in rough order:
 * `build.rs` — a file upstream does not have at all, so a rebase will not conflict with it, but
   the `Cargo.toml` build-dependency and the cargo-machete ignore that go with it are in files
   upstream edits constantly.
+* `src/window.rs` — the `cfg`'d parent type, template resource and `glib::wrapper!` block that make
+  `Window` a plain `gtk::ApplicationWindow` on Windows. A rebase that touches this file's structure
+  can silently collapse it back to the single `adw::ApplicationWindow` path; nothing fails to
+  compile if that happens; the window just stops snapping.
+* `src/ui-blueprint-resources.in` — one line, `window-windows.blp`, in a file upstream edits
+  constantly by adding and removing blueprints of its own.
+* `src/window-windows.blp` has no upstream counterpart to conflict with, so it drifts out of step
+  with `src/window.blp` silently rather than loudly: a change to the shared page content (the
+  stack, its four pages) has to be made in both files by hand.

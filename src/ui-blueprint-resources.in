@@ -159,4 +159,5 @@ session_view/sidebar/room_row.blp
 session_view/sidebar/section_row.blp
 session_view/sidebar/verification_row.blp
 shortcuts-dialog.blp
+window-windows.blp
 window.blp

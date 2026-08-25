@@ -194,16 +194,24 @@ security-framework = "3"
 
 # Windows-only dependencies.
 [target.'cfg(target_os = "windows")'.dependencies]
+# `win32` gives its `HWND` (and friends) as the `windows` crate's own types,
+# rather than its fallback newtype, so `windows_frame` needs no conversion.
+gdk4-win32 = { version = "0.11", features = ["win32"] }
 windows = { version = "0.62", features = [
     "Data_Xml_Dom",
     "Foundation",
     "UI_Notifications",
     "Win32_Foundation",
+    "Win32_Graphics_Gdi",
     "Win32_Security_Credentials",
     "Win32_System_Com",
     "Win32_System_Registry",
+    "Win32_UI_Controls",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_Notifications",
     "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
 ] }
 # The `#[implement]` macro that builds the notification activator expands to
 # paths in `windows_core`, so it has to be nameable at the crate root rather
