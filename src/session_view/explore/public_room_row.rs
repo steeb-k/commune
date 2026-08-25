@@ -195,9 +195,9 @@ mod imp {
                 )
             } else if room.can_knock() {
                 (
-                    gettext("Request an Invite"),
+                    gettext("Request Access"),
                     gettext_f(
-                        "Request an invite to {room_name}",
+                        "Ask to be let into {room_name}",
                         &[("room_name", &room_name)],
                     ),
                 )

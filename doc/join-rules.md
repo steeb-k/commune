@@ -102,6 +102,40 @@ the switch on `knock_restricted_join_rule` when the membership rule is
 selected, and on nothing extra for the invite rule. The version notice at the
 top of the page now shows for either shortfall.
 
+## One word for it, and that word is access
+
+Knocking had two vocabularies. The asking side said **invite** — _Request an
+Invite_, _Invite Requests_, _Allow Invite Requests_, _Requested an Invite_ —
+and the refusing side said **access**: _Deny Access to {user}?_, _Deny Access_,
+_Could not deny access to user_. Both were upstream's, in the same feature, on
+adjacent buttons.
+
+Worse, the button that accepted a request said **_Invite_**, full stop, beside
+one that said _Deny Request_. It is only ever shown for somebody who has
+knocked, so "invite" was never the right word there: it named what the protocol
+does — a knock is answered with an `m.room.member` invite — rather than what
+the person is doing, which is answering a request.
+
+It is all _access_ now, because that is what the person on either end is
+thinking about, and because the deny side was already using it:
+
+| Was | Is |
+| --- | --- |
+| Request an Invite | **Request Access** |
+| Invite | **Accept Request** |
+| Deny Request | Deny Request |
+| Requested an Invite | **Requested Access** |
+| Invite Request(s) | **Access Request(s)** |
+| Allow Invite Requests | **Allow Access Requests** |
+
+`SidebarSectionName::InviteRequest` keeps its name: the variant is serialised
+into the session settings, and only what it displays changed.
+
+The same words serve both directions on purpose. The sidebar section holds
+rooms **you** have knocked on; the members page holds people who have knocked
+on **yours**. "Access Requests" reads correctly either way, which "Invite
+Requests" also did — that part was never the problem.
+
 ## The dead switch
 
 `update_knock_sensitive()` replaces the inline sensitivity in
@@ -160,3 +194,7 @@ space producing no rule at all.
 3. `RoomCategoryFilter` is exported from `session::sidebar_data` now. Upstream
    keeps it private to the sidebar; a merge that re-privatises it breaks the
    picker with a visibility error, which at least fails loudly.
+4. **Fifteen strings about knocking were rewritten**, across seven files, from
+   _invite_ to _access_. A merge takes upstream's wording back without
+   complaint, since nothing about it fails to compile — the table above is the
+   record of what they should say.

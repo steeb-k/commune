@@ -572,9 +572,19 @@ Not spaces, but the same bug and found with it: a knocked room is drawn in an
 _Invite Requests_ section and its row had no menu either, so the request could
 not be retracted from the sidebar.
 
-* [ ] **Knock on a room** — `#knock-room:localhost` from Explore — and then
-      **right-click its sidebar row**: the menu should offer _Retract_.
+* [ ] **Knock on a room** — `#knock-room:localhost` from Explore, as carol —
+      and then **right-click its sidebar row**: the menu should offer
+      _Retract_.
 * [ ] **Retracting works** and the row goes.
+* [ ] **It is called access, not an invite, all the way through.** Carol's
+      button reads _Request Access_; her sidebar section reads _Access
+      Requests_; alice sees _Access Requests_ in the room's members page, the
+      profile says _Requested Access_, and the two buttons there read _Accept
+      Request_ and _Deny Request_. The word _invite_ should not appear
+      anywhere in the flow. Reported on 24 August 2026 as two vocabularies in
+      one feature, with the accept button reading _Invite_ beside a _Deny
+      Request_.
+* [ ] **_Allow Access Requests_** is what the switch in _Who Can Join_ says.
 
 ### Leaving one, and not re-filing one
 
