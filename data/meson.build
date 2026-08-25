@@ -108,4 +108,19 @@ if host_machine.system() == 'linux'
     )
 endif
 
+# Fontconfig: the `emoji` generic-family alias.
+#
+# MSYS2's fontconfig ships without one, so the dedicated lookup Pango does
+# for a codepoint carrying an explicit U+FE0F (colour presentation) finds
+# nothing and falls back to a hex-code box, even for emoji that render fine
+# on their own -- see `data/fontconfig/70-commune-emoji.conf`. Installed
+# into MSYS2's own `conf.d`, which its `fonts.conf` already includes, so
+# nothing else has to be told to read it.
+if host_machine.system() == 'windows'
+    install_data(
+        'fontconfig' / '70-commune-emoji.conf',
+        install_dir: prefix / get_option('sysconfdir') / 'fonts' / 'conf.d',
+    )
+endif
+
 subdir('resources')
