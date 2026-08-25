@@ -142,9 +142,9 @@ template $UserPage: Adw.NavigationPage {
                 selected-power-level-changed => $set_power_level() swapped;
               }
 
+              // The title is set in the code: this is only ever shown for
+              // somebody who has knocked, and it says so.
               $LoadingButtonRow invite_button {
-                // Translators: In this string, 'Invite' is a verb.
-                title: _("Invite");
                 activated => $invite_user() swapped;
               }
 

@@ -425,7 +425,7 @@ mod imp {
             let label = if room_list_info.local_room().is_some() {
                 gettext("View")
             } else if room.can_knock() {
-                gettext("Request an Invite")
+                gettext("Request Access")
             } else {
                 gettext("Join")
             };

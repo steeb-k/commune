@@ -94,7 +94,7 @@ impl fmt::Display for SidebarSectionName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let label = match self {
             SidebarSectionName::VerificationRequest => gettext("Verifications"),
-            SidebarSectionName::InviteRequest => gettext("Invite Requests"),
+            SidebarSectionName::InviteRequest => gettext("Access Requests"),
             SidebarSectionName::Invited => gettext("Invited"),
             SidebarSectionName::ServerNotice => gettext("Server Notices"),
             // Translators: A space is a collection of rooms, presented as a
