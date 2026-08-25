@@ -719,8 +719,8 @@
           believing the space's own <code>m.space.child</code> over the room's claim about
           itself, which is what the specification asks for and what stops any room announcing
           itself as part of anywhere. The spec page moved Spaces into its implemented column
-          with that. What is left is not protocol: nesting is walked a page at a time rather
-          than drawn as a tree, which is where Nheko is still ahead.
+          with that. Nesting was the last thing left, and it is drawn now: a subspace
+          expands in place, as deep as the space goes.
         </p>
       </div>
       <div class="note">
@@ -961,7 +961,7 @@
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
       c: { commune:1, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"The whole module: a sidebar section, a page listing the rooms inside with a button to open or join each, a picker, making a space, putting a room into one, taking it back out, and a room saying which spaces hold it — believing the space over the room, as the spec asks. A subspace opens its own page rather than expanding: there is no tree, which is the one thing Nheko still does that this does not.",
+      cn: { commune:"The whole module: a sidebar section, a page listing the rooms inside with a button to open or join each, a picker, making a space, putting a room into one, taking it back out, and a room saying which spaces hold it — believing the space over the room, as the spec asks. A subspace expands in place, as deep as the space goes, with no request per level — the whole hierarchy arrives in one walk and each row knows the way down to it, so a hierarchy that points back at itself stops rather than opening forever.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },

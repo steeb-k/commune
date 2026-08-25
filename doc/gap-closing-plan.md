@@ -174,9 +174,23 @@ instruction those were built rather than logged, in one commit past the plan:
   levels. Only joined spaces can answer, which is the protocol and not a gap.
 * `suggested` is read and drawn; `order` is applied by the server.
 
-Spaces is in the implemented column of `spec-gaps.html` now, and what is left
-in `spaces.md` under _Not done_ is one interface decision (no tree) and two
-optional annotations nobody has asked to write.
+Then the last interface decision was taken rather than left: **a subspace
+expands in place on the space page**, drawing the rooms inside it underneath.
+Four options were put up — expand in place, a space as a sidebar filter, a
+sidebar tree, or leave it — and the first was chosen: it finishes the browsing
+story without reshaping what the sidebar is.
+
+That changed the fetch. `/hierarchy` is asked without `max_depth` now, so one
+walk carries the whole tree and opening a subspace costs no request. The rows
+are built only once the walk finishes, because `GtkTreeListModel` asks whether
+a row can be opened exactly once and remembers the answer — a subspace whose
+chunk had not arrived would have been a leaf for good. Each row carries the
+spaces walked through to reach it, because a Matrix hierarchy is a graph and
+`A → B → A` would otherwise open forever.
+
+Spaces is in the implemented column of `spec-gaps.html`, and what is left in
+`spaces.md` under _Not done_ is two annotations the specification calls
+optional and nobody has asked to write.
 
 **Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
 
@@ -205,7 +219,8 @@ drift: they go in the feature's own commit.**
 | 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
 | 8a. Space picker, restricted rule | `b60baf66`, `640b1576` | done, **unseen** |
 | 8b. `m.space.child` | `37d318aa`, `9db20bfa` | done, **unseen** |
-| Finishing the module | (this round) | done, **unseen** |
+| Finishing the module | `b3deab0d`, `aec0710a` | done, **unseen** |
+| Subspaces expand in place | (this round) | done, **unseen** |
 | 9–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
@@ -481,6 +496,9 @@ This alone takes the row from `·` to `◐` and is the smallest honest thing.
   with the existing section expander (`sidebar_data/item.rs:77-114`). Arbitrary nesting means
   adopting `GtkTreeListModel` plus a `GtkTreeExpander` row type in `sidebar/row.rs:150-220` —
   defer that, and say in the ledger that it is deferred.
+  _(Deferred at the time, built afterwards: subspaces expand in place on the
+  space page. `GtkTreeListModel` came in there rather than in the sidebar,
+  which is untouched.)_
 
 ### 7. Peek a `world_readable` room
 

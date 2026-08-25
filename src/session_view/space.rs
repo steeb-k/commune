@@ -4,7 +4,7 @@ use tracing::error;
 
 use super::explore::public_room_row::PublicRoomRow;
 use crate::{
-    session::{RemoteRoom, Room, SpaceChildren},
+    session::{Room, SpaceChild, SpaceChildren},
     utils::{LoadingState, TemplateCallbacks, matrix::MatrixIdUri},
 };
 
@@ -77,18 +77,36 @@ mod imp {
                 }
             ));
 
-            self.children_list
-                .bind_model(Some(&self.children.list()), |item| {
-                    let row = PublicRoomRow::new();
+            // The whole hierarchy is already in hand, so a subspace opens
+            // without a request. `autoexpand` stays off: a space can hold
+            // hundreds of rooms across its subspaces, and none of them was
+            // asked for.
+            let tree = gtk::TreeListModel::new(self.children.list(), false, false, |item| {
+                item.downcast_ref::<SpaceChild>()
+                    .and_then(SpaceChild::children)
+                    .map(Cast::upcast)
+            });
 
-                    if let Some(room) = item.downcast_ref::<RemoteRoom>() {
-                        row.set_room(room);
-                    } else {
-                        error!("Space children list contains something else than a room: {item:?}");
+            self.children_list.bind_model(Some(&tree), |item| {
+                let expander = gtk::TreeExpander::builder()
+                    .indent_for_depth(true)
+                    .indent_for_icon(false)
+                    .build();
+
+                if let Some(row) = item.downcast_ref::<gtk::TreeListRow>() {
+                    expander.set_list_row(Some(row));
+
+                    if let Some(child) = row.item().and_downcast::<SpaceChild>() {
+                        let room_row = PublicRoomRow::new();
+                        room_row.set_room(child.room());
+                        expander.set_child(Some(&room_row));
                     }
+                } else {
+                    error!("Space hierarchy contains something else than a room: {item:?}");
+                }
 
-                    row.upcast()
-                });
+                expander.upcast()
+            });
 
             self.children.list().connect_items_changed(clone!(
                 #[weak(rename_to = imp)]

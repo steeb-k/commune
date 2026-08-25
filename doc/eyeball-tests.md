@@ -375,12 +375,11 @@ Slice 2. All of this is on the space page, below the topic.
       needs a revisit to update, the handler is not connected.
 * [ ] **Sub Space is marked as a space** — the dimmed grid icon and the word
       _Space_ — and its button behaves like any other room's.
-* [ ] **Sub Space opens its own page.** _View_ it (join it first if need be)
-      and you land on a second space page, for Sub Space, with its own —
-      empty — room list. This is how nesting is walked, one page at a time.
-* [ ] **An empty space says so.** Sub Space has no children, so its page
-      should read "There are no rooms in this space yet." rather than showing a
-      spinner or an empty heading.
+* [ ] **Sub Space opens its own page too.** _View_ it (join it first if need
+      be) and you land on a second space page, for Sub Space.
+* [ ] **An empty space says so.** Sub Space has no children of its own, so its
+      page should read "There are no rooms in this space yet." rather than
+      showing a spinner or an empty heading.
 * [ ] **Each row shows what it should**: avatar, name, topic where there is
       one, canonical alias where there is one, and a member count. A room with
       no topic must not leave a gap.
@@ -404,6 +403,33 @@ Slice 2. All of this is on the space page, below the topic.
       the `via` servers are being read: a real space holds rooms on other
       homeservers, and joining one of those from the list is what fails if the
       `m.space.child` events were not parsed.
+
+### Opening a subspace in place
+
+* [ ] **A subspace has an expander** — a triangle to the left of its row —
+      and an ordinary room does not. Put a room inside `Sub Space` from another
+      client first, or with _Add to Space…_, so it has something to show.
+* [ ] **Opening it draws its rooms underneath, indented**, without a spinner
+      and without a pause. The whole hierarchy arrives in one walk, so this
+      should be instant even on a slow homeserver — if it stalls, something is
+      fetching per expansion.
+* [ ] **A subspace of a subspace expands too**, as deep as the space goes.
+* [ ] **A space with nothing in it has no expander.** `Sub Space` before you
+      put anything in it must be a plain row.
+* [ ] **Closing it puts the rooms away** and the row keeps its own button.
+* [ ] **A loop does not open forever.** From another client, add `Test Space`
+      as a child of `Sub Space`, so `Test Space → Sub Space → Test Space`.
+      Opening `Sub Space` should show `Test Space` as a **plain row with no
+      expander** — it is already one of the spaces above it. Without that
+      guard it would open forever, and this is the check most worth doing.
+* [ ] **A room in two spaces appears in both**, which is what the hierarchy
+      says. Add `Public Room` to `Sub Space` as well and open both.
+* [ ] **The order is the specification's.** `m.space.child` carries an
+      `order`; set one on two of `Test Space`'s children from another client
+      and confirm they sort by it, before the ones without, and that the rest
+      sort oldest-event-first.
+* [ ] **The buttons still work at depth.** _Join_ and _Preview_ on a row three
+      levels down behave the same as at the top.
 
 ### Leaving one, and not re-filing one
 
