@@ -752,8 +752,9 @@ macOS, so the Control-key bindings the Linux build has are already right here.
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
 * **M4**: the rest of polish. Dark mode already follows the system with no work and the clock
-  format is read from the setting Windows keeps for it; drag and drop and IME are unverified, and
-  the embedded icon has been confirmed present in the executable but not seen in a taskbar.
+  format is read from the setting Windows keeps for it; drag and drop has been checked by hand and
+  works, IME is still unverified, and the embedded icon has been confirmed present in the executable
+  but not seen in a taskbar.
 * **M5 is finished**, and nothing is outstanding on it. Banners carry the sender's avatar; a
   click opens the room whether or not Commune was running; an incoming call raises Answer and
   Decline, and Decline was seen declining the call at both ends; a notification leaves the
