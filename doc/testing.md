@@ -116,6 +116,28 @@ left, and the seed step only ever creates. It writes its marker only when
 every call succeeded, so a partial run is tried again rather than remembered
 as finished.
 
+### `verify` before a session
+
+```sh
+./testing/local-homeserver.sh verify
+```
+
+It reports and never repairs — `up` repairs. It checks every account can log
+in, every room has the join rule and the directory visibility the checks
+assume, that both spaces hold bob as well as alice, that carol is in no space,
+and that `Test Space` still holds its six rooms.
+
+It exists because the faults arrived one at a time in the middle of somebody
+else's testing session — rooms never published, a space with nobody left in it,
+no account free to be invited — each a minute to fix and an hour of patience.
+Run it first and they all arrive at once.
+
+**A room has to be published to be found, and finding it is half the point.**
+The first pass published the six rooms whose join rule was public and stopped
+there, which left out the two knock rooms and the restricted one. Those exist
+to be found and then knocked on, or refused — a knock room the directory will
+not admit to cannot be knocked on by anybody.
+
 ### Leaving a room you are alone in destroys it
 
 There is no way back into a room whose last member has left: not by alias, not

@@ -796,9 +796,16 @@ seed_directory() {
 
   log "Rejoining and publishing the rooms that should be findable…"
 
-  # Every room whose join rule is public, and the two spaces. Bobs Room and
-  # Peekable Room are bob's, so he is the one who can publish them.
-  for key in space sub_space public_room readable_room peekable_room bob_room; do
+  # Everything somebody is meant to *find* rather than be shown. That is not
+  # just the public rooms: a knock room exists to be knocked on, and you cannot
+  # knock on a room the directory will not admit to. Same for the two
+  # restricted ones — the point of them is to be found and then refused or
+  # allowed depending on the space you are in.
+  #
+  # Left out: Invite Room, Encrypted Room, ACL Room and Link Room, which are
+  # reached from alice's own sidebar and have nothing to do with discovery.
+  for key in space sub_space public_room readable_room peekable_room bob_room \
+             knock_room knock_restricted restricted; do
     room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
     [ -n "$room" ] || continue
 
@@ -904,6 +911,150 @@ repair_sub_space() {
     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
 
   log "Sub Space is back."
+}
+
+# Check the harness is in the state the eyeball checks assume.
+#
+# This exists because the faults kept arriving one at a time, in the middle of
+# somebody else's testing session: rooms that were never published, a space
+# with nobody left in it, no account free to be invited. Each was a minute to
+# fix and an hour of somebody's patience. This says all of it at once.
+#
+# It reports and never repairs — `up` repairs. A red line here means run `up`,
+# and if `up` does not clear it, the harness is wrong rather than the server.
+verify() {
+  local alice bob carol problems=0
+
+  good() { printf '  \033[32mok  \033[0m %s\n' "$1"; }
+  bad() { printf '  \033[1;31mfail\033[0m %s\n' "$1"; problems=$((problems + 1)); }
+
+  echo ""
+  echo "Accounts"
+  for who in alice bob carol admin; do
+    case $who in
+      alice) pass=$ALICE_PASS ;;
+      bob) pass=$BOB_PASS ;;
+      carol) pass=$CAROL_PASS ;;
+      admin) pass=admin-is-testing ;;
+    esac
+    if [ -n "$(login "$who" "$pass")" ]; then
+      good "@$who:localhost can log in"
+    else
+      bad "@$who:localhost cannot log in"
+    fi
+  done
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  carol=$(login carol "$CAROL_PASS")
+  [ -n "$alice" ] || { echo ""; return 1; }
+
+  if [ ! -f "$STATE" ]; then
+    bad "nothing has been seeded yet"
+    echo ""
+    return 1
+  fi
+
+  echo ""
+  echo "Rooms — join rule and whether Explore can find them"
+
+  # key|expected join rule|expected directory|who can read its state
+  local row key want_rule want_dir owner token room rule dir
+  for row in \
+    "space|public|public|alice" \
+    "sub_space|public|public|alice" \
+    "public_room|public|public|alice" \
+    "readable_room|public|public|alice" \
+    "peekable_room|public|public|bob" \
+    "bob_room|public|public|bob" \
+    "knock_room|knock|public|alice" \
+    "knock_restricted|knock_restricted|public|alice" \
+    "restricted|restricted|public|alice" \
+    "invite_room|invite|private|alice" \
+    "encrypted_room|invite|private|alice" \
+    "acl_room|invite|private|alice" \
+    "link_room|invite|private|alice"
+  do
+    IFS='|' read -r key want_rule want_dir owner <<< "$row"
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+
+    if [ -z "$room" ]; then
+      bad "$key is not in seeded.json"
+      continue
+    fi
+
+    case $owner in bob) token=$bob ;; *) token=$alice ;; esac
+
+    rule=$(curl -sf "$HS/_matrix/client/v3/rooms/$room/state/m.room.join_rules" \
+      -H "Authorization: Bearer $token" 2>/dev/null | jq -r '.join_rule // "unreadable"' )
+    dir=$(curl -sf "$HS/_matrix/client/v3/directory/list/room/$room" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '.visibility // "?"' )
+
+    if [ "$rule" = "$want_rule" ] && [ "$dir" = "$want_dir" ]; then
+      good "$key — $rule, $dir"
+    else
+      bad "$key — join rule $rule (want $want_rule), directory $dir (want $want_dir)"
+    fi
+  done
+
+  echo ""
+  echo "Who is where"
+
+  local members
+  for key in space sub_space; do
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+    [ -n "$room" ] || continue
+
+    members=$(curl -sf "$HS/_matrix/client/v3/rooms/$room/joined_members" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '.joined | keys | join(", ")')
+
+    case "$members" in
+      *alice*bob*|*bob*alice*)
+        good "$key holds alice and bob" ;;
+      "")
+        bad "$key has nobody left in it — a room like that cannot be rejoined" ;;
+      *)
+        bad "$key holds $members — bob has to be there or alice leaving destroys it" ;;
+    esac
+  done
+
+  # Carol is the only person who can be invited to a space, so she must not be
+  # in one.
+  room=$(jq -r '.space // empty' "$STATE")
+  if [ -n "$room" ] && [ -n "$carol" ]; then
+    if curl -sf "$HS/_matrix/client/v3/rooms/$room/joined_members" \
+      -H "Authorization: Bearer $carol" >/dev/null 2>&1; then
+      bad "carol is in Test Space — she is who the invite checks invite"
+    else
+      good "carol is in no space, so she can be invited to one"
+    fi
+  fi
+
+  echo ""
+  echo "The hierarchy"
+
+  room=$(jq -r '.space // empty' "$STATE")
+  if [ -n "$room" ]; then
+    local children
+    children=$(curl -sf "$HS/_matrix/client/v1/rooms/$room/hierarchy?limit=30" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '[.rooms[].room_id] | length')
+
+    if [ "${children:-0}" -ge 7 ]; then
+      good "Test Space holds $((children - 1)) rooms"
+    else
+      bad "Test Space holds ${children:-0} entries, expected seven including itself"
+    fi
+  fi
+
+  echo ""
+  if [ "$problems" -eq 0 ]; then
+    printf '\033[32mThe harness is in the state the checks expect.\033[0m\n\n'
+    return 0
+  fi
+
+  printf '\033[1;31m%s to put right\033[0m — run `up`, which repairs all of these.\n\n' \
+    "$problems"
+  return 1
 }
 
 # --------------------------------------------------------------- notices ----
@@ -1445,6 +1596,10 @@ summary() {
   Then run  ./testing/local-homeserver.sh reports  to see what arrived.
   ────────────────────────────────────────────────────────────────────
 
+  Before a testing session:  ./testing/local-homeserver.sh verify
+  It says whether every room, account and membership the eyeball checks
+  assume is actually there. `up` repairs whatever it finds.
+
 EOF
 }
 
@@ -1464,6 +1619,10 @@ case "${1:-up}" in
     seed_directory
     send_notice || true
     summary
+    ;;
+  verify)
+    need curl; need jq
+    verify
     ;;
   turn)
     need podman; need curl; need jq
