@@ -16,8 +16,18 @@
 //! # Supported formats
 //!
 //! BMP, GIF (animated), ICO, JPEG, PNG (including APNG), TIFF and WebP
-//! (animated). **SVG, HEIC, AVIF and JXL are not supported** and report
-//! [`Error::UnknownFormat`], which the UI surfaces as "Image format not
+//! (animated) are decoded by the `image` crate.
+//!
+//! Anything it does not recognise is handed to **`GdkPixbuf`**, which is
+//! already here — GTK loads every icon in the application through it — and
+//! which brings whatever loaders the platform installed with it. On the GTK
+//! stacks this port uses that is SVG, AVIF and HEIC/HEIF, none of which the
+//! `image` crate reads. A pixbuf-decoded image is always a still: the fallback
+//! exists to show a picture that would otherwise be an error, not to animate
+//! one.
+//!
+//! What is left over — **JXL**, and anything else with no loader installed —
+//! reports [`Error::UnknownFormat`], which the UI surfaces as "Image format not
 //! supported".
 
 use std::{
@@ -29,7 +39,7 @@ use std::{
     time::Duration,
 };
 
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
 use image::{
     AnimationDecoder, DynamicImage, Frames, ImageDecoder, ImageError as ImageCrateError,
     ImageFormat, ImageReader, RgbaImage, metadata::Orientation,
@@ -88,9 +98,22 @@ impl Loader {
     }
 }
 
+/// Work out what the image is and how to get frames out of it.
+///
+/// The `image` crate is asked first, and `GdkPixbuf` picks up whatever it does
+/// not recognise. Both ways of not recognising something arrive here as
+/// [`Error::UnknownFormat`]: either the format could not be guessed at all, or
+/// it was guessed and the decoder for it is not compiled in.
+fn probe(data: Arc<[u8]>) -> Result<Image, Error> {
+    match probe_encoded(data.clone()) {
+        Err(error) if error.is_unknown_format() => probe_pixbuf(data),
+        result => result,
+    }
+}
+
 /// Read the header of the image to work out its format, orientation and
 /// natural dimensions, and start streaming its frames if it is animated.
-fn probe(data: Arc<[u8]>) -> Result<Image, Error> {
+fn probe_encoded(data: Arc<[u8]>) -> Result<Image, Error> {
     let reader = ImageReader::new(Cursor::new(data.clone()))
         .with_guessed_format()
         .map_err(|error| Error::Read(error.to_string()))?;
@@ -114,13 +137,52 @@ fn probe(data: Arc<[u8]>) -> Result<Image, Error> {
 
     Ok(Image {
         inner: Arc::new(ImageInner {
-            data,
-            format,
-            orientation,
+            source: FrameSource::Encoded {
+                data,
+                format,
+                orientation,
+            },
             width,
             height,
             scale: OnceLock::new(),
             animation,
+        }),
+    })
+}
+
+/// Decode the image with `GdkPixbuf`, for a format the `image` crate does not
+/// read.
+///
+/// Whether this succeeds depends on the loaders installed beside the GTK stack
+/// in use, which is the point: the SVG loader is already required for the
+/// application's own icons, and the platform's other loaders come along with
+/// it at no cost to us.
+fn probe_pixbuf(data: Arc<[u8]>) -> Result<Image, Error> {
+    // `from_owned` rather than a copy: the encoded image can be large, and the
+    // `Arc` is exactly what `glib::Bytes` wants to hold on to.
+    let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from_owned(data));
+
+    let pixbuf = gdk_pixbuf::Pixbuf::from_stream(&stream, gio::Cancellable::NONE)
+        // A loader that is not installed and a file that is corrupt are the
+        // same error here, and the honest answer to both is that we could not
+        // read it.
+        .map_err(|_| Error::UnknownFormat)?;
+
+    // JPEGs inside HEIF containers carry the same orientation tag as any
+    // other, and pixbuf will apply it but does not do so by itself.
+    let pixbuf = pixbuf.apply_embedded_orientation().unwrap_or(pixbuf);
+
+    let raw = RawFrame::from_pixbuf(&pixbuf);
+    let (width, height) = (raw.width, raw.height);
+
+    Ok(Image {
+        inner: Arc::new(ImageInner {
+            source: FrameSource::Pixbuf(raw),
+            width,
+            height,
+            scale: OnceLock::new(),
+            // Still, always. See `FrameSource::Pixbuf`.
+            animation: None,
         }),
     })
 }
@@ -162,14 +224,30 @@ pub(crate) struct Image {
     inner: Arc<ImageInner>,
 }
 
+/// Where the frames of an image are decoded from.
+enum FrameSource {
+    /// The `image` crate, decoding the encoded bytes on demand.
+    Encoded {
+        /// The encoded image.
+        data: Arc<[u8]>,
+        /// The format of the encoded image.
+        format: ImageFormat,
+        /// The orientation to apply to every decoded frame.
+        orientation: Orientation,
+    },
+    /// `GdkPixbuf`, which decoded the whole image up front because the `image`
+    /// crate did not recognise its format.
+    ///
+    /// There is no streaming here and no second frame: a pixbuf loader hands
+    /// over one picture, and the formats that reach this path — SVG, AVIF,
+    /// HEIC — are ones we only ever want one of.
+    Pixbuf(RawFrame),
+}
+
 /// The shared state of a loaded image.
 struct ImageInner {
-    /// The encoded image.
-    data: Arc<[u8]>,
-    /// The format of the encoded image.
-    format: ImageFormat,
-    /// The orientation to apply to every decoded frame.
-    orientation: Orientation,
+    /// Where a frame comes from.
+    source: FrameSource,
     /// The natural width of the image, after orientation.
     width: u32,
     /// The natural height of the image, after orientation.
@@ -264,40 +342,63 @@ impl fmt::Debug for Image {
 /// The delay is carried over untouched: scaling must not turn an animation into
 /// a still image.
 async fn scale_frame(raw: RawFrame, scale: Option<(u32, u32)>) -> Result<RawFrame, Error> {
-    let Some((width, height)) = scale else {
-        return Ok(raw);
-    };
-
-    if width >= raw.width && height >= raw.height {
+    if !needs_scaling(&raw, scale) {
         return Ok(raw);
     }
 
     RUNTIME
-        .spawn_blocking(move || {
-            let delay = raw.delay;
-
-            let Some(buffer) = RgbaImage::from_raw(raw.width, raw.height, raw.data) else {
-                return Err(Error::Decode(
-                    "the decoded frame does not match its dimensions".to_owned(),
-                ));
-            };
-
-            Ok(RawFrame::new(
-                DynamicImage::ImageRgba8(buffer).thumbnail(width, height),
-                delay,
-            ))
-        })
+        .spawn_blocking(move || scale_raw_frame(raw, scale))
         .await
         .expect("task was not aborted")
+}
+
+/// Whether scaling the given frame to the given dimensions would do anything.
+fn needs_scaling(raw: &RawFrame, scale: Option<(u32, u32)>) -> bool {
+    scale.is_some_and(|(width, height)| width < raw.width || height < raw.height)
+}
+
+/// Scale an already decoded frame down to the given dimensions, blocking.
+///
+/// The caller is responsible for being somewhere it is allowed to block;
+/// [`scale_frame`] is the same thing for somewhere that is not.
+fn scale_raw_frame(raw: RawFrame, scale: Option<(u32, u32)>) -> Result<RawFrame, Error> {
+    if !needs_scaling(&raw, scale) {
+        return Ok(raw);
+    }
+    let Some((width, height)) = scale else {
+        return Ok(raw);
+    };
+
+    let delay = raw.delay;
+
+    let Some(buffer) = RgbaImage::from_raw(raw.width, raw.height, raw.data) else {
+        return Err(Error::Decode(
+            "the decoded frame does not match its dimensions".to_owned(),
+        ));
+    };
+
+    Ok(RawFrame::new(
+        DynamicImage::ImageRgba8(buffer).thumbnail(width, height),
+        delay,
+    ))
 }
 
 /// Decode the first frame of the given image, scaled down to the given
 /// dimensions if it is bigger than them.
 fn decode_first_frame(inner: &ImageInner, scale: Option<(u32, u32)>) -> Result<RawFrame, Error> {
-    let decoder =
-        ImageReader::with_format(Cursor::new(inner.data.clone()), inner.format).into_decoder()?;
+    let (data, format, orientation) = match &inner.source {
+        FrameSource::Encoded {
+            data,
+            format,
+            orientation,
+        } => (data, *format, *orientation),
+        // Already decoded, so there is nothing to do but size it.
+        FrameSource::Pixbuf(raw) => return scale_raw_frame(raw.clone(), scale),
+    };
+
+    let decoder = ImageReader::with_format(Cursor::new(data.clone()), format).into_decoder()?;
     let mut image = DynamicImage::from_decoder(decoder)?;
-    image.apply_orientation(inner.orientation);
+    image.apply_orientation(orientation);
 
     if let Some((width, height)) = scale
         && (width < image.width() || height < image.height())
@@ -504,6 +605,55 @@ struct RawFrame {
 }
 
 impl RawFrame {
+    /// Construct a raw frame from a pixbuf.
+    ///
+    /// `GdkPixbuf` hands back rows padded to a stride of its own choosing, and
+    /// either three channels or four. This copies it into the tightly packed
+    /// RGBA that everything downstream expects, which is also the one layout
+    /// [`Frame::new`] can hand to `gdk::MemoryTexture` without another copy.
+    fn from_pixbuf(pixbuf: &gdk_pixbuf::Pixbuf) -> Self {
+        let width = u32::try_from(pixbuf.width()).unwrap_or(0);
+        let height = u32::try_from(pixbuf.height()).unwrap_or(0);
+        let stride = usize::try_from(pixbuf.rowstride()).unwrap_or(0);
+        let channels = usize::try_from(pixbuf.n_channels()).unwrap_or(0);
+
+        let pixels = pixbuf.read_pixel_bytes();
+        let mut data = Vec::with_capacity(
+            usize::try_from(width).unwrap_or(0) * usize::try_from(height).unwrap_or(0) * 4,
+        );
+
+        for row in 0..usize::try_from(height).unwrap_or(0) {
+            let start = row * stride;
+
+            for column in 0..usize::try_from(width).unwrap_or(0) {
+                let pixel = start + column * channels;
+                let Some(rgb) = pixels.get(pixel..pixel + channels) else {
+                    // A short buffer should not be possible, but a torn image
+                    // is better than a panic in a decoder.
+                    break;
+                };
+
+                data.extend_from_slice(&rgb[..3.min(rgb.len())]);
+                // Three channels means the loader had no alpha to give.
+                data.push(if channels > 3 { rgb[3] } else { u8::MAX });
+            }
+        }
+
+        // However short the copy came out, the dimensions have to describe it.
+        let rows = usize::try_from(width)
+            .ok()
+            .and_then(|width| (data.len() / 4).checked_div(width))
+            .unwrap_or(0);
+        let height = u32::try_from(rows).unwrap_or(height);
+
+        Self {
+            data,
+            width,
+            height,
+            delay: None,
+        }
+    }
+
     /// Construct a raw frame from the given decoded image.
     fn new(image: DynamicImage, delay: Option<Duration>) -> Self {
         let buffer = image.into_rgba8();
@@ -624,5 +774,70 @@ impl From<ImageCrateError> for Error {
             ImageCrateError::IoError(error) => Self::Read(error.to_string()),
             error => Self::Decode(error.to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The smallest SVG that draws something.
+    // Two hashes, because the colour in it closes a one-hash raw string.
+    const SVG: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" width="8" height="4">
+        <rect width="8" height="4" fill="#ff0000"/>
+    </svg>"##;
+
+    /// A format the `image` crate reads, so the fallback must not be reached.
+    const PNG: &[u8] = &[
+        0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, b'I', b'H', b'D', b'R', 0,
+        0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 0x1f, 0x15, 0xc4, 0x89, 0, 0, 0, 0x0a, b'I', b'D',
+        b'A', b'T', 0x78, 0x9c, 0x63, 0, 1, 0, 0, 5, 0, 1, 0x0d, 0x0a, 0x2d, 0xb4, 0, 0, 0, 0,
+        b'I', b'E', b'N', b'D', 0xae, 0x42, 0x60, 0x82,
+    ];
+
+    /// SVG is the format this fallback exists for: the `image` crate has never
+    /// read it, and every sticker set that uses it was an error message before.
+    ///
+    /// This needs GTK's type system for `GdkPixbuf`, and it needs the SVG
+    /// loader to be installed — which it must be anyway, or none of the
+    /// application's own icons would draw.
+    #[test]
+    fn an_svg_decodes_through_the_fallback() {
+        gtk::init().expect("GTK should start");
+
+        let image = probe(Arc::from(SVG)).expect("the SVG should decode");
+
+        assert_eq!(image.width(), 8);
+        assert_eq!(image.height(), 4);
+        assert!(
+            matches!(image.inner.source, FrameSource::Pixbuf(_)),
+            "an SVG should come from the pixbuf fallback"
+        );
+    }
+
+    /// And the fallback must stay a fallback: anything the `image` crate reads
+    /// has to keep going through it, animations included.
+    #[test]
+    fn a_png_does_not_reach_the_fallback() {
+        gtk::init().expect("GTK should start");
+
+        let image = probe(Arc::from(PNG)).expect("the PNG should decode");
+
+        assert!(
+            matches!(image.inner.source, FrameSource::Encoded { .. }),
+            "a PNG should be decoded by the `image` crate"
+        );
+    }
+
+    /// Something no loader anywhere will claim still reports the error the UI
+    /// knows how to show.
+    #[test]
+    fn nonsense_is_still_an_unknown_format() {
+        gtk::init().expect("GTK should start");
+
+        let error = probe(Arc::from(&b"not an image, nor anything else"[..]))
+            .expect_err("nonsense should not decode");
+
+        assert!(error.is_unknown_format());
     }
 }
