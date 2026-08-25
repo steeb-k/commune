@@ -481,6 +481,43 @@ That last one decided the route. `tauri-winrt-notification`, which is otherwise 
 is what Nullgate uses, **cannot withdraw a notification at all** — and Commune withdraws in five
 places. The `windows` crate was already a dependency, so going direct added none.
 
+**Colour emoji reactions rendered as a hex-code box, and it looked like a coverage or encoding
+problem but was neither.** `👍️`, `👎️` and `❤️` — Commune's own default quick reactions — showed as
+`01F44D`, `01F44E` and `2764` in their own little boxes: Pango's fallback for a codepoint no font
+could supply a glyph for. Segoe UI Emoji is on the system and renders every one of those glyphs
+perfectly when asked for by name, and `fc-match "emoji"` resolves cleanly to it too — both dead
+ends, because neither is the code path the running app actually takes.
+
+The gap is one specific step downstream of both of those. A codepoint followed by `U+FE0F`
+(VARIATION SELECTOR-16, requesting the colour presentation rather than the text one — which is how
+these three are actually encoded, `"\u{1F44D}\u{FE0F}"` and so on in
+`src/session/global_account_data.rs`) is resolved by Pango through a dedicated lookup of the
+**generic `emoji` font family**, not through its ordinary per-character coverage fallback. That
+lookup fails to load _any_ font on this toolchain — reproduced directly with
+`pango-view --font="emoji 24"`, independent of weight, and independent of which real font the alias
+resolves to: redirecting it at plain "Segoe UI" (no colour glyphs at all) failed exactly the same
+way. Asking for `"Segoe UI Emoji"` by its own name, meanwhile, loads fine at any size or weight.
+`fc-match` only pattern-matches a family name to a font file; it never actually loads one, which is
+why it kept disagreeing with the running app.
+
+Stripping the selector before display was the first fix tried, and it is wrong in a way that only
+shows up on the one reaction out of the three that needs the selector. `👍` and `👎` default to
+emoji presentation regardless (`Emoji_Presentation=Yes`), so removing `U+FE0F` from them changes
+nothing and they rendered correctly — appearing to confirm the fix. `❤` does not have that default;
+without the selector it fell back to a plain outline heart, trading one wrong rendering for a
+quieter one. The fix that holds for all three is naming `Segoe UI Emoji` directly as the
+`font-family` for `.reaction-chooser button` and `.reaction-key-emoji` in
+`data/resources/stylesheet/_windows.scss`, sidestepping Pango's own broken lookup rather than
+working around what it breaks.
+
+Also added, though it turned out not to be what fixed this: `data/fontconfig/70-commune-emoji.conf`,
+installed to MSYS2's `etc/fonts/conf.d` on Windows only (`data/meson.build`). MSYS2's fontconfig
+package ships no `emoji` generic-family alias at all, unlike a normal desktop Linux install — a real
+gap, and worth having closed regardless, but it is not what the reactions above needed: `fc-match`
+resolved the alias to Segoe UI Emoji the same way with or without it, since fontconfig's own
+substitution rules already found it. The failure is downstream of alias resolution, in Pango's own
+loader, which this file has no reach into.
+
 ## What differs from Linux
 
 **Data lives in one directory.** `%LOCALAPPDATA%\commune-Devel\data` and `…\cache`, rather than the

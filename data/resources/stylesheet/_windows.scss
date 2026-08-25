@@ -119,4 +119,18 @@ $window-control-width: 40px;
       min-width: $window-control-width + $window-control-bleed;
     }
   }
+
+  // A codepoint followed by U+FE0F (VARIATION SELECTOR-16, requesting emoji
+  // presentation rather than text — this is how Commune's own reactions and
+  // any reaction synced from another client are encoded) is resolved by
+  // Pango through a dedicated lookup of the generic "emoji" font family,
+  // rather than through ordinary per-character coverage fallback. On this
+  // toolchain, that lookup fails to load any font at all, whatever real font
+  // backs the alias — while naming Segoe UI Emoji directly works fine, at
+  // any weight. So it is named directly here, in the two places a reaction
+  // is drawn as text, rather than left to Pango's own choice.
+  .reaction-chooser button,
+  .reaction-key-emoji {
+    font-family: "Segoe UI Emoji";
+  }
 }
