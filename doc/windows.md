@@ -499,11 +499,14 @@ renderer works fine with DComp." Without that flag, `dcomp_device` is never init
 accelerated renderers fail their DirectComposition check regardless of what hardware or driver sits
 underneath. Tried on the development VM — `GDK_DEBUG=dcomp` is not even a recognized value on the
 `gtk4` 4.22.4-1 package this port builds against (confirmed with `GDK_DEBUG=help`, and `pacman -Sy`
-shows 4.22.4-1 is already the newest MSYS2 offers), so this specific opt-in postdates the package
-MSYS2 has built. Nothing to fix here: not a Commune bug, not a config gap, not this machine or that
-one — a GTK version gap that closes whenever MSYS2 packages a `gtk4` new enough to carry it.
-Worth trying `GDK_DEBUG=dcomp` again once that happens, with the source comment's own caveat in
-mind — upstream is hedging on GL/Vulkan-under-DComp stability, not just gatekeeping it.
+shows 4.22.4-1 is already the newest MSYS2 offers), so this specific opt-in is missing entirely, not
+just older. GTK's own `NEWS`, checked through its latest entries, does not mention DirectComposition,
+`dcomp` or this gate at all — it has not shipped in any tagged release yet, only on the development
+branch. So this is not "wait for MSYS2's next package sync"; it is "wait for a GTK release to carry
+it at all, then for MSYS2 to package that release." Nothing to fix here in the meantime: not a
+Commune bug, not a config gap, not this machine or that one. Worth trying `GDK_DEBUG=dcomp` again
+once a MSYS2 `gtk4` new enough exists, with the source comment's own caveat in mind — upstream is
+hedging on GL/Vulkan-under-DComp stability, not just gatekeeping it.
 
 Nothing about this is broken in the meantime — Commune runs, and ran through the whole snapping and
 emoji work above, entirely on the software path without incident — but it is a real difference in
