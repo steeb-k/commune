@@ -74,6 +74,7 @@ STATE=$DATA/seeded.json
 
 ALICE_PASS=alice-is-testing
 BOB_PASS=bob-is-testing
+CAROL_PASS=carol-is-testing
 
 log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
@@ -403,6 +404,11 @@ seed() {
   register admin admin-is-testing admin
   register alice "$ALICE_PASS" plain
   register bob "$BOB_PASS" plain
+  # Carol exists and joins nothing. Bob has to be inside both spaces so that
+  # alice leaving one does not destroy it, which leaves nobody to invite —
+  # you cannot invite somebody who is already a member, and the invite subpage
+  # correctly refuses to offer them.
+  register carol "$CAROL_PASS" plain
 
   local alice bob
   alice=$(login alice "$ALICE_PASS")
