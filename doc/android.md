@@ -43,7 +43,7 @@ whole route hung on.
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
-| S9 — the space-bar cursor slide | **fixed and confirmed on the emulator**, not yet on hardware. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
+| S9 — the space-bar cursor slide | **fixed, and confirmed on a Pixel 9a on 25 August 2026**. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
 
 ## Where things are
 
@@ -2080,6 +2080,11 @@ Regression, same rig: typing `testing` on Gboard's keys and deleting three chara
 backspace gives `test`, the room list filters to `testchat`, the suggestion strip offers
 `test`/`rest`/`testing`, and `inputType` is still `0x1`. The S8 fixes still hold.
 
+**Confirmed on the Pixel 9a, 25 August 2026** — _"This works beautifully."_ The emulator rig
+predicted hardware correctly, which is the other thing worth knowing about it: every conclusion in
+this section was reached with the phone switched off and none of them had to be revised once it was
+switched on.
+
 ### One bug of mine, not a demonstrated cause
 
 The first attempt answered `getTextAfterCursor` with
@@ -2121,11 +2126,9 @@ all of it blocks calling the port finished.
 * ~~**Sliding the space bar to move the cursor.** _"I need to touch on it before we ship
   anything."_ Upstream, in `gdk/android/glue/java/org/gtk/android/ImContext.java` — four missing
   `InputConnection` overrides.~~ **Fixed on 24 August 2026** by `patch-gtk-ime-selection.sh` and
-  `patch-gtk-ime-reset.sh`, and confirmed on the emulator — see
+  `patch-gtk-ime-reset.sh`, and **confirmed on a Pixel 9a on 25 August 2026** — see
   [S9](#s9--the-space-bar-and-the-reset-that-cancelled-it). The missing overrides were real but were
   not the cause; the cause was `reset` restarting the input method on every cursor movement.
-  **Still to do: confirm on the Pixel 9a**, which is the only part of this that could not be checked
-  without the phone.
 * ~~**The homeserver field still gets a plain keyboard, not a URL one.** Setting `input-purpose`
   did not change it; the remaining break is upstream and sits in the same file as the space-bar
   bug, so one keyboard pass covers both.~~ **Fixed** by `patch-gtk-input-purpose.sh` and confirmed
@@ -2209,7 +2212,7 @@ all of it blocks calling the port finished.
     means `InputMethodManager.restartInput` — tearing the `InputConnection` down underneath the
     gesture. One guard in `gtk_im_context_android_reset`, carried as `patch-gtk-ime-reset.sh`.
 
-  Confirmed on the emulator, **not yet on the Pixel 9a**.
+  Confirmed on the emulator and then on the Pixel 9a, 25 August 2026.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
 * ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
