@@ -24,6 +24,7 @@ whole route hung on.
 * [S5 — Notifications](#s5--notifications)
 * [S6 — The formats that would not draw](#s6--the-formats-that-would-not-draw)
 * [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
+* [Before this ships](#before-this-ships)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -1846,6 +1847,22 @@ hardware. Nothing about GL performance transfers either, since the translation l
 the app's native code and the host's graphics stack. What it does buy is that every iteration from
 here can be checked on the emulator, and the phone is needed once, at the end.
 
+## Before this ships
+
+A running list, in the user's words where they said it. Nothing here blocks further development;
+all of it blocks calling the port finished.
+
+* **Sliding the space bar to move the cursor.** _"I need to touch on it before we ship anything."_
+  Upstream, in `gdk/android/glue/java/org/gtk/android/ImContext.java` — four missing
+  `InputConnection` overrides, described under
+  [Known gaps](#known-gaps). Deferred deliberately on 24 August 2026 rather than forgotten: it is a
+  standalone piece of work with a full build-install-type-on-a-phone loop per iteration, and it sat
+  in the middle of the media work instead of beside it.
+* **Translations are missing entirely.** `po/meson.build`'s `i18n.gettext()` install carries no
+  `install_tag`, so pixiewood's `meson install --tags runtime` drops it silently and the
+  application is English-only on Android. Recorded much earlier as something that _"should be fixed
+  before anyone sees it"_, and still true.
+
 ## Known gaps
 
 * **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
@@ -1881,6 +1898,32 @@ here can be checked on the emulator, and the phone is needed once, at the end.
   would be the stronger test. And **`ESC`** does not behave like `BACK`: it triggers GTK's own
   back-navigation and leaves the room entirely rather than only dismissing the IME. Not itself a
   bug, just a reason not to read `ESC` and `BACK` as equivalent here.
+
+  **Tested at last on real hardware, 24 August 2026 — a Pixel 9a running GrapheneOS, Android 17,
+  with a real Gboard.** The keyboard itself works: it appears for the composer, types, and hides.
+  That closes the question this bullet has carried since S0, and it took a physical device to do
+  it, because the emulator has never stopped claiming a hardware keyboard.
+
+  Two things it immediately found that no emulator run could have.
+
+  **The homeserver field does not ask for a URL keyboard.** Gboard offers a plain alphabetic layout
+  with autocapitalisation, for a field that wants `/` and `.` and no capitals. This one is ours and
+  it is one line: `src/login/homeserver_page.blp` never sets `input-purpose`, so GTK truthfully
+  reports free-form. The Android side was already complete —
+  `gtk/gtkimcontextandroid.c:131` maps `GTK_INPUT_PURPOSE_URL` to `TYPE_TEXT_VARIATION_URI` — and
+  the fix is correct everywhere rather than an Android special case, since desktop IMEs and
+  accessibility tooling read the same property.
+
+  **Sliding along the space bar to move the cursor is broken, and it is upstream.** It moves a
+  character or two and stops. `gdk/android/glue/java/org/gtk/android/ImContext.java` is 107 lines,
+  and its `ImeConnection extends BaseInputConnection` overrides exactly four methods:
+  `setComposingText`, `finishComposingText`, `commitText`, `deleteSurroundingText`. There is no
+  `setSelection`, no `getTextBeforeCursor`, no `getTextAfterCursor` and no `getSelectedText`.
+  Gboard's spacebar gesture has to both move the cursor and read back where it landed; with none of
+  that implemented it falls back to synthesised arrow keys and loses track of its own position
+  almost at once, which is exactly the reported symptom. No property Commune sets can affect it.
+  The native `getSurrounding()` those overrides would need already exists, so this is a
+  well-shaped upstream contribution rather than a research problem.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
 * ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
@@ -1899,7 +1942,8 @@ here can be checked on the emulator, and the phone is needed once, at the end.
   with `-Dwarnings`. The fixes are `[`gtk::gdk::Texture`]` and dropping the explicit target. Only
   the Android target was measured; this is left alone here because that file is the decoder seam
   shared with the macOS and Windows ports.
-* **330 MB debug APK** for Commune, x86_64, and 334 MB for aarch64 (125–136 MB for the demos). The debug symbols are
+* **330 MB debug APK** for Commune on x86_64, and 334 MB on aarch64 (125–136 MB for the
+  demos). The debug symbols are
   already off; what is left is GTK, libadwaita, GtkSourceView, harfbuzz and 168 MB of Rust. A
   release build with stripping has not been measured, and neither has an `aarch64` one.
 * GStreamer is not built at all: pixiewood's cross file sets `media-gstreamer = 'disabled'` for
