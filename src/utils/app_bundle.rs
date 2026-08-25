@@ -1,14 +1,27 @@
 //! Where the app finds its own files at runtime.
 //!
-//! Everywhere except macOS the answer is fixed at build time: Meson bakes the
-//! install prefix into [`RESOURCES_FILE`], [`UI_RESOURCES_FILE`] and
-//! [`LOCALEDIR`], and the app is only ever run from that prefix.
+//! On Linux the answer is fixed at build time: Meson bakes the install
+//! prefix into [`RESOURCES_FILE`], [`UI_RESOURCES_FILE`] and [`LOCALEDIR`],
+//! and the app is only ever run from that prefix.
 //!
-//! A macOS `.app` is relocatable — the user drags it wherever they like — so
-//! nothing about its location can be known when it is built. Everything it
-//! needs is therefore found relative to the executable, which is at
-//! `Commune.app/Contents/MacOS/commune`, with the payload laid out under
-//! `Contents/Resources` as a small Unix prefix:
+//! macOS and Windows are both relocatable — a `.app` gets dragged wherever
+//! the user likes, and `bundle.sh`'s folder gets installed per-user rather
+//! than to a fixed system prefix — so on both, everything is found relative
+//! to the executable instead of trusting what Meson baked in. Windows is the
+//! simpler of the two: `bundle.sh` lays out `bin\commune.exe` beside
+//! `share\commune\*.gresource` and `share\locale`, which is the same shape
+//! `meson install` gives the MSYS2 prefix, so one relative computation
+//! serves both a packaged bundle and a plain dev install. GLib itself
+//! already finds its *own* data — schemas, pixbuf loaders, GStreamer
+//! plugins, fontconfig — relative to its own DLL automatically on Windows,
+//! which is what lets `bundle.sh` call the layout self-relocating; our two
+//! gresources are not a GLib lookup, so they needed the same treatment
+//! explicitly. Without it, the baked-in path only ever resolved on the
+//! machine that built the binary — every other machine panicked on start,
+//! silently, since a release build has no console for the message to reach.
+//!
+//! A macOS `.app` is at `Commune.app/Contents/MacOS/commune`, with the
+//! payload laid out under `Contents/Resources` as a small Unix prefix:
 //!
 //! ```text
 //! Contents/Resources/share/commune/*.gresource
@@ -81,7 +94,11 @@ pub(crate) fn init() -> RuntimePaths {
     {
         self::macos::init()
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        self::windows::init()
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         RuntimePaths::from_config()
     }
@@ -206,5 +223,39 @@ mod macos {
             ui_resources_file: pkgdata_dir.join("ui-resources.gresource"),
             localedir: share_dir.join("locale"),
         }
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod windows {
+    use std::{env, path::PathBuf};
+
+    use super::RuntimePaths;
+
+    /// Find our own two gresources and the locale directory relative to the
+    /// running executable, rather than trusting the path Meson baked in at
+    /// build time — see the module-level doc comment for why that path only
+    /// ever resolves on the machine that built it.
+    pub(super) fn init() -> RuntimePaths {
+        let Some(root) = install_root() else {
+            return RuntimePaths::from_config();
+        };
+
+        let share_dir = root.join("share");
+        let pkgdata_dir = share_dir.join("commune");
+        RuntimePaths {
+            resources_file: pkgdata_dir.join("resources.gresource"),
+            ui_resources_file: pkgdata_dir.join("ui-resources.gresource"),
+            localedir: share_dir.join("locale"),
+        }
+    }
+
+    /// The directory holding `bin`, `share` and `lib`, given an executable
+    /// at `<root>\bin\commune.exe`. The same shape whether that root is
+    /// `bundle.sh`'s relocatable folder or a plain `meson install` into an
+    /// MSYS2 prefix.
+    fn install_root() -> Option<PathBuf> {
+        let exe = env::current_exe().ok()?;
+        Some(exe.parent()?.parent()?.to_path_buf())
     }
 }
