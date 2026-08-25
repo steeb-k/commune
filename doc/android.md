@@ -998,6 +998,20 @@ loop, and the loud one: meson's wrapper truncates compiler output in `pixiewood 
 error there arrives as a `FAILED: [code=101]` line with the diagnostic cut off, while ninja on its
 own prints it in full.
 
+**That whole block is only needed when the pixiewood manifest changes.** For a change to Rust,
+Blueprint or resources — which is most changes — `pixiewood build` alone is the loop, and the
+difference is minutes rather than seconds. `prepare` re-checks every wrap; `generate` rewrites the
+Gradle project from its XSL; and the four patch scripts exist purely to repair what `generate`
+rewrites, so skipping it skips them too. Running the full sequence every time is a habit worth not
+acquiring: it was measured costing several minutes a round on changes whose actual compile work was
+27 ninja steps.
+
+Two other costs are worth knowing before blaming the compiler. Everything crosses `/mnt/c`, so
+`meson install --tags runtime` copies the entire installed tree onto the Windows filesystem and
+Gradle then packs a 334 MB APK and a 660 MB universal one; that I/O dominates a small change. And
+`build` does every whitelisted architecture, so since aarch64 was added it is all paid twice —
+which is the right default, but not when only the phone is about to be reinstalled.
+
 `build-aux/android/io.github.steeb_k.Commune.xml` is the pixiewood manifest. Two things in it are
 worth knowing. The `xi:include` reads the **built** metainfo, so the architecture it names has to
 match the whitelist or it points into a directory that was never created. And pixiewood copies one
@@ -1858,6 +1872,9 @@ all of it blocks calling the port finished.
   [Known gaps](#known-gaps). Deferred deliberately on 24 August 2026 rather than forgotten: it is a
   standalone piece of work with a full build-install-type-on-a-phone loop per iteration, and it sat
   in the middle of the media work instead of beside it.
+* **The homeserver field still gets a plain keyboard, not a URL one.** Setting `input-purpose` did
+  not change it; the remaining break is upstream and sits in the same file as the space-bar bug, so
+  one keyboard pass covers both. See [Known gaps](#known-gaps).
 * **Translations are missing entirely.** `po/meson.build`'s `i18n.gettext()` install carries no
   `install_tag`, so pixiewood's `meson install --tags runtime` drops it silently and the
   application is English-only on Android. Recorded much earlier as something that _"should be fixed
@@ -1906,13 +1923,28 @@ all of it blocks calling the port finished.
 
   Two things it immediately found that no emulator run could have.
 
-  **The homeserver field does not ask for a URL keyboard.** Gboard offers a plain alphabetic layout
-  with autocapitalisation, for a field that wants `/` and `.` and no capitals. This one is ours and
-  it is one line: `src/login/homeserver_page.blp` never sets `input-purpose`, so GTK truthfully
-  reports free-form. The Android side was already complete —
-  `gtk/gtkimcontextandroid.c:131` maps `GTK_INPUT_PURPOSE_URL` to `TYPE_TEXT_VARIATION_URI` — and
-  the fix is correct everywhere rather than an Android special case, since desktop IMEs and
-  accessibility tooling read the same property.
+  **The homeserver field does not ask for a URL keyboard, and setting the purpose did not fix it.**
+  Gboard offers a plain alphabetic layout with autocapitalisation, for the one field in the
+  application that wants `/` and `.` and no capitals.
+
+  `src/login/homeserver_page.blp` now sets `input-purpose: url` (`70af5483`). That was worth doing
+  on its own terms — the field is a URL on every platform, and desktop input methods and
+  accessibility tooling read the same property — but **it did not change the keyboard**, verified on
+  the Pixel 9a with the property in place.
+
+  What that rules out, so the next attempt does not start over:
+
+  * The property reaches the right object. `adw_entry_row_set_input_purpose` calls
+    `gtk_text_set_input_purpose` on the internal `GtkText`, so `AdwEntryRow` is not swallowing it.
+  * The Android mapping exists. `gtk/gtkimcontextandroid.c:131` turns `GTK_INPUT_PURPOSE_URL` into
+    `TYPE_TEXT_VARIATION_URI`.
+
+  So the break is between `GtkText`'s `input-purpose` and the `self->input_purpose` that
+  `_gtk_im_context_android_get_input_type` reads — either it is never propagated to the IM context,
+  or Android asks for the input type once, when the `InputConnection` is created, and nothing calls
+  `restartInput` afterwards. Both are upstream, and both are in the same file as the space-bar bug
+  below, so a single keyboard pass would naturally cover both. **Deferred at the user's request,
+  24 August 2026** — the fix in Commune is already in and correct; what remains is not ours.
 
   **Sliding along the space bar to move the cursor is broken, and it is upstream.** It moves a
   character or two and stops. `gdk/android/glue/java/org/gtk/android/ImContext.java` is 107 lines,
