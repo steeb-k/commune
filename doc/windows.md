@@ -487,19 +487,27 @@ stale, still reading the RDP connection this shell was originally opened under �
 `GskCairoRenderer` still. So this is not a remoting artifact at all.
 
 **Nor is it this machine.** The user reproduced the identical failure — same two "requires Direct
-Composition" lines, same fallback — on separate, genuine hardware, the same machine the resource-path
-crash (`beb6bb58`) was found and fixed on. That was the missing half of the comparison this note
-originally called for: a real DirectComposition-capable machine to test against, not just physical
-presence at the development VM. The result narrows this from "maybe just this VM" to a real question
-about the port or the toolchain — either MSYS2's `gtk4`/`gdk4-win32` package is missing something
-DirectComposition realization needs regardless of the machine underneath it, or there is a
-DirectComposition prerequisite (a specific driver feature level, hardware-accelerated GPU scheduling,
-DWM composition itself being on) that a "clean Windows 11 machine" does not guarantee. Not yet
-narrowed further — worth checking what GPU and driver that machine reports, and whether `dxdiag`
-shows DirectComposition as available at all, before assuming either explanation. Nothing about this
-is broken in the meantime — Commune runs, and ran through the whole snapping and emoji work above,
-entirely on the software path without incident — but it is a real difference in how the app performs,
-and now looks more likely to affect every user than a VM-only quirk would.
+Composition" lines, same fallback — on separate, genuine hardware: a Radeon 610M with a real AMD
+driver, the same machine the resource-path crash (`beb6bb58`) was found and fixed on. That ruled out
+a driver or capability gap outright, and pointed at the toolchain instead.
+
+**And that is exactly where it turned out to be.** GDK's current win32 backend
+(`gdk_win32_display_init_dcomp` in `gdk/win32/gdkdisplay-win32.c`) gates DirectComposition device
+creation behind `GDK_DEBUG=dcomp`, deliberately opt-in — the source comment says why: "DComp is
+opt-in (`GDK_DEBUG=dcomp`) because it causes issues with the GL and Vulkan renderers. The Cairo
+renderer works fine with DComp." Without that flag, `dcomp_device` is never initialized, so both
+accelerated renderers fail their DirectComposition check regardless of what hardware or driver sits
+underneath. Tried on the development VM — `GDK_DEBUG=dcomp` is not even a recognized value on the
+`gtk4` 4.22.4-1 package this port builds against (confirmed with `GDK_DEBUG=help`, and `pacman -Sy`
+shows 4.22.4-1 is already the newest MSYS2 offers), so this specific opt-in postdates the package
+MSYS2 has built. Nothing to fix here: not a Commune bug, not a config gap, not this machine or that
+one — a GTK version gap that closes whenever MSYS2 packages a `gtk4` new enough to carry it.
+Worth trying `GDK_DEBUG=dcomp` again once that happens, with the source comment's own caveat in
+mind — upstream is hedging on GL/Vulkan-under-DComp stability, not just gatekeeping it.
+
+Nothing about this is broken in the meantime — Commune runs, and ran through the whole snapping and
+emoji work above, entirely on the software path without incident — but it is a real difference in
+how the app performs, and affects every user on this toolchain rather than being a VM-only quirk.
 
 One thing RustDesk did change: unlike RDP, it hands over the **real webcam**, confirmed working.
 That is a device-redirection question, not a compositor one, and driving the real console session is
