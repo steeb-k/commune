@@ -206,6 +206,10 @@ Goal: log in, timeline images work.
    one look like a second primary, because it is one. Check that the first is actually running
    before concluding anything.
 
+   **Revisit: that answer holds given a head start, but a tighter double-launch races registration
+   itself and produces two real processes.** Root cause is shared-code startup ordering, not
+   anything win32-specific — see `doc/startup-registration-race.md`. Not fixed here.
+
 Verify: password login; SSO login (`src/login/local_server.rs` binds localhost — expect a
 Defender firewall prompt); send and receive text; image thumbnail, animated GIF, sticker pack;
 video plays; a voice message plays (WASAPI); the Credential Manager control panel shows the
@@ -502,7 +506,9 @@ is a package here.
 ## Risks and open questions
 
 * **GApplication uniqueness without a session bus** — the biggest unknown, answered by experiment
-  in M1 because the `matrix:` warm path and single-instance behaviour hang on it.
+  in M1 because the `matrix:` warm path and single-instance behaviour hang on it. Revisited: the
+  mechanism works, but a startup-ordering race (shared code, not win32-specific) can still produce
+  two real instances on a tight double-launch — see `doc/startup-registration-race.md`.
 * **`aws-lc-sys` on `x86_64-pc-windows-gnu`** — fallback is the SDK's ring provider, feature name
   to be verified against the pinned revision.
 * Whether MSYS2's gtk4 ships a GStreamer media backend, and whether its libshumate has the vector
