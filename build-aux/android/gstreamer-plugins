@@ -1,0 +1,57 @@
+# The GStreamer plugins linked into the Android build, one per line.
+#
+# Read by `build-aux/android/gstreamer-static-plugins.sh`, which turns this list
+# into both the C registration and the link line, so the two cannot drift apart.
+# Names are plugin names, not element names: the archive for `foo` is
+# `lib/gstreamer-1.0/libgstfoo.a`.
+#
+# Every entry costs binary size, so this is a list of things something actually
+# asks for rather than everything that might one day be useful. On a dynamic
+# build GStreamer would discover plugins by scanning a directory; here nothing
+# is discovered, and an element that is not reachable from this list fails at
+# `gst_element_factory_make` with "no such element".
+
+# --- the machinery, needed by any pipeline at all ---
+coreelements        # filesrc, fakesink, queue, capsfilter, typefind
+typefindfunctions   # the content sniffing decodebin dispatches on
+playback            # uridecodebin3, decodebin3, urisourcebin
+gio                 # giosrc, for the URIs GFile hands out that are not file://
+
+# --- audio conversion and measurement ---
+audioconvert
+audioresample
+audioparsers        # framing for elementary streams that arrive without it
+level               # the meter the voice-message waveform is built from
+app                 # appsink; the video thumbnailer will want it
+
+# --- containers ---
+ogg
+matroska            # .mkv and .webm
+isomp4              # .mp4 and .m4a
+
+# --- audio decoders ---
+opus                # what Matrix voice messages actually are
+vorbis
+flac
+wavparse
+mpg123              # mp3
+id3demux            # an mp3 with an ID3 tag is `application/x-id3` until this
+                    # strips it, and then nothing downstream is reachable.
+                    # Measured: without it, a tagged mp3 gives no duration and
+                    # no waveform, while ogg, wav and flac are unaffected.
+
+# Deliberately absent, and why:
+#
+#   * AAC. There is no `faad` in this tarball. The container plugins above still
+#     give a duration for an .m4a without it, because that comes from the
+#     container rather than the decoder; only the waveform is lost. The choice
+#     is between `libav` and `androidmedia`, and it belongs with the video work.
+#   * Video decoders (`libav`, `openh264`, `vpx`, `videoconvertscale`) and
+#     `androidmedia`. `androidmedia` is the interesting one — hardware codecs
+#     through MediaCodec — but it needs a JNIEnv and an Android Context, which
+#     is the same thing pixiewood's cross file cites for keeping GTK's
+#     `media-gstreamer` disabled. That is its own step.
+#   * Sinks (`opensles`, `autodetect`). Nothing plays audio yet: the player
+#     widgets go through `gtk::MediaFile`, and GTK is built with
+#     `media-gstreamer = 'disabled'`. Until that changes a sink would be dead
+#     weight.

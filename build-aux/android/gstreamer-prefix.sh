@@ -55,10 +55,18 @@
 #     library in the process is already using.
 #   * `include/gstreamer-1.0`, symlinked. Deliberately not the tarball's whole
 #     `include/`, which holds its GLib headers.
+#   * `deps/`, symlinks to **every** archive the tarball has — its own libraries,
+#     all 247 plugins, and all the third-party code they need — flattened into
+#     one directory along with the `.la` files that describe how they depend on
+#     each other.
 #
-# What it does *not* contain is the tarball's GLib, GIO, cairo, or any other
-# library pixiewood also builds. If a link ever needs one of those, the answer
-# is pixiewood's, and it is already on the search path.
+# `lib/` and `deps/` exist for opposite reasons, and the difference is the point.
+# `lib/` is reached through pkg-config and therefore through `-L`, so it must
+# hold nothing that could answer somebody else's `-l`. `deps/` is never on a
+# search path at all: `gstreamer-static-plugins.sh` names things in it by
+# absolute path, which the linker treats as a file rather than a search. That is
+# why `deps/` can safely contain the tarball's GLib and cairo and libpng while
+# `lib/` must not — nothing can reach them by accident.
 #
 # See also `build-aux/android/gstreamer.c`, which reconciles the one thing this
 # separation cannot: the tarball and pixiewood build different versions of
@@ -97,6 +105,15 @@ for pair in x86_64:x86_64 arm64:aarch64 armv7:arm x86:x86; do
 		cp "$pc" "$dst/$out/lib/pkgconfig/$(basename "$pc")"
 	done
 
+	# Everything, flattened, reachable only by absolute path. The plugin
+	# archives and the tarball's own `lib/` share no basenames, which is what
+	# makes one directory safe.
+	mkdir -p "$dst/$out/deps"
+	for f in "$src/$arch"/lib/lib*.a "$src/$arch"/lib/lib*.la 	         "$src/$arch"/lib/gstreamer-1.0/lib*.a "$src/$arch"/lib/gstreamer-1.0/lib*.la; do
+		[ -f "$f" ] || continue
+		ln -s "$f" "$dst/$out/deps/$(basename "$f")"
+	done
+
 	# The NDK's, not the tarball's. No `-L`, so nothing to shadow.
 	cat > "$dst/$out/lib/pkgconfig/zlib.pc" <<'PC'
 Name: zlib
@@ -105,7 +122,7 @@ Version: 1.2.11
 Libs: -lz
 PC
 
-	echo "$out: $(ls "$dst/$out"/lib/*.a | wc -l) archives, $(ls "$dst/$out"/lib/pkgconfig/*.pc | wc -l) pkg-config files"
+	echo "$out: $(ls "$dst/$out"/lib/*.a | wc -l) linkable archives, $(ls "$dst/$out"/lib/pkgconfig/*.pc | wc -l) pkg-config files, $(ls "$dst/$out"/deps/*.a | wc -l) in deps/"
 done
 
 if [ "$found" -eq 0 ]; then
