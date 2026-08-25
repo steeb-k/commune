@@ -484,13 +484,22 @@ is well known for being partial. That guess does not survive the obvious test. R
 RustDesk, which drives the real console session rather than opening a new one — confirmed with
 `WTSGetActiveConsoleSessionId()`, not the session's own `$env:SESSIONNAME`, which turned out to be
 stale, still reading the RDP connection this shell was originally opened under — changed nothing:
-`GskCairoRenderer` still. So this is not a remoting artifact at all. It is either this machine's own
-graphics stack (a VM without a DirectComposition-capable adapter would look exactly like this,
-locally or remoted) or a genuine gap in the port, and telling those apart needs a machine confirmed
-to have DirectComposition to compare against — not merely physical presence at this one, which the
-test above already stands in for. Nothing about this is broken in the meantime — Commune runs, and
-ran through the whole snapping and emoji work above, entirely on the software path without incident
-— but it is a real difference in how the app performs.
+`GskCairoRenderer` still. So this is not a remoting artifact at all.
+
+**Nor is it this machine.** The user reproduced the identical failure — same two "requires Direct
+Composition" lines, same fallback — on separate, genuine hardware, the same machine the resource-path
+crash (`beb6bb58`) was found and fixed on. That was the missing half of the comparison this note
+originally called for: a real DirectComposition-capable machine to test against, not just physical
+presence at the development VM. The result narrows this from "maybe just this VM" to a real question
+about the port or the toolchain — either MSYS2's `gtk4`/`gdk4-win32` package is missing something
+DirectComposition realization needs regardless of the machine underneath it, or there is a
+DirectComposition prerequisite (a specific driver feature level, hardware-accelerated GPU scheduling,
+DWM composition itself being on) that a "clean Windows 11 machine" does not guarantee. Not yet
+narrowed further — worth checking what GPU and driver that machine reports, and whether `dxdiag`
+shows DirectComposition as available at all, before assuming either explanation. Nothing about this
+is broken in the meantime — Commune runs, and ran through the whole snapping and emoji work above,
+entirely on the software path without incident — but it is a real difference in how the app performs,
+and now looks more likely to affect every user than a VM-only quirk would.
 
 One thing RustDesk did change: unlike RDP, it hands over the **real webcam**, confirmed working.
 That is a device-redirection question, not a compositor one, and driving the real console session is
