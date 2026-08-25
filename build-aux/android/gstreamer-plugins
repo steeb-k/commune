@@ -40,18 +40,36 @@ id3demux            # an mp3 with an ID3 tag is `application/x-id3` until this
                     # Measured: without it, a tagged mp3 gives no duration and
                     # no waveform, while ogg, wav and flac are unaffected.
 
+# --- video, and everything else `libav` decodes ---
+videoconvertscale   # videoconvert, for the thumbnailer and the video sink
+videoparsersbad     # h264parse and friends, which decodebin3 inserts ahead of
+                    # a decoder for a stream that arrives out of a container
+libav               # the decoders themselves, in software. `androidmedia` is
+                    # the hardware alternative and is not usable yet; see below
+
+# --- playback ---
+volume              # playbin's own volume element, which it makes by name
+autodetect          # autoaudiosink, which is what playbin picks when nothing
+                    # else is set
+opensles            # and what autoaudiosink then finds. OpenSL ES is an NDK
+                    # API, so unlike MediaCodec it needs nothing from Java
+
 # Deliberately absent, and why:
 #
-#   * AAC. There is no `faad` in this tarball. The container plugins above still
-#     give a duration for an .m4a without it, because that comes from the
-#     container rather than the decoder; only the waveform is lost. The choice
-#     is between `libav` and `androidmedia`, and it belongs with the video work.
-#   * Video decoders (`libav`, `openh264`, `vpx`, `videoconvertscale`) and
-#     `androidmedia`. `androidmedia` is the interesting one — hardware codecs
-#     through MediaCodec — but it needs a JNIEnv and an Android Context, which
-#     is the same thing pixiewood's cross file cites for keeping GTK's
-#     `media-gstreamer` disabled. That is its own step.
-#   * Sinks (`opensles`, `autodetect`). Nothing plays audio yet: the player
-#     widgets go through `gtk::MediaFile`, and GTK is built with
-#     `media-gstreamer = 'disabled'`. Until that changes a sink would be dead
-#     weight.
+#   * `androidmedia`, the hardware codecs, reached through MediaCodec. It wants
+#     `gst_android_get_application_class_loader`, which GStreamer core defines
+#     in `gstandroid.c.o` — and that object also defines `JNI_OnLoad`, which
+#     GTK already defines in `gdkandroidruntime.c`. Referencing the one drags in
+#     the other and the link fails on a duplicate symbol. Nothing pulls that
+#     object in today, which is why static GStreamer links at all.
+#
+#     There is a way through: an archive member is only extracted to satisfy an
+#     *undefined* symbol, so defining `gst_android_get_application_class_loader`
+#     ourselves leaves `gstandroid.c.o` unreferenced and the collision never
+#     happens. GTK is handed the application classloader in
+#     `gdk_android_initialize`, which is exactly what that function has to
+#     return. Untried; `libav` decodes the same formats in software today.
+#   * `openh264` and `vpx`, which `libav` already covers.
+#   * The camera and microphone sources (`ahc`, `ahs`). Both are in
+#     `androidmedia`, and both are Java callbacks rather than an NDK API, so
+#     they need more than the classloader above.

@@ -10,7 +10,7 @@ mod waveform;
 mod waveform_paintable;
 
 use self::waveform::Waveform;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 use super::gst_media_stream::GstMediaStream;
 use crate::{
     MEDIA_FILE_NOTIFIER,
@@ -24,22 +24,24 @@ use crate::{
 };
 
 /// Create a stream that plays the given file.
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "android")))]
 fn media_stream_for_file(file: &gio::File) -> gtk::MediaStream {
     gtk::MediaFile::for_file(file).upcast()
 }
 
 /// Create a stream that plays the given file.
 ///
-/// `GtkMediaFile` has no backend at all in the GTK build we use on macOS, so
-/// it is given the same stream of ours that the media viewer plays video with.
-#[cfg(target_os = "macos")]
+/// `GtkMediaFile` has no backend at all in the GTK builds we use on macOS and
+/// Android, so it is given the same stream of ours that the media viewer plays
+/// video with. Without it a voice message shows a duration of `00:00` and never
+/// plays, because a backend-less `GtkMediaFile` reports no error either.
+#[cfg(any(target_os = "macos", target_os = "android"))]
 fn media_stream_for_file(file: &gio::File) -> gtk::MediaStream {
     GstMediaStream::new(file).upcast()
 }
 
 /// Stop the given stream and drop what it was playing.
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "android")))]
 fn clear_media_stream(stream: &gtk::MediaStream) {
     if let Some(media_file) = stream.downcast_ref::<gtk::MediaFile>() {
         media_file.clear();
@@ -50,7 +52,7 @@ fn clear_media_stream(stream: &gtk::MediaStream) {
 ///
 /// `GstMediaStream` stops its pipeline when it is disposed, so letting go of it
 /// is all there is to do.
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 fn clear_media_stream(_stream: &gtk::MediaStream) {}
 
 mod imp {

@@ -3,10 +3,11 @@
 //! GTK has a `GStreamer` media backend of its own, and everywhere it is
 //! available `GtkVideo` uses it and this type is not built. It is compiled
 //! into `libgtk` and switched on only when the `GStreamer` libraries are found
-//! while GTK itself is built, and the conda-forge build we use on macOS is
-//! built without them — so there `GtkMediaFile` has no backend at all, and a
-//! `GtkVideo` given a file shows an empty frame and a duration of zero without
-//! ever reporting an error.
+//! while GTK itself is built. Two of our builds are built without them — the
+//! conda-forge one on macOS, and pixiewood's on Android, whose cross file says
+//! `media-gstreamer = 'disabled'` — so there `GtkMediaFile` has no backend at
+//! all, and a `GtkVideo` or a `GtkMediaControls` given a file shows an empty
+//! frame and a duration of zero without ever reporting an error.
 //!
 //! This is the same shape as GTK's own `GtkGstMediaFile`, assembled from the
 //! pieces the timeline already plays video with: a [`gst_play::Play`] rendering

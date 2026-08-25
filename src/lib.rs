@@ -199,6 +199,11 @@ pub fn run() {
         // registration entry points, and `gst::init()` has returned.
         unsafe { commune_gst_register_static_plugins() };
 
+        // `gtk4paintablesink` is not among them: it is a Rust plugin, built
+        // here as a crate rather than taken from the upstream binaries, so it
+        // registers through its own generated entry point.
+        gst_gtk4::plugin_register_static().expect("Could not register gtk4paintablesink");
+
         // The plugin count is worth logging rather than just the version: in a
         // static build it is the only evidence that registration ran, and a
         // missing plugin presents much later as "no such element".
