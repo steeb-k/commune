@@ -433,6 +433,10 @@ Slice 2. All of this is on the space page, below the topic.
 
 ### Leaving one, and not re-filing one
 
+* [ ] **The space row has a menu at all.** Right-click it, or use the ⋯ button
+      that appears on hover. It had none until `21f89afe`: the actions were
+      built and the row was never told it had a menu, so there was no way to
+      reach them. Reported on 24 August 2026.
 * [ ] **Right-click the space row: the menu offers _Leave Room_ and
       _Report Room_, and nothing else.** No _Favorite_, no _Low Priority_, no
       _Set as Direct Chat_, no _Mark as Unread_. Those are tags and a space
@@ -464,6 +468,16 @@ Slice 2. All of this is on the space page, below the topic.
       space (`#space:matrix.org` and similar) and confirm the marker appears
       there too. The local harness has one space and one shape of summary; a
       real directory is where a missing `room_type` shows up.
+
+### A room you have knocked on
+
+Not spaces, but the same bug and found with it: a knocked room is drawn in an
+_Invite Requests_ section and its row had no menu either, so the request could
+not be retracted from the sidebar.
+
+* [ ] **Knock on a room** — `#knock-room:localhost` from Explore — and then
+      **right-click its sidebar row**: the menu should offer _Retract_.
+* [ ] **Retracting works** and the row goes.
 
 ### Invites, and what these slices deliberately do not change
 

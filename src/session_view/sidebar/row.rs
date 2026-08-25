@@ -269,12 +269,19 @@ mod imp {
         }
 
         /// Whether this has a room context menu.
+        ///
+        /// This must name every category that `room_actions` builds something
+        /// for. The menu itself is one model whose items hide themselves when
+        /// their action is missing, so a category left out here has its
+        /// actions built and no way to reach them.
         fn has_room_context_menu(&self) -> bool {
             self.room().is_some_and(|r| {
                 matches!(
                     r.category(),
                     RoomCategory::Invited
+                        | RoomCategory::Knocked
                         | RoomCategory::ServerNotice
+                        | RoomCategory::Space
                         | RoomCategory::Favorite
                         | RoomCategory::Normal
                         | RoomCategory::LowPriority
