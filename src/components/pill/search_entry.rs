@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
-    glib,
+    gdk, glib,
     glib::{clone, closure_local},
 };
 
@@ -56,6 +56,7 @@ mod imp {
                     Signal::builder("pill-removed")
                         .param_types([PillSource::static_type()])
                         .build(),
+                    Signal::builder("activated").build(),
                 ]
             });
             SIGNALS.as_ref()
@@ -64,6 +65,32 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
+
+            // This looks like a search entry and is a `GtkTextView`, because a
+            // pill has to sit inside the text. A text view takes Return as a
+            // new line, which is never what somebody typing into a search box
+            // means, and which quietly puts a newline in the term being
+            // searched for. Swallow it and let whoever owns the entry decide
+            // what Return does.
+            let keys = gtk::EventControllerKey::new();
+            keys.connect_key_pressed(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, key, _, _| {
+                    if !matches!(
+                        key,
+                        gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::ISO_Enter
+                    ) {
+                        return glib::Propagation::Proceed;
+                    }
+
+                    obj.emit_by_name::<()>("activated", &[]);
+                    glib::Propagation::Stop
+                }
+            ));
+            self.text_view.add_controller(keys);
 
             self.text_buffer.connect_delete_range(clone!(
                 #[weak]
@@ -265,6 +292,20 @@ impl PillSearchEntry {
             true,
             closure_local!(|obj: Self, source: PillSource| {
                 f(&obj, source);
+            }),
+        )
+    }
+
+    /// Connect to the signal emitted when Return is pressed in the entry.
+    ///
+    /// The entry swallows Return itself — a text view would otherwise take it
+    /// as a new line — and leaves what it means to whoever owns the entry.
+    pub fn connect_activated<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "activated",
+            true,
+            closure_local!(|obj: Self| {
+                f(&obj);
             }),
         )
     }

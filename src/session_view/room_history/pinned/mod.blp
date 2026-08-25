@@ -1,0 +1,59 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomHistoryPinned: Adw.Bin {
+  vexpand: true;
+  hexpand: true;
+
+  Gtk.Stack stack {
+    transition-type: crossfade;
+
+    Gtk.StackPage {
+      name: "loading";
+      title: _("Loading");
+
+      child: Adw.Spinner {};
+    }
+
+    Gtk.StackPage {
+      name: "empty";
+      title: _("No Pinned Messages");
+
+      child: Adw.StatusPage {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "view-pin-symbolic";
+        title: _("No Pinned Messages");
+        description: _("Pin a message from its context menu to keep it here");
+      };
+    }
+
+    Gtk.StackPage {
+      name: "results";
+      title: _("Pinned Messages");
+
+      child: Gtk.ScrolledWindow {
+        hscrollbar-policy: never;
+        vexpand: true;
+
+        child: Adw.ClampScrollable {
+          vexpand: true;
+          hexpand: true;
+          maximum-size: 750;
+          tightening-threshold: 550;
+
+          child: Gtk.ListView list_view {
+            show-separators: true;
+            single-click-activate: true;
+            activate => $row_activated() swapped;
+
+            styles [
+              "navigation-sidebar",
+            ]
+          };
+        };
+      };
+    }
+  }
+}

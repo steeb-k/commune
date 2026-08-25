@@ -23,7 +23,7 @@ use crate::{
     prelude::*,
     session::{Member, Membership, Permissions, Room, User},
     toast,
-    utils::BoundObject,
+    utils::{BoundObject, TemplateCallbacks},
 };
 
 mod imp {
@@ -94,6 +94,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_css_name("user-page");
         }
@@ -356,8 +357,8 @@ mod imp {
                     Some(pgettext("member", "Banned"))
                 }
                 Membership::Knock => {
-                    // Translators: As in, 'The room member requested an invite'.
-                    Some(pgettext("member", "Requested an Invite"))
+                    // Translators: As in, 'The room member asked to be let in'.
+                    Some(pgettext("member", "Requested Access"))
                 }
                 Membership::Unsupported => {
                     // Translators: As in, 'The room member has an unknown role'.
@@ -383,8 +384,16 @@ mod imp {
                 permissions.can_do_to_user(user_id, PowerLevelUserAction::ChangePowerLevel);
             self.power_level_row.set_read_only(!can_change_power_level);
 
+            // This button is only ever offered for somebody who has knocked,
+            // and to them an invite is not an invitation — it is the answer to
+            // a request they made. The button beside it already says "Deny
+            // Request"; this one used to say "Invite", which is what the
+            // protocol does rather than what the person is doing.
             let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
             self.invite_button.set_visible(can_invite);
+            if can_invite {
+                self.invite_button.set_title(&gettext("Accept Request"));
+            }
 
             let can_kick = matches!(
                 membership,
@@ -522,7 +531,9 @@ mod imp {
             let user_id = member.user_id().clone();
 
             if room.invite(&[user_id]).await.is_err() {
-                toast!(self.obj(), gettext("Could not invite user"));
+                // Same reasoning as the button's own label: this only ever
+                // runs for somebody who asked to come in.
+                toast!(self.obj(), gettext("Could not accept the request"));
             }
 
             self.reset_room();

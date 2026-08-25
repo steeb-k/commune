@@ -90,8 +90,34 @@ template $RoomDetailsJoinRuleSubpage: Adw.NavigationPage {
 
             $CheckLoadingRow membership_row {
               visible: false;
+              // Translators: This is a choice of who can join a room: the
+              // members of a space, which is a collection of rooms.
+              title: _("Members of a Space");
               action-name: "join-rule.set-value";
               action-target: "'room-membership'";
+            }
+          }
+
+          Gtk.ListBox space_box {
+            visible: false;
+
+            styles [
+              "boxed-list",
+            ]
+
+            Adw.ActionRow space_row {
+              activatable: true;
+              selectable: false;
+              // Translators: A space is a collection of rooms, presented as a
+              // folder-like room that other rooms belong to.
+              title: _("Space");
+              activated => $choose_space() swapped;
+
+              [suffix]
+              Gtk.Image space_row_arrow {
+                icon-name: "go-next-symbolic";
+                accessible-role: presentation;
+              }
             }
           }
 
@@ -102,7 +128,7 @@ template $RoomDetailsJoinRuleSubpage: Adw.NavigationPage {
 
             Adw.SwitchRow knock_row {
               selectable: false;
-              title: _("Allow Invite Requests");
+              title: _("Allow Access Requests");
               notify::active => $update_changed() swapped;
             }
           }

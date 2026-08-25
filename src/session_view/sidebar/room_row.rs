@@ -255,8 +255,18 @@ mod imp {
                 .room
                 .obj()
                 .is_some_and(|room| room.category() == RoomCategory::ServerNotice);
+            let is_space = self
+                .room
+                .obj()
+                .is_some_and(|room| room.category() == RoomCategory::Space);
 
-            if is_server_notice {
+            if is_space {
+                self.room_icon.set_icon_name(Some("view-grid-symbolic"));
+                // Translators: A space is a collection of rooms, presented as a
+                // folder-like room that other rooms belong to.
+                self.room_icon.set_tooltip_text(Some(&gettext("Space")));
+                self.room_icon.set_visible(true);
+            } else if is_server_notice {
                 self.room_icon.set_icon_name(Some("warning-symbolic"));
                 // Translators: The server notices room is the room the homeserver uses to
                 // talk to the user in an official capacity, for example to warn them that

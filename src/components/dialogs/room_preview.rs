@@ -1,14 +1,15 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone};
+use tracing::error;
 
-use super::ToastableDialog;
+use super::{ToastableDialog, peek_row::RoomPeekRow};
 use crate::{
     Window,
     components::{Avatar, LoadingButton},
     i18n::ngettext_f,
     prelude::*,
-    session::{RemoteRoom, Session},
+    session::{PeekedMessage, RemoteRoom, RoomPeek, Session},
     toast,
     utils::{
         LoadingState,
@@ -50,7 +51,21 @@ mod imp {
         #[template_child]
         room_members_count: TemplateChild<gtk::Label>,
         #[template_child]
+        peek_btn: TemplateChild<gtk::Button>,
+        #[template_child]
         view_or_join_btn: TemplateChild<LoadingButton>,
+        #[template_child]
+        peek_room_name: TemplateChild<gtk::Label>,
+        #[template_child]
+        peek_stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        peek_scrolled_window: TemplateChild<gtk::ScrolledWindow>,
+        #[template_child]
+        peek_list: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        peek_view_or_join_btn: TemplateChild<LoadingButton>,
+        /// The messages of the room, when it can be read without joining it.
+        peek: RoomPeek,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         session: glib::WeakRef<Session>,
@@ -106,6 +121,35 @@ mod imp {
                     glib::Propagation::Stop
                 }
             ));
+
+            self.peek_list.bind_model(Some(&self.peek.list()), |item| {
+                let row = RoomPeekRow::new();
+
+                if let Some(message) = item.downcast_ref::<PeekedMessage>() {
+                    row.set_message(Some(message));
+                } else {
+                    error!("Room peek list contains something else than a message: {item:?}");
+                }
+
+                row.upcast()
+            });
+
+            self.peek.list().connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
+                    imp.update_peek_stack();
+                }
+            ));
+            self.peek.connect_loading_state_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_peek_stack();
+                }
+            ));
+
+            self.update_peek_stack();
         }
 
         fn dispose(&self) {
@@ -216,8 +260,14 @@ mod imp {
 
         /// Whether we can go back to the previous screen.
         fn can_go_back(&self) -> bool {
-            !self.disable_go_back.get()
-                && self.stack.visible_child_name().as_deref() == Some("details")
+            match self.stack.visible_child_name().as_deref() {
+                // The preview is always opened from the details, so there is
+                // always something behind it, even when the dialog was opened
+                // on a room rather than on the entry page.
+                Some("peek") => true,
+                Some("details") => !self.disable_go_back.get(),
+                _ => false,
+            }
         }
 
         /// Set the currently visible page.
@@ -319,7 +369,7 @@ mod imp {
                 self.room_topic.set_visible(true);
                 self.room_members_box.set_visible(false);
 
-                self.set_visible_page("details");
+                self.show_details_page();
                 return;
             }
 
@@ -347,6 +397,20 @@ mod imp {
             self.room_members_box.set_visible(true);
 
             self.update_view_or_join_button();
+            self.show_details_page();
+        }
+
+        /// Show the details of the previewed room, unless its messages are
+        /// being read.
+        ///
+        /// The details of a room that is still loading arrive after the dialog
+        /// has been put on screen, and a preview opened in the meantime must
+        /// not be yanked away by them.
+        fn show_details_page(&self) {
+            if self.stack.visible_child_name().as_deref() == Some("peek") {
+                return;
+            }
+
             self.set_visible_page("details");
         }
 
@@ -361,13 +425,82 @@ mod imp {
             let label = if room_list_info.local_room().is_some() {
                 gettext("View")
             } else if room.can_knock() {
-                gettext("Request an Invite")
+                gettext("Request Access")
             } else {
                 gettext("Join")
             };
-            self.view_or_join_btn.set_content_label(label);
+            self.view_or_join_btn.set_content_label(label.clone());
             self.view_or_join_btn
                 .set_is_loading(room_list_info.is_joining());
+            self.peek_view_or_join_btn.set_content_label(label);
+            self.peek_view_or_join_btn
+                .set_is_loading(room_list_info.is_joining());
+
+            // Reading a room that has already been joined is what the room
+            // history is for, and an encrypted room answers with ciphertext
+            // nobody outside it can turn back into words.
+            self.peek_btn.set_visible(
+                room.is_world_readable()
+                    && !room.is_encrypted()
+                    && room_list_info.local_room().is_none(),
+            );
+        }
+
+        /// Read the last messages of the previewed room.
+        #[template_callback]
+        pub(super) fn peek_room(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+            let Some(room_id) = room.room_id() else {
+                return;
+            };
+
+            // The heading above belongs to the dialog and always reads
+            // "Join a Room", so without this the page never says which room is
+            // being read.
+            self.peek_room_name.set_label(&room.display_name());
+
+            self.peek.set_room(&session, room_id);
+            self.set_visible_page("peek");
+        }
+
+        /// Update the page shown for the messages of the previewed room.
+        fn update_peek_stack(&self) {
+            let is_empty = self.peek.is_empty();
+
+            let name = match self.peek.loading_state() {
+                LoadingState::Initial | LoadingState::Loading => "loading",
+                LoadingState::Error => "error",
+                LoadingState::Ready if is_empty => "empty",
+                LoadingState::Ready => "list",
+            };
+
+            self.peek_stack.set_visible_child_name(name);
+
+            if name == "list" {
+                self.scroll_peek_to_end();
+            }
+        }
+
+        /// Scroll the messages of the previewed room to the last of them.
+        ///
+        /// They arrive oldest first, and what somebody wants from a preview is
+        /// what the room is saying now — the same end every other timeline
+        /// here opens at. The adjustment only knows how tall the list is once
+        /// it has been laid out, hence the idle.
+        fn scroll_peek_to_end(&self) {
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    let adjustment = imp.peek_scrolled_window.vadjustment();
+                    adjustment.set_value(adjustment.upper() - adjustment.page_size());
+                }
+            ));
         }
 
         /// View or join the room that was previewed.
@@ -432,13 +565,16 @@ mod imp {
         /// If we can't go back, closes the window.
         #[template_callback]
         fn go_back(&self) {
-            if self.can_go_back() {
-                // There is only one screen to go back to.
-                self.look_up_btn.set_is_loading(false);
-                self.entry_page.set_sensitive(true);
-                self.set_visible_page("entry");
-            } else {
-                self.obj().close();
+            match self.stack.visible_child_name().as_deref() {
+                Some("peek") => self.set_visible_page("details"),
+                Some("details") if !self.disable_go_back.get() => {
+                    self.look_up_btn.set_is_loading(false);
+                    self.entry_page.set_sensitive(true);
+                    self.set_visible_page("entry");
+                }
+                _ => {
+                    self.obj().close();
+                }
             }
         }
 
@@ -481,5 +617,14 @@ impl RoomPreviewDialog {
         let imp = self.imp();
         imp.disable_go_back(true);
         imp.set_room(room);
+    }
+
+    /// Set the room to preview, and read its messages right away.
+    ///
+    /// The details are still behind the preview, so the back button leads to
+    /// them rather than closing the dialog.
+    pub(crate) fn set_room_and_peek(&self, room: &RemoteRoom) {
+        self.set_room(room);
+        self.imp().peek_room();
     }
 }

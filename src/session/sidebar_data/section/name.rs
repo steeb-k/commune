@@ -21,6 +21,8 @@ pub enum SidebarSectionName {
     Invited,
     /// The section for the server notices room.
     ServerNotice,
+    /// The section for spaces.
+    Space,
     /// The section for favorite rooms.
     Favorite,
     /// The section for joined rooms without a tag.
@@ -39,11 +41,12 @@ impl SidebarSectionName {
             RoomCategory::Knocked => Self::InviteRequest,
             RoomCategory::Invited => Self::Invited,
             RoomCategory::ServerNotice => Self::ServerNotice,
+            RoomCategory::Space => Self::Space,
             RoomCategory::Favorite => Self::Favorite,
             RoomCategory::Normal => Self::Normal,
             RoomCategory::LowPriority => Self::LowPriority,
             RoomCategory::Left => Self::Left,
-            RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => return None,
+            RoomCategory::Outdated | RoomCategory::Ignored => return None,
         };
 
         Some(name)
@@ -56,6 +59,7 @@ impl SidebarSectionName {
             Self::InviteRequest => RoomCategory::Knocked,
             Self::Invited => RoomCategory::Invited,
             Self::ServerNotice => RoomCategory::ServerNotice,
+            Self::Space => RoomCategory::Space,
             Self::Favorite => RoomCategory::Favorite,
             Self::Normal => RoomCategory::Normal,
             Self::LowPriority => RoomCategory::LowPriority,
@@ -69,10 +73,13 @@ impl SidebarSectionName {
     /// possible.
     pub(crate) fn into_target_room_category(self) -> Option<TargetRoomCategory> {
         let category = match self {
+            // A space is joined and left like any other room, but none of the
+            // tags apply to it, so it is never a drag-n-drop target.
             Self::VerificationRequest
             | Self::InviteRequest
             | Self::Invited
-            | Self::ServerNotice => return None,
+            | Self::ServerNotice
+            | Self::Space => return None,
             Self::Favorite => TargetRoomCategory::Favorite,
             Self::Normal => TargetRoomCategory::Normal,
             Self::LowPriority => TargetRoomCategory::LowPriority,
@@ -87,9 +94,12 @@ impl fmt::Display for SidebarSectionName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let label = match self {
             SidebarSectionName::VerificationRequest => gettext("Verifications"),
-            SidebarSectionName::InviteRequest => gettext("Invite Requests"),
+            SidebarSectionName::InviteRequest => gettext("Access Requests"),
             SidebarSectionName::Invited => gettext("Invited"),
             SidebarSectionName::ServerNotice => gettext("Server Notices"),
+            // Translators: A space is a collection of rooms, presented as a
+            // folder-like room that other rooms belong to.
+            SidebarSectionName::Space => gettext("Spaces"),
             SidebarSectionName::Favorite => gettext("Favorites"),
             SidebarSectionName::Normal => gettext("Rooms"),
             SidebarSectionName::LowPriority => gettext("Low Priority"),

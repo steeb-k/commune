@@ -20,6 +20,7 @@ mod event_timestamp;
 mod member_timestamp;
 mod message_row;
 mod message_toolbar;
+mod pinned;
 mod read_receipts_list;
 mod search;
 mod state;
@@ -35,6 +36,7 @@ use self::{
     event_timestamp::EventTimestamp,
     message_row::MessageRow,
     message_toolbar::MessageToolbar,
+    pinned::RoomHistoryPinned,
     read_receipts_list::ReadReceiptsList,
     search::RoomHistorySearch,
     state::{StateGroupRow, StateRow},
@@ -64,6 +66,12 @@ use crate::{
 const SCROLL_TIMEOUT: Duration = Duration::from_millis(500);
 /// The time to wait before considering that messages on a screen where read.
 const READ_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long an event stays highlighted after the live timeline was scrolled
+/// to it.
+const HIGHLIGHT_SECONDS: u32 = 3;
+/// How long to wait for an event to turn up in a loading live timeline before
+/// giving up and building a timeline focused on it.
+const HIGHLIGHT_WAIT_SECONDS: u32 = 2;
 
 mod imp {
     use std::{
@@ -121,6 +129,8 @@ mod imp {
         search_view: TemplateChild<RoomHistorySearch>,
         #[template_child]
         drag_overlay: TemplateChild<DragOverlay>,
+        #[template_child]
+        pinned_view: TemplateChild<RoomHistoryPinned>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
         /// The timeline currently displayed.
@@ -129,6 +139,9 @@ mod imp {
         /// Whether this is the only view visible, i.e. there is no sidebar.
         #[property(get, set)]
         is_only_view: Cell<bool>,
+        /// Whether the pinned messages take the place of the timeline.
+        #[property(get, set = Self::set_is_showing_pinned, explicit_notify)]
+        is_showing_pinned: Cell<bool>,
         /// The members of the current room.
         ///
         /// We hold a strong reference here to keep the list in memory as long
@@ -143,6 +156,21 @@ mod imp {
         /// Whether we already scrolled to the focused event of the current
         /// timeline.
         focused_scroll_done: Cell<bool>,
+        /// The event to scroll to and highlight without leaving the live
+        /// timeline.
+        ///
+        /// A focused timeline never receives new events, so one must not be
+        /// built for an event the live timeline already holds — arriving from
+        /// a notification for a brand new message and then silently not seeing
+        /// the next one is worse than the jump it saves.
+        highlighted_event_id: RefCell<Option<OwnedEventId>>,
+        /// Whether we already scrolled to the highlighted event.
+        highlight_scroll_done: Cell<bool>,
+        /// The timeout after which an event that never loaded is given a
+        /// focused timeline after all.
+        highlight_timeout: RefCell<Option<glib::SourceId>>,
+        /// The timeout that ends the highlight.
+        unhighlight_timeout: RefCell<Option<glib::SourceId>>,
         /// The `GroupingListModel` used in the list view.
         grouping_model: OnceCell<GroupingListModel>,
         scroll_timeout: RefCell<Option<glib::SourceId>>,
@@ -165,6 +193,7 @@ mod imp {
         #[allow(clippy::too_many_lines)]
         fn class_init(klass: &mut Self::Class) {
             VerificationInfoBar::ensure_type();
+            RoomHistoryPinned::ensure_type();
             RoomHistorySearch::ensure_type();
 
             Self::bind_template(klass);
@@ -315,6 +344,7 @@ mod imp {
             self.init_listview();
             self.init_drop_target();
             self.init_search();
+            self.init_pinned();
 
             self.scroll_btn_revealer
                 .connect_child_revealed_notify(|revealer| {
@@ -422,6 +452,32 @@ mod imp {
                     }
                 }
             ));
+        }
+
+        /// Whether to show the button that opens the pinned messages.
+        ///
+        /// Shown when the room has pinned something, and kept while the pinned
+        /// messages are open even after the last one is unpinned — it is the
+        /// only way back to the timeline, and hiding it there would strand
+        /// whoever did the unpinning on the empty page.
+        ///
+        /// `function` for the same reason as
+        /// [`Self::server_notice_button_label()`].
+        #[template_callback(function)]
+        fn show_pinned_button(pinned_count: u32, is_showing_pinned: bool) -> bool {
+            pinned_count > 0 || is_showing_pinned
+        }
+
+        /// Set whether the pinned messages take the place of the timeline.
+        fn set_is_showing_pinned(&self, is_showing_pinned: bool) {
+            if self.is_showing_pinned.get() == is_showing_pinned {
+                return;
+            }
+
+            self.is_showing_pinned.set(is_showing_pinned);
+
+            self.update_view();
+            self.obj().notify_is_showing_pinned();
         }
 
         /// The label of the button of the server notice banner.
@@ -578,6 +634,24 @@ mod imp {
             ));
         }
 
+        /// Initialize the view of the pinned messages of the room.
+        fn init_pinned(&self) {
+            self.pinned_view.connect_event_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, event_id| {
+                    let Ok(event_id) = EventId::parse(&event_id) else {
+                        error!("Could not parse event ID of activated pinned message");
+                        return;
+                    };
+
+                    // Close the pinned messages to show the message in the timeline.
+                    imp.set_is_showing_pinned(false);
+                    imp.obj().focus_on_event(event_id);
+                }
+            ));
+        }
+
         /// Toggle the search of the messages of the room.
         fn toggle_search(&self) {
             let enable = !self.search_bar.is_search_mode();
@@ -670,6 +744,7 @@ mod imp {
             }
 
             self.disconnect_all();
+            self.clear_highlight();
             if let Some(source_id) = self.scroll_timeout.take() {
                 source_id.remove();
             }
@@ -759,6 +834,7 @@ mod imp {
                     move |_| {
                         imp.update_view();
                         imp.scroll_to_focused_event_if_needed();
+                        imp.scroll_to_highlighted_event_if_needed();
                     }
                 ));
 
@@ -774,6 +850,7 @@ mod imp {
                         if timeline.state() == LoadingState::Ready {
                             imp.load_more_events_if_needed();
                             imp.scroll_to_focused_event_if_needed();
+                            imp.scroll_to_highlighted_event_if_needed();
                         } else if timeline.state() == LoadingState::Error && timeline.is_focused() {
                             // The focused timeline could not be loaded and its error page
                             // has no way back, so return to the live timeline.
@@ -790,6 +867,7 @@ mod imp {
                 self.grouping_model().set_model(Some(timeline.items()));
 
                 self.search_view.set_room(Some(room.clone()));
+                self.pinned_view.set_room(Some(room.clone()));
 
                 if timeline.is_focused() {
                     // The bottom of a focused timeline is not the present, so we must not
@@ -806,7 +884,11 @@ mod imp {
             } else {
                 self.grouping_model().set_model(None::<gio::ListModel>);
                 self.search_view.set_room(None::<Room>);
+                self.pinned_view.set_room(None::<Room>);
             }
+
+            // A room is not left showing the pinned messages of the last one.
+            self.set_is_showing_pinned(false);
 
             self.update_view();
             self.load_more_events_if_needed();
@@ -849,14 +931,7 @@ mod imp {
                 child.set_event(Some(event.clone()));
 
                 // Rows are recycled, so this must be set for every row.
-                let is_focused_event = self
-                    .timeline
-                    .obj()
-                    .and_then(|timeline| timeline.focused_event_id())
-                    .is_some_and(|event_id| {
-                        event.matches_identifier(&TimelineEventItemId::EventId(event_id))
-                    });
-                child.set_is_focused_event(is_focused_event);
+                child.set_is_focused_event(self.is_target_event(event));
             } else if let Some(virtual_item) = item.downcast_ref::<VirtualItem>() {
                 set_virtual_item_child(list_item, virtual_item);
             } else if let Some(group) = item.downcast_ref::<GroupingListGroup>() {
@@ -1062,6 +1137,176 @@ mod imp {
             ));
         }
 
+        /// The event the timeline is pointed at, whether by a focused
+        /// timeline or by a highlight on the live one.
+        fn target_event_id(&self) -> Option<OwnedEventId> {
+            self.timeline
+                .obj()
+                .and_then(|timeline| timeline.focused_event_id())
+                .or_else(|| self.highlighted_event_id.borrow().clone())
+        }
+
+        /// Whether the given event is the one the timeline is pointed at.
+        fn is_target_event(&self, event: &Event) -> bool {
+            self.target_event_id().is_some_and(|event_id| {
+                event.matches_identifier(&TimelineEventItemId::EventId(event_id))
+            })
+        }
+
+        /// Update the highlight of the rows that are built.
+        ///
+        /// Binding a row picks the highlight up on its own; this is for the
+        /// rows that are already on screen when it is set or cleared.
+        fn update_target_event_rows(&self) {
+            let mut child = self.listview.first_child();
+
+            while let Some(widget) = child {
+                if let Some(row) = widget.first_child().and_downcast::<EventRow>()
+                    && let Some(event) = row.event()
+                {
+                    row.set_is_focused_event(self.is_target_event(&event));
+                }
+
+                child = widget.next_sibling();
+            }
+        }
+
+        /// Scroll to the highlighted event of the live timeline, once it is
+        /// loaded.
+        fn scroll_to_highlighted_event_if_needed(&self) {
+            if self.highlight_scroll_done.get() {
+                return;
+            }
+
+            let Some(event_id) = self.highlighted_event_id.borrow().clone() else {
+                return;
+            };
+            let Some(timeline) = self.timeline.obj() else {
+                return;
+            };
+
+            let key = TimelineEventItemId::EventId(event_id);
+            if timeline.find_event_position(&key).is_none() {
+                if !timeline.is_empty() && timeline.state() == LoadingState::Ready {
+                    // The timeline is loaded and the event is not in it, so it
+                    // is old enough to need one of its own. The timeout is
+                    // only for a timeline that never becomes ready at all.
+                    self.give_up_on_highlight();
+                }
+
+                // Otherwise wait until it is loaded.
+                return;
+            }
+
+            self.highlight_scroll_done.set(true);
+            if let Some(source_id) = self.highlight_timeout.take() {
+                source_id.remove();
+            }
+
+            // Wait until the next tick, to make sure that the GtkListView has created the
+            // item before scrolling to it.
+            glib::idle_add_local_once(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move || {
+                    imp.scroll_to_event(&key);
+                    imp.update_target_event_rows();
+                    imp.arm_unhighlight();
+                }
+            ));
+        }
+
+        /// Show the given event of the live timeline, rather than building a
+        /// timeline focused on it.
+        ///
+        /// `wait` means the event was not found yet and the timeline is still
+        /// loading, so it is worth waiting for.
+        pub(super) fn highlight_event(
+            &self,
+            timeline: &Timeline,
+            event_id: OwnedEventId,
+            wait: bool,
+        ) {
+            if self.timeline.obj().as_ref() != Some(timeline) {
+                self.obj().set_timeline(Some(timeline.clone()));
+            }
+
+            self.clear_highlight();
+            self.highlighted_event_id.replace(Some(event_id));
+            self.highlight_scroll_done.set(false);
+
+            if wait {
+                let source_id = glib::timeout_add_seconds_local_once(
+                    HIGHLIGHT_WAIT_SECONDS,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.give_up_on_highlight();
+                        }
+                    ),
+                );
+                self.highlight_timeout.replace(Some(source_id));
+            }
+
+            self.scroll_to_highlighted_event_if_needed();
+            self.update_target_event_rows();
+        }
+
+        /// Stop highlighting an event, after a moment of it being highlighted.
+        fn arm_unhighlight(&self) {
+            if let Some(source_id) = self.unhighlight_timeout.take() {
+                source_id.remove();
+            }
+
+            let source_id = glib::timeout_add_seconds_local_once(
+                HIGHLIGHT_SECONDS,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move || {
+                        imp.unhighlight_timeout.take();
+                        imp.highlighted_event_id.take();
+                        imp.update_target_event_rows();
+                    }
+                ),
+            );
+            self.unhighlight_timeout.replace(Some(source_id));
+        }
+
+        /// Give up waiting for the highlighted event to load, and focus a
+        /// timeline on it instead.
+        fn give_up_on_highlight(&self) {
+            self.highlight_timeout.take();
+
+            let Some(event_id) = self.highlighted_event_id.take() else {
+                return;
+            };
+            let Some(room) = self.room() else {
+                return;
+            };
+
+            self.highlight_scroll_done.set(true);
+            self.obj()
+                .set_timeline(Some(Timeline::new_focused(&room, event_id)));
+        }
+
+        /// Forget the highlighted event and the timeouts around it.
+        pub(super) fn clear_highlight(&self) {
+            if let Some(source_id) = self.highlight_timeout.take() {
+                source_id.remove();
+            }
+            if let Some(source_id) = self.unhighlight_timeout.take() {
+                source_id.remove();
+            }
+
+            self.highlight_scroll_done.set(false);
+
+            if self.highlighted_event_id.take().is_some() {
+                self.update_target_event_rows();
+            }
+        }
+
         /// Update the room menu for the current state.
         fn update_room_menu(&self) {
             let Some(room) = self.room() else {
@@ -1089,6 +1334,12 @@ mod imp {
             if self.search_bar.is_search_mode() {
                 // The search results take the place of the timeline.
                 self.stack.set_visible_child_name("search");
+                return;
+            }
+
+            if self.is_showing_pinned.get() {
+                // So do the pinned messages.
+                self.stack.set_visible_child_name("pinned");
                 return;
             }
 
@@ -1613,14 +1864,21 @@ impl RoomHistory {
         }
     }
 
-    /// Show the event with the given ID, by displaying a timeline focused on
-    /// it.
+    /// Show the event with the given ID.
     ///
-    /// The timeline of a focused event never receives new events, so
+    /// When the room's live timeline already holds the event, it is scrolled
+    /// to and highlighted there. Only an event that is not loaded gets a
+    /// timeline focused on it, which is the case that timeline exists for:
+    /// **a focused timeline never receives new events**, so
     /// [`RoomHistory::return_to_live()`] must be used to go back to the live
     /// timeline of the room.
+    ///
+    /// Building one for an event that was already on screen is what clicking
+    /// the notification for a brand new message used to do, and it left the
+    /// room silently frozen at the moment it was opened.
     pub(crate) fn focus_on_event(&self, event_id: OwnedEventId) {
-        let Some(room) = self.imp().room() else {
+        let imp = self.imp();
+        let Some(room) = imp.room() else {
             return;
         };
 
@@ -1632,6 +1890,21 @@ impl RoomHistory {
             return;
         }
 
+        let live_timeline = room.live_timeline();
+        let is_loaded = live_timeline
+            .find_event_position(&TimelineEventItemId::EventId(event_id.clone()))
+            .is_some();
+        // The live timeline of a room that has never been opened is still
+        // being built, so "not found" is not yet an answer.
+        let may_still_load =
+            live_timeline.is_empty() || live_timeline.state() != LoadingState::Ready;
+
+        if is_loaded || may_still_load {
+            imp.highlight_event(&live_timeline, event_id, !is_loaded);
+            return;
+        }
+
+        imp.clear_highlight();
         self.set_timeline(Some(Timeline::new_focused(&room, event_id)));
     }
 

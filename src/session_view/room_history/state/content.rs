@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, pango};
 use matrix_sdk_ui::timeline::{
     AnyOtherStateEventContentChange, MemberProfileChange, MembershipChange, OtherState,
-    RoomMembershipChange, TimelineItemContent,
+    RoomMembershipChange, RoomPinnedEventsChange, TimelineItemContent,
 };
 use ruma::{
     UserId,
@@ -124,6 +124,32 @@ mod imp {
                 }
                 AnyOtherStateEventContentChange::RoomServerAcl(content) => {
                     WidgetType::Text(server_acl_message(content, &sender.disambiguated_name()))
+                }
+                AnyOtherStateEventContentChange::RoomPinnedEvents(content) => {
+                    // The SDK reduces the two lists to which way they differ, which
+                    // is all a sentence can carry: how many were pinned, and which
+                    // ones, is what the pinned messages view is for.
+                    let message = match RoomPinnedEventsChange::from(content) {
+                        RoomPinnedEventsChange::Added => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} pinned a message.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                        RoomPinnedEventsChange::Removed => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} unpinned a message.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                        RoomPinnedEventsChange::Changed => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} changed the pinned messages.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                    };
+                    WidgetType::Text(message)
                 }
                 _ => {
                     warn!(

@@ -27,6 +27,24 @@ menu event-actions-menu {
 
   section {
     item {
+      // Translators: In this string, 'Pin' is a verb, as in pinning a message
+      // to a noticeboard.
+      label: _("_Pin");
+      action: "event.pin";
+      hidden-when: "action-missing";
+    }
+
+    item {
+      // Translators: In this string, 'Unpin' is a verb: this removes a message
+      // from the pinned ones.
+      label: _("Un_pin");
+      action: "event.unpin";
+      hidden-when: "action-missing";
+    }
+  }
+
+  section {
+    item {
       label: _("_Select");
       action: "event.select";
       hidden-when: "action-missing";

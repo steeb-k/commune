@@ -1,0 +1,226 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LoginRegisterPage: Adw.NavigationPage {
+  tag: "register";
+  title: _("Create Account");
+
+  styles [
+    "form-page",
+  ]
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-title: false;
+    }
+
+    content: Gtk.Box {
+      orientation: vertical;
+
+      $OfflineBanner {}
+
+      Gtk.ScrolledWindow scrolled_window {
+        hscrollbar-policy: never;
+        propagate-natural-height: true;
+        vexpand: true;
+
+        child: Adw.Clamp {
+          maximum-size: 400;
+
+          child: Gtk.Box {
+            orientation: vertical;
+            valign: center;
+            accessible-role: form;
+
+            accessibility {
+              labelled-by: [
+                title,
+              ];
+
+              described-by: [
+                homeserver_url,
+              ];
+            }
+
+            Gtk.Box {
+              orientation: vertical;
+              spacing: 12;
+              halign: center;
+
+              Gtk.Label title {
+                wrap: true;
+                justify: center;
+                accessible-role: heading;
+
+                styles [
+                  "title-1",
+                ]
+
+                accessibility {
+                  level: 1;
+                }
+              }
+
+              Gtk.Box {
+                spacing: 6;
+                halign: center;
+                tooltip-text: _("Homeserver URL");
+
+                Gtk.Image {
+                  icon-name: "home-symbolic";
+                  accessible-role: presentation;
+                }
+
+                Gtk.Label homeserver_url {
+                  ellipsize: end;
+
+                  styles [
+                    "body",
+                  ]
+                }
+              }
+            }
+
+            Gtk.Box {
+              orientation: vertical;
+              spacing: 6;
+
+              Gtk.ListBox {
+                accessible-role: group;
+
+                styles [
+                  "boxed-list",
+                ]
+
+                Adw.EntryRow username_entry {
+                  title: _("Matrix Username");
+                  selectable: false;
+                  changed => $username_changed() swapped;
+                  entry-activated => $register() swapped;
+
+                  accessibility {
+                    described-by: [
+                      username_error,
+                    ];
+                  }
+                }
+              }
+
+              Gtk.Revealer username_error_revealer {
+                child: Gtk.Label username_error {
+                  accessible-role: status;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  xalign: 0;
+
+                  styles [
+                    "caption",
+                  ]
+                };
+              }
+            }
+
+            Gtk.Box {
+              orientation: vertical;
+              spacing: 6;
+
+              Gtk.ListBox {
+                accessible-role: group;
+
+                styles [
+                  "boxed-list",
+                ]
+
+                Adw.PasswordEntryRow password_entry {
+                  title: _("Password");
+                  selectable: false;
+                  changed => $validate_password() swapped;
+                  entry-activated => $register() swapped;
+
+                  accessibility {
+                    described-by: [
+                      password_error,
+                    ];
+                  }
+                }
+              }
+
+              Gtk.LevelBar password_progress {
+                margin-top: 2;
+                margin-bottom: 1;
+                mode: discrete;
+                max-value: 5;
+                accessible-role: presentation;
+              }
+
+              Gtk.Revealer password_error_revealer {
+                child: Gtk.Label password_error {
+                  accessible-role: status;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  xalign: 0;
+
+                  styles [
+                    "caption",
+                  ]
+                };
+              }
+            }
+
+            Gtk.Box {
+              orientation: vertical;
+              spacing: 6;
+
+              Gtk.ListBox {
+                accessible-role: group;
+
+                styles [
+                  "boxed-list",
+                ]
+
+                Adw.PasswordEntryRow confirm_password_entry {
+                  title: _("Confirm Password");
+                  selectable: false;
+                  changed => $validate_password_confirmation() swapped;
+                  entry-activated => $register() swapped;
+
+                  accessibility {
+                    described-by: [
+                      confirm_password_error,
+                    ];
+                  }
+                }
+              }
+
+              Gtk.Revealer confirm_password_error_revealer {
+                child: Gtk.Label confirm_password_error {
+                  accessible-role: status;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  xalign: 0;
+
+                  styles [
+                    "caption",
+                  ]
+                };
+              }
+            }
+
+            $LoadingButton next_button {
+              content-label: _("Create Account");
+              halign: center;
+              clicked => $register() swapped;
+
+              styles [
+                "suggested-action",
+                "standalone-button",
+                "pill",
+              ]
+            }
+          };
+        };
+      }
+    };
+  };
+}

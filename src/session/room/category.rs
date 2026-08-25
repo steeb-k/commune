@@ -84,12 +84,16 @@ impl RoomCategory {
                         | TargetRoomCategory::LowPriority
                 )
             }
-            // The server owns the `m.server_notice` tag, so moving the room
-            // out of the category would only be undone on the next sync. The
-            // spec expects leaving to be possible, and the server to answer
-            // with `M_CANNOT_LEAVE_SERVER_NOTICE_ROOM` when it is not.
-            Self::ServerNotice => matches!(category, TargetRoomCategory::Left),
-            Self::Knocked | Self::Ignored | Self::Outdated | Self::Space => false,
+            // Two categories that can be left and nothing else, for different
+            // reasons. The server owns the `m.server_notice` tag, so moving
+            // that room out of its category would only be undone on the next
+            // sync; the spec expects leaving to be possible, and the server to
+            // answer with `M_CANNOT_LEAVE_SERVER_NOTICE_ROOM` when it is not.
+            // A space carries no tag at all, but it is joined and left like
+            // any other room, and one that could not be left would sit in the
+            // sidebar forever.
+            Self::ServerNotice | Self::Space => matches!(category, TargetRoomCategory::Left),
+            Self::Knocked | Self::Ignored | Self::Outdated => false,
         }
     }
 
@@ -130,6 +134,8 @@ impl RoomCategory {
 impl fmt::Display for RoomCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Some(section_name) = SidebarSectionName::from_room_category(*self) else {
+            // `Outdated` and `Ignored` have no section, and nothing displays
+            // them.
             unimplemented!();
         };
 

@@ -3,7 +3,7 @@ use ruma::{
     OwnedServerName,
     api::client::directory::get_public_rooms_filtered,
     assign,
-    directory::{Filter, RoomNetwork, RoomTypeFilter},
+    directory::{Filter, RoomNetwork},
 };
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -273,9 +273,12 @@ impl ExploreSearchData {
             since: next_batch,
             room_network,
             server: self.server.clone(),
+            // No `room_types` filter: an empty list means no filtering, so
+            // spaces come back alongside rooms. `RoomTypeFilter::Default` is
+            // what used to hide them.
             filter: assign!(
                 Filter::new(),
-                { generic_search_term: self.search_term.clone(), room_types: vec![RoomTypeFilter::Default] }
+                { generic_search_term: self.search_term.clone() }
             ),
         })
     }
