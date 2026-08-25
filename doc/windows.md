@@ -19,7 +19,7 @@ it was built; this file records what actually exists, what is stubbed, and what 
 
 ## State today
 
-**M0, M2, M3 and M5 are done, and M1 is most of the way there.** The tree builds for
+**M0, M1, M2, M3 and M5 are all done.** The tree builds for
 `x86_64-pc-windows-gnu`, and
 `cargo check`, `cargo clippy --all-targets -- -D warnings`, nightly `cargo fmt --check`,
 `cargo deny`, `cargo machete`, `cargo sort`, `typos`, `rumdl` and the pre-commit hook all pass.
@@ -54,7 +54,8 @@ that hands raw pointers to the operating system, and everything it protects is l
 **Logging in works**, against a real homeserver, and syncing and the timeline with it. So does
 **session restore** — quit and relaunch and the session comes back out of the Credential Manager —
 which completes that path end to end, since restoring is the one part the round-trip test could
-not cover.
+not cover. Search, image thumbnails, animated GIFs, and video and voice-message playback are all
+confirmed working by hand on real hardware — M1 is done, not just mostly.
 
 Three things came out of that first session with an account, and none of them is what it looked
 like at first glance. They are written up in [What bit us](#what-bit-us): calls fail over Remote
@@ -65,7 +66,7 @@ Windows notification backend after all, which changes what M5 is.
 | Area | State |
 | --- | --- |
 | Toolchain | MSYS2 UCRT64, mingw ABI, `x86_64-pc-windows-gnu` |
-| Runtime paths | Meson's compile-time constants — a bundle relocates itself, see below |
+| Runtime paths | Relative to `current_exe()`, same as macOS's `.app` — see [What bit us](#what-bit-us) |
 | Image decoding | `image` crate, shared with macOS via `cfg(not(target_os = "linux"))` |
 | Video and audio playback | Own `GtkMediaStream`, `src/components/media/gst_media_stream.rs` |
 | Secrets | Windows Credential Manager, `src/secret/windows.rs`, round-tripped by a test |
@@ -744,10 +745,6 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 
 ## Not done yet
 
-* **The rest of M1.** Logging in, syncing and session restore are all done — the last completing
-  the Credential Manager path end to end, since restoring is the one part the round-trip test
-  could not cover. Search, image thumbnails and animated GIFs are confirmed working by hand. Still
-  owed: video and voice-message playback.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
