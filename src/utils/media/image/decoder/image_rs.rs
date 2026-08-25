@@ -20,11 +20,19 @@
 //!
 //! Anything it does not recognise is handed to **`GdkPixbuf`**, which is
 //! already here — GTK loads every icon in the application through it — and
-//! which brings whatever loaders the platform installed with it. On the GTK
-//! stacks this port uses that is SVG, AVIF and HEIC/HEIF, none of which the
-//! `image` crate reads. A pixbuf-decoded image is always a still: the fallback
-//! exists to show a picture that would otherwise be an error, not to animate
-//! one.
+//! which brings whatever loaders the platform installed with it. What that
+//! adds is up to the platform: a desktop GTK stack usually has SVG, AVIF and
+//! HEIC/HEIF, and Android wires its own codecs for HEIC, HEIF and AVIF
+//! straight into gdk-pixbuf. A pixbuf-decoded image is always a still: the
+//! fallback exists to show a picture that would otherwise be an error, not to
+//! animate one.
+//!
+//! Pixbuf normally picks its loader by sniffing the bytes, but a loader may
+//! declare no signature to sniff for, and Android's HEIF one does exactly
+//! that: it defers the question of format to the platform decoder, so it has
+//! nothing of its own to match on. A loader like that can only be reached by
+//! naming a MIME type, so a container we recognise ourselves and pixbuf
+//! declined gets a second try by name. See [`iso_bmff_mime_types`].
 //!
 //! What is left over — **JXL**, and anything else with no loader installed —
 //! reports [`Error::UnknownFormat`], which the UI surfaces as "Image format not
@@ -154,19 +162,12 @@ fn probe_encoded(data: Arc<[u8]>) -> Result<Image, Error> {
 /// read.
 ///
 /// Whether this succeeds depends on the loaders installed beside the GTK stack
-/// in use, which is the point: the SVG loader is already required for the
-/// application's own icons, and the platform's other loaders come along with
-/// it at no cost to us.
+/// in use, which is the point: the platform's loaders come along with pixbuf
+/// at no cost to us, and on Android those are the system codecs themselves.
 fn probe_pixbuf(data: Arc<[u8]>) -> Result<Image, Error> {
-    // `from_owned` rather than a copy: the encoded image can be large, and the
-    // `Arc` is exactly what `glib::Bytes` wants to hold on to.
-    let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from_owned(data));
-
-    let pixbuf = gdk_pixbuf::Pixbuf::from_stream(&stream, gio::Cancellable::NONE)
-        // A loader that is not installed and a file that is corrupt are the
-        // same error here, and the honest answer to both is that we could not
-        // read it.
-        .map_err(|_| Error::UnknownFormat)?;
+    // A loader that is not installed and a file that is corrupt are the same
+    // error here, and the honest answer to both is that we could not read it.
+    let pixbuf = decode_pixbuf(&data).ok_or(Error::UnknownFormat)?;
 
     // JPEGs inside HEIF containers carry the same orientation tag as any
     // other, and pixbuf will apply it but does not do so by itself.
@@ -185,6 +186,68 @@ fn probe_pixbuf(data: Arc<[u8]>) -> Result<Image, Error> {
             animation: None,
         }),
     })
+}
+
+/// Hand the encoded image to whichever installed pixbuf loader will take it.
+///
+/// Sniffing is asked first, because it is what pixbuf is designed around and
+/// it is right whenever a loader declares a signature. Only when that finds
+/// nothing do we insist, and only for a container we recognise: see
+/// [`iso_bmff_mime_types`] for the one that needs it and why.
+fn decode_pixbuf(data: &Arc<[u8]>) -> Option<gdk_pixbuf::Pixbuf> {
+    // `from_owned` rather than a copy: the encoded image can be large, and the
+    // `Arc` is exactly what `glib::Bytes` wants to hold on to.
+    let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from_owned(data.clone()));
+
+    if let Ok(pixbuf) = gdk_pixbuf::Pixbuf::from_stream(&stream, gio::Cancellable::NONE) {
+        return Some(pixbuf);
+    }
+
+    iso_bmff_mime_types(data)
+        .iter()
+        .find_map(|mime_type| decode_pixbuf_as(data, mime_type))
+}
+
+/// Decode the encoded image with the loader that claims the given MIME type,
+/// if one is installed.
+fn decode_pixbuf_as(data: &[u8], mime_type: &str) -> Option<gdk_pixbuf::Pixbuf> {
+    let loader = gdk_pixbuf::PixbufLoader::with_mime_type(mime_type).ok()?;
+
+    // Both halves have to succeed: `write` can refuse the bytes and `close` is
+    // where a loader that buffered the whole image reports what it made of it.
+    let written = loader.write(data);
+    let closed = loader.close();
+    written.ok()?;
+    closed.ok()?;
+
+    loader.pixbuf()
+}
+
+/// The MIME types worth offering a loader for the given image, if it is an ISO
+/// base media file — the container HEIC, HEIF and AVIF all sit in.
+///
+/// This is the one family that sniffing cannot place. Android's HEIF loader
+/// declares an empty signature array, which `gdk-pixbuf`'s `format_check`
+/// iterates zero times, so it scores nothing and is never chosen no matter
+/// what the bytes say. Naming a type is the only way in.
+///
+/// All three types are offered to every such file rather than read off the
+/// brand, because the loaders that answer to them do not divide up the way the
+/// names suggest. Android registers only `image/heic` and `image/heif`, and
+/// the decoder behind both is `AImageDecoder`, which works the format out for
+/// itself and reads AVIF too. A desktop `libheif` module answers to all three
+/// and likewise decodes any of them. Picking by brand would mean asking for
+/// `image/avif` on Android and being told no, for a file it can read.
+fn iso_bmff_mime_types(data: &[u8]) -> &'static [&'static str] {
+    // A box length, then the type, then the major brand: 12 bytes before any
+    // of this means anything.
+    let is_iso_bmff = data.len() >= 12 && &data[4..8] == b"ftyp";
+
+    if is_iso_bmff {
+        &["image/avif", "image/heic", "image/heif"]
+    } else {
+        &[]
+    }
 }
 
 /// Whether the given orientation exchanges the width and the height of the
@@ -839,5 +902,37 @@ mod tests {
             .expect_err("nonsense should not decode");
 
         assert!(error.is_unknown_format());
+    }
+
+    /// The container that sniffing cannot place has to be recognised here
+    /// instead, or Android's HEIF loader is unreachable and HEIC and AVIF stay
+    /// broken. A `ftyp` box at offset four is the whole of the check.
+    #[test]
+    fn an_iso_base_media_file_is_offered_a_loader_by_name() {
+        let mut heic = b"\x00\x00\x00\x18ftypheic".to_vec();
+        heic.extend_from_slice(b"\x00\x00\x00\x00mif1heic");
+
+        assert!(
+            iso_bmff_mime_types(&heic).contains(&"image/heic"),
+            "a HEIC file should be offered the HEIC loader"
+        );
+        assert!(
+            iso_bmff_mime_types(&heic).contains(&"image/avif"),
+            "AVIF is asked for too: the loaders behind these types do not \
+             divide up the way the names suggest"
+        );
+    }
+
+    /// And nothing else gets the second try. Sniffing is right for every
+    /// loader that declares a signature, so insisting by name past it would
+    /// only mean handing a corrupt file to a decoder that already declined it.
+    #[test]
+    fn anything_else_is_left_to_sniffing() {
+        assert!(iso_bmff_mime_types(PNG).is_empty());
+        assert!(iso_bmff_mime_types(SVG).is_empty());
+        assert!(
+            iso_bmff_mime_types(b"ftyp").is_empty(),
+            "a header too short to hold a brand is not a container"
+        );
     }
 }
