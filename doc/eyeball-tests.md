@@ -345,9 +345,17 @@ a second run.
 * [ ] **A topic containing a matrix.to link is clickable** and opens that room
       or user inside the app rather than a browser. Same handler as the invite
       page; it is wired separately here.
-* [ ] **No dead controls.** There is no _Room Details_, no composer, no member
-      list. If any of the room-history header bar buttons appear on this page,
-      the wrong page is being shown.
+* [ ] **The header bar has a menu**, at the right. It offers _Space Details_,
+      _Invite New Members…_, _Leave Space_ and _Report Space…_. There was none
+      at all until 24 August 2026, which left every page of the room details
+      unreachable for a space.
+* [ ] **_Space Details_ opens them**, and the _Spaces_ group in there can put
+      this space inside another one.
+* [ ] **_Invite New Members…_ is absent without the power to invite.**
+* [ ] **_Leave Space_ asks first**, and leaving works.
+* [ ] **No composer and no member list.** The space page is not a room
+      history; if the call buttons or the search button turn up on it, the
+      wrong page is being shown.
 
 ### What is inside one
 

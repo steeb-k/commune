@@ -1,10 +1,18 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{glib, glib::clone};
 use tracing::error;
 
-use super::explore::public_room_row::PublicRoomRow;
+use super::{
+    explore::public_room_row::PublicRoomRow,
+    room_details::{self, RoomDetails},
+};
 use crate::{
-    session::{Room, SpaceChild, SpaceChildren},
+    components::{confirm_leave_room_dialog, confirm_report_room_dialog},
+    gettext_f,
+    prelude::*,
+    session::{Room, SpaceChild, SpaceChildren, TargetRoomCategory},
+    toast,
     utils::{LoadingState, TemplateCallbacks, matrix::MatrixIdUri},
 };
 
@@ -48,6 +56,25 @@ mod imp {
             TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
+
+            // A space is a room, so everything the room details offer applies
+            // to it — including the group that puts this space inside another
+            // one. Without this there is no way to reach any of it: a space
+            // has no room history, and that is where the menu used to live.
+            klass.install_action("space.details", None, |obj, _, _| {
+                obj.imp().open_details(room_details::InitialView::None);
+            });
+            klass.install_action("space.invite-members", None, |obj, _, _| {
+                obj.imp().open_details(room_details::InitialView::Subpage(
+                    room_details::SubpageName::Invite,
+                ));
+            });
+            klass.install_action_async("space.leave", None, |obj, _, _| async move {
+                obj.imp().leave().await;
+            });
+            klass.install_action_async("space.report", None, |obj, _, _| async move {
+                obj.imp().report().await;
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -153,7 +180,91 @@ mod imp {
             }
 
             self.room.replace(room);
+
+            self.update_actions();
             self.obj().notify_room();
+        }
+
+        /// Update which of the space's actions apply.
+        fn update_actions(&self) {
+            let obj = self.obj();
+            let Some(room) = self.room.borrow().clone() else {
+                obj.action_set_enabled("space.details", false);
+                obj.action_set_enabled("space.invite-members", false);
+                obj.action_set_enabled("space.leave", false);
+                obj.action_set_enabled("space.report", false);
+                return;
+            };
+
+            obj.action_set_enabled("space.details", true);
+            obj.action_set_enabled("space.report", true);
+            obj.action_set_enabled("space.invite-members", room.permissions().can_invite());
+            obj.action_set_enabled("space.leave", room.is_joined());
+        }
+
+        /// Open the details of this space.
+        fn open_details(&self, initial_view: room_details::InitialView) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+
+            RoomDetails::new(self.obj().root().and_downcast_ref(), &room, initial_view).present();
+        }
+
+        /// Leave this space.
+        async fn leave(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+
+            if confirm_leave_room_dialog(&room, &*self.obj())
+                .await
+                .is_none()
+            {
+                return;
+            }
+
+            if room
+                .change_category(TargetRoomCategory::Left)
+                .await
+                .is_err()
+            {
+                toast!(
+                    self.obj(),
+                    gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Could not leave {space}",
+                        &[("space", &room.display_name())],
+                    ),
+                );
+            }
+        }
+
+        /// Report this space to the homeserver.
+        async fn report(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let Some(reason) = confirm_report_room_dialog(&room, &*obj).await else {
+                return;
+            };
+
+            if room.report(reason).await.is_err() {
+                toast!(
+                    obj,
+                    gettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Could not report {space}",
+                        &[("space", &room.display_name())],
+                    ),
+                );
+            } else {
+                toast!(obj, gettext("Report sent"));
+            }
         }
 
         /// List the rooms in this space again, after a failure.

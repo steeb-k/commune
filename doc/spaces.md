@@ -306,6 +306,25 @@ things come with it:
   The specification does not ask for this; every other client does it, and a
   space without it behaves like a room with a hidden timeline.
 
+## The space page has a menu
+
+A space's header bar carries the same menu a room's does, minus what does not
+apply: **Space Details**, **Invite New Members…**, **Leave Space**,
+**Report Space…**.
+
+It was missing until `24 August 2026`, and the omission was worse than it
+sounds. A room reaches its details from the room history's header bar; a space
+has no room history, so it had no route to them at all. That meant a space
+could not be renamed, given a topic or an avatar, have its permissions or join
+rule or addresses edited — or, once _Add to Space…_ existed, be put inside
+another space. Every one of those pages was already written and none was
+reachable.
+
+The actions are `ContentSpace`'s own rather than reused from `RoomHistory`,
+because the two share no widget, and their labels say _space_ where the room's
+say _room_. What they call is the same: `RoomDetails::new`,
+`confirm_leave_room_dialog`, `confirm_report_room_dialog`.
+
 ## Explore stops filtering them out
 
 `ExploreSearchData::as_request` sent `room_types: vec![RoomTypeFilter::Default]`.
@@ -330,7 +349,7 @@ the answer.
 | `src/session/sidebar_data/item_list.rs` | The section itself, `TOP_LEVEL_ITEMS_COUNT`, the index map |
 | `src/session/session_settings.rs` | `Space` in the default expanded set |
 | `src/session/room/category.rs` | `can_change_to` letting a space be left |
-| `src/session_view/space.rs`, `space.blp` | The page |
+| `src/session_view/space.rs`, `space.blp` | The page, its room list and its menu |
 | `src/session_view/content.rs`, `content.blp` | The `space` stack page and the routing arm |
 | `src/session_view/sidebar/room_row.rs` | The `view-grid-symbolic` row icon |
 | `src/session_view/sidebar/row.rs` | The `leave` action for a space |
