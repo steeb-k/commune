@@ -1963,6 +1963,9 @@ character or two and stopped, which is where S8 left it: _"Spacebar sliding is a
 deal."_ The cause turned out not to be in the Java glue where the search started, and finding it
 needed a way to test a keyboard without a keyboard.
 
+Both defects here are GTK's rather than Commune's, and are written up for filing in
+[doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md).
+
 ### The emulator can be typed on after all
 
 Every keyboard measurement in this ledger before tonight carried an asterisk, because the emulator
@@ -2143,6 +2146,26 @@ all of it blocks calling the port finished.
   `install_tag`, so pixiewood's `meson install --tags runtime` drops it silently and the
   application is English-only on Android. Recorded much earlier as something that _"should be fixed
   before anyone sees it"_, and still true.
+* **File the GTK IME defects upstream.** Notes are written and ready to paste:
+  [doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md). Four of the seven patch scripts
+  this port carries are GTK bugs rather than Commune glue, and every one of them is a local patch
+  that has to be re-applied after each `pixiewood generate` and re-checked against each GTK update:
+
+  | script | defect |
+  | --- | --- |
+  | `patch-gtk-ime.sh` | `outAttrs.inputType` hardcoded to `TYPE_NULL`, working line commented out above it — no keyboard at all |
+  | `patch-gtk-input-purpose.sh` | `input_purpose`/`input_hints` read from struct fields nothing assigns after `_init` — every field announced as free-form prose, passwords included |
+  | `patch-gtk-ime-reset.sh` | `reset` calls `restartInput` on every cursor movement, cancelling any IME interaction in flight |
+  | `patch-gtk-ime-selection.sh` | `ImeConnection` answers no text query and has no `setSelection` |
+
+  The first three are defects with one-line fixes. The fourth is a missing feature, and the honest
+  part of it is that `GtkIMContext` cannot express "put the cursor here" at all — so what is carried
+  here is a workaround (synthesised arrow keys) rather than something to propose as a patch without
+  asking the maintainers first.
+
+  This does not block Commune shipping. It is on the list because carrying four downstream patches
+  against a moving `main` branch is a standing cost, and because the fixes are worth more to other
+  GTK-on-Android applications than they are here.
 
 ## Known gaps
 
