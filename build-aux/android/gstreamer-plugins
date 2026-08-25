@@ -49,6 +49,9 @@ libav               # the decoders themselves, in software. `androidmedia` is
 
 # --- playback ---
 volume              # playbin's own volume element, which it makes by name
+audiofx             # for `scaletempo`, which `GstPlay` asks for by name to
+                    # hold pitch steady when the rate is not 1.0
+deinterlace         # `playsink` builds a deinterlace chain and warns without it
 autodetect          # autoaudiosink, which is what playbin picks when nothing
                     # else is set
 opensles            # and what autoaudiosink then finds. OpenSL ES is an NDK

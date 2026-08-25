@@ -1,7 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, gio, glib, glib::clone};
 
-use crate::{components::MediaContentViewer, spawn, utils::OneshotNotifier};
+use crate::{
+    components::{ContentType, MediaContentViewer},
+    spawn,
+    utils::OneshotNotifier,
+};
 
 mod imp {
     use std::cell::OnceCell;
@@ -85,8 +89,8 @@ mod imp {
         }
 
         /// Set the file to preview.
-        pub(super) async fn set_file(&self, file: gio::File) {
-            self.media.view_file(file.into(), None).await;
+        pub(super) async fn set_file(&self, file: gio::File, content_type: ContentType) {
+            self.media.view_file(file.into(), Some(content_type)).await;
             self.set_loading(false);
         }
 
@@ -142,14 +146,20 @@ impl AttachmentDialog {
     }
 
     /// Set the file to preview.
-    pub(crate) fn set_file(&self, file: gio::File) {
+    /// Set the file to preview.
+    ///
+    /// The content type is passed in rather than guessed from the file, because
+    /// the file may be a copy this application made — see `send_file_inner` —
+    /// and a temporary file has no extension for `g_content_type_guess` to go
+    /// on. The caller knows what it asked for.
+    pub(crate) fn set_file(&self, file: gio::File, content_type: ContentType) {
         let imp = self.imp();
 
         spawn!(clone!(
             #[weak]
             imp,
             async move {
-                imp.set_file(file).await;
+                imp.set_file(file, content_type).await;
             }
         ));
     }
