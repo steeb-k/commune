@@ -66,8 +66,16 @@
       <option>-Dgtksourceview:build-testsuite=false</option>
       <option>-Dgtksourceview:install-tests=false</option>
     </configure-options>
+    <!--
+      Both, deliberately. `x86_64` is the emulator, which is where every
+      measurement in `doc/android.md` was taken, and `aarch64` is every phone
+      worth the name. Dropping `x86_64` would also break the `xi:include`
+      above, which reads the metainfo out of that architecture's build
+      directory.
+    -->
     <architectures mode="whitelist">
       <arch>x86_64</arch>
+      <arch>aarch64</arch>
     </architectures>
   </build>
 </app>
