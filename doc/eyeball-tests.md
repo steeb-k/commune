@@ -12,6 +12,12 @@ than "should appear".
 Format: one section per feature, oldest first. `[ ]` not yet looked at, `[x]`
 looked at and behaves, `[!]` looked at and wrong (with what happened).
 
+A subsection that takes something away — leaving a space, removing a room from
+one — opens with a line in italics beginning **Destructive**, and belongs at
+the end of its section. The run sheet reads that line and marks every check
+under it, so nobody tears down the thing the next twenty checks need. Keep both
+true when adding to this file.
+
 ---
 
 ## How to run this
@@ -37,7 +43,8 @@ commune
 ```
 
 Log in as **alice** — the greeter offers matrix.org first, so this means
-_Another Homeserver_ → `localhost:8008`. Some checks want **bob** as well; a
+_Another Homeserver_ → `localhost:8008`. The harness sets three passwords:
+`alice-is-testing`, `bob-is-testing`, `admin-is-testing`. Some checks want **bob** as well; a
 second Commune on the same machine cannot hold two sessions at once, so those
 are gathered together rather than scattered.
 
@@ -64,6 +71,14 @@ something appearing where it should not have.
 
 If a check fails, say **what happened**, not what should have. A screenshot is
 worth more than either.
+
+### What to do last
+
+Anything marked **Destructive** takes away what the rest of its section is
+looking at. Those subsections sit at the end of each section for that reason,
+and the run sheet marks them. Nothing here is unrecoverable — `Test Space` and
+`Sub Space` are public, so rejoining them is a search in Explore — but it is
+ten minutes you do not need to spend.
 
 ---
 
@@ -492,7 +507,55 @@ Slice 2. All of this is on the space page, below the topic.
 * [ ] **The buttons still work at depth.** _Join_ and _Preview_ on a row three
       levels down behave the same as at the top.
 
+### Finding one in Explore
+
+* [ ] **Explore lists spaces at all.** Search for "Test" on `localhost` — the
+      space should be in the results next to the ordinary rooms. Before this
+      change the directory was asked to exclude them.
+* [ ] **A space row says "Space"** — a dimmed grid icon and the word, beside
+      the member count. An ordinary room row must **not** show it; that is the
+      half of this check that catches a property left always-true.
+* [ ] **Joining from Explore** works and the room lands in the Spaces section,
+      not in _Rooms_. The button should read _Join_, and _View_ once joined.
+* [ ] **On matrix.org**, where the directory is large: search for a known
+      space (`#space:matrix.org` and similar) and confirm the marker appears
+      there too. The local harness has one space and one shape of summary; a
+      real directory is where a missing `room_type` shows up.
+
+### Invites, and what these slices deliberately do not change
+
+* [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
+      invite page. As bob, have alice invite you to Test Space. Accepting it
+      should drop the space into the Spaces section on the next sync; declining
+      should behave like declining a room. The invite page says nothing about
+      it being a space, which is known and recorded in `spaces.md`.
+* [ ] **A room added to a space while its page is open does not appear.**
+      Known, and recorded in `spaces.md` under _Not done_: the listing is
+      fetched once. Reselecting the space should pick the new room up. This
+      check exists so the behaviour is not re-reported as a bug.
+* [ ] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
+      Historical and the drag-and-drop between them all still work; the
+      _Forget_ target is still at the bottom of the sidebar. The section index
+      map was rewritten by hand and it is exactly the kind of change that
+      moves a section's contents into its neighbour.
+
+### A room you have knocked on
+
+_Destructive, mildly: it leaves a knock behind if you stop halfway._
+
+Not spaces, but the same bug and found with it: a knocked room is drawn in an
+_Invite Requests_ section and its row had no menu either, so the request could
+not be retracted from the sidebar.
+
+* [ ] **Knock on a room** — `#knock-room:localhost` from Explore — and then
+      **right-click its sidebar row**: the menu should offer _Retract_.
+* [ ] **Retracting works** and the row goes.
+
 ### Leaving one, and not re-filing one
+
+_Destructive. Leave it until the rest of this section is done — it takes away
+the spaces the checks above need, and getting them back means rejoining
+`#test-space:localhost` and `#sub-space:localhost` from Explore._
 
 * [x] **The space row has a menu at all.** Right-click it, or use the ⋯ button
       that appears on hover. It had none until `60792ddf`: the actions were
@@ -515,48 +578,6 @@ Slice 2. All of this is on the space page, below the topic.
       spaces with `m.space.child`, which does not exist here yet, and a drop
       that silently did nothing would be worse than one that refuses.
 
-### Finding one in Explore
-
-* [ ] **Explore lists spaces at all.** Search for "Test" on `localhost` — the
-      space should be in the results next to the ordinary rooms. Before this
-      change the directory was asked to exclude them.
-* [ ] **A space row says "Space"** — a dimmed grid icon and the word, beside
-      the member count. An ordinary room row must **not** show it; that is the
-      half of this check that catches a property left always-true.
-* [ ] **Joining from Explore** works and the room lands in the Spaces section,
-      not in _Rooms_. The button should read _Join_, and _View_ once joined.
-* [ ] **On matrix.org**, where the directory is large: search for a known
-      space (`#space:matrix.org` and similar) and confirm the marker appears
-      there too. The local harness has one space and one shape of summary; a
-      real directory is where a missing `room_type` shows up.
-
-### A room you have knocked on
-
-Not spaces, but the same bug and found with it: a knocked room is drawn in an
-_Invite Requests_ section and its row had no menu either, so the request could
-not be retracted from the sidebar.
-
-* [ ] **Knock on a room** — `#knock-room:localhost` from Explore — and then
-      **right-click its sidebar row**: the menu should offer _Retract_.
-* [ ] **Retracting works** and the row goes.
-
-### Invites, and what these slices deliberately do not change
-
-* [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
-      invite page. As bob, have alice invite you to Test Space. Accepting it
-      should drop the space into the Spaces section on the next sync; declining
-      should behave like declining a room. The invite page says nothing about
-      it being a space, which is known and recorded in `spaces.md`.
-* [ ] **A room added to a space while its page is open does not appear.**
-      Known, and recorded in `spaces.md` under _Not done_: the listing is
-      fetched once. Reselecting the space should pick the new room up. This
-      check exists so the behaviour is not re-reported as a bug.
-* [ ] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
-      Historical and the drag-and-drop between them all still work; the
-      _Forget_ target is still at the bottom of the sidebar. The section index
-      map was rewritten by hand and it is exactly the kind of change that
-      moves a section's contents into its neighbour.
-
 ## Choosing a space, restricting a room to one, and putting one in — `doc/join-rules.md`, `doc/spaces.md`
 
 Round 3, slice 3. The client can now ask which space you mean; _Who Can Join_
@@ -572,6 +593,26 @@ the same with knocking on. Log in as alice, who owns all of them.
 ```sh
 testing/local-homeserver.sh up
 ```
+
+### Making a space
+
+* [ ] **The new-room dialog offers a _Kind_.** _Room_ is selected; picking
+      _Space_ changes the heading to _New Space_ and the button to
+      _Create Space_.
+* [ ] **The encryption switch disappears for a space** and comes back for a
+      room.
+* [ ] **The visibility subtitles say "space"** rather than "room".
+* [ ] **Creating a private space works**, and it lands in the _Spaces_ sidebar
+      section rather than in _Rooms_ — this is the check that
+      `creation_content` really carried `type: m.space`.
+* [ ] **Creating a public space works** and takes an address, the same as a
+      room.
+* [ ] **Nobody can post in it.** From another client, look at the new space's
+      power levels: `events_default` should be 100, with `m.space.child`, the
+      name, the topic and the avatar at 50. A space anybody can post into is
+      a room with a hidden timeline.
+* [ ] **The new space accepts rooms.** Add a room to it from that room's
+      details, and open the space to see it.
 
 ### The picker
 
@@ -680,38 +721,6 @@ Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
       write the parent event as somebody who can send `m.space.child` in that
       space. It should appear.
 
-### Taking a room back out
-
-* [ ] **Each row has a _Remove_ button**, and pressing it takes the room out of
-      that space: the row goes, a toast says so, and the space's own page no
-      longer lists the room when reopened.
-* [ ] **Another client agrees.** The `m.space.child` should now be an empty
-      object rather than gone — Matrix has no way to delete a state event.
-* [ ] **The button is insensitive without permission.** As bob, in a space he
-      does not administer that holds a room he can see, the row appears and the
-      button does not work.
-* [ ] **Adding it back works**, and the room reappears in the space.
-
-### Making a space
-
-* [ ] **The new-room dialog offers a _Kind_.** _Room_ is selected; picking
-      _Space_ changes the heading to _New Space_ and the button to
-      _Create Space_.
-* [ ] **The encryption switch disappears for a space** and comes back for a
-      room.
-* [ ] **The visibility subtitles say "space"** rather than "room".
-* [ ] **Creating a private space works**, and it lands in the _Spaces_ sidebar
-      section rather than in _Rooms_ — this is the check that
-      `creation_content` really carried `type: m.space`.
-* [ ] **Creating a public space works** and takes an address, the same as a
-      room.
-* [ ] **Nobody can post in it.** From another client, look at the new space's
-      power levels: `events_default` should be 100, with `m.space.child`, the
-      name, the topic and the avatar at 50. A space anybody can post into is
-      a room with a hidden timeline.
-* [ ] **The new space accepts rooms.** Add a room to it from that room's
-      details, and open the space to see it.
-
 ### Suggested rooms
 
 * [ ] **A suggested child is marked.** From another client, set
@@ -732,6 +741,22 @@ Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
       Select _Members of a Space_ there and _Allow Invite Requests_ must go
       insensitive — `knock_restricted` does not exist for that room, and
       sending it would be rejected.
+
+### Taking a room back out
+
+_Destructive. Leave it until the rest of this section is done — it undoes the
+`m.space.child` events the checks above are looking at. Adding the room back
+puts them right._
+
+* [ ] **Each row has a _Remove_ button**, and pressing it takes the room out of
+      that space: the row goes, a toast says so, and the space's own page no
+      longer lists the room when reopened.
+* [ ] **Another client agrees.** The `m.space.child` should now be an empty
+      object rather than gone — Matrix has no way to delete a state event.
+* [ ] **The button is insensitive without permission.** As bob, in a space he
+      does not administer that holds a room he can see, the row appears and the
+      button does not work.
+* [ ] **Adding it back works**, and the room reappears in the space.
 
 ## Reading a room without joining it — `doc/peeking.md`
 
