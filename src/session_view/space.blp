@@ -1,6 +1,40 @@
 using Gtk 4.0;
 using Adw 1;
 
+menu space-menu-model {
+  section {
+    item {
+      // Translators: A space is a collection of rooms, presented as a
+      // folder-like room that other rooms belong to.
+      label: _("Space _Details");
+      action: "space.details";
+      hidden-when: "action-disabled";
+    }
+
+    item {
+      label: _("_Invite New Members…");
+      action: "space.invite-members";
+      hidden-when: "action-disabled";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Leave Space");
+      action: "space.leave";
+      hidden-when: "action-disabled";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Report Space…");
+      action: "space.report";
+      hidden-when: "action-disabled";
+    }
+  }
+}
+
 template $ContentSpace: Adw.Bin {
   vexpand: true;
   hexpand: true;
@@ -14,6 +48,15 @@ template $ContentSpace: Adw.Bin {
         // Translators: A space is a collection of rooms, presented as a
         // folder-like room that other rooms belong to.
         subtitle: _("Space");
+      }
+
+      [end]
+      Gtk.MenuButton space_menu {
+        valign: center;
+        icon-name: "menu-secondary-symbolic";
+        menu-model: space-menu-model;
+        tooltip-text: _("Space Menu");
+        primary: false;
       }
     }
 

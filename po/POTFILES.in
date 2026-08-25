@@ -238,6 +238,7 @@ src/session_view/sidebar/room_row.rs
 src/session_view/sidebar/row.rs
 src/session_view/sidebar/section_row.rs
 src/session_view/space.blp
+src/session_view/space.rs
 src/shortcuts-dialog.blp
 src/user_facing_error.rs
 src/utils/klipy.rs

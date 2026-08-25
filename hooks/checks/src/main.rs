@@ -504,10 +504,10 @@ impl CheckCmd {
             let count = missing_translatable.len();
 
             if count == 1 {
-                print_error("Found 1 file in POTFILES.in without translatable strings:");
+                print_error("Found 1 file with translatable strings missing from POTFILES.in:");
             } else {
                 print_error(&format!(
-                    "Found {count} files in POTFILES.in without translatable strings:"
+                    "Found {count} files with translatable strings missing from POTFILES.in:"
                 ));
             }
         }
