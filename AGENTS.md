@@ -72,12 +72,35 @@ where this fork stands, and they are read as current. Each carries a comment at
 its top with the artifact URL it is published to; re-publish to that URL rather
 than making a second artifact.
 
-Their mastheads name **the newest commit that touched `src/`**, not `HEAD`: a
+Each of them names **the newest commit that touched `src/`**, not `HEAD`: a
 documentation commit cannot name its own hash, so chasing `HEAD` would leave the
-pages permanently one behind. `upstream-defects.html` counts commits up to that
-same one. `hooks/doc-freshness` checks both, and warns when a commit changes
-`src/` and no documentation at all; the pre-commit hook runs it, and it never
-blocks, because only a person can tell which change genuinely needs no ledger.
+pages permanently one behind. Each names it in two or three places — a masthead
+and a footer, sometimes a sources list — and `upstream-defects.html` and
+`spec-gaps.html` also carry the commit count. **Do not go looking for them by
+hand.** That is what produced the state this was written in: on 25 August 2026
+the three footers had been stale for two refreshes and `upstream-defects.html`
+was naming a count and a hash that could not both be true.
+
+The round trip, after a commit that touched `src/`:
+
+```sh
+hooks/doc-freshness --fix        # every hash and count, one command
+git diff                         # look at it
+# republish the changed pages to the URLs in their top comments
+hooks/doc-freshness --published  # record that you did
+git commit doc/                  # the pages and the record together
+```
+
+`doc/pages.state` is what makes both halves mechanical. Its `commit` line is how
+the hook tells a marker it wrote from a hash the prose cites deliberately — both
+pages name commits on purpose, and a regex over prose would rewrite those too and
+be a new kind of lie in a file whose whole job is not lying. Its `sha256` lines
+are what makes "changed and never republished" a thing a check can see rather
+than a thing somebody has to remember.
+
+`hooks/doc-freshness` also still warns when a commit changes `src/` and no
+documentation at all. The pre-commit hook runs it, and it never blocks, because
+only a person can tell which change genuinely needs no ledger.
 
 `doc/eyeball-tests.md` is the running list of what has been built and never
 looked at on screen — every feature that draws adds to it in the same commit,

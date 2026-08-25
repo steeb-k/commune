@@ -2,8 +2,8 @@
 #
 # Warn when the documentation is falling behind the code.
 #
-# Two things drift, and neither is visible to the compiler, clippy, the tests
-# or checks-bin:
+# Three things drift, and none of them is visible to the compiler, clippy, the
+# tests or checks-bin:
 #
 #   * A change to `src/` that lands with no change to `doc/`. Every feature in
 #     this fork has a ledger, `doc/eyeball-tests.md` lists what has never been
@@ -11,21 +11,54 @@
 #     stands. A commit that moves any of that and says nothing makes all of them
 #     quietly wrong.
 #
-#   * The `main @ <hash>` in the two HTML mastheads, and the commit count in
-#     `upstream-defects.html`. These name **the newest commit that touched
-#     `src/`** — not HEAD, because a documentation commit cannot name its own
-#     hash and chasing HEAD guarantees the pages are always one behind.
+#   * **Every** commit hash and commit count in the three HTML pages, not only
+#     the `main @ <hash>` in the masthead. Each page names the commit two or
+#     three times in different phrasings, and until 25 August 2026 this looked
+#     at the masthead alone: the footers had been stale for two refreshes, and
+#     `upstream-defects.html` reached the state of naming a count and a hash
+#     that disagreed with each other.
+#
+#     They name **the newest commit that touched `src/`** — not HEAD, because a
+#     documentation commit cannot name its own hash and chasing HEAD guarantees
+#     the pages are always one behind.
+#
+#   * A page changed in the repository and never republished to its artifact.
+#     The pages are a record of where the fork stands only if the published copy
+#     is the one people read. A page updated here and left unsent is worse than
+#     one never written, because the repository says it is current.
+#
+# **How it knows which hash is a moving one.** `doc/pages.state` records what
+# the pages were last set to. A hash matching that record is the marker and gets
+# rewritten; every other hash is left alone. That matters — the pages cite
+# commits on purpose: `spec-gaps.html` names the commit it was last checked
+# against, and `upstream-defects.html` names the fork's own commit that fixed an
+# upstream defect. A regex over prose would rewrite both, and be a new kind of
+# lie in a file whose whole job is not lying. So the rule is: this only touches
+# what it wrote.
 #
 # This warns and never blocks: some changes to `src/` genuinely need no
 # documentation, and only a person can tell which. It is called from
 # `hooks/pre-commit.hook`, and can be run on its own at any time:
 #
-#     hooks/doc-freshness            # check the committed state
-#     hooks/doc-freshness --staged   # also check what is about to be committed
+#     hooks/doc-freshness             # check the committed state
+#     hooks/doc-freshness --staged    # also check what is about to be committed
+#     hooks/doc-freshness --fix       # rewrite every hash and count, then stop
+#     hooks/doc-freshness --published # record the pages as sent, then stop
+#
+# The round trip after a commit that touched `src/`:
+#
+#     hooks/doc-freshness --fix        # six places, one command
+#     git diff                         # look at it
+#     ...republish the pages that changed to the URLs in their top comments...
+#     hooks/doc-freshness --published  # record that you did
+#     git commit doc/                  # the pages and the record together
 
 set -uo pipefail
 
 FORK_POINT=1e5c1cab
+PAGES=(doc/client-comparison.html doc/spec-gaps.html doc/upstream-defects.html)
+PUBLISHED=(doc/client-comparison.html doc/spec-gaps.html doc/upstream-defects.html doc/eyeball-run.html)
+STATE=doc/pages.state
 
 act="\e[1;33m"
 pos="\e[32m"
@@ -38,6 +71,80 @@ warn() {
   printf "${act}!!${res} %b\n" "$*" >&2
   warned=1
 }
+
+# What the pages should say.
+last_src=$(git log -1 --format=%h --abbrev=8 -- src/)
+count=""
+[[ -n "$last_src" ]] && count=$(git rev-list --count "$FORK_POINT..$last_src")
+
+# What they were last set to.
+recorded_commit=$(awk '$1 == "commit" {print $2}' "$STATE" 2>/dev/null)
+recorded_count=$(awk '$1 == "count" {print $2}' "$STATE" 2>/dev/null)
+
+write_state() {
+  {
+    echo "# What the HTML ledger pages under doc/ currently say, and the sha256"
+    echo "# of each as it was last published to its artifact URL."
+    echo "#"
+    echo "# Written by hooks/doc-freshness --fix and --published. The commit line"
+    echo "# is how the hook tells a moving marker from a hash the prose cites on"
+    echo "# purpose: it only ever rewrites the hash it last wrote."
+    echo "commit $1"
+    echo "count $2"
+    shift 2
+    for line in "$@"; do echo "sha256 $line"; done
+  } > "$STATE"
+}
+
+current_stamps() {
+  for page in "${PUBLISHED[@]}"; do
+    [[ -f "$page" ]] && echo "$(sha256sum "$page" | awk '{print $1}') $page"
+  done
+}
+
+# ---- --fix -----------------------------------------------------------------
+
+if [[ "${1:-}" == "--fix" ]]; then
+  [[ -z "$last_src" ]] && { echo "No commit has touched src/ yet." >&2; exit 0; }
+
+  if [[ -z "$recorded_commit" ]]; then
+    echo "$STATE has no commit line, so nothing knows which hash is the marker." >&2
+    echo "Set it by hand once, to whatever the pages currently say." >&2
+    exit 1
+  fi
+
+  touched=0
+  for page in "${PAGES[@]}"; do
+    [[ -f "$page" ]] || continue
+    before=$(cat "$page")
+    sed -i "s/\b$recorded_commit\b/$last_src/g" "$page"
+    [[ -n "$recorded_count" ]] && sed -i "s/\b$recorded_count commits\b/$count commits/g" "$page"
+    if [[ "$before" != "$(cat "$page")" ]]; then
+      echo "  updated $page"
+      touched=1
+    fi
+  done
+
+  mapfile -t stamps < <(awk '$1 == "sha256" {print $2, $3}' "$STATE" 2>/dev/null)
+  write_state "$last_src" "$count" "${stamps[@]}"
+
+  if [[ $touched -eq 1 ]]; then
+    echo "Every marker now reads $last_src / $count commits."
+    echo "Republish the pages that changed, then: hooks/doc-freshness --published"
+  else
+    echo "Nothing to rewrite; the pages already read $last_src."
+  fi
+  exit 0
+fi
+
+# ---- --published -----------------------------------------------------------
+
+if [[ "${1:-}" == "--published" ]]; then
+  mapfile -t stamps < <(current_stamps)
+  write_state "${recorded_commit:-$last_src}" "${recorded_count:-$count}" "${stamps[@]}"
+  echo "Recorded. Commit $STATE with the pages it describes."
+  exit 0
+fi
 
 # ---- the staged half -------------------------------------------------------
 
@@ -53,30 +160,51 @@ if [[ "${1:-}" == "--staged" ]]; then
   fi
 fi
 
-# ---- the recorded state ----------------------------------------------------
+# ---- the markers -----------------------------------------------------------
 
-last_src=$(git log -1 --format=%h --abbrev=8 -- src/)
-
-if [[ -n "$last_src" ]]; then
-  count=$(git rev-list --count "$FORK_POINT..$last_src")
-
-  for page in doc/client-comparison.html doc/spec-gaps.html; do
+if [[ -z "$recorded_commit" ]]; then
+  warn "$STATE has no commit line; the hash checks cannot run."
+elif [[ -n "$last_src" && "$recorded_commit" != "$last_src" ]]; then
+  for page in "${PAGES[@]}"; do
     [[ -f "$page" ]] || continue
-    recorded=$(grep -o 'main @ [0-9a-f]\{7,\}' "$page" | head -1 | awk '{print $3}')
+    n=$(grep -oc "\b$recorded_commit\b" "$page" || true)
+    [[ "${n:-0}" -gt 0 ]] &&
+      warn "$page names $recorded_commit in $n place(s); the newest src/ commit is $last_src."
+  done
+  [[ $warned -eq 1 ]] && printf "   hooks/doc-freshness --fix rewrites every one of them.\n" >&2
+fi
 
-    if [[ -n "$recorded" && "$recorded" != "$last_src" ]]; then
-      warn "$page says 'main @ $recorded'; the newest src/ commit is $last_src."
+# A count nobody recorded, or one that disagrees with the record, is the
+# failure upstream-defects.html actually reached: a number and a hash that
+# could not both be true.
+if [[ -n "$count" ]]; then
+  for page in "${PAGES[@]}"; do
+    [[ -f "$page" ]] || continue
+    bad=$(grep -oE '\b[0-9]+ commits\b' "$page" | awk '{print $1}' | sort -u |
+          grep -v "^$count\$" | paste -sd' ')
+    [[ -n "$bad" ]] &&
+      warn "$page counts $bad commits; there are $count up to $last_src."
+  done
+fi
+
+# ---- pages changed and never republished -----------------------------------
+
+if [[ ! -f "$STATE" ]]; then
+  warn "$STATE is missing; nothing knows what has been published."
+else
+  for page in "${PUBLISHED[@]}"; do
+    [[ -f "$page" ]] || continue
+    now=$(sha256sum "$page" | awk '{print $1}')
+    was=$(awk -v p="$page" '$1 == "sha256" && $3 == p {print $2}' "$STATE")
+
+    if [[ -z "$was" ]]; then
+      warn "$page has never been recorded as published."
+    elif [[ "$now" != "$was" ]]; then
+      url=$(grep -oE 'https://claude\.ai/code/artifact/[0-9a-f-]+' "$page" | head -1)
+      warn "$page has changed since it was last published."
+      printf "   Republish it to %s,\n   then run hooks/doc-freshness --published.\n" "$url" >&2
     fi
   done
-
-  page=doc/upstream-defects.html
-  if [[ -f "$page" ]]; then
-    recorded=$(grep -o 'plus [0-9]\+ commits' "$page" | head -1 | awk '{print $2}')
-
-    if [[ -n "$recorded" && "$recorded" != "$count" ]]; then
-      warn "$page says 'plus $recorded commits'; there are $count up to $last_src."
-    fi
-  fi
 fi
 
 if [[ $warned -eq 0 ]]; then
