@@ -1519,6 +1519,15 @@ Android provides for data that must not be backed up. The cache stays at `getCac
 glue does not touch. There is nothing to migrate, because anything at the old path was destroyed by
 the build that would have carried the migration.
 
+**Measured, rather than argued from where the directories sit.** A rebuild produced an APK whose
+`assets/afpr` differs from the copy on the device, which is what makes the glue take the destructive
+path rather than skip it — so this exercised the wipe, not a build that happened not to trigger it.
+After installing and launching: everything under `files` carries the launch time, `afpr` included,
+so `cleanDirectory` ran; `no_backup/commune` and the `secrets.d/<id>.sealed` inside it still carry
+their original timestamps; and the app came back to its room list with the foreground service
+running, which only happens once a session has been restored — so the Keystore key still decrypted
+the sealed file across a reinstall. Repeated once more, with the same result.
+
 The general lesson is worth more than the fix: **`getFilesDir()` is GTK's on this port, not
 Commune's.** Anything of ours that is put there is on borrowed time.
 
