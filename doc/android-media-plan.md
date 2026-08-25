@@ -204,3 +204,70 @@ platform and worth acting on — and it will have cost a day rather than a rewri
    `PKG_CONFIG_LIBDIR`? Worth a timeboxed attempt before ruling route A in or out on cost.
 4. How much APK does route A add? Relevant because installs already run ~20 minutes over nullgate
    and only ~2 minutes over LAN.
+
+## Step 0 reconnaissance, 25 August 2026
+
+All _measured_ against `gstreamer-1.0-android-universal-1.28.6`, extracted to
+`~/android/gstreamer/{x86_64,arm64}` on the Arch host (2.0 GB per architecture).
+
+### The tarball is static-only
+
+**391 static archives and zero `.so` files.** There is no `libgstreamer-1.0.so` to ship; there is
+`libgstreamer-1.0.a`. This kills the tidy idea of dropping plugin `.so`s flat into `lib/<abi>/` and
+pointing `GST_PLUGIN_PATH` at `nativeLibraryDir` — there is nothing to drop in. GStreamer has to be
+**linked statically into `libcommune.so`**, and its plugins are static too, so each one has to be
+registered explicitly rather than discovered.
+
+The mechanism is shipped with the tarball. `gst_init()` calls `gst_init_static_plugins()`, which the
+application provides; `share/gst-android/ndk-build/gstreamer_android-1.0.c.in` is the template the
+official ndk-build flow fills in, and it is short enough to write by hand:
+
+```c
+void gst_init_static_plugins (void) {
+  GST_PLUGIN_STATIC_REGISTER (coreelements);   /* one per plugin */
+  ...
+}
+```
+
+### The two-GLib problem, and why it looks survivable
+
+The tarball bundles **GLib 2.82.4**; pixiewood builds **2.89.4** for GTK. Linking both would put two
+GObject type systems in one process, which is fatal — so GStreamer must resolve GLib against
+pixiewood's shared `libglib-2.0.so` rather than its own `libglib-2.0.a`.
+
+The tarball cooperates. `gstreamer-1.0.pc` says:
+
+```text
+Requires: glib-2.0 >=  2.64.0, gobject-2.0
+Libs: -L${libdir} -lgstreamer-1.0
+```
+
+It requires `glib-2.0` **by module name**, not by its own copy. So a pkg-config search path with
+pixiewood's `meson-uninstalled` **first** and GStreamer's `lib/pkgconfig` second resolves
+`gstreamer-1.0` to the tarball and `glib-2.0` to pixiewood — exactly the split needed. 2.89.4
+satisfies `>= 2.64.0`, and newer-GLib-under-older-GStreamer is the safe direction, since GLib does
+not remove symbols.
+
+_Unverified:_ whether the link actually succeeds. That is the whole of step 0.
+
+### The four places this touches
+
+| what | where |
+| --- | --- |
+| pkg-config search path for Cargo | `meson.build:193`, `cargo_env` — `PKG_CONFIG_LIBDIR` **replaces** the path, so GStreamer's dir must be appended with `:`, after `meson-uninstalled` |
+| the dependency Meson links | `meson.build:124`, `android_deps` |
+| `gst_init_static_plugins()` | a new C file beside `../build-aux/android/stub.c` in `src/meson.build:155` — that `executable()` is the one real link |
+| the Rust crates | `Cargo.toml:132`, currently `[target.'cfg(not(target_os = "android"))'.dependencies]` |
+
+The shape of the build helps here: Cargo produces `libcommune.a` and never links, so it only needs
+pkg-config to _describe_ GStreamer; Meson performs the single real link. That is the same property
+that made the port work at all.
+
+_Measured:_ `gstreamer-sys` 0.25.2 requires `gstreamer-1.0 >= 1.14` and no higher feature is enabled
+in `Cargo.toml`, so 1.28.6 is comfortably compatible — no version work needed.
+
+### What step 0 actually is
+
+The smallest thing that proves the route: link GStreamer core statically, call `gst::init()`, log
+`gst::version_string()`, see it on the emulator. Not the media code — none of the gates come off
+until this returns a version string.
