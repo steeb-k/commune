@@ -230,4 +230,6 @@ src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs
 src/utils/media/image/mod.rs
 src/utils/media/mod.rs
+src/window-windows.blp
 src/window.blp
+src/window.rs

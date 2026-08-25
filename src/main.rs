@@ -102,6 +102,18 @@ fn main() {
 
     gtk::glib::set_application_name("Commune");
 
+    // `Window` is a plain, server-side-decorated `gtk::ApplicationWindow` on
+    // Windows, with a native frame subclass standing in for CSD (see
+    // `doc/windows-snapping-plan.md`). `gtk_window_set_titlebar()` enables
+    // CSD unconditionally, so a window with no titlebar still needs telling:
+    // left unset, GTK gives an undecorated win32 toplevel its own default
+    // `GtkHeaderBar` at realize.
+    #[cfg(target_os = "windows")]
+    // SAFETY: called before `gtk::init()`, before any other thread exists.
+    unsafe {
+        std::env::set_var("GTK_CSD", "0");
+    }
+
     gtk::init().expect("Could not start GTK4");
 
     // Now that there are settings to change, make text resolve to the size it

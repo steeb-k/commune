@@ -7,6 +7,7 @@ extend-ignore-re = ["Hiting enter key"]
 gir = "gir"
 inout = "inout"
 numer = "numer" # Short for numerator in GStreamer
+tme = "tme" # Win32's TrackMouseEvent flag prefix, TME_LEAVE and TME_NONCLIENT
 ue = "ue" # End of word after mnemonic
 
 [type.po]
