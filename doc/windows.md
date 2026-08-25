@@ -251,17 +251,25 @@ their own inputs and survive — so a rebuild to change the key is minutes, not 
 There is nothing here corresponding to the environment variables `src/utils/app_bundle.rs` has to
 set on macOS, and that is not an oversight. GLib on Windows works out where it was installed by
 asking the loader where `libglib-2.0-0.dll` came from and taking the parent of its directory;
-GdkPixbuf, GIO and GStreamer all follow the same convention. So a tree of
+GdkPixbuf, GIO, GStreamer and fontconfig all follow the same convention. So a tree of
 
 ```text
-Commune/bin/*.dll   Commune/lib/...   Commune/share/...
+Commune/bin/*.dll   Commune/etc/...   Commune/lib/...   Commune/share/...
 ```
 
-finds its own data wherever it is moved to, with nothing set and nothing rewritten.
+finds its own data wherever it is moved to, with nothing set and nothing rewritten. Fontconfig is
+the one of the four that found this out the hard way: `bundle.sh` did not carry `etc/fonts` for a
+while, and rather than failing loudly, a fontconfig with no `conf.d` to read just falls back
+quietly — no generic family aliases, including the `emoji` one described above, and no fallback
+fonts either. The `meson install`-into-prefix development build was never affected, because it sits
+inside the full MSYS2 prefix and finds the real `/ucrt64/etc/fonts` regardless of anything the
+bundle script does.
 
 What is genuinely ours to do is the **DLL closure**, because Windows has no rpath and resolves an
-import by name in the loading module's own directory, and the **gdk-pixbuf loader cache**, which
-records absolute paths and would otherwise point back into MSYS2.
+import by name in the loading module's own directory; the **gdk-pixbuf loader cache**, which
+records absolute paths and would otherwise point back into MSYS2; and **fontconfig's own config
+directory**, copied from the prefix with Commune's `conf.d` addition layered on top of MSYS2's,
+the same way the GSettings schemas already are.
 
 The closure is a worklist rather than repeated passes: each binary is walked exactly once, when it
 first arrives. The obvious implementation — sweep everything, repeat until nothing new appears —
