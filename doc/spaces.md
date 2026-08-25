@@ -377,34 +377,38 @@ the answer.
    `Content::update_visible_child` is where the two will collide.
 4. `RoomTypeFilter` is no longer imported by `explore/search.rs`. If a merge
    brings the filter back, spaces vanish from Explore with no other symptom.
-5. `has_room_context_menu` in `sidebar/row.rs` gates whether a row gets a menu
+5. **`hooks/template-checks` now catches item 7 of this list**, and the whole
+   class of template-against-Rust disagreement it belongs to. It does **not**
+   catch item 6, which is two Rust lists that must agree — nothing checks
+   that, and the pattern is worth watching for elsewhere.
+6. `has_room_context_menu` in `sidebar/row.rs` gates whether a row gets a menu
    at all, and it is a **separate list** from the `match` in `room_actions`
    that builds the actions. The menu is one model whose items hide themselves
    when their action is missing, so a category added to the second list and
    not the first has its actions built and no way to reach them — which is
    exactly what happened to `Space` between `69002a14` and the fix. Add to
    both.
-6. `TemplateCallbacks::bind_template_callbacks` must stay in `ContentSpace`'s
+7. `TemplateCallbacks::bind_template_callbacks` must stay in `ContentSpace`'s
    `class_init` — `space.blp` uses `$string_not_empty` twice, and without the
    binding the template fails to build and the application aborts at startup.
    This is not caught by anything but launching it, and it did happen.
-7. `explore/public_room_row.rs` is `pub(super)` and has a second caller now. An
+8. `explore/public_room_row.rs` is `pub(super)` and has a second caller now. An
    upstream change to what `set_room` expects breaks the space page too, and
    the compiler will only point at Explore's copy of the call.
-8. The hierarchy is built from the `m.space.child` events rather than from the
+9. The hierarchy is built from the `m.space.child` events rather than from the
    order of the `rooms` array, so a server that returns them in a different
    order changes nothing. A room in `children_state` with no summary in
    `rooms` is skipped: the server could not reach it and there is nothing to
    draw.
-9. `add_room_to_space` and `remove_room_from_space` treat a failed
-   `m.space.parent` as a warning. If a merge makes it an error, putting a room
-   into a space stops working for anybody who is not also an administrator of
-   the room.
-10. `parent_spaces` asks every joined space one question each. That is a state
+10. `add_room_to_space` and `remove_room_from_space` treat a failed
+    `m.space.parent` as a warning. If a merge makes it an error, putting a
+    room into a space stops working for anybody who is not also an
+    administrator of the room.
+11. `parent_spaces` asks every joined space one question each. That is a state
     store read rather than a request, so it is cheap, but it is linear in the
     number of spaces and it runs on the tokio pool. If upstream ever exposes a
     reverse index, use it.
-11. Creating a space overrides the power levels. If upstream adds its own
+12. Creating a space overrides the power levels. If upstream adds its own
     space creation, take theirs and check it does the same — a space where
     `events_default` is 0 is a room with an invisible timeline anybody can
     write into.

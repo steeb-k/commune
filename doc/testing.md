@@ -93,6 +93,41 @@ homeserver seeded before any of them existed gets them on the next `up`. It is n
 the call buttons — those go by the member count, so every room alice and bob
 share has them — but it is where anybody testing calls looks first.
 
+## What the hooks check, and what they cannot
+
+`hooks/checks-bin` is upstream's fifteen checks: formatting, spelling,
+dependencies, the two `POTFILES` lists, the blueprint resource list. It knows
+nothing about whether the code works.
+
+`hooks/doc-freshness` warns when a commit touches `src/` and no `doc/`, and
+when the HTML mastheads have fallen behind. It never blocks.
+
+`hooks/template-checks` is the fork's own, added on 24 August 2026 after the
+fourth bug in two days that none of the above could see. A `.blp` and the `.rs`
+that loads it are two halves of one class joined by nothing: the compiler sees
+the template as a string, and a disagreement lands at runtime, on the widget's
+first construction, as an abort or a panic. It looks for four:
+
+* a `=> $handler()` with no `#[template_callback] fn handler`;
+* a template with handlers whose `class_init` never calls
+  `Self::bind_template_callbacks` — either spelling;
+* a template using one of `TemplateCallbacks`' global closures whose
+  `class_init` never calls `TemplateCallbacks::bind_template_callbacks`;
+* a `#[template_child]` naming an object the template does not declare.
+
+The third of those is what stopped `ContentSpace` being drawn at all, and it
+passed clippy, the tests and all fifteen checks on the way in. The script was
+tested by putting each of the four faults back and confirming it says so.
+
+The `.blp` is paired with its `.rs` through the resource path each declares,
+rather than through the file name, because several templates are loaded by a
+file of another name. A `.blp` with no `template` block — a bare menu — is
+skipped.
+
+**It still cannot tell you a widget looks right.** It answers "will this
+construct", not "is this correct", and the eyeball ledger is still the only
+answer to the second.
+
 ## `check` versus the app
 
 `check` drives the endpoints with `curl`, not through Commune. It answers one
