@@ -37,8 +37,11 @@ use self::{
     method_page::LoginMethodPage,
     session_setup_view::SessionSetupView,
 };
+// Android registers under a different client URI; see `client_metadata` below.
+#[cfg(not(target_os = "android"))]
+use crate::APP_HOMEPAGE_URL;
 use crate::{
-    APP_HOMEPAGE_URL, APP_NAME, Application, RUNTIME, SETTINGS_KEY_CURRENT_SESSION, Window,
+    APP_NAME, Application, RUNTIME, SETTINGS_KEY_CURRENT_SESSION, Window,
     components::OfflineBanner, prelude::*, secret::Secret, session::Session, spawn, spawn_tokio,
     toast,
 };
