@@ -345,12 +345,12 @@ a second run.
 * [ ] **A topic containing a matrix.to link is clickable** and opens that room
       or user inside the app rather than a browser. Same handler as the invite
       page; it is wired separately here.
-* [ ] **The header bar has a menu**, at the right. It offers _Space Details_,
+* [x] **The header bar has a menu**, at the right. It offers _Space Details_,
       _Invite New Members…_, _Leave Space_ and _Report Space…_. There was none
       at all until 24 August 2026, which left every page of the room details
-      unreachable for a space.
-* [ ] **_Space Details_ opens them**, and the _Spaces_ group in there can put
-      this space inside another one.
+      unreachable for a space. Reported working on 24 August 2026.
+* [x] **_Space Details_ opens them**, and the _Spaces_ group in there can put
+      this space inside another one. Reported working on 24 August 2026.
 * [ ] **_Invite New Members…_ is absent without the power to invite.**
 * [ ] **_Leave Space_ asks first**, and leaving works.
 * [ ] **No composer and no member list.** The space page is not a room
@@ -441,10 +441,10 @@ Slice 2. All of this is on the space page, below the topic.
 
 ### Leaving one, and not re-filing one
 
-* [ ] **The space row has a menu at all.** Right-click it, or use the ⋯ button
-      that appears on hover. It had none until `21f89afe`: the actions were
+* [x] **The space row has a menu at all.** Right-click it, or use the ⋯ button
+      that appears on hover. It had none until `60792ddf`: the actions were
       built and the row was never told it had a menu, so there was no way to
-      reach them. Reported on 24 August 2026.
+      reach them. Reported broken, then working, on 24 August 2026.
 * [ ] **Right-click the space row: the menu offers _Leave Room_ and
       _Report Room_, and nothing else.** No _Favorite_, no _Low Priority_, no
       _Set as Direct Chat_, no _Mark as Unread_. Those are tags and a space
