@@ -46,12 +46,13 @@ use crate::{
     session::{Event, Member, PackImage, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
-        Location, LocationError, TemplateCallbacks, TokioDrop, http,
+        File, Location, LocationError, TemplateCallbacks, TokioDrop, http,
         klipy::{self, SelectedGif},
         media::{
             FileInfo, audio::load_audio_info, filename_for_mime, image::ImageInfoLoader,
             video::load_video_info,
         },
+        save_data_to_tmp_file,
     },
 };
 
@@ -1188,12 +1189,6 @@ mod imp {
         async fn send_file_inner(&self, file: gio::File) {
             let obj = self.obj();
 
-            let Some(path) = file.path() else {
-                warn!("Could not read file: file does not have a path");
-                toast!(obj, gettext("Error reading file"));
-                return;
-            };
-
             let file_info = match FileInfo::try_from_file(&file).await {
                 Ok(file_info) => file_info,
                 Err(error) => {
@@ -1203,8 +1198,57 @@ mod imp {
                 }
             };
 
+            // Everything below this wants the file as a path or as a `file://`
+            // URI: the preview and the thumbnailer hand a URI to `GStreamer`,
+            // and the upload hands a path to the send queue. A file the Android
+            // picker returns has neither in a usable form. Its URI is
+            // `content://...`, which `GStreamer` has no handler for, and its
+            // `g_file_get_path` is GTK answering with `Uri.getPath()` -- a
+            // document id like `/document/video:1000000034`, which looks
+            // absolute and points at nothing, so it has to be checked rather
+            // than trusted. Copying it once here is what makes the rest work,
+            // and on every other platform the path is real and nothing is
+            // copied.
+            //
+            // `source_file` is held until this function returns, because a
+            // temporary one deletes itself when the last reference to it goes.
+            let (source_file, source) = match file.path().filter(|path| path.exists()) {
+                Some(path) => (File::from(file), AttachmentSource::from(path)),
+                None => {
+                    let data = match file.load_contents_future().await {
+                        Ok((data, _)) => data.to_vec(),
+                        Err(error) => {
+                            warn!("Could not read file: {error}");
+                            toast!(obj, gettext("Error reading file"));
+                            return;
+                        }
+                    };
+
+                    // The upload is given the bytes rather than the copy's
+                    // path, because `matrix-sdk` names an attachment after the
+                    // file it read, and the copy is named `.tmp` followed by
+                    // six random characters. The cost is holding the attachment
+                    // twice while the dialog is open, and the alternative is
+                    // sending every picked file under a name nobody chose.
+                    let source = AttachmentSource::Data {
+                        bytes: data.clone(),
+                        filename: file_info.filename.clone(),
+                    };
+
+                    match save_data_to_tmp_file(data).await {
+                        Ok(file) => (file, source),
+                        Err(error) => {
+                            warn!("Could not copy the file to a temporary file: {error}");
+                            toast!(obj, gettext("Error reading file"));
+                            return;
+                        }
+                    }
+                }
+            };
+            let file = source_file.as_gfile();
+
             let dialog = AttachmentDialog::new(&file_info.filename);
-            dialog.set_file(file.clone());
+            dialog.set_file(file.clone(), file_info.mime.type_().as_str().into());
 
             if dialog.response_future(&*obj).await != gtk::ResponseType::Ok {
                 return;
@@ -1233,7 +1277,7 @@ mod imp {
                 _ => (AttachmentInfo::File(BaseFileInfo { size }), None),
             };
 
-            self.send_attachment(path.into(), file_info.mime, info, thumbnail)
+            self.send_attachment(source, file_info.mime, info, thumbnail)
                 .await;
         }
 
