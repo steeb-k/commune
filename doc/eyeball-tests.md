@@ -38,9 +38,14 @@ struck here**. The page keeps its marks in one browser and nowhere else.
 
 ```sh
 testing/local-homeserver.sh up      # or `reset` for a clean slate
+testing/local-homeserver.sh verify  # says whether it is in the state below
 meson install -C _build             # the binary must be newer than the code
 commune
 ```
+
+`verify` reports and never repairs; `up` repairs. Run it before a session and
+whatever is wrong arrives at once rather than one room at a time in the middle
+of the list.
 
 Log in as **alice** — the greeter offers matrix.org first, so this means
 _Another Homeserver_ → `localhost:8008`. The harness sets four passwords:
