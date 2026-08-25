@@ -98,6 +98,14 @@ pub(crate) fn update(has_sessions: bool) {
                 debug!("Stopped syncing in the background");
             }
         }
+        // Sessions are restored before there is a window, and a window is where
+        // the `Activity` and therefore the `Context` come from. So the first
+        // call of a run routinely arrives too early, and says so; the call from
+        // `present_main_window()` is the one that takes. Expected, recovered
+        // from, and not worth a warning that reads like a failure.
+        Err(AndroidJniError::NoWindow) => {
+            debug!("Too early to change background syncing; there is no window yet");
+        }
         Err(error) => {
             // Not fatal in either direction. Failing to start costs background
             // delivery and nothing else; failing to stop leaves a notification
