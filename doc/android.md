@@ -38,7 +38,7 @@ whole route hung on.
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
-| S4 — GStreamer | not started |
+| S4 — GStreamer | **step 0 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, and `gst::init()` runs on the emulator. No plugins yet, so nothing decodes anything. The plan, the two traps that were not visible from reading `.pc` files, and what step 1 needs are in `doc/android-media-plan.md` |
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
@@ -976,6 +976,21 @@ Commune  : commune::application: Datadir: /data/user/0/…/files/share/commune
 
 ### How it is built
 
+Once per machine, before any of the below, because pixiewood has no wrap for
+GStreamer and cannot build one — see `doc/android-media-plan.md`:
+
+```sh
+# gstreamer-1.0-android-universal-<version>.tar.xz, ~992 MB, 2.0 GB per
+# architecture extracted. From https://gstreamer.freedesktop.org/data/pkg/android/
+tar xf gstreamer-1.0-android-universal-1.28.6.tar.xz -C $HOME/android/gstreamer
+sh build-aux/android/gstreamer-prefix.sh $HOME/android/gstreamer $HOME/android/gst-android
+```
+
+`meson.build` looks for the result at `$GSTREAMER_ANDROID_PREFIX`, defaulting to
+`~/android/gst-android`, and refuses to configure without it. **Do not point it at the extracted
+tarball directly** — that is what the prefix script exists to prevent, and the script's own header
+explains why at length.
+
 ```sh
 PW="perl $HOME/src/gtk-android-builder/pixiewood -C $PWD"
 $PW prepare --sdk $HOME/android/sdk --toolchain $HOME/android/sdk/ndk/27.2.12479018 \
@@ -1014,6 +1029,51 @@ is the cheap and correct habit.
 
 About eleven minutes from cold on this machine, most of it Cargo. The APK lands in
 `.pixiewood/android/app/build/outputs/apk/debug/app-x86_64-debug.apk`.
+
+### The APK is about twice the size it needs to be, for two reasons
+
+_Measured 25 August 2026, x86_64 debug._ Neither of these has been acted on; both are recorded here
+because every install over a slow link pays for them.
+
+**Roughly 200 MiB of the APK is dead space.** Gradle packages incrementally, and repeated builds
+leave orphaned data in the zip that no central-directory entry points at any more:
+
+| | |
+| --- | --- |
+| APK on disk | 517.5 MiB |
+| sum of its entries | 318.9 MiB |
+| gaps larger than 1 MiB | 4, the largest 163.4 MiB |
+
+`rm -rf .pixiewood/android/app/build/outputs/apk` before `pixiewood build` produced a 319.4 MiB
+APK from the identical inputs — exactly the entry total. Whether it recurs on every incremental
+build or only after a mid-build reconfigure is **not established**; the one measurement here
+followed a reconfigure that happened while a build was running.
+
+**The strip step fails, and Gradle carries on.** It says so, in a line that is easy to read past:
+
+```text
+Unable to strip the following libraries, packaging them as they are:
+libcommune.so, libjpeg.so, libturbojpeg.so
+```
+
+The NDK's own `llvm-strip --strip-all` handles the same files without complaint, so this is AGP's
+task failing rather than an unstrippable binary. What it costs, over all 36 native libraries:
+
+| | |
+| --- | --- |
+| as built | 315.4 MiB |
+| `--strip-all` | **158.5 MiB** |
+
+`libcommune.so` alone is 172.4 MiB as packaged and 108.9 MiB stripped: a 50 MB `.strtab` and an
+8 MB `.symtab` that were never meant to ship. And this is still a `buildtype=debug` build, which
+compiles the C stack at `-O0` — `libharfbuzz-subset.so` is 35 MiB as built and 4.9 MiB stripped.
+
+What is left after all that is our own binary, and it is the real story: 81 MiB of `.text` plus
+about 15 MiB of `.eh_frame` and `.gcc_except_table`. That is Rust with `matrix-sdk`, `ruma` and the
+crypto stack statically linked. The whole GTK stack — 35 libraries — is about 50 MiB stripped, and
+GStreamer is 0.55 MiB of it. Untried levers, in the order they look worth trying: fixing the strip
+task, a `release` build, then `lto`, `codegen-units = 1`, `panic = "abort"` and `strip` in the Cargo
+profile.
 
 When only the Rust has changed, `ninja src/libcommune.a` in `.pixiewood/bin-x86_64` is the fast
 loop, and the loud one: meson's wrapper truncates compiler output in `pixiewood build`, so a Rust
