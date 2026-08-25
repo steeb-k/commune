@@ -89,7 +89,40 @@ nothing to do with.
 
 The direct chat, the space's children and the peekable room are each made
 outside the `seeded.json` gate and behind a marker of their own, so a
-homeserver seeded before any of them existed gets them on the next `up`. It is not needed for
+homeserver seeded before any of them existed gets them on the next `up`.
+
+### Two things about the directory that cost an evening
+
+**`preset: public_chat` does not publish a room.** It sets the join rule.
+Whether a room appears in the directory is `visibility`, a different field on
+the same request, defaulting to `private` — so every room here was joinable by
+alias and none was ever listed, and **Explore had nothing to show on this
+homeserver from the day the script was written**. That is not something the
+client can be tested for, and the checks that ask you to find a space in
+Explore were untestable as written.
+
+**Synapse refuses to publish anything unless a rule says otherwise.** With no
+`room_list_publication_rules`, `PUT /directory/list/room/{id}` answers
+`Not allowed to publish room` whoever asks. `ensure_publication_config` adds
+the rule and restarts, the way the TURN and server-notices repairs do.
+
+`seed_directory` publishes the six rooms that should be findable, and rejoins
+alice to everything she owns on the way past — the checks ask for rooms to be
+left, and the seed step only ever creates. It writes its marker only when
+every call succeeded, so a partial run is tried again rather than remembered
+as finished.
+
+### Leaving a room you are alone in destroys it
+
+There is no way back into a room whose last member has left: not by alias, not
+by ID, not through the admin API, because no server is in it to ask. The
+eyeball checks ask for spaces to be left, and `Sub Space` had one member, so
+the first run through them took it for good.
+
+Bob is seeded into both spaces now, which is what stops it. `repair_sub_space`
+handles a server that has already lost it: it notices the room cannot be
+joined, releases the alias — which still points at the room nobody is in —
+builds it again and puts it back inside `Test Space`. It is not needed for
 the call buttons — those go by the member count, so every room alice and bob
 share has them — but it is where anybody testing calls looks first.
 

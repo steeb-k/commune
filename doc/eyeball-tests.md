@@ -554,8 +554,11 @@ not be retracted from the sidebar.
 ### Leaving one, and not re-filing one
 
 _Destructive. Leave it until the rest of this section is done — it takes away
-the spaces the checks above need, and getting them back means rejoining
-`#test-space:localhost` and `#sub-space:localhost` from Explore._
+the spaces the checks above need. `testing/local-homeserver.sh up` puts them
+back: it rejoins what can be rejoined and rebuilds `Sub Space` if it has to,
+because **a room whose last member leaves is destroyed and cannot be
+re-entered by anybody**. Bob is seeded into both spaces to stop that, and the
+repair exists for the servers that lost one before he was._
 
 * [x] **The space row has a menu at all.** Right-click it, or use the ⋯ button
       that appears on hover. It had none until `60792ddf`: the actions were
