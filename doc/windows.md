@@ -421,6 +421,14 @@ wrong, and nothing about it has been shown to be right either — this test says
 Worth fixing regardless: what reaches the user is "Could not open device", naming a backend nobody
 chose. "No microphone was found" is what happened.
 
+**Update, from the real console session (see the GSK entry below for how that was confirmed):**
+reconnecting over RustDesk instead of RDP gets `wasapisrc` a real device — the microphone comes
+through. Half of what blocked calls above was specifically an RDP redirection gap, not a port issue,
+and RustDesk closes it. The other half does not have an answer yet: this machine has no speakers, so
+even a call whose capture side now works cannot be confirmed to have a working playback side from
+here. A full round trip still needs either speakers on this machine or a way to confirm the far end
+heard something without relying on this end's own ears.
+
 **GSK renders through software (Cairo), and it is not RDP being RDP.** `GSK_DEBUG=renderer` names
 the reason directly:
 
