@@ -2080,10 +2080,15 @@ Regression, same rig: typing `testing` on Gboard's keys and deleting three chara
 backspace gives `test`, the room list filters to `testchat`, the suggestion strip offers
 `test`/`rest`/`testing`, and `inputType` is still `0x1`. The S8 fixes still hold.
 
-**Confirmed on the Pixel 9a, 25 August 2026** — _"This works beautifully."_ The emulator rig
-predicted hardware correctly, which is the other thing worth knowing about it: every conclusion in
-this section was reached with the phone switched off and none of them had to be revised once it was
-switched on.
+**Confirmed on the Pixel 9a, 25 August 2026** — _"This works beautifully."_ Including **in the
+message composer**, which is the `GtkTextView` case and the one worth having checked: there
+`retrieve-surrounding` returns a sliding window rather than the whole buffer, so the offsets handed
+to the keyboard are relative to a frame that moves as the cursor does. Computing every move as a
+delta from the position read in the same call is evidently enough to absorb that.
+
+The emulator rig predicted hardware correctly, which is the other thing worth knowing about it:
+every conclusion in this section was reached with the phone switched off, and none of them had to
+be revised once it was switched on.
 
 ### One bug of mine, not a demonstrated cause
 
