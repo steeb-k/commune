@@ -248,10 +248,10 @@ their own inputs and survive — so a rebuild to change the key is minutes, not 
 
 ### The folder relocates itself
 
-There is nothing here corresponding to the environment variables `src/utils/app_bundle.rs` has to
-set on macOS, and that is not an oversight. GLib on Windows works out where it was installed by
-asking the loader where `libglib-2.0-0.dll` came from and taking the parent of its directory;
-GdkPixbuf, GIO, GStreamer and fontconfig all follow the same convention. So a tree of
+Almost nothing here corresponds to the environment variables `src/utils/app_bundle.rs` has to set
+on macOS, and that is not an oversight. GLib on Windows works out where it was installed by asking
+the loader where `libglib-2.0-0.dll` came from and taking the parent of its directory; GdkPixbuf,
+GIO, GStreamer and fontconfig all follow the same convention. So a tree of
 
 ```text
 Commune/bin/*.dll   Commune/etc/...   Commune/lib/...   Commune/share/...
@@ -264,6 +264,24 @@ quietly — no generic family aliases, including the `emoji` one described above
 fonts either. The `meson install`-into-prefix development build was never affected, because it sits
 inside the full MSYS2 prefix and finds the real `/ucrt64/etc/fonts` regardless of anything the
 bundle script does.
+
+**Almost**, because our own two gresources are not a GLib lookup — they are a path Meson bakes into
+`RESOURCES_FILE`/`UI_RESOURCES_FILE` at `meson setup` time, same as Linux, where the app only ever
+runs from the prefix it was configured for. On Windows that assumption broke silently: a
+signed release `.msi`, installed and launched on a completely clean Windows 11 machine for the
+first time all session, showed nothing at all — no window, no dialog, not even an entry in the
+Application event log, just `commune.exe` in Task Manager for about two seconds before exiting.
+Exit code `101` was the tell — the code a Rust panic unwinds out of `main()` with — and redirecting
+stderr, which a `windows_subsystem = "windows"` binary has nowhere else to put it, gave the actual
+message: it could not open `C:/msys64/ucrt64/share/commune/resources.gresource`, the build
+machine's own MSYS2 prefix, which is never going to exist on anyone else's computer. It had only
+ever been tested on the machine that built it, where that path is real by coincidence. Fixed
+(`beb6bb58`) by giving `app_bundle.rs` a Windows branch that finds both gresources and the locale
+directory relative to `current_exe()`, the same way the macOS branch already does for its `.app` —
+`bin\commune.exe` sits beside `share\commune\*.gresource` in both `bundle.sh`'s folder and a plain
+`meson install`, so one relative computation covers both. Verified past what a passing build proves:
+renamed `C:\msys64\ucrt64\share\commune` out of the way so the old path genuinely could not resolve,
+and the bundle's own executable still reached a logged-in session.
 
 What is genuinely ours to do is the **DLL closure**, because Windows has no rpath and resolves an
 import by name in the loading module's own directory; the **gdk-pixbuf loader cache**, which
@@ -353,6 +371,18 @@ This matters more here than the equivalent did on macOS. There, an ad-hoc signat
 run and a real identity was out of reach, so the port shipped a tarball to route around Gatekeeper.
 Here there is a certificate, so the `.msi` can be something a stranger is willing to run: unsigned,
 SmartScreen shows an unknown-publisher warning that most people are right to obey.
+
+**And SmartScreen let a fresh Stable-profile `.msi` through without a warning.** Reputation is
+per-certificate as well as per-file, so the concern was that a brand-new build, however well the
+publisher's history reads elsewhere, might still get the "Windows protected your PC" treatment on
+its first run anywhere. Building it and running it locally does not exercise that check at all —
+SmartScreen's app-reputation gate only triggers on a file carrying the Mark-of-the-Web, the
+`Zone.Identifier` alternate data stream Explorer sets on anything that came from the internet zone.
+Stamping that by hand with `Set-Content -Stream Zone.Identifier` (writing a `[ZoneTransfer]` section
+with `ZoneId=3`) reproduces the real path without needing an actual upload and download.
+`smartscreen.exe` did run as part of launching it, but the installer went straight to the WiX license
+screen — no interception. Cancelled before actually installing, since the point was the reputation
+check, not a live install.
 
 ## What bit us
 
@@ -693,18 +723,12 @@ macOS, so the Control-key bindings the Linux build has are already right here.
 
 * **The rest of M1.** Logging in, syncing and session restore are all done — the last completing
   the Credential Manager path end to end, since restoring is the one part the round-trip test
-  could not cover. Still owed: image thumbnails and animated GIFs, and video and voice-message
-  playback.
+  could not cover. Search, image thumbnails and animated GIFs are confirmed working by hand. Still
+  owed: video and voice-message playback.
 * **Confirming this end's own call playback.** A real call has been placed and answered, camera and
   microphone both, with the far end confirming both arrived — see [What bit us](#what-bit-us). What
   is left is narrower than "does calling work": this machine has no speakers, so nobody has yet heard
   or watched a call arrive _here_. Needs speakers on this machine, or a second device to confirm from.
-* **Whether search actually finds anything.** The indexing errors are gone and the index is built
-  in memory, but no search has been run against it from the UI.
-* **What SmartScreen makes of it.** The artifacts are signed and verify, but nobody has yet
-  downloaded one through a browser on a machine that has never seen Commune, which is the only way
-  to find out what a stranger is shown. Reputation accrues per certificate and per file, so an
-  early build may still be warned about.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
