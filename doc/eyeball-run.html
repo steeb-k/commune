@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; a6ecaf87</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 8cb0b353</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Spaces</span><b>59</b></a><a href="#s2" data-for="s2"><span>Choosing a space, restricting a room to one, and putting one in</span><b>47</b></a><a href="#s3" data-for="s3"><span>Reading a room without joining it</span><b>12</b></a><a href="#s4" data-for="s4"><span>Going to a message without leaving the present</span><b>9</b></a><a href="#s5" data-for="s5"><span>Signing up and resetting a password</span><b>20</b></a><a href="#s6" data-for="s6"><span>Presence</span><b>11</b></a><a href="#s7" data-for="s7"><span>Pinned messages</span><b>5</b></a><a href="#s8" data-for="s8"><span>Calls</span><b>4</b></a><a href="#s9" data-for="s9"><span>Server ACLs</span><b>1</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Spaces</span><b>0</b></a><a href="#s2" data-for="s2"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s3" data-for="s3"><span>Reading a room without joining it</span><b>0</b></a><a href="#s4" data-for="s4"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s5" data-for="s5"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s6" data-for="s6"><span>Presence</span><b>0</b></a><a href="#s7" data-for="s7"><span>Pinned messages</span><b>0</b></a><a href="#s8" data-for="s8"><span>Calls</span><b>0</b></a><a href="#s9" data-for="s9"><span>Server ACLs</span><b>0</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -222,12 +222,12 @@ a screenshot; <em>Copy report</em> or <em>Save report</em> then gathers them up.
 <section id="s0" data-open="1" data-checks="0"><header><h2>How to run this</h2></header><div class="body"><p>The sections below are ordered oldest first, which is the wrong order to read them in. <strong>Work newest first</strong>: the code nobody has looked at yet is the code most likely to be wrong, and four of the five bugs found on 24 August 2026 were in work less than a day old.</p><p><code>doc/eyeball-run.html</code> is this file with checkboxes, generated from it by <code>doc/eyeball-page.py</code> and published at &lt;https://claude.ai/code/artifact/9b66f090-2f6d-407e-a802-ea4079773fe9&gt;. Regenerate and republish it whenever this file changes — the ledger is the source, the page only draws it, and <strong>a result is not recorded until it is struck here</strong>. The page keeps its marks in one browser and nowhere else.</p><h3>Before anything</h3><pre><code>testing/local-homeserver.sh up      # or `reset` for a clean slate
 testing/local-homeserver.sh verify  # says whether it is in the state below
 meson install -C _build             # the binary must be newer than the code
-commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</code> repairs. Run it before a session and whatever is wrong arrives at once rather than one room at a time in the middle of the list.</p><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. The harness sets four passwords: <code>alice-is-testing</code>, <code>bob-is-testing</code>, <code>carol-is-testing</code>, <code>admin-is-testing</code>.</p><p><strong>Who is who.</strong> Alice owns nearly everything. <strong>Bob</strong> is a second member — including of both spaces, so that alice leaving one does not destroy it — which means he can never be invited to them. <strong>Carol</strong> exists and has joined nothing, and is who the invite checks are for. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p><h3>What to do last</h3><p>Anything marked <strong>Destructive</strong> takes away what the rest of its section is looking at. Those subsections sit at the end of each section for that reason, and the run sheet marks them. Nothing here is unrecoverable — <code>Test Space</code> and <code>Sub Space</code> are public, so rejoining them is a search in Explore — but it is ten minutes you do not need to spend.</p></div></section><section id="s1" data-open="1" data-checks="62"><header><h2>Spaces</h2><span class="src">doc/spaces.md</span><span class="cnt" data-count>59 left</span></header><div class="body"><p>Round 3. Slice 1 made spaces stop being invisible; slice 2 made the space page list the rooms inside one. The slice 1 checks are about a space being present, openable, leavable and findable; the slice 2 checks are under <em>What is inside one</em>.</p><h3>Setting up</h3><p>Everything except the last group runs against <code>testing/local-homeserver.sh</code>, which seeds a public space called <strong>Test Space</strong> (<code>#test-space:localhost</code>, created by alice) with six rooms inside it, one for each shape a listing has to draw:</p><div class="scroller"><table><thead><tr><th>Room</th><th>Why it is there</th></tr></thead><tbody><tr><td><code>Public Room</code></td><td>alice has joined it — the button should say <em>View</em></td></tr><tr><td><code>Restricted Room</code></td><td>alice has joined it too, and it names the space in its join rule</td></tr><tr><td><code>Bobs Room</code></td><td>bob made it and alice never joined — the button should say <em>Join</em></td></tr><tr><td><code>Sub Space</code></td><td>a space inside a space — where the one-level limit shows</td></tr><tr><td><code>Readable Room</code></td><td><code>world_readable</code>, but alice&#x27;s own, so she is in it</td></tr><tr><td><code>Peekable Room</code></td><td><code>world_readable</code> and bob&#x27;s — the one alice can preview</td></tr></tbody></table></div><p>Naming a space in a join rule is <strong>not</strong> the same as being a child of it, so <code>seed_space_children()</code> writes the <code>m.space.child</code> events, and <code>seed_peekable_room()</code> adds the last of them. Both run outside the <code>seeded.json</code> gate, which means an existing server picks the children up:</p><pre><code>testing/local-homeserver.sh up        # or `reset` for a clean slate</code></pre><p>Log in as alice — the greeter now offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. For the invite check, log in as bob in a second run.</p><h3>The sidebar</h3><div class="chk" data-id="kbe6d26f95f" data-state="" data-lead="A &quot;Spaces&quot; section appears">
+commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</code> repairs. Run it before a session and whatever is wrong arrives at once rather than one room at a time in the middle of the list.</p><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. The harness sets four passwords: <code>alice-is-testing</code>, <code>bob-is-testing</code>, <code>carol-is-testing</code>, <code>admin-is-testing</code>.</p><p><strong>Who is who.</strong> Alice owns nearly everything. <strong>Bob</strong> is a second member — including of both spaces, so that alice leaving one does not destroy it — which means he can never be invited to them. <strong>Carol</strong> exists and has joined nothing, and is who the invite checks are for. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p><h3>What to do last</h3><p>Anything marked <strong>Destructive</strong> takes away what the rest of its section is looking at. Those subsections sit at the end of each section for that reason, and the run sheet marks them. Nothing here is unrecoverable — <code>Test Space</code> and <code>Sub Space</code> are public, so rejoining them is a search in Explore — but it is ten minutes you do not need to spend.</p></div></section><section id="s1" data-open="1" data-checks="62"><header><h2>Spaces</h2><span class="src">doc/spaces.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>Round 3. Slice 1 made spaces stop being invisible; slice 2 made the space page list the rooms inside one. The slice 1 checks are about a space being present, openable, leavable and findable; the slice 2 checks are under <em>What is inside one</em>.</p><h3>Setting up</h3><p>Everything except the last group runs against <code>testing/local-homeserver.sh</code>, which seeds a public space called <strong>Test Space</strong> (<code>#test-space:localhost</code>, created by alice) with six rooms inside it, one for each shape a listing has to draw:</p><div class="scroller"><table><thead><tr><th>Room</th><th>Why it is there</th></tr></thead><tbody><tr><td><code>Public Room</code></td><td>alice has joined it — the button should say <em>View</em></td></tr><tr><td><code>Restricted Room</code></td><td>alice has joined it too, and it names the space in its join rule</td></tr><tr><td><code>Bobs Room</code></td><td>bob made it and alice never joined — the button should say <em>Join</em></td></tr><tr><td><code>Sub Space</code></td><td>a space inside a space — where the one-level limit shows</td></tr><tr><td><code>Readable Room</code></td><td><code>world_readable</code>, but alice&#x27;s own, so she is in it</td></tr><tr><td><code>Peekable Room</code></td><td><code>world_readable</code> and bob&#x27;s — the one alice can preview</td></tr></tbody></table></div><p>Naming a space in a join rule is <strong>not</strong> the same as being a child of it, so <code>seed_space_children()</code> writes the <code>m.space.child</code> events, and <code>seed_peekable_room()</code> adds the last of them. Both run outside the <code>seeded.json</code> gate, which means an existing server picks the children up:</p><pre><code>testing/local-homeserver.sh up        # or `reset` for a clean slate</code></pre><p>Log in as alice — the greeter now offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. For the invite check, log in as bob in a second run.</p><h3>The sidebar</h3><div class="chk" data-id="kbe6d26f95f" data-state="" data-lead="A &quot;Spaces&quot; section appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A &quot;Spaces&quot; section appears</strong>, between <em>Server Notices</em> and <em>Favorites</em>, holding Test Space. This much was seen on 24 August 2026 on the user&#x27;s own account — the rest of this list was not.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A &quot;Spaces&quot; section appears</strong>, between <em>Server Notices</em> and <em>Favorites</em>, holding Test Space. This much was seen on 24 August 2026 on the user&#x27;s own account — the rest of this list was not.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -240,7 +240,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>It is collapsed on an existing session and expanded on a new one.</strong> Expected, not a fault: the expanded sections are stored as a set of names, and a session saved before this change has no <code>space</code> in it. Check both: an account already logged in, and one logged in fresh after <code>rm -rf ~/.local/share/commune</code> (or a second account).</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>It is collapsed on an existing session and expanded on a new one.</strong> Expected, not a fault: the expanded sections are stored as a set of names, and a session saved before this change has no <code>space</code> in it. Check both: an account already logged in, and one logged in fresh after <code>rm -rf ~/.local/share/commune</code> (or a second account).</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -253,7 +253,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The expander remembers.</strong> Collapse it, quit, start again: still collapsed. This is the <code>space</code> string reaching <code>SessionSettings</code>, and a typo there fails silently.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The expander remembers.</strong> Collapse it, quit, start again: still collapsed. This is the <code>space</code> string reaching <code>SessionSettings</code>, and a typo there fails silently.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -266,7 +266,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The section disappears when it is empty.</strong> Leave the last space and the header should go with it, the way <em>Favorites</em> does.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The section disappears when it is empty.</strong> Leave the last space and the header should go with it, the way <em>Favorites</em> does.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -279,7 +279,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The row carries a grid icon</strong> with a &quot;Space&quot; tooltip on hover.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The row carries a grid icon</strong> with a &quot;Space&quot; tooltip on hover.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -292,7 +292,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The icon did not steal anyone else&#x27;s.</strong> A direct chat still shows the person icon, a call room the video icon, the server notices room the warning triangle. The space branch was put <em>ahead</em> of all three, so this is the regression to watch.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The icon did not steal anyone else&#x27;s.</strong> A direct chat still shows the person icon, a call room the video icon, the server notices room the warning triangle. The space branch was put <em>ahead</em> of all three, so this is the regression to watch.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -305,7 +305,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space with unread state does not shout.</strong> A space receives no messages, so its row should carry no unread dot and the section header no count. If a count appears, the aggregation in <code>SidebarSection</code> is counting something that is not a message.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space with unread state does not shout.</strong> A space receives no messages, so its row should carry no unread dot and the section header no count. If a count appears, the aggregation in <code>SidebarSection</code> is counting something that is not a message.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -318,7 +318,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The sidebar room search finds it.</strong> Ctrl+K, type &quot;Test&quot; — the space should be among the results and selecting it should open the space page, not an empty timeline.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The sidebar room search finds it.</strong> Ctrl+K, type &quot;Test&quot; — the space should be among the results and selecting it should open the space page, not an empty timeline.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -331,7 +331,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>Selecting the space opens a page with its name</strong>, not an empty room history. This is the visible bug slice 1 exists to fix, so if anything here is wrong, this is the thing to report.</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><span class="tag seen">Seen</span><strong>Selecting the space opens a page with its name</strong>, not an empty room history. This is the visible bug slice 1 exists to fix, so if anything here is wrong, this is the thing to report.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -344,7 +344,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The header bar</strong> shows the space name as the title and the word &quot;Space&quot; underneath as a subtitle.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The header bar</strong> shows the space name as the title and the word &quot;Space&quot; underneath as a subtitle.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -357,7 +357,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The header bar is the same height as every other page&#x27;s.</strong> Switch between a room, Explore and the space with the sidebar visible. It was added to the size group by hand and the array&#x27;s length is a literal.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The header bar is the same height as every other page&#x27;s.</strong> Switch between a room, Explore and the space with the sidebar visible. It was added to the size group by hand and the array&#x27;s length is a literal.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -370,7 +370,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The body</strong>: an avatar, the name in large type, the canonical alias <code>#test-space:localhost</code> under it, and the list of rooms below that.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The body</strong>: an avatar, the name in large type, the canonical alias <code>#test-space:localhost</code> under it, and the list of rooms below that.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -383,7 +383,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space with no topic hides the topic label</strong> rather than leaving a gap — and a space <em>with</em> one shows it. Set one from another client, or check against a space on matrix.org.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space with no topic hides the topic label</strong> rather than leaving a gap — and a space <em>with</em> one shows it. Set one from another client, or check against a space on matrix.org.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -396,7 +396,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A topic containing a matrix.to link is clickable</strong> and opens that room or user inside the app rather than a browser. Same handler as the invite page; it is wired separately here.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A topic containing a matrix.to link is clickable</strong> and opens that room or user inside the app rather than a browser. Same handler as the invite page; it is wired separately here.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -435,7 +435,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Invite New Members…</em> is absent without the power to invite.</strong></div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Invite New Members…</em> is absent without the power to invite.</strong></div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -448,7 +448,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Somebody already in the space says so.</strong> Search for <code>bob</code>, who is a member of both spaces: his row has no checkbox and a chip reading <em>Already a member</em> where the checkbox would be. Reported on 24 August 2026 as a row that could not be clicked with nothing saying why — the chip was a dim label sharing its space with the user ID, and it ellipsized away.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Somebody already in the space says so.</strong> Search for <code>bob</code>, who is a member of both spaces: his row has no checkbox and a chip reading <em>Already a member</em> where the checkbox would be. Reported on 24 August 2026 as a row that could not be clicked with nothing saying why — the chip was a dim label sharing its space with the user ID, and it ellipsized away.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -461,7 +461,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Somebody who is in nothing can be picked.</strong> Search for <code>carol</code> and her row has a checkbox.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Somebody who is in nothing can be picked.</strong> Search for <code>carol</code> and her row has a checkbox.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -474,7 +474,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Return in the search box does not put a line break in it.</strong> It is a text view, because a pill has to sit inside the text, and it used to take Return as a new line — which also put a newline in the term being searched for. Return should now invite whoever is selected, or do nothing when the button is insensitive.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Return in the search box does not put a line break in it.</strong> It is a text view, because a pill has to sit inside the text, and it used to take Return as a new line — which also put a newline in the term being searched for. Return should now invite whoever is selected, or do nothing when the button is insensitive.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -487,7 +487,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Leave Space</em> asks first</strong>, and leaving works.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Leave Space</em> asks first</strong>, and leaving works.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -500,7 +500,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>No composer and no member list.</strong> The space page is not a room history; if the call buttons or the search button turn up on it, the wrong page is being shown.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>No composer and no member list.</strong> The space page is not a room history; if the call buttons or the search button turn up on it, the wrong page is being shown.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -513,7 +513,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The six seeded rooms appear</strong> under a <em>Rooms</em> heading: Public Room, Restricted Room, Bobs Room, Sub Space, Readable Room and Peekable Room. Not five, not seven, and <strong>not Test Space itself</strong> — the space is the first room the endpoint returns and it is skipped on purpose.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The six seeded rooms appear</strong> under a <em>Rooms</em> heading: Public Room, Restricted Room, Bobs Room, Sub Space, Readable Room and Peekable Room. Not five, not seven, and <strong>not Test Space itself</strong> — the space is the first room the endpoint returns and it is skipped on purpose.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -526,7 +526,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A spinner shows first and is replaced.</strong> Select the space from a cold start. If the spinner stays forever the request failed silently; if the page is blank the stack landed on the wrong child.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A spinner shows first and is replaced.</strong> Select the space from a cold start. If the spinner stays forever the request failed silently; if the page is blank the stack landed on the wrong child.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -539,7 +539,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The buttons say the right thing.</strong> As alice: <em>View</em> on Public Room, Restricted Room and Readable Room, <em>Join</em> on Bobs Room and Peekable Room. As bob, who is in Bobs Room, Peekable Room and Sub Space and not the rest, they swap over. This is <code>RoomListRoomInfo</code>, and a button that says <em>Join</em> for a room you are already in means the identifiers are not matching.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The buttons say the right thing.</strong> As alice: <em>View</em> on Public Room, Restricted Room and Readable Room, <em>Join</em> on Bobs Room and Peekable Room. As bob, who is in Bobs Room, Peekable Room and Sub Space and not the rest, they swap over. This is <code>RoomListRoomInfo</code>, and a button that says <em>Join</em> for a room you are already in means the identifiers are not matching.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -552,7 +552,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>View</em> opens the room.</strong> Clicking it selects that room in the sidebar and shows its timeline.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>View</em> opens the room.</strong> Clicking it selects that room in the sidebar and shows its timeline.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -565,7 +565,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Join</em> joins it, in place.</strong> Click <em>Join</em> on Bobs Room: the button shows its loading state, the room appears in the sidebar under <em>Rooms</em>, and the button on the space page turns into <em>View</em> <strong>without reopening the page</strong>. That last part is the live half of <code>RoomListRoomInfo</code>; if it needs a revisit to update, the handler is not connected.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Join</em> joins it, in place.</strong> Click <em>Join</em> on Bobs Room: the button shows its loading state, the room appears in the sidebar under <em>Rooms</em>, and the button on the space page turns into <em>View</em> <strong>without reopening the page</strong>. That last part is the live half of <code>RoomListRoomInfo</code>; if it needs a revisit to update, the handler is not connected.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -578,7 +578,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Sub Space is marked as a space</strong> — the dimmed grid icon and the word <em>Space</em> — and its button behaves like any other room&#x27;s.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Sub Space is marked as a space</strong> — the dimmed grid icon and the word <em>Space</em> — and its button behaves like any other room&#x27;s.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -591,7 +591,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Sub Space opens its own page too.</strong> <em>View</em> it (join it first if need be) and you land on a second space page, for Sub Space.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Sub Space opens its own page too.</strong> <em>View</em> it (join it first if need be) and you land on a second space page, for Sub Space.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -604,7 +604,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>An empty space says so.</strong> Sub Space has no children of its own, so its page should read &quot;There are no rooms in this space yet.&quot; rather than showing a spinner or an empty heading.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>An empty space says so.</strong> Sub Space has no children of its own, so its page should read &quot;There are no rooms in this space yet.&quot; rather than showing a spinner or an empty heading.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -617,7 +617,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Each row shows what it should</strong>: avatar, name, topic where there is one, canonical alias where there is one, and a member count. A room with no topic must not leave a gap.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Each row shows what it should</strong>: avatar, name, topic where there is one, canonical alias where there is one, and a member count. A room with no topic must not leave a gap.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -630,7 +630,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Switching between two spaces swaps the lists.</strong> Select Test Space, then Sub Space, then Test Space again. The second page must never show the first page&#x27;s rooms, even for an instant — the list is cleared before the new request goes out, and the response of a space you have navigated away from is dropped.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Switching between two spaces swaps the lists.</strong> Select Test Space, then Sub Space, then Test Space again. The second page must never show the first page&#x27;s rooms, even for an instant — the list is cleared before the new request goes out, and the response of a space you have navigated away from is dropped.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -643,7 +643,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The list survives a reselect.</strong> Leave the space page, come back: the rooms are still there, or are fetched again, but never half of them.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The list survives a reselect.</strong> Leave the space page, come back: the rooms are still there, or are fetched again, but never half of them.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -656,7 +656,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>No truncation notice on a small space.</strong> &quot;This space holds more rooms than are listed here.&quot; should be <strong>invisible</strong> for Test Space. It only belongs on a space with more than 200 rooms, which the harness has no way to make — check it on matrix.org if you find one.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>No truncation notice on a small space.</strong> &quot;This space holds more rooms than are listed here.&quot; should be <strong>invisible</strong> for Test Space. It only belongs on a space with more than 200 rooms, which the harness has no way to make — check it on matrix.org if you find one.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -669,7 +669,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The error state is reachable and recoverable.</strong> Stop the homeserver (<code>testing/local-homeserver.sh down</code>), open a space you have not opened this session: the page should say the rooms could not be listed and offer <em>Try Again</em>. Bring the server back up and press it — the list should fill in. A dead-end error page is the failure here.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The error state is reachable and recoverable.</strong> Stop the homeserver (<code>testing/local-homeserver.sh down</code>), open a space you have not opened this session: the page should say the rooms could not be listed and offer <em>Try Again</em>. Bring the server back up and press it — the list should fill in. A dead-end error page is the failure here.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -682,7 +682,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space on matrix.org lists its rooms too.</strong> This is the check that the <code>via</code> servers are being read: a real space holds rooms on other homeservers, and joining one of those from the list is what fails if the <code>m.space.child</code> events were not parsed.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space on matrix.org lists its rooms too.</strong> This is the check that the <code>via</code> servers are being read: a real space holds rooms on other homeservers, and joining one of those from the list is what fails if the <code>m.space.child</code> events were not parsed.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -695,7 +695,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A subspace has an expander</strong> — a triangle to the left of its row — and an ordinary room does not. Put a room inside <code>Sub Space</code> from another client first, or with <em>Add to Space…</em>, so it has something to show.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A subspace has an expander</strong> — a triangle to the left of its row — and an ordinary room does not. Put a room inside <code>Sub Space</code> from another client first, or with <em>Add to Space…</em>, so it has something to show.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -708,7 +708,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Opening it draws its rooms underneath, indented</strong>, without a spinner and without a pause. The whole hierarchy arrives in one walk, so this should be instant even on a slow homeserver — if it stalls, something is fetching per expansion.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Opening it draws its rooms underneath, indented</strong>, without a spinner and without a pause. The whole hierarchy arrives in one walk, so this should be instant even on a slow homeserver — if it stalls, something is fetching per expansion.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -721,7 +721,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A subspace of a subspace expands too</strong>, as deep as the space goes.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A subspace of a subspace expands too</strong>, as deep as the space goes.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -734,7 +734,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space with nothing in it has no expander.</strong> <code>Sub Space</code> before you put anything in it must be a plain row.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space with nothing in it has no expander.</strong> <code>Sub Space</code> before you put anything in it must be a plain row.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -747,7 +747,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Closing it puts the rooms away</strong> and the row keeps its own button.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Closing it puts the rooms away</strong> and the row keeps its own button.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -760,7 +760,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>A loop does not open forever.</strong> From another client, add <code>Test Space</code> as a child of <code>Sub Space</code>, so <code>Test Space → Sub Space → Test Space</code>. Opening <code>Sub Space</code> should show <code>Test Space</code> as a <strong>plain row with no expander</strong> — it is already one of the spaces above it. Without that guard it would open forever, and this is the check most worth doing.</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><span class="tag seen">Seen</span><strong>A loop does not open forever.</strong> From another client, add <code>Test Space</code> as a child of <code>Sub Space</code>, so <code>Test Space → Sub Space → Test Space</code>. Opening <code>Sub Space</code> should show <code>Test Space</code> as a <strong>plain row with no expander</strong> — it is already one of the spaces above it. Without that guard it would open forever, and this is the check most worth doing.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -773,7 +773,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room in two spaces appears in both</strong>, which is what the hierarchy says. Add <code>Public Room</code> to <code>Sub Space</code> as well and open both.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room in two spaces appears in both</strong>, which is what the hierarchy says. Add <code>Public Room</code> to <code>Sub Space</code> as well and open both.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -786,7 +786,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The order is the specification&#x27;s.</strong> <code>m.space.child</code> carries an <code>order</code>; set one on two of <code>Test Space</code>&#x27;s children from another client and confirm they sort by it, before the ones without, and that the rest sort oldest-event-first.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The order is the specification&#x27;s.</strong> <code>m.space.child</code> carries an <code>order</code>; set one on two of <code>Test Space</code>&#x27;s children from another client and confirm they sort by it, before the ones without, and that the rest sort oldest-event-first.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -799,7 +799,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The buttons still work at depth.</strong> <em>Join</em> and <em>Preview</em> on a row three levels down behave the same as at the top.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The buttons still work at depth.</strong> <em>Join</em> and <em>Preview</em> on a row three levels down behave the same as at the top.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -812,7 +812,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Explore lists spaces at all.</strong> Search for &quot;Test&quot; on <code>localhost</code> — the space should be in the results next to the ordinary rooms. Before this change the directory was asked to exclude them.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Explore lists spaces at all.</strong> Search for &quot;Test&quot; on <code>localhost</code> — the space should be in the results next to the ordinary rooms. Before this change the directory was asked to exclude them.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -825,7 +825,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space row says &quot;Space&quot;</strong> — a dimmed grid icon and the word, beside the member count. An ordinary room row must <strong>not</strong> show it; that is the half of this check that catches a property left always-true.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space row says &quot;Space&quot;</strong> — a dimmed grid icon and the word, beside the member count. An ordinary room row must <strong>not</strong> show it; that is the half of this check that catches a property left always-true.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -838,7 +838,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Joining from Explore</strong> works and the room lands in the Spaces section, not in <em>Rooms</em>. The button should read <em>Join</em>, and <em>View</em> once joined.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Joining from Explore</strong> works and the room lands in the Spaces section, not in <em>Rooms</em>. The button should read <em>Join</em>, and <em>View</em> once joined.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -851,7 +851,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>On matrix.org</strong>, where the directory is large: search for a known space (<code>#space:matrix.org</code> and similar) and confirm the marker appears there too. The local harness has one space and one shape of summary; a real directory is where a missing <code>room_type</code> shows up.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>On matrix.org</strong>, where the directory is large: search for a known space (<code>#space:matrix.org</code> and similar) and confirm the marker appears there too. The local harness has one space and one shape of summary; a real directory is where a missing <code>room_type</code> shows up.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -864,7 +864,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>An invite to a space still goes to <em>Invited</em></strong> and opens the ordinary invite page. Invite <strong>carol</strong> to Test Space and log in as her — bob is already a member of both spaces and cannot be invited to either, which the invite page correctly refuses to offer. Accepting should drop the space into her Spaces section on the next sync; declining should behave like declining a room. The invite page says nothing about it being a space, which is known and recorded in <code>spaces.md</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>An invite to a space still goes to <em>Invited</em></strong> and opens the ordinary invite page. Invite <strong>carol</strong> to Test Space and log in as her — bob is already a member of both spaces and cannot be invited to either, which the invite page correctly refuses to offer. Accepting should drop the space into her Spaces section on the next sync; declining should behave like declining a room. The invite page says nothing about it being a space, which is known and recorded in <code>spaces.md</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -877,7 +877,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room added to a space while its page is open does not appear.</strong> Known, and recorded in <code>spaces.md</code> under <em>Not done</em>: the listing is fetched once. Reselecting the space should pick the new room up. This check exists so the behaviour is not re-reported as a bug.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room added to a space while its page is open does not appear.</strong> Known, and recorded in <code>spaces.md</code> under <em>Not done</em>: the listing is fetched once. Reselecting the space should pick the new room up. This check exists so the behaviour is not re-reported as a bug.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -890,7 +890,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Nothing regressed for ordinary rooms.</strong> Favorites, Low Priority, Historical and the drag-and-drop between them all still work; the <em>Forget</em> target is still at the bottom of the sidebar. The section index map was rewritten by hand and it is exactly the kind of change that moves a section&#x27;s contents into its neighbour.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Nothing regressed for ordinary rooms.</strong> Favorites, Low Priority, Historical and the drag-and-drop between them all still work; the <em>Forget</em> target is still at the bottom of the sidebar. The section index map was rewritten by hand and it is exactly the kind of change that moves a section&#x27;s contents into its neighbour.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -903,7 +903,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Knock on a room</strong> — <code>#knock-room:localhost</code> from Explore, as carol — and then <strong>right-click its sidebar row</strong>: the menu should offer <em>Retract</em>.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Knock on a room</strong> — <code>#knock-room:localhost</code> from Explore, as carol — and then <strong>right-click its sidebar row</strong>: the menu should offer <em>Retract</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -916,7 +916,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Retracting works</strong> and the row goes.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Retracting works</strong> and the row goes.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -929,7 +929,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>It is called access, not an invite, all the way through.</strong> Carol&#x27;s button reads <em>Request Access</em>; her sidebar section reads <em>Access Requests</em>; alice sees <em>Access Requests</em> in the room&#x27;s members page, the profile says <em>Requested Access</em>, and the two buttons there read <em>Accept Request</em> and <em>Deny Request</em>. The word <em>invite</em> should not appear anywhere in the flow. Reported on 24 August 2026 as two vocabularies in one feature, with the accept button reading <em>Invite</em> beside a <em>Deny Request</em>.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>It is called access, not an invite, all the way through.</strong> Carol&#x27;s button reads <em>Request Access</em>; her sidebar section reads <em>Access Requests</em>; alice sees <em>Access Requests</em> in the room&#x27;s members page, the profile says <em>Requested Access</em>, and the two buttons there read <em>Accept Request</em> and <em>Deny Request</em>. The word <em>invite</em> should not appear anywhere in the flow. Reported on 24 August 2026 as two vocabularies in one feature, with the accept button reading <em>Invite</em> beside a <em>Deny Request</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -942,7 +942,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong><em>Allow Access Requests</em></strong> is what the switch in <em>Who Can Join</em> says.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong><em>Allow Access Requests</em></strong> is what the switch in <em>Who Can Join</em> says.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -968,7 +968,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Right-click the space row: the menu offers <em>Leave Room</em> and <em>Report Room</em>, and nothing else.</strong> No <em>Favorite</em>, no <em>Low Priority</em>, no <em>Set as Direct Chat</em>, no <em>Mark as Unread</em>. Those are tags and a space takes none of them.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Right-click the space row: the menu offers <em>Leave Room</em> and <em>Report Room</em>, and nothing else.</strong> No <em>Favorite</em>, no <em>Low Priority</em>, no <em>Set as Direct Chat</em>, no <em>Mark as Unread</em>. Those are tags and a space takes none of them.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -981,7 +981,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong><em>Leave Room</em> asks first</strong>, then the row leaves the Spaces section and turns up under <em>Historical</em>. Then <em>Forget</em> from there should work as it does for a room.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong><em>Leave Room</em> asks first</strong>, then the row leaves the Spaces section and turns up under <em>Historical</em>. Then <em>Forget</em> from there should work as it does for a room.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -994,7 +994,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Re-joining it</strong> — from Explore, or the alias — puts it back in the Spaces section rather than in <em>Rooms</em>.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Re-joining it</strong> — from Explore, or the alias — puts it back in the Spaces section rather than in <em>Rooms</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1007,7 +1007,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Dragging the space row</strong> highlights only <em>Historical</em> as a valid drop target; every other section should go grey. Dropping it there leaves the space, the same as the menu item.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Dragging the space row</strong> highlights only <em>Historical</em> as a valid drop target; every other section should go grey. Dropping it there leaves the space, the same as the menu item.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1020,7 +1020,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Dragging an ordinary room over the Spaces section does nothing.</strong> The section must show as disabled and refuse the drop. Rooms are put into spaces with <code>m.space.child</code>, which does not exist here yet, and a drop that silently did nothing would be worse than one that refuses.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Dragging an ordinary room over the Spaces section does nothing.</strong> The section must show as disabled and refuse the drop. Rooms are put into spaces with <code>m.space.child</code>, which does not exist here yet, and a drop that silently did nothing would be worse than one that refuses.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1028,12 +1028,12 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s2" data-open="1" data-checks="47"><header><h2>Choosing a space, restricting a room to one, and putting one in</h2><span class="src">doc/join-rules.md`, `doc/spaces.md</span><span class="cnt" data-count>47 left</span></header><div class="body"><p>Round 3, slice 3. The client can now ask which space you mean; <em>Who Can Join</em> uses it to build a restricted rule rather than only to keep one, and the room details use it to put a room into a space.</p><h3>Setting up</h3><p>The harness seeds <code>Test Space</code> and <code>Sub Space</code>, plus <code>Restricted Room</code>, which is already restricted to <code>Test Space</code>, and <code>Knock Restricted Room</code>, which is the same with knocking on. Log in as alice, who owns all of them.</p><pre><code>testing/local-homeserver.sh up</code></pre><h3>Making a space</h3><div class="chk" data-id="k05f4055376" data-state="" data-lead="The new-room dialog offers a _Kind_.">
+</div></div></section><section id="s2" data-open="1" data-checks="49"><header><h2>Choosing a space, restricting a room to one, and putting one in</h2><span class="src">doc/join-rules.md`, `doc/spaces.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>Round 3, slice 3. The client can now ask which space you mean; <em>Who Can Join</em> uses it to build a restricted rule rather than only to keep one, and the room details use it to put a room into a space.</p><h3>Setting up</h3><p>The harness seeds <code>Test Space</code> and <code>Sub Space</code>, plus <code>Restricted Room</code>, which is already restricted to <code>Test Space</code>, and <code>Knock Restricted Room</code>, which is the same with knocking on. Log in as alice, who owns all of them.</p><pre><code>testing/local-homeserver.sh up</code></pre><h3>Making a space</h3><div class="chk" data-id="k05f4055376" data-state="" data-lead="The new-room dialog offers a _Kind_.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The new-room dialog offers a <em>Kind</em>.</strong> <em>Room</em> is selected; picking <em>Space</em> changes the heading to <em>New Space</em> and the button to <em>Create Space</em>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The new-room dialog offers a <em>Kind</em>.</strong> <em>Room</em> is selected; picking <em>Space</em> changes the heading to <em>New Space</em> and the button to <em>Create Space</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1041,12 +1041,25 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="k2d4d6aeba1" data-state="" data-lead="The encryption switch disappears for a space">
+</div><div class="chk" data-id="k5b5869244d" data-state="" data-lead="The Name box is there whatever is being made.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The encryption switch disappears for a space</strong> and comes back for a room.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The Name box is there whatever is being made.</strong> The group titled <em>Name</em>, between <em>Kind</em> and <em>Description</em>, takes a name for a room and for a space, private or public. Reported on 25 August 2026 as a private space having &quot;the encryption rocker switch instead of the name box&quot;; confirmed good the same day once the switch was gone for a space. The box that was missed was <em>Main Address</em>, which appears for <em>Public</em> only, under the visibility choices: the <code>#alias</code>, which a private room does not have.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kbcd7437dbc" data-state="" data-lead="The encryption switch disappears for a space">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The encryption switch disappears for a space</strong> and comes back for a room. Reported on 25 August 2026 as staying on screen for a private space, and going only when <em>Public</em> was picked: the visibility half of the condition was a binding in the template and the kind half was a <code>set_visible</code> from Rust, and the binding won. Both halves are in the binding now, and it was reported working the same day.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1059,7 +1072,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The visibility subtitles say &quot;space&quot;</strong> rather than &quot;room&quot;.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The visibility subtitles say &quot;space&quot;</strong> rather than &quot;room&quot;.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1072,7 +1085,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Creating a private space works</strong>, and it lands in the <em>Spaces</em> sidebar section rather than in <em>Rooms</em> — this is the check that <code>creation_content</code> really carried <code>type: m.space</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Creating a private space works</strong>, and it lands in the <em>Spaces</em> sidebar section rather than in <em>Rooms</em> — this is the check that <code>creation_content</code> really carried <code>type: m.space</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1085,7 +1098,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Creating a public space works</strong> and takes an address, the same as a room.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Creating a public space works</strong> and takes an address, the same as a room.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1098,7 +1111,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Nobody can post in it.</strong> From another client, look at the new space&#x27;s power levels: <code>events_default</code> should be 100, with <code>m.space.child</code>, the name, the topic and the avatar at 50. A space anybody can post into is a room with a hidden timeline.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Nobody can post in it.</strong> From another client, look at the new space&#x27;s power levels: <code>events_default</code> should be 100, with <code>m.space.child</code>, the name, the topic and the avatar at 50. A space anybody can post into is a room with a hidden timeline.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1111,7 +1124,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The new space accepts rooms.</strong> Add a room to it from that room&#x27;s details, and open the space to see it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The new space accepts rooms.</strong> Add a room to it from that room&#x27;s details, and open the space to see it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1124,7 +1137,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Room Details → <em>Who Can Join</em> on any room shows <em>Members of a Space</em>.</strong> It used to be hidden unless the room was already restricted. It should now be there for <code>Public Room</code> and <code>Invite Room</code> too.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Room Details → <em>Who Can Join</em> on any room shows <em>Members of a Space</em>.</strong> It used to be hidden unless the room was already restricted. It should now be there for <code>Public Room</code> and <code>Invite Room</code> too.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1137,7 +1150,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Selecting it reveals a <em>Space</em> row below the three choices</strong>, reading <em>None chosen</em> for a room that has no restriction.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Selecting it reveals a <em>Space</em> row below the three choices</strong>, reading <em>None chosen</em> for a room that has no restriction.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1150,7 +1163,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Activating that row opens a dialog listing your spaces</strong> — <code>Test Space</code> and <code>Sub Space</code>, and nothing else. No ordinary rooms, no direct chat, no server notices room.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Activating that row opens a dialog listing your spaces</strong> — <code>Test Space</code> and <code>Sub Space</code>, and nothing else. No ordinary rooms, no direct chat, no server notices room.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1163,7 +1176,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The room you are editing is not in the list.</strong> Open <em>Who Can Join</em> on <code>Test Space</code> itself: the picker must offer <code>Sub Space</code> only. A space cannot be restricted to itself.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The room you are editing is not in the list.</strong> Open <em>Who Can Join</em> on <code>Test Space</code> itself: the picker must offer <code>Sub Space</code> only. A space cannot be restricted to itself.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1176,7 +1189,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Search filters the list</strong>, and a search matching nothing says so rather than showing an empty box.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Search filters the list</strong>, and a search matching nothing says so rather than showing an empty box.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1189,7 +1202,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Dismissing the dialog changes nothing</strong> — press Escape or click away, and the <em>Space</em> row still reads what it did.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Dismissing the dialog changes nothing</strong> — press Escape or click away, and the <em>Space</em> row still reads what it did.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1202,7 +1215,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Choosing a space fills the row in</strong>, the dialog closes, and <em>Save</em> becomes sensitive.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Choosing a space fills the row in</strong>, the dialog closes, and <em>Save</em> becomes sensitive.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1215,7 +1228,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Saving works.</strong> The rule is written and the page comes back showing <em>Members of a Space</em> with that space named. Confirm from another client that the room really is restricted.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Saving works.</strong> The rule is written and the page comes back showing <em>Members of a Space</em> with that space named. Confirm from another client that the room really is restricted.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1228,7 +1241,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A user in the space can then join the room</strong>, and one outside it cannot. As <strong>carol</strong>, who is in no space, try the room you just restricted; then have alice invite her to <code>Test Space</code>, accept, and try again. Bob is no use here — he is already in both spaces.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A user in the space can then join the room</strong>, and one outside it cannot. As <strong>carol</strong>, who is in no space, try the room you just restricted; then have alice invite her to <code>Test Space</code>, accept, and try again. Bob is no use here — he is already in both spaces.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1241,7 +1254,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong><em>Save</em> stays insensitive with the rule selected and no space chosen.</strong> This is the check that matters most: saving in that state would send a restricted rule allowing nobody, which this page cannot undo. Select <em>Members of a Space</em> on an unrestricted room and go no further.</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><span class="tag seen">Seen</span><strong><em>Save</em> stays insensitive with the rule selected and no space chosen.</strong> This is the check that matters most: saving in that state would send a restricted rule allowing nobody, which this page cannot undo. Select <em>Members of a Space</em> on an unrestricted room and go no further.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1254,7 +1267,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Going back with the rule selected and no space chosen</strong> asks about unsaved changes only if there are any — there are none, so it should just go back.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Going back with the rule selected and no space chosen</strong> asks about unsaved changes only if there are any — there are none, so it should just go back.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1267,7 +1280,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The rule is not silently swapped.</strong> With <em>Members of a Space</em> selected and no space, the page must not save an invite or knock rule instead. That is what the old code did, and it was invisible.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The rule is not silently swapped.</strong> With <em>Members of a Space</em> selected and no space, the page must not save an invite or knock rule instead. That is what the old code did, and it was invisible.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1280,7 +1293,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room already restricted to a space keeps it</strong> when you only flip <em>Allow Invite Requests</em>. Open <code>Restricted Room</code>, toggle the switch, save, and check from another client that the allow list still names <code>Test Space</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room already restricted to a space keeps it</strong> when you only flip <em>Allow Invite Requests</em>. Open <code>Restricted Room</code>, toggle the switch, save, and check from another client that the allow list still names <code>Test Space</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1293,7 +1306,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room with no permission shows the space and no arrow.</strong> As bob in a room he cannot administer, <em>Who Can Join</em> should still say which space, with the row not activatable.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room with no permission shows the space and no arrow.</strong> As bob in a room he cannot administer, <em>Who Can Join</em> should still say which space, with the row not activatable.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1306,7 +1319,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The <em>Spaces</em> group is on the general page</strong> of any room that is not a direct chat, under <em>Access and Visibility</em>, with one row.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The <em>Spaces</em> group is on the general page</strong> of any room that is not a direct chat, under <em>Access and Visibility</em>, with one row.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1319,7 +1332,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>It is absent from a direct chat.</strong> Open the details of the alice–bob chat: no <em>Spaces</em> group.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>It is absent from a direct chat.</strong> Open the details of the alice–bob chat: no <em>Spaces</em> group.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1332,7 +1345,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Add to Space…</em> opens the picker</strong>, listing <code>Test Space</code> and <code>Sub Space</code> — the spaces alice made, and so can write in.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Add to Space…</em> opens the picker</strong>, listing <code>Test Space</code> and <code>Sub Space</code> — the spaces alice made, and so can write in.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1345,7 +1358,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space you cannot write in is not offered.</strong> As bob: he is a member of both spaces and administers neither, so the picker must be <strong>empty</strong> and say so. Membership is not enough — this is the check that <code>SendState(SpaceChild)</code> is really being asked rather than &quot;am I in it&quot;, and the one most likely to be wrong.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space you cannot write in is not offered.</strong> As bob: he is a member of both spaces and administers neither, so the picker must be <strong>empty</strong> and say so. Membership is not enough — this is the check that <code>SendState(SpaceChild)</code> is really being asked rather than &quot;am I in it&quot;, and the one most likely to be wrong.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1358,7 +1371,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The room being added is not offered itself.</strong> Open the details of <code>Test Space</code> and press <em>Add to Space…</em>: only <code>Sub Space</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The room being added is not offered itself.</strong> Open the details of <code>Test Space</code> and press <em>Add to Space…</em>: only <code>Sub Space</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1371,7 +1384,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Adding <code>Invite Room</code> to <code>Test Space</code> says so</strong>, with a toast naming the space.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Adding <code>Invite Room</code> to <code>Test Space</code> says so</strong>, with a toast naming the space.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1384,7 +1397,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The room appears in the space.</strong> Open <code>Test Space</code> from the sidebar — the list should now hold <code>Invite Room</code> as well. It will not appear while the space page is already open; the listing is fetched once, which is recorded in <code>spaces.md</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The room appears in the space.</strong> Open <code>Test Space</code> from the sidebar — the list should now hold <code>Invite Room</code> as well. It will not appear while the space page is already open; the listing is fetched once, which is recorded in <code>spaces.md</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1397,7 +1410,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Another client agrees.</strong> Check from Element that <code>Test Space</code> has an <code>m.space.child</code> for the room, and that the room has an <code>m.space.parent</code> for the space with <code>canonical</code> absent or false.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Another client agrees.</strong> Check from Element that <code>Test Space</code> has an <code>m.space.child</code> for the room, and that the room has an <code>m.space.parent</code> for the space with <code>canonical</code> absent or false.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1410,7 +1423,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Adding a room somebody else administers still works.</strong> Have bob make a room, have alice join it without power, and add it to <code>Test Space</code> from alice&#x27;s client. The <code>m.space.child</code> needs power in the <strong>space</strong>, which alice has; the <code>m.space.parent</code> needs power in the <strong>room</strong>, which she does not, so it should be skipped with a warning in the log and the operation should still report success.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Adding a room somebody else administers still works.</strong> Have bob make a room, have alice join it without power, and add it to <code>Test Space</code> from alice&#x27;s client. The <code>m.space.child</code> needs power in the <strong>space</strong>, which alice has; the <code>m.space.parent</code> needs power in the <strong>room</strong>, which she does not, so it should be skipped with a warning in the log and the operation should still report success.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1423,7 +1436,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Adding a room twice is harmless</strong> — the state event is simply written again.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Adding a room twice is harmless</strong> — the state event is simply written again.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1436,7 +1449,20 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The row goes insensitive while it works</strong> and comes back afterwards, whether it succeeded or not.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The row goes insensitive while it works</strong> and comes back afterwards, whether it succeeded or not.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k5a357db0be" data-state="" data-lead="The space is listed the moment the toast says so.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The space is listed the moment the toast says so.</strong> The other half of the removal fault below: adding also read the whole list again from a state store that had not heard about the change, so on a slow homeserver the <em>Spaces</em> group did not name the space it had just been told about. Watch the group, not the toast — do not close and reopen the page. Reported working on 25 August 2026.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1449,7 +1475,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The <em>Spaces</em> group lists them.</strong> Add <code>Invite Room</code> to <code>Test Space</code>, then reopen its details: a row naming <code>Test Space</code>, with its avatar.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The <em>Spaces</em> group lists them.</strong> Add <code>Invite Room</code> to <code>Test Space</code>, then reopen its details: a row naming <code>Test Space</code>, with its avatar.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1462,7 +1488,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room in no space lists none</strong> — just the <em>Add to Space…</em> row.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room in no space lists none</strong> — just the <em>Add to Space…</em> row.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1475,7 +1501,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The looking-for-them row does not stay.</strong> A spinner row appears while the spaces are asked and goes when they answer. If it never goes, the read failed silently.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The looking-for-them row does not stay.</strong> A spinner row appears while the spaces are asked and goes when they answer. If it never goes, the read failed silently.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1488,7 +1514,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room in two spaces lists both.</strong> Add the same room to <code>Sub Space</code> as well.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room in two spaces lists both.</strong> Add the same room to <code>Sub Space</code> as well.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1501,7 +1527,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A space you are not in is not listed</strong>, even when it holds the room. This cannot be helped and is not a fault: the state of a space nobody here has joined cannot be read. Check it by having bob add one of alice&#x27;s rooms to a space alice is not in.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A space you are not in is not listed</strong>, even when it holds the room. This cannot be helped and is not a fault: the state of a space nobody here has joined cannot be read. Check it by having bob add one of alice&#x27;s rooms to a space alice is not in.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1514,7 +1540,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>A room that only claims a parent is not believed.</strong> From another client, write an <code>m.space.parent</code> into a room pointing at a space that does <strong>not</strong> name it as a child, as a user with no power in that space. It must not appear. This is the specification&#x27;s own rule and the check most worth doing, because getting it wrong lets any room claim to be anywhere.</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><span class="tag seen">Seen</span><strong>A room that only claims a parent is not believed.</strong> From another client, write an <code>m.space.parent</code> into a room pointing at a space that does <strong>not</strong> name it as a child, as a user with no power in that space. It must not appear. This is the specification&#x27;s own rule and the check most worth doing, because getting it wrong lets any room claim to be anywhere.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1527,7 +1553,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>…unless whoever claimed it could have made it true.</strong> Same test, but write the parent event as somebody who can send <code>m.space.child</code> in that space. It should appear.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>…unless whoever claimed it could have made it true.</strong> Same test, but write the parent event as somebody who can send <code>m.space.child</code> in that space. It should appear.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1540,7 +1566,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A suggested child is marked.</strong> From another client, set <code>&quot;suggested&quot;: true</code> on one of <code>Test Space</code>&#x27;s <code>m.space.child</code> events. That room&#x27;s row on the space page should show a star and the word <em>Suggested</em>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A suggested child is marked.</strong> From another client, set <code>&quot;suggested&quot;: true</code> on one of <code>Test Space</code>&#x27;s <code>m.space.child</code> events. That room&#x27;s row on the space page should show a star and the word <em>Suggested</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1553,7 +1579,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>No other row shows it</strong>, on the space page or in Explore. The flag belongs to the relationship, not to the room, so a room listed anywhere else must never carry it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>No other row shows it</strong>, on the space page or in Explore. The flag belongs to the relationship, not to the room, so a room listed anywhere else must never carry it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1566,7 +1592,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room too old for restricted rules does not offer it.</strong> Restricted join rules arrived in room version 8 and <code>knock_restricted</code> in version 10. Make a version 7 room from another client: <em>Members of a Space</em> must be absent and the notice at the top of the page must show.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room too old for restricted rules does not offer it.</strong> Restricted join rules arrived in room version 8 and <code>knock_restricted</code> in version 10. Make a version 7 room from another client: <em>Members of a Space</em> must be absent and the notice at the top of the page must show.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1579,7 +1605,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A version 8 or 9 room offers the rule but not knocking over it.</strong> Select <em>Members of a Space</em> there and <em>Allow Invite Requests</em> must go insensitive — <code>knock_restricted</code> does not exist for that room, and sending it would be rejected.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A version 8 or 9 room offers the rule but not knocking over it.</strong> Select <em>Members of a Space</em> there and <em>Allow Invite Requests</em> must go insensitive — <code>knock_restricted</code> does not exist for that room, and sending it would be rejected.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1587,12 +1613,12 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3 class='wrecks'>Taking a room back out</h3><p><em>Destructive. Leave it until the rest of this section is done — it undoes the <code>m.space.child</code> events the checks above are looking at. Adding the room back puts them right.</em></p><div class="chk" data-id="k7fc42ec4e6" data-state="" data-lead="Each row has a _Remove_ button">
+</div><h3 class='wrecks'>Taking a room back out</h3><p><em>Destructive. Leave it until the rest of this section is done — it undoes the <code>m.space.child</code> events the checks above are looking at. Adding the room back puts them right.</em></p><div class="chk" data-id="kb7438bbfdb" data-state="" data-lead="Each row has a _Remove_ button">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Each row has a <em>Remove</em> button</strong>, and pressing it takes the room out of that space: the row goes, a toast says so, and the space&#x27;s own page no longer lists the room when reopened.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Each row has a <em>Remove</em> button</strong>, and pressing it takes the room out of that space: the row goes <strong>at once</strong>, a toast says so, and the space&#x27;s own page no longer lists the room when reopened. Reported on 25 August 2026 as working, but with the row staying for something like half a minute against a slow homeserver — the whole list was read again from the local state store, which does not carry the change until it comes back down the sync. The row is taken out directly now, and the wait was gone when it was looked at again the same day.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1605,7 +1631,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Another client agrees.</strong> The <code>m.space.child</code> should now be an empty object rather than gone — Matrix has no way to delete a state event.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Another client agrees.</strong> The <code>m.space.child</code> should now be an empty object rather than gone — Matrix has no way to delete a state event.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1618,7 +1644,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>The button is insensitive without permission.</strong> As bob, in a space he does not administer that holds a room he can see, the row appears and the button does not work.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>The button is insensitive without permission.</strong> As bob, in a space he does not administer that holds a room he can see, the row appears and the button does not work.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1631,7 +1657,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Adding it back works</strong>, and the room reappears in the space.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>Adding it back works</strong>, and the room reappears in the space.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1639,12 +1665,12 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s3" data-open="1" data-checks="18"><header><h2>Reading a room without joining it</h2><span class="src">doc/peeking.md</span><span class="cnt" data-count>12 left</span></header><div class="body"><p>Round 3, item 7. A room whose history is <code>world_readable</code> can be read by anybody, and Commune now offers that as a <strong>Preview</strong> — in the room preview dialog, and on every row of Explore and of a space page.</p><p><strong>Some of this was seen on 24 August 2026</strong>, against a real room on <code>matrix.org</code> from a <code>matrix.org</code> account rather than against the harness. Those checks are struck below and say so. Everything unstruck is still unseen — and the whole &quot;where the button is <em>not</em>&quot; group is, which is the half that catches a flag being read wrong.</p><h3>Setting up</h3><p><code>testing/local-homeserver.sh</code> seeds <strong>Peekable Room</strong> inside <code>Test Space</code>: bob&#x27;s room, <code>world_readable</code>, with two messages in it. It is bob&#x27;s on purpose — <code>Readable Room</code> is <code>world_readable</code> too but alice created it, so she is a member and gets the room rather than a preview of it. Everything else in the harness is <code>shared</code> history, which is not the same thing and must <strong>not</strong> offer a preview.</p><pre><code>testing/local-homeserver.sh up</code></pre><p><code>seed_peekable_room()</code> has a marker of its own, so a server seeded before this existed picks the room up without a reset. Log in as alice.</p><h3>Where the button is, and is not</h3><div class="chk" data-id="k94068e5d27" data-state="" data-lead="A _Preview_ button appears on Peekable Room&#x27;s row">
+</div></div></section><section id="s3" data-open="1" data-checks="18"><header><h2>Reading a room without joining it</h2><span class="src">doc/peeking.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>Round 3, item 7. A room whose history is <code>world_readable</code> can be read by anybody, and Commune now offers that as a <strong>Preview</strong> — in the room preview dialog, and on every row of Explore and of a space page.</p><p><strong>Some of this was seen on 24 August 2026</strong>, against a real room on <code>matrix.org</code> from a <code>matrix.org</code> account rather than against the harness. Those checks are struck below and say so. Everything unstruck is still unseen — and the whole &quot;where the button is <em>not</em>&quot; group is, which is the half that catches a flag being read wrong.</p><h3>Setting up</h3><p><code>testing/local-homeserver.sh</code> seeds <strong>Peekable Room</strong> inside <code>Test Space</code>: bob&#x27;s room, <code>world_readable</code>, with two messages in it. It is bob&#x27;s on purpose — <code>Readable Room</code> is <code>world_readable</code> too but alice created it, so she is a member and gets the room rather than a preview of it. Everything else in the harness is <code>shared</code> history, which is not the same thing and must <strong>not</strong> offer a preview.</p><pre><code>testing/local-homeserver.sh up</code></pre><p><code>seed_peekable_room()</code> has a marker of its own, so a server seeded before this existed picks the room up without a reset. Log in as alice.</p><h3>Where the button is, and is not</h3><div class="chk" data-id="k94068e5d27" data-state="" data-lead="A _Preview_ button appears on Peekable Room&#x27;s row">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A <em>Preview</em> button appears on Peekable Room&#x27;s row</strong>, on the Test Space page, beside <em>Join</em>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A <em>Preview</em> button appears on Peekable Room&#x27;s row</strong>, on the Test Space page, beside <em>Join</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1657,7 +1683,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>It does not appear on any other row.</strong> Readable Room is <code>world_readable</code> but joined; Public Room and Restricted Room are joined; Bobs Room and Sub Space are not <code>world_readable</code>. A button on any of those means a flag is being read wrong, and that is the half of this check worth caring about.</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><span class="tag seen">Seen</span><strong>It does not appear on any other row.</strong> Readable Room is <code>world_readable</code> but joined; Public Room and Restricted Room are joined; Bobs Room and Sub Space are not <code>world_readable</code>. A button on any of those means a flag is being read wrong, and that is the half of this check worth caring about.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1670,7 +1696,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>It does not appear once the room is joined.</strong> Join Peekable Room and look at the row again: <em>View</em>, and no <em>Preview</em>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>It does not appear once the room is joined.</strong> Join Peekable Room and look at the row again: <em>View</em>, and no <em>Preview</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1683,7 +1709,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The same button is in the room preview dialog.</strong> Ctrl+K or <em>+</em> → <em>Join a Room</em>, enter <code>#peekable-room:localhost</code>, and the details page should show <em>Preview</em> next to <em>Join</em>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The same button is in the room preview dialog.</strong> Ctrl+K or <em>+</em> → <em>Join a Room</em>, enter <code>#peekable-room:localhost</code>, and the details page should show <em>Preview</em> next to <em>Join</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1696,7 +1722,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>An encrypted room never offers it.</strong> Nothing in the harness is both encrypted and <code>world_readable</code>; if you can make one from another client, the button must stay hidden.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>An encrypted room never offers it.</strong> Nothing in the harness is both encrypted and <code>world_readable</code>; if you can make one from another client, the button must stay hidden.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1709,7 +1735,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Pressing <em>Preview</em> shows the two seeded messages</strong>, oldest first, each with a sender name and a timestamp. Seen on 24 August 2026 on a <code>matrix.org</code> room, not against the harness, so this stays open.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Pressing <em>Preview</em> shows the two seeded messages</strong>, oldest first, each with a sender name and a timestamp. Seen on 24 August 2026 on a <code>matrix.org</code> room, not against the harness, so this stays open.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1787,7 +1813,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Join</em> is on the preview page too</strong>, and joining from there works and closes the dialog on the room. The button was on screen on 24 August 2026; it was not pressed, so this stays open.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Join</em> is on the preview page too</strong>, and joining from there works and closes the dialog on the room. The button was on screen on 24 August 2026; it was not pressed, so this stays open.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1800,7 +1826,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Back goes to the details, not out.</strong> From the preview, the back arrow should land on the room&#x27;s details page; from there it goes to the entry page, or closes if the dialog was opened on a room. The arrow was on screen; it was not pressed.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Back goes to the details, not out.</strong> From the preview, the back arrow should land on the room&#x27;s details page; from there it goes to the entry page, or closes if the dialog was opened on a room. The arrow was on screen; it was not pressed.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1826,7 +1852,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room on another homeserver says so.</strong> Try a <code>world_readable</code> room on matrix.org from the local harness. Expect <em>Cannot Be Read</em>: Synapse does not peek a room it does not have, and that page exists because this is the common outcome, not a rare one. Note what 24 August 2026 showed: from a <code>matrix.org</code> account, a <code>matrix.org</code> room is <strong>local</strong> and peeks perfectly. The failure is cross-homeserver, which is narrower than <code>doc/peeking.md</code> first put it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room on another homeserver says so.</strong> Try a <code>world_readable</code> room on matrix.org from the local harness. Expect <em>Cannot Be Read</em>: Synapse does not peek a room it does not have, and that page exists because this is the common outcome, not a rare one. Note what 24 August 2026 showed: from a <code>matrix.org</code> account, a <code>matrix.org</code> room is <strong>local</strong> and peeks perfectly. The failure is cross-homeserver, which is narrower than <code>doc/peeking.md</code> first put it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1839,7 +1865,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The message is not an error toast or a spinner that never stops.</strong></div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The message is not an error toast or a spinner that never stops.</strong></div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1852,7 +1878,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Pressing <em>Preview</em> again retries.</strong> Go back, press it again — it should make the request a second time rather than showing the stale failure.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Pressing <em>Preview</em> again retries.</strong> Go back, press it again — it should make the request a second time rather than showing the stale failure.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1865,7 +1891,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room with no messages says <em>Nothing to Read</em></strong> rather than showing an empty list. Make an empty <code>world_readable</code> room from another client.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room with no messages says <em>Nothing to Read</em></strong> rather than showing an empty list. Make an empty <code>world_readable</code> room from another client.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1873,7 +1899,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s4" data-open="1" data-checks="10"><header><h2>Going to a message without leaving the present</h2><span class="src">doc/search.md</span><span class="cnt" data-count>9 left</span></header><div class="body"><p><code>RoomHistory::focus_on_event()</code> used to build a focused timeline every time. It now prefers the room&#x27;s <strong>live</strong> timeline whenever that already holds the event, and highlights the message in place. Every way of going to a message runs through it, so all four need a look, and the one that motivated the change is the notification.</p><p><strong>There is no harness for the notification case.</strong> <code>COMMUNE_TEST_NOTIFICATION=1</code> deliberately carries a room URI, not an event URI, so it takes the room-preview path and proves nothing here. It needs a real incoming message while the window is unfocused — two accounts, or a phone.</p><div class="chk" data-id="k065c84970e" data-state="" data-lead="A notification for a brand new message opens the room at the bottom, with no _Back to Latest_ button.">
+</div></div></section><section id="s4" data-open="1" data-checks="10"><header><h2>Going to a message without leaving the present</h2><span class="src">doc/search.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p><code>RoomHistory::focus_on_event()</code> used to build a focused timeline every time. It now prefers the room&#x27;s <strong>live</strong> timeline whenever that already holds the event, and highlights the message in place. Every way of going to a message runs through it, so all four need a look, and the one that motivated the change is the notification.</p><p><strong>There is no harness for the notification case.</strong> <code>COMMUNE_TEST_NOTIFICATION=1</code> deliberately carries a room URI, not an event URI, so it takes the room-preview path and proves nothing here. It needs a real incoming message while the window is unfocused — two accounts, or a phone.</p><div class="chk" data-id="k065c84970e" data-state="" data-lead="A notification for a brand new message opens the room at the bottom, with no _Back to Latest_ button.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1891,7 +1917,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>And the room keeps updating afterwards.</strong> Send another message from the other account without touching anything: it must appear. This is the half that was actually broken, and it is invisible unless you wait for it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>And the room keeps updating afterwards.</strong> Send another message from the other account without touching anything: it must appear. This is the half that was actually broken, and it is invisible unless you wait for it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1904,7 +1930,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The message is highlighted for about three seconds</strong> and then goes back to normal. Watch that it does not stay highlighted, and that it does not look like a selection.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The message is highlighted for about three seconds</strong> and then goes back to normal. Watch that it does not stay highlighted, and that it does not look like a selection.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1917,7 +1943,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A read receipt is sent.</strong> The other account should see the message marked read. A focused timeline suppresses receipts on purpose, so this is how you tell which timeline you actually landed in without looking for the button.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A read receipt is sent.</strong> The other account should see the message marked read. A focused timeline suppresses receipts on purpose, so this is how you tell which timeline you actually landed in without looking for the button.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1930,7 +1956,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A notification for an old message still gets a focused timeline</strong> — the <em>Back to Latest</em> button appears and works. Scroll a room&#x27;s history back a long way from the other account&#x27;s side, or click a notification that has sat unread while thousands of messages arrived. The fallback is the case the focused timeline exists for and it must still work.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A notification for an old message still gets a focused timeline</strong> — the <em>Back to Latest</em> button appears and works. Scroll a room&#x27;s history back a long way from the other account&#x27;s side, or click a notification that has sat unread while thousands of messages arrived. The fallback is the case the focused timeline exists for and it must still work.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1943,7 +1969,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A <code>matrix.to</code> permalink to a message near the bottom</strong> stays live and highlights, and one to an old message focuses. Paste one into a room and click it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A <code>matrix.to</code> permalink to a message near the bottom</strong> stays live and highlights, and one to an old message focuses. Paste one into a room and click it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1956,7 +1982,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A search result behaves the same way.</strong> A hit on a recent message should now leave you in the live timeline rather than in a snapshot — this is a deliberate change to how search results open, and it is the one most likely to feel wrong to somebody used to the old behaviour.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A search result behaves the same way.</strong> A hit on a recent message should now leave you in the live timeline rather than in a snapshot — this is a deliberate change to how search results open, and it is the one most likely to feel wrong to somebody used to the old behaviour.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1969,7 +1995,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A pinned message opens the same way</strong>, which for a recently pinned message means staying live.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A pinned message opens the same way</strong>, which for a recently pinned message means staying live.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1982,7 +2008,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A room that has never been opened in this session.</strong> The live timeline is still being built when the notification is clicked, so the highlight is a pending one. Restart the app, do not open the room, then click a notification for a message in it: it should still land live and highlighted, not focused. If the timeline takes more than two seconds to become ready, it falls back to a focused timeline — no worse than before, but worth noticing if it happens every time.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A room that has never been opened in this session.</strong> The live timeline is still being built when the notification is clicked, so the highlight is a pending one. Restart the app, do not open the room, then click a notification for a message in it: it should still land live and highlighted, not focused. If the timeline takes more than two seconds to become ready, it falls back to a focused timeline — no worse than before, but worth noticing if it happens every time.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1995,7 +2021,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Clicking a notification for a room you are already reading</strong> does not jump anywhere unpleasant or steal the scroll position for long.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Clicking a notification for a room you are already reading</strong> does not jump anywhere unpleasant or steal the scroll position for long.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2003,7 +2029,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s5" data-open="1" data-checks="32"><header><h2>Signing up and resetting a password</h2><span class="src">doc/registration.md</span><span class="cnt" data-count>20 left</span></header><div class="body"><p>The sign-up half was run on 24 August 2026 and reported as going well end to end. Struck below are the things that run says were seen; the edge cases and the ones with no local harness are still open, and the reset half has not been touched at all.</p><p>Use <code>testing/local-homeserver.sh</code> for all of it — it runs with open registration, so Synapse asks for <code>m.login.dummy</code> and no stage needs input. Registering on a public server leaves a junk account behind.</p><div class="chk" data-id="k47c898d182" data-state="" data-lead="The _Create Account_ button is there at all">
+</div></div></section><section id="s5" data-open="1" data-checks="32"><header><h2>Signing up and resetting a password</h2><span class="src">doc/registration.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>The sign-up half was run on 24 August 2026 and reported as going well end to end. Struck below are the things that run says were seen; the edge cases and the ones with no local harness are still open, and the reset half has not been touched at all.</p><p>Use <code>testing/local-homeserver.sh</code> for all of it — it runs with open registration, so Synapse asks for <code>m.login.dummy</code> and no stage needs input. Registering on a public server leaves a junk account behind.</p><div class="chk" data-id="k47c898d182" data-state="" data-lead="The _Create Account_ button is there at all">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2099,7 +2125,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A taken username refused at the last moment</strong> — register <code>bob</code> in two windows at once, or take the name between the check and the button — says &quot;This username is already taken&quot; from the new error mapping.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A taken username refused at the last moment</strong> — register <code>bob</code> in two windows at once, or take the name between the check and the button — says &quot;This username is already taken&quot; from the new error mapping.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2112,7 +2138,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Going back cleans the page.</strong> Leave the register page, come back, and the three rows should be empty with no leftover green or amber, and the meter at zero.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Going back cleans the page.</strong> Leave the register page, come back, and the three rows should be empty with no leftover green or amber, and the meter at zero.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2151,7 +2177,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The terms page</strong>, which has no harness at all — Synapse only asks for <code>m.login.terms</code> with a <code>user_consent</code> block and its template files. A check button per policy document, each row with an external-link button that opens it, and <em>Agree</em> insensitive until every box is ticked. The most likely things to be wrong here are the row layout (prefix check button, suffix link) and which language of the document is picked.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The terms page</strong>, which has no harness at all — Synapse only asks for <code>m.login.terms</code> with a <code>user_consent</code> block and its template files. A check button per policy document, each row with an external-link button that opens it, and <em>Agree</em> insensitive until every box is ticked. The most likely things to be wrong here are the row layout (prefix check button, suffix link) and which language of the document is picked.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2164,7 +2190,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The fallback page</strong>, for a stage this client still does not draw — a captcha, or an emailed token: the homeserver&#x27;s own web page should appear inside the dialog. <code>matrix.org</code> asks for a captcha, which is one run through it and no more.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The fallback page</strong>, for a stage this client still does not draw — a captcha, or an emailed token: the homeserver&#x27;s own web page should appear inside the dialog. <code>matrix.org</code> asks for a captcha, which is one run through it and no more.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2177,7 +2203,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The OAuth path</strong>, which needs a server with the OAuth 2.0 API: the browser should open the server&#x27;s <em>sign-up</em> form rather than its sign-in form, and a server that does not advertise <code>prompt=create</code> should say so with a toast instead of opening a browser at all. Nothing in the harness speaks OAuth, so this needs <code>matrix.org</code> or another real server.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The OAuth path</strong>, which needs a server with the OAuth 2.0 API: the browser should open the server&#x27;s <em>sign-up</em> form rather than its sign-in form, and a server that does not advertise <code>prompt=create</code> should say so with a toast instead of opening a browser at all. Nothing in the harness speaks OAuth, so this needs <code>matrix.org</code> or another real server.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2203,7 +2229,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The two rows draw</strong> as a boxed list with radio buttons, matrix.org checked, and the entry hidden underneath.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The two rows draw</strong> as a boxed list with radio buttons, matrix.org checked, and the entry hidden underneath.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2216,7 +2242,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Picking <em>Another Homeserver</em> reveals the entry</strong> and puts the cursor in it; picking matrix.org again hides it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Picking <em>Another Homeserver</em> reveals the entry</strong> and puts the cursor in it; picking matrix.org again hides it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2229,7 +2255,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong><em>Next</em> is sensitive immediately</strong>, with nothing typed, and pressing Return goes straight on — the button takes the focus when the page is shown with the default picked.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong><em>Next</em> is sensitive immediately</strong>, with nothing typed, and pressing Return goes straight on — the button takes the focus when the page is shown with the default picked.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2242,7 +2268,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The <em>Advanced…</em> button is hidden</strong> while matrix.org is chosen and comes back with the entry. Auto-discovery is meaningless for the default.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The <em>Advanced…</em> button is hidden</strong> while matrix.org is chosen and comes back with the entry. Auto-discovery is meaningless for the default.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2255,7 +2281,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The next page says &quot;Log in to matrix.org&quot;</strong> (or &quot;Create an account on matrix.org&quot;), which is the <code>server_name()</code> that moved onto the page.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The next page says &quot;Log in to matrix.org&quot;</strong> (or &quot;Create an account on matrix.org&quot;), which is the <code>server_name()</code> that moved onto the page.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2268,7 +2294,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A custom homeserver still works both ways</strong> — a domain name with auto-discovery on, and a URL with it off through <em>Advanced…</em>. This is the path that used to be the only one, so it is the regression to watch.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A custom homeserver still works both ways</strong> — a domain name with auto-discovery on, and a URL with it off through <em>Advanced…</em>. This is the path that used to be the only one, so it is the regression to watch.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2281,7 +2307,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Going back to the greeter and returning</strong> puts the choice back on matrix.org with the entry empty.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Going back to the greeter and returning</strong> puts the choice back on matrix.org with the entry empty.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2294,7 +2320,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Logging in against the local harness still works</strong>, which now means picking <em>Another Homeserver</em> and typing <code>localhost:8008</code> — the flow every other test here starts with.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Logging in against the local harness still works</strong>, which now means picking <em>Another Homeserver</em> and typing <code>localhost:8008</code> — the flow every other test here starts with.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2307,7 +2333,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The <em>Forgot Password?</em> link</strong> is on the password login page, under the password row, flat and centred. <strong>It cannot be reached on matrix.org</strong>, which delegates authentication and so never shows that page — use <em>Another Homeserver</em> and the local harness. That is behaviour, not a fault: <code>account.matrix.org</code> carries its own reset.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The <em>Forgot Password?</em> link</strong> is on the password login page, under the password row, flat and centred. <strong>It cannot be reached on matrix.org</strong>, which delegates authentication and so never shows that page — use <em>Another Homeserver</em> and the local harness. That is behaviour, not a fault: <code>account.matrix.org</code> carries its own reset.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2346,7 +2372,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>An address on no account</strong> says &quot;No account on this homeserver uses that email address.&quot;</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>An address on no account</strong> says &quot;No account on this homeserver uses that email address.&quot;</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2359,7 +2385,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The stack moves on</strong> to the password half only once the server has answered, and the explanation names the address the link went to.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The stack moves on</strong> to the password half only once the server has answered, and the explanation names the address the link went to.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2372,7 +2398,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The strength meter and the confirmation</strong> behave as they do on the other two pages. Half seen on 24 August 2026: Account Settings ▸ Change Password works end to end, so the shared helpers did not break the page that existed before them. The reset page&#x27;s own copy is still unseen.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The strength meter and the confirmation</strong> behave as they do on the other two pages. Half seen on 24 August 2026: Account Settings ▸ Change Password works end to end, so the shared helpers did not break the page that existed before them. The reset page&#x27;s own copy is still unseen.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2385,7 +2411,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Pressing <em>Reset Password</em> before opening the link</strong> says &quot;Open the link in the email first, then try again&quot; and leaves the page as it was. This is the 401-with-a-UIAA-body case, and it is the most likely thing in the whole flow to be wrong.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Pressing <em>Reset Password</em> before opening the link</strong> says &quot;Open the link in the email first, then try again&quot; and leaves the page as it was. This is the 401-with-a-UIAA-body case, and it is the most likely thing in the whole flow to be wrong.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2398,7 +2424,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The whole thing, end to end</strong>, on a homeserver that does send email: the new password works, and every other session is logged out.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The whole thing, end to end</strong>, on a homeserver that does send email: the new password works, and every other session is logged out.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2411,7 +2437,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Going back and returning</strong> empties both halves and starts at the email step again.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Going back and returning</strong> empties both halves and starts at the email step again.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2419,7 +2445,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s6" data-open="1" data-checks="12"><header><h2>Presence</h2><span class="src">doc/presence.md</span><span class="cnt" data-count>11 left</span></header><div class="body"><p>Nothing here has been seen on screen. The user&#x27;s homeserver runs the Presence module, so unlike most of the field this can be exercised on a real account.</p><div class="chk" data-id="k7c92a14834" data-state="" data-lead="A badge appears">
+</div></div></section><section id="s6" data-open="1" data-checks="12"><header><h2>Presence</h2><span class="src">doc/presence.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>Nothing here has been seen on screen. The user&#x27;s homeserver runs the Presence module, so unlike most of the field this can be exercised on a real account.</p><div class="chk" data-id="k7c92a14834" data-state="" data-lead="A badge appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2437,7 +2463,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The badge sits on the avatar&#x27;s corner.</strong> It did not on first pass: the overlay filled the space the avatar widget was given rather than hugging the avatar, so on a profile page the dot landed a few hundred pixels to the right. Fixed with <code>halign</code>/<code>valign</code> on the overlay — check the corner is right at size 24, 32 and 128, and check the fix did not move any avatar that was relying on being stretched.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The badge sits on the avatar&#x27;s corner.</strong> It did not on first pass: the overlay filled the space the avatar widget was given rather than hugging the avatar, so on a profile page the dot landed a few hundred pixels to the right. Fixed with <code>halign</code>/<code>valign</code> on the overlay — check the corner is right at size 24, 32 and 128, and check the fix did not move any avatar that was relying on being stretched.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2450,7 +2476,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A badge appears in the member list</strong> specifically.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A badge appears in the member list</strong> specifically.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2463,7 +2489,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The badge scales.</strong> It is sized from the avatar, a third of it clamped to 8–24px. Check it at size 32 in the member list and at size 128 on a profile page; the failure modes are a smudge on the big one and a dot covering the initials on the small one.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The badge scales.</strong> It is sized from the avatar, a third of it clamped to 8–24px. Check it at size 32 in the member list and at size 128 on a profile page; the failure modes are a smudge on the big one and a dot covering the initials on the small one.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2476,7 +2502,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The badge has a ring</strong> in the window colour, so it reads as sitting on the avatar rather than as part of the picture.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The badge has a ring</strong> in the window colour, so it reads as sitting on the avatar rather than as part of the picture.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2489,7 +2515,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A direct chat&#x27;s sidebar row carries the other person&#x27;s badge</strong>, and an ordinary room&#x27;s does not. Added on 23 August 2026 after the first pass left it out; the room&#x27;s avatar mirrors its <code>direct_member</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A direct chat&#x27;s sidebar row carries the other person&#x27;s badge</strong>, and an ordinary room&#x27;s does not. Added on 23 August 2026 after the first pass left it out; the room&#x27;s avatar mirrors its <code>direct_member</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2502,7 +2528,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The badge appears nowhere else</strong> — not on inline mentions, read receipts, the typing row, the New Direct Chat picker, message rows or ordinary room avatars. It is opt-in and three sites opted in.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The badge appears nowhere else</strong> — not on inline mentions, read receipts, the typing row, the New Direct Chat picker, message rows or ordinary room avatars. It is opt-in and three sites opted in.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2515,7 +2541,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>A profile page shows the status message</strong> when the person set one, and shows nothing rather than an empty gap when they did not.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>A profile page shows the status message</strong> when the person set one, and shows nothing rather than an empty gap when they did not.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2528,7 +2554,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>It changes live.</strong> Go idle or online in another client on the same account, or ask somebody to, and watch the badge follow without a restart.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>It changes live.</strong> Go idle or online in another client on the same account, or ask somebody to, and watch the badge follow without a restart.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2541,7 +2567,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Somebody who has not moved still gets a badge.</strong> This is the store read: sync only sends presence when it changes, so a person who was already online before Commune started would otherwise have none until they did something.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Somebody who has not moved still gets a badge.</strong> This is the store read: sync only sends presence when it changes, so a person who was already online before Commune started would otherwise have none until they did something.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2554,7 +2580,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The switch is in Account Settings ▸ Privacy and starts on.</strong> Turning it off should make you go offline for other clients within a moment — this is the half that was never optional before, so it is worth confirming from a second client rather than trusting it.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The switch is in Account Settings ▸ Privacy and starts on.</strong> Turning it off should make you go offline for other clients within a moment — this is the half that was never optional before, so it is worth confirming from a second client rather than trusting it.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2567,7 +2593,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Turning it back on</strong> makes you online again without restarting.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Turning it back on</strong> makes you online again without restarting.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2575,7 +2601,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s7" data-open="1" data-checks="12"><header><h2>Pinned messages</h2><span class="src">doc/pinned-messages.md</span><span class="cnt" data-count>5 left</span></header><div class="body"><p>Nothing in this feature has been seen on screen yet. Every item below is new drawing code.</p><div class="chk" data-id="k63e31d4af2" data-state="" data-lead="The header toggle appears">
+</div></div></section><section id="s7" data-open="1" data-checks="12"><header><h2>Pinned messages</h2><span class="src">doc/pinned-messages.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p>Nothing in this feature has been seen on screen yet. Every item below is new drawing code.</p><div class="chk" data-id="k63e31d4af2" data-state="" data-lead="The header toggle appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2658,7 +2684,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The unpin button&#x27;s icon reads as &quot;unpin&quot;.</strong> It was <code>list-remove-symbolic</code> on first pass and read as a stray horizontal rule; changed to <code>close-symbolic</code>, which is what <code>removable_row.blp</code> and the explore server row already use for taking an item off a list. Not a wastebasket on purpose: the context menu&#x27;s <em>Remove</em> redacts the message, and a wastebasket here would read as that. Needs another look.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The unpin button&#x27;s icon reads as &quot;unpin&quot;.</strong> It was <code>list-remove-symbolic</code> on first pass and read as a stray horizontal rule; changed to <code>close-symbolic</code>, which is what <code>removable_row.blp</code> and the explore server row already use for taking an item off a list. Not a wastebasket on purpose: the context menu&#x27;s <em>Remove</em> redacts the message, and a wastebasket here would read as that. Needs another look.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2671,7 +2697,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Unpinning the last message <em>while the pinned view is open</em></strong> leaves the toggle visible and shows the empty page, rather than hiding the only way back. Unpinning from the timeline with the view closed correctly hides the toggle, and that much was seen on 23 August 2026 — this is the other case.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Unpinning the last message <em>while the pinned view is open</em></strong> leaves the toggle visible and shows the empty page, rather than hiding the only way back. Unpinning from the timeline with the view closed correctly hides the toggle, and that much was seen on 23 August 2026 — this is the other case.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2684,7 +2710,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The empty page</strong> — <code>view-pin-symbolic</code>, &quot;No Pinned Messages&quot;.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The empty page</strong> — <code>view-pin-symbolic</code>, &quot;No Pinned Messages&quot;.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2710,7 +2736,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The server notices room is unaffected</strong>: its pinned events still raise the notice banner and must not appear in a pinned messages view. The toggle should never appear in that room. Needs <code>testing/local-homeserver.sh</code> — <code>./testing/local-homeserver.sh notice</code> then <code>limit on</code>.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The server notices room is unaffected</strong>: its pinned events still raise the notice banner and must not appear in a pinned messages view. The toggle should never appear in that room. Needs <code>testing/local-homeserver.sh</code> — <code>./testing/local-homeserver.sh notice</code> then <code>limit on</code>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2723,7 +2749,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Nothing regressed in the live timeline.</strong> <code>is_live()</code> replaced three <code>!is_focused()</code> checks: read receipts still move, the typing row still appears, and the timeline still preloads.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>Nothing regressed in the live timeline.</strong> <code>is_live()</code> replaced three <code>!is_focused()</code> checks: read receipts still move, the typing row still appears, and the timeline still preloads.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2731,12 +2757,12 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s8" data-open="1" data-checks="4"><header><h2>Calls</h2><span class="src">doc/calls.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p><code>doc/calls.md</code> carries the authoritative list at its top; these are the ones it names as never having faced a second client.</p><div class="chk" data-id="k8aff3cb8bf" data-state="" data-lead="A renegotiation arriving here — needs a peer whose interface offers to add video…">
+</div></div></section><section id="s8" data-open="1" data-checks="4"><header><h2>Calls</h2><span class="src">doc/calls.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><p><code>doc/calls.md</code> carries the authoritative list at its top; these are the ones it names as never having faced a second client.</p><div class="chk" data-id="k8aff3cb8bf" data-state="" data-lead="A renegotiation arriving here — needs a peer whose interface offers to add video…">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt">A renegotiation arriving <strong>here</strong> — needs a peer whose interface offers to add video mid-call, which Element for Android&#x27;s does not.</div>
+<div class="txt"><span class="tag seen">Seen</span>A renegotiation arriving <strong>here</strong> — needs a peer whose interface offers to add video mid-call, which Element for Android&#x27;s does not.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2749,7 +2775,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt">The rollback when two renegotiations cross. Takes two people pressing the same button in the same second.</div>
+<div class="txt"><span class="tag seen">Seen</span>The rollback when two renegotiations cross. Takes two people pressing the same button in the same second.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2762,7 +2788,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt">The badge for what the other end muted. The peer to hand sends no stream metadata at all.</div>
+<div class="txt"><span class="tag seen">Seen</span>The badge for what the other end muted. The peer to hand sends no stream metadata at all.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2775,7 +2801,7 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt">The answered and missed cases of the <code>m.call.invite</code> timeline row. Only the &quot;no outcome&quot; case has been seen.</div>
+<div class="txt"><span class="tag seen">Seen</span>The answered and missed cases of the <code>m.call.invite</code> timeline row. Only the &quot;no outcome&quot; case has been seen.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -2783,12 +2809,12 @@ commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s9" data-open="1" data-checks="1"><header><h2>Server ACLs</h2><span class="src">doc/server-acls.md</span><span class="cnt" data-count>1 left</span></header><div class="body"><div class="chk" data-id="k95e8caa559" data-state="" data-lead="The timeline line, which has never been drawn.">
+</div></div></section><section id="s9" data-open="1" data-checks="1"><header><h2>Server ACLs</h2><span class="src">doc/server-acls.md</span><span class="cnt" data-count>0 left</span></header><div class="body"><div class="chk" data-id="k95e8caa559" data-state="" data-lead="The timeline line, which has never been drawn.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The timeline line, which has never been drawn.</strong> <code>show_in_timeline()</code> dropped <code>m.room.server_acl</code> before it could reach a row; that was fixed on 23 August 2026 alongside pinned messages. Change an ACL and check the sentence appears — &quot;Alice blocked evil.example from taking part in this room&quot; for a deny-list-only change, &quot;changed which servers can take part in this room&quot; otherwise. Needs <code>testing/local-homeserver.sh</code>; do not do this to a real room.</div>
+<div class="txt"><span class="tag seen">Seen</span><strong>The timeline line, which has never been drawn.</strong> <code>show_in_timeline()</code> dropped <code>m.room.server_acl</code> before it could reach a row; that was fixed on 23 August 2026 alongside pinned messages. Change an ACL and check the sentence appears — &quot;Alice blocked evil.example from taking part in this room&quot; for a deny-list-only change, &quot;changed which servers can take part in this room&quot; otherwise. Needs <code>testing/local-homeserver.sh</code>; do not do this to a real room.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">

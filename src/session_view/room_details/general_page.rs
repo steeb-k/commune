@@ -98,8 +98,10 @@ mod imp {
         add_to_space_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         spaces_loading_row: TemplateChild<adw::ActionRow>,
-        /// The rows naming the spaces this room is in.
-        parent_space_rows: RefCell<Vec<adw::ActionRow>>,
+        /// The rows naming the spaces this room is in, each with the space it
+        /// is for, so that one of them can be found again without re-reading
+        /// the state of every space.
+        parent_space_rows: RefCell<Vec<(Room, adw::ActionRow)>>,
         #[template_child]
         history_visibility: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -916,13 +918,16 @@ mod imp {
         /// List the spaces this room is in, again.
         ///
         /// Reading it means asking every joined space whether it names this
-        /// room, so it is done once when the page appears and again after this
-        /// page changes something. A space that gains or loses the room
-        /// elsewhere shows up the next time the details are opened.
+        /// room, so it is done once, when the page appears. A space that gains
+        /// or loses the room elsewhere shows up the next time the details are
+        /// opened; a change this page makes is put into the list by
+        /// [`show_parent_space()`] and [`hide_parent_space()`] instead, since
+        /// this answers from the state store and the state store has not heard
+        /// about it yet.
         fn update_parent_spaces(&self) {
             let Some(room) = self.room.obj() else { return };
 
-            for row in self.parent_space_rows.take() {
+            for (_, row) in self.parent_space_rows.take() {
                 self.spaces_group.remove(&row);
             }
             self.spaces_loading_row.set_visible(true);
@@ -942,15 +947,12 @@ mod imp {
 
                     let rows = spaces
                         .into_iter()
-                        .map(|space| imp.build_parent_space_row(&space))
+                        .map(|space| {
+                            let row = imp.build_parent_space_row(&space);
+                            imp.append_parent_space_row(&row);
+                            (space, row)
+                        })
                         .collect::<Vec<_>>();
-
-                    for row in &rows {
-                        // Keep the row that adds one at the bottom.
-                        imp.spaces_group.remove(&*imp.add_to_space_row);
-                        imp.spaces_group.add(row);
-                        imp.spaces_group.add(&*imp.add_to_space_row);
-                    }
 
                     imp.parent_space_rows.replace(rows);
                 }
@@ -1012,6 +1014,63 @@ mod imp {
             row
         }
 
+        /// Put the given row into the group, above the row that adds a space.
+        fn append_parent_space_row(&self, row: &adw::ActionRow) {
+            // Keep the row that adds one at the bottom.
+            self.spaces_group.remove(&*self.add_to_space_row);
+            self.spaces_group.add(row);
+            self.spaces_group.add(&*self.add_to_space_row);
+        }
+
+        /// Show the given space in the list, if it is not there already.
+        ///
+        /// This is what the list is corrected with after this page puts the
+        /// room into a space, rather than reading the spaces again. The
+        /// homeserver has accepted the `m.space.child`, but the local state
+        /// store does not carry it until the change arrives back down the
+        /// sync, and on a slow homeserver that is half a minute — long enough
+        /// for a re-read to answer with the state as it was before the button
+        /// was pressed, and for the list to disagree with the toast next to
+        /// it.
+        fn show_parent_space(&self, space: &Room) {
+            if self
+                .parent_space_rows
+                .borrow()
+                .iter()
+                .any(|(known, _)| known.room_id() == space.room_id())
+            {
+                return;
+            }
+
+            let row = self.build_parent_space_row(space);
+            self.append_parent_space_row(&row);
+            self.parent_space_rows
+                .borrow_mut()
+                .push((space.clone(), row));
+        }
+
+        /// Take the given space out of the list, if it is there.
+        ///
+        /// The other half of [`show_parent_space()`], for the same reason: the
+        /// row goes when the removal is accepted rather than when it syncs
+        /// back.
+        fn hide_parent_space(&self, space: &Room) {
+            let row = {
+                let mut rows = self.parent_space_rows.borrow_mut();
+
+                let Some(index) = rows
+                    .iter()
+                    .position(|(known, _)| known.room_id() == space.room_id())
+                else {
+                    return;
+                };
+
+                rows.remove(index).1
+            };
+
+            self.spaces_group.remove(&row);
+        }
+
         /// Take this room back out of the given space.
         async fn remove_from_space(&self, space: &Room, button: &LoadingButton) {
             let Some(room) = self.room.obj() else { return };
@@ -1033,7 +1092,7 @@ mod imp {
                     gettext("Removed from {space}"),
                     space = space_name,
                 );
-                self.update_parent_spaces();
+                self.hide_parent_space(space);
             } else {
                 toast!(
                     obj,
@@ -1084,7 +1143,7 @@ mod imp {
                     gettext("Added to {space}"),
                     space = space_name,
                 );
-                self.update_parent_spaces();
+                self.show_parent_space(&space);
             } else {
                 toast!(
                     obj,

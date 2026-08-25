@@ -25,6 +25,7 @@ use crate::{
     prelude::*,
     session::Session,
     spawn_tokio, toast,
+    utils::TemplateCallbacks,
 };
 
 // MAX length of room addresses
@@ -47,8 +48,6 @@ mod imp {
         content: TemplateChild<gtk::Box>,
         #[template_child]
         kind_space: TemplateChild<gtk::CheckButton>,
-        #[template_child]
-        encryption_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         visibility_private_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -81,6 +80,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -186,11 +186,6 @@ mod imp {
             } else {
                 gettext("_Create Room")
             });
-
-            // A space has no timeline anybody reads, so encrypting it protects
-            // nothing and would only stop its name and topic being seen by the
-            // people it is for.
-            self.encryption_group.set_visible(!is_space);
 
             self.visibility_private_row.set_subtitle(&if is_space {
                 gettext("Only invited people can join this space")

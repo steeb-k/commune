@@ -141,8 +141,18 @@ template $CreateRoomDialog: $ToastableDialog {
               }
             }
 
-            Adw.PreferencesGroup encryption_group {
-              visible: bind visibility_private.active;
+            Adw.PreferencesGroup {
+              // A space has no timeline anybody reads, so encrypting it
+              // protects nothing and would only stop its name and topic being
+              // seen by the people it is for. Both halves of that belong here:
+              // a binding on this property is re-asserted whenever the source
+              // changes, so a `set_visible` from Rust does not survive the
+              // next click on the visibility choices.
+              visible: bind $logical_and(
+                visibility_private.active,
+                $invert_boolean(kind_space.active) as <bool>
+              ) as <bool>;
+
               margin-top: 12;
 
               Adw.SwitchRow encryption {

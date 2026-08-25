@@ -192,6 +192,44 @@ Spaces is in the implemented column of `spec-gaps.html`, and what is left in
 `spaces.md` under _Not done_ is two annotations the specification calls
 optional and nobody has asked to write.
 
+**The whole eyeball sheet was run on 25 August 2026**, and it is the reason the
+State column below stopped saying "unseen". 154 checks that had never been
+looked at were struck in one sitting, which covers everything round 3 built
+plus the two rounds before it that had been left at "done, unseen". Two checks
+failed, both in slice 3, and both were the same kind of fault as the ones the
+sheet caught the day before — invisible to every automated check, obvious the
+moment somebody used it:
+
+* **The encryption switch stayed on screen for a private space.** The condition
+  is "private and not a space", and it had been written in two places: the
+  visibility half as a `visible` binding in `create_room_dialog.blp`, the kind
+  half as a `set_visible` in `update_kind`. A binding re-asserts itself from
+  its own sources, so the Rust half was overwritten and the switch only went
+  when _Public_ was picked. Both halves are in the binding now, which is the
+  general lesson: **a property with a binding on it has one author, and it is
+  the template.**
+* **A room removed from a space kept its row for half a minute.** The
+  _Spaces_ group re-read the whole list after the change, and `parent_spaces`
+  answers from the local state store, which does not carry the write until it
+  comes back down the sync. Against a slow homeserver the re-read answered with
+  the state as it was before the button was pressed, so the row sat there next
+  to a toast saying it had gone. Adding had the same fault and nobody had
+  noticed, because the check for it says to reopen the page. Both are corrected
+  in the list directly now, on the strength of the homeserver having accepted
+  the write.
+
+The tear-down checks under the **Destructive** lines were done too — leaving a
+space, dragging one to _Historical_, taking a room back out and putting it
+back. Both faults were fixed the same day and a second pass over the sheet
+found all 200 checks good, so **`doc/eyeball-tests.md` has nothing unstruck in
+it for the first time**. Rounds 1 to 3 are seen, and the next thing that draws
+will be the only unseen line in that file.
+
+One note for the next run: the sheet's report counts button presses rather than
+checks, so a check done and not clicked reads as "not looked at". That produced
+a phantom "eleven not looked at" on the first pass, and the number should not
+be read as a list of what was skipped.
+
 **Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
 
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
@@ -209,18 +247,18 @@ drift: they go in the feature's own commit.**
 | 2. Presence | `052e5f37`, `b6570c23` | done, seen |
 | Ledger catch-up | `44a0aedb`, `54563b65` | done |
 | 3. Decouple `AuthDialog` | `59dcc516` | done |
-| 3. Register | `73294320` | done, **unseen** |
-| 3. Token and terms stages | `0bddedb0` | done, **unseen** |
+| 3. Register | `73294320` | done, seen |
+| 3. Token and terms stages | `0bddedb0` | done, seen |
 | 4. Password reset | `b5d4ae74` | done, seen as far as a server without SMTP allows |
-| Homeserver default | `5d24e432` | done, unseen |
-| 5. Spaces, slice 1 | `69002a14`, `1427c68c` | done; only the sidebar section seen |
+| Homeserver default | `5d24e432` | done, seen |
+| 5. Spaces, slice 1 | `69002a14`, `1427c68c` | done, seen |
 | Space children in the harness | `6e4079ab` | done |
-| 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, **unseen** |
-| 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done; the preview itself seen, the button's negative cases not |
-| 8a. Space picker, restricted rule | `b60baf66`, `640b1576` | done, **unseen** |
-| 8b. `m.space.child` | `37d318aa`, `9db20bfa` | done, **unseen** |
-| Finishing the module | `b3deab0d`, `aec0710a` | done, **unseen** |
-| Subspaces expand in place | (this round) | done, **unseen** |
+| 6. Spaces, slice 2 | `41136eeb`, `d47f99ed` | done, seen |
+| 7. Peeking | `ee2d0272`, `48e21dc1`, `43d26d02`, `3916a716` | done, seen, negatives included |
+| 8a. Space picker, restricted rule | `b60baf66`, `640b1576` | done, seen |
+| 8b. `m.space.child` | `37d318aa`, `9db20bfa` | done, seen; two faults, fixed and re-seen |
+| Finishing the module | `b3deab0d`, `aec0710a` | done, seen; two faults, fixed and re-seen |
+| Subspaces expand in place | `ce984576`, `21f89afe` | done, seen |
 | 9–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
