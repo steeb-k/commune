@@ -124,6 +124,12 @@ rather than through the file name, because several templates are loaded by a
 file of another name. A `.blp` with no `template` block — a bare menu — is
 skipped.
 
+`doc/eyeball-page.py` turns `doc/eyeball-tests.md` into a run sheet with
+checkboxes, ordered newest first. The ledger is the source and the page only
+draws it, so a result is not recorded until it is struck in the markdown. The
+page keeps its marks in the browser it was ticked in; it can hand back a report
+and the screenshots attached to failures, and nothing else leaves that browser.
+
 **It still cannot tell you a widget looks right.** It answers "will this
 construct", not "is this correct", and the eyeball ledger is still the only
 answer to the second.

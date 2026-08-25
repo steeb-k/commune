@@ -14,6 +14,59 @@ looked at and behaves, `[!]` looked at and wrong (with what happened).
 
 ---
 
+## How to run this
+
+The sections below are ordered oldest first, which is the wrong order to read
+them in. **Work newest first**: the code nobody has looked at yet is the code
+most likely to be wrong, and four of the five bugs found on 24 August 2026 were
+in work less than a day old.
+
+`doc/eyeball-run.html` is this file with checkboxes, generated from it by
+`doc/eyeball-page.py` and published at
+<https://claude.ai/code/artifact/9b66f090-2f6d-407e-a802-ea4079773fe9>.
+Regenerate and republish it whenever this file changes — the ledger is the
+source, the page only draws it, and **a result is not recorded until it is
+struck here**. The page keeps its marks in one browser and nowhere else.
+
+### Before anything
+
+```sh
+testing/local-homeserver.sh up      # or `reset` for a clean slate
+meson install -C _build             # the binary must be newer than the code
+commune
+```
+
+Log in as **alice** — the greeter offers matrix.org first, so this means
+_Another Homeserver_ → `localhost:8008`. Some checks want **bob** as well; a
+second Commune on the same machine cannot hold two sessions at once, so those
+are gathered together rather than scattered.
+
+### The order, and roughly what each costs
+
+| | Section | Why here |
+| --- | --- | --- |
+| 1 | Spaces | Largest, newest, and the sidebar section is all anybody has seen |
+| 2 | Choosing a space, restricting, putting one in | Same day's work, and the restricted rule can lock people out if it is wrong |
+| 3 | Reading a room without joining it | Partly seen already; the negatives are untouched |
+| 4 | Going to a message without leaving the present | Small, and it is a fix rather than a feature |
+| 5 | Signing up and resetting a password | Never looked at, and it is the first thing a new person meets |
+| 6 | Presence | Never looked at |
+| 7 | Pinned messages, Calls, Server ACLs | Mostly seen; the leftovers |
+
+### The half worth caring about
+
+Every section has checks phrased as _something should **not** happen_ — a
+button absent, a control insensitive, a room not listed. **Those are the ones
+to do.** A feature that works when you use it properly is the easy case; the
+bugs found so far were all a flag read backwards, a list not kept in step, or a
+control that was never wired at all, and every one of them showed up as
+something appearing where it should not have.
+
+If a check fails, say **what happened**, not what should have. A screenshot is
+worth more than either.
+
+---
+
 ## Calls — `doc/calls.md`
 
 `doc/calls.md` carries the authoritative list at its top; these are the ones it
