@@ -57,6 +57,13 @@ use tracing::error;
 
 use crate::RUNTIME;
 
+/// The SVG path, which only Android needs and only Android can take: it draws
+/// with GTK's own renderer rather than with a decoder, so it cannot run where
+/// the rest of this module runs.
+#[cfg(target_os = "android")]
+#[path = "svg_android.rs"]
+mod svg;
+
 /// The delay to use for an animation frame that does not declare a usable one.
 ///
 /// GIFs in particular often declare a delay of 0, which every renderer is
@@ -98,6 +105,15 @@ impl Loader {
                 Arc::from(&*contents)
             }
         };
+
+        // Before the hop to the blocking pool, because this one has to stay on
+        // the main thread. See `svg::probe`.
+        #[cfg(target_os = "android")]
+        if svg::looks_like_svg(&data)
+            && let Some(image) = svg::probe(&data)
+        {
+            return Ok(image);
+        }
 
         RUNTIME
             .spawn_blocking(move || probe(data))
@@ -178,11 +194,11 @@ fn probe_pixbuf(data: Arc<[u8]>) -> Result<Image, Error> {
 
     Ok(Image {
         inner: Arc::new(ImageInner {
-            source: FrameSource::Pixbuf(raw),
+            source: FrameSource::Still(raw),
             width,
             height,
             scale: OnceLock::new(),
-            // Still, always. See `FrameSource::Pixbuf`.
+            // Still, always. See `FrameSource::Still`.
             animation: None,
         }),
     })
@@ -298,13 +314,14 @@ enum FrameSource {
         /// The orientation to apply to every decoded frame.
         orientation: Orientation,
     },
-    /// `GdkPixbuf`, which decoded the whole image up front because the `image`
-    /// crate did not recognise its format.
+    /// A picture that was decoded whole, up front, because the `image` crate
+    /// did not recognise its format.
     ///
-    /// There is no streaming here and no second frame: a pixbuf loader hands
-    /// over one picture, and the formats that reach this path — SVG, AVIF,
-    /// HEIC — are ones we only ever want one of.
-    Pixbuf(RawFrame),
+    /// Two things produce this: `GdkPixbuf`, which is the fallback everywhere,
+    /// and GTK's own SVG renderer on Android, which is the fallback to the
+    /// fallback. Neither streams and neither has a second frame — the formats
+    /// that reach here are ones we only ever want one of.
+    Still(RawFrame),
 }
 
 /// The shared state of a loaded image.
@@ -456,7 +473,7 @@ fn decode_first_frame(inner: &ImageInner, scale: Option<(u32, u32)>) -> Result<R
             orientation,
         } => (data, *format, *orientation),
         // Already decoded, so there is nothing to do but size it.
-        FrameSource::Pixbuf(raw) => return scale_raw_frame(raw.clone(), scale),
+        FrameSource::Still(raw) => return scale_raw_frame(raw.clone(), scale),
     };
 
     let decoder = ImageReader::with_format(Cursor::new(data.clone()), format).into_decoder()?;
@@ -873,7 +890,7 @@ mod tests {
         assert_eq!(image.width(), 8);
         assert_eq!(image.height(), 4);
         assert!(
-            matches!(image.inner.source, FrameSource::Pixbuf(_)),
+            matches!(image.inner.source, FrameSource::Still(_)),
             "an SVG should come from the pixbuf fallback"
         );
     }
