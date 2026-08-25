@@ -1,0 +1,27 @@
+# Cross-built for Android only, because Android is the only platform where
+# nothing else supplies an icon theme.
+#
+# Everywhere else this is a package that is simply always installed, which is
+# why its absence went unnoticed until the emulator drew the missing-icon
+# placeholder in place of the "Back to Latest" button. An icon on Android
+# resolves only if Commune ships it in its own gresource or GTK ships it
+# builtin; of the names the UI asks for and Commune does not ship, eleven did
+# neither. See `doc/android.md`.
+#
+# It is pure data — no compiler, no library, nothing to link — and every one of
+# its `install_*` calls already carries `install_tag : 'runtime'`, which is what
+# pixiewood's `meson install --tags runtime` needs to not drop it. It installs
+# to `datadir/icons/Adwaita`, and the glue points `XDG_DATA_DIRS` at
+# `<files>/share`, so it lands exactly where GTK looks with nothing to wire up.
+#
+# Nothing depends on it, so nothing pulls it in: the top-level `meson.build`
+# calls `subproject()` on it explicitly, under `is_android`.
+#
+# `master`, not `main`: adwaita-icon-theme has not renamed its default branch.
+# A moving target like every other wrap here, and like them it has to be pinned
+# before anything is packaged. Verified against 51.beta.
+[wrap-git]
+url = https://gitlab.gnome.org/GNOME/adwaita-icon-theme.git
+revision = master
+depth = 1
+diff_files = adwaita-icon-theme-android.patch
