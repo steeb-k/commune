@@ -982,10 +982,11 @@ sh build-aux/android/patch-manifest.sh      # between generate and build, always
 sh build-aux/android/patch-gtk-ime.sh       # likewise; see "The IME" below
 sh build-aux/android/patch-gtk-intent.sh    # likewise; see the SSO section
 sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground service
+sh build-aux/android/patch-gtk-input-purpose.sh  # likewise; see the input purpose
 $PW build
 ```
 
-All four patches run between every `generate` and `build`. `generate` rewrites the manifest from
+All five patches run between every `generate` and `build`. `generate` rewrites the manifest from
 its own XSL each time, and the Java ones write into `subprojects/gtk`, which a re-extracted wrap
 loses. Each script is a no-op when its change is already in place, so running them all every time
 is the cheap and correct habit.
