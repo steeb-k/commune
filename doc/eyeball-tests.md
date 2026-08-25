@@ -43,8 +43,13 @@ commune
 ```
 
 Log in as **alice** — the greeter offers matrix.org first, so this means
-_Another Homeserver_ → `localhost:8008`. The harness sets three passwords:
-`alice-is-testing`, `bob-is-testing`, `admin-is-testing`. Some checks want **bob** as well; a
+_Another Homeserver_ → `localhost:8008`. The harness sets four passwords:
+`alice-is-testing`, `bob-is-testing`, `carol-is-testing`, `admin-is-testing`.
+
+**Who is who.** Alice owns nearly everything. **Bob** is a second member —
+including of both spaces, so that alice leaving one does not destroy it — which
+means he can never be invited to them. **Carol** exists and has joined nothing,
+and is who the invite checks are for. Some checks want **bob** as well; a
 second Commune on the same machine cannot hold two sessions at once, so those
 are gathered together rather than scattered.
 
@@ -438,10 +443,10 @@ Slice 2. All of this is on the space page, below the topic.
       page is blank the stack landed on the wrong child.
 * [ ] **The buttons say the right thing.** As alice: _View_ on Public Room,
       Restricted Room and Readable Room, _Join_ on Bobs Room and Peekable Room.
-      As bob, who is in Bobs Room and Peekable Room and not the others, they
-      swap over. This is
-      `RoomListRoomInfo`, and a button that says _Join_ for a room you are
-      already in means the identifiers are not matching.
+      As bob, who is in Bobs Room, Peekable Room and Sub Space and not the
+      rest, they swap over. This is `RoomListRoomInfo`, and a button that says
+      _Join_ for a room you are already in means the identifiers are not
+      matching.
 * [ ] **_View_ opens the room.** Clicking it selects that room in the sidebar
       and shows its timeline.
 * [ ] **_Join_ joins it, in place.** Click _Join_ on Bobs Room: the button
@@ -525,10 +530,12 @@ Slice 2. All of this is on the space page, below the topic.
 ### Invites, and what these slices deliberately do not change
 
 * [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
-      invite page. As bob, have alice invite you to Test Space. Accepting it
-      should drop the space into the Spaces section on the next sync; declining
-      should behave like declining a room. The invite page says nothing about
-      it being a space, which is known and recorded in `spaces.md`.
+      invite page. Invite **carol** to Test Space and log in as her — bob is
+      already a member of both spaces and cannot be invited to either, which
+      the invite page correctly refuses to offer. Accepting should drop the
+      space into her Spaces section on the next sync; declining should behave
+      like declining a room. The invite page says nothing about it being a
+      space, which is known and recorded in `spaces.md`.
 * [ ] **A room added to a space while its page is open does not appear.**
       Known, and recorded in `spaces.md` under _Not done_: the listing is
       fetched once. Reselecting the space should pick the new room up. This
@@ -640,8 +647,9 @@ testing/local-homeserver.sh up
       _Members of a Space_ with that space named. Confirm from another client
       that the room really is restricted.
 * [ ] **A user in the space can then join the room**, and one outside it
-      cannot. As bob, who is not in `Test Space`, try the room you just
-      restricted; then have alice invite bob to the space and try again.
+      cannot. As **carol**, who is in no space, try the room you just
+      restricted; then have alice invite her to `Test Space`, accept, and try
+      again. Bob is no use here — he is already in both spaces.
 
 ### What must not happen
 
@@ -673,11 +681,11 @@ Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
       chat: no _Spaces_ group.
 * [ ] **_Add to Space…_ opens the picker**, listing `Test Space` and
       `Sub Space` — the spaces alice made, and so can write in.
-* [ ] **A space you cannot write in is not offered.** As bob, who is in no
-      space he administers, the picker should be empty and say so. If alice
-      invites bob to `Test Space` without giving him power, it must stay
-      empty — this is the check that `SendState(SpaceChild)` is really being
-      asked, and the one most likely to be wrong.
+* [ ] **A space you cannot write in is not offered.** As bob: he is a member
+      of both spaces and administers neither, so the picker must be **empty**
+      and say so. Membership is not enough — this is the check that
+      `SendState(SpaceChild)` is really being asked rather than "am I in it",
+      and the one most likely to be wrong.
 * [ ] **The room being added is not offered itself.** Open the details of
       `Test Space` and press _Add to Space…_: only `Sub Space`.
 * [ ] **Adding `Invite Room` to `Test Space` says so**, with a toast naming the

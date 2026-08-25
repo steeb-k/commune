@@ -73,8 +73,12 @@ what fetches the page.
 | Server Notices | created by the homeserver on `notice`, and tagged `m.server_notice` |
 | (a direct chat) | alice and bob, in `m.direct` on both sides — where the call buttons are |
 
-Three accounts: `alice` owns the rooms, `bob` is a second member to report and
-be reported, `admin` is a Synapse admin so reports can be read back.
+Four accounts. `alice` owns the rooms. `bob` is a second member to report and
+be reported, and is inside both spaces so that alice leaving one cannot destroy
+it — which means **he can never be invited to them**, and the invite subpage
+correctly refuses to offer somebody who is already a member. `carol` exists and
+has joined nothing, and is who the invite checks are for. `admin` is a Synapse
+admin so reports can be read back.
 
 **Naming a space in a join rule is not the same as being in it.** Until
 24 August 2026 nothing wrote `m.space.child`, so Test Space existed and was
