@@ -24,6 +24,7 @@ whole route hung on.
 * [S5 — Notifications](#s5--notifications)
 * [S6 — The formats that would not draw](#s6--the-formats-that-would-not-draw)
 * [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
+* [S8 — Three input bugs that were one](#s8--three-input-bugs-that-were-one)
 * [Before this ships](#before-this-ships)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
@@ -40,6 +41,7 @@ whole route hung on.
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. Never yet run on real hardware |
+| S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init`. The space-bar cursor gesture is still broken and is genuinely missing code rather than unwired |
 
 ## Where things are
 
@@ -1862,6 +1864,71 @@ hardware. Nothing about GL performance transfers either, since the translation l
 the app's native code and the host's graphics stack. What it does buy is that every iteration from
 here can be checked on the emulator, and the phone is needed once, at the end.
 
+## S8 — Three input bugs that were one
+
+Reported from the Pixel, in the order they were hit, and they read as a pile of unrelated
+papercuts: a URL field with a prose keyboard; **passwords rendered in plain text**; and Next
+buttons that stayed dead until focus left the field. The fair reaction to that list is the one it
+got — that input handling here is fourth-class and perhaps the whole approach is wrong.
+
+They were one bug.
+
+### The dead field
+
+`GtkIMContextAndroid` has `input_purpose` and `input_hints` struct members.
+`gtk_im_context_android_init` sets them to `GTK_INPUT_PURPOSE_FREE_FORM` and
+`GTK_INPUT_HINT_NONE`, and **nothing assigns them again.** The file contains no `set_property`, no
+`get_property` and no `g_object_class_override_property` at all, where `gtkimcontextwayland.c` and
+`gtkimcontextime.c` both have them.
+
+The values were never lost, only elsewhere. `GtkIMContext` installs `input-purpose` and
+`input-hints` itself and stores them in its own private struct, so a widget setting the purpose
+works exactly as documented — and the Android backend then consults two fields nobody has written
+since they were initialised. Every text field in every GTK application on Android was announced to
+the IME as free-form prose.
+
+The switch statement that reads them is complete and correct. It maps every `GtkInputPurpose` onto
+the matching Android `InputType`, password and PIN included. It was simply reading a variable
+nobody populated.
+
+That single fact explains all three reports:
+
+| Symptom | Why |
+| --- | --- |
+| Passwords in plain text | No `TYPE_TEXT_VARIATION_PASSWORD`, so the IME leaves suggestions and composing on, and composing text draws unmasked. Anything forcing a commit masks it, which made it look intermittent |
+| URL field with a prose keyboard | No `TYPE_TEXT_VARIATION_URI`. Setting `input-purpose: url` on the widget changed nothing, because the property arrived and was then ignored |
+| Next button dead until focus left | A composing IME holds text in preedit rather than committing per keystroke, so `changed` never fires. **Inference, not measurement** — the correct types suppress composing, so it should follow |
+
+### The fix, and why it is one line
+
+`patch-gtk-input-purpose.sh` fills the two dead fields from the live properties immediately before
+the switch reads them. Nothing else needed changing, because nothing else was wrong.
+
+Focus moving between two entries swaps the active `GtkIMContext`, and
+`ToplevelActivity.setActiveImContext` calls `imm.restartInput`, so the type is re-queried per
+field rather than fixed at whichever field was focused first. That was checked before building
+rather than after, because a fix that worked only for the first field would have looked like a
+working fix.
+
+**Confirmed on the Pixel 9a:** passwords mask as typed, and the homeserver field gets a URL
+keyboard.
+
+### What this says about the backend
+
+This is the **second** complete-but-unconnected implementation found in this one subsystem.
+`patch-gtk-ime.sh` exists because `ToplevelActivity.onCreateInputConnection` hardcoded
+`outAttrs.inputType = InputType.TYPE_NULL` **with the working line commented out directly above
+it**, which meant no keyboard appeared at all.
+
+Two of those is a pattern worth naming, because it changes what "immature" means here. Nothing so
+far has been an architecture that cannot express what Android needs; it has been code that was
+written and never wired up. Both fixes were one line each, and both were carried locally as patch
+scripts without waiting on upstream.
+
+The space-bar cursor gesture is the honest test of whether that pattern holds, because it is the
+first one that is genuinely _missing_ rather than disconnected — see
+[Before this ships](#before-this-ships).
+
 ## Before this ships
 
 A running list, in the user's words where they said it. Nothing here blocks further development;
@@ -1924,28 +1991,18 @@ all of it blocks calling the port finished.
 
   Two things it immediately found that no emulator run could have.
 
-  **The homeserver field does not ask for a URL keyboard, and setting the purpose did not fix it.**
-  Gboard offers a plain alphabetic layout with autocapitalisation, for the one field in the
-  application that wants `/` and `.` and no capitals.
+  ~~**The homeserver field does not ask for a URL keyboard, and setting the purpose did not fix
+  it.**~~ **Fixed** (`7011944e`), together with plaintext passwords, because they were the same
+  bug. The first guess above was right about where the break was and wrong about it being
+  unreachable: `GtkIMContextAndroid` reads its own `input_purpose` field, which
+  `gtk_im_context_android_init` sets to `FREE_FORM` and nothing assigns again, while the value the
+  widget set lives in `GtkIMContext`'s private struct. Every field in every GTK application on
+  Android was therefore announced as free-form prose. One line, carried as
+  `patch-gtk-input-purpose.sh`. See
+  [Three input bugs that were one](#s8--three-input-bugs-that-were-one).
 
-  `src/login/homeserver_page.blp` now sets `input-purpose: url` (`70af5483`). That was worth doing
-  on its own terms — the field is a URL on every platform, and desktop input methods and
-  accessibility tooling read the same property — but **it did not change the keyboard**, verified on
-  the Pixel 9a with the property in place.
-
-  What that rules out, so the next attempt does not start over:
-
-  * The property reaches the right object. `adw_entry_row_set_input_purpose` calls
-    `gtk_text_set_input_purpose` on the internal `GtkText`, so `AdwEntryRow` is not swallowing it.
-  * The Android mapping exists. `gtk/gtkimcontextandroid.c:131` turns `GTK_INPUT_PURPOSE_URL` into
-    `TYPE_TEXT_VARIATION_URI`.
-
-  So the break is between `GtkText`'s `input-purpose` and the `self->input_purpose` that
-  `_gtk_im_context_android_get_input_type` reads — either it is never propagated to the IM context,
-  or Android asks for the input type once, when the `InputConnection` is created, and nothing calls
-  `restartInput` afterwards. Both are upstream, and both are in the same file as the space-bar bug
-  below, so a single keyboard pass would naturally cover both. **Deferred at the user's request,
-  24 August 2026** — the fix in Commune is already in and correct; what remains is not ours.
+  **Confirmed on the Pixel 9a:** the password field masks as you type, and the homeserver field
+  gets a URL keyboard.
 
   **Sliding along the space bar to move the cursor is broken, and it is upstream.** It moves a
   character or two and stops. `gdk/android/glue/java/org/gtk/android/ImContext.java` is 107 lines,
