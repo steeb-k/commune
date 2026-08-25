@@ -424,10 +424,14 @@ chose. "No microphone was found" is what happened.
 **Update, from the real console session (see the GSK entry below for how that was confirmed):**
 reconnecting over RustDesk instead of RDP gets `wasapisrc` a real device — the microphone comes
 through. Half of what blocked calls above was specifically an RDP redirection gap, not a port issue,
-and RustDesk closes it. The other half does not have an answer yet: this machine has no speakers, so
-even a call whose capture side now works cannot be confirmed to have a working playback side from
-here. A full round trip still needs either speakers on this machine or a way to confirm the far end
-heard something without relying on this end's own ears.
+and RustDesk closes it.
+
+**And a real call has now been placed and answered**, camera and microphone both, with the far end
+confirming both arrived — the whole outbound pipeline, capture through encode through the network,
+works. What is still unconfirmed is this end's own playback, since this machine has no speakers to
+hear or see it land: a full round trip in both directions still needs either speakers here or a
+second device to watch it arrive on. That is a narrower and more mundane gap than "does calling work
+at all", which is the question this answers.
 
 **GSK renders through software (Cairo), and it is not RDP being RDP.** `GSK_DEBUG=renderer` names
 the reason directly:
@@ -691,9 +695,10 @@ macOS, so the Control-key bindings the Linux build has are already right here.
   the Credential Manager path end to end, since restoring is the one part the round-trip test
   could not cover. Still owed: image thumbnails and animated GIFs, and video and voice-message
   playback.
-* **Calls, from a machine that has a microphone.** Every element they need is present, and the
-  signalling half already works; the pipeline half has never had a capture device to open. See
-  [What bit us](#what-bit-us). Run against Element per `doc/calls.md`, from the console.
+* **Confirming this end's own call playback.** A real call has been placed and answered, camera and
+  microphone both, with the far end confirming both arrived — see [What bit us](#what-bit-us). What
+  is left is narrower than "does calling work": this machine has no speakers, so nobody has yet heard
+  or watched a call arrive _here_. Needs speakers on this machine, or a second device to confirm from.
 * **Whether search actually finds anything.** The indexing errors are gone and the index is built
   in memory, but no search has been run against it from the UI.
 * **What SmartScreen makes of it.** The artifacts are signed and verify, but nobody has yet
