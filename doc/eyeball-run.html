@@ -165,6 +165,13 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
   margin-right:7px; vertical-align:1px;
 }
 .chk .tag.key { background:var(--key-soft); color:var(--key); }
+.chk .tag.wrecks { background:var(--fail-soft); color:var(--fail); }
+.body h3.wrecks::after {
+  content:"takes things away"; font-family:var(--f-mono); font-size:10px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--fail);
+  background:var(--fail-soft); padding:3px 7px; border-radius:2px;
+  margin-left:10px; vertical-align:3px;
+}
 .chk .tag.seen { background:var(--pass-soft); color:var(--pass); }
 .chk .extra { grid-column:2; display:none; flex-direction:column; gap:8px; padding-bottom:4px; }
 .chk[data-state="fail"] .extra { display:flex; }
@@ -189,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; a70e9301</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 5e34a831</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -214,7 +221,7 @@ else.</strong> Mark a failure and you get somewhere to say what happened and to 
 a screenshot; <em>Copy report</em> or <em>Save report</em> then gathers them up.</p>
 <section id="s0" data-open="1" data-checks="0"><header><h2>How to run this</h2></header><div class="body"><p>The sections below are ordered oldest first, which is the wrong order to read them in. <strong>Work newest first</strong>: the code nobody has looked at yet is the code most likely to be wrong, and four of the five bugs found on 24 August 2026 were in work less than a day old.</p><p><code>doc/eyeball-run.html</code> is this file with checkboxes, generated from it by <code>doc/eyeball-page.py</code> and published at &lt;https://claude.ai/code/artifact/9b66f090-2f6d-407e-a802-ea4079773fe9&gt;. Regenerate and republish it whenever this file changes — the ledger is the source, the page only draws it, and <strong>a result is not recorded until it is struck here</strong>. The page keeps its marks in one browser and nowhere else.</p><h3>Before anything</h3><pre><code>testing/local-homeserver.sh up      # or `reset` for a clean slate
 meson install -C _build             # the binary must be newer than the code
-commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p></div></section><section id="s1" data-open="1" data-checks="57"><header><h2>Spaces</h2><span class="src">doc/spaces.md</span><span class="cnt" data-count>54 left</span></header><div class="body"><p>Round 3. Slice 1 made spaces stop being invisible; slice 2 made the space page list the rooms inside one. The slice 1 checks are about a space being present, openable, leavable and findable; the slice 2 checks are under <em>What is inside one</em>.</p><h3>Setting up</h3><p>Everything except the last group runs against <code>testing/local-homeserver.sh</code>, which seeds a public space called <strong>Test Space</strong> (<code>#test-space:localhost</code>, created by alice) with six rooms inside it, one for each shape a listing has to draw:</p><div class="scroller"><table><thead><tr><th>Room</th><th>Why it is there</th></tr></thead><tbody><tr><td><code>Public Room</code></td><td>alice has joined it — the button should say <em>View</em></td></tr><tr><td><code>Restricted Room</code></td><td>alice has joined it too, and it names the space in its join rule</td></tr><tr><td><code>Bobs Room</code></td><td>bob made it and alice never joined — the button should say <em>Join</em></td></tr><tr><td><code>Sub Space</code></td><td>a space inside a space — where the one-level limit shows</td></tr><tr><td><code>Readable Room</code></td><td><code>world_readable</code>, but alice&#x27;s own, so she is in it</td></tr><tr><td><code>Peekable Room</code></td><td><code>world_readable</code> and bob&#x27;s — the one alice can preview</td></tr></tbody></table></div><p>Naming a space in a join rule is <strong>not</strong> the same as being a child of it, so <code>seed_space_children()</code> writes the <code>m.space.child</code> events, and <code>seed_peekable_room()</code> adds the last of them. Both run outside the <code>seeded.json</code> gate, which means an existing server picks the children up:</p><pre><code>testing/local-homeserver.sh up        # or `reset` for a clean slate</code></pre><p>Log in as alice — the greeter now offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. For the invite check, log in as bob in a second run.</p><h3>The sidebar</h3><div class="chk" data-id="c62" data-state="" data-lead="A &quot;Spaces&quot; section appears">
+commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. The harness sets three passwords: <code>alice-is-testing</code>, <code>bob-is-testing</code>, <code>admin-is-testing</code>. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p><h3>What to do last</h3><p>Anything marked <strong>Destructive</strong> takes away what the rest of its section is looking at. Those subsections sit at the end of each section for that reason, and the run sheet marks them. Nothing here is unrecoverable — <code>Test Space</code> and <code>Sub Space</code> are public, so rejoining them is a search in Explore — but it is ten minutes you do not need to spend.</p></div></section><section id="s1" data-open="1" data-checks="57"><header><h2>Spaces</h2><span class="src">doc/spaces.md</span><span class="cnt" data-count>54 left</span></header><div class="body"><p>Round 3. Slice 1 made spaces stop being invisible; slice 2 made the space page list the rooms inside one. The slice 1 checks are about a space being present, openable, leavable and findable; the slice 2 checks are under <em>What is inside one</em>.</p><h3>Setting up</h3><p>Everything except the last group runs against <code>testing/local-homeserver.sh</code>, which seeds a public space called <strong>Test Space</strong> (<code>#test-space:localhost</code>, created by alice) with six rooms inside it, one for each shape a listing has to draw:</p><div class="scroller"><table><thead><tr><th>Room</th><th>Why it is there</th></tr></thead><tbody><tr><td><code>Public Room</code></td><td>alice has joined it — the button should say <em>View</em></td></tr><tr><td><code>Restricted Room</code></td><td>alice has joined it too, and it names the space in its join rule</td></tr><tr><td><code>Bobs Room</code></td><td>bob made it and alice never joined — the button should say <em>Join</em></td></tr><tr><td><code>Sub Space</code></td><td>a space inside a space — where the one-level limit shows</td></tr><tr><td><code>Readable Room</code></td><td><code>world_readable</code>, but alice&#x27;s own, so she is in it</td></tr><tr><td><code>Peekable Room</code></td><td><code>world_readable</code> and bob&#x27;s — the one alice can preview</td></tr></tbody></table></div><p>Naming a space in a join rule is <strong>not</strong> the same as being a child of it, so <code>seed_space_children()</code> writes the <code>m.space.child</code> events, and <code>seed_peekable_room()</code> adds the last of them. Both run outside the <code>seeded.json</code> gate, which means an existing server picks the children up:</p><pre><code>testing/local-homeserver.sh up        # or `reset` for a clean slate</code></pre><p>Log in as alice — the greeter now offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. For the invite check, log in as bob in a second run.</p><h3>The sidebar</h3><div class="chk" data-id="kbe6d26f95f" data-state="" data-lead="A &quot;Spaces&quot; section appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -227,7 +234,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c63" data-state="" data-lead="It is collapsed on an existing session and expanded on a new one.">
+</div><div class="chk" data-id="ka25ad4a5cf" data-state="" data-lead="It is collapsed on an existing session and expanded on a new one.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -240,7 +247,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c64" data-state="" data-lead="The expander remembers.">
+</div><div class="chk" data-id="k6579b789d1" data-state="" data-lead="The expander remembers.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -253,7 +260,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c65" data-state="" data-lead="The section disappears when it is empty.">
+</div><div class="chk" data-id="k58ed2f8db9" data-state="" data-lead="The section disappears when it is empty.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -266,7 +273,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c66" data-state="" data-lead="The row carries a grid icon">
+</div><div class="chk" data-id="ka6e649c1e1" data-state="" data-lead="The row carries a grid icon">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -279,7 +286,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c67" data-state="" data-lead="The icon did not steal anyone else&#x27;s.">
+</div><div class="chk" data-id="kfa095ac276" data-state="" data-lead="The icon did not steal anyone else&#x27;s.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -292,7 +299,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c68" data-state="" data-lead="A space with unread state does not shout.">
+</div><div class="chk" data-id="ke3a6f9c89f" data-state="" data-lead="A space with unread state does not shout.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -305,7 +312,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c69" data-state="" data-lead="The sidebar room search finds it.">
+</div><div class="chk" data-id="k77bd739807" data-state="" data-lead="The sidebar room search finds it.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -318,7 +325,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>The space page</h3><div class="chk" data-id="c70" data-state="" data-lead="Selecting the space opens a page with its name">
+</div><h3>The space page</h3><div class="chk" data-id="kdd47f232aa" data-state="" data-lead="Selecting the space opens a page with its name">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -331,7 +338,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c71" data-state="" data-lead="The header bar">
+</div><div class="chk" data-id="k88b11471ce" data-state="" data-lead="The header bar">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -344,7 +351,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c72" data-state="" data-lead="The header bar is the same height as every other page&#x27;s.">
+</div><div class="chk" data-id="kf487109947" data-state="" data-lead="The header bar is the same height as every other page&#x27;s.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -357,7 +364,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c73" data-state="" data-lead="The body">
+</div><div class="chk" data-id="kc96b5fd8f0" data-state="" data-lead="The body">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -370,7 +377,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c74" data-state="" data-lead="A space with no topic hides the topic label">
+</div><div class="chk" data-id="k082a7e48bb" data-state="" data-lead="A space with no topic hides the topic label">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -383,7 +390,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c75" data-state="" data-lead="A topic containing a matrix.to link is clickable">
+</div><div class="chk" data-id="k8627281287" data-state="" data-lead="A topic containing a matrix.to link is clickable">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -396,7 +403,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c76" data-state="" data-lead="The header bar has a menu">
+</div><div class="chk" data-id="ka783b25f4d" data-state="" data-lead="The header bar has a menu">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -409,7 +416,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c77" data-state="" data-lead="_Space Details_ opens them">
+</div><div class="chk" data-id="k788274f61d" data-state="" data-lead="_Space Details_ opens them">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -422,7 +429,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c78" data-state="" data-lead="_Invite New Members…_ is absent without the power to invite.">
+</div><div class="chk" data-id="k7c5e188b53" data-state="" data-lead="_Invite New Members…_ is absent without the power to invite.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -435,7 +442,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c79" data-state="" data-lead="_Leave Space_ asks first">
+</div><div class="chk" data-id="k245a015067" data-state="" data-lead="_Leave Space_ asks first">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -448,7 +455,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c80" data-state="" data-lead="No composer and no member list.">
+</div><div class="chk" data-id="ke6f749816a" data-state="" data-lead="No composer and no member list.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -461,7 +468,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>What is inside one</h3><p>Slice 2. All of this is on the space page, below the topic.</p><div class="chk" data-id="c81" data-state="" data-lead="The six seeded rooms appear">
+</div><h3>What is inside one</h3><p>Slice 2. All of this is on the space page, below the topic.</p><div class="chk" data-id="kaee96c5453" data-state="" data-lead="The six seeded rooms appear">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -474,7 +481,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c82" data-state="" data-lead="A spinner shows first and is replaced.">
+</div><div class="chk" data-id="k764f02db42" data-state="" data-lead="A spinner shows first and is replaced.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -487,7 +494,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c83" data-state="" data-lead="The buttons say the right thing.">
+</div><div class="chk" data-id="k019d94957a" data-state="" data-lead="The buttons say the right thing.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -500,7 +507,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c84" data-state="" data-lead="_View_ opens the room.">
+</div><div class="chk" data-id="k68ad3c91a1" data-state="" data-lead="_View_ opens the room.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -513,7 +520,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c85" data-state="" data-lead="_Join_ joins it, in place.">
+</div><div class="chk" data-id="kcfbd47a408" data-state="" data-lead="_Join_ joins it, in place.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -526,7 +533,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c86" data-state="" data-lead="Sub Space is marked as a space">
+</div><div class="chk" data-id="k95ee316aa5" data-state="" data-lead="Sub Space is marked as a space">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -539,7 +546,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c87" data-state="" data-lead="Sub Space opens its own page too.">
+</div><div class="chk" data-id="k76b06d8805" data-state="" data-lead="Sub Space opens its own page too.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -552,7 +559,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c88" data-state="" data-lead="An empty space says so.">
+</div><div class="chk" data-id="k90d9cd857b" data-state="" data-lead="An empty space says so.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -565,7 +572,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c89" data-state="" data-lead="Each row shows what it should">
+</div><div class="chk" data-id="k7243e31256" data-state="" data-lead="Each row shows what it should">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -578,7 +585,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c90" data-state="" data-lead="Switching between two spaces swaps the lists.">
+</div><div class="chk" data-id="kc26a2f5433" data-state="" data-lead="Switching between two spaces swaps the lists.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -591,7 +598,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c91" data-state="" data-lead="The list survives a reselect.">
+</div><div class="chk" data-id="k5fbef6b8e7" data-state="" data-lead="The list survives a reselect.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -604,7 +611,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c92" data-state="" data-lead="No truncation notice on a small space.">
+</div><div class="chk" data-id="kea85ce3aaa" data-state="" data-lead="No truncation notice on a small space.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -617,7 +624,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c93" data-state="" data-lead="The error state is reachable and recoverable.">
+</div><div class="chk" data-id="kd74f6fcda4" data-state="" data-lead="The error state is reachable and recoverable.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -630,7 +637,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c94" data-state="" data-lead="A space on matrix.org lists its rooms too.">
+</div><div class="chk" data-id="k17faa1ce71" data-state="" data-lead="A space on matrix.org lists its rooms too.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -643,7 +650,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Opening a subspace in place</h3><div class="chk" data-id="c95" data-state="" data-lead="A subspace has an expander">
+</div><h3>Opening a subspace in place</h3><div class="chk" data-id="k3813be17da" data-state="" data-lead="A subspace has an expander">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -656,7 +663,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c96" data-state="" data-lead="Opening it draws its rooms underneath, indented">
+</div><div class="chk" data-id="k64ca154725" data-state="" data-lead="Opening it draws its rooms underneath, indented">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -669,7 +676,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c97" data-state="" data-lead="A subspace of a subspace expands too">
+</div><div class="chk" data-id="k2b3239b19c" data-state="" data-lead="A subspace of a subspace expands too">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -682,7 +689,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c98" data-state="" data-lead="A space with nothing in it has no expander.">
+</div><div class="chk" data-id="k7a863077f9" data-state="" data-lead="A space with nothing in it has no expander.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -695,7 +702,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c99" data-state="" data-lead="Closing it puts the rooms away">
+</div><div class="chk" data-id="k80b6d1b7bb" data-state="" data-lead="Closing it puts the rooms away">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -708,7 +715,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c100" data-state="" data-lead="A loop does not open forever.">
+</div><div class="chk" data-id="ke104f5184a" data-state="" data-lead="A loop does not open forever.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -721,7 +728,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c101" data-state="" data-lead="A room in two spaces appears in both">
+</div><div class="chk" data-id="k02b80396bd" data-state="" data-lead="A room in two spaces appears in both">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -734,7 +741,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c102" data-state="" data-lead="The order is the specification&#x27;s.">
+</div><div class="chk" data-id="k194f49ea61" data-state="" data-lead="The order is the specification&#x27;s.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -747,7 +754,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c103" data-state="" data-lead="The buttons still work at depth.">
+</div><div class="chk" data-id="k14688e8933" data-state="" data-lead="The buttons still work at depth.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -760,85 +767,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Leaving one, and not re-filing one</h3><div class="chk" data-id="c104" data-state="" data-lead="The space row has a menu at all.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><span class="tag seen">Seen</span><strong>The space row has a menu at all.</strong> Right-click it, or use the ⋯ button that appears on hover. It had none until <code>60792ddf</code>: the actions were built and the row was never told it had a menu, so there was no way to reach them. Reported broken, then working, on 24 August 2026.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c105" data-state="" data-lead="Right-click the space row: the menu offers _Leave Room_ and _Report Room_, and nothing else.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Right-click the space row: the menu offers <em>Leave Room</em> and <em>Report Room</em>, and nothing else.</strong> No <em>Favorite</em>, no <em>Low Priority</em>, no <em>Set as Direct Chat</em>, no <em>Mark as Unread</em>. Those are tags and a space takes none of them.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c106" data-state="" data-lead="_Leave Room_ asks first">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong><em>Leave Room</em> asks first</strong>, then the row leaves the Spaces section and turns up under <em>Historical</em>. Then <em>Forget</em> from there should work as it does for a room.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c107" data-state="" data-lead="Re-joining it">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Re-joining it</strong> — from Explore, or the alias — puts it back in the Spaces section rather than in <em>Rooms</em>.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c108" data-state="" data-lead="Dragging the space row">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Dragging the space row</strong> highlights only <em>Historical</em> as a valid drop target; every other section should go grey. Dropping it there leaves the space, the same as the menu item.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c109" data-state="" data-lead="Dragging an ordinary room over the Spaces section does nothing.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Dragging an ordinary room over the Spaces section does nothing.</strong> The section must show as disabled and refuse the drop. Rooms are put into spaces with <code>m.space.child</code>, which does not exist here yet, and a drop that silently did nothing would be worse than one that refuses.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Finding one in Explore</h3><div class="chk" data-id="c110" data-state="" data-lead="Explore lists spaces at all.">
+</div><h3>Finding one in Explore</h3><div class="chk" data-id="kcba5c90435" data-state="" data-lead="Explore lists spaces at all.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -851,7 +780,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c111" data-state="" data-lead="A space row says &quot;Space&quot;">
+</div><div class="chk" data-id="k8090d41377" data-state="" data-lead="A space row says &quot;Space&quot;">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -864,7 +793,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c112" data-state="" data-lead="Joining from Explore">
+</div><div class="chk" data-id="k1507c7b95b" data-state="" data-lead="Joining from Explore">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -877,7 +806,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c113" data-state="" data-lead="On matrix.org">
+</div><div class="chk" data-id="k431be3dc01" data-state="" data-lead="On matrix.org">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -890,33 +819,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>A room you have knocked on</h3><p>Not spaces, but the same bug and found with it: a knocked room is drawn in an <em>Invite Requests</em> section and its row had no menu either, so the request could not be retracted from the sidebar.</p><div class="chk" data-id="c114" data-state="" data-lead="Knock on a room">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Knock on a room</strong> — <code>#knock-room:localhost</code> from Explore — and then <strong>right-click its sidebar row</strong>: the menu should offer <em>Retract</em>.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c115" data-state="" data-lead="Retracting works">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Retracting works</strong> and the row goes.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Invites, and what these slices deliberately do not change</h3><div class="chk" data-id="c116" data-state="" data-lead="An invite to a space still goes to _Invited_">
+</div><h3>Invites, and what these slices deliberately do not change</h3><div class="chk" data-id="k779c07e598" data-state="" data-lead="An invite to a space still goes to _Invited_">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -929,7 +832,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c117" data-state="" data-lead="A room added to a space while its page is open does not appear.">
+</div><div class="chk" data-id="k20435b6d7d" data-state="" data-lead="A room added to a space while its page is open does not appear.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -942,7 +845,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c118" data-state="" data-lead="Nothing regressed for ordinary rooms.">
+</div><div class="chk" data-id="kaef4dd061f" data-state="" data-lead="Nothing regressed for ordinary rooms.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -955,12 +858,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s2" data-open="1" data-checks="47"><header><h2>Choosing a space, restricting a room to one, and putting one in</h2><span class="src">doc/join-rules.md`, `doc/spaces.md</span><span class="cnt" data-count>47 left</span></header><div class="body"><p>Round 3, slice 3. The client can now ask which space you mean; <em>Who Can Join</em> uses it to build a restricted rule rather than only to keep one, and the room details use it to put a room into a space.</p><h3>Setting up</h3><p>The harness seeds <code>Test Space</code> and <code>Sub Space</code>, plus <code>Restricted Room</code>, which is already restricted to <code>Test Space</code>, and <code>Knock Restricted Room</code>, which is the same with knocking on. Log in as alice, who owns all of them.</p><pre><code>testing/local-homeserver.sh up</code></pre><h3>The picker</h3><div class="chk" data-id="c119" data-state="" data-lead="Room Details → _Who Can Join_ on any room shows _Members of a Space_.">
+</div><h3 class='wrecks'>A room you have knocked on</h3><p><em>Destructive, mildly: it leaves a knock behind if you stop halfway.</em></p><p>Not spaces, but the same bug and found with it: a knocked room is drawn in an <em>Invite Requests</em> section and its row had no menu either, so the request could not be retracted from the sidebar.</p><div class="chk" data-id="k9869153845" data-state="" data-lead="Knock on a room">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Room Details → <em>Who Can Join</em> on any room shows <em>Members of a Space</em>.</strong> It used to be hidden unless the room was already restricted. It should now be there for <code>Public Room</code> and <code>Invite Room</code> too.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Knock on a room</strong> — <code>#knock-room:localhost</code> from Explore — and then <strong>right-click its sidebar row</strong>: the menu should offer <em>Retract</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -968,12 +871,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c120" data-state="" data-lead="Selecting it reveals a _Space_ row below the three choices">
+</div><div class="chk" data-id="k087f559fd2" data-state="" data-lead="Retracting works">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Selecting it reveals a <em>Space</em> row below the three choices</strong>, reading <em>None chosen</em> for a room that has no restriction.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Retracting works</strong> and the row goes.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -981,12 +884,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c121" data-state="" data-lead="Activating that row opens a dialog listing your spaces">
+</div><h3 class='wrecks'>Leaving one, and not re-filing one</h3><p><em>Destructive. Leave it until the rest of this section is done — it takes away the spaces the checks above need, and getting them back means rejoining <code>#test-space:localhost</code> and <code>#sub-space:localhost</code> from Explore.</em></p><div class="chk" data-id="kdca0cfe22c" data-state="" data-lead="The space row has a menu at all.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Activating that row opens a dialog listing your spaces</strong> — <code>Test Space</code> and <code>Sub Space</code>, and nothing else. No ordinary rooms, no direct chat, no server notices room.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><span class="tag seen">Seen</span><strong>The space row has a menu at all.</strong> Right-click it, or use the ⋯ button that appears on hover. It had none until <code>60792ddf</code>: the actions were built and the row was never told it had a menu, so there was no way to reach them. Reported broken, then working, on 24 August 2026.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -994,12 +897,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c122" data-state="" data-lead="The room you are editing is not in the list.">
+</div><div class="chk" data-id="ka80d1f6c0f" data-state="" data-lead="Right-click the space row: the menu offers _Leave Room_ and _Report Room_, and nothing else.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>The room you are editing is not in the list.</strong> Open <em>Who Can Join</em> on <code>Test Space</code> itself: the picker must offer <code>Sub Space</code> only. A space cannot be restricted to itself.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Right-click the space row: the menu offers <em>Leave Room</em> and <em>Report Room</em>, and nothing else.</strong> No <em>Favorite</em>, no <em>Low Priority</em>, no <em>Set as Direct Chat</em>, no <em>Mark as Unread</em>. Those are tags and a space takes none of them.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1007,12 +910,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c123" data-state="" data-lead="Search filters the list">
+</div><div class="chk" data-id="kc6e4a75b6c" data-state="" data-lead="_Leave Room_ asks first">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Search filters the list</strong>, and a search matching nothing says so rather than showing an empty box.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong><em>Leave Room</em> asks first</strong>, then the row leaves the Spaces section and turns up under <em>Historical</em>. Then <em>Forget</em> from there should work as it does for a room.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1020,12 +923,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c124" data-state="" data-lead="Dismissing the dialog changes nothing">
+</div><div class="chk" data-id="kbdc969033d" data-state="" data-lead="Re-joining it">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Dismissing the dialog changes nothing</strong> — press Escape or click away, and the <em>Space</em> row still reads what it did.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Re-joining it</strong> — from Explore, or the alias — puts it back in the Spaces section rather than in <em>Rooms</em>.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1033,12 +936,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c125" data-state="" data-lead="Choosing a space fills the row in">
+</div><div class="chk" data-id="k6173305d6c" data-state="" data-lead="Dragging the space row">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Choosing a space fills the row in</strong>, the dialog closes, and <em>Save</em> becomes sensitive.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Dragging the space row</strong> highlights only <em>Historical</em> as a valid drop target; every other section should go grey. Dropping it there leaves the space, the same as the menu item.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1046,12 +949,12 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c126" data-state="" data-lead="Saving works.">
+</div><div class="chk" data-id="k4075b6a1e0" data-state="" data-lead="Dragging an ordinary room over the Spaces section does nothing.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
-<div class="txt"><strong>Saving works.</strong> The rule is written and the page comes back showing <em>Members of a Space</em> with that space named. Confirm from another client that the room really is restricted.</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Dragging an ordinary room over the Spaces section does nothing.</strong> The section must show as disabled and refuse the drop. Rooms are put into spaces with <code>m.space.child</code>, which does not exist here yet, and a drop that silently did nothing would be worse than one that refuses.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
@@ -1059,371 +962,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c127" data-state="" data-lead="A user in the space can then join the room">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A user in the space can then join the room</strong>, and one outside it cannot. As bob, who is not in <code>Test Space</code>, try the room you just restricted; then have alice invite bob to the space and try again.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>What must not happen</h3><div class="chk" data-id="c128" data-state="" data-lead="_Save_ stays insensitive with the rule selected and no space chosen.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong><em>Save</em> stays insensitive with the rule selected and no space chosen.</strong> This is the check that matters most: saving in that state would send a restricted rule allowing nobody, which this page cannot undo. Select <em>Members of a Space</em> on an unrestricted room and go no further.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c129" data-state="" data-lead="Going back with the rule selected and no space chosen">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Going back with the rule selected and no space chosen</strong> asks about unsaved changes only if there are any — there are none, so it should just go back.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c130" data-state="" data-lead="The rule is not silently swapped.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The rule is not silently swapped.</strong> With <em>Members of a Space</em> selected and no space, the page must not save an invite or knock rule instead. That is what the old code did, and it was invisible.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c131" data-state="" data-lead="A room already restricted to a space keeps it">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A room already restricted to a space keeps it</strong> when you only flip <em>Allow Invite Requests</em>. Open <code>Restricted Room</code>, toggle the switch, save, and check from another client that the allow list still names <code>Test Space</code>.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c132" data-state="" data-lead="A room with no permission shows the space and no arrow.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A room with no permission shows the space and no arrow.</strong> As bob in a room he cannot administer, <em>Who Can Join</em> should still say which space, with the row not activatable.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Putting a room into a space</h3><p>Slice 3, second half. Room Details → <em>Spaces</em> → <em>Add to Space…</em>.</p><div class="chk" data-id="c133" data-state="" data-lead="The _Spaces_ group is on the general page">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The <em>Spaces</em> group is on the general page</strong> of any room that is not a direct chat, under <em>Access and Visibility</em>, with one row.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c134" data-state="" data-lead="It is absent from a direct chat.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>It is absent from a direct chat.</strong> Open the details of the alice–bob chat: no <em>Spaces</em> group.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c135" data-state="" data-lead="_Add to Space…_ opens the picker">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong><em>Add to Space…</em> opens the picker</strong>, listing <code>Test Space</code> and <code>Sub Space</code> — the spaces alice made, and so can write in.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c136" data-state="" data-lead="A space you cannot write in is not offered.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A space you cannot write in is not offered.</strong> As bob, who is in no space he administers, the picker should be empty and say so. If alice invites bob to <code>Test Space</code> without giving him power, it must stay empty — this is the check that <code>SendState(SpaceChild)</code> is really being asked, and the one most likely to be wrong.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c137" data-state="" data-lead="The room being added is not offered itself.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The room being added is not offered itself.</strong> Open the details of <code>Test Space</code> and press <em>Add to Space…</em>: only <code>Sub Space</code>.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c138" data-state="" data-lead="Adding `Invite Room` to `Test Space` says so">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Adding <code>Invite Room</code> to <code>Test Space</code> says so</strong>, with a toast naming the space.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c139" data-state="" data-lead="The room appears in the space.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The room appears in the space.</strong> Open <code>Test Space</code> from the sidebar — the list should now hold <code>Invite Room</code> as well. It will not appear while the space page is already open; the listing is fetched once, which is recorded in <code>spaces.md</code>.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c140" data-state="" data-lead="Another client agrees.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Another client agrees.</strong> Check from Element that <code>Test Space</code> has an <code>m.space.child</code> for the room, and that the room has an <code>m.space.parent</code> for the space with <code>canonical</code> absent or false.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c141" data-state="" data-lead="Adding a room somebody else administers still works.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Adding a room somebody else administers still works.</strong> Have bob make a room, have alice join it without power, and add it to <code>Test Space</code> from alice&#x27;s client. The <code>m.space.child</code> needs power in the <strong>space</strong>, which alice has; the <code>m.space.parent</code> needs power in the <strong>room</strong>, which she does not, so it should be skipped with a warning in the log and the operation should still report success.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c142" data-state="" data-lead="Adding a room twice is harmless">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Adding a room twice is harmless</strong> — the state event is simply written again.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c143" data-state="" data-lead="The row goes insensitive while it works">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The row goes insensitive while it works</strong> and comes back afterwards, whether it succeeded or not.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Which spaces a room is in</h3><div class="chk" data-id="c144" data-state="" data-lead="The _Spaces_ group lists them.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The <em>Spaces</em> group lists them.</strong> Add <code>Invite Room</code> to <code>Test Space</code>, then reopen its details: a row naming <code>Test Space</code>, with its avatar.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c145" data-state="" data-lead="A room in no space lists none">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A room in no space lists none</strong> — just the <em>Add to Space…</em> row.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c146" data-state="" data-lead="The looking-for-them row does not stay.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The looking-for-them row does not stay.</strong> A spinner row appears while the spaces are asked and goes when they answer. If it never goes, the read failed silently.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c147" data-state="" data-lead="A room in two spaces lists both.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A room in two spaces lists both.</strong> Add the same room to <code>Sub Space</code> as well.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c148" data-state="" data-lead="A space you are not in is not listed">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>A space you are not in is not listed</strong>, even when it holds the room. This cannot be helped and is not a fault: the state of a space nobody here has joined cannot be read. Check it by having bob add one of alice&#x27;s rooms to a space alice is not in.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c149" data-state="" data-lead="A room that only claims a parent is not believed.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>A room that only claims a parent is not believed.</strong> From another client, write an <code>m.space.parent</code> into a room pointing at a space that does <strong>not</strong> name it as a child, as a user with no power in that space. It must not appear. This is the specification&#x27;s own rule and the check most worth doing, because getting it wrong lets any room claim to be anywhere.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c150" data-state="" data-lead="…unless whoever claimed it could have made it true.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>…unless whoever claimed it could have made it true.</strong> Same test, but write the parent event as somebody who can send <code>m.space.child</code> in that space. It should appear.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Taking a room back out</h3><div class="chk" data-id="c151" data-state="" data-lead="Each row has a _Remove_ button">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Each row has a <em>Remove</em> button</strong>, and pressing it takes the room out of that space: the row goes, a toast says so, and the space&#x27;s own page no longer lists the room when reopened.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c152" data-state="" data-lead="Another client agrees.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Another client agrees.</strong> The <code>m.space.child</code> should now be an empty object rather than gone — Matrix has no way to delete a state event.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c153" data-state="" data-lead="The button is insensitive without permission.">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>The button is insensitive without permission.</strong> As bob, in a space he does not administer that holds a room he can see, the row appears and the button does not work.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><div class="chk" data-id="c154" data-state="" data-lead="Adding it back works">
-<div class="ctl">
-<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
-<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
-</div>
-<div class="txt"><strong>Adding it back works</strong>, and the room reappears in the space.</div>
-<div class="extra">
-<textarea placeholder="What happened? Not what should have."></textarea>
-<div class="shot">
-<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
-<div class="shot-acts"></div>
-</div>
-</div>
-</div><h3>Making a space</h3><div class="chk" data-id="c155" data-state="" data-lead="The new-room dialog offers a _Kind_.">
+</div></div></section><section id="s2" data-open="1" data-checks="47"><header><h2>Choosing a space, restricting a room to one, and putting one in</h2><span class="src">doc/join-rules.md`, `doc/spaces.md</span><span class="cnt" data-count>47 left</span></header><div class="body"><p>Round 3, slice 3. The client can now ask which space you mean; <em>Who Can Join</em> uses it to build a restricted rule rather than only to keep one, and the room details use it to put a room into a space.</p><h3>Setting up</h3><p>The harness seeds <code>Test Space</code> and <code>Sub Space</code>, plus <code>Restricted Room</code>, which is already restricted to <code>Test Space</code>, and <code>Knock Restricted Room</code>, which is the same with knocking on. Log in as alice, who owns all of them.</p><pre><code>testing/local-homeserver.sh up</code></pre><h3>Making a space</h3><div class="chk" data-id="k05f4055376" data-state="" data-lead="The new-room dialog offers a _Kind_.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1436,7 +975,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c156" data-state="" data-lead="The encryption switch disappears for a space">
+</div><div class="chk" data-id="k2d4d6aeba1" data-state="" data-lead="The encryption switch disappears for a space">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1449,7 +988,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c157" data-state="" data-lead="The visibility subtitles say &quot;space&quot;">
+</div><div class="chk" data-id="k4311adb8f2" data-state="" data-lead="The visibility subtitles say &quot;space&quot;">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1462,7 +1001,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c158" data-state="" data-lead="Creating a private space works">
+</div><div class="chk" data-id="k9f61532309" data-state="" data-lead="Creating a private space works">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1475,7 +1014,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c159" data-state="" data-lead="Creating a public space works">
+</div><div class="chk" data-id="k7e9fe34458" data-state="" data-lead="Creating a public space works">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1488,7 +1027,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c160" data-state="" data-lead="Nobody can post in it.">
+</div><div class="chk" data-id="k616a0f10c7" data-state="" data-lead="Nobody can post in it.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1501,7 +1040,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c161" data-state="" data-lead="The new space accepts rooms.">
+</div><div class="chk" data-id="k4326c6e337" data-state="" data-lead="The new space accepts rooms.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1514,7 +1053,423 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Suggested rooms</h3><div class="chk" data-id="c162" data-state="" data-lead="A suggested child is marked.">
+</div><h3>The picker</h3><div class="chk" data-id="kca625a4a9e" data-state="" data-lead="Room Details → _Who Can Join_ on any room shows _Members of a Space_.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Room Details → <em>Who Can Join</em> on any room shows <em>Members of a Space</em>.</strong> It used to be hidden unless the room was already restricted. It should now be there for <code>Public Room</code> and <code>Invite Room</code> too.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k73fe3b9bbb" data-state="" data-lead="Selecting it reveals a _Space_ row below the three choices">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Selecting it reveals a <em>Space</em> row below the three choices</strong>, reading <em>None chosen</em> for a room that has no restriction.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k42919b5c05" data-state="" data-lead="Activating that row opens a dialog listing your spaces">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Activating that row opens a dialog listing your spaces</strong> — <code>Test Space</code> and <code>Sub Space</code>, and nothing else. No ordinary rooms, no direct chat, no server notices room.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kdbf15e664d" data-state="" data-lead="The room you are editing is not in the list.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The room you are editing is not in the list.</strong> Open <em>Who Can Join</em> on <code>Test Space</code> itself: the picker must offer <code>Sub Space</code> only. A space cannot be restricted to itself.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k5c72c03e81" data-state="" data-lead="Search filters the list">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Search filters the list</strong>, and a search matching nothing says so rather than showing an empty box.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k2210044981" data-state="" data-lead="Dismissing the dialog changes nothing">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Dismissing the dialog changes nothing</strong> — press Escape or click away, and the <em>Space</em> row still reads what it did.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd7385ca81f" data-state="" data-lead="Choosing a space fills the row in">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Choosing a space fills the row in</strong>, the dialog closes, and <em>Save</em> becomes sensitive.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k1aee3e4edb" data-state="" data-lead="Saving works.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Saving works.</strong> The rule is written and the page comes back showing <em>Members of a Space</em> with that space named. Confirm from another client that the room really is restricted.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k2b4e42059d" data-state="" data-lead="A user in the space can then join the room">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A user in the space can then join the room</strong>, and one outside it cannot. As bob, who is not in <code>Test Space</code>, try the room you just restricted; then have alice invite bob to the space and try again.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><h3>What must not happen</h3><div class="chk" data-id="k1152a2e857" data-state="" data-lead="_Save_ stays insensitive with the rule selected and no space chosen.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong><em>Save</em> stays insensitive with the rule selected and no space chosen.</strong> This is the check that matters most: saving in that state would send a restricted rule allowing nobody, which this page cannot undo. Select <em>Members of a Space</em> on an unrestricted room and go no further.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k053709d625" data-state="" data-lead="Going back with the rule selected and no space chosen">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Going back with the rule selected and no space chosen</strong> asks about unsaved changes only if there are any — there are none, so it should just go back.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k3d8ba99a2c" data-state="" data-lead="The rule is not silently swapped.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The rule is not silently swapped.</strong> With <em>Members of a Space</em> selected and no space, the page must not save an invite or knock rule instead. That is what the old code did, and it was invisible.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k02d926b833" data-state="" data-lead="A room already restricted to a space keeps it">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A room already restricted to a space keeps it</strong> when you only flip <em>Allow Invite Requests</em>. Open <code>Restricted Room</code>, toggle the switch, save, and check from another client that the allow list still names <code>Test Space</code>.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k0250a0bfb2" data-state="" data-lead="A room with no permission shows the space and no arrow.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A room with no permission shows the space and no arrow.</strong> As bob in a room he cannot administer, <em>Who Can Join</em> should still say which space, with the row not activatable.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><h3>Putting a room into a space</h3><p>Slice 3, second half. Room Details → <em>Spaces</em> → <em>Add to Space…</em>.</p><div class="chk" data-id="k602bda0322" data-state="" data-lead="The _Spaces_ group is on the general page">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The <em>Spaces</em> group is on the general page</strong> of any room that is not a direct chat, under <em>Access and Visibility</em>, with one row.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k72ac9b863e" data-state="" data-lead="It is absent from a direct chat.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>It is absent from a direct chat.</strong> Open the details of the alice–bob chat: no <em>Spaces</em> group.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kbc4039c02f" data-state="" data-lead="_Add to Space…_ opens the picker">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong><em>Add to Space…</em> opens the picker</strong>, listing <code>Test Space</code> and <code>Sub Space</code> — the spaces alice made, and so can write in.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ke8609591ae" data-state="" data-lead="A space you cannot write in is not offered.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A space you cannot write in is not offered.</strong> As bob, who is in no space he administers, the picker should be empty and say so. If alice invites bob to <code>Test Space</code> without giving him power, it must stay empty — this is the check that <code>SendState(SpaceChild)</code> is really being asked, and the one most likely to be wrong.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k0d18e5b386" data-state="" data-lead="The room being added is not offered itself.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The room being added is not offered itself.</strong> Open the details of <code>Test Space</code> and press <em>Add to Space…</em>: only <code>Sub Space</code>.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k34198fd55a" data-state="" data-lead="Adding `Invite Room` to `Test Space` says so">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Adding <code>Invite Room</code> to <code>Test Space</code> says so</strong>, with a toast naming the space.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k8f6a12a13c" data-state="" data-lead="The room appears in the space.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The room appears in the space.</strong> Open <code>Test Space</code> from the sidebar — the list should now hold <code>Invite Room</code> as well. It will not appear while the space page is already open; the listing is fetched once, which is recorded in <code>spaces.md</code>.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k4f13e10357" data-state="" data-lead="Another client agrees.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Another client agrees.</strong> Check from Element that <code>Test Space</code> has an <code>m.space.child</code> for the room, and that the room has an <code>m.space.parent</code> for the space with <code>canonical</code> absent or false.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd735b16f8f" data-state="" data-lead="Adding a room somebody else administers still works.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Adding a room somebody else administers still works.</strong> Have bob make a room, have alice join it without power, and add it to <code>Test Space</code> from alice&#x27;s client. The <code>m.space.child</code> needs power in the <strong>space</strong>, which alice has; the <code>m.space.parent</code> needs power in the <strong>room</strong>, which she does not, so it should be skipped with a warning in the log and the operation should still report success.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kf6e6d054cc" data-state="" data-lead="Adding a room twice is harmless">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Adding a room twice is harmless</strong> — the state event is simply written again.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k7882bbdb7b" data-state="" data-lead="The row goes insensitive while it works">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The row goes insensitive while it works</strong> and comes back afterwards, whether it succeeded or not.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><h3>Which spaces a room is in</h3><div class="chk" data-id="k685c944c2d" data-state="" data-lead="The _Spaces_ group lists them.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The <em>Spaces</em> group lists them.</strong> Add <code>Invite Room</code> to <code>Test Space</code>, then reopen its details: a row naming <code>Test Space</code>, with its avatar.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ke7346589f2" data-state="" data-lead="A room in no space lists none">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A room in no space lists none</strong> — just the <em>Add to Space…</em> row.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kbff4bad454" data-state="" data-lead="The looking-for-them row does not stay.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The looking-for-them row does not stay.</strong> A spinner row appears while the spaces are asked and goes when they answer. If it never goes, the read failed silently.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k38ec802454" data-state="" data-lead="A room in two spaces lists both.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A room in two spaces lists both.</strong> Add the same room to <code>Sub Space</code> as well.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kef9467b787" data-state="" data-lead="A space you are not in is not listed">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A space you are not in is not listed</strong>, even when it holds the room. This cannot be helped and is not a fault: the state of a space nobody here has joined cannot be read. Check it by having bob add one of alice&#x27;s rooms to a space alice is not in.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd463e1a53b" data-state="" data-lead="A room that only claims a parent is not believed.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>A room that only claims a parent is not believed.</strong> From another client, write an <code>m.space.parent</code> into a room pointing at a space that does <strong>not</strong> name it as a child, as a user with no power in that space. It must not appear. This is the specification&#x27;s own rule and the check most worth doing, because getting it wrong lets any room claim to be anywhere.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k8b8aaa940b" data-state="" data-lead="…unless whoever claimed it could have made it true.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>…unless whoever claimed it could have made it true.</strong> Same test, but write the parent event as somebody who can send <code>m.space.child</code> in that space. It should appear.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><h3>Suggested rooms</h3><div class="chk" data-id="k9e252f6127" data-state="" data-lead="A suggested child is marked.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1527,7 +1482,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c163" data-state="" data-lead="No other row shows it">
+</div><div class="chk" data-id="kd87042cd14" data-state="" data-lead="No other row shows it">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1540,7 +1495,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Old rooms</h3><div class="chk" data-id="c164" data-state="" data-lead="A room too old for restricted rules does not offer it.">
+</div><h3>Old rooms</h3><div class="chk" data-id="kd3f4e8d5f8" data-state="" data-lead="A room too old for restricted rules does not offer it.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1553,7 +1508,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c165" data-state="" data-lead="A version 8 or 9 room offers the rule but not knocking over it.">
+</div><div class="chk" data-id="ke66d7fd87d" data-state="" data-lead="A version 8 or 9 room offers the rule but not knocking over it.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1566,7 +1521,59 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s3" data-open="1" data-checks="18"><header><h2>Reading a room without joining it</h2><span class="src">doc/peeking.md</span><span class="cnt" data-count>12 left</span></header><div class="body"><p>Round 3, item 7. A room whose history is <code>world_readable</code> can be read by anybody, and Commune now offers that as a <strong>Preview</strong> — in the room preview dialog, and on every row of Explore and of a space page.</p><p><strong>Some of this was seen on 24 August 2026</strong>, against a real room on <code>matrix.org</code> from a <code>matrix.org</code> account rather than against the harness. Those checks are struck below and say so. Everything unstruck is still unseen — and the whole &quot;where the button is <em>not</em>&quot; group is, which is the half that catches a flag being read wrong.</p><h3>Setting up</h3><p><code>testing/local-homeserver.sh</code> seeds <strong>Peekable Room</strong> inside <code>Test Space</code>: bob&#x27;s room, <code>world_readable</code>, with two messages in it. It is bob&#x27;s on purpose — <code>Readable Room</code> is <code>world_readable</code> too but alice created it, so she is a member and gets the room rather than a preview of it. Everything else in the harness is <code>shared</code> history, which is not the same thing and must <strong>not</strong> offer a preview.</p><pre><code>testing/local-homeserver.sh up</code></pre><p><code>seed_peekable_room()</code> has a marker of its own, so a server seeded before this existed picks the room up without a reset. Log in as alice.</p><h3>Where the button is, and is not</h3><div class="chk" data-id="c166" data-state="" data-lead="A _Preview_ button appears on Peekable Room&#x27;s row">
+</div><h3 class='wrecks'>Taking a room back out</h3><p><em>Destructive. Leave it until the rest of this section is done — it undoes the <code>m.space.child</code> events the checks above are looking at. Adding the room back puts them right.</em></p><div class="chk" data-id="k7fc42ec4e6" data-state="" data-lead="Each row has a _Remove_ button">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Each row has a <em>Remove</em> button</strong>, and pressing it takes the room out of that space: the row goes, a toast says so, and the space&#x27;s own page no longer lists the room when reopened.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kfe069fb451" data-state="" data-lead="Another client agrees.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Another client agrees.</strong> The <code>m.space.child</code> should now be an empty object rather than gone — Matrix has no way to delete a state event.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k436f723fda" data-state="" data-lead="The button is insensitive without permission.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>The button is insensitive without permission.</strong> As bob, in a space he does not administer that holds a room he can see, the row appears and the button does not work.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k35df4089b6" data-state="" data-lead="Adding it back works">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span><strong>Adding it back works</strong>, and the room reappears in the space.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s3" data-open="1" data-checks="18"><header><h2>Reading a room without joining it</h2><span class="src">doc/peeking.md</span><span class="cnt" data-count>12 left</span></header><div class="body"><p>Round 3, item 7. A room whose history is <code>world_readable</code> can be read by anybody, and Commune now offers that as a <strong>Preview</strong> — in the room preview dialog, and on every row of Explore and of a space page.</p><p><strong>Some of this was seen on 24 August 2026</strong>, against a real room on <code>matrix.org</code> from a <code>matrix.org</code> account rather than against the harness. Those checks are struck below and say so. Everything unstruck is still unseen — and the whole &quot;where the button is <em>not</em>&quot; group is, which is the half that catches a flag being read wrong.</p><h3>Setting up</h3><p><code>testing/local-homeserver.sh</code> seeds <strong>Peekable Room</strong> inside <code>Test Space</code>: bob&#x27;s room, <code>world_readable</code>, with two messages in it. It is bob&#x27;s on purpose — <code>Readable Room</code> is <code>world_readable</code> too but alice created it, so she is a member and gets the room rather than a preview of it. Everything else in the harness is <code>shared</code> history, which is not the same thing and must <strong>not</strong> offer a preview.</p><pre><code>testing/local-homeserver.sh up</code></pre><p><code>seed_peekable_room()</code> has a marker of its own, so a server seeded before this existed picks the room up without a reset. Log in as alice.</p><h3>Where the button is, and is not</h3><div class="chk" data-id="k94068e5d27" data-state="" data-lead="A _Preview_ button appears on Peekable Room&#x27;s row">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1579,7 +1586,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c167" data-state="" data-lead="It does not appear on any other row.">
+</div><div class="chk" data-id="k4eaa897cfe" data-state="" data-lead="It does not appear on any other row.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1592,7 +1599,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c168" data-state="" data-lead="It does not appear once the room is joined.">
+</div><div class="chk" data-id="k710849e958" data-state="" data-lead="It does not appear once the room is joined.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1605,7 +1612,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c169" data-state="" data-lead="The same button is in the room preview dialog.">
+</div><div class="chk" data-id="ka5e8144df3" data-state="" data-lead="The same button is in the room preview dialog.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1618,7 +1625,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c170" data-state="" data-lead="An encrypted room never offers it.">
+</div><div class="chk" data-id="k42275bc69b" data-state="" data-lead="An encrypted room never offers it.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1631,7 +1638,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>The preview itself</h3><div class="chk" data-id="c171" data-state="" data-lead="Pressing _Preview_ shows the two seeded messages">
+</div><h3>The preview itself</h3><div class="chk" data-id="k2240e84625" data-state="" data-lead="Pressing _Preview_ shows the two seeded messages">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1644,7 +1651,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c172" data-state="" data-lead="The room&#x27;s name is on the page">
+</div><div class="chk" data-id="k15a5f37642" data-state="" data-lead="The room&#x27;s name is on the page">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1657,7 +1664,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c173" data-state="" data-lead="A room with more messages than fit opens at the newest">
+</div><div class="chk" data-id="k4b80005f05" data-state="" data-lead="A room with more messages than fit opens at the newest">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1670,7 +1677,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c174" data-state="" data-lead="The sender is named, not numbered.">
+</div><div class="chk" data-id="kd1a495224f" data-state="" data-lead="The sender is named, not numbered.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1683,7 +1690,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c175" data-state="" data-lead="There are no avatars and no images">
+</div><div class="chk" data-id="kb778c74736" data-state="" data-lead="There are no avatars and no images">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1696,7 +1703,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c176" data-state="" data-lead="The line above the list says nobody can see you looking.">
+</div><div class="chk" data-id="kcde329fe1f" data-state="" data-lead="The line above the list says nobody can see you looking.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1709,7 +1716,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c177" data-state="" data-lead="_Join_ is on the preview page too">
+</div><div class="chk" data-id="k9372893857" data-state="" data-lead="_Join_ is on the preview page too">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1722,7 +1729,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c178" data-state="" data-lead="Back goes to the details, not out.">
+</div><div class="chk" data-id="k37220db70a" data-state="" data-lead="Back goes to the details, not out.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1735,7 +1742,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c179" data-state="" data-lead="Opening it from a row lands straight on the preview">
+</div><div class="chk" data-id="kfb48eadcfc" data-state="" data-lead="Opening it from a row lands straight on the preview">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1748,7 +1755,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>When it cannot be read</h3><div class="chk" data-id="c180" data-state="" data-lead="A room on another homeserver says so.">
+</div><h3>When it cannot be read</h3><div class="chk" data-id="k024c04b199" data-state="" data-lead="A room on another homeserver says so.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1761,7 +1768,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c181" data-state="" data-lead="The message is not an error toast or a spinner that never stops.">
+</div><div class="chk" data-id="kee046b9972" data-state="" data-lead="The message is not an error toast or a spinner that never stops.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1774,7 +1781,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c182" data-state="" data-lead="Pressing _Preview_ again retries.">
+</div><div class="chk" data-id="k1583cceec4" data-state="" data-lead="Pressing _Preview_ again retries.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1787,7 +1794,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c183" data-state="" data-lead="A room with no messages says _Nothing to Read_">
+</div><div class="chk" data-id="k5fad569da5" data-state="" data-lead="A room with no messages says _Nothing to Read_">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1800,7 +1807,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s4" data-open="1" data-checks="10"><header><h2>Going to a message without leaving the present</h2><span class="src">doc/search.md</span><span class="cnt" data-count>9 left</span></header><div class="body"><p><code>RoomHistory::focus_on_event()</code> used to build a focused timeline every time. It now prefers the room&#x27;s <strong>live</strong> timeline whenever that already holds the event, and highlights the message in place. Every way of going to a message runs through it, so all four need a look, and the one that motivated the change is the notification.</p><p><strong>There is no harness for the notification case.</strong> <code>COMMUNE_TEST_NOTIFICATION=1</code> deliberately carries a room URI, not an event URI, so it takes the room-preview path and proves nothing here. It needs a real incoming message while the window is unfocused — two accounts, or a phone.</p><div class="chk" data-id="c184" data-state="" data-lead="A notification for a brand new message opens the room at the bottom, with no _Back to Latest_ button.">
+</div></div></section><section id="s4" data-open="1" data-checks="10"><header><h2>Going to a message without leaving the present</h2><span class="src">doc/search.md</span><span class="cnt" data-count>9 left</span></header><div class="body"><p><code>RoomHistory::focus_on_event()</code> used to build a focused timeline every time. It now prefers the room&#x27;s <strong>live</strong> timeline whenever that already holds the event, and highlights the message in place. Every way of going to a message runs through it, so all four need a look, and the one that motivated the change is the notification.</p><p><strong>There is no harness for the notification case.</strong> <code>COMMUNE_TEST_NOTIFICATION=1</code> deliberately carries a room URI, not an event URI, so it takes the room-preview path and proves nothing here. It needs a real incoming message while the window is unfocused — two accounts, or a phone.</p><div class="chk" data-id="k065c84970e" data-state="" data-lead="A notification for a brand new message opens the room at the bottom, with no _Back to Latest_ button.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1813,7 +1820,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c185" data-state="" data-lead="And the room keeps updating afterwards.">
+</div><div class="chk" data-id="kf8477f17b5" data-state="" data-lead="And the room keeps updating afterwards.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1826,7 +1833,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c186" data-state="" data-lead="The message is highlighted for about three seconds">
+</div><div class="chk" data-id="kbe1aee13ae" data-state="" data-lead="The message is highlighted for about three seconds">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1839,7 +1846,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c187" data-state="" data-lead="A read receipt is sent.">
+</div><div class="chk" data-id="ka425758ce9" data-state="" data-lead="A read receipt is sent.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1852,7 +1859,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c188" data-state="" data-lead="A notification for an old message still gets a focused timeline">
+</div><div class="chk" data-id="k72759f5635" data-state="" data-lead="A notification for an old message still gets a focused timeline">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1865,7 +1872,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c189" data-state="" data-lead="A `matrix.to` permalink to a message near the bottom">
+</div><div class="chk" data-id="kbf2ccab79a" data-state="" data-lead="A `matrix.to` permalink to a message near the bottom">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1878,7 +1885,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c190" data-state="" data-lead="A search result behaves the same way.">
+</div><div class="chk" data-id="kef74d4e890" data-state="" data-lead="A search result behaves the same way.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1891,7 +1898,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c191" data-state="" data-lead="A pinned message opens the same way">
+</div><div class="chk" data-id="ke822c61a62" data-state="" data-lead="A pinned message opens the same way">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1904,7 +1911,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c192" data-state="" data-lead="A room that has never been opened in this session.">
+</div><div class="chk" data-id="ka60c4238eb" data-state="" data-lead="A room that has never been opened in this session.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1917,7 +1924,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c193" data-state="" data-lead="Clicking a notification for a room you are already reading">
+</div><div class="chk" data-id="kd66b2d819e" data-state="" data-lead="Clicking a notification for a room you are already reading">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1930,7 +1937,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s5" data-open="1" data-checks="32"><header><h2>Signing up and resetting a password</h2><span class="src">doc/registration.md</span><span class="cnt" data-count>20 left</span></header><div class="body"><p>The sign-up half was run on 24 August 2026 and reported as going well end to end. Struck below are the things that run says were seen; the edge cases and the ones with no local harness are still open, and the reset half has not been touched at all.</p><p>Use <code>testing/local-homeserver.sh</code> for all of it — it runs with open registration, so Synapse asks for <code>m.login.dummy</code> and no stage needs input. Registering on a public server leaves a junk account behind.</p><div class="chk" data-id="c30" data-state="" data-lead="The _Create Account_ button is there at all">
+</div></div></section><section id="s5" data-open="1" data-checks="32"><header><h2>Signing up and resetting a password</h2><span class="src">doc/registration.md</span><span class="cnt" data-count>20 left</span></header><div class="body"><p>The sign-up half was run on 24 August 2026 and reported as going well end to end. Struck below are the things that run says were seen; the edge cases and the ones with no local harness are still open, and the reset half has not been touched at all.</p><p>Use <code>testing/local-homeserver.sh</code> for all of it — it runs with open registration, so Synapse asks for <code>m.login.dummy</code> and no stage needs input. Registering on a public server leaves a junk account behind.</p><div class="chk" data-id="k47c898d182" data-state="" data-lead="The _Create Account_ button is there at all">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1943,7 +1950,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c31" data-state="" data-lead="It leads to the same homeserver page">
+</div><div class="chk" data-id="ke92823e9c0" data-state="" data-lead="It leads to the same homeserver page">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1956,7 +1963,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c32" data-state="" data-lead="The register page draws">
+</div><div class="chk" data-id="k9ff473839e" data-state="" data-lead="The register page draws">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1969,7 +1976,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c33" data-state="" data-lead="The strength meter fills">
+</div><div class="chk" data-id="k791215b8b2" data-state="" data-lead="The strength meter fills">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1982,7 +1989,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c34" data-state="" data-lead="The username check says something.">
+</div><div class="chk" data-id="k383bad8910" data-state="" data-lead="The username check says something.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1995,7 +2002,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c35" data-state="" data-lead="The button is insensitive">
+</div><div class="chk" data-id="k7fa6f124b8" data-state="" data-lead="The button is insensitive">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2008,7 +2015,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c36" data-state="" data-lead="The account is actually created">
+</div><div class="chk" data-id="kac5c43bf1d" data-state="" data-lead="The account is actually created">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2021,7 +2028,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c37" data-state="" data-lead="A taken username refused at the last moment">
+</div><div class="chk" data-id="k8de9f92b57" data-state="" data-lead="A taken username refused at the last moment">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2034,7 +2041,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c38" data-state="" data-lead="Going back cleans the page.">
+</div><div class="chk" data-id="k4236aaf50b" data-state="" data-lead="Going back cleans the page.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2047,7 +2054,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c39" data-state="" data-lead="Registration switched off">
+</div><div class="chk" data-id="k03659b46d3" data-state="" data-lead="Registration switched off">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2060,7 +2067,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c40" data-state="" data-lead="The registration token page.">
+</div><div class="chk" data-id="kce55addb07" data-state="" data-lead="The registration token page.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2073,7 +2080,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c41" data-state="" data-lead="The terms page">
+</div><div class="chk" data-id="k9d4c3eda11" data-state="" data-lead="The terms page">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2086,7 +2093,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c42" data-state="" data-lead="The fallback page">
+</div><div class="chk" data-id="k3244577559" data-state="" data-lead="The fallback page">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2099,7 +2106,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c43" data-state="" data-lead="The OAuth path">
+</div><div class="chk" data-id="k8133c6f6c1" data-state="" data-lead="The OAuth path">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2112,7 +2119,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c44" data-state="" data-lead="Nothing regressed in logging in.">
+</div><div class="chk" data-id="kd422fa91a9" data-state="" data-lead="Nothing regressed in logging in.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2125,7 +2132,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Choosing a homeserver</h3><p>The page both flows share, reworked on 24 August 2026 after the sign-up run: <code>matrix.org</code> is offered first and the old entry is behind a second row.</p><div class="chk" data-id="c45" data-state="" data-lead="The two rows draw">
+</div><h3>Choosing a homeserver</h3><p>The page both flows share, reworked on 24 August 2026 after the sign-up run: <code>matrix.org</code> is offered first and the old entry is behind a second row.</p><div class="chk" data-id="kd07927d012" data-state="" data-lead="The two rows draw">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2138,7 +2145,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c46" data-state="" data-lead="Picking _Another Homeserver_ reveals the entry">
+</div><div class="chk" data-id="k27f7f6c978" data-state="" data-lead="Picking _Another Homeserver_ reveals the entry">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2151,7 +2158,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c47" data-state="" data-lead="_Next_ is sensitive immediately">
+</div><div class="chk" data-id="k29615b52c0" data-state="" data-lead="_Next_ is sensitive immediately">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2164,7 +2171,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c48" data-state="" data-lead="The _Advanced…_ button is hidden">
+</div><div class="chk" data-id="k7f7fa0dbc2" data-state="" data-lead="The _Advanced…_ button is hidden">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2177,7 +2184,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c49" data-state="" data-lead="The next page says &quot;Log in to matrix.org&quot;">
+</div><div class="chk" data-id="kec5a1a04f3" data-state="" data-lead="The next page says &quot;Log in to matrix.org&quot;">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2190,7 +2197,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c50" data-state="" data-lead="A custom homeserver still works both ways">
+</div><div class="chk" data-id="kd1395a5ad3" data-state="" data-lead="A custom homeserver still works both ways">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2203,7 +2210,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c51" data-state="" data-lead="Going back to the greeter and returning">
+</div><div class="chk" data-id="kd54136c42e" data-state="" data-lead="Going back to the greeter and returning">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2216,7 +2223,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c52" data-state="" data-lead="Logging in against the local harness still works">
+</div><div class="chk" data-id="k3bcc270619" data-state="" data-lead="Logging in against the local harness still works">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2229,7 +2236,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><h3>Resetting a password</h3><p>Nothing here has been seen, and there is <strong>no local harness for any of it</strong> — Synapse sends no email without an SMTP server. What can be checked without one is everything up to the point where the email would arrive.</p><div class="chk" data-id="c53" data-state="" data-lead="The _Forgot Password?_ link">
+</div><h3>Resetting a password</h3><p>Nothing here has been seen, and there is <strong>no local harness for any of it</strong> — Synapse sends no email without an SMTP server. What can be checked without one is everything up to the point where the email would arrive.</p><div class="chk" data-id="keed5d87537" data-state="" data-lead="The _Forgot Password?_ link">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2242,7 +2249,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c54" data-state="" data-lead="The page draws">
+</div><div class="chk" data-id="k11a43939af" data-state="" data-lead="The page draws">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2255,7 +2262,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c55" data-state="" data-lead="A homeserver that cannot send email says so.">
+</div><div class="chk" data-id="k9979b4c392" data-state="" data-lead="A homeserver that cannot send email says so.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2268,7 +2275,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c56" data-state="" data-lead="An address on no account">
+</div><div class="chk" data-id="ke3f37775e0" data-state="" data-lead="An address on no account">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2281,7 +2288,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c57" data-state="" data-lead="The stack moves on">
+</div><div class="chk" data-id="kbf185f3ddc" data-state="" data-lead="The stack moves on">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2294,7 +2301,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c58" data-state="" data-lead="The strength meter and the confirmation">
+</div><div class="chk" data-id="kd76fd5cca2" data-state="" data-lead="The strength meter and the confirmation">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2307,7 +2314,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c59" data-state="" data-lead="Pressing _Reset Password_ before opening the link">
+</div><div class="chk" data-id="k7dcea9dc30" data-state="" data-lead="Pressing _Reset Password_ before opening the link">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2320,7 +2327,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c60" data-state="" data-lead="The whole thing, end to end">
+</div><div class="chk" data-id="k02d5b182d6" data-state="" data-lead="The whole thing, end to end">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2333,7 +2340,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c61" data-state="" data-lead="Going back and returning">
+</div><div class="chk" data-id="k8e2d7d3d1c" data-state="" data-lead="Going back and returning">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2346,7 +2353,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s6" data-open="1" data-checks="12"><header><h2>Presence</h2><span class="src">doc/presence.md</span><span class="cnt" data-count>11 left</span></header><div class="body"><p>Nothing here has been seen on screen. The user&#x27;s homeserver runs the Presence module, so unlike most of the field this can be exercised on a real account.</p><div class="chk" data-id="c18" data-state="" data-lead="A badge appears">
+</div></div></section><section id="s6" data-open="1" data-checks="12"><header><h2>Presence</h2><span class="src">doc/presence.md</span><span class="cnt" data-count>11 left</span></header><div class="body"><p>Nothing here has been seen on screen. The user&#x27;s homeserver runs the Presence module, so unlike most of the field this can be exercised on a real account.</p><div class="chk" data-id="k7c92a14834" data-state="" data-lead="A badge appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2359,7 +2366,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c19" data-state="" data-lead="The badge sits on the avatar&#x27;s corner.">
+</div><div class="chk" data-id="ke189db857a" data-state="" data-lead="The badge sits on the avatar&#x27;s corner.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2372,7 +2379,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c20" data-state="" data-lead="A badge appears in the member list">
+</div><div class="chk" data-id="k6e56f1e11c" data-state="" data-lead="A badge appears in the member list">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2385,7 +2392,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c21" data-state="" data-lead="The badge scales.">
+</div><div class="chk" data-id="k715b5547cf" data-state="" data-lead="The badge scales.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2398,7 +2405,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c22" data-state="" data-lead="The badge has a ring">
+</div><div class="chk" data-id="ke1e7c1c24a" data-state="" data-lead="The badge has a ring">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2411,7 +2418,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c23" data-state="" data-lead="A direct chat&#x27;s sidebar row carries the other person&#x27;s badge">
+</div><div class="chk" data-id="k3d17b56e28" data-state="" data-lead="A direct chat&#x27;s sidebar row carries the other person&#x27;s badge">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2424,7 +2431,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c24" data-state="" data-lead="The badge appears nowhere else">
+</div><div class="chk" data-id="kdb7051d25a" data-state="" data-lead="The badge appears nowhere else">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2437,7 +2444,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c25" data-state="" data-lead="A profile page shows the status message">
+</div><div class="chk" data-id="k06c59f5e66" data-state="" data-lead="A profile page shows the status message">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2450,7 +2457,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c26" data-state="" data-lead="It changes live.">
+</div><div class="chk" data-id="k65dc878410" data-state="" data-lead="It changes live.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2463,7 +2470,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c27" data-state="" data-lead="Somebody who has not moved still gets a badge.">
+</div><div class="chk" data-id="k1a42a044d6" data-state="" data-lead="Somebody who has not moved still gets a badge.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2476,7 +2483,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c28" data-state="" data-lead="The switch is in Account Settings ▸ Privacy and starts on.">
+</div><div class="chk" data-id="kc91201420a" data-state="" data-lead="The switch is in Account Settings ▸ Privacy and starts on.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2489,7 +2496,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c29" data-state="" data-lead="Turning it back on">
+</div><div class="chk" data-id="k850a259c3c" data-state="" data-lead="Turning it back on">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2502,7 +2509,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s7" data-open="1" data-checks="12"><header><h2>Pinned messages</h2><span class="src">doc/pinned-messages.md</span><span class="cnt" data-count>5 left</span></header><div class="body"><p>Nothing in this feature has been seen on screen yet. Every item below is new drawing code.</p><div class="chk" data-id="c6" data-state="" data-lead="The header toggle appears">
+</div></div></section><section id="s7" data-open="1" data-checks="12"><header><h2>Pinned messages</h2><span class="src">doc/pinned-messages.md</span><span class="cnt" data-count>5 left</span></header><div class="body"><p>Nothing in this feature has been seen on screen yet. Every item below is new drawing code.</p><div class="chk" data-id="k63e31d4af2" data-state="" data-lead="The header toggle appears">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2515,7 +2522,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c7" data-state="" data-lead="Pin from the context menu.">
+</div><div class="chk" data-id="k8515d60f07" data-state="" data-lead="Pin from the context menu.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2528,7 +2535,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c8" data-state="" data-lead="The menu keeps up.">
+</div><div class="chk" data-id="k3d6471b928" data-state="" data-lead="The menu keeps up.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2541,7 +2548,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c9" data-state="" data-lead="The pinned view lists them.">
+</div><div class="chk" data-id="ka182562998" data-state="" data-lead="The pinned view lists them.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2554,7 +2561,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c10" data-state="" data-lead="Clicking a row jumps to the message">
+</div><div class="chk" data-id="kf70fc48d03" data-state="" data-lead="Clicking a row jumps to the message">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2567,7 +2574,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c11" data-state="" data-lead="The unpin button on a row works and does not also jump.">
+</div><div class="chk" data-id="kf8119f49a8" data-state="" data-lead="The unpin button on a row works and does not also jump.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2580,7 +2587,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c12" data-state="" data-lead="The unpin button&#x27;s icon reads as &quot;unpin&quot;.">
+</div><div class="chk" data-id="k184588126b" data-state="" data-lead="The unpin button&#x27;s icon reads as &quot;unpin&quot;.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2593,7 +2600,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c13" data-state="" data-lead="Unpinning the last message _while the pinned view is open_">
+</div><div class="chk" data-id="k267b3a019f" data-state="" data-lead="Unpinning the last message _while the pinned view is open_">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2606,7 +2613,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c14" data-state="" data-lead="The empty page">
+</div><div class="chk" data-id="k417dcff375" data-state="" data-lead="The empty page">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2619,7 +2626,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c15" data-state="" data-lead="The timeline sentence">
+</div><div class="chk" data-id="k408f20ec9c" data-state="" data-lead="The timeline sentence">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2632,7 +2639,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c16" data-state="" data-lead="The server notices room is unaffected">
+</div><div class="chk" data-id="kd282617901" data-state="" data-lead="The server notices room is unaffected">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2645,7 +2652,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c17" data-state="" data-lead="Nothing regressed in the live timeline.">
+</div><div class="chk" data-id="k08c3c7bae5" data-state="" data-lead="Nothing regressed in the live timeline.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2658,7 +2665,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s8" data-open="1" data-checks="4"><header><h2>Calls</h2><span class="src">doc/calls.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p><code>doc/calls.md</code> carries the authoritative list at its top; these are the ones it names as never having faced a second client.</p><div class="chk" data-id="c1" data-state="" data-lead="A renegotiation arriving here — needs a peer whose interface offers to add video…">
+</div></div></section><section id="s8" data-open="1" data-checks="4"><header><h2>Calls</h2><span class="src">doc/calls.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p><code>doc/calls.md</code> carries the authoritative list at its top; these are the ones it names as never having faced a second client.</p><div class="chk" data-id="k8aff3cb8bf" data-state="" data-lead="A renegotiation arriving here — needs a peer whose interface offers to add video…">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2671,7 +2678,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c2" data-state="" data-lead="The rollback when two renegotiations cross. Takes two people pressing the same button in…">
+</div><div class="chk" data-id="ke7ac2fa055" data-state="" data-lead="The rollback when two renegotiations cross. Takes two people pressing the same button in…">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2684,7 +2691,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c3" data-state="" data-lead="The badge for what the other end muted. The peer to hand sends no stream metadata at all.">
+</div><div class="chk" data-id="k1995340d6b" data-state="" data-lead="The badge for what the other end muted. The peer to hand sends no stream metadata at all.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2697,7 +2704,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div><div class="chk" data-id="c4" data-state="" data-lead="The answered and missed cases of the m.call.invite timeline row. Only the &quot;no outcome&quot;…">
+</div><div class="chk" data-id="k9e8ae87aec" data-state="" data-lead="The answered and missed cases of the m.call.invite timeline row. Only the &quot;no outcome&quot;…">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2710,7 +2717,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s9" data-open="1" data-checks="1"><header><h2>Server ACLs</h2><span class="src">doc/server-acls.md</span><span class="cnt" data-count>1 left</span></header><div class="body"><div class="chk" data-id="c5" data-state="" data-lead="The timeline line, which has never been drawn.">
+</div></div></section><section id="s9" data-open="1" data-checks="1"><header><h2>Server ACLs</h2><span class="src">doc/server-acls.md</span><span class="cnt" data-count>1 left</span></header><div class="body"><div class="chk" data-id="k95e8caa559" data-state="" data-lead="The timeline line, which has never been drawn.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -2726,6 +2733,7 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
 </div></div></section>
 </main>
 </div>
+<script>window.__legacyIds = {"c1": "k8aff3cb8bf", "c2": "ke7ac2fa055", "c3": "k1995340d6b", "c4": "k9e8ae87aec", "c5": "k95e8caa559", "c6": "k63e31d4af2", "c7": "k8515d60f07", "c8": "k3d6471b928", "c9": "ka182562998", "c10": "kf70fc48d03", "c11": "kf8119f49a8", "c12": "k184588126b", "c13": "k267b3a019f", "c14": "k417dcff375", "c15": "k408f20ec9c", "c16": "kd282617901", "c17": "k08c3c7bae5", "c18": "k7c92a14834", "c19": "ke189db857a", "c20": "k6e56f1e11c", "c21": "k715b5547cf", "c22": "ke1e7c1c24a", "c23": "k3d17b56e28", "c24": "kdb7051d25a", "c25": "k06c59f5e66", "c26": "k65dc878410", "c27": "k1a42a044d6", "c28": "kc91201420a", "c29": "k850a259c3c", "c30": "k47c898d182", "c31": "ke92823e9c0", "c32": "k9ff473839e", "c33": "k791215b8b2", "c34": "k383bad8910", "c35": "k7fa6f124b8", "c36": "kac5c43bf1d", "c37": "k8de9f92b57", "c38": "k4236aaf50b", "c39": "k03659b46d3", "c40": "kce55addb07", "c41": "k9d4c3eda11", "c42": "k3244577559", "c43": "k8133c6f6c1", "c44": "kd422fa91a9", "c45": "kd07927d012", "c46": "k27f7f6c978", "c47": "k29615b52c0", "c48": "k7f7fa0dbc2", "c49": "kec5a1a04f3", "c50": "kd1395a5ad3", "c51": "kd54136c42e", "c52": "k3bcc270619", "c53": "keed5d87537", "c54": "k11a43939af", "c55": "k9979b4c392", "c56": "ke3f37775e0", "c57": "kbf185f3ddc", "c58": "kd76fd5cca2", "c59": "k7dcea9dc30", "c60": "k02d5b182d6", "c61": "k8e2d7d3d1c", "c62": "kbe6d26f95f", "c63": "ka25ad4a5cf", "c64": "k6579b789d1", "c65": "k58ed2f8db9", "c66": "ka6e649c1e1", "c67": "kfa095ac276", "c68": "ke3a6f9c89f", "c69": "k77bd739807", "c70": "kdd47f232aa", "c71": "k88b11471ce", "c72": "kf487109947", "c73": "kc96b5fd8f0", "c74": "k082a7e48bb", "c75": "k8627281287", "c76": "ka783b25f4d", "c77": "k788274f61d", "c78": "k7c5e188b53", "c79": "k245a015067", "c80": "ke6f749816a", "c81": "kaee96c5453", "c82": "k764f02db42", "c83": "k019d94957a", "c84": "k68ad3c91a1", "c85": "kcfbd47a408", "c86": "k95ee316aa5", "c87": "k76b06d8805", "c88": "k90d9cd857b", "c89": "k7243e31256", "c90": "kc26a2f5433", "c91": "k5fbef6b8e7", "c92": "kea85ce3aaa", "c93": "kd74f6fcda4", "c94": "k17faa1ce71", "c95": "k3813be17da", "c96": "k64ca154725", "c97": "k2b3239b19c", "c98": "k7a863077f9", "c99": "k80b6d1b7bb", "c100": "ke104f5184a", "c101": "k02b80396bd", "c102": "k194f49ea61", "c103": "k14688e8933", "c104": "kdca0cfe22c", "c105": "ka80d1f6c0f", "c106": "kc6e4a75b6c", "c107": "kbdc969033d", "c108": "k6173305d6c", "c109": "k4075b6a1e0", "c110": "kcba5c90435", "c111": "k8090d41377", "c112": "k1507c7b95b", "c113": "k431be3dc01", "c114": "k9869153845", "c115": "k087f559fd2", "c116": "k779c07e598", "c117": "k20435b6d7d", "c118": "kaef4dd061f", "c119": "kca625a4a9e", "c120": "k73fe3b9bbb", "c121": "k42919b5c05", "c122": "kdbf15e664d", "c123": "k5c72c03e81", "c124": "k2210044981", "c125": "kd7385ca81f", "c126": "k1aee3e4edb", "c127": "k2b4e42059d", "c128": "k1152a2e857", "c129": "k053709d625", "c130": "k3d8ba99a2c", "c131": "k02d926b833", "c132": "k0250a0bfb2", "c133": "k602bda0322", "c134": "k72ac9b863e", "c135": "kbc4039c02f", "c136": "ke8609591ae", "c137": "k0d18e5b386", "c138": "k34198fd55a", "c139": "k8f6a12a13c", "c140": "k4f13e10357", "c141": "kd735b16f8f", "c142": "kf6e6d054cc", "c143": "k7882bbdb7b", "c144": "k685c944c2d", "c145": "ke7346589f2", "c146": "kbff4bad454", "c147": "k38ec802454", "c148": "kef9467b787", "c149": "kd463e1a53b", "c150": "k8b8aaa940b", "c151": "k7fc42ec4e6", "c152": "kfe069fb451", "c153": "k436f723fda", "c154": "k35df4089b6", "c155": "k05f4055376", "c156": "k2d4d6aeba1", "c157": "k4311adb8f2", "c158": "k9f61532309", "c159": "k7e9fe34458", "c160": "k616a0f10c7", "c161": "k4326c6e337", "c162": "k9e252f6127", "c163": "kd87042cd14", "c164": "kd3f4e8d5f8", "c165": "ke66d7fd87d", "c166": "k94068e5d27", "c167": "k4eaa897cfe", "c168": "k710849e958", "c169": "ka5e8144df3", "c170": "k42275bc69b", "c171": "k2240e84625", "c172": "k15a5f37642", "c173": "k4b80005f05", "c174": "kd1a495224f", "c175": "kb778c74736", "c176": "kcde329fe1f", "c177": "k9372893857", "c178": "k37220db70a", "c179": "kfb48eadcfc", "c180": "k024c04b199", "c181": "kee046b9972", "c182": "k1583cceec4", "c183": "k5fad569da5", "c184": "k065c84970e", "c185": "kf8477f17b5", "c186": "kbe1aee13ae", "c187": "ka425758ce9", "c188": "k72759f5635", "c189": "kbf2ccab79a", "c190": "kef74d4e890", "c191": "ke822c61a62", "c192": "ka60c4238eb", "c193": "kd66b2d819e"};</script>
 <script>
 (function () {
   "use strict";
@@ -2740,6 +2748,24 @@ commune</code></pre><p>Log in as <strong>alice</strong> — the greeter offers m
     } catch (e) {
       state = {};
     }
+
+    if (state.__v === 2) return;
+
+    // The first run sheet named checks by their position in the ledger, so
+    // reordering it would have moved every mark onto the wrong check. Carry
+    // what this browser holds across to the names that follow the text.
+    var map = window.__legacyIds || {};
+    var carried = {};
+
+    Object.keys(state).forEach(function (id) {
+      if (id.charAt(0) === "_") return;
+      var moved = map[id];
+      carried[moved || id] = state[id];
+    });
+
+    carried.__v = 2;
+    state = carried;
+    save();
   }
 
   function save() {

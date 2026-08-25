@@ -10,6 +10,10 @@ extend-ignore-re = [
   "<code>[0-9a-f]{7,40}</code>",
   "`[0-9a-f]{7,40}`",
   "main @ [0-9a-f]{7,40}",
+  # `doc/eyeball-run.html` names each check by a hash of its own text, so the
+  # same hazard arrives a hundred and ninety-three times over. They only ever
+  # appear as an attribute value or a key of the map that migrates them.
+  "\"k[0-9a-f]{10}\"",
 ]
 
 [default.extend-words]

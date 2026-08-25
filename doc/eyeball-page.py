@@ -11,6 +11,7 @@ in the repository is still where a result is recorded for good.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import re
@@ -61,12 +62,25 @@ def inline(text: str) -> str:
     return out
 
 
+def fingerprint(text: str) -> str:
+    """A short, stable name for a check, derived from what it says.
+
+    Positional identifiers were a mistake: reordering the ledger moved every
+    mark in every browser onto the wrong check. A check keeps its identity as
+    long as its wording does, and changing the wording resets it, which is
+    right — a rewritten check has not been looked at.
+    """
+    normalized = re.sub(r"\s+", " ", re.sub(r"[*`_~]", "", text)).strip().lower()
+    return "k" + hashlib.sha1(normalized.encode()).hexdigest()[:10]
+
+
 class Check:
-    def __init__(self, section: str, state: str, text: str, index: int):
+    def __init__(self, section: str, state: str, text: str, destructive: bool):
         self.section = section
         self.done = state == "x"
         self.text = text
-        self.ident = f"c{index}"
+        self.destructive = destructive
+        self.ident = fingerprint(text)
         lowered = text.lower()
         self.key = any(phrase in lowered for phrase in KEY_PHRASES)
 
@@ -112,7 +126,7 @@ def parse(markdown: str) -> list[Section]:
     lines = markdown.split("\n")
     sections: list[Section] = []
     current: Section | None = None
-    index = 0
+    destructive = False
     i = 0
 
     paragraph: list[str] = []
@@ -130,6 +144,7 @@ def parse(markdown: str) -> list[Section]:
         heading = re.match(r"^## (.+?)(?:\s+—\s+`(.+?)`)?\s*$", line)
         if heading:
             flush_paragraph()
+            destructive = False
             current = Section(heading.group(1), heading.group(2))
             sections.append(current)
             i += 1
@@ -142,8 +157,16 @@ def parse(markdown: str) -> list[Section]:
         subheading = re.match(r"^### (.+)$", line)
         if subheading:
             flush_paragraph()
+            # A subsection that takes something away says so on its first line,
+            # and everything under it is marked.
+            rest = "\n".join(lines[i + 1 : i + 4])
+            destructive = bool(re.search(r"^_Destructive", rest, re.MULTILINE))
             current.items.append(
-                Block("h", f"<h3>{inline(subheading.group(1))}</h3>")
+                Block(
+                    "h",
+                    f'<h3{" class=\'wrecks\'" if destructive else ""}>'
+                    f"{inline(subheading.group(1))}</h3>",
+                )
             )
             i += 1
             continue
@@ -178,9 +201,8 @@ def parse(markdown: str) -> list[Section]:
             while i < len(lines) and re.match(r"^ {6,}\S", lines[i]):
                 body.append(lines[i].strip())
                 i += 1
-            index += 1
             current.items.append(
-                Check(current.title, check.group(1), " ".join(body), index)
+                Check(current.title, check.group(1), " ".join(body), destructive)
             )
             continue
 
@@ -228,6 +250,38 @@ def ordered(sections: list[Section]) -> list[Section]:
     return sorted(sections, key=lambda s: (rank(s), sections.index(s)))
 
 
+LEGACY_REV = "5e34a831"
+
+
+def legacy_map() -> dict[str, str]:
+    """Old positional identifiers to the stable ones that replaced them.
+
+    The first run sheet named checks `c1`…`c193` by their order in the ledger,
+    so reordering the ledger moved every mark onto the wrong check. This maps
+    what any browser already holds onto the new names, once, by matching the
+    text each identifier stood for.
+    """
+    try:
+        previous = subprocess.run(
+            ["git", "-C", str(WORKSPACE), "show", f"{LEGACY_REV}:doc/eyeball-tests.md"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return {}
+
+    mapping = {}
+    index = 0
+
+    for match in re.finditer(r"(?m)^\* \[[ x!]\] (.*(?:\n {6,}\S.*)*)$", previous):
+        index += 1
+        body = " ".join(line.strip() for line in match.group(1).split("\n"))
+        mapping[f"c{index}"] = fingerprint(body)
+
+    return mapping
+
+
 def commit() -> str:
     try:
         return subprocess.run(
@@ -254,6 +308,24 @@ SCRIPT = r"""
     } catch (e) {
       state = {};
     }
+
+    if (state.__v === 2) return;
+
+    // The first run sheet named checks by their position in the ledger, so
+    // reordering it would have moved every mark onto the wrong check. Carry
+    // what this browser holds across to the names that follow the text.
+    var map = window.__legacyIds || {};
+    var carried = {};
+
+    Object.keys(state).forEach(function (id) {
+      if (id.charAt(0) === "_") return;
+      var moved = map[id];
+      carried[moved || id] = state[id];
+    });
+
+    carried.__v = 2;
+    state = carried;
+    save();
   }
 
   function save() {
@@ -762,6 +834,13 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
   margin-right:7px; vertical-align:1px;
 }
 .chk .tag.key { background:var(--key-soft); color:var(--key); }
+.chk .tag.wrecks { background:var(--fail-soft); color:var(--fail); }
+.body h3.wrecks::after {
+  content:"takes things away"; font-family:var(--f-mono); font-size:10px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--fail);
+  background:var(--fail-soft); padding:3px 7px; border-radius:2px;
+  margin-left:10px; vertical-align:3px;
+}
 .chk .tag.seen { background:var(--pass-soft); color:var(--pass); }
 .chk .extra { grid-column:2; display:none; flex-direction:column; gap:8px; padding-bottom:4px; }
 .chk[data-state="fail"] .extra { display:flex; }
@@ -788,6 +867,8 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 
 def render_check(check: Check) -> str:
     tags = ""
+    if check.destructive:
+        tags += '<span class="tag wrecks" title="Takes away what the checks above are looking at — leave it until last">Destructive</span>'
     if check.key:
         tags += '<span class="tag key" title="The ledger names this one as carrying the most weight">Key</span>'
     if check.done:
@@ -881,6 +962,7 @@ a screenshot; <em>Copy report</em> or <em>Save report</em> then gathers them up.
 {"".join(body)}
 </main>
 </div>
+<script>window.__legacyIds = {json.dumps(legacy_map())};</script>
 <script>{SCRIPT}</script>"""
 
 
