@@ -165,7 +165,16 @@ if is_android
 
     # `--static`: every GStreamer library here is an archive, so their private
     # dependencies — orc, zlib, `-latomic`, `-llog` — have to come along.
-    gst_modules = ['gstreamer-1.0']
+    gst_modules = ['gstreamer-1.0', 'gstreamer-pbutils-1.0']
+
+    # Nothing is discovered in a static build. The plugins listed in
+    # `build-aux/android/gstreamer-plugins` are the only elements that will
+    # exist, and the same list generates both the archives linked here and the
+    # C that registers them, so the two cannot drift apart.
+    sh = find_program('sh')
+    gst_plugins_script = files('build-aux/android/gstreamer-static-plugins.sh')
+    gst_plugins_list = files('build-aux/android/gstreamer-plugins')
+
     gst_dep = declare_dependency(
         compile_args: run_command(
             pkgconfig_exe,
@@ -181,7 +190,22 @@ if is_android
             gst_modules,
             env: pkgconfig_env,
             check: true,
+        ).stdout().split() + run_command(
+            sh,
+            gst_plugins_script,
+            gst_prefix,
+            gst_plugins_list,
+            '--libs',
+            check: true,
         ).stdout().split(),
+    )
+
+    gst_static_plugins_c = custom_target(
+        'gstreamer-static-plugins',
+        input: gst_plugins_list,
+        output: 'gstreamer-static-plugins.c',
+        command: [sh, gst_plugins_script, gst_prefix, '@INPUT@', '--source'],
+        capture: true,
     )
     message(
         'GStreamer ' + run_command(

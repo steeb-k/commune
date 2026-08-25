@@ -73,6 +73,7 @@ zeroize = "1"
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { version = "0.9", features = ["v1_8"], package = "libadwaita" }
 gst = { version = "0.25", package = "gstreamer" }
+gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
 sourceview = { version = "0.11", package = "sourceview5" }
 
@@ -133,7 +134,6 @@ features = [
 # it.
 [target.'cfg(not(target_os = "android"))'.dependencies]
 gst_app = { version = "0.25", package = "gstreamer-app" }
-gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
 gst_play = { version = "0.25", package = "gstreamer-play" }
 gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
 gst_video = { version = "0.25", package = "gstreamer-video" }

@@ -1,28 +1,19 @@
 //! Collection of methods for audio.
 
-#[cfg(not(target_os = "android"))]
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
 
-#[cfg(not(target_os = "android"))]
 use gst::prelude::*;
-use gtk::gio;
-#[cfg(not(target_os = "android"))]
-use gtk::{glib, prelude::*};
+use gtk::{gio, glib, prelude::*};
 use matrix_sdk::attachment::BaseAudioInfo;
-#[cfg(not(target_os = "android"))]
 use tracing::warn;
 
-#[cfg(not(target_os = "android"))]
 use super::load_gstreamer_media_info;
-#[cfg(not(target_os = "android"))]
-use crate::utils::OneshotNotifier;
-use crate::utils::resample_slice;
+use crate::utils::{OneshotNotifier, resample_slice};
 
 /// Load information for the audio in the given file.
-#[cfg(not(target_os = "android"))]
 pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     let mut info = BaseAudioInfo::default();
 
@@ -35,22 +26,10 @@ pub(crate) async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     info
 }
 
-/// Load information for the audio in the given file.
-///
-/// The duration and the waveform both come from `GStreamer`, which is not
-/// cross-built for Android, so nothing can be probed and the defaults stand: an
-/// outgoing voice message carries no duration and no waveform. Restoring this
-/// belongs to S4, see `doc/android.md`.
-#[cfg(target_os = "android")]
-pub(crate) async fn load_audio_info(_file: &gio::File) -> BaseAudioInfo {
-    BaseAudioInfo::default()
-}
-
 /// Generate a waveform for the given audio file.
 ///
 /// The returned waveform should contain between 30 and 110 samples with a value
 /// between 0 and 1.
-#[cfg(not(target_os = "android"))]
 async fn generate_waveform(file: &gio::File, duration: Option<Duration>) -> Option<Vec<f32>> {
     // We first need to get the duration, to compute the interval required to
     // collect just enough samples. We use a separate pipeline for simplicity,
