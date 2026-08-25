@@ -421,6 +421,26 @@ wrong, and nothing about it has been shown to be right either — this test says
 Worth fixing regardless: what reaches the user is "Could not open device", naming a backend nobody
 chose. "No microphone was found" is what happened.
 
+**GSK renders through software (Cairo), and this may be the same RDP session being the same kind of
+witness against itself.** `GSK_DEBUG=renderer` names the reason directly:
+
+```text
+Not using Vulkan: platform is not Wayland
+Failed to realize renderer 'GskGLRenderer' for surface 'GdkWin32Toplevel': OpenGL requires Direct Composition
+Failed to realize renderer 'GskVulkanRenderer' for surface 'GdkWin32Toplevel': Vulkan requires Direct Composition
+Failed to realize renderer 'GskGLRenderer' for surface 'GdkWin32Toplevel': OpenGL requires Direct Composition
+Using renderer 'GskCairoRenderer' for surface 'GdkWin32Toplevel'
+```
+
+Both of GTK's accelerated renderers need DirectComposition on win32, and this session does not have
+it, so every frame is drawn on the CPU rather than the GPU. Nothing about this is broken — Commune
+runs, and ran through the whole snapping and emoji work above, entirely on the software path without
+incident — but it is a real difference in how the app performs, and the same session that has no
+microphone (above) is exactly the kind of session that might not be handed GPU compositing either.
+Untested: whether DirectComposition is available **from the physical console**, which is the only way
+to tell a genuine gap in the port from another thing this machine's Remote Desktop session does not
+have.
+
 **The message search index cannot live on disk, because a room ID is not a legal file name.**
 Every sync used to log, once per room:
 
@@ -677,9 +697,11 @@ one of four ways to verify an identity, the other three work without a camera, a
 already works here in the direction where the phone does the scanning. `doc/windows-plan.md` has
 the reasoning, and the route it would take if the decision is ever revisited.
 
-Unverified beyond that: GTK's win32 backend for input methods and drag and drop, which renderer GSK
-picks, and whether the popover-on-a-separate-surface problem that troubles the macOS sticker picker
-has a win32 sibling.
+Unverified beyond that: GTK's win32 backend for input methods, and whether the
+popover-on-a-separate-surface problem that troubles the macOS sticker picker has a win32 sibling.
+Drag and drop, dialogs presenting as separate windows, and compact mode alongside snapping have all
+been checked by hand and work. Which renderer GSK picks is answered below, in
+[What bit us](#what-bit-us) — it comes with a caveat of its own.
 
 ## Rebasing
 
