@@ -104,14 +104,39 @@ fn main() {
 
     // `Window` is a plain, server-side-decorated `gtk::ApplicationWindow` on
     // Windows, with a native frame subclass standing in for CSD (see
-    // `doc/windows-snapping-plan.md`). `gtk_window_set_titlebar()` enables
-    // CSD unconditionally, so a window with no titlebar still needs telling:
+    // `doc/windows.md`). `gtk_window_set_titlebar()` enables CSD
+    // unconditionally, so a window with no titlebar still needs telling:
     // left unset, GTK gives an undecorated win32 toplevel its own default
     // `GtkHeaderBar` at realize.
     #[cfg(target_os = "windows")]
     // SAFETY: called before `gtk::init()`, before any other thread exists.
     unsafe {
         std::env::set_var("GTK_CSD", "0");
+    }
+
+    // GDK's win32 backend gates DirectComposition-backed rendering (what
+    // `GskGLRenderer`/`GskVulkanRenderer` both need there) behind this flag on
+    // purpose -- upstream's own comment on `gdk_win32_display_init_dcomp` says
+    // it "causes issues with the GL and Vulkan renderers", which is reason
+    // enough not to inherit it in a release build sight unseen. Debug builds
+    // opt in anyway, so a dependency bump that finally makes this flag mean
+    // something gets exercised the moment anyone runs a dev build, rather than
+    // silently changing what ships. As of this MSYS2 `gtk4` (4.22.4-1, already
+    // MSYS2's newest), the flag is not even recognised -- `GDK_DEBUG=help`
+    // does not list it, so this line is inert today; see doc/windows.md's
+    // renderer section for the full story. If Commune starts crashing or
+    // glitching visually in a *debug* build on Windows with no other
+    // explanation after a GTK bump, this is the first thing to suspect. If it
+    // instead starts rendering through GL/Vulkan cleanly, that is the signal
+    // to test carrying it into release builds too.
+    #[cfg(all(target_os = "windows", debug_assertions))]
+    // SAFETY: called before `gtk::init()`, before any other thread exists.
+    unsafe {
+        let value = match std::env::var("GDK_DEBUG") {
+            Ok(existing) if !existing.is_empty() => format!("{existing}:dcomp"),
+            _ => "dcomp".to_owned(),
+        };
+        std::env::set_var("GDK_DEBUG", value);
     }
 
     gtk::init().expect("Could not start GTK4");
