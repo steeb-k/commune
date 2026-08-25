@@ -461,10 +461,10 @@ and RustDesk closes it.
 
 **And a real call has now been placed and answered**, camera and microphone both, with the far end
 confirming both arrived — the whole outbound pipeline, capture through encode through the network,
-works. What is still unconfirmed is this end's own playback, since this machine has no speakers to
-hear or see it land: a full round trip in both directions still needs either speakers here or a
-second device to watch it arrive on. That is a narrower and more mundane gap than "does calling work
-at all", which is the question this answers.
+works. The remaining gap — this end's own playback, unconfirmed on the development VM for want of
+speakers — is closed too: a full video call on the real hardware (the same machine the resource-path
+crash and the DirectComposition finding both came from) had working audio, microphone and camera in
+both directions. Calls are done.
 
 **GSK renders through software (Cairo), and it is not RDP being RDP.** `GSK_DEBUG=renderer` names
 the reason directly:
@@ -748,10 +748,6 @@ macOS, so the Control-key bindings the Linux build has are already right here.
   the Credential Manager path end to end, since restoring is the one part the round-trip test
   could not cover. Search, image thumbnails and animated GIFs are confirmed working by hand. Still
   owed: video and voice-message playback.
-* **Confirming this end's own call playback.** A real call has been placed and answered, camera and
-  microphone both, with the far end confirming both arrived — see [What bit us](#what-bit-us). What
-  is left is narrower than "does calling work": this machine has no speakers, so nobody has yet heard
-  or watched a call arrive _here_. Needs speakers on this machine, or a second device to confirm from.
 * **Windows Sandbox.** The bundle was proven self-contained by cutting `PATH` and checking every
   loaded module, which is strong evidence but not the same as a machine that has never had MSYS2
   on it.
