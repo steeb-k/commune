@@ -2,22 +2,23 @@ mod animated_image_paintable;
 mod audio_player;
 mod content_viewer;
 // GTK only has a media backend of its own where it was built against
-// GStreamer, which the conda-forge build we use on macOS was not.
-#[cfg(target_os = "macos")]
+// GStreamer. The conda-forge build we use on macOS was not, and neither is
+// pixiewood's Android build: its cross file sets `media-gstreamer =
+// 'disabled'`.
+#[cfg(any(target_os = "macos", target_os = "android"))]
 mod gst_media_stream;
-// The map viewer is libshumate and the video player is GStreamer. Neither is
-// cross-built for Android, so both are absent there; see `doc/android.md`.
+// The map viewer is libshumate, which is not cross-built for Android; see
+// `doc/android.md`.
 #[cfg(not(target_os = "android"))]
 mod location_viewer;
-#[cfg(not(target_os = "android"))]
 mod video_player;
-#[cfg(not(target_os = "android"))]
 mod video_player_renderer;
 
+#[cfg(not(target_os = "android"))]
+pub(crate) use self::location_viewer::LocationViewer;
 pub(crate) use self::{
     animated_image_paintable::AnimatedImagePaintable,
     audio_player::*,
     content_viewer::{ContentType, MediaContentViewer},
+    video_player::VideoPlayer,
 };
-#[cfg(not(target_os = "android"))]
-pub(crate) use self::{location_viewer::LocationViewer, video_player::VideoPlayer};

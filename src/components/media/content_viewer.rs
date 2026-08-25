@@ -5,7 +5,7 @@ use gtk::{gdk, gio, glib};
 
 #[cfg(not(target_os = "android"))]
 use super::LocationViewer;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 use super::gst_media_stream::GstMediaStream;
 use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource};
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// Play the given file in the given video widget.
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "android")))]
 fn set_video_file(video: &gtk::Video, file: &gio::File) {
     video.set_file(Some(file));
 }
@@ -24,20 +24,21 @@ fn set_video_file(video: &gtk::Video, file: &gio::File) {
 /// Play the given file in the given video widget.
 ///
 /// `GtkVideo` plays a file with `GtkMediaFile`, which has no backend at all in
-/// the GTK build we use on macOS, so it is given a stream of ours instead.
-#[cfg(target_os = "macos")]
+/// the GTK builds we use on macOS and Android, so it is given a stream of ours
+/// instead.
+#[cfg(any(target_os = "macos", target_os = "android"))]
 fn set_video_file(video: &gtk::Video, file: &gio::File) {
     video.set_media_stream(Some(&GstMediaStream::new(file)));
 }
 
 /// Stop the given video widget and drop what it was playing.
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "android")))]
 fn clear_video(video: &gtk::Video) {
     video.set_file(None::<&gio::File>);
 }
 
 /// Stop the given video widget and drop what it was playing.
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 fn clear_video(video: &gtk::Video) {
     video.set_media_stream(None::<&gtk::MediaStream>);
 }

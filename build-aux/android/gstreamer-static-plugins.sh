@@ -99,10 +99,20 @@ fi
 # Provided by pixiewood as shared libraries; must not be answered from here.
 SKIP=" glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 gthread-2.0 intl ffi pcre2-8 z "
 
+# `dependency_libs` also carries bare `-l` flags for libraries that are not in
+# `deps/` at all, and most of them are already on the link line: `-llog`,
+# `-landroid`, `-lm` and `-latomic` come with the NDK, and `-liconv` is answered
+# by bionic. Passing those through would be noise at best. This names the ones
+# nothing else asks for, so that a plugin needing a system library says so
+# through its own `.la` rather than through a special case in `meson.build`.
+# Without `-lOpenSLES`, `openslessink` does not link.
+SYSLIBS=" OpenSLES "
+
 work=$(mktemp)
 seen=$(mktemp)
 out=$(mktemp)
-trap 'rm -f "$work" "$seen" "$out"' EXIT
+sys=$(mktemp)
+trap 'rm -f "$work" "$seen" "$out" "$sys"' EXIT
 
 for p in $plugins; do
 	if [ ! -f "$deps/libgst$p.a" ]; then
@@ -135,12 +145,21 @@ while [ -s "$work" ]; do
 
 	la="$deps/$name.la"
 	[ -f "$la" ] || continue
-	sed -n "s/^dependency_libs='\(.*\)'$/\1/p" "$la" \
-		| tr ' ' '\n' \
-		| sed -n 's/\.la$//p' \
-		| while read -r dep; do
-			echo "$(basename "$dep")" >> "$work"
-		done
+	deplibs=$(sed -n "s/^dependency_libs='\(.*\)'$/\1/p" "$la")
+
+	for dep in $deplibs; do
+		case "$dep" in
+		*.la)
+			basename "${dep%.la}" >> "$work"
+			;;
+		-l*)
+			case "$SYSLIBS" in
+			*" ${dep#-l} "*) echo "$dep" >> "$sys" ;;
+			esac
+			;;
+		esac
+	done
 done
 
 cat "$out"
+sort -u "$sys"

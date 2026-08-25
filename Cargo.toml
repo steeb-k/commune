@@ -73,7 +73,10 @@ zeroize = "1"
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { version = "0.9", features = ["v1_8"], package = "libadwaita" }
 gst = { version = "0.25", package = "gstreamer" }
+gst_app = { version = "0.25", package = "gstreamer-app" }
 gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
+gst_play = { version = "0.25", package = "gstreamer-play" }
+gst_video = { version = "0.25", package = "gstreamer-video" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
 sourceview = { version = "0.11", package = "sourceview5" }
 
@@ -124,19 +127,11 @@ features = [
     "compat-lax-room-topic-deser",
 ]
 
-# The rest of GStreamer, which Android does not have yet.
-#
-# `gst` itself is above, in the common table: the Android build links the
-# upstream GStreamer binaries statically, and `gst::init()` runs there. What is
-# still missing is a plugin registry, so nothing can actually decode anything —
-# see `doc/android-media-plan.md`. These crates come across as each step of that
-# plan lands. Part of the gtk-rs family above, and still updated together with
-# it.
+# The last of GStreamer that Android does not have. Both of these are for
+# calls, which are their own step; everything media needs is in the common table
+# above. Part of the gtk-rs family, and still updated together with it.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-gst_app = { version = "0.25", package = "gstreamer-app" }
-gst_play = { version = "0.25", package = "gstreamer-play" }
 gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
-gst_video = { version = "0.25", package = "gstreamer-video" }
 gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
 # libshumate wants libsoup-3.0, json-glib, libprotobuf-c and sqlite3, none of
 # which are cross-built. Unlike GtkSourceView, which is now a wrap, the map is
@@ -157,6 +152,14 @@ image = { version = "0.25.5", default-features = false, features = [
 
 # Android-only dependencies.
 [target.'cfg(target_os = "android")'.dependencies]
+# `gtk4paintablesink`, which everything here renders video through. Every other
+# platform finds it at run time — the GNOME runtime ships it, and so does the
+# conda-forge build on macOS — but nothing on Android does: it is the one plugin
+# in this application that depends on GTK, so Cerbero cannot build it and the
+# upstream Android binaries do not carry it. Building it here is not a
+# workaround, it is the same plugin from the same source, registered statically
+# with `gst::plugin_define!` like every other plugin in this build.
+gst_gtk4 = { version = "0.15", package = "gst-plugin-gtk4" }
 # Not a new dependency, only a wider one. `gtk::Svg` is GTK's own SVG renderer,
 # public since 4.22 and behind that feature in gtk-rs, and on Android it is the
 # only thing that will draw an SVG: the `image` crate has never read one, and

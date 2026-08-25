@@ -165,7 +165,25 @@ if is_android
 
     # `--static`: every GStreamer library here is an archive, so their private
     # dependencies — orc, zlib, `-latomic`, `-llog` — have to come along.
-    gst_modules = ['gstreamer-1.0', 'gstreamer-pbutils-1.0']
+    #
+    # One entry per GStreamer crate the Rust builds against, because each of
+    # those is a set of `gst_*` calls that this link has to answer. The plugin
+    # list below names plugins, not libraries, and nothing in it reaches these
+    # archives: a missing entry here is a wall of undefined symbols at the very
+    # end of a seven-minute build.
+    #
+    # `gstreamer-gl-1.0` has no crate of its own in `Cargo.toml`. It is here for
+    # `gst-plugin-gtk4`, which depends on `gstreamer-gl` unconditionally and so
+    # references `gst_gl_*` whether or not any of its GL features are on. It
+    # brings `-lGLESv2` and `-lEGL` with it.
+    gst_modules = [
+        'gstreamer-1.0',
+        'gstreamer-app-1.0',
+        'gstreamer-gl-1.0',
+        'gstreamer-pbutils-1.0',
+        'gstreamer-play-1.0',
+        'gstreamer-video-1.0',
+    ]
 
     # Nothing is discovered in a static build. The plugins listed in
     # `build-aux/android/gstreamer-plugins` are the only elements that will
