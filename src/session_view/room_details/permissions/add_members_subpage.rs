@@ -79,6 +79,18 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            self.search_entry.connect_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    // Return does what the button does, and nothing when the
+                    // button would do nothing.
+                    if imp.add_button.is_sensitive() {
+                        imp.add_button.emit_clicked();
+                    }
+                }
+            ));
+
             self.search_entry.connect_pill_removed(clone!(
                 #[weak(rename_to = imp)]
                 self,

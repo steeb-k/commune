@@ -30,7 +30,11 @@ components/crypto/recovery_setup_view.blp
 components/dialogs/auth/in_browser_page.blp
 components/dialogs/auth/mod.blp
 components/dialogs/auth/password_page.blp
+components/dialogs/auth/registration_token_page.blp
+components/dialogs/auth/terms_page.blp
+components/dialogs/peek_row.blp
 components/dialogs/room_preview.blp
+components/dialogs/space_picker.blp
 components/dialogs/toastable.blp
 components/dialogs/user_profile.blp
 components/image_pack_editor/image_row.blp
@@ -76,6 +80,8 @@ login/homeserver_page.blp
 login/in_browser_page.blp
 login/method_page.blp
 login/mod.blp
+login/register_page.blp
+login/reset_password_page.blp
 login/session_setup_view.blp
 macos_menu_bar.blp
 session_view/call_view/mod.blp
@@ -143,6 +149,8 @@ session_view/room_history/message_toolbar/mod.blp
 session_view/room_history/message_toolbar/sticker_picker/gif_page.blp
 session_view/room_history/message_toolbar/sticker_picker/mod.blp
 session_view/room_history/mod.blp
+session_view/room_history/pinned/mod.blp
+session_view/room_history/pinned/row.blp
 session_view/room_history/read_receipts_list/mod.blp
 session_view/room_history/read_receipts_list/read_receipts_popover.blp
 session_view/room_history/search/mod.blp
@@ -158,6 +166,7 @@ session_view/sidebar/mod.blp
 session_view/sidebar/room_row.blp
 session_view/sidebar/section_row.blp
 session_view/sidebar/verification_row.blp
+session_view/space.blp
 shortcuts-dialog.blp
 window-windows.blp
 window.blp

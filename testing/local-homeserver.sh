@@ -37,6 +37,8 @@
 #   ./testing/local-homeserver.sh notice  # send another server notice to alice
 #   ./testing/local-homeserver.sh limit on|off  # cross the MAU limit, so Synapse
 #                                         # sends and pins a notice of its own
+#   ./testing/local-homeserver.sh signup open|token|off  # what a new account has
+#                                         # to get past
 #   ./testing/local-homeserver.sh check   # verify the endpoints server-side
 #   ./testing/local-homeserver.sh reports # show what the admin has received
 #   ./testing/local-homeserver.sh down    # stop the server, keep the data
@@ -72,6 +74,7 @@ STATE=$DATA/seeded.json
 
 ALICE_PASS=alice-is-testing
 BOB_PASS=bob-is-testing
+CAROL_PASS=carol-is-testing
 
 log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
@@ -126,6 +129,16 @@ rc_login:
 rc_reports:
   per_second: 1000
   burst_count: 1000
+
+# Synapse refuses to put a room in its directory unless a rule allows it, and
+# ships with none, so `PUT /directory/list/room/{id}` answers "Not allowed to
+# publish room" whoever asks. Explore is the client's whole view of the
+# directory; without this it has nothing to show and cannot be tested.
+room_list_publication_rules:
+  - user_id: "*"
+    alias: "*"
+    room_id: "*"
+    action: allow
 
 # Synapse ships with URL previews off, and most servers leave them that way, so
 # a real account is no use for testing them. The blacklist is not optional:
@@ -274,6 +287,33 @@ turn_info() {
   curl -sf "$HS/_matrix/client/v3/voip/turnServer" -H "Authorization: Bearer $alice"
 }
 
+# A homeserver.yaml generated before publication was part of this script has no
+# rule allowing it, and Synapse denies by default, so every room stayed out of
+# the directory however it was created.
+ensure_publication_config() {
+  local config=$DATA/homeserver.yaml
+  [ -f "$config" ] || return 0
+  grep -q '^room_list_publication_rules:' "$config" && return 0
+
+  log "Allowing rooms to be published to the directory…"
+  cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh.
+room_list_publication_rules:
+  - user_id: "*"
+    alias: "*"
+    room_id: "*"
+    action: allow
+YAML
+
+  if podman container exists "$CONTAINER" 2>/dev/null \
+    && [ "$(podman inspect -f '{{.State.Running}}' "$CONTAINER")" = true ]; then
+    log "Restarting the homeserver so it reads the change…"
+    podman restart "$CONTAINER" >/dev/null
+    wait_for_server
+  fi
+}
+
 # A homeserver.yaml generated before server notices were part of this script has
 # no `server_notices` block, and the admin endpoint answers 400 without one. Add
 # it in place rather than making the user throw the server away.
@@ -364,6 +404,11 @@ seed() {
   register admin admin-is-testing admin
   register alice "$ALICE_PASS" plain
   register bob "$BOB_PASS" plain
+  # Carol exists and joins nothing. Bob has to be inside both spaces so that
+  # alice leaving one does not destroy it, which leaves nobody to invite —
+  # you cannot invite somebody who is already a member, and the invite subpage
+  # correctly refuses to offer them.
+  register carol "$CAROL_PASS" plain
 
   local alice bob
   alice=$(login alice "$ALICE_PASS")
@@ -573,6 +618,445 @@ seed_direct_chat() {
   log "Direct chat is $dm"
 }
 
+# -------------------------------------------------------- space children ----
+
+# Put rooms inside `Test Space`.
+#
+# The seed creates the space and two rooms whose join rule *names* it, which is
+# not the same as being in it: `m.space.child` is what puts a room in a space,
+# and nothing did that, so browsing the space found an empty one. The four
+# children below are the four cases a space browser has to draw:
+#
+#   * a room alice has already joined, so the row offers to view it;
+#   * a room she has not, created by bob, so the row offers to join it;
+#   * a subspace, which is where the deliberate one-level limit shows;
+#   * a `world_readable` room, which is what peeking needs.
+#
+# Idempotent, and outside the `seeded.json` gate like `seed_direct_chat`, so a
+# homeserver seeded before this existed gets the children on the next `up`.
+seed_space_children() {
+  local alice bob space child
+  [ -f "$STATE" ] || return 0
+
+  space=$(jq -r '.space // empty' "$STATE")
+  [ -n "$space" ] || return 0
+
+  if [ "$(jq -r '.space_children // empty' "$STATE")" = true ]; then
+    log "Test Space already has children."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] || return 0
+
+  log "Putting rooms inside Test Space…"
+
+  local sub_space readable_room bob_room
+  sub_space=$(create_room "$alice" '{
+    "name": "Sub Space",
+    "creation_content": {"type": "m.space"},
+    "preset": "public_chat",
+    "room_alias_name": "sub-space"
+  }')
+  readable_room=$(create_room "$alice" '{
+    "name": "Readable Room",
+    "preset": "public_chat",
+    "room_alias_name": "readable-room",
+    "initial_state": [{
+      "type": "m.room.history_visibility",
+      "state_key": "",
+      "content": {"history_visibility": "world_readable"}
+    }]
+  }')
+  bob_room=$(create_room "$bob" '{
+    "name": "Bobs Room",
+    "preset": "public_chat",
+    "room_alias_name": "bobs-room"
+  }')
+
+  send_text "$alice" "$readable_room" readable1 \
+    '{"msgtype": "m.text", "body": "Anyone can read this without joining."}'
+
+  # Bob joins both spaces, and it is not decoration: a room whose last member
+  # leaves is destroyed, and there is no way back into it — not by alias, not
+  # by ID, not by the admin API. The checks ask for spaces to be left, so
+  # without a second member the first run through them takes Sub Space with it.
+  for room in "$space" "$sub_space"; do
+    curl -sf -X POST "$HS/_matrix/client/v3/join/$room?server_name=localhost" \
+      -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+      -d '{}' >/dev/null || warn "bob could not join $room"
+  done
+
+  # The space itself is alice's, so she can write its children whoever owns the
+  # room being added. `via` is not optional: a child without it is ignored.
+  for child in "$(jq -r .public_room "$STATE")" "$(jq -r .restricted "$STATE")" \
+               "$sub_space" "$readable_room" "$bob_room"; do
+    [ -n "$child" ] && [ "$child" != null ] || continue
+
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$space/state/m.space.child/$child" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{"via": ["localhost"]}' >/dev/null \
+      || warn "the server refused to add $child to the space"
+  done
+
+  jq --arg sub_space "$sub_space" \
+     --arg readable_room "$readable_room" \
+     --arg bob_room "$bob_room" \
+     '. + {$sub_space, $readable_room, $bob_room, space_children: true}' \
+     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Test Space now holds five rooms, one of them a subspace."
+}
+
+# Put a room alice can read but has not joined inside Test Space.
+#
+# `Readable Room` is world_readable too, but alice created it, so she is a
+# member and the client offers her the room rather than a preview of it. This
+# one is bob's, which is the only way to get the case peeking is actually for.
+#
+# It has a marker of its own rather than riding on `space_children`, so a
+# server seeded before this existed picks it up on the next `up`.
+seed_peekable_room() {
+  local alice bob space peekable_room
+
+  [ -f "$STATE" ] || return 0
+
+  space=$(jq -r '.space // empty' "$STATE")
+  [ -n "$space" ] || return 0
+
+  if [ "$(jq -r '.peekable_room // empty' "$STATE")" != "" ]; then
+    log "Test Space already holds a room alice can peek."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] && [ -n "$bob" ] || return 0
+
+  log "Adding a room alice can read without joining…"
+
+  peekable_room=$(create_room "$bob" '{
+    "name": "Peekable Room",
+    "preset": "public_chat",
+    "room_alias_name": "peekable-room",
+    "initial_state": [{
+      "type": "m.room.history_visibility",
+      "state_key": "",
+      "content": {"history_visibility": "world_readable"}
+    }]
+  }')
+  [ -n "$peekable_room" ] || return 0
+
+  send_text "$bob" "$peekable_room" peekable1 \
+    '{"msgtype": "m.text", "body": "Alice can read this without joining."}'
+  send_text "$bob" "$peekable_room" peekable2 \
+    '{"msgtype": "m.text", "body": "So can anybody else who finds the room."}'
+
+  curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$space/state/m.space.child/$peekable_room" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"via": ["localhost"]}' >/dev/null \
+    || warn "the server refused to add $peekable_room to the space"
+
+  jq --arg peekable_room "$peekable_room" \
+     '. + {$peekable_room}' \
+     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Test Space now holds six rooms."
+}
+
+# Put alice back in the rooms she is meant to be in, and publish the ones that
+# are meant to be findable.
+#
+# Two things this fixes. `preset: public_chat` sets a room's **join rule**;
+# whether it appears in the directory is `visibility`, a different field on the
+# same request, and it defaults to `private`. So every room here was joinable
+# by alias and none was ever listed, and Explore had nothing to show on this
+# homeserver from the day it was written — which is not something the client
+# can be tested for.
+#
+# And the eyeball checks ask for rooms to be left, which cannot be undone from
+# the seed step: it only ever creates. Rejoining is idempotent and cheap, so
+# this doubles as the repair for a run that has been through them.
+#
+# The marker is only written when every call succeeded, so a partial run is
+# tried again rather than remembered as done.
+seed_directory() {
+  local alice bob token room key failed=0
+  [ -f "$STATE" ] || return 0
+
+  if [ "$(jq -r '.directory // empty' "$STATE")" = true ]; then
+    log "The rooms that should be findable already are."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] || return 0
+
+  log "Rejoining and publishing the rooms that should be findable…"
+
+  # Everything somebody is meant to *find* rather than be shown. That is not
+  # just the public rooms: a knock room exists to be knocked on, and you cannot
+  # knock on a room the directory will not admit to. Same for the two
+  # restricted ones — the point of them is to be found and then refused or
+  # allowed depending on the space you are in.
+  #
+  # Left out: Invite Room, Encrypted Room, ACL Room and Link Room, which are
+  # reached from alice's own sidebar and have nothing to do with discovery.
+  for key in space sub_space public_room readable_room peekable_room bob_room \
+             knock_room knock_restricted restricted; do
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+    [ -n "$room" ] || continue
+
+    case $key in
+      bob_room|peekable_room) token=$bob ;;
+      *) token=$alice ;;
+    esac
+
+    # The owner has to be in a room to publish it, and the checks ask for some
+    # of these to be left. `server_name` is not optional when joining by ID:
+    # without it Synapse has nowhere to ask, even for a room of its own.
+    curl -sf -X POST "$HS/_matrix/client/v3/join/$room?server_name=localhost" \
+      -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+      -d '{}' >/dev/null || true
+
+    if ! curl -sf -X PUT "$HS/_matrix/client/v3/directory/list/room/$room" \
+      -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+      -d '{"visibility": "public"}' >/dev/null; then
+      warn "the server refused to publish $key"
+      failed=1
+    fi
+  done
+
+  # Alice belongs in the rooms she made, whether or not they are published.
+  for key in restricted knock_restricted invite_room knock_room acl_room \
+             link_room encrypted_room; do
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+    [ -n "$room" ] || continue
+
+    curl -sf -X POST "$HS/_matrix/client/v3/join/$room?server_name=localhost" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{}' >/dev/null || true
+  done
+
+  if [ "$failed" -eq 1 ]; then
+    warn "some rooms could not be published; run \`up\` again to try once more"
+    return 0
+  fi
+
+  jq '. + {directory: true}' "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Explore can find them now."
+}
+
+# Rebuild a seeded space that has been left by everybody.
+#
+# A room whose last member leaves is gone: the homeserver keeps the events and
+# will let nobody back in, by alias or by ID, because no server is in it to ask.
+# The checks ask for spaces to be left, so before bob was seeded into them the
+# first run through took Sub Space with it.
+#
+# Only Sub Space is rebuilt, because it is the only seeded room that has ever
+# had one member. Its alias has to be released first — it still points at the
+# room nobody is in.
+repair_sub_space() {
+  local alice bob admin sub_space old_id
+  [ -f "$STATE" ] || return 0
+
+  alice=$(login alice "$ALICE_PASS")
+  [ -n "$alice" ] || return 0
+
+  old_id=$(jq -r '.sub_space // empty' "$STATE")
+  [ -n "$old_id" ] || return 0
+
+  # If it can still be joined there is nothing to do.
+  if curl -sf -X POST "$HS/_matrix/client/v3/join/$old_id?server_name=localhost" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{}' >/dev/null 2>&1; then
+    return 0
+  fi
+
+  warn "Sub Space has no members left and cannot be rejoined; building it again"
+
+  bob=$(login bob "$BOB_PASS")
+  admin=$(login admin admin-is-testing)
+
+  # The alias still points at the room nobody is in.
+  curl -sf -X DELETE "$HS/_matrix/client/v3/directory/room/%23sub-space%3Alocalhost" \
+    -H "Authorization: Bearer ${admin:-$alice}" >/dev/null 2>&1 || true
+
+  sub_space=$(create_room "$alice" '{
+    "name": "Sub Space",
+    "creation_content": {"type": "m.space"},
+    "preset": "public_chat",
+    "room_alias_name": "sub-space"
+  }')
+  [ -n "$sub_space" ] || { warn "could not build Sub Space again"; return 0; }
+
+  [ -n "$bob" ] && curl -sf -X POST "$HS/_matrix/client/v3/join/$sub_space?server_name=localhost" \
+    -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+    -d '{}' >/dev/null || true
+
+  # Put it back inside Test Space.
+  local space
+  space=$(jq -r '.space // empty' "$STATE")
+  if [ -n "$space" ]; then
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$space/state/m.space.child/$sub_space" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{"via": ["localhost"]}' >/dev/null || warn "could not put it back in Test Space"
+  fi
+
+  jq --arg sub_space "$sub_space" '. + {$sub_space} | del(.directory)' \
+    "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Sub Space is back."
+}
+
+# Check the harness is in the state the eyeball checks assume.
+#
+# This exists because the faults kept arriving one at a time, in the middle of
+# somebody else's testing session: rooms that were never published, a space
+# with nobody left in it, no account free to be invited. Each was a minute to
+# fix and an hour of somebody's patience. This says all of it at once.
+#
+# It reports and never repairs — `up` repairs. A red line here means run `up`,
+# and if `up` does not clear it, the harness is wrong rather than the server.
+verify() {
+  local alice bob carol problems=0
+
+  good() { printf '  \033[32mok  \033[0m %s\n' "$1"; }
+  bad() { printf '  \033[1;31mfail\033[0m %s\n' "$1"; problems=$((problems + 1)); }
+
+  echo ""
+  echo "Accounts"
+  for who in alice bob carol admin; do
+    case $who in
+      alice) pass=$ALICE_PASS ;;
+      bob) pass=$BOB_PASS ;;
+      carol) pass=$CAROL_PASS ;;
+      admin) pass=admin-is-testing ;;
+    esac
+    if [ -n "$(login "$who" "$pass")" ]; then
+      good "@$who:localhost can log in"
+    else
+      bad "@$who:localhost cannot log in"
+    fi
+  done
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  carol=$(login carol "$CAROL_PASS")
+  [ -n "$alice" ] || { echo ""; return 1; }
+
+  if [ ! -f "$STATE" ]; then
+    bad "nothing has been seeded yet"
+    echo ""
+    return 1
+  fi
+
+  echo ""
+  echo "Rooms — join rule and whether Explore can find them"
+
+  # key|expected join rule|expected directory|who can read its state
+  local row key want_rule want_dir owner token room rule dir
+  for row in \
+    "space|public|public|alice" \
+    "sub_space|public|public|alice" \
+    "public_room|public|public|alice" \
+    "readable_room|public|public|alice" \
+    "peekable_room|public|public|bob" \
+    "bob_room|public|public|bob" \
+    "knock_room|knock|public|alice" \
+    "knock_restricted|knock_restricted|public|alice" \
+    "restricted|restricted|public|alice" \
+    "invite_room|invite|private|alice" \
+    "encrypted_room|invite|private|alice" \
+    "acl_room|invite|private|alice" \
+    "link_room|invite|private|alice"
+  do
+    IFS='|' read -r key want_rule want_dir owner <<< "$row"
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+
+    if [ -z "$room" ]; then
+      bad "$key is not in seeded.json"
+      continue
+    fi
+
+    case $owner in bob) token=$bob ;; *) token=$alice ;; esac
+
+    rule=$(curl -sf "$HS/_matrix/client/v3/rooms/$room/state/m.room.join_rules" \
+      -H "Authorization: Bearer $token" 2>/dev/null | jq -r '.join_rule // "unreadable"' )
+    dir=$(curl -sf "$HS/_matrix/client/v3/directory/list/room/$room" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '.visibility // "?"' )
+
+    if [ "$rule" = "$want_rule" ] && [ "$dir" = "$want_dir" ]; then
+      good "$key — $rule, $dir"
+    else
+      bad "$key — join rule $rule (want $want_rule), directory $dir (want $want_dir)"
+    fi
+  done
+
+  echo ""
+  echo "Who is where"
+
+  local members
+  for key in space sub_space; do
+    room=$(jq -r --arg k "$key" '.[$k] // empty' "$STATE")
+    [ -n "$room" ] || continue
+
+    members=$(curl -sf "$HS/_matrix/client/v3/rooms/$room/joined_members" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '.joined | keys | join(", ")')
+
+    case "$members" in
+      *alice*bob*|*bob*alice*)
+        good "$key holds alice and bob" ;;
+      "")
+        bad "$key has nobody left in it — a room like that cannot be rejoined" ;;
+      *)
+        bad "$key holds $members — bob has to be there or alice leaving destroys it" ;;
+    esac
+  done
+
+  # Carol is the only person who can be invited to a space, so she must not be
+  # in one.
+  room=$(jq -r '.space // empty' "$STATE")
+  if [ -n "$room" ] && [ -n "$carol" ]; then
+    if curl -sf "$HS/_matrix/client/v3/rooms/$room/joined_members" \
+      -H "Authorization: Bearer $carol" >/dev/null 2>&1; then
+      bad "carol is in Test Space — she is who the invite checks invite"
+    else
+      good "carol is in no space, so she can be invited to one"
+    fi
+  fi
+
+  echo ""
+  echo "The hierarchy"
+
+  room=$(jq -r '.space // empty' "$STATE")
+  if [ -n "$room" ]; then
+    local children
+    children=$(curl -sf "$HS/_matrix/client/v1/rooms/$room/hierarchy?limit=30" \
+      -H "Authorization: Bearer $alice" 2>/dev/null | jq -r '[.rooms[].room_id] | length')
+
+    if [ "${children:-0}" -ge 7 ]; then
+      good "Test Space holds $((children - 1)) rooms"
+    else
+      bad "Test Space holds ${children:-0} entries, expected seven including itself"
+    fi
+  fi
+
+  echo ""
+  if [ "$problems" -eq 0 ]; then
+    printf '\033[32mThe harness is in the state the checks expect.\033[0m\n\n'
+    return 0
+  fi
+
+  printf '\033[1;31m%s to put right\033[0m — run `up`, which repairs all of these.\n\n' \
+    "$problems"
+  return 1
+}
+
 # --------------------------------------------------------------- notices ----
 
 # Send a server notice to alice and put her in the room.
@@ -699,6 +1183,100 @@ YAML
   if [ "$mode" = off ] && [ "${pinned:-0}" != 0 ]; then
     warn "Synapse has not unpinned it yet; it does that the next time it looks, so open the app and wait"
   fi
+}
+
+# ----------------------------------------------------------------- signup ----
+
+# Decide what a new account has to get past.
+#
+# `up` leaves registration open with no verification, so Synapse asks for
+# `m.login.dummy` and the authentication dialog answers it without drawing
+# anything. That is the happy path, and it hides the dialog completely — so the
+# other two modes exist to make it appear:
+#
+#   * `token` requires `m.login.registration_token` and prints a token to use.
+#     That is a stage Commune draws itself.
+#   * `off` refuses registration entirely, which is the `M_FORBIDDEN` case — the
+#     one that must not say "Invalid credentials".
+#
+# The terms stage (`m.login.terms`) is not here: Synapse only asks for it with a
+# `user_consent` block pointing at template files it renders itself, which is
+# more homeserver configuration than this harness has any other reason to carry.
+# Commune draws that stage too, and it has never been seen.
+signup() {
+  local mode=${1:-open}
+  local config=$DATA/homeserver.yaml
+  [ -f "$config" ] || die "No homeserver configuration; run './testing/local-homeserver.sh up' first"
+
+  # Drop the block this command added before, so every mode is the same
+  # operation with different contents.
+  python3 - "$config" <<'SIGNUP_PY'
+import re, sys
+path = sys.argv[1]
+text = open(path).read()
+text = re.sub(r"\n# Added by testing/local-homeserver\.sh \(signup\)\.\n(?:.*\n)*?# End signup\.\n", "\n", text)
+open(path, "w").write(text)
+SIGNUP_PY
+
+  case "$mode" in
+    open)
+      log "Leaving registration open, with no stage the user can see…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: true
+enable_registration_without_verification: true
+registration_requires_token: false
+# End signup.
+YAML
+      ;;
+    token)
+      log "Requiring a registration token…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: true
+enable_registration_without_verification: true
+registration_requires_token: true
+# End signup.
+YAML
+      ;;
+    off)
+      log "Switching registration off…"
+      cat >> "$config" <<'YAML'
+
+# Added by testing/local-homeserver.sh (signup).
+enable_registration: false
+# End signup.
+YAML
+      ;;
+    *)
+      die "Unknown signup mode '$mode'. Try: open, token, off"
+      ;;
+  esac
+
+  podman restart "$CONTAINER" >/dev/null
+  wait_for_server
+
+  if [ "$mode" = token ]; then
+    local admin token
+    admin=$(login admin admin-is-testing)
+    [ -n "$admin" ] || die "Could not log in as admin"
+
+    # Three uses, because getting a token wrong on the first try is one of the
+    # things worth watching.
+    token=$(curl -sf -X POST "$HS/_synapse/admin/v1/registration_tokens/new" \
+      -H "Authorization: Bearer $admin" -H 'Content-Type: application/json' \
+      -d '{"uses_allowed": 3}' | jq -r .token)
+
+    if [ -z "$token" ] || [ "$token" = null ]; then
+      warn "Could not mint a registration token; is the admin account still there?"
+    else
+      log "Registration token, good for three accounts: $token"
+    fi
+  fi
+
+  log "Now use Create Account on the greeter, against homeserver localhost:$PORT."
 }
 
 # ------------------------------------------------------------------ check ----
@@ -1018,6 +1596,10 @@ summary() {
   Then run  ./testing/local-homeserver.sh reports  to see what arrived.
   ────────────────────────────────────────────────────────────────────
 
+  Before a testing session:  ./testing/local-homeserver.sh verify
+  It says whether every room, account and membership the eyeball checks
+  assume is actually there. `up` repairs whatever it finds.
+
 EOF
 }
 
@@ -1028,10 +1610,19 @@ case "${1:-up}" in
     start_turn_server
     ensure_server_notices_config
     ensure_turn_config
+    ensure_publication_config
     seed
     seed_direct_chat
+    seed_space_children
+    seed_peekable_room
+    repair_sub_space
+    seed_directory
     send_notice || true
     summary
+    ;;
+  verify)
+    need curl; need jq
+    verify
     ;;
   turn)
     need podman; need curl; need jq
@@ -1047,6 +1638,10 @@ case "${1:-up}" in
   limit)
     need podman; need curl; need jq; need python3
     limit "${2:-on}"
+    ;;
+  signup)
+    need podman; need curl; need jq; need python3
+    signup "${2:-open}"
     ;;
   check)
     need podman; need curl; need jq
@@ -1069,6 +1664,6 @@ case "${1:-up}" in
     log "Homeserver and its data are gone."
     ;;
   *)
-    die "Unknown command '$1'. Try: up, notice, limit, turn, check, reports, down, clean"
+    die "Unknown command '$1'. Try: up, notice, limit, signup, turn, check, reports, down, clean"
     ;;
 esac

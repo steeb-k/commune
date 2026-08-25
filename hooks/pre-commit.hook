@@ -11,6 +11,22 @@ res="\e[0m"
 echo "-- Pre-commit checks --"
 echo "To ignore these checks next time, run: git commit --no-verify"
 echo ""
+
+# Documentation drift. Warns, never blocks — see hooks/doc-freshness.
+hooks/doc-freshness --staged
+echo ""
+
+# Widget templates against the Rust that builds them. Blocks: every one of
+# these is a crash on the widget's first construction, and nothing else in
+# this repository looks for them.
+echo -e "${act}Checking${res} widget templates"
+if ! hooks/template-checks; then
+    echo ""
+    echo -e "Pre-commit checks result: ${neg}fail${res}"
+    exit 1
+fi
+echo ""
+
 if hooks/checks-bin --git-staged; then
     echo ""
     echo -e "Pre-commit checks result: ${pos}ok${res}"

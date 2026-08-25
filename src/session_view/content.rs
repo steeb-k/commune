@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone};
 
-use super::{Explore, Invite, InviteRequest, RoomHistory};
+use super::{Explore, Invite, InviteRequest, RoomHistory, Space};
 use crate::{
     identity_verification_view::IdentityVerificationView,
     session::{
@@ -21,6 +21,8 @@ enum ContentPage {
     InviteRequest,
     /// The selected room invite.
     Invite,
+    /// The selected space.
+    Space,
     /// The explore page.
     Explore,
     /// The selected identity verification.
@@ -35,6 +37,7 @@ impl ContentPage {
             Self::RoomHistory => "room-history",
             Self::InviteRequest => "invite-request",
             Self::Invite => "invite",
+            Self::Space => "space",
             Self::Explore => "explore",
             Self::Verification => "verification",
         }
@@ -49,6 +52,7 @@ impl ContentPage {
             "room-history" => Self::RoomHistory,
             "invite-request" => Self::InviteRequest,
             "invite" => Self::Invite,
+            "space" => Self::Space,
             "explore" => Self::Explore,
             "verification" => Self::Verification,
             _ => panic!("Unknown ContentPage: {name}"),
@@ -75,6 +79,8 @@ mod imp {
         invite_request: TemplateChild<InviteRequest>,
         #[template_child]
         invite: TemplateChild<Invite>,
+        #[template_child]
+        space: TemplateChild<Space>,
         #[template_child]
         explore: TemplateChild<Explore>,
         #[template_child]
@@ -256,6 +262,12 @@ mod imp {
                         self.invite.set_room(Some(room.clone()));
                         self.set_visible_page(ContentPage::Invite);
                     }
+                    // A space has no timeline of its own, so sending it to the
+                    // room history shows an empty one forever.
+                    RoomCategory::Space => {
+                        self.space.set_room(Some(room.clone()));
+                        self.set_visible_page(ContentPage::Space);
+                    }
                     _ => {
                         self.room_history.set_timeline(Some(room.live_timeline()));
                         self.set_visible_page(ContentPage::RoomHistory);
@@ -281,12 +293,13 @@ mod imp {
         }
 
         /// All the header bars of the children of the content.
-        pub(super) fn header_bars(&self) -> [&adw::HeaderBar; 6] {
+        pub(super) fn header_bars(&self) -> [&adw::HeaderBar; 7] {
             [
                 &self.empty_page_header_bar,
                 self.room_history.header_bar(),
                 self.invite_request.header_bar(),
                 self.invite.header_bar(),
+                self.space.header_bar(),
                 self.explore.header_bar(),
                 &self.verification_page_header_bar,
             ]
@@ -317,7 +330,7 @@ impl Content {
     }
 
     /// All the header bars of the children of the content.
-    pub(crate) fn header_bars(&self) -> [&adw::HeaderBar; 6] {
+    pub(crate) fn header_bars(&self) -> [&adw::HeaderBar; 7] {
         self.imp().header_bars()
     }
 }

@@ -11,6 +11,9 @@ template $SidebarRoomRow: Adw.Bin {
       data: bind template.room as <$Room>.avatar-data;
       watched-room: bind template.room;
       watched-safety-setting: invite-avatars;
+      // Only a direct chat ever carries a presence, so an ordinary room draws
+      // no badge here.
+      show-presence: true;
       accessible-role: presentation;
     }
 

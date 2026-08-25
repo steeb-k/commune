@@ -1,0 +1,53 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomPeekRow: Adw.Bin {
+  accessibility {
+    labelled-by: [
+      sender_label,
+    ];
+
+    described-by: [
+      body_label,
+    ];
+  }
+
+  child: Gtk.Box {
+    orientation: vertical;
+    spacing: 3;
+
+    Gtk.Box {
+      spacing: 6;
+
+      Gtk.Label sender_label {
+        ellipsize: end;
+        xalign: 0;
+        hexpand: true;
+
+        styles [
+          "heading",
+        ]
+      }
+
+      Gtk.Label timestamp_label {
+        valign: center;
+        halign: end;
+
+        styles [
+          "caption",
+          "dimmed",
+          "numeric",
+        ]
+      }
+    }
+
+    Gtk.Label body_label {
+      xalign: 0;
+      wrap: true;
+      wrap-mode: word_char;
+      lines: 8;
+      ellipsize: end;
+      selectable: true;
+    }
+  };
+}

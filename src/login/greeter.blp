@@ -113,11 +113,10 @@ template $Greeter: Adw.NavigationPage {
               }
 
               Gtk.Button {
-                visible: false;
                 can-shrink: true;
                 label: _("_Create Account");
                 use-underline: true;
-                action-name: "app.create-account";
+                action-name: "login.create-account";
 
                 styles [
                   "pill",

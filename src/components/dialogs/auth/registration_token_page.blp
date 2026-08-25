@@ -1,0 +1,101 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $AuthDialogRegistrationTokenPage: Adw.Bin {
+  child: Gtk.WindowHandle {
+    child: Gtk.Box {
+      orientation: vertical;
+
+      Gtk.ScrolledWindow {
+        propagate-natural-width: true;
+        propagate-natural-height: true;
+        hscrollbar-policy: never;
+
+        styles [
+          "body-scrolled-window",
+          "undershoot-bottom",
+        ]
+
+        child: Gtk.Box {
+          orientation: vertical;
+
+          styles [
+            "message-area",
+            "has-heading",
+            "has-body",
+          ]
+
+          Adw.Bin {
+            styles [
+              "heading-bin",
+            ]
+
+            Gtk.Label {
+              justify: center;
+              xalign: 0.5;
+              label: _("Registration Token");
+
+              styles [
+                "title-2",
+              ]
+            }
+          }
+
+          Gtk.Label {
+            vexpand: true;
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            xalign: 0.5;
+            label: _("This homeserver only accepts new accounts with a token. Whoever runs it can give you one.");
+
+            styles [
+              "body",
+            ]
+          }
+
+          Gtk.Entry token {
+            margin-top: 6;
+            margin-start: 24;
+            margin-end: 24;
+            activates-default: true;
+            changed => $update_confirm() swapped;
+
+            accessibility {
+              label: _("Registration Token");
+            }
+          }
+        };
+      }
+
+      Adw.WrapBox {
+        child-spacing: 12;
+        line-spacing: 12;
+        justify: fill;
+        justify-last-line: true;
+
+        styles [
+          "response-area",
+        ]
+
+        Gtk.Button {
+          can-shrink: true;
+          use-underline: true;
+          label: _("_Cancel");
+          action-name: "auth-dialog.close";
+        }
+
+        $LoadingButton confirm_button {
+          sensitive: false;
+          can-shrink: true;
+          content-label: _("C_ontinue");
+          clicked => $proceed() swapped;
+
+          styles [
+            "suggested-action",
+          ]
+        }
+      }
+    };
+  };
+}

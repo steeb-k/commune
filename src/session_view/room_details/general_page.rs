@@ -25,13 +25,14 @@ use super::{MemberRow, RoomDetails, UpgradeDialog, UpgradeInfo};
 use crate::{
     Window,
     components::{
-        Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SwitchLoadingRow,
+        Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SpacePickerDialog,
+        SpaceRequirement, SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
     session::{
         HistoryVisibilityValue, Member, MemberList, MembershipListKind, NotificationsRoomSetting,
-        Room, RoomCategory,
+        Room, RoomCategory, add_room_to_space, parent_spaces, remove_room_from_space,
     },
     spawn, spawn_tokio, toast,
     utils::{BoundObjectWeakRef, TemplateCallbacks, expression, matrix::MatrixIdUri},
@@ -91,6 +92,16 @@ mod imp {
         guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         publish: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        spaces_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        add_to_space_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        spaces_loading_row: TemplateChild<adw::ActionRow>,
+        /// The rows naming the spaces this room is in, each with the space it
+        /// is for, so that one of them can be found again without re-reading
+        /// the state of every space.
+        parent_space_rows: RefCell<Vec<(Room, adw::ActionRow)>>,
         #[template_child]
         history_visibility: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -370,6 +381,7 @@ mod imp {
             self.update_history_visibility();
             self.update_encryption();
             self.update_upgrade_button();
+            self.update_parent_spaces();
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
@@ -901,6 +913,246 @@ mod imp {
             }
 
             row.set_is_loading(false);
+        }
+
+        /// List the spaces this room is in, again.
+        ///
+        /// Reading it means asking every joined space whether it names this
+        /// room, so it is done once, when the page appears. A space that gains
+        /// or loses the room elsewhere shows up the next time the details are
+        /// opened; a change this page makes is put into the list by
+        /// [`show_parent_space()`] and [`hide_parent_space()`] instead, since
+        /// this answers from the state store and the state store has not heard
+        /// about it yet.
+        fn update_parent_spaces(&self) {
+            let Some(room) = self.room.obj() else { return };
+
+            for (_, row) in self.parent_space_rows.take() {
+                self.spaces_group.remove(&row);
+            }
+            self.spaces_loading_row.set_visible(true);
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let spaces = parent_spaces(&room).await;
+
+                    if imp.room.obj().as_ref() != Some(&room) {
+                        // The page is showing a different room now.
+                        return;
+                    }
+
+                    imp.spaces_loading_row.set_visible(false);
+
+                    let rows = spaces
+                        .into_iter()
+                        .map(|space| {
+                            let row = imp.build_parent_space_row(&space);
+                            imp.append_parent_space_row(&row);
+                            (space, row)
+                        })
+                        .collect::<Vec<_>>();
+
+                    imp.parent_space_rows.replace(rows);
+                }
+            ));
+        }
+
+        /// Build the row naming one of the spaces this room is in.
+        fn build_parent_space_row(&self, space: &Room) -> adw::ActionRow {
+            let row = adw::ActionRow::builder()
+                .selectable(false)
+                .title(space.display_name())
+                .build();
+
+            let avatar = Avatar::new();
+            avatar.set_size(24);
+            avatar.set_data(Some(space.avatar_data()));
+            row.add_prefix(&avatar);
+
+            let button = LoadingButton::new();
+            button.set_content_label(gettext("Remove"));
+            button.set_valign(gtk::Align::Center);
+            button.add_css_class("flat");
+            button.update_property(&[gtk::accessible::Property::Description(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "Remove this room from {space}",
+                &[("space", &space.display_name())],
+            ))]);
+
+            // Taking a room out of a space is a state event in the space, the
+            // same permission putting it in needed.
+            button.set_sensitive(
+                space
+                    .permissions()
+                    .is_allowed_to(PowerLevelAction::SendState(StateEventType::SpaceChild)),
+            );
+
+            button.connect_clicked(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[weak]
+                space,
+                move |button| {
+                    let button = button.clone();
+
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        #[weak]
+                        space,
+                        async move {
+                            imp.remove_from_space(&space, &button).await;
+                        }
+                    ));
+                }
+            ));
+
+            row.add_suffix(&button);
+            row
+        }
+
+        /// Put the given row into the group, above the row that adds a space.
+        fn append_parent_space_row(&self, row: &adw::ActionRow) {
+            // Keep the row that adds one at the bottom.
+            self.spaces_group.remove(&*self.add_to_space_row);
+            self.spaces_group.add(row);
+            self.spaces_group.add(&*self.add_to_space_row);
+        }
+
+        /// Show the given space in the list, if it is not there already.
+        ///
+        /// This is what the list is corrected with after this page puts the
+        /// room into a space, rather than reading the spaces again. The
+        /// homeserver has accepted the `m.space.child`, but the local state
+        /// store does not carry it until the change arrives back down the
+        /// sync, and on a slow homeserver that is half a minute — long enough
+        /// for a re-read to answer with the state as it was before the button
+        /// was pressed, and for the list to disagree with the toast next to
+        /// it.
+        fn show_parent_space(&self, space: &Room) {
+            if self
+                .parent_space_rows
+                .borrow()
+                .iter()
+                .any(|(known, _)| known.room_id() == space.room_id())
+            {
+                return;
+            }
+
+            let row = self.build_parent_space_row(space);
+            self.append_parent_space_row(&row);
+            self.parent_space_rows
+                .borrow_mut()
+                .push((space.clone(), row));
+        }
+
+        /// Take the given space out of the list, if it is there.
+        ///
+        /// The other half of [`show_parent_space()`], for the same reason: the
+        /// row goes when the removal is accepted rather than when it syncs
+        /// back.
+        fn hide_parent_space(&self, space: &Room) {
+            let row = {
+                let mut rows = self.parent_space_rows.borrow_mut();
+
+                let Some(index) = rows
+                    .iter()
+                    .position(|(known, _)| known.room_id() == space.room_id())
+                else {
+                    return;
+                };
+
+                rows.remove(index).1
+            };
+
+            self.spaces_group.remove(&row);
+        }
+
+        /// Take this room back out of the given space.
+        async fn remove_from_space(&self, space: &Room, button: &LoadingButton) {
+            let Some(room) = self.room.obj() else { return };
+
+            button.set_is_loading(true);
+
+            let result = remove_room_from_space(&room, space).await;
+
+            button.set_is_loading(false);
+
+            let obj = self.obj();
+            let space_name = space.display_name();
+
+            if result.is_ok() {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Removed from {space}"),
+                    space = space_name,
+                );
+                self.hide_parent_space(space);
+            } else {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Could not remove this room from {space}"),
+                    space = space_name,
+                );
+            }
+        }
+
+        /// Put this room inside one of the spaces this account is in.
+        #[template_callback]
+        async fn add_to_space(&self) {
+            let Some(room) = self.room.obj() else { return };
+            let Some(session) = room.session() else {
+                return;
+            };
+
+            // Writing `m.space.child` is a state event in the space, so only
+            // the spaces this account can write in are worth offering — and a
+            // space cannot be put inside itself.
+            let Some(space) = SpacePickerDialog::choose(
+                &*self.obj(),
+                &session,
+                Some(&room),
+                SpaceRequirement::CanHoldRooms,
+            )
+            .await
+            else {
+                return;
+            };
+
+            self.add_to_space_row.set_sensitive(false);
+
+            let result = add_room_to_space(&room, &space).await;
+
+            self.add_to_space_row.set_sensitive(true);
+
+            let obj = self.obj();
+            let space_name = space.display_name();
+
+            if result.is_ok() {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Added to {space}"),
+                    space = space_name,
+                );
+                self.show_parent_space(&space);
+            } else {
+                toast!(
+                    obj,
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    gettext("Could not add this room to {space}"),
+                    space = space_name,
+                );
+            }
         }
 
         /// Toggle whether the room is published in the room directory.

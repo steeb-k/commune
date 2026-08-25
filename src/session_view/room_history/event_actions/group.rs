@@ -244,6 +244,26 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                 .build()]);
         }
 
+        // Pin or unpin the event.
+        if has_event_id && permissions.can_pin_events() {
+            let is_pinned = event
+                .event_id()
+                .is_some_and(|event_id| room.is_pinned(&event_id));
+
+            let name = if is_pinned { "unpin" } else { "pin" };
+            action_group.add_action_entries([gio::ActionEntry::builder(name)
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        spawn!(async move {
+                            imp.set_message_pinned(!is_pinned).await;
+                        });
+                    }
+                ))
+                .build()]);
+        }
+
         self.add_message_actions(action_group, room, event);
     }
 
@@ -595,6 +615,37 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
 
         if event.room().redact(&[event_id], None).await.is_err() {
             toast!(obj, gettext("Could not remove message"));
+        }
+    }
+
+    /// Pin or unpin the event of this row.
+    async fn set_message_pinned(&self, pinned: bool)
+    where
+        Self::Type: IsA<gtk::Widget>,
+    {
+        let Some(event) = self.event() else {
+            error!("Could not pin timeline item that is not an event");
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            error!("Event to pin does not have an event ID");
+            return;
+        };
+        let obj = self.obj();
+        let room = event.room();
+
+        let result = if pinned {
+            room.pin_event(event_id).await
+        } else {
+            room.unpin_event(event_id).await
+        };
+
+        if result.is_err() {
+            if pinned {
+                toast!(obj, gettext("Could not pin message"));
+            } else {
+                toast!(obj, gettext("Could not unpin message"));
+            }
         }
     }
 

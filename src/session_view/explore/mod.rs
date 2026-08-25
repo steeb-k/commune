@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::clone};
 use tracing::error;
 
-mod public_room_row;
+pub(super) mod public_room_row;
 mod search;
 mod server;
 mod server_list;

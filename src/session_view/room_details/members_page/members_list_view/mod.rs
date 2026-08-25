@@ -380,9 +380,9 @@ mod imp {
                 }
                 MembershipListKind::Knock => {
                     if count == 1 {
-                        gettext("Invite Request")
+                        gettext("Access Request")
                     } else {
-                        gettext("Invite Requests")
+                        gettext("Access Requests")
                     }
                 }
             };
@@ -436,7 +436,7 @@ mod imp {
                     (title, description)
                 }
                 MembershipListKind::Knock => {
-                    let title = gettext("No Invite Requests");
+                    let title = gettext("No Access Requests");
                     let description = gettext("There are no invite requests in this room");
                     (title, description)
                 }

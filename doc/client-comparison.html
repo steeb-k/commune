@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 14.1.0</span>
-      <span>main @ 4eb53e53</span>
+      <span>main @ 1a596300</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -688,45 +688,39 @@
 
   <section>
     <div class="sec-head">
-      <h2>Everyone but us <span class="tick gone">6 rows</span></h2>
+      <h2>Everyone but us <span class="tick gone">2 rows</span></h2>
       <p class="sec-sub">
         The rows where the field has settled and Commune hasn't. None of these is a judgement
         call about taste: each is a thing a person moving from any other client expects to find
         and does not. Ordered by how little room there is to argue.
+        <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
+        presence, and signing up with the password reset that went with it. Their notes are gone
+        rather than struck; what they became is in the table above, in the Commune cell of each.
+        <strong>Spaces left this section on 24 August 2026</strong>, after all three of its
+        slices and then the rest of the module landed the same day. Its note is kept rather than
+        deleted, as a record of what the gap was.
       </p>
     </div>
     <div class="notes">
       <div class="note">
-        <span class="note-tag">7 of 9 peers, 1 partial · Spaces</span>
-        <span class="note-head">Spaces</span>
+        <span class="note-tag">closed 24 August 2026 · Spaces</span>
+        <span class="note-head">Spaces <span style="font-weight:400;color:var(--ink-soft)">— done</span></span>
         <p class="note-body">
-          Every client in this table except Commune’s own parent can browse and join a space. Commune recognises
-          <code>RoomCategory::Space</code> and then hides it, so a person organised around spaces
-          opens the app and finds their rooms scattered or missing. Element X, which drops nearly
-          everything to stay fast, still shipped a read-only version rather than none.
-          <strong>It is also the blocker under two other rows</strong> — authoring a restricted
-          join rule and adding a room to a space both need a space picker first.
-        </p>
-      </div>
-      <div class="note">
-        <span class="note-tag">8 of 9 peers · Client-Server API</span>
-        <span class="note-head">Signing up</span>
-        <p class="note-body">
-          Nheko — two maintainers, a C++ client that admits in its own README that most features
-          are missing — has user registration. Commune has login only, so the first thing a new
-          user is told is to go and make the account somewhere else.
-          <strong>The cheapest row here by a distance</strong>, and the only one that costs a user
-          before they have ever seen the timeline.
-        </p>
-      </div>
-      <div class="note">
-        <span class="note-tag">8 of 9 peers · m.room.pinned_events</span>
-        <span class="note-head">Pinned messages</span>
-        <p class="note-body">
-          The fork already reads pinned events — but only inside the server notices room, to decide
-          which notice is still active. The generic case — the one every peer but Fractal has — is
-          unbuilt: no pin action, no pinned list, no banner. <strong>The plumbing is there and
-          pointed at one room.</strong>
+          Every client in this table except Commune’s own parent can browse and join a space.
+          Every client in this table except Commune’s own parent could browse and join a space,
+          and Commune could not. <strong>All of that changed on 24 August 2026</strong>: a space
+          has its own sidebar section, opening one shows a page listing the rooms inside with a
+          button to open or join each, the public directory lists and labels them, a picker asks
+          which space you mean, and <code>m.space.child</code> is written — so a room can be put
+          into a space, not only found in one. Both rows this blocked are closed: a restricted
+          join rule can be authored, and adding a room to a space is the thing itself.
+          <strong>The rest of the module followed the same day</strong>: a space can be made
+          here, a room can be taken back out of one, and a room says which spaces hold it —
+          believing the space's own <code>m.space.child</code> over the room's claim about
+          itself, which is what the specification asks for and what stops any room announcing
+          itself as part of anywhere. The spec page moved Spaces into its implemented column
+          with that. Nesting was the last thing left, and it is drawn now: a subspace
+          expands in place, as deep as the space goes.
         </p>
       </div>
       <div class="note">
@@ -738,15 +732,6 @@
           ships them, including the conservative KDE one. <strong>A poll sent into a room Commune
           is in renders as nothing at all.</strong> Skipping it is defensible; not knowing it is
           missing is not.
-        </p>
-      </div>
-      <div class="note">
-        <span class="note-tag">7 of 9 peers · Presence</span>
-        <span class="note-head">Presence</span>
-        <p class="note-body">
-          No online dot, no last-active, nothing published. Most homeservers keep presence switched
-          off, which is the usual defence — but the field disagrees with that defence almost
-          unanimously, and the ones that show it degrade quietly when the server says nothing.
         </p>
       </div>
       <div class="note">
@@ -872,7 +857,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>571f2b31</code>, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>1a596300</code>, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -923,14 +908,14 @@
     { f: "Threads", g: "Messaging", kind: "spec", tag: "Threading",
       note: "Thread list, thread view, per-thread receipts, composer routing.",
       c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:0, fc:1, nh:1, nc:0.5, ci:0 },
-      cn: { commune:"Threaded messages land in the main timeline as ordinary events; a thread reply is sent as a plain rich reply.",
+      cn: { commune:"Threaded messages land in the main timeline as ordinary events, and no thread can be listed or opened. Replies do carry the thread relation — the gap is entirely interface.",
             ex:"Behind Labs and described by Element as incomplete.",
             nc:"A thread's body renders, but the README still names threads a notable exception." } },
 
     { f: "Polls", g: "Messaging", kind: "msc", tag: "MSC3381",
       note: "Never standardised; shipped almost everywhere regardless.",
       c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:1, ci:1 },
-      cn: { commune:"m.poll.* is never parsed, so a poll renders as nothing.",
+      cn: { commune:"The SDK parses m.poll.start; our own timeline filter is an allow-list that drops it, so a poll renders as nothing.",
             nc:"Shipped as an unstable feature." } },
 
     { f: "Voice messages", g: "Messaging", kind: "msc", tag: "MSC3245",
@@ -954,8 +939,8 @@
 
     { f: "Pinned messages", g: "Messaging", kind: "spec", tag: "Spec",
       note: "m.room.pinned_events, in any room.",
-      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Pinned events are read only inside the server notices room, to find the active notice." } },
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Built 23 August 2026: pin and unpin from a message's context menu, a pinned list behind a header toggle, and a timeline line naming who pinned what. The server notices room keeps the separate UI the spec asks for." } },
 
     { f: "Search the messages of a room", g: "Messaging", kind: "spec", tag: "Search",
       note: "Including rooms that are encrypted.",
@@ -975,16 +960,17 @@
     // ---- Rooms
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",
       note: "Browsing, joining and organising by space.",
-      c: { commune:0, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Spaces are recognised, then hidden: RoomCategory::Space maps to no sidebar section.",
+      c: { commune:1, fractal:0, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"The whole module: a sidebar section, a page listing the rooms inside with a button to open or join each, a picker, making a space, putting a room into one, taking it back out, and a room saying which spaces hold it — believing the space over the room, as the spec asks. A subspace expands in place, as deep as the space goes, with no request per level — the whole hierarchy arrives in one walk and each row knows the way down to it, so a hierarchy that points back at itself stops rather than opening forever.",
             ex:"Read-only: view joined spaces, see rooms, accept invitations.",
             nh:"Shown as a collapsible tree, subspaces included.",
             sc:"The main reason this fork of Element X exists." } },
 
     { f: "Peek a public room before joining", g: "Rooms", kind: "spec", tag: "Room previews",
       note: "Reading the timeline of a world_readable room.",
-      c: { commune:0.5, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
-      cn: { commune:"Name, topic and member count from the summary and hierarchy endpoints — the timeline is never peeked.",
+      c: { commune:1, fractal:0.5, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:1, nc:-1, ci:1 },
+      cn: { commune:"A Preview button in the room preview dialog and on every row of Explore and of a space page, reading the last twenty messages straight off /messages. Plain text and no media, deliberately: nothing here fetches a picture out of a room you have not joined. Usually answers with an error for a room on another homeserver, which is Synapse and not us.",
+            fractal:"Name, topic and member count only.",
             ci:"Its join-before-navigate flow." } },
 
     { f: "Knocking to join a room", g: "Rooms", kind: "spec", tag: "Spec",
@@ -993,8 +979,8 @@
 
     { f: "Restricted join rules", g: "Rooms", kind: "spec", tag: "Restricting membership",
       note: "A room whose members come from a space.",
-      c: { commune:0.5, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:0.5, nc:-1, ci:0.5 },
-      cn: { commune:"An existing restriction can be edited and knocking toggled over it. Authoring one needs a space picker — see the Spaces row." } },
+      c: { commune:1, fractal:0, ew:1, ex:-1, ec:-1, sc:-1, fc:-1, nh:0.5, nc:-1, ci:0.5 },
+      cn: { commune:"A restriction can be created as well as kept: the space picker landed with the third slice of spaces. Offered for room version 8 and up, with knocking over it gated on version 10, where knock_restricted arrived. Picking a space replaces the whole allow list, so a room restricted to several is best left alone." } },
 
     { f: "Server ACLs", g: "Rooms", kind: "spec", tag: "Spec",
       note: "Which servers may take part in a room.",
@@ -1054,8 +1040,8 @@
 
     { f: "Signing up, and resetting a password", g: "Account", kind: "spec", tag: "Spec",
       note: "Creating an account without leaving the app.",
-      c: { commune:0, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Login handles password, SSO and OAuth. There is no sign-up path and no password reset." } },
+      c: { commune:1, fractal:0, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Both halves landed 23 August 2026. Signing up: a username and password page on a native homeserver, prompt=create in the browser on an OAuth one, native pages for the token and terms stages, the standard's fallback page for a captcha. Resetting: a Forgot Password? link that asks the homeserver to email a link, then takes a new password. None of it has been watched on screen yet." } },
 
     { f: "Email and phone on the account", g: "Account", kind: "spec", tag: "Spec",
       note: "Adding, seeing and removing third-party identifiers.",
@@ -1110,8 +1096,8 @@
 
     { f: "Presence", g: "Server", kind: "spec", tag: "Presence",
       note: "Online dot, last-active, status message.",
-      c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Not read, not published, not shown.",
+      c: { commune:1, fractal:0, ew:1, ex:0, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Built 23 August 2026: a badge on the avatar in the member list, on a profile and on a direct chat's row, the status message on a profile, and a switch for publishing your own — which is an off switch, since /sync has been publishing it all along. The last-active time is read and not drawn; idle is a badge colour instead.",
             nh:"Presence and status messages, when the server has it enabled." } },
 
     { f: "Ignoring a user", g: "Server", kind: "spec", tag: "Spec",

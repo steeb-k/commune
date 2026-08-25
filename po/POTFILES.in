@@ -38,6 +38,7 @@ src/application.rs
 src/components/action_button.blp
 src/components/avatar/editable.blp
 src/components/avatar/editable.rs
+src/components/avatar/mod.rs
 src/components/camera/qrcode_scanner.blp
 src/components/camera/qrcode_scanner.rs
 src/components/camera/viewfinder.rs
@@ -49,9 +50,14 @@ src/components/dialogs/auth/in_browser_page.blp
 src/components/dialogs/auth/mod.blp
 src/components/dialogs/auth/mod.rs
 src/components/dialogs/auth/password_page.blp
+src/components/dialogs/auth/registration_token_page.blp
+src/components/dialogs/auth/terms_page.blp
+src/components/dialogs/auth/terms_page.rs
 src/components/dialogs/message_dialogs.rs
+src/components/dialogs/peek_row.rs
 src/components/dialogs/room_preview.blp
 src/components/dialogs/room_preview.rs
+src/components/dialogs/space_picker.blp
 src/components/dialogs/user_profile.blp
 src/components/image_pack_editor/image_row.blp
 src/components/image_pack_editor/mod.blp
@@ -103,6 +109,10 @@ src/login/method_page.blp
 src/login/method_page.rs
 src/login/mod.blp
 src/login/mod.rs
+src/login/register_page.blp
+src/login/register_page.rs
+src/login/reset_password_page.blp
+src/login/reset_password_page.rs
 src/login/session_setup_view.blp
 src/macos_menu_bar.blp
 src/secret/linux.rs
@@ -126,6 +136,7 @@ src/session_view/create_direct_chat_dialog/mod.rs
 src/session_view/create_room_dialog.blp
 src/session_view/create_room_dialog.rs
 src/session_view/explore/mod.blp
+src/session_view/explore/public_room_row.blp
 src/session_view/explore/public_room_row.rs
 src/session_view/explore/server_row.blp
 src/session_view/explore/servers_popover.blp
@@ -207,6 +218,9 @@ src/session_view/room_history/message_toolbar/sticker_picker/mod.blp
 src/session_view/room_history/message_toolbar/sticker_picker/pack_image_button.rs
 src/session_view/room_history/mod.blp
 src/session_view/room_history/mod.rs
+src/session_view/room_history/pinned/mod.blp
+src/session_view/room_history/pinned/row.blp
+src/session_view/room_history/pinned/row.rs
 src/session_view/room_history/read_receipts_list/mod.rs
 src/session_view/room_history/search/mod.blp
 src/session_view/room_history/search/mod.rs
@@ -223,6 +237,8 @@ src/session_view/sidebar/mod.rs
 src/session_view/sidebar/room_row.rs
 src/session_view/sidebar/row.rs
 src/session_view/sidebar/section_row.rs
+src/session_view/space.blp
+src/session_view/space.rs
 src/shortcuts-dialog.blp
 src/user_facing_error.rs
 src/utils/klipy.rs
@@ -230,6 +246,7 @@ src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs
 src/utils/media/image/mod.rs
 src/utils/media/mod.rs
+src/utils/password.rs
 src/window-windows.blp
 src/window.blp
 src/window.rs
