@@ -38,7 +38,7 @@ whole route hung on.
 | S1 — Rust hello-world APK | **done** — a Rust GTK app runs as an APK |
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
-| S4 — GStreamer | **step 0 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, and `gst::init()` runs on the emulator. No plugins yet, so nothing decodes anything. The plan, the two traps that were not visible from reading `.pc` files, and what step 1 needs are in `doc/android-media-plan.md` |
+| S4 — GStreamer | **steps 0 and 1 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 19 plugins are registered, and **a voice message gets a duration and a waveform on the emulator** through the same code every other platform runs. Measured for opus-in-ogg, wav, mp3 and flac. Still missing: AAC, playback (GTK is built with `media-gstreamer = 'disabled'`) and all video. The plan and every measurement are in `doc/android-media-plan.md` |
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
@@ -1029,6 +1029,38 @@ is the cheap and correct habit.
 
 About eleven minutes from cold on this machine, most of it Cargo. The APK lands in
 `.pixiewood/android/app/build/outputs/apk/debug/app-x86_64-debug.apk`.
+
+### Every attachment open was black, and it was a directory that did not exist
+
+_Found and fixed 25 August 2026_ (`eb951d5a`), reported as "opening pictures just shows a black
+screen". Worth writing down because the symptom pointed at the renderer and the cause was nowhere
+near it, and because the hazard was already documented in this codebase — reached by a route that
+had not been changed with the rest.
+
+`MediaContentViewer` never got a file:
+
+```text
+W Commune : commune::session_view::media_viewer::imp:
+    Could not retrieve media file: No such file or directory (os error 2)
+```
+
+`save_data_to_tmp_file` writes into `TMP_DIR`, and `TMP_DIR` was
+`glib::user_runtime_dir()`. The Android glue's `g_set_user_dirs`
+(`gdk/android/gdkandroidruntime.c:277`) sets `XDG_CONFIG_DIRS`, `XDG_DATA_DIRS`, `XDG_CONFIG_HOME`
+and `XDG_DATA_HOME` — and nothing else. So `g_get_user_runtime_dir` falls back to
+`g_get_user_cache_dir`, which falls back to `$HOME/.cache`, and an Android process has no useful
+`HOME`.
+
+`DataType::base_dir_path` describes that fallback in its own doc comment and already routes around
+it. `TMP_DIR` simply did not go through `DataType`. It does now, so temporary files land in
+`<data>/cache/<profile>/tmp` — `getCacheDir()`, which is what Android provides for files it may
+reclaim.
+
+The second half is why a missing directory became a missing _file_: the code called
+`fs::create_dir`, which creates only the last component and fails with `ENOENT` when the parent is
+absent, rather than `fs::create_dir_all`.
+
+**This was not about pictures.** Every attachment the viewer opened went through the same path.
 
 ### The APK is about twice the size it needs to be, for two reasons
 

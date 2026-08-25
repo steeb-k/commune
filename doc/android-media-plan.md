@@ -382,3 +382,112 @@ reason to keep another object — that is worth re-measuring then rather than gu
 
 The APK did not grow measurably. Its size problem is real but unrelated: see the packaging note in
 `doc/android.md`.
+
+---
+
+## Step 1 — plugins, and the first working media, 25 August 2026
+
+**A voice message gets a duration and a waveform on Android**, from the same
+`generate_waveform` every other platform runs. `load_audio_info` is no longer a stub.
+
+### Nothing is discovered
+
+This is the part that makes a static GStreamer different from every other GStreamer. There is no
+plugin directory to scan, so the elements that exist are exactly the ones registered, and one that
+is not fails at `gst_element_factory_make` — at run time, in a code path nobody exercised, rather
+than at build time.
+
+So the plugin set is a checked-in list with its reasons attached,
+`build-aux/android/gstreamer-plugins`, and it generates **both** halves:
+
+| from the list | how |
+| --- | --- |
+| the C that registers the plugins | `gstreamer-static-plugins.sh --source`, a `custom_target` |
+| the archives that get linked | `gstreamer-static-plugins.sh --libs`, into `gst_dep`'s `link_args` |
+
+A plugin therefore cannot be linked without being registered, or registered without being linked;
+the first is dead weight and the second is a link error.
+
+### Two things the reconnaissance had wrong
+
+**`gst_init()` does not call `gst_init_static_plugins()`.** The ndk-build template shipped in
+`share/gst-android/ndk-build` carries the comment `/* This is called by gst_init() */`, and the
+step 0 notes above repeated it. It is not true of this tarball: nothing in `libgstreamer-1.0.a`
+references that symbol at all. It is a convention of that template's own init function. Since we do
+not use the template, the call is ours — `commune_gst_register_static_plugins`, from `src/lib.rs`,
+immediately after `gst::init()`, because registration needs an initialized registry.
+
+**Meson already wraps the link in `--start-group`.** The first version of the resolver emitted its
+own around the plugin archives, to cover the cycles between GStreamer's libraries, and lld refused:
+`error: nested --start-group`. The outer group covers them already.
+
+### Where the plugins' own dependencies come from
+
+`libgstopus.a` needs libopus, `libgstmpg123.a` needs libmpg123, and so on down. Those live in the
+tarball's `lib/`, beside its GLib, cairo, freetype and libpng — the exact directory step 0 exists to
+keep off the link line.
+
+They are resolved instead through the `.la` files, whose `dependency_libs` are absolute paths into
+Cerbero's build machine and therefore useless as paths but exactly right as a dependency graph, and
+emitted as **absolute paths** into the prefix's new `deps/`. An absolute path is a file rather than
+a search, so no `-L` is involved and nothing there can answer anyone else's `-l`. `deps/` can hold
+the tarball's GLib safely for precisely that reason, where `lib/` cannot.
+
+Names pixiewood already provides — `glib-2.0`, `gobject-2.0`, `gio-2.0`, `gmodule-2.0`, `intl`,
+`ffi`, `pcre2-8`, `z` — are left unresolved on purpose, so the `-l` flags already on the line answer
+them and there stays one GLib in the process.
+
+### What was measured
+
+On the emulator, running the pipeline `generate_waveform` builds, against files made with ffmpeg:
+
+| file | codec | duration | waveform samples |
+| --- | --- | --- | --- |
+| `test-voice.ogg` | opus in ogg — what a Matrix voice message is | 6.000 s | 111 |
+| `test-tone.wav` | pcm_s16le | 6.000 s | 111 |
+| `test-tone.mp3` | mp3 | 6.034 s | 111 |
+| `test-tone.flac` | flac | 6.000 s | 111 |
+
+and in the application itself, on every launch:
+
+```text
+I Commune : commune: GStreamer 1.28.6, 19 plugins registered
+```
+
+That line is deliberate. In a static build the plugin count is the only evidence registration ran;
+without it the first sign of trouble is a missing element much later.
+
+**One real bug, found the way this failure mode always shows up.** mp3 gave no duration and no
+waveform while ogg, wav and flac were fine. `GST_DEBUG=2`:
+
+```text
+WARN uridecodebin gsturidecodebin.c:1008:unknown_type_cb:
+     warning: No decoder available for type 'application/x-id3'.
+```
+
+A tagged mp3 is `application/x-id3` until something strips the tag, and `id3demux` was not on the
+list. Adding it fixed it. A dynamic build would have found the plugin on disk and nobody would ever
+have known it was needed.
+
+### Cost
+
+| | |
+| --- | --- |
+| GStreamer and codec text in `libcommune.so` | 2.9 MiB, up from 0.55 MiB |
+| `libcommune.so`, unstripped debug | 196.2 MiB, up from 172.4 MiB |
+| APK, x86_64 debug, packaged clean | 343.3 MiB, up from 319.4 MiB |
+
+The 24 MiB the APK grew is almost all symbol table, not code — see the packaging note in
+`doc/android.md`, which is unrelated to this work and still unaddressed.
+
+### Not done
+
+* **AAC**, so an `.m4a` gets a duration from its container and no waveform. There is no `faad` in
+  the tarball; the choice is `libav` or `androidmedia`, and it belongs with the video work.
+* **Playback.** The player widgets go through `gtk::MediaFile`, and pixiewood builds GTK with
+  `media-gstreamer = 'disabled'` — its cross file says *"disabled until we have a mechanism to pass
+  the JNIEnv* & Context to gstreamer"*. No sink is linked, because until that changes one would be
+  dead weight.
+* **Video.** Thumbnails and metadata need `videoconvertscale` and a decoder; `androidmedia` is the
+  interesting option, and it needs the same JNIEnv and Context that GTK's own backend does. That is
+  one problem, not two, and it is the next step.
