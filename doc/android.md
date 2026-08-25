@@ -36,7 +36,7 @@ whole route hung on.
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | not started |
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
-| S6 — image formats | **HEIC, HEIF and AVIF done** through gdk-pixbuf's Android loaders, which were already in the APK; **SVG done** through GTK's own renderer, which was too. JXL is still unreadable. None of it exercised on a device yet |
+| S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 
 ## Where things are
 
@@ -1662,6 +1662,22 @@ grew a public SVG renderer of its own in 4.22 — `GtkSvg`, a `GdkPaintable` and
 `GtkSymbolicPaintable` implementing much of SVG 2, animations included — and it is what draws the
 symbolic icons this port already fixed. librsvg is not needed for SVG here and never was; see
 [SVG, which needed no new library](#svg-which-needed-no-new-library).
+
+### What was measured
+
+Three images built for the purpose, each labelled with its own format so that which decoder ran is
+readable off the screen rather than inferred, pushed to `/sdcard/Download` and sent into a room on
+the emulator:
+
+| File | Path taken | Result |
+| --- | --- | --- |
+| `test-heic.heic` | `image` crate declines → pixbuf sniff declines → `image/heic` by name → `AImageDecoder` | draws |
+| `test-avif.avif` | same, and the loader that answers is still the HEIF one | draws |
+| `test-svg.svg` | sniffed as SVG before the blocking-pool hop → `GtkSvg` → cairo → `RawFrame` | draws |
+
+All three had been "Image format not supported" before. The AVIF is the one worth noticing: nothing
+in the APK registers `image/avif`, and it decodes anyway, because the loader that took it never
+looks at the format.
 
 ### The loader that cannot be sniffed for
 
