@@ -65,6 +65,23 @@
       <option>-Dgtksourceview:documentation=false</option>
       <option>-Dgtksourceview:build-testsuite=false</option>
       <option>-Dgtksourceview:install-tests=false</option>
+      <!--
+        16 KB ELF alignment, for every shared object in the APK.
+
+        The NDK links to 4 KB by default, and a Pixel 9a on Android 17 reports
+        the consequence: `AppWarnings: Showing PageSizeMismatchDialog`, and
+        `pageSizeCompat=4` in `dumpsys package`. `llvm-readelf -l` agrees:
+        every LOAD segment came out `0x1000` where a 16 KB device wants
+        `0x4000`. Android runs a 4 KB-aligned app in a compatibility mode
+        rather than refusing it, so this presents as a warning and a slower
+        app, not a crash, which is why no emulator run ever mentioned it.
+
+        These reach the C and C++ links of every subproject, which is what
+        matters here: `libcommune.so` is linked by Meson, not by Cargo, so the
+        Rust needs nothing of its own.
+      -->
+      <option>-Dc_link_args=-Wl,-z,max-page-size=16384</option>
+      <option>-Dcpp_link_args=-Wl,-z,max-page-size=16384</option>
     </configure-options>
     <!--
       Both, deliberately. `x86_64` is the emulator, which is where every
