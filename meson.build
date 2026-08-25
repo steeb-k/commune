@@ -71,6 +71,18 @@ sourceview_dep = dependency(
     version: '>= 5.0.0',
     allow_fallback: is_android,
 )
+if is_android
+    # Android is the only platform with no icon theme of its own. Elsewhere
+    # adwaita-icon-theme is a package that is always installed; in an APK it is
+    # there only if we put it there, and without it every icon that Commune
+    # does not ship itself and GTK does not ship builtin draws as the
+    # missing-icon placeholder. See `subprojects/adwaita-icon-theme.wrap` and
+    # `doc/android.md`.
+    #
+    # `subproject()` rather than `dependency()` because it provides none: it is
+    # data, so nothing would ever ask for it and nothing would ever build it.
+    subproject('adwaita-icon-theme')
+endif
 if host_machine.system() == 'linux'
     # glycin decodes images on Linux. Every other platform uses the `image`
     # crate instead, see `src/utils/media/image/decoder/`.

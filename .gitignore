@@ -39,6 +39,14 @@ testing/.homeserver/
 # Meson clones wrap subprojects in here; only the .wrap files are ours.
 /subprojects/*/
 
+# `packagefiles/` is the exception: meson reads a wrap's `diff_files` from
+# there and nowhere else, so a patch we author has to live in it. pixiewood
+# also copies one directory per wrap it patches into the same place, and those
+# are generated, so the directory is re-included and then emptied again.
+!/subprojects/packagefiles/
+/subprojects/packagefiles/*
+!/subprojects/packagefiles/adwaita-icon-theme-android.patch
+
 # pixiewood generates the Android build tree in here.
 .pixiewood/
 
@@ -47,5 +55,6 @@ testing/.homeserver/
 # ours to keep.
 /subprojects/*.wrap
 !/subprojects/gtksourceview.wrap
+!/subprojects/adwaita-icon-theme.wrap
 /subprojects/.wraplock
 /.buildconfig
