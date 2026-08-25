@@ -271,3 +271,114 @@ in `Cargo.toml`, so 1.28.6 is comfortably compatible — no version work needed.
 The smallest thing that proves the route: link GStreamer core statically, call `gst::init()`, log
 `gst::version_string()`, see it on the emulator. Not the media code — none of the gates come off
 until this returns a version string.
+
+---
+
+## Step 0 — done, 25 August 2026
+
+**`GStreamer 1.28.6`, logged from Rust, on the emulator.** Route A works. Everything below is
+_measured_.
+
+The reconnaissance above was right that pkg-config resolves the _modules_ correctly and wrong that
+this was enough. Two things sat between the plan and a working link, and neither was visible from
+reading `.pc` files.
+
+### The `-L` does not follow the module resolution
+
+pkg-config gives `-uninstalled.pc` files priority over plain ones, everywhere on the search path,
+so pixiewood wins `glib-2.0` as predicted:
+
+```text
+gstreamer-1.0            1.28.6
+glib-2.0                 2.89.4
+```
+
+The link does not inherit that. `gstreamer-1.0.pc` emits `-L<tarball>/lib`, that `-L` lands ahead of
+pixiewood's, and the linker searches directories in order for **every** `-l` on the command line —
+including `-lglib-2.0`, which pixiewood's own GLib asked for. The tarball is a complete prefix: its
+`lib/` holds `libglib-2.0.a` right beside `libgstreamer-1.0.a`.
+
+So the first attempt pulled GLib **2.82.4 out of the tarball** and died:
+
+```text
+ld.lld: error: undefined symbol: libiconv_open
+>>> referenced by gconvert.c:72
+>>>   gconvert.c.o:(try_conversion) in archive .../gstreamer/x86_64/lib/libglib-2.0.a
+```
+
+— the tarball's GLib expects a standalone libiconv, and Android's is inside libc. That error was a
+courtesy. A build that got past it would have put two GObject type systems in one process.
+
+The fix is to give that `-L` nothing to shadow with: `build-aux/android/gstreamer-prefix.sh` builds
+a prefix holding GStreamer's own libraries and nothing else. Symlinks for the archives, **copies**
+for the `.pc` files — they set `prefix=${pcfiledir}/../..`, and pkg-config resolves symlinks before
+computing `pcfiledir`, so a symlinked `.pc` file points straight back at the tarball and undoes the
+whole exercise. That cost one wasted iteration.
+
+### proxy-libintl, twice, under two sets of names
+
+With the shadowing gone, two symbols were left undefined: `libintl_bindtextdomain` and
+`libintl_bind_textdomain_codeset`, both from `init_pre` in `gst_init`.
+
+Neither side uses GNU gettext. Both use proxy-libintl — and the tarball's 0.4 exports `libintl_*`
+where pixiewood's 0.5 exports `g_libintl_*`. Same nine functions, renamed:
+
+| tarball (proxy-libintl 0.4) | pixiewood (proxy-libintl 0.5) |
+| --- | --- |
+| `libintl_bindtextdomain` | `g_libintl_bindtextdomain` |
+| `libintl_gettext` | `g_libintl_gettext` |
+| … seven more | … seven more |
+
+Linking the tarball's own `libintl.a` would have resolved them and put a second proxy-libintl in
+the process with its own idea of the bound domains. `build-aux/android/gstreamer.c` forwards
+instead, nine lines, and leaves one libintl.
+
+### What the build does now
+
+| what | where |
+| --- | --- |
+| the pruned prefix | `build-aux/android/gstreamer-prefix.sh`, run once per machine |
+| where it is found | `$GSTREAMER_ANDROID_PREFIX`, default `~/android/gst-android`, the convention `probe-env.sh` already used for the SDK; `meson.build` errors with a pointer to the script if it is absent |
+| the search path | `meson-uninstalled:<prefix>/lib/pkgconfig`, built once in `meson.build` and handed to both Meson and Cargo |
+| the dependency | `declare_dependency` from `pkg-config --libs --static`, **not** `dependency()` — Meson would run pkg-config with `PKG_CONFIG_SYSROOT_DIR` set from the NDK sysroot and rewrite these absolute paths, and there is nowhere to tell it about the two search directories anyway |
+| the libintl shim | `build-aux/android/gstreamer.c`, compiled beside `stub.c` in the one real link |
+| the crate | `gst` moved to the common `[dependencies]` table |
+| the proof | `gst::init()` now runs on Android, and `src/lib.rs` logs `gst::version_string()` on every launch |
+
+`gst_init_static_plugins()` is **not** written yet. It is not needed to start: `gst_init()` brings
+up the registry, the type system and the clock quite happily with no plugins at all. Nothing can
+decode anything, which is step 1.
+
+### Step 1 is already de-risked
+
+All seven crates the media code wants were link-tested together, ahead of needing them:
+
+```text
+GStreamer 1.28.6 app=0x644befd71498 play=125455685747712 sdp=0x644befd83b74
+                 video=125457296395328 webrtc=125457296411568
+```
+
+— core, app, pbutils, play, sdp, video and webrtc, all initialising and registering GObject types on
+the emulator. The only additional private dependencies pkg-config asked for were **orc** and
+**zlib**. orc is GStreamer's alone and now sits in the pruned prefix. zlib is the one library in the
+set that Android itself provides — `libz.so` has been an NDK API since API 1 — so the prefix ships a
+three-line `zlib.pc` that emits a bare `-lz`, with no `-L` to shadow the zlib everything else in the
+process is already using.
+
+### Cost: about 0.55 MiB
+
+_Measured_ by summing the sizes of every defined symbol in `libcommune.so`:
+
+| | |
+| --- | --- |
+| GStreamer's text | **0.55 MiB**, 2753 symbols |
+| all text in `libcommune.so` | 83.4 MiB |
+| shared libraries needed | unchanged — one `libglib-2.0.so`, pixiewood's |
+
+`libgstreamer-1.0.a` is 10.9 MB on disk, but most of that is debug information and object files
+nothing references. A static archive only contributes what is reached, and so far what is reached is
+`gst_init` and `gst_version_string`. Step 1 will pull in more, since each registered plugin is a
+reason to keep another object — that is worth re-measuring then rather than guessing now.
+
+The APK did not grow measurably. Its size problem is real but unrelated: see the packaging note in
+`doc/android.md`.
