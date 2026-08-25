@@ -425,6 +425,19 @@ a second run.
 * [x] **_Space Details_ opens them**, and the _Spaces_ group in there can put
       this space inside another one. Reported working on 24 August 2026.
 * [ ] **_Invite New Members…_ is absent without the power to invite.**
+* [ ] **Somebody already in the space says so.** Search for `bob`, who is a
+      member of both spaces: his row has no checkbox and a chip reading
+      _Already a member_ where the checkbox would be. Reported on 24 August
+      2026 as a row that could not be clicked with nothing saying why — the
+      chip was a dim label sharing its space with the user ID, and it
+      ellipsized away.
+* [ ] **Somebody who is in nothing can be picked.** Search for `carol` and her
+      row has a checkbox.
+* [ ] **Return in the search box does not put a line break in it.** It is a
+      text view, because a pill has to sit inside the text, and it used to
+      take Return as a new line — which also put a newline in the term being
+      searched for. Return should now invite whoever is selected, or do
+      nothing when the button is insensitive.
 * [ ] **_Leave Space_ asks first**, and leaving works.
 * [ ] **No composer and no member list.** The space page is not a room
       history; if the call buttons or the search button turn up on it, the

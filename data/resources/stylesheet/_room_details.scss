@@ -141,3 +141,15 @@ permissions-member-row {
     border-radius: vendor.$menu_radius;
   }
 }
+
+// Why somebody in the invite list cannot be invited. A chip rather than a dim
+// label: when the checkbox is gone, this is the only thing that says why, and
+// it used to be mistaken for a second line of the user ID.
+.invite-exception {
+  font-size: 0.8125rem;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background-color: var(--secondary-sidebar-bg-color);
+  color: var(--dim-label-color, inherit);
+  opacity: 0.85;
+}

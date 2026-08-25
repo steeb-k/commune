@@ -16,7 +16,7 @@ use crate::{
     components::{LoadingButton, PillSearchEntry, PillSource},
     prelude::*,
     session::{Room, User},
-    toast,
+    spawn, toast,
 };
 
 mod imp {
@@ -116,6 +116,26 @@ mod imp {
                 self,
                 move |_| {
                     imp.update_view();
+                }
+            ));
+
+            self.search_entry.connect_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    // Return does what the button does, and nothing when the
+                    // button would do nothing.
+                    if !imp.invite_button.is_sensitive() {
+                        return;
+                    }
+
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        async move {
+                            imp.invite().await;
+                        }
+                    ));
                 }
             ));
 

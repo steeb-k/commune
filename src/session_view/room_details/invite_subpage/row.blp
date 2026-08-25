@@ -22,6 +22,7 @@ template $RoomDetailsInviteRow: Adw.Bin {
 
     Gtk.Box {
       orientation: vertical;
+      hexpand: true;
 
       styles [
         "title",
@@ -53,15 +54,17 @@ template $RoomDetailsInviteRow: Adw.Bin {
       visible: bind template.item as <$RoomDetailsInviteItem>.can-invite;
     }
 
+    // The only thing that says why this row cannot be picked. It used to be a
+    // dim label sharing its space with the user ID and ellipsizing away when
+    // the dialog was narrow, so the missing checkbox was the whole signal.
     Gtk.Label {
       visible: bind $invert_boolean(template.item as <$RoomDetailsInviteItem>.can-invite) as <bool>;
-      hexpand: true;
+      valign: center;
       halign: end;
-      ellipsize: end;
       label: bind template.item as <$RoomDetailsInviteItem>.invite-exception;
 
       styles [
-        "subtitle",
+        "invite-exception",
       ]
     }
   };
