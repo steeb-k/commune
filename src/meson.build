@@ -154,6 +154,7 @@ if not build_env_only and is_android
     executable(
         meson.project_name(),
         '../build-aux/android/stub.c',
+        '../build-aux/android/gstreamer.c',
         dependencies: android_deps + [rust_dep],
         install: true,
         install_dir: get_option('libdir'),
