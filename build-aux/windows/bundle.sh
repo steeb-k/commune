@@ -13,12 +13,15 @@
 # corresponding to the environment variables the macOS bundle has to set. On
 # Windows GLib works out where it was installed by asking the loader where
 # `libglib-2.0-0.dll` came from and taking the parent of its directory, and
-# GdkPixbuf, GIO and GStreamer all follow the same convention. So a tree of
+# GdkPixbuf, GIO, GStreamer and fontconfig all follow the same convention. So a
+# tree of
 #
-#   Commune/bin/*.dll   Commune/lib/...   Commune/share/...
+#   Commune/bin/*.dll   Commune/etc/...   Commune/lib/...   Commune/share/...
 #
 # relocates itself: move the folder and every one of those libraries finds its
-# own data again, with nothing set and nothing rewritten.
+# own data again, with nothing set and nothing rewritten. Fontconfig is the one
+# of the four that stays quiet about it rather than failing outright when its
+# directory is missing — see the `etc/fonts` copy below, section 3.
 #
 # What has to be done by hand is the closure of DLLs — Windows has no rpath, and
 # an executable finds its imports by name in its own directory — and the
@@ -170,6 +173,15 @@ cp -r "$PREFIX/share/gtksourceview-5" "$BUNDLE/share/"
 # Used to work out the type of a file that is being sent or received.
 mkdir -p "$BUNDLE/share/mime"
 cp "$PREFIX/share/mime/mime.cache" "$BUNDLE/share/mime/"
+
+# Fontconfig finds its own config directory relative to itself the same way
+# GLib finds its own data — but only if that directory is there to find.
+# Without it there is no `conf.d` to read at all: no fallback fonts, no
+# generic family aliases (`sans-serif`, `emoji`, …), nothing. Ours, alongside
+# MSYS2's, the same layering as the schemas above.
+mkdir -p "$BUNDLE/etc/fonts"
+cp -r "$PREFIX/etc/fonts/." "$BUNDLE/etc/fonts/"
+cp "$staged_prefix/etc/fonts/conf.d"/*.conf "$BUNDLE/etc/fonts/conf.d/"
 
 ################################################################################
 # 4. The loadable modules.
