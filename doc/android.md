@@ -1531,6 +1531,45 @@ the sealed file across a reinstall. Repeated once more, with the same result.
 The general lesson is worth more than the fix: **`getFilesDir()` is GTK's on this port, not
 Commune's.** Anything of ours that is put there is on borrowed time.
 
+### The icon theme, which is a wrap and two patches
+
+Android is the only platform Commune runs on with no icon theme of its own, and nothing said so:
+an icon simply resolved or drew as the missing-icon placeholder. See the Known gaps entry for how
+that presented and which eleven names were affected.
+
+`adwaita-icon-theme` is an unusually easy thing to cross-build, because there is nothing to build.
+It is data — no compiler, no library, nothing to link — and every one of its `install_*` calls
+already carries `install_tag : 'runtime'`, which is exactly what pixiewood's
+`meson install --tags runtime` needs to not drop it the way it dropped the translations. It
+installs to `datadir/icons/Adwaita`, and the glue points `XDG_DATA_DIRS` at `<files>/share`, so it
+lands where GTK already looks with nothing to wire up.
+
+The one structural wrinkle is that **nothing depends on it**, so nothing pulls it in. A
+`dependency()` would have nothing to ask for. `meson.build` calls `subproject()` on it directly,
+under `is_android`.
+
+Two patches, in `subprojects/packagefiles/adwaita-icon-theme-android.patch`, both for things that
+only appear in a cross build:
+
+* **Cursors.** The project installs them unconditionally on anything that is not Windows: 16 MB of
+  the 19 MB it installs, plus fifty-odd `install_symlink`s that would then have to survive APK
+  asset packing. Android draws no pointer and has no X11 cursor names, so none of it has a reader.
+  The patch adds an `android` branch that installs none.
+* **The icon cache.** `find_program('gtk4-update-icon-cache')` finds the **cross-built** one in
+  `subprojects/gtk` — an Android binary — and meson refuses to run it on the build host:
+  `An exe_wrapper is needed for … gtk4-update-icon-cache`. That was the first failure the build
+  hit. Skipped on Android, at no real cost: GTK scans the theme directory when there is no cache,
+  and the install script was already `skip_if_destdir`.
+
+**2.8 MB installed, 91 KB in the APK**, because SVGs compress. Measured on the emulator:
+`files/share/icons/Adwaita` is extracted on the device with `index.theme`, `symbolic`, `scalable`
+and `16x16` and no `cursors`, and `view-more-horizontal-symbolic` renders in the quick reaction
+popover — an icon in neither Commune's set nor GTK's, so nothing else could be drawing it.
+
+One correction to the Known gaps entry while it was being checked: the warning triangle beside
+"Could not decrypt this message" is `warning-symbolic`, which Commune ships and which was always
+drawing correctly. Only the "Back to Latest" button was the placeholder.
+
 ### What this does not do
 
 **Notification buttons are written but unexercised.** `Notification.Action` is built for the
@@ -1638,11 +1677,13 @@ run.
   | `call-start`, `call-stop`, `camera-web`, `camera-disabled`, `microphone-disabled`, `audio-input-microphone` | calls, already gated out with GStreamer |
 
   Six of the eleven are the call and camera icons, which no reachable code draws while S4 is
-  undone, so the visible damage today is five. The fix is a choice rather than a patch: wrap
-  `adwaita-icon-theme` for pixiewood (it is a Meson project and installs no code, so it is the
-  honest fix and the one that keeps working as the UI grows), or copy the handful of SVGs into
-  `data/resources/icons/` (smaller, but it makes Commune ship icons it would shadow the system
-  theme with on Linux). Not yet done, and worth doing before anyone sees this build.
+  undone, so the visible damage was five.
+
+  **Fixed** by wrapping `adwaita-icon-theme` rather than by copying the handful of SVGs into
+  `data/resources/icons/`. Copying would have been smaller and would have made Commune ship icons
+  that shadow the system theme on Linux for no Android-only reason; the wrap keeps working as the
+  UI grows and costs 91 KB in the APK. See
+  [The icon theme, which is a wrap and two patches](#the-icon-theme-which-is-a-wrap-and-two-patches).
 * **The TLS trust roots are read from the filesystem rather than verified by Android.** Deliberate,
   measured, and narrower than the platform verifier in ways written down in `src/utils/tls.rs` and
   in [The TLS that never returned](#the-tls-that-never-returned). Replacing it needs the Kotlin
