@@ -121,17 +121,78 @@ The honest cost of this recommendation is **divergence**: Android would play med
 desktop does not use, and that path has to be maintained. The `#[cfg]` seam already exists and macOS
 already uses it, so the shape is not new — but two backends is two backends.
 
-## The decision that changes everything
+## The decision that changes everything — settled
 
-**Are voice and video calls on Android a real goal, or not?**
+**Are voice and video calls on Android a real goal?** Asked 25 August 2026, answered: **calls
+matter eventually.**
 
-* **If yes** — GStreamer is mandatory eventually, and doing route A now is probably better than
-  doing C now and A later, because the second one does not replace the first, it adds to it.
-* **If no** — route C is dramatically cheaper, and the case for cross-compiling GStreamer is much
-  weaker than it looks, since two-thirds of the GStreamer code in this tree is the part we would not
-  be building.
+That settles it for route A. GStreamer becomes mandatory at some point, and doing C now and A later
+does not replace the first effort, it adds to it — two backends, two sets of bugs, and the call
+pipeline still unbuilt at the end of it. The staged plan above keeps its _order of value_ (audio
+first, video playback last) but is delivered through GStreamer rather than around it.
 
-This is a product question, not a technical one, which is why it is not answered here.
+### One thing to try before anything else
+
+pixiewood builds GTK with `media-gstreamer = 'disabled'` **because GStreamer is not there**. If it
+becomes there, that option can be flipped — and then `GtkMediaFile` has a backend, and
+`media_stream_for_file`'s ordinary non-macOS arm works on Android with **no Commune change at all**.
+
+Commune's own `GstMediaStream` exists only because the conda-forge GTK on macOS was built without
+GStreamer. Android need not inherit that workaround. Worth establishing early, because it decides
+whether `gtk4paintablesink` is needed at all — _measured:_ the current path reaches it even for
+audio, since `GstMediaStream` always builds a `VideoPlayerRenderer` and that calls
+`ElementFactory::make("gtk4paintablesink").expect(...)`.
+
+### Staging for route A
+
+0. **Spike: make `gst::init()` succeed on the device.** Nothing else matters until GStreamer links
+   and initialises inside the APK. This is the whole risk of the route, concentrated in one step.
+1. **Flip `media-gstreamer` in the GTK build** and see whether the audio player simply works.
+2. **Waveform and duration** — un-gate `utils/media/audio.rs`.
+3. **Video metadata and thumbnails** — un-gate `utils/media/video.rs`.
+4. **Video playback** — un-gate the player; needs `gtk4paintablesink` if step 1 did not make it
+   moot, most likely via the `gst-plugin-gtk4` crate registered statically rather than as a plugin
+   `.so`.
+5. **Calls** — a separate project, on top of a GStreamer that by then exists.
+
+Steps 1–4 are almost entirely _un-gating code that already exists and already works on desktop_.
+The work is step 0.
+
+## Is this more work than a Kotlin UI?
+
+Asked directly, and worth answering with numbers rather than instinct.
+
+_Measured, 25 August 2026:_
+
+| | lines |
+| --- | --- |
+| Rust in `src/` | 113,520 |
+| Blueprint UI | 13,460 |
+| of which `session_view/` (timeline, message rows, sidebar) | 38,302 |
+| `components/` (widgets) | 15,915 |
+| `session/` (GObject models, not portable to Kotlin) | 27,360 |
+| `login/` | 2,154 |
+
+A Kotlin front end replaces `session_view` + `components` + `login` + the Blueprints — **about
+70,000 lines** — and most of `session/` besides, because those are GObject subclasses and list
+models, not portable logic. What it would reuse from "our Rust repos" is smaller than it sounds:
+`matrix-sdk` is upstream, and already ships official UniFFI Kotlin bindings that Element X Android
+uses. So a Kotlin Commune would mostly be _a new Matrix client_, not a re-skin of this one.
+
+Against that, the media work is: get one prebuilt library to link, then remove `#[cfg]` gates from
+1,051 lines that already work.
+
+**These are not close, and the media question should not be what reopens the Kotlin decision.**
+
+What _would_ legitimately reopen it is a pattern, not a task: if step 0 proves not merely hard but
+impossible, or if the list of things GTK-on-Android cannot do keeps growing faster than it shrinks.
+So far it has shrunk — S6, S7, S8 and S9 each ended with the thing working, and three of the four
+were unwired code rather than missing capability. The honest counterweight is that libshumate and
+GStreamer are both genuinely absent, and that is a real cost, not a rhetorical one.
+
+The way to keep this decision evidence-based is to **timebox step 0**. If GStreamer links inside a
+day or two, the rest is deleting `#[cfg]` lines. If it does not, that is a real signal about the
+platform and worth acting on — and it will have cost a day rather than a rewrite.
 
 ## Open questions to settle before starting
 
