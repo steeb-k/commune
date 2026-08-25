@@ -72,6 +72,7 @@ zeroize = "1"
 
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { version = "0.9", features = ["v1_8"], package = "libadwaita" }
+gst = { version = "0.25", package = "gstreamer" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
 sourceview = { version = "0.11", package = "sourceview5" }
 
@@ -122,15 +123,15 @@ features = [
     "compat-lax-room-topic-deser",
 ]
 
-# Everything that needs GStreamer, which is not cross-built for Android.
+# The rest of GStreamer, which Android does not have yet.
 #
-# pixiewood builds GTK with `media-gstreamer = 'disabled'` and GStreamer itself
-# has to be cross-compiled separately, which is S4. Until then Android has no
-# media playback, no voice messages and no calls, and these crates cannot even
-# be linked — so they are absent rather than unused. Part of the gtk-rs family
-# above, and still updated together with it.
+# `gst` itself is above, in the common table: the Android build links the
+# upstream GStreamer binaries statically, and `gst::init()` runs there. What is
+# still missing is a plugin registry, so nothing can actually decode anything —
+# see `doc/android-media-plan.md`. These crates come across as each step of that
+# plan lands. Part of the gtk-rs family above, and still updated together with
+# it.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-gst = { version = "0.25", package = "gstreamer" }
 gst_app = { version = "0.25", package = "gstreamer-app" }
 gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
 gst_play = { version = "0.25", package = "gstreamer-play" }

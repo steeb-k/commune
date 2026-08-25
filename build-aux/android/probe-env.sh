@@ -24,6 +24,7 @@ optional_missing=''
 SDK=${ANDROID_HOME:-$HOME/android/sdk}
 NDK_VERSION=${ANDROID_NDK_VERSION:-27.2.12479018}
 PIXIEWOOD=${PIXIEWOOD:-$HOME/src/gtk-android-builder/pixiewood}
+GST_PREFIX=${GSTREAMER_ANDROID_PREFIX:-$HOME/android/gst-android}
 
 # Record a name in a space-separated list, avoiding duplicates.
 #
@@ -218,6 +219,30 @@ path_check 'pixiewood' "$PIXIEWOOD" required
 if [ -f "$PIXIEWOOD" ]; then
     _pver=$(perl "$PIXIEWOOD" --version 2>&1 | grep -v experimental | head -n 1)
     row 'pixiewood --version' 'yes' "${_pver:-unknown}" 'required' 'ok'
+fi
+
+header 'GStreamer (the pruned prefix, not the tarball)'
+table_header
+# pixiewood has no wrap for GStreamer, so it comes from the upstream Android
+# binaries, run through `gstreamer-prefix.sh`. `meson.build` refuses to
+# configure without the result, so this is required rather than optional.
+for _arch in x86_64 aarch64; do
+    _pc="$GST_PREFIX/$_arch/lib/pkgconfig"
+    if [ -f "$_pc/gstreamer-1.0.pc" ]; then
+        _gver=$(sed -n 's/^Version: *//p' "$_pc/gstreamer-1.0.pc" | head -n 1)
+        _n=$(ls "$GST_PREFIX/$_arch"/lib/*.a 2>/dev/null | wc -l)
+        row "gstreamer $_arch" 'yes' "${_gver:-unknown} ($_n archives)" 'required' 'ok'
+    else
+        row "gstreamer $_arch" 'no' '-' 'required' 'MISSING'
+        remember missing "gstreamer-prefix:$_arch"
+    fi
+done
+# The mistake this catches is pointing $GSTREAMER_ANDROID_PREFIX at the
+# extracted tarball. That has a `lib/pkgconfig/gstreamer-1.0.pc` too, and a
+# `libglib-2.0.a` beside it that will shadow pixiewood's GLib at link time.
+if [ -f "$GST_PREFIX/x86_64/lib/libglib-2.0.a" ]; then
+    row 'prefix is pruned' 'no' 'libglib-2.0.a present' 'required' 'NOT PRUNED'
+    remember missing 'gstreamer-prefix:run-gstreamer-prefix.sh'
 fi
 
 header 'Rust (needed from S1 onwards, not by S0)'

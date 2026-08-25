@@ -121,11 +121,84 @@ if is_android
     dl_dep = cc.find_library('dl')
     m_dep = cc.find_library('m')
 
+    # GStreamer is not a wrap and pixiewood does not know how to build it. It
+    # comes from the upstream Android binaries, pruned into something safe to
+    # put on a pkg-config path by `build-aux/android/gstreamer-prefix.sh` —
+    # read that script before changing any of this; it explains why the tarball
+    # cannot be pointed at directly.
+    #
+    # The location is per-machine, so it is an environment variable with a
+    # default, the same convention `build-aux/android/probe-env.sh` uses for the
+    # SDK and the NDK. The prefix names its architectures the way Meson does.
+    gst_prefix = run_command(
+        'sh',
+        '-c',
+        'echo "${GSTREAMER_ANDROID_PREFIX:-$HOME/android/gst-android}"',
+        check: true,
+    ).stdout().strip() / host_machine.cpu_family()
+    gst_pkgconfig = gst_prefix / 'lib' / 'pkgconfig'
+
+    if not fs.exists(gst_pkgconfig)
+        error(
+            'No GStreamer prefix at ' + gst_pkgconfig + '. Extract the Android '
+            + 'binaries from https://gstreamer.freedesktop.org/data/pkg/android/ '
+            + 'and run build-aux/android/gstreamer-prefix.sh over them, or set '
+            + '$GSTREAMER_ANDROID_PREFIX. See doc/android-media-plan.md.',
+        )
+    endif
+
+    # Not `dependency()`. Meson would run pkg-config with its own environment,
+    # which for a cross build sets `PKG_CONFIG_SYSROOT_DIR` from the NDK sysroot
+    # and would rewrite these absolute paths, and there is nowhere to tell it
+    # about the two search directories in the first place. The search path is
+    # the whole subtlety here — `meson-uninstalled` first so that pixiewood wins
+    # `glib-2.0`, GStreamer second — so it is built explicitly, once, and the
+    # same string is handed to Cargo below.
+    uninstalled = meson.project_build_root() / 'meson-uninstalled'
+    pkgconfig_path = uninstalled + ':' + gst_pkgconfig
+    pkgconfig_exe = find_program('pkg-config', required: true)
+    pkgconfig_env = {
+        'PKG_CONFIG_LIBDIR': pkgconfig_path,
+        'PKG_CONFIG_PATH': pkgconfig_path,
+        'PKG_CONFIG_ALLOW_CROSS': '1',
+    }
+
+    # `--static`: every GStreamer library here is an archive, so their private
+    # dependencies — orc, zlib, `-latomic`, `-llog` — have to come along.
+    gst_modules = ['gstreamer-1.0']
+    gst_dep = declare_dependency(
+        compile_args: run_command(
+            pkgconfig_exe,
+            '--cflags',
+            gst_modules,
+            env: pkgconfig_env,
+            check: true,
+        ).stdout().split(),
+        link_args: run_command(
+            pkgconfig_exe,
+            '--libs',
+            '--static',
+            gst_modules,
+            env: pkgconfig_env,
+            check: true,
+        ).stdout().split(),
+    )
+    message(
+        'GStreamer ' + run_command(
+            pkgconfig_exe,
+            '--modversion',
+            'gstreamer-1.0',
+            env: pkgconfig_env,
+            check: true,
+        ).stdout().strip() + ' from ' + gst_prefix,
+    )
+
     android_deps = [
         adw_dep,
         dl_dep,
         gio_dep,
         glib_dep,
+        gst_dep,
         gtk_dep,
         log_dep,
         m_dep,
@@ -228,11 +301,13 @@ if is_android
     # which is exactly why a `staticlib` works. `PKG_CONFIG_LIBDIR` *replaces*
     # the search path rather than extending it, so the host's own `/usr` `.pc`
     # files cannot leak into an Android build and quietly satisfy something.
-    uninstalled = meson.project_build_root() / 'meson-uninstalled'
-
+    #
+    # `pkgconfig_path` is the same string Meson resolved `gstreamer-1.0` with
+    # above, so `gstreamer-sys` sees exactly what Meson linked: GStreamer from
+    # the pruned prefix, GLib from pixiewood.
     cargo_env += [
-        'PKG_CONFIG_PATH=' + uninstalled,
-        'PKG_CONFIG_LIBDIR=' + uninstalled,
+        'PKG_CONFIG_PATH=' + pkgconfig_path,
+        'PKG_CONFIG_LIBDIR=' + pkgconfig_path,
         'PKG_CONFIG_ALLOW_CROSS=1',
         'CC_' + triple_env + '=' + cc.cmd_array()[0],
         'AR_' + triple_env + '=' + ndk_bin / 'llvm-ar',

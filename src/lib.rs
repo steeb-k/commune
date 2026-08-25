@@ -175,10 +175,14 @@ pub fn run() {
         tracing::error!("Could not reach the Java VM: {error}");
     }
 
-    // GStreamer is not cross-built for Android yet, so there is nothing to
-    // initialize there. See `doc/android.md`.
-    #[cfg(not(target_os = "android"))]
     gst::init().expect("Could not initialize gst");
+
+    // Android links GStreamer statically out of the upstream binaries rather
+    // than building it as a wrap, and nothing else in the build would notice if
+    // that link silently produced a library that cannot start. It is one line to
+    // say so on every launch. See `doc/android-media-plan.md`.
+    #[cfg(target_os = "android")]
+    tracing::info!("{}", gst::version_string());
 
     #[cfg(target_os = "linux")]
     aperture::init(APP_ID);
