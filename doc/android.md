@@ -25,6 +25,7 @@ whole route hung on.
 * [S6 — The formats that would not draw](#s6--the-formats-that-would-not-draw)
 * [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
 * [S8 — Three input bugs that were one](#s8--three-input-bugs-that-were-one)
+* [S9 — The space bar, and the reset that cancelled it](#s9--the-space-bar-and-the-reset-that-cancelled-it)
 * [Before this ships](#before-this-ships)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
@@ -41,7 +42,8 @@ whole route hung on.
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
-| S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init`. The space-bar cursor gesture is still broken and is genuinely missing code rather than unwired |
+| S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
+| S9 — the space-bar cursor slide | **fixed and confirmed on the emulator**, not yet on hardware. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
 
 ## Where things are
 
@@ -985,10 +987,27 @@ sh build-aux/android/patch-gtk-ime.sh       # likewise; see "The IME" below
 sh build-aux/android/patch-gtk-intent.sh    # likewise; see the SSO section
 sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground service
 sh build-aux/android/patch-gtk-input-purpose.sh  # likewise; see the input purpose
+sh build-aux/android/patch-gtk-ime-selection.sh  # likewise; see S9
+sh build-aux/android/patch-gtk-ime-reset.sh      # likewise; see S9
 $PW build
 ```
 
-All five patches run between every `generate` and `build`. `generate` rewrites the manifest from
+Run these in the **archlinux** WSL distro, not Git Bash: `patch-manifest.sh` needs `XML::LibXML`,
+which Git Bash's perl does not have, and the Java patches' `perl` and `awk` there mangle the
+backslashes in their own substitutions and silently apply nothing.
+
+**The Gradle copies of the glue are hard links, not copies.**
+`.pixiewood/android/app/src/main/java/org/gtk/android/*.java` and
+`subprojects/gtk/gdk/android/glue/java/org/gtk/android/*.java` are the same inodes, so patching
+either patches both and there is no pristine copy left in the tree to diff against. `cp` between
+them fails with _"are the same file"_, which is how this was found. To start over, restore from the
+wrap's own git rather than from the other path:
+
+```sh
+git -C subprojects/gtk checkout -- gdk/android/glue/java/org/gtk/android/ImContext.java
+```
+
+All seven patches run between every `generate` and `build`. `generate` rewrites the manifest from
 its own XSL each time, and the Java ones write into `subprojects/gtk`, which a re-extracted wrap
 loses. Each script is a no-op when its change is already in place, so running them all every time
 is the cheap and correct habit.
@@ -1230,8 +1249,16 @@ Two consequences worth knowing before testing input by hand:
   which is then the correct behaviour rather than a bug.
 * Otherwise, reach the keyboard through the handle → **Show on-screen keyboard**.
 
-Neither is evidence about a real phone, which has no keyboard device and should get a normal
-keyboard from the `inputType` fix alone. That remains untested.
+Neither is evidence about a real phone, which has no keyboard device and gets a normal keyboard
+from the `inputType` fix alone — confirmed on the Pixel 9a on 24 August 2026.
+
+**This does not make the emulator useless for keyboard work, which is what it was read as for most
+of this port.** Once the full QWERTY is up, it behaves like a keyboard: `input swipe` drives
+Gboard's space-bar gesture, `input tap` on the key positions types through the `InputConnection`,
+and the whole loop is scriptable. Every input question S8 and S9 answered was answered here, with
+the phone switched off. See [S9](#s9--the-space-bar-and-the-reset-that-cancelled-it) for the rig,
+and for the one rule that makes it valid: `adb shell input text` is **not** typing, because it
+never goes through the `InputConnection`.
 
 ### The TLS that never returned
 
@@ -1929,20 +1956,181 @@ The space-bar cursor gesture is the honest test of whether that pattern holds, b
 first one that is genuinely _missing_ rather than disconnected — see
 [Before this ships](#before-this-ships).
 
+## S9 — The space bar, and the reset that cancelled it
+
+Sliding a thumb along Gboard's space bar should drag the cursor with it. In Commune it moved a
+character or two and stopped, which is where S8 left it: _"Spacebar sliding is already a huge
+deal."_ The cause turned out not to be in the Java glue where the search started, and finding it
+needed a way to test a keyboard without a keyboard.
+
+### The emulator can be typed on after all
+
+Every keyboard measurement in this ledger before tonight carried an asterisk, because the emulator
+shows Gboard's collapsed physical-keyboard strip rather than a keyboard — see
+[The emulator is in physical-keyboard mode](#the-emulator-is-in-physical-keyboard-mode). That made
+the phone the only place input could be judged, which is why S8 was deferred until there was one.
+
+The strip's own menu ends that. **Hamburger → "Show on-screen keyboard"** draws the full QWERTY,
+`setting secure show_ime_with_hard_keyboard` already being `1`, and from there the gesture can be
+driven synthetically:
+
+```sh
+adb -s emulator-5554 shell input swipe 790 1444 500 1444 1200   # a slow drag along the space bar
+```
+
+Two things had to be got right for that to measure anything.
+
+**`adb shell input text` is not typing.** It injects key events at the view and never touches the
+`InputConnection`, so the keyboard does not learn the characters exist and its cursor model stays
+at 0 no matter what the application answers. Measured directly: with text put in that way Gboard
+asked for `setSelection(0, 0)` — the whole document, as far as it knew, being empty. Typing the
+same string by tapping Gboard's own keys produced `setSelection(10, 10)` instead. Every keyboard
+measurement has to tap keys.
+
+**A control is needed.** The identical swipe was run first against the stock Android Settings
+search box, which moved the cursor seven characters. That fixes the swipe as a working instrument
+before pointing it at Commune, so that "nothing happened" can be read as a fault in the app rather
+than in the test.
+
+The marker technique: after the gesture, `adb shell input text "X"` inserts at GTK's real cursor
+regardless of where the keyboard believes it to be, so a screenshot shows the answer as a letter in
+a word rather than as a caret to squint at.
+
+### The baseline
+
+| | stock Settings box | Commune, before |
+| --- | --- | --- |
+| identical 290 px space-bar swipe | cursor moves 7 characters | cursor does not move |
+| Gboard's suggestion strip | `world`, `worlds` | `what`, `I`, `I'm` |
+
+The suggestion strip is the tell. Sentence-openers mean Gboard has no idea what is in the field.
+
+### What the keyboard actually asks for
+
+The ledger's previous explanation was inference, and it was wrong. It said the gesture "falls back
+to synthesised arrow keys and loses track of its own position". Logging every `InputConnection`
+call shows Gboard never sends a key event for this. It sends **`setSelection`**, once, and then
+gives up — and the cursor not having moved at all in the baseline is what rules the arrow-key story
+out, since arrow keys would have worked: `AKEYCODE_DPAD_LEFT` maps to `GDK_KEY_Left`
+(`gdkandroidkeysyms-private.h:61`), and five of them injected by hand move a `GtkText` cursor five
+characters. That was measured before anything was written, because the whole fix depends on it.
+
+### Three things were wrong, and only the third was the cause
+
+**The keyboard could not read the text.** `ImeConnection` overrode no text query, so all of them
+fell through to `BaseInputConnection`, which answers out of the `Editable` from `getEditable()` —
+the composing scratch buffer that `commitText` and `finishComposingText` call `clear()` on after
+every commit. Truthfully, as far as that class knew, the document was empty. The real text was one
+unused call away: `ImContext` already declares `public native SurroundingRetVal getSurrounding()`
+and `gtkimcontextandroid.c` already implements it. Nothing called it.
+
+**`GtkIMContext` cannot move a cursor.** The protocol an input method gets is `commit`,
+`delete-surrounding` and `retrieve-surrounding`. There is no `set-cursor`, so `setSelection` is
+spelled out in arrow keys — the same trick `deleteSurroundingText` already uses to spell deletion
+out in backspaces.
+
+**Every cursor movement restarted the input method.** This is the actual cause.
+`gtk_text_move_cursor` ends, unconditionally, with
+
+```c
+  priv->need_im_reset = TRUE;
+  gtk_text_reset_im_context (self);
+```
+
+so every arrow key runs `gtk_im_context_reset`. On Wayland that discards preedit state and returns.
+On Android `gtk_im_context_android_reset` calls the Java `ImContext.reset`, which is
+`imm.restartInput(view)` — which destroys the `InputConnection` and builds a new one. Whatever
+gesture the keyboard had in flight dies with it.
+
+The proof is in the `EditorInfo` of the connection that replaced it. After a slide that moved the
+cursor one character from 11 to 10, `dumpsys input_method` reports `initialSelStart=10` — a
+_freshly created_ connection, seeded at the position the cursor had just reached. The keyboard was
+not confused; it was hung up on mid-sentence and had to dial again.
+
+That also means the cost is not limited to this gesture: a full IME teardown was being paid per
+arrow key, per tap into a field, and per selection change.
+
+### What was measured
+
+All on the emulator, against Commune's room-list search entry — a `GtkText` that filters locally,
+so nothing here goes near the account.
+
+| build | text typed by | what the keyboard asked for | where the cursor ended up |
+| --- | --- | --- | --- |
+| before any change | `input text` | nothing | did not move |
+| text queries answered from `getSurrounding` | `input text` | `setSelection(0, 0)` | jumped to the start |
+| the same build | Gboard's keys | `setSelection(10, 10)`, once | moved one character, stopped |
+| `getExtractedText` added | Gboard's keys | `setSelection(10, 10)`, once | moved one character, stopped |
+| `reset` no longer restarts input | Gboard's keys | `setSelection` 10, 9, 8, 7, 6 | **slid five characters with the swipe** |
+
+Rows two and three are the same build and differ only in how the text got there, which is the
+cleanest statement of why `input text` cannot be used to test a keyboard. `setSelection(0, 0)` was
+not a bug in the fix; it was the fix faithfully carrying out the instruction of a keyboard whose
+model of the document was empty, because nothing had ever gone through its `InputConnection`.
+
+**`getExtractedText` did not change the outcome.** Rows three and four are identical. It is kept
+because `BaseInputConnection` returns `null` there and a `null` reads to the keyboard as "no text",
+which is worth not saying when it is untrue — but the honest record is that the decisive change was
+the last row, and nothing before it moved the needle past one character.
+
+The final slide is 230 px for five characters against the Settings box's 290 px for seven: the same
+sensitivity, within the threshold that starts the gesture.
+
+Regression, same rig: typing `testing` on Gboard's keys and deleting three characters with Gboard's
+backspace gives `test`, the room list filters to `testchat`, the suggestion strip offers
+`test`/`rest`/`testing`, and `inputType` is still `0x1`. The S8 fixes still hold.
+
+### One bug of mine, not a demonstrated cause
+
+The first attempt answered `getTextAfterCursor` with
+
+```java
+s.text.substring(s.end, Math.min(s.text.length(), s.end + length))
+```
+
+and `length` comes from the keyboard, which is entitled to pass `Integer.MAX_VALUE`. `s.end +
+length` then overflows to a negative, `Math.min` picks it, `substring` throws — and an exception
+thrown across a binder reaches the caller as a plain `null`, which the keyboard reads as an empty
+document with nothing anywhere to explain it. The clamp is now by the room available rather than by
+adding and hoping.
+
+Recorded because it is a real defect and a nasty failure mode, **not** because it was observed:
+nothing in the measurements above is known to have been caused by it.
+
+### What this says about the backend
+
+S8 counted two complete-but-unconnected implementations and called it a pattern. This is the third:
+`getSurrounding()` was declared, implemented in C, registered in `im_context_natives[]`, and called
+by nothing.
+
+But the pattern does not hold all the way, and the difference matters. The
+restart-on-every-cursor-move is not unwired code. It is a **wrong interaction between two pieces
+that are each locally reasonable** — `gtk_text_move_cursor` resetting the IM context, which is
+correct on every other backend, and the Android backend mapping `reset` onto `restartInput`, which
+is the only honest mapping available to it. It misbehaves only where those two meet, which is why
+nothing upstream has caught it, and why no property Commune sets could ever have worked around it.
+
+That makes it a better-shaped upstream contribution than the previous two: a one-line guard with a
+reproducible measurement behind it.
+
 ## Before this ships
 
 A running list, in the user's words where they said it. Nothing here blocks further development;
 all of it blocks calling the port finished.
 
-* **Sliding the space bar to move the cursor.** _"I need to touch on it before we ship anything."_
-  Upstream, in `gdk/android/glue/java/org/gtk/android/ImContext.java` — four missing
-  `InputConnection` overrides, described under
-  [Known gaps](#known-gaps). Deferred deliberately on 24 August 2026 rather than forgotten: it is a
-  standalone piece of work with a full build-install-type-on-a-phone loop per iteration, and it sat
-  in the middle of the media work instead of beside it.
-* **The homeserver field still gets a plain keyboard, not a URL one.** Setting `input-purpose` did
-  not change it; the remaining break is upstream and sits in the same file as the space-bar bug, so
-  one keyboard pass covers both. See [Known gaps](#known-gaps).
+* ~~**Sliding the space bar to move the cursor.** _"I need to touch on it before we ship
+  anything."_ Upstream, in `gdk/android/glue/java/org/gtk/android/ImContext.java` — four missing
+  `InputConnection` overrides.~~ **Fixed on 24 August 2026** by `patch-gtk-ime-selection.sh` and
+  `patch-gtk-ime-reset.sh`, and confirmed on the emulator — see
+  [S9](#s9--the-space-bar-and-the-reset-that-cancelled-it). The missing overrides were real but were
+  not the cause; the cause was `reset` restarting the input method on every cursor movement.
+  **Still to do: confirm on the Pixel 9a**, which is the only part of this that could not be checked
+  without the phone.
+* ~~**The homeserver field still gets a plain keyboard, not a URL one.** Setting `input-purpose`
+  did not change it; the remaining break is upstream and sits in the same file as the space-bar
+  bug, so one keyboard pass covers both.~~ **Fixed** by `patch-gtk-input-purpose.sh` and confirmed
+  on the Pixel 9a on 24 August 2026 — it was the same dead field as the plaintext passwords. See
+  [S8](#s8--three-input-bugs-that-were-one).
 * **Translations are missing entirely.** `po/meson.build`'s `i18n.gettext()` install carries no
   `install_tag`, so pixiewood's `meson install --tags runtime` drops it silently and the
   application is English-only on Android. Recorded much earlier as something that _"should be fixed
@@ -2004,16 +2192,24 @@ all of it blocks calling the port finished.
   **Confirmed on the Pixel 9a:** the password field masks as you type, and the homeserver field
   gets a URL keyboard.
 
-  **Sliding along the space bar to move the cursor is broken, and it is upstream.** It moves a
-  character or two and stops. `gdk/android/glue/java/org/gtk/android/ImContext.java` is 107 lines,
-  and its `ImeConnection extends BaseInputConnection` overrides exactly four methods:
-  `setComposingText`, `finishComposingText`, `commitText`, `deleteSurroundingText`. There is no
-  `setSelection`, no `getTextBeforeCursor`, no `getTextAfterCursor` and no `getSelectedText`.
-  Gboard's spacebar gesture has to both move the cursor and read back where it landed; with none of
-  that implemented it falls back to synthesised arrow keys and loses track of its own position
-  almost at once, which is exactly the reported symptom. No property Commune sets can affect it.
-  The native `getSurrounding()` those overrides would need already exists, so this is a
-  well-shaped upstream contribution rather than a research problem.
+  ~~**Sliding along the space bar to move the cursor is broken, and it is upstream.** It moves a
+  character or two and stops. `ImContext.java` is 107 lines and overrides exactly four methods;
+  there is no `setSelection`, no `getTextBeforeCursor`, no `getTextAfterCursor` and no
+  `getSelectedText`. Gboard's spacebar gesture has to both move the cursor and read back where it
+  landed; with none of that implemented it falls back to synthesised arrow keys and loses track of
+  its own position almost at once.~~ **Fixed on 24 August 2026**, and the explanation above was
+  wrong on two counts, both corrected by measurement in
+  [S9](#s9--the-space-bar-and-the-reset-that-cancelled-it):
+
+  * Gboard does **not** fall back to synthesised arrow keys. It calls `setSelection` and nothing
+    else. What ruled the arrow-key story out is that the cursor did not move at all — arrow keys
+    would have worked, and were separately measured doing so.
+  * The missing overrides were real, and adding them was not enough. The cause was
+    `gtk_text_move_cursor` resetting the IM context on every cursor movement, which on Android
+    means `InputMethodManager.restartInput` — tearing the `InputConnection` down underneath the
+    gesture. One guard in `gtk_im_context_android_reset`, carried as `patch-gtk-ime-reset.sh`.
+
+  Confirmed on the emulator, **not yet on the Pixel 9a**.
 * The IME comes up unbidden on launch. Still true of the Adwaita demo on Arch, so it is the glue's
   behaviour and not something either demo does.
 * ~~The Android data directory is external storage~~ and ~~`glib::user_cache_dir()` looks
