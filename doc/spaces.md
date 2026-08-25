@@ -271,10 +271,22 @@ Only **joined** spaces can be listed at all: the state of a space nobody here
 is in is not ours to read, so a room can genuinely be inside a space this never
 mentions. That is a property of the protocol, not a gap.
 
-It is asked once when the details page appears, and again after this page adds
-or removes something. A space that gains or loses the room from another client
-shows up the next time the details are opened — the alternative is watching the
-state of every joined space for one page that is usually closed.
+It is asked once, when the details page appears. A space that gains or loses
+the room from another client shows up the next time the details are opened —
+the alternative is watching the state of every joined space for one page that
+is usually closed.
+
+**A change this page makes is put into the list directly**, rather than by
+asking again. It used to ask again, and that was wrong: `parent_spaces` answers
+from the local state store, and the state store does not carry the
+`m.space.child` this page has just written until it arrives back down the sync.
+Against a slow homeserver that is upwards of half a minute, so the re-read
+answered with the state as it was before the button was pressed — the row for a
+space the room had just been taken out of stayed, next to a toast saying it had
+gone. `show_parent_space` and `hide_parent_space` correct the list on the
+strength of the homeserver having accepted the write, which is the thing that
+settles it; the failed case leaves the list alone, which is already right.
+Found and fixed on 25 August 2026, and confirmed gone the same day.
 
 ## Taking a room back out
 
@@ -297,7 +309,15 @@ things come with it:
 
 * **The encryption switch is hidden.** A space has no timeline anybody reads,
   so encrypting it protects nothing and would only stop its name and topic
-  reaching the people it is for.
+  reaching the people it is for. The switch is already hidden for a public room
+  — it has nothing to encrypt to — so the condition is `private and not a
+  space`, and it lives in one place, the template's `visible` binding. Splitting
+  it, with the visibility half bound in the template and the kind half set from
+  `update_kind`, did not work: a binding is re-asserted from its own sources and
+  the `set_visible` did not survive, so the switch stayed on screen for a
+  private space until the visibility choice was touched. Found and fixed on
+  25 August 2026; the general rule it stands for is that **a property with a
+  binding on it has one author, and that author is the template.**
 * **`events_default` is raised to 100**, with `m.space.child`, the name, the
   topic and the avatar dropped to 50. A room where nobody raised the bar is a
   room anybody can post to, and a space's timeline is never drawn — so a

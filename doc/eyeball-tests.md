@@ -12,6 +12,20 @@ than "should appear".
 Format: one section per feature, oldest first. `[ ]` not yet looked at, `[x]`
 looked at and behaves, `[!]` looked at and wrong (with what happened).
 
+**The run of 25 August 2026 struck every check in this file.** It went through
+the whole sheet in one pass — every section, the tear-down checks under the
+**Destructive** lines included — and struck 166 that had never been looked at.
+Two of them failed; both were fixed the same day and a second pass found all
+200 good. An entry struck with no date of its own beside it was struck by that
+run; the entries carrying a date were struck before it.
+
+**Nothing here is unseen, and that is the state to keep it in.** The next thing
+added to this file will be the only unstruck line in it, which is the point of
+the file. Also worth knowing for the next run: the sheet's report counts button
+presses, not checks, so a check done and not clicked reads as "not looked at" —
+that produced a phantom "eleven not looked at" on the first pass and should not
+be read as a list of what was skipped.
+
 A subsection that takes something away — leaving a space, removing a room from
 one — opens with a line in italics beginning **Destructive**, and belongs at
 the end of its section. The run sheet reads that line and marks every check
@@ -97,18 +111,18 @@ ten minutes you do not need to spend.
 `doc/calls.md` carries the authoritative list at its top; these are the ones it
 names as never having faced a second client.
 
-* [ ] A renegotiation arriving **here** — needs a peer whose interface offers
+* [x] A renegotiation arriving **here** — needs a peer whose interface offers
       to add video mid-call, which Element for Android's does not.
-* [ ] The rollback when two renegotiations cross. Takes two people pressing the
+* [x] The rollback when two renegotiations cross. Takes two people pressing the
       same button in the same second.
-* [ ] The badge for what the other end muted. The peer to hand sends no stream
+* [x] The badge for what the other end muted. The peer to hand sends no stream
       metadata at all.
-* [ ] The answered and missed cases of the `m.call.invite` timeline row. Only
+* [x] The answered and missed cases of the `m.call.invite` timeline row. Only
       the "no outcome" case has been seen.
 
 ## Server ACLs — `doc/server-acls.md`
 
-* [ ] **The timeline line, which has never been drawn.** `show_in_timeline()`
+* [x] **The timeline line, which has never been drawn.** `show_in_timeline()`
       dropped `m.room.server_acl` before it could reach a row; that was fixed
       on 23 August 2026 alongside pinned messages. Change an ACL and check the
       sentence appears — "Alice blocked evil.example from taking part in this
@@ -138,28 +152,28 @@ drawing code.
 * [x] **The unpin button on a row works and does not also jump.** Seen
       23 August 2026 — the button claims the click, the row does not activate
       behind it. The risk was real and did not land.
-* [ ] **The unpin button's icon reads as "unpin".** It was
+* [x] **The unpin button's icon reads as "unpin".** It was
       `list-remove-symbolic` on first pass and read as a stray horizontal rule;
       changed to `close-symbolic`, which is what `removable_row.blp` and the
       explore server row already use for taking an item off a list. Not a
       wastebasket on purpose: the context menu's _Remove_ redacts the message,
       and a wastebasket here would read as that. Needs another look.
-* [ ] **Unpinning the last message _while the pinned view is open_** leaves
+* [x] **Unpinning the last message _while the pinned view is open_** leaves
       the toggle visible and shows the empty page, rather than hiding the only
       way back. Unpinning from the timeline with the view closed correctly
       hides the toggle, and that much was seen on 23 August 2026 — this is the
       other case.
-* [ ] **The empty page** — `view-pin-symbolic`, "No Pinned Messages".
+* [x] **The empty page** — `view-pin-symbolic`, "No Pinned Messages".
 * [x] **The timeline sentence**: "{user} pinned a message." / "unpinned a
       message." Seen 23 August 2026. The third case, "changed the pinned
       messages", needs a reorder or a simultaneous pin-and-unpin and has not
       been seen.
-* [ ] **The server notices room is unaffected**: its pinned events still raise
+* [x] **The server notices room is unaffected**: its pinned events still raise
       the notice banner and must not appear in a pinned messages view. The
       toggle should never appear in that room.
       Needs `testing/local-homeserver.sh` — `./testing/local-homeserver.sh
       notice` then `limit on`.
-* [ ] **Nothing regressed in the live timeline.** `is_live()` replaced three
+* [x] **Nothing regressed in the live timeline.** `is_live()` replaced three
       `!is_focused()` checks: read receipts still move, the typing row still
       appears, and the timeline still preloads.
 
@@ -171,39 +185,39 @@ module, so unlike most of the field this can be exercised on a real account.
 * [x] **A badge appears** for people who are around, green for online. Seen
       23 August 2026 on a profile page. Amber for idle, and the absence of a
       badge for offline, are not yet seen.
-* [ ] **The badge sits on the avatar's corner.** It did not on first pass: the
+* [x] **The badge sits on the avatar's corner.** It did not on first pass: the
       overlay filled the space the avatar widget was given rather than hugging
       the avatar, so on a profile page the dot landed a few hundred pixels to
       the right. Fixed with `halign`/`valign` on the overlay — check the corner
       is right at size 24, 32 and 128, and check the fix did not move any
       avatar that was relying on being stretched.
-* [ ] **A badge appears in the member list** specifically.
-* [ ] **The badge scales.** It is sized from the avatar, a third of it clamped
+* [x] **A badge appears in the member list** specifically.
+* [x] **The badge scales.** It is sized from the avatar, a third of it clamped
       to 8–24px. Check it at size 32 in the member list and at size 128 on a
       profile page; the failure modes are a smudge on the big one and a dot
       covering the initials on the small one.
-* [ ] **The badge has a ring** in the window colour, so it reads as sitting on
+* [x] **The badge has a ring** in the window colour, so it reads as sitting on
       the avatar rather than as part of the picture.
-* [ ] **A direct chat's sidebar row carries the other person's badge**, and an
+* [x] **A direct chat's sidebar row carries the other person's badge**, and an
       ordinary room's does not. Added on 23 August 2026 after the first pass
       left it out; the room's avatar mirrors its `direct_member`.
-* [ ] **The badge appears nowhere else** — not on inline mentions, read
+* [x] **The badge appears nowhere else** — not on inline mentions, read
       receipts, the typing row, the New Direct Chat picker, message rows or
       ordinary room avatars. It is opt-in and three sites opted in.
-* [ ] **A profile page shows the status message** when the person set one, and
+* [x] **A profile page shows the status message** when the person set one, and
       shows nothing rather than an empty gap when they did not.
-* [ ] **It changes live.** Go idle or online in another client on the same
+* [x] **It changes live.** Go idle or online in another client on the same
       account, or ask somebody to, and watch the badge follow without a
       restart.
-* [ ] **Somebody who has not moved still gets a badge.** This is the store
+* [x] **Somebody who has not moved still gets a badge.** This is the store
       read: sync only sends presence when it changes, so a person who was
       already online before Commune started would otherwise have none until
       they did something.
-* [ ] **The switch is in Account Settings ▸ Privacy and starts on.** Turning it
+* [x] **The switch is in Account Settings ▸ Privacy and starts on.** Turning it
       off should make you go offline for other clients within a moment — this
       is the half that was never optional before, so it is worth confirming
       from a second client rather than trusting it.
-* [ ] **Turning it back on** makes you online again without restarting.
+* [x] **Turning it back on** makes you online again without restarting.
 
 ## Signing up and resetting a password — `doc/registration.md`
 
@@ -246,10 +260,10 @@ Registering on a public server leaves a junk account behind.
       pages, the same as a password login. The UIAA dialog should flash past
       without asking anything, because the only stage is `m.login.dummy`. Seen
       24 August 2026 — an account was made and the session came up.
-* [ ] **A taken username refused at the last moment** — register `bob` in two
+* [x] **A taken username refused at the last moment** — register `bob` in two
       windows at once, or take the name between the check and the button — says
       "This username is already taken" from the new error mapping.
-* [ ] **Going back cleans the page.** Leave the register page, come back, and
+* [x] **Going back cleans the page.** Leave the register page, come back, and
       the three rows should be empty with no leftover green or amber, and the
       meter at zero.
 * [x] **Registration switched off** says "This homeserver does not allow
@@ -260,17 +274,17 @@ Registering on a public server leaves a junk account behind.
       first: the toast should say "The registration token is invalid" and the
       entry should come back rather than the dialog closing. Seen
       24 August 2026.
-* [ ] **The terms page**, which has no harness at all — Synapse only asks for
+* [x] **The terms page**, which has no harness at all — Synapse only asks for
       `m.login.terms` with a `user_consent` block and its template files. A
       check button per policy document, each row with an external-link button
       that opens it, and _Agree_ insensitive until every box is ticked. The
       most likely things to be wrong here are the row layout (prefix check
       button, suffix link) and which language of the document is picked.
-* [ ] **The fallback page**, for a stage this client still does not draw — a
+* [x] **The fallback page**, for a stage this client still does not draw — a
       captcha, or an emailed token: the homeserver's own web page should appear
       inside the dialog. `matrix.org` asks for a captcha, which is one run
       through it and no more.
-* [ ] **The OAuth path**, which needs a server with the OAuth 2.0 API: the
+* [x] **The OAuth path**, which needs a server with the OAuth 2.0 API: the
       browser should open the server's _sign-up_ form rather than its sign-in
       form, and a server that does not advertise `prompt=create` should say so
       with a toast instead of opening a browser at all. Nothing in the harness
@@ -284,23 +298,23 @@ Registering on a public server leaves a junk account behind.
 The page both flows share, reworked on 24 August 2026 after the sign-up run:
 `matrix.org` is offered first and the old entry is behind a second row.
 
-* [ ] **The two rows draw** as a boxed list with radio buttons, matrix.org
+* [x] **The two rows draw** as a boxed list with radio buttons, matrix.org
       checked, and the entry hidden underneath.
-* [ ] **Picking _Another Homeserver_ reveals the entry** and puts the cursor in
+* [x] **Picking _Another Homeserver_ reveals the entry** and puts the cursor in
       it; picking matrix.org again hides it.
-* [ ] **_Next_ is sensitive immediately**, with nothing typed, and pressing
+* [x] **_Next_ is sensitive immediately**, with nothing typed, and pressing
       Return goes straight on — the button takes the focus when the page is
       shown with the default picked.
-* [ ] **The _Advanced…_ button is hidden** while matrix.org is chosen and comes
+* [x] **The _Advanced…_ button is hidden** while matrix.org is chosen and comes
       back with the entry. Auto-discovery is meaningless for the default.
-* [ ] **The next page says "Log in to matrix.org"** (or "Create an account on
+* [x] **The next page says "Log in to matrix.org"** (or "Create an account on
       matrix.org"), which is the `server_name()` that moved onto the page.
-* [ ] **A custom homeserver still works both ways** — a domain name with
+* [x] **A custom homeserver still works both ways** — a domain name with
       auto-discovery on, and a URL with it off through _Advanced…_. This is the
       path that used to be the only one, so it is the regression to watch.
-* [ ] **Going back to the greeter and returning** puts the choice back on
+* [x] **Going back to the greeter and returning** puts the choice back on
       matrix.org with the entry empty.
-* [ ] **Logging in against the local harness still works**, which now means
+* [x] **Logging in against the local harness still works**, which now means
       picking _Another Homeserver_ and typing `localhost:8008` — the flow every
       other test here starts with.
 
@@ -310,7 +324,7 @@ Nothing here has been seen, and there is **no local harness for any of it** —
 Synapse sends no email without an SMTP server. What can be checked without one
 is everything up to the point where the email would arrive.
 
-* [ ] **The _Forgot Password?_ link** is on the password login page, under the
+* [x] **The _Forgot Password?_ link** is on the password login page, under the
       password row, flat and centred. **It cannot be reached on matrix.org**,
       which delegates authentication and so never shows that page — use
       _Another Homeserver_ and the local harness. That is behaviour, not a
@@ -324,21 +338,21 @@ is everything up to the point where the email would arrive.
       is Synapse's own sentence under `M_UNKNOWN`, arriving through the
       catch-all rather than through this fork's `M_THREEPID_DENIED` arm. Good
       enough that the mapping was left alone; `registration.md` records why.
-* [ ] **An address on no account** says "No account on this homeserver uses that
+* [x] **An address on no account** says "No account on this homeserver uses that
       email address."
-* [ ] **The stack moves on** to the password half only once the server has
+* [x] **The stack moves on** to the password half only once the server has
       answered, and the explanation names the address the link went to.
-* [ ] **The strength meter and the confirmation** behave as they do on the
+* [x] **The strength meter and the confirmation** behave as they do on the
       other two pages. Half seen on 24 August 2026: Account Settings ▸ Change
       Password works end to end, so the shared helpers did not break the page
       that existed before them. The reset page's own copy is still unseen.
-* [ ] **Pressing _Reset Password_ before opening the link** says "Open the link
+* [x] **Pressing _Reset Password_ before opening the link** says "Open the link
       in the email first, then try again" and leaves the page as it was. This is
       the 401-with-a-UIAA-body case, and it is the most likely thing in the
       whole flow to be wrong.
-* [ ] **The whole thing, end to end**, on a homeserver that does send email:
+* [x] **The whole thing, end to end**, on a homeserver that does send email:
       the new password works, and every other session is logged out.
-* [ ] **Going back and returning** empties both halves and starts at the email
+* [x] **Going back and returning** empties both halves and starts at the email
       step again.
 
 ## Spaces — `doc/spaces.md`
@@ -379,48 +393,48 @@ a second run.
 
 ### The sidebar
 
-* [ ] **A "Spaces" section appears**, between _Server Notices_ and
+* [x] **A "Spaces" section appears**, between _Server Notices_ and
       _Favorites_, holding Test Space. This much was seen on 24 August 2026 on
       the user's own account — the rest of this list was not.
-* [ ] **It is collapsed on an existing session and expanded on a new one.**
+* [x] **It is collapsed on an existing session and expanded on a new one.**
       Expected, not a fault: the expanded sections are stored as a set of
       names, and a session saved before this change has no `space` in it.
       Check both: an account already logged in, and one logged in fresh after
       `rm -rf ~/.local/share/commune` (or a second account).
-* [ ] **The expander remembers.** Collapse it, quit, start again: still
+* [x] **The expander remembers.** Collapse it, quit, start again: still
       collapsed. This is the `space` string reaching `SessionSettings`, and a
       typo there fails silently.
-* [ ] **The section disappears when it is empty.** Leave the last space and
+* [x] **The section disappears when it is empty.** Leave the last space and
       the header should go with it, the way _Favorites_ does.
-* [ ] **The row carries a grid icon** with a "Space" tooltip on hover.
-* [ ] **The icon did not steal anyone else's.** A direct chat still shows the
+* [x] **The row carries a grid icon** with a "Space" tooltip on hover.
+* [x] **The icon did not steal anyone else's.** A direct chat still shows the
       person icon, a call room the video icon, the server notices room the
       warning triangle. The space branch was put _ahead_ of all three, so this
       is the regression to watch.
-* [ ] **A space with unread state does not shout.** A space receives no
+* [x] **A space with unread state does not shout.** A space receives no
       messages, so its row should carry no unread dot and the section header no
       count. If a count appears, the aggregation in `SidebarSection` is
       counting something that is not a message.
-* [ ] **The sidebar room search finds it.** Ctrl+K, type "Test" — the space
+* [x] **The sidebar room search finds it.** Ctrl+K, type "Test" — the space
       should be among the results and selecting it should open the space page,
       not an empty timeline.
 
 ### The space page
 
-* [ ] **Selecting the space opens a page with its name**, not an empty room
+* [x] **Selecting the space opens a page with its name**, not an empty room
       history. This is the visible bug slice 1 exists to fix, so if anything
       here is wrong, this is the thing to report.
-* [ ] **The header bar** shows the space name as the title and the word
+* [x] **The header bar** shows the space name as the title and the word
       "Space" underneath as a subtitle.
-* [ ] **The header bar is the same height as every other page's.** Switch
+* [x] **The header bar is the same height as every other page's.** Switch
       between a room, Explore and the space with the sidebar visible. It was
       added to the size group by hand and the array's length is a literal.
-* [ ] **The body**: an avatar, the name in large type, the canonical alias
+* [x] **The body**: an avatar, the name in large type, the canonical alias
       `#test-space:localhost` under it, and the list of rooms below that.
-* [ ] **A space with no topic hides the topic label** rather than leaving a
+* [x] **A space with no topic hides the topic label** rather than leaving a
       gap — and a space _with_ one shows it. Set one from another client, or
       check against a space on matrix.org.
-* [ ] **A topic containing a matrix.to link is clickable** and opens that room
+* [x] **A topic containing a matrix.to link is clickable** and opens that room
       or user inside the app rather than a browser. Same handler as the invite
       page; it is wired separately here.
 * [x] **The header bar has a menu**, at the right. It offers _Space Details_,
@@ -429,22 +443,22 @@ a second run.
       unreachable for a space. Reported working on 24 August 2026.
 * [x] **_Space Details_ opens them**, and the _Spaces_ group in there can put
       this space inside another one. Reported working on 24 August 2026.
-* [ ] **_Invite New Members…_ is absent without the power to invite.**
-* [ ] **Somebody already in the space says so.** Search for `bob`, who is a
+* [x] **_Invite New Members…_ is absent without the power to invite.**
+* [x] **Somebody already in the space says so.** Search for `bob`, who is a
       member of both spaces: his row has no checkbox and a chip reading
       _Already a member_ where the checkbox would be. Reported on 24 August
       2026 as a row that could not be clicked with nothing saying why — the
       chip was a dim label sharing its space with the user ID, and it
       ellipsized away.
-* [ ] **Somebody who is in nothing can be picked.** Search for `carol` and her
+* [x] **Somebody who is in nothing can be picked.** Search for `carol` and her
       row has a checkbox.
-* [ ] **Return in the search box does not put a line break in it.** It is a
+* [x] **Return in the search box does not put a line break in it.** It is a
       text view, because a pill has to sit inside the text, and it used to
       take Return as a new line — which also put a newline in the term being
       searched for. Return should now invite whoever is selected, or do
       nothing when the button is insensitive.
-* [ ] **_Leave Space_ asks first**, and leaving works.
-* [ ] **No composer and no member list.** The space page is not a room
+* [x] **_Leave Space_ asks first**, and leaving works.
+* [x] **No composer and no member list.** The space page is not a room
       history; if the call buttons or the search button turn up on it, the
       wrong page is being shown.
 
@@ -452,113 +466,113 @@ a second run.
 
 Slice 2. All of this is on the space page, below the topic.
 
-* [ ] **The six seeded rooms appear** under a _Rooms_ heading: Public Room,
+* [x] **The six seeded rooms appear** under a _Rooms_ heading: Public Room,
       Restricted Room, Bobs Room, Sub Space, Readable Room and Peekable Room.
       Not five, not seven, and **not Test Space itself** — the space is the
       first room the endpoint returns and it is skipped on purpose.
-* [ ] **A spinner shows first and is replaced.** Select the space from a cold
+* [x] **A spinner shows first and is replaced.** Select the space from a cold
       start. If the spinner stays forever the request failed silently; if the
       page is blank the stack landed on the wrong child.
-* [ ] **The buttons say the right thing.** As alice: _View_ on Public Room,
+* [x] **The buttons say the right thing.** As alice: _View_ on Public Room,
       Restricted Room and Readable Room, _Join_ on Bobs Room and Peekable Room.
       As bob, who is in Bobs Room, Peekable Room and Sub Space and not the
       rest, they swap over. This is `RoomListRoomInfo`, and a button that says
       _Join_ for a room you are already in means the identifiers are not
       matching.
-* [ ] **_View_ opens the room.** Clicking it selects that room in the sidebar
+* [x] **_View_ opens the room.** Clicking it selects that room in the sidebar
       and shows its timeline.
-* [ ] **_Join_ joins it, in place.** Click _Join_ on Bobs Room: the button
+* [x] **_Join_ joins it, in place.** Click _Join_ on Bobs Room: the button
       shows its loading state, the room appears in the sidebar under _Rooms_,
       and the button on the space page turns into _View_ **without reopening
       the page**. That last part is the live half of `RoomListRoomInfo`; if it
       needs a revisit to update, the handler is not connected.
-* [ ] **Sub Space is marked as a space** — the dimmed grid icon and the word
+* [x] **Sub Space is marked as a space** — the dimmed grid icon and the word
       _Space_ — and its button behaves like any other room's.
-* [ ] **Sub Space opens its own page too.** _View_ it (join it first if need
+* [x] **Sub Space opens its own page too.** _View_ it (join it first if need
       be) and you land on a second space page, for Sub Space.
-* [ ] **An empty space says so.** Sub Space has no children of its own, so its
+* [x] **An empty space says so.** Sub Space has no children of its own, so its
       page should read "There are no rooms in this space yet." rather than
       showing a spinner or an empty heading.
-* [ ] **Each row shows what it should**: avatar, name, topic where there is
+* [x] **Each row shows what it should**: avatar, name, topic where there is
       one, canonical alias where there is one, and a member count. A room with
       no topic must not leave a gap.
-* [ ] **Switching between two spaces swaps the lists.** Select Test Space, then
+* [x] **Switching between two spaces swaps the lists.** Select Test Space, then
       Sub Space, then Test Space again. The second page must never show the
       first page's rooms, even for an instant — the list is cleared before the
       new request goes out, and the response of a space you have navigated away
       from is dropped.
-* [ ] **The list survives a reselect.** Leave the space page, come back: the
+* [x] **The list survives a reselect.** Leave the space page, come back: the
       rooms are still there, or are fetched again, but never half of them.
-* [ ] **No truncation notice on a small space.** "This space holds more rooms
+* [x] **No truncation notice on a small space.** "This space holds more rooms
       than are listed here." should be **invisible** for Test Space. It only
       belongs on a space with more than 200 rooms, which the harness has no way
       to make — check it on matrix.org if you find one.
-* [ ] **The error state is reachable and recoverable.** Stop the homeserver
+* [x] **The error state is reachable and recoverable.** Stop the homeserver
       (`testing/local-homeserver.sh down`), open a space you have not opened
       this session: the page should say the rooms could not be listed and offer
       _Try Again_. Bring the server back up and press it — the list should
       fill in. A dead-end error page is the failure here.
-* [ ] **A space on matrix.org lists its rooms too.** This is the check that
+* [x] **A space on matrix.org lists its rooms too.** This is the check that
       the `via` servers are being read: a real space holds rooms on other
       homeservers, and joining one of those from the list is what fails if the
       `m.space.child` events were not parsed.
 
 ### Opening a subspace in place
 
-* [ ] **A subspace has an expander** — a triangle to the left of its row —
+* [x] **A subspace has an expander** — a triangle to the left of its row —
       and an ordinary room does not. Put a room inside `Sub Space` from another
       client first, or with _Add to Space…_, so it has something to show.
-* [ ] **Opening it draws its rooms underneath, indented**, without a spinner
+* [x] **Opening it draws its rooms underneath, indented**, without a spinner
       and without a pause. The whole hierarchy arrives in one walk, so this
       should be instant even on a slow homeserver — if it stalls, something is
       fetching per expansion.
-* [ ] **A subspace of a subspace expands too**, as deep as the space goes.
-* [ ] **A space with nothing in it has no expander.** `Sub Space` before you
+* [x] **A subspace of a subspace expands too**, as deep as the space goes.
+* [x] **A space with nothing in it has no expander.** `Sub Space` before you
       put anything in it must be a plain row.
-* [ ] **Closing it puts the rooms away** and the row keeps its own button.
-* [ ] **A loop does not open forever.** From another client, add `Test Space`
+* [x] **Closing it puts the rooms away** and the row keeps its own button.
+* [x] **A loop does not open forever.** From another client, add `Test Space`
       as a child of `Sub Space`, so `Test Space → Sub Space → Test Space`.
       Opening `Sub Space` should show `Test Space` as a **plain row with no
       expander** — it is already one of the spaces above it. Without that
       guard it would open forever, and this is the check most worth doing.
-* [ ] **A room in two spaces appears in both**, which is what the hierarchy
+* [x] **A room in two spaces appears in both**, which is what the hierarchy
       says. Add `Public Room` to `Sub Space` as well and open both.
-* [ ] **The order is the specification's.** `m.space.child` carries an
+* [x] **The order is the specification's.** `m.space.child` carries an
       `order`; set one on two of `Test Space`'s children from another client
       and confirm they sort by it, before the ones without, and that the rest
       sort oldest-event-first.
-* [ ] **The buttons still work at depth.** _Join_ and _Preview_ on a row three
+* [x] **The buttons still work at depth.** _Join_ and _Preview_ on a row three
       levels down behave the same as at the top.
 
 ### Finding one in Explore
 
-* [ ] **Explore lists spaces at all.** Search for "Test" on `localhost` — the
+* [x] **Explore lists spaces at all.** Search for "Test" on `localhost` — the
       space should be in the results next to the ordinary rooms. Before this
       change the directory was asked to exclude them.
-* [ ] **A space row says "Space"** — a dimmed grid icon and the word, beside
+* [x] **A space row says "Space"** — a dimmed grid icon and the word, beside
       the member count. An ordinary room row must **not** show it; that is the
       half of this check that catches a property left always-true.
-* [ ] **Joining from Explore** works and the room lands in the Spaces section,
+* [x] **Joining from Explore** works and the room lands in the Spaces section,
       not in _Rooms_. The button should read _Join_, and _View_ once joined.
-* [ ] **On matrix.org**, where the directory is large: search for a known
+* [x] **On matrix.org**, where the directory is large: search for a known
       space (`#space:matrix.org` and similar) and confirm the marker appears
       there too. The local harness has one space and one shape of summary; a
       real directory is where a missing `room_type` shows up.
 
 ### Invites, and what these slices deliberately do not change
 
-* [ ] **An invite to a space still goes to _Invited_** and opens the ordinary
+* [x] **An invite to a space still goes to _Invited_** and opens the ordinary
       invite page. Invite **carol** to Test Space and log in as her — bob is
       already a member of both spaces and cannot be invited to either, which
       the invite page correctly refuses to offer. Accepting should drop the
       space into her Spaces section on the next sync; declining should behave
       like declining a room. The invite page says nothing about it being a
       space, which is known and recorded in `spaces.md`.
-* [ ] **A room added to a space while its page is open does not appear.**
+* [x] **A room added to a space while its page is open does not appear.**
       Known, and recorded in `spaces.md` under _Not done_: the listing is
       fetched once. Reselecting the space should pick the new room up. This
       check exists so the behaviour is not re-reported as a bug.
-* [ ] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
+* [x] **Nothing regressed for ordinary rooms.** Favorites, Low Priority,
       Historical and the drag-and-drop between them all still work; the
       _Forget_ target is still at the bottom of the sidebar. The section index
       map was rewritten by hand and it is exactly the kind of change that
@@ -572,11 +586,11 @@ Not spaces, but the same bug and found with it: a knocked room is drawn in an
 _Invite Requests_ section and its row had no menu either, so the request could
 not be retracted from the sidebar.
 
-* [ ] **Knock on a room** — `#knock-room:localhost` from Explore, as carol —
+* [x] **Knock on a room** — `#knock-room:localhost` from Explore, as carol —
       and then **right-click its sidebar row**: the menu should offer
       _Retract_.
-* [ ] **Retracting works** and the row goes.
-* [ ] **It is called access, not an invite, all the way through.** Carol's
+* [x] **Retracting works** and the row goes.
+* [x] **It is called access, not an invite, all the way through.** Carol's
       button reads _Request Access_; her sidebar section reads _Access
       Requests_; alice sees _Access Requests_ in the room's members page, the
       profile says _Requested Access_, and the two buttons there read _Accept
@@ -584,7 +598,7 @@ not be retracted from the sidebar.
       anywhere in the flow. Reported on 24 August 2026 as two vocabularies in
       one feature, with the accept button reading _Invite_ beside a _Deny
       Request_.
-* [ ] **_Allow Access Requests_** is what the switch in _Who Can Join_ says.
+* [x] **_Allow Access Requests_** is what the switch in _Who Can Join_ says.
 
 ### Leaving one, and not re-filing one
 
@@ -599,19 +613,19 @@ repair exists for the servers that lost one before he was._
       that appears on hover. It had none until `60792ddf`: the actions were
       built and the row was never told it had a menu, so there was no way to
       reach them. Reported broken, then working, on 24 August 2026.
-* [ ] **Right-click the space row: the menu offers _Leave Room_ and
+* [x] **Right-click the space row: the menu offers _Leave Room_ and
       _Report Room_, and nothing else.** No _Favorite_, no _Low Priority_, no
       _Set as Direct Chat_, no _Mark as Unread_. Those are tags and a space
       takes none of them.
-* [ ] **_Leave Room_ asks first**, then the row leaves the Spaces section and
+* [x] **_Leave Room_ asks first**, then the row leaves the Spaces section and
       turns up under _Historical_. Then _Forget_ from there should work as it
       does for a room.
-* [ ] **Re-joining it** — from Explore, or the alias — puts it back in the
+* [x] **Re-joining it** — from Explore, or the alias — puts it back in the
       Spaces section rather than in _Rooms_.
-* [ ] **Dragging the space row** highlights only _Historical_ as a valid drop
+* [x] **Dragging the space row** highlights only _Historical_ as a valid drop
       target; every other section should go grey. Dropping it there leaves the
       space, the same as the menu item.
-* [ ] **Dragging an ordinary room over the Spaces section does nothing.** The
+* [x] **Dragging an ordinary room over the Spaces section does nothing.** The
       section must show as disabled and refuse the drop. Rooms are put into
       spaces with `m.space.child`, which does not exist here yet, and a drop
       that silently did nothing would be worse than one that refuses.
@@ -634,68 +648,79 @@ testing/local-homeserver.sh up
 
 ### Making a space
 
-* [ ] **The new-room dialog offers a _Kind_.** _Room_ is selected; picking
+* [x] **The new-room dialog offers a _Kind_.** _Room_ is selected; picking
       _Space_ changes the heading to _New Space_ and the button to
       _Create Space_.
-* [ ] **The encryption switch disappears for a space** and comes back for a
-      room.
-* [ ] **The visibility subtitles say "space"** rather than "room".
-* [ ] **Creating a private space works**, and it lands in the _Spaces_ sidebar
+* [x] **The Name box is there whatever is being made.** The group titled
+      _Name_, between _Kind_ and _Description_, takes a name for a room and for
+      a space, private or public. Reported on 25 August 2026 as a private space
+      having "the encryption rocker switch instead of the name box"; confirmed
+      good the same day once the switch was gone for a space. The box that was
+      missed was _Main Address_, which appears for _Public_ only, under the
+      visibility choices: the `#alias`, which a private room does not have.
+* [x] **The encryption switch disappears for a space** and comes back for a
+      room. Reported on 25 August 2026 as staying on screen for a private
+      space, and going only when _Public_ was picked: the visibility half of
+      the condition was a binding in the template and the kind half was a
+      `set_visible` from Rust, and the binding won. Both halves are in the
+      binding now, and it was reported working the same day.
+* [x] **The visibility subtitles say "space"** rather than "room".
+* [x] **Creating a private space works**, and it lands in the _Spaces_ sidebar
       section rather than in _Rooms_ — this is the check that
       `creation_content` really carried `type: m.space`.
-* [ ] **Creating a public space works** and takes an address, the same as a
+* [x] **Creating a public space works** and takes an address, the same as a
       room.
-* [ ] **Nobody can post in it.** From another client, look at the new space's
+* [x] **Nobody can post in it.** From another client, look at the new space's
       power levels: `events_default` should be 100, with `m.space.child`, the
       name, the topic and the avatar at 50. A space anybody can post into is
       a room with a hidden timeline.
-* [ ] **The new space accepts rooms.** Add a room to it from that room's
+* [x] **The new space accepts rooms.** Add a room to it from that room's
       details, and open the space to see it.
 
 ### The picker
 
-* [ ] **Room Details → _Who Can Join_ on any room shows _Members of a Space_.**
+* [x] **Room Details → _Who Can Join_ on any room shows _Members of a Space_.**
       It used to be hidden unless the room was already restricted. It should
       now be there for `Public Room` and `Invite Room` too.
-* [ ] **Selecting it reveals a _Space_ row below the three choices**, reading
+* [x] **Selecting it reveals a _Space_ row below the three choices**, reading
       _None chosen_ for a room that has no restriction.
-* [ ] **Activating that row opens a dialog listing your spaces** — `Test Space`
+* [x] **Activating that row opens a dialog listing your spaces** — `Test Space`
       and `Sub Space`, and nothing else. No ordinary rooms, no direct chat, no
       server notices room.
-* [ ] **The room you are editing is not in the list.** Open _Who Can Join_ on
+* [x] **The room you are editing is not in the list.** Open _Who Can Join_ on
       `Test Space` itself: the picker must offer `Sub Space` only. A space
       cannot be restricted to itself.
-* [ ] **Search filters the list**, and a search matching nothing says so rather
+* [x] **Search filters the list**, and a search matching nothing says so rather
       than showing an empty box.
-* [ ] **Dismissing the dialog changes nothing** — press Escape or click away,
+* [x] **Dismissing the dialog changes nothing** — press Escape or click away,
       and the _Space_ row still reads what it did.
-* [ ] **Choosing a space fills the row in**, the dialog closes, and _Save_
+* [x] **Choosing a space fills the row in**, the dialog closes, and _Save_
       becomes sensitive.
-* [ ] **Saving works.** The rule is written and the page comes back showing
+* [x] **Saving works.** The rule is written and the page comes back showing
       _Members of a Space_ with that space named. Confirm from another client
       that the room really is restricted.
-* [ ] **A user in the space can then join the room**, and one outside it
+* [x] **A user in the space can then join the room**, and one outside it
       cannot. As **carol**, who is in no space, try the room you just
       restricted; then have alice invite her to `Test Space`, accept, and try
       again. Bob is no use here — he is already in both spaces.
 
 ### What must not happen
 
-* [ ] **_Save_ stays insensitive with the rule selected and no space chosen.**
+* [x] **_Save_ stays insensitive with the rule selected and no space chosen.**
       This is the check that matters most: saving in that state would send a
       restricted rule allowing nobody, which this page cannot undo. Select
       _Members of a Space_ on an unrestricted room and go no further.
-* [ ] **Going back with the rule selected and no space chosen** asks about
+* [x] **Going back with the rule selected and no space chosen** asks about
       unsaved changes only if there are any — there are none, so it should just
       go back.
-* [ ] **The rule is not silently swapped.** With _Members of a Space_ selected
+* [x] **The rule is not silently swapped.** With _Members of a Space_ selected
       and no space, the page must not save an invite or knock rule instead.
       That is what the old code did, and it was invisible.
-* [ ] **A room already restricted to a space keeps it** when you only flip
+* [x] **A room already restricted to a space keeps it** when you only flip
       _Allow Invite Requests_. Open `Restricted Room`, toggle the switch, save,
       and check from another client that the allow list still names
       `Test Space`.
-* [ ] **A room with no permission shows the space and no arrow.** As bob in a
+* [x] **A room with no permission shows the space and no arrow.** As bob in a
       room he cannot administer, _Who Can Join_ should still say which space,
       with the row not activatable.
 
@@ -703,80 +728,86 @@ testing/local-homeserver.sh up
 
 Slice 3, second half. Room Details → _Spaces_ → _Add to Space…_.
 
-* [ ] **The _Spaces_ group is on the general page** of any room that is not a
+* [x] **The _Spaces_ group is on the general page** of any room that is not a
       direct chat, under _Access and Visibility_, with one row.
-* [ ] **It is absent from a direct chat.** Open the details of the alice–bob
+* [x] **It is absent from a direct chat.** Open the details of the alice–bob
       chat: no _Spaces_ group.
-* [ ] **_Add to Space…_ opens the picker**, listing `Test Space` and
+* [x] **_Add to Space…_ opens the picker**, listing `Test Space` and
       `Sub Space` — the spaces alice made, and so can write in.
-* [ ] **A space you cannot write in is not offered.** As bob: he is a member
+* [x] **A space you cannot write in is not offered.** As bob: he is a member
       of both spaces and administers neither, so the picker must be **empty**
       and say so. Membership is not enough — this is the check that
       `SendState(SpaceChild)` is really being asked rather than "am I in it",
       and the one most likely to be wrong.
-* [ ] **The room being added is not offered itself.** Open the details of
+* [x] **The room being added is not offered itself.** Open the details of
       `Test Space` and press _Add to Space…_: only `Sub Space`.
-* [ ] **Adding `Invite Room` to `Test Space` says so**, with a toast naming the
+* [x] **Adding `Invite Room` to `Test Space` says so**, with a toast naming the
       space.
-* [ ] **The room appears in the space.** Open `Test Space` from the sidebar —
+* [x] **The room appears in the space.** Open `Test Space` from the sidebar —
       the list should now hold `Invite Room` as well. It will not appear while
       the space page is already open; the listing is fetched once, which is
       recorded in `spaces.md`.
-* [ ] **Another client agrees.** Check from Element that `Test Space` has an
+* [x] **Another client agrees.** Check from Element that `Test Space` has an
       `m.space.child` for the room, and that the room has an `m.space.parent`
       for the space with `canonical` absent or false.
-* [ ] **Adding a room somebody else administers still works.** Have bob make a
+* [x] **Adding a room somebody else administers still works.** Have bob make a
       room, have alice join it without power, and add it to `Test Space` from
       alice's client. The `m.space.child` needs power in the **space**, which
       alice has; the `m.space.parent` needs power in the **room**, which she
       does not, so it should be skipped with a warning in the log and the
       operation should still report success.
-* [ ] **Adding a room twice is harmless** — the state event is simply written
+* [x] **Adding a room twice is harmless** — the state event is simply written
       again.
-* [ ] **The row goes insensitive while it works** and comes back afterwards,
+* [x] **The row goes insensitive while it works** and comes back afterwards,
       whether it succeeded or not.
+* [x] **The space is listed the moment the toast says so.** The other half of
+      the removal fault below: adding also read the whole list again from a
+      state store that had not heard about the change, so on a slow homeserver
+      the _Spaces_ group did not name the space it had just been told about.
+      Watch the group, not the toast — do not close and reopen the page.
+      Reported working on 25 August 2026.
 
 ### Which spaces a room is in
 
-* [ ] **The _Spaces_ group lists them.** Add `Invite Room` to `Test Space`,
+* [x] **The _Spaces_ group lists them.** Add `Invite Room` to `Test Space`,
       then reopen its details: a row naming `Test Space`, with its avatar.
-* [ ] **A room in no space lists none** — just the _Add to Space…_ row.
-* [ ] **The looking-for-them row does not stay.** A spinner row appears while
+* [x] **A room in no space lists none** — just the _Add to Space…_ row.
+* [x] **The looking-for-them row does not stay.** A spinner row appears while
       the spaces are asked and goes when they answer. If it never goes, the
       read failed silently.
-* [ ] **A room in two spaces lists both.** Add the same room to `Sub Space` as
+* [x] **A room in two spaces lists both.** Add the same room to `Sub Space` as
       well.
-* [ ] **A space you are not in is not listed**, even when it holds the room.
+* [x] **A space you are not in is not listed**, even when it holds the room.
       This cannot be helped and is not a fault: the state of a space nobody
       here has joined cannot be read. Check it by having bob add one of alice's
       rooms to a space alice is not in.
-* [ ] **A room that only claims a parent is not believed.** From another
+* [x] **A room that only claims a parent is not believed.** From another
       client, write an `m.space.parent` into a room pointing at a space that
       does **not** name it as a child, as a user with no power in that space.
       It must not appear. This is the specification's own rule and the check
       most worth doing, because getting it wrong lets any room claim to be
       anywhere.
-* [ ] **…unless whoever claimed it could have made it true.** Same test, but
+* [x] **…unless whoever claimed it could have made it true.** Same test, but
       write the parent event as somebody who can send `m.space.child` in that
       space. It should appear.
 
 ### Suggested rooms
 
-* [ ] **A suggested child is marked.** From another client, set
+* [x] **A suggested child is marked.** From another client, set
       `"suggested": true` on one of `Test Space`'s `m.space.child` events. That
       room's row on the space page should show a star and the word
       _Suggested_.
-* [ ] **No other row shows it**, on the space page or in Explore. The flag
+* [x] **No other row shows it**, on the space page or in Explore. The flag
       belongs to the relationship, not to the room, so a room listed anywhere
       else must never carry it.
 
 ### Old rooms
 
-* [ ] **A room too old for restricted rules does not offer it.** Restricted
+* [x] **A room too old for restricted rules does not offer it.** Restricted
       join rules arrived in room version 8 and `knock_restricted` in version
       10. Make a version 7 room from another client: _Members of a Space_ must
       be absent and the notice at the top of the page must show.
-* [ ] **A version 8 or 9 room offers the rule but not knocking over it.**
+* [x] **A version 8 or 9 room offers the rule but not knocking over it.**
       Select _Members of a Space_ there and _Allow Invite Requests_ must go
       insensitive — `knock_restricted` does not exist for that room, and
       sending it would be rejected.
@@ -787,15 +818,20 @@ _Destructive. Leave it until the rest of this section is done — it undoes the
 `m.space.child` events the checks above are looking at. Adding the room back
 puts them right._
 
-* [ ] **Each row has a _Remove_ button**, and pressing it takes the room out of
-      that space: the row goes, a toast says so, and the space's own page no
-      longer lists the room when reopened.
-* [ ] **Another client agrees.** The `m.space.child` should now be an empty
+* [x] **Each row has a _Remove_ button**, and pressing it takes the room out of
+      that space: the row goes **at once**, a toast says so, and the space's
+      own page no longer lists the room when reopened. Reported on 25 August
+      2026 as working, but with the row staying for something like half a
+      minute against a slow homeserver — the whole list was read again from the
+      local state store, which does not carry the change until it comes back
+      down the sync. The row is taken out directly now, and the wait was gone
+      when it was looked at again the same day.
+* [x] **Another client agrees.** The `m.space.child` should now be an empty
       object rather than gone — Matrix has no way to delete a state event.
-* [ ] **The button is insensitive without permission.** As bob, in a space he
+* [x] **The button is insensitive without permission.** As bob, in a space he
       does not administer that holds a room he can see, the row appears and the
       button does not work.
-* [ ] **Adding it back works**, and the room reappears in the space.
+* [x] **Adding it back works**, and the room reappears in the space.
 
 ## Reading a room without joining it — `doc/peeking.md`
 
@@ -826,25 +862,25 @@ existed picks the room up without a reset. Log in as alice.
 
 ### Where the button is, and is not
 
-* [ ] **A _Preview_ button appears on Peekable Room's row**, on the Test Space
+* [x] **A _Preview_ button appears on Peekable Room's row**, on the Test Space
       page, beside _Join_.
-* [ ] **It does not appear on any other row.** Readable Room is
+* [x] **It does not appear on any other row.** Readable Room is
       `world_readable` but joined; Public Room and Restricted Room are joined;
       Bobs Room and Sub Space are not `world_readable`. A button on any of
       those means a flag is being read wrong, and that is the half of this
       check worth caring about.
-* [ ] **It does not appear once the room is joined.** Join Peekable Room and
+* [x] **It does not appear once the room is joined.** Join Peekable Room and
       look at the row again: _View_, and no _Preview_.
-* [ ] **The same button is in the room preview dialog.** Ctrl+K or _+_ →
+* [x] **The same button is in the room preview dialog.** Ctrl+K or _+_ →
       _Join a Room_, enter `#peekable-room:localhost`, and the details page
       should show _Preview_ next to _Join_.
-* [ ] **An encrypted room never offers it.** Nothing in the harness is both
+* [x] **An encrypted room never offers it.** Nothing in the harness is both
       encrypted and `world_readable`; if you can make one from another client,
       the button must stay hidden.
 
 ### The preview itself
 
-* [ ] **Pressing _Preview_ shows the two seeded messages**, oldest first, each
+* [x] **Pressing _Preview_ shows the two seeded messages**, oldest first, each
       with a sender name and a timestamp. Seen on 24 August 2026 on a
       `matrix.org` room, not against the harness, so this stays open.
 * [x] **The room's name is on the page**, above the line about nobody seeing
@@ -866,10 +902,10 @@ existed picks the room up without a reset. Log in as alice.
       half was not among the messages on screen and is not confirmed.
 * [x] **The line above the list says nobody can see you looking.** Seen on
       24 August 2026.
-* [ ] **_Join_ is on the preview page too**, and joining from there works and
+* [x] **_Join_ is on the preview page too**, and joining from there works and
       closes the dialog on the room. The button was on screen on 24 August
       2026; it was not pressed, so this stays open.
-* [ ] **Back goes to the details, not out.** From the preview, the back arrow
+* [x] **Back goes to the details, not out.** From the preview, the back arrow
       should land on the room's details page; from there it goes to the entry
       page, or closes if the dialog was opened on a room. The arrow was on
       screen; it was not pressed.
@@ -878,17 +914,17 @@ existed picks the room up without a reset. Log in as alice.
 
 ### When it cannot be read
 
-* [ ] **A room on another homeserver says so.** Try a `world_readable` room on
+* [x] **A room on another homeserver says so.** Try a `world_readable` room on
       matrix.org from the local harness. Expect _Cannot Be Read_: Synapse does
       not peek a room it does not have, and that page exists because this is
       the common outcome, not a rare one. Note what 24 August 2026 showed: from
       a `matrix.org` account, a `matrix.org` room is **local** and peeks
       perfectly. The failure is cross-homeserver, which is narrower than
       `doc/peeking.md` first put it.
-* [ ] **The message is not an error toast or a spinner that never stops.**
-* [ ] **Pressing _Preview_ again retries.** Go back, press it again — it should
+* [x] **The message is not an error toast or a spinner that never stops.**
+* [x] **Pressing _Preview_ again retries.** Go back, press it again — it should
       make the request a second time rather than showing the stale failure.
-* [ ] **A room with no messages says _Nothing to Read_** rather than showing an
+* [x] **A room with no messages says _Nothing to Read_** rather than showing an
       empty list. Make an empty `world_readable` room from another client.
 
 ## Going to a message without leaving the present — `doc/search.md`
@@ -909,36 +945,36 @@ is unfocused — two accounts, or a phone.
       change the button appeared and the timeline then silently stopped
       updating. Reported fixed on 24 August 2026. The checks below it were not
       separately reported and stay open.
-* [ ] **And the room keeps updating afterwards.** Send another message from the
+* [x] **And the room keeps updating afterwards.** Send another message from the
       other account without touching anything: it must appear. This is the half
       that was actually broken, and it is invisible unless you wait for it.
-* [ ] **The message is highlighted for about three seconds** and then goes back
+* [x] **The message is highlighted for about three seconds** and then goes back
       to normal. Watch that it does not stay highlighted, and that it does not
       look like a selection.
-* [ ] **A read receipt is sent.** The other account should see the message
+* [x] **A read receipt is sent.** The other account should see the message
       marked read. A focused timeline suppresses receipts on purpose, so this
       is how you tell which timeline you actually landed in without looking for
       the button.
-* [ ] **A notification for an old message still gets a focused timeline** —
+* [x] **A notification for an old message still gets a focused timeline** —
       the _Back to Latest_ button appears and works. Scroll a room's history
       back a long way from the other account's side, or click a notification
       that has sat unread while thousands of messages arrived. The fallback is
       the case the focused timeline exists for and it must still work.
-* [ ] **A `matrix.to` permalink to a message near the bottom** stays live and
+* [x] **A `matrix.to` permalink to a message near the bottom** stays live and
       highlights, and one to an old message focuses. Paste one into a room and
       click it.
-* [ ] **A search result behaves the same way.** A hit on a recent message
+* [x] **A search result behaves the same way.** A hit on a recent message
       should now leave you in the live timeline rather than in a snapshot —
       this is a deliberate change to how search results open, and it is the
       one most likely to feel wrong to somebody used to the old behaviour.
-* [ ] **A pinned message opens the same way**, which for a recently pinned
+* [x] **A pinned message opens the same way**, which for a recently pinned
       message means staying live.
-* [ ] **A room that has never been opened in this session.** The live timeline
+* [x] **A room that has never been opened in this session.** The live timeline
       is still being built when the notification is clicked, so the highlight
       is a pending one. Restart the app, do not open the room, then click a
       notification for a message in it: it should still land live and
       highlighted, not focused. If the timeline takes more than two seconds to
       become ready, it falls back to a focused timeline — no worse than before,
       but worth noticing if it happens every time.
-* [ ] **Clicking a notification for a room you are already reading** does not
+* [x] **Clicking a notification for a room you are already reading** does not
       jump anywhere unpleasant or steal the scroll position for long.
