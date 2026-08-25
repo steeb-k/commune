@@ -1093,6 +1093,10 @@ Two consequences of the copy, both found by testing rather than by reading:
 The wider point: **this port has never been able to send an attachment**, of any type. It went
 unnoticed because the crash arrived first and looked like the whole story.
 
+Both defects share one cause, and it reaches further than the composer: a `content://` file has no
+path and says otherwise. The routes that have been fixed, the ones that are merely untested and the
+two that are known broken are inventoried in `doc/android-attachments-plan.md`.
+
 ### Every attachment open was black, and it was a directory that did not exist
 
 _Found and fixed 25 August 2026_ (`eb951d5a`), reported as "opening pictures just shows a black
