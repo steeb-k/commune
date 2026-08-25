@@ -23,6 +23,7 @@ whole route hung on.
 * [S3 — Commune on Android](#s3--commune-on-android)
 * [S5 — Notifications](#s5--notifications)
 * [S6 — The formats that would not draw](#s6--the-formats-that-would-not-draw)
+* [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -37,6 +38,7 @@ whole route hung on.
 | S4 — GStreamer | not started |
 | S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
+| S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. Never yet run on real hardware |
 
 ## Where things are
 
@@ -1775,6 +1777,75 @@ Android target — the build is `cargo rustc --lib --crate-type staticlib`, whic
 The ISO base media tests in `image_rs.rs` are in a module no `cfg` guards, so those do run on a
 macOS or Windows checkout.
 
+## S7 — aarch64, and an emulator that runs it
+
+Every measurement in this file up to here was taken on the x86_64 emulator, which is the one
+architecture no phone uses. `build-aux/android/io.github.steeb_k.Commune.xml` whitelisted it alone.
+
+Both are whitelisted now rather than aarch64 instead. The emulator is where the test loop lives,
+and the manifest's `xi:include` reads the built metainfo out of the **x86_64** build directory by
+name, so dropping that architecture would point the include at a directory that was never created —
+the trap already written up under [Building a demo APK](#building-a-demo-apk).
+
+### What it took, which was almost nothing
+
+`rustup target add aarch64-linux-android` on the build host, and one `<arch>` element. pixiewood
+already shipped `prepare/arch/aarch64.cross`, and the NDK already had
+`aarch64-linux-android31-clang`. Nothing else.
+
+It linked first time: 3185 C objects for GTK, GLib, cairo, pango, harfbuzz and the rest, and a
+177 MB `libcommune.so` with `ring`, `rustls`, the bundled SQLite, `matrix-sdk` and the JNI glue all
+resolved against the aarch64 sysroot. For a first build on a new architecture that is a better
+result than it had any right to be, and the reason is that nothing here was ever x86-specific: the
+port's Android arms are all JNI and `cfg(target_os)`, neither of which knows what a register is.
+
+The x86_64 SIMD failure does not recur, and it is worth saying why rather than being relieved about
+it. That one was NASM-specific. libjpeg-turbo's aarch64 path is NEON **intrinsics** compiled by
+clang, with `have_simd` set unconditionally for the architecture (`simd/meson.build:177`), so the
+generated `jconfig.h` and the built library agree — which on x86_64, after the wrong-distro
+reconfigure, they did not.
+
+| APK | Size |
+| --- | --- |
+| `app-arm64-v8a-debug.apk` | 334 MB |
+| `app-x86_64-debug.apk` | 330 MB |
+| `app-universal-debug.apk` | 660 MB |
+
+Debug, unstripped, and Gradle says so: `Unable to strip the following libraries, packaging them as
+they are`, for all 36. A stripped release build is still unmeasured.
+
+### The emulator already runs ARM, so the phone can wait
+
+There was no need for an arm64 AVD, which on an x86_64 host means whole-system emulation and is
+miserable. `seed_api35` already reports:
+
+```text
+ro.product.cpu.abilist:        x86_64,arm64-v8a
+ro.dalvik.vm.native.bridge:    libndk_translation.so
+```
+
+Android's x86_64 system images have carried ARM64 translation since API 30. So the arm64 APK
+installs and runs on the emulator that was already here, and `dumpsys package` confirms Android
+chose it rather than falling back:
+
+```text
+primaryCpuAbi=arm64-v8a
+secondaryCpuAbi=null
+```
+
+`nativeloader` then loads out of `base.apk!/lib/arm64-v8a/`, the session restores, and the
+homeserver is reachable — which is a larger claim than it sounds, because it means the Keystore
+JNI, the filesystem trust roots in `src/utils/tls.rs`, the bundled SQLite and the crypto stack all
+work as ARM code. The UI draws, icons included, so the icon-theme wrap and GTK's SVG parsing are
+fine here too.
+
+**What this does not establish.** Translation is not a phone. Cold start from `nativeloader` to
+"Homeserver is reachable" was 8.7 s against 3.0 s for the native x86_64 build — one measurement
+each, both first-launch — and that number says something about `libndk_translation.so`, not about
+hardware. Nothing about GL performance transfers either, since the translation layer sits between
+the app's native code and the host's graphics stack. What it does buy is that every iteration from
+here can be checked on the emulator, and the phone is needed once, at the end.
+
 ## Known gaps
 
 * **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
@@ -1828,7 +1899,7 @@ macOS or Windows checkout.
   with `-Dwarnings`. The fixes are `[`gtk::gdk::Texture`]` and dropping the explicit target. Only
   the Android target was measured; this is left alone here because that file is the decoder seam
   shared with the macOS and Windows ports.
-* **315 MB debug APK** for Commune, x86_64 only (125–136 MB for the demos). The debug symbols are
+* **330 MB debug APK** for Commune, x86_64, and 334 MB for aarch64 (125–136 MB for the demos). The debug symbols are
   already off; what is left is GTK, libadwaita, GtkSourceView, harfbuzz and 168 MB of Rust. A
   release build with stripping has not been measured, and neither has an `aarch64` one.
 * GStreamer is not built at all: pixiewood's cross file sets `media-gstreamer = 'disabled'` for
