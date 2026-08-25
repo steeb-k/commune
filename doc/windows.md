@@ -34,7 +34,10 @@ its AUMID, registers `matrix:`, and removes all three cleanly.
 Two of the plan's open questions have been answered by experiment, both favourably:
 
 * **`GApplication` uniqueness works** without a session bus. A second invocation exits on its own
-  rather than becoming a second primary instance.
+  rather than becoming a second primary instance — **given enough of a head start**. A tighter
+  double-launch races registration itself and can produce two real, independent processes; this
+  turned out to be a shared-code startup-ordering issue rather than anything specific to Windows'
+  registration mechanism. See `doc/startup-registration-race.md`, not fixed on this branch.
 * **`matrix:` URIs forward to the running instance.** A second invocation carrying
   `matrix:u/alice:example.org` reached the first instance's `Application::open`, was parsed into
   `ShowMatrixId(User("@alice:example.org"))`, and was refused only because no session was logged
