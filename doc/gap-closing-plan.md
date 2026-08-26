@@ -335,8 +335,46 @@ the unopened link. `doc/email-and-phone.md` is the ledger. Round 5 is
 finished; the account row sits in the partial column by decision (the
 msisdn-add half), and the push row closed whole.
 
-**Next: round 6 — voice message recording (MSC3245), mutual rooms, policy
-servers.** See the decided rounds below before scoping.
+**Round 6 is built, all three items, 26 August 2026.** Voice recording is a
+`VoiceRecorder` GObject (autoaudiosrc → Opus-in-Ogg to a temp file) behind a
+microphone button and a recording page in the toolbar's stack; the pinned
+SDK's `AttachmentInfo::Voice` writes the whole MSC3245 wire format, and the
+waveform comes from the `load_audio_info` upstream already had — no `level`
+element in the recorder. The pipeline was proven on Windows and WSL with
+`audiotestsrc`; a real microphone does not exist over RDP, so that check is
+on the eyeball list. `doc/voice-messages.md` is the ledger. **Two things the
+round's pricing got wrong, recorded so they are not re-derived:**
+
+* **Mutual rooms is stable spec (v1.19) but not in the ruma pin**, and
+  ruma's request macros panic outside its own tree, so
+  `src/utils/matrix/mutual_rooms.rs` spells the request out over the SDK's
+  reqwest client — stable path, then the MSC2666 unstable path on 404, and
+  a server that knows neither simply gets no _Shared Rooms_ section on the
+  profile page. `doc/mutual-rooms.md`.
+* **"Mark spam-checked events" does not exist.** The spec's policy-server
+  client role is the `m.room.policy` state event and nothing else —
+  "Clients do not interact with the Policy Server directly." What a client
+  can do is say what the event means, so the timeline now does:
+  `m.room.policy` joined the state allow-list and reads as "{sender} made
+  {server} check the messages of this room" (or "stopped the checking").
+  `doc/policy-servers.md`.
+
+**A bug report rode along with round 6:** a pack image sent alone in a
+message — presented at sticker size since the image-packs round — refused to
+shrink below that size, so one wider than the view overflowed the chat
+window. `CustomEmoticon::measure` returned min == nat and ignored
+`for_size`; it is now height-for-width, a large emoticon's minimum width is
+zero and its height follows the aspect ratio down. The `m.sticker` path
+(`MessageVisualMedia`) was checked against the same report with a GTK
+harness and already shrank correctly.
+
+**Next: round 7 — invite by email.** See the decided rounds below before
+scoping. **Also queued by the user, 26 August 2026: an optional chat-bubble
+message style**, like Element's setting of the same name — messages drawn in
+bubbles instead of the flat rows, chosen from preferences. It is
+presentation work outside the spec-gap board, sized like a small round of
+its own, and should be built as its own piece after round 6's doc round
+trip.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
