@@ -47,6 +47,7 @@ futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.8", features = ["gettext-system"] }
+http = "1.5"
 indexmap = "2"
 linkify = "0.11"
 mime = "0.3"
@@ -120,6 +121,7 @@ git = "https://github.com/ruma/ruma.git"
 rev = "db24422e03aea7c7974230098fe9aeb5481cddc6"
 features = [
     "client-api-c",
+    "identity-service-api-c",
     "markdown",
     "html-matrix",
     "compat-arbitrary-length-ids",
