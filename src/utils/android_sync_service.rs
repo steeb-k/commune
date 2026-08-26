@@ -21,11 +21,14 @@
 //!
 //! **It may only be started from the foreground.** Since API 31 a background
 //! process calling `startForegroundService()` gets
-//! `ForegroundServiceStartNotAllowedException`. That is not a real constraint
-//! for us — a backgrounded Commune is frozen and cannot call anything — but it
-//! does decide where the call goes: [`update()`] runs when the window is
-//! presented and when the session list changes, both of which only happen with
-//! the app on screen.
+//! `ForegroundServiceStartNotAllowedException`. When this was written that was
+//! not a real constraint — a backgrounded Commune was frozen and could not
+//! call anything — but a push wake changed that: a `MESSAGE` broadcast starts
+//! the whole application in the background, its session restore reaches
+//! [`update()`], and the exception is thrown for real (measured on the
+//! emulator, 26 August 2026). The error arm below absorbs it, which is why it
+//! is an arm and not a panic; the window-presented caller remains the one that
+//! takes.
 //!
 //! **It is capped at six hours a day.** Android 15 gives a `dataSync`
 //! foreground service six hours in any twenty-four, then calls `onTimeout()`,

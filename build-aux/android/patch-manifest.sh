@@ -47,6 +47,14 @@
 # `SecurityException` at the moment it is called, which is inside the service
 # and therefore a crash rather than a failed call. See
 # `src/utils/android_sync_service.rs` and `build-aux/android/SyncService.java`.
+#
+# And UnifiedPush: the `<receiver>` the distributor answers on, exported
+# because the distributor is another application, and a `<queries>` entry for
+# the `unifiedpush://link` activity every distributor exposes (spec AND_3.1.0)
+# — since Android 11 a package another application cannot "see" cannot be
+# queried or broadcast to, and without this entry distributor discovery
+# returns an empty list rather than an error. See
+# `src/utils/android_push.rs` and `build-aux/android/PushReceiver.java`.
 set -eu
 
 MANIFEST=${1:-.pixiewood/android/app/src/main/AndroidManifest.xml}
@@ -132,10 +140,61 @@ perl -MXML::LibXML -e '
         $application->appendChild($node);
     }
 
+    # The UnifiedPush receiver, beside the service. Exported: the broadcasts
+    # come from the distributor, which is another application. The actions are
+    # the five the AND_3 spec has a distributor send a connector.
+    my $receiver_name = "org.gtk.android.PushReceiver";
+    my ($receiver) = $xpc->findnodes(
+        qq(//application/receiver[\@android:name="$receiver_name"])
+    );
+    if (!$receiver) {
+        my $node = $doc->createElement("receiver");
+        $node->setAttributeNS($android, "android:name", $receiver_name);
+        $node->setAttributeNS($android, "android:exported", "true");
+
+        my $filter = $doc->createElement("intent-filter");
+        for my $action (
+            "org.unifiedpush.android.connector.NEW_ENDPOINT",
+            "org.unifiedpush.android.connector.MESSAGE",
+            "org.unifiedpush.android.connector.REGISTRATION_FAILED",
+            "org.unifiedpush.android.connector.UNREGISTERED",
+            "org.unifiedpush.android.connector.TEMP_UNAVAILABLE",
+        ) {
+            my $entry = $doc->createElement("action");
+            $entry->setAttributeNS($android, "android:name", $action);
+            $filter->appendChild($entry);
+        }
+        $node->appendChild($filter);
+
+        $application->appendChild($node);
+    }
+
+    # Package visibility for distributor discovery. `<queries>` is a child of
+    # <manifest>, like the permissions.
+    my ($queries) = $xpc->findnodes(
+        qq(/manifest/queries/intent/data[\@android:scheme="unifiedpush"])
+    );
+    if (!$queries) {
+        my $node = $doc->createElement("queries");
+        my $intent = $doc->createElement("intent");
+
+        my $action = $doc->createElement("action");
+        $action->setAttributeNS($android, "android:name", "android.intent.action.VIEW");
+        $intent->appendChild($action);
+
+        my $data = $doc->createElement("data");
+        $data->setAttributeNS($android, "android:scheme", "unifiedpush");
+        $data->setAttributeNS($android, "android:host", "link");
+        $intent->appendChild($data);
+
+        $node->appendChild($intent);
+        $doc->documentElement->insertBefore($node, $application);
+    }
+
     $doc->toFile($path, 1);
 
-    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter, %d permissions, %s\n",
-        $path, $scheme, scalar(@permissions), $service_name;
+    printf "patched %s: launchMode=singleTask, allowBackup=false, %s intent-filter, %d permissions, %s, %s, unifiedpush queries\n",
+        $path, $scheme, scalar(@permissions), $service_name, $receiver_name;
 ' "$MANIFEST"
 
 # Say so if any of them did not take, rather than letting a silent no-op
@@ -147,7 +206,9 @@ for expected in \
     'android:name="android.permission.POST_NOTIFICATIONS"' \
     'android:name="android.permission.FOREGROUND_SERVICE"' \
     'android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"' \
-    'android:name="org.gtk.android.SyncService"'
+    'android:name="org.gtk.android.SyncService"' \
+    'android:name="org.gtk.android.PushReceiver"' \
+    'android:scheme="unifiedpush"'
 do
     if ! grep -q "$expected" "$MANIFEST"; then
         printf 'expected %s in %s after patching\n' "$expected" "$MANIFEST" >&2

@@ -25,6 +25,8 @@ pub(crate) mod android;
 #[cfg(target_os = "android")]
 pub(crate) mod android_notifications;
 #[cfg(target_os = "android")]
+pub(crate) mod android_push;
+#[cfg(target_os = "android")]
 pub(crate) mod android_sync_service;
 pub(crate) mod app_bundle;
 pub(crate) mod expression;

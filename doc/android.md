@@ -22,6 +22,7 @@ whole route hung on.
 * [S2 — Commune compiles for Android](#s2--commune-compiles-for-android)
 * [S3 — Commune on Android](#s3--commune-on-android)
 * [S5 — Notifications](#s5--notifications)
+* [S5b — UnifiedPush: the endpoint reaches Rust](#s5b--unifiedpush-the-endpoint-reaches-rust)
 * [S6 — The formats that would not draw](#s6--the-formats-that-would-not-draw)
 * [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
 * [S8 — Three input bugs that were one](#s8--three-input-bugs-that-were-one)
@@ -40,7 +41,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | **steps 0, 1 and 2 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 28 plugins are registered, and **audio and video both play on the emulator** through the same code every other platform runs. A voice message plays through OpenSL ES; an mp4 previews, sends and plays in the timeline, as does one that was already in the room. GTK's own `media-gstreamer` turned out not to be needed: `GstMediaStream`, written for macOS, covers Android too. Still missing: hardware decode via `androidmedia`, and calls. The plan and every measurement are in `doc/android-media-plan.md` |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; real push not started |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push is under way as S5b** — the plan is `doc/android-push-plan.md`, its step 0 (server chain, with `curl` alone) and step 1 (UnifiedPush registration; a real endpoint reaches Rust, and a push at a dead process starts the process) are **done, 26 August 2026**; next is step 2, the pusher |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
@@ -1845,6 +1846,77 @@ run.
 
 **The channel name is untranslated**, like everything else here — see
 [Translations are missing](#what-has-not-been-exercised).
+
+## S5b — UnifiedPush: the endpoint reaches Rust
+
+Real push, planned in `doc/android-push-plan.md` after the six-hour cap made the foreground
+service a stand-in. Step 0 — the whole server chain proven with `curl` and a throwaway Synapse,
+the spec pinned at `AND_3.1.0`, and the discovery that the glue runs `main` on _every_ process
+start — is written up in the plan; this section is what happened on the device.
+
+**Step 1 is done, 26 August 2026, on the emulator.** The pieces: `PushReceiver.java` beside the
+glue (`patch-gtk-receiver.sh`, the eighth patch script), a `<receiver>` for the five connector
+actions and a `<queries>` entry for the `unifiedpush://link` activity in `patch-manifest.sh`,
+`src/utils/android_push.rs` for discovery, registration and the receiving end, and
+`android::seed_from_jni()` so a JNI entry can capture the VM and `Context` in a process where GTK
+never opened a display. Registration state — token, distributor, endpoint — is a keyfile under
+`DataType::Persistent`, which is `no_backup`: the token is the registration's identity and has to
+outlive the process, and the broadcasts it validates arrive in processes started long after the
+one that registered.
+
+Two mechanics are worth recording:
+
+* **The JVM does not see `g_module_open`.** Native methods resolve only through libraries loaded
+  with `System.loadLibrary`, so the receiver loads `libcommune.so` once more by name — dlopen
+  reference-counts, so that is bookkeeping, not a second copy — and `stub.c` takes the address of
+  `Java_org_gtk_android_PushReceiver_nativeReceive`, because Meson links the staticlib as a plain
+  archive and an object nothing references is dropped.
+* **A never-opened distributor does not exist, as far as broadcasts go.** ntfy installed fresh
+  from F-Droid received nothing: a package that has never been launched is in the stopped state,
+  and broadcasts are silently not delivered to it. The identical registration after opening ntfy
+  once was answered in 178 ms. The fix is `FLAG_INCLUDE_STOPPED_PACKAGES` on the `REGISTER`
+  intent — being installed is what makes it the user's distributor; having been opened should not
+  be part of the contract. **Measured**: with ntfy force-stopped (which re-enters the stopped
+  state) and no process, the flagged `REGISTER` started ntfy's process and was answered.
+
+That last verification measured two more things at once, because it ran after a reinstall of
+Commune: ntfy logged _"Package name retrieved with shared identity"_ — the API 34
+`FLAG_SHARE_IDENTITY` path works, the legacy `application` extra was not needed — and, the token
+having survived under `no_backup`, ntfy matched its existing subscription and re-announced **the
+same endpoint** instead of minting a second registration. That is the plan's
+"survives a reinstall via `NEW_ENDPOINT`" measurement, made exactly as hoped.
+
+**Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
+`["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
+`https://ntfy.sh/upeOjmM0pSDm0r?up=1`, the `up` + 12 naming the plan documents — arrives at
+`nativeReceive` and is logged from Rust; and a synthetic Matrix notify POSTed at ntfy's gateway
+reaches the running application as a `MESSAGE` broadcast about five seconds later, most of it
+ntfy's own delivery latency.
+
+### The push at a dead process, measured a step early
+
+`am stop-app` (which kills without the stopped state that `am force-stop` would set), then the
+same gateway POST. Everything below is one logcat:
+
+* ntfy held the message and sent the broadcast; Android logged
+  `Start proc … for broadcast {…PushReceiver}` — the process exists again because of us.
+* `RuntimeApplication.onCreate` ran `main`, exactly as step 0 read in the source: GStreamer
+  registered its plugins, the application constructed itself, and **no `Activity` appeared and
+  nothing crashed** — `activate` never fired, so nothing tried to present a window.
+* `nativeReceive` logged the message **771 ms after process start**.
+* **Session restore runs without a window.** `Restoring previous session … @fakeguy` — the
+  Keystore unseals from a background process, and the ordinary sync loop started.
+* That restore reached `android_sync_service::update()`, and the API 31 exception the module had
+  written off as unreachable was thrown for real — `Background started FGS: Disallowed` — and
+  absorbed by the error arm built for other failures. The module comment now tells the truth.
+* **The freezer closed the window ten seconds in.** `ActivityManager: freezing` came 10.6 s after
+  process start, while the sync loop's 30-second long-poll was still in flight. That is the
+  budget: the accidental full-app wake fits a session restore but not a classic sync, which is
+  the measured version of why step 3 plans on `NotificationClient` fetching one event rather
+  than syncing.
+* One emulator artifact worth not chasing later: the woken process's syncs failed with DNS errors
+  against a homeserver the same emulator resolves when foregrounded. Noted, unexplained, and to be
+  retested on hardware before it is believed.
 
 ## S6 — The formats that would not draw
 

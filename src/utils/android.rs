@@ -150,6 +150,39 @@ pub(crate) fn init() -> Result<(), AndroidJniError> {
     Ok(())
 }
 
+/// Capture the `JavaVM` and application `Context` out of a JNI entry point.
+///
+/// The ordinary capture runs on the GTK thread ([`init()`]) and needs a window
+/// ([`application_context()`]). A JNI entry the Java side calls directly —
+/// `PushReceiver.nativeReceive` — has both in hand with neither precondition,
+/// and in a process started only for a broadcast it may be the first and only
+/// place they can come from. Calling this when both are already captured is
+/// free, and a race stores the same values either way.
+pub(crate) fn seed_from_jni(env: &mut JNIEnv, context: &JObject) -> Result<(), AndroidJniError> {
+    if JAVA_VM.get().is_none() {
+        let _ = JAVA_VM.set(env.get_java_vm()?);
+        debug!("Captured the Java VM from a JNI entry point");
+    }
+
+    if APPLICATION_CONTEXT.get().is_none() {
+        // The receiver is handed a restricted `Context`; the application one
+        // behind it is the one worth keeping, for the reason the static's
+        // comment gives.
+        let application = env
+            .call_method(
+                context,
+                "getApplicationContext",
+                "()Landroid/content/Context;",
+                &[],
+            )?
+            .l()?;
+        let _ = APPLICATION_CONTEXT.set(env.new_global_ref(&application)?);
+        debug!("Captured the application context from a JNI entry point");
+    }
+
+    Ok(())
+}
+
 /// Run the given closure with a `JNIEnv` valid for the calling thread.
 ///
 /// The thread is attached to the `JavaVM` if it was not already, and detached

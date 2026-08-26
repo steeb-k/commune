@@ -198,6 +198,12 @@ mod imp {
                 // start the service from, since it needs the `Activity` the
                 // window carries. This is the first moment there is one.
                 self.update_sync_service();
+
+                // Register with a UnifiedPush distributor, if one is
+                // installed. Step 1 scaffolding — see
+                // `utils::android_push::init()` for what is deliberately not
+                // decided here yet.
+                crate::utils::android_push::init();
             }
 
             window
