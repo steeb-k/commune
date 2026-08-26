@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 1.0.0-rc1</span>
-      <span>main @ 98403036</span>
+      <span>main @ a8fe620f</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -864,7 +864,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>98403036</code>, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>a8fe620f</code>, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -927,9 +927,9 @@
 
     { f: "Voice messages", g: "Messaging", kind: "msc", tag: "MSC3245",
       note: "Recording and sending, not just playback.",
-      c: { commune:0.5, fractal:0.5, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:0.5, ci:1 },
-      cn: { commune:"Plays them, with a waveform — there is no recorder in the tree, so none can be sent.",
-            fractal:"Same as Commune: playback only.",
+      c: { commune:1, fractal:0.5, ew:1, ex:1, ec:1, sc:1, fc:1, nh:0, nc:0.5, ci:1 },
+      cn: { commune:"Records from the toolbar's microphone button — Opus in Ogg, waveform and duration measured from the finished take — and sends the MSC3245 fields through the SDK. Playback was always there.",
+            fractal:"Playback only.",
             nc:"Renders audio; no recorder found in the source tree." } },
 
     { f: "Location sharing", g: "Messaging", kind: "spec", tag: "Spec",
@@ -1117,13 +1117,13 @@
             ex:"Deliberately simplified." } },
 
     { f: "Rooms in common with a user", g: "Server", kind: "spec", tag: "Mutual rooms",
-      c: { commune:0, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
-      cn: { commune:"GET /_matrix/client/v1/mutual_rooms is never called." } },
+      c: { commune:1, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"A Shared Rooms section on the profile page, off the stable endpoint with the MSC2666 unstable path as fallback. A server answering neither shows no section." } },
 
     { f: "Policy servers", g: "Server", kind: "spec", tag: "Policy servers",
-      note: "Spam-checked events, standardised in v1.16.",
-      c: { commune:0, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
-      cn: { commune:"The m.room.policy state event is neither read nor settable." } },
+      note: "The m.room.policy state event, standardised in v1.16. The checking itself is between homeservers; a client's role is the event.",
+      c: { commune:0.5, fractal:0, ew:-1, ex:-1, ec:-1, sc:-1, fc:-1, nh:-1, nc:-1, ci:-1 },
+      cn: { commune:"The timeline says who made which server check the room's messages, and when the checking stopped. Setting the event is not offered — a moderation control for a later round." } },
 
     { f: "Widgets and the integration manager", g: "Server", kind: "vendor", tag: "Vendor",
       c: { commune:0, fractal:0, ew:1, ex:0, ec:1, sc:0, fc:-1, nh:0, nc:0, ci:0 } },

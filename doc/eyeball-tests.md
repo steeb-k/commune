@@ -1164,3 +1164,79 @@ never arrives; the full flow needs a homeserver that sends mail.
       msisdn to alice through the Synapse admin API, reopen the page: a
       _Phone Numbers_ group appears, its description says why one cannot be
       added here, and removing it works.
+
+## Voice messages — `doc/voice-messages.md`
+
+A microphone button in the message toolbar, next to the sticker button. It
+needs a real capture device: a remote desktop session has none unless the
+RDP client redirects the microphone, so these checks belong on a console
+session (or WSLg with a mic passed through).
+
+* [ ] **No microphone fails politely.** On the RDP session as it is,
+      pressing the button must toast "No microphone could be opened" and
+      leave the composer as it was — no recording page, no crash.
+* [ ] **Recording looks like recording.** With a microphone, the toolbar
+      swaps to a red record icon and a counter that ticks "0:01, 0:02…"
+      once a second.
+* [ ] **Cancel throws the take away.** Cancel returns to the composer;
+      nothing is sent, and no `commune-voice-message-*.ogg` is left in the
+      temporary directory.
+* [ ] **Send delivers a voice message, not a file.** Say a few words, send:
+      the message plays back in Commune's own audio row, and Element shows
+      it as a voice message with a waveform — the waveform drawn from real
+      loudness, lumpy where you spoke and flat where you paused, is the
+      MSC3245 fields working.
+* [ ] **Switching rooms mid-recording drops the take.** Start recording,
+      click another room: the toolbar is back to the composer and nothing
+      was sent — same for opening a thread.
+* [ ] **Losing permission mid-recording drops it too.** Start recording as
+      bob in a room where alice then raises the events power level: the
+      recording page yields to the no-permission strip.
+
+## Mutual rooms — `doc/mutual-rooms.md`
+
+A _Shared Rooms_ section on the profile page (avatar ▸ from a member list or
+a message), listing the rooms you share with that user. Synapse needs
+`experimental_features: {msc2666_enabled: true}` for the unstable path;
+a Synapse new enough to advertise v1.19 answers the stable one.
+
+* [ ] **The section lists the shared rooms.** Open bob's profile as alice
+      with two rooms in common: both rows, with avatars, and no room the two
+      do not share.
+* [ ] **A row goes to its room.** Activating one closes the profile window
+      and lands the view in that room.
+* [ ] **Your own profile has no section.** The endpoint refuses the asking
+      account's own ID, and the page should not even ask.
+* [ ] **A server without the endpoint shows nothing.** Against a homeserver
+      with the feature off, the profile page simply has no _Shared Rooms_
+      heading — no error, no empty box.
+
+## Policy servers — `doc/policy-servers.md`
+
+One sentence in the timeline when `m.room.policy` changes. Sending the state
+event takes another client or `curl`; Commune only draws it.
+
+* [ ] **Setting a policy server says so.** As alice, send
+      `{"via": "policyserver.example"}` as `m.room.policy` with empty state
+      key (Element's /devtools does it): the timeline reads "alice made
+      policyserver.example check the messages of this room."
+* [ ] **Unsetting reads as removal.** Send `{}` the same way: "alice stopped
+      the checking of this room's messages."
+* [ ] **The room's state page shows the event** under the state list like
+      any other, rather than the "Unsupported event" fallback.
+
+## Wide stickers and emoticons shrink — fix of 26 August 2026
+
+A pack image sent alone in a message is presented at sticker size, and used
+to refuse to shrink below it.
+
+* [ ] **A wide sticker-sized emoticon fits.** Send a pack image wider than
+      it is tall alone in a message, narrow the window below the image's
+      width: the image scales down inside the message area, keeping its
+      shape, instead of running off the right edge.
+* [ ] **Several in one message share the width** rather than overflowing.
+* [ ] **Among words nothing changed:** the same pack image inside a
+      sentence still sits at text height.
+* [ ] **An `m.sticker` sticker still fits too.** A sticker from the sticker
+      picker in the same narrowed window scales down as before — this path
+      was checked by harness and should already behave.

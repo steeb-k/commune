@@ -46,7 +46,11 @@ joining it, `doc/threads.md` for threads,
 `doc/email-and-phone.md` for the identifiers on the account,
 `doc/recent-emoji.md` for the quick reactions, `doc/url-previews.md` for
 the card under a message that has a link, `doc/server-notices.md` for the
-room the homeserver talks to the user in, and `doc/calls.md` for one-to-one
+room the homeserver talks to the user in,
+`doc/voice-messages.md` for recording and sending a voice message,
+`doc/mutual-rooms.md` for the shared rooms on a profile,
+`doc/policy-servers.md` for the `m.room.policy` state event in the
+timeline, and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.
 Read the one for a feature before

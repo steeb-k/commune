@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 98403036</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; a8fe620f</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a><a href="#s11" data-for="s11"><span>Notification rules</span><b>6</b></a><a href="#s12" data-for="s12"><span>Email and phone on the account</span><b>7</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a><a href="#s11" data-for="s11"><span>Notification rules</span><b>6</b></a><a href="#s12" data-for="s12"><span>Email and phone on the account</span><b>7</b></a><a href="#s13" data-for="s13"><span>Voice messages</span><b>6</b></a><a href="#s14" data-for="s14"><span>Mutual rooms</span><b>4</b></a><a href="#s15" data-for="s15"><span>Policy servers</span><b>3</b></a><a href="#s16" data-for="s16"><span>Wide stickers and emoticons shrink — fix of 26 August 2026</span><b>4</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -3312,6 +3312,227 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
 <div class="txt"><strong>A phone number from elsewhere is listed and removable.</strong> Add an msisdn to alice through the Synapse admin API, reopen the page: a <em>Phone Numbers</em> group appears, its description says why one cannot be added here, and removing it works.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s13" data-open="1" data-checks="6"><header><h2>Voice messages</h2><span class="src">doc/voice-messages.md</span><span class="cnt" data-count>6 left</span></header><div class="body"><p>A microphone button in the message toolbar, next to the sticker button. It needs a real capture device: a remote desktop session has none unless the RDP client redirects the microphone, so these checks belong on a console session (or WSLg with a mic passed through).</p><div class="chk" data-id="k34c755853e" data-state="" data-lead="No microphone fails politely.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>No microphone fails politely.</strong> On the RDP session as it is, pressing the button must toast &quot;No microphone could be opened&quot; and leave the composer as it was — no recording page, no crash.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd439bd68ab" data-state="" data-lead="Recording looks like recording.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Recording looks like recording.</strong> With a microphone, the toolbar swaps to a red record icon and a counter that ticks &quot;0:01, 0:02…&quot; once a second.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k39e5ce1434" data-state="" data-lead="Cancel throws the take away.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Cancel throws the take away.</strong> Cancel returns to the composer; nothing is sent, and no <code>commune-voice-message-*.ogg</code> is left in the temporary directory.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ke8c834a985" data-state="" data-lead="Send delivers a voice message, not a file.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Send delivers a voice message, not a file.</strong> Say a few words, send: the message plays back in Commune&#x27;s own audio row, and Element shows it as a voice message with a waveform — the waveform drawn from real loudness, lumpy where you spoke and flat where you paused, is the MSC3245 fields working.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k574179c324" data-state="" data-lead="Switching rooms mid-recording drops the take.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Switching rooms mid-recording drops the take.</strong> Start recording, click another room: the toolbar is back to the composer and nothing was sent — same for opening a thread.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd2d1485300" data-state="" data-lead="Losing permission mid-recording drops it too.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Losing permission mid-recording drops it too.</strong> Start recording as bob in a room where alice then raises the events power level: the recording page yields to the no-permission strip.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s14" data-open="1" data-checks="4"><header><h2>Mutual rooms</h2><span class="src">doc/mutual-rooms.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>A <em>Shared Rooms</em> section on the profile page (avatar ▸ from a member list or a message), listing the rooms you share with that user. Synapse needs <code>experimental_features: {msc2666_enabled: true}</code> for the unstable path; a Synapse new enough to advertise v1.19 answers the stable one.</p><div class="chk" data-id="k00be4491a0" data-state="" data-lead="The section lists the shared rooms.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The section lists the shared rooms.</strong> Open bob&#x27;s profile as alice with two rooms in common: both rows, with avatars, and no room the two do not share.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kf9cd082c57" data-state="" data-lead="A row goes to its room.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A row goes to its room.</strong> Activating one closes the profile window and lands the view in that room.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k1ec5a649f2" data-state="" data-lead="Your own profile has no section.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Your own profile has no section.</strong> The endpoint refuses the asking account&#x27;s own ID, and the page should not even ask.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k8a0dbdfdf2" data-state="" data-lead="A server without the endpoint shows nothing.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A server without the endpoint shows nothing.</strong> Against a homeserver with the feature off, the profile page simply has no <em>Shared Rooms</em> heading — no error, no empty box.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s15" data-open="1" data-checks="3"><header><h2>Policy servers</h2><span class="src">doc/policy-servers.md</span><span class="cnt" data-count>3 left</span></header><div class="body"><p>One sentence in the timeline when <code>m.room.policy</code> changes. Sending the state event takes another client or <code>curl</code>; Commune only draws it.</p><div class="chk" data-id="k83f7a747e1" data-state="" data-lead="Setting a policy server says so.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Setting a policy server says so.</strong> As alice, send <code>{&quot;via&quot;: &quot;policyserver.example&quot;}</code> as <code>m.room.policy</code> with empty state key (Element&#x27;s /devtools does it): the timeline reads &quot;alice made policyserver.example check the messages of this room.&quot;</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k8c794341f4" data-state="" data-lead="Unsetting reads as removal.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Unsetting reads as removal.</strong> Send <code>{}</code> the same way: &quot;alice stopped the checking of this room&#x27;s messages.&quot;</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k642c3d14da" data-state="" data-lead="The room&#x27;s state page shows the event">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The room&#x27;s state page shows the event</strong> under the state list like any other, rather than the &quot;Unsupported event&quot; fallback.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s16" data-open="1" data-checks="4"><header><h2>Wide stickers and emoticons shrink — fix of 26 August 2026</h2><span class="cnt" data-count>4 left</span></header><div class="body"><p>A pack image sent alone in a message is presented at sticker size, and used to refuse to shrink below it.</p><div class="chk" data-id="k9693095f2f" data-state="" data-lead="A wide sticker-sized emoticon fits.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A wide sticker-sized emoticon fits.</strong> Send a pack image wider than it is tall alone in a message, narrow the window below the image&#x27;s width: the image scales down inside the message area, keeping its shape, instead of running off the right edge.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k8e6e61b6f7" data-state="" data-lead="Several in one message share the width">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Several in one message share the width</strong> rather than overflowing.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd0809689a7" data-state="" data-lead="Among words nothing changed:">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Among words nothing changed:</strong> the same pack image inside a sentence still sits at text height.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k6dc7274f84" data-state="" data-lead="An `m.sticker` sticker still fits too.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>An <code>m.sticker</code> sticker still fits too.</strong> A sticker from the sticker picker in the same narrowed window scales down as before — this path was checked by harness and should already behave.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">

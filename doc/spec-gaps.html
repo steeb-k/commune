@@ -487,12 +487,12 @@
     <div class="eyebrow">
       <span>Commune 1.0.0-rc1</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ 98403036</span>
+      <span>main @ a8fe620f</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Eight gaps:
-      five with no implementation at all, three implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Seven gaps:
+      three with no implementation at all, four implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -524,25 +524,32 @@
       not speak is spoken. Round 5 followed the same day: the predefined notification rules
       got their switches, and the identifiers on the account became visible on a
       password-auth homeserver — an email address can be added and removed, a phone number
-      only seen and removed, the stance that keeps that row partial.
+      only seen and removed, the stance that keeps that row partial. Round 6, still the same
+      day, took two rows out of the absent column: Mutual Rooms is implemented — a
+      profile page now lists the rooms in common, off the stable v1.19 endpoint with the
+      unstable path as fallback for a homeserver that has not caught up — and Policy Servers
+      moved to the partial column, the timeline saying what <code>m.room.policy</code> means
+      while setting it stays unoffered. Voice messages, the one proposal this fork admitted
+      past its no-MSC stance, got their recording half the same round; that row lives on the
+      comparison page rather than here, being an MSC.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">5</div>
+      <div class="score-num">3</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">3</div>
+      <div class="score-num">4</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">40</div>
+      <div class="score-num">41</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces, threads and one-to-one calls.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces, threads, mutual rooms and one-to-one calls.</div>
     </div>
   </div>
 
@@ -579,7 +586,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">5 modules</span></h2>
+      <h2>Absent <span class="tick gone">3 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -609,20 +616,6 @@
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
           <tr>
-            <td><span class="feat">Mutual rooms</span></td>
-            <td class="mod">Mutual Rooms</td>
-            <td class="state">The user profile dialog doesn't offer "rooms in common". <code>GET /_matrix/client/v1/mutual_rooms</code> is never called.</td>
-            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Policy servers</span></td>
-            <td class="mod">Policy Servers</td>
-            <td class="state">The <code>m.room.policy</code> state event isn't read or settable, and spam-checked events aren't distinguished in the timeline.</td>
-            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
             <td><span class="feat">OpenID</span></td>
             <td class="mod">OpenID</td>
             <td class="state">No OpenID token request. Only matters for proving your identity to an integration manager or a widget, and Commune hosts neither.</td>
@@ -636,11 +629,13 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">3 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Two are gaps in coverage;
-        the third — the account's identifiers — is narrower by decision, since adding a phone
-        number takes SMS infrastructure almost no homeserver runs. The last deliberate
+        the account's identifiers are narrower by decision, since adding a phone
+        number takes SMS infrastructure almost no homeserver runs; and policy servers arrived
+        here from the absent column on 26 August 2026 — the timeline says what
+        <code>m.room.policy</code> means, and setting it is what remains. The last deliberate
         departure before it, image packs
         writing unstable names, was closed on 22 August 2026. Spaces passed through this column
         and out of it in August 2026; threads passed through it in a single day, arriving from
@@ -663,9 +658,34 @@
         </thead>
         <tbody>
           <tr>
+            <td><span class="feat">Recording a voice message</span></td>
+            <td class="mod">MSC3245</td>
+            <td class="state">The sending half of the one proposal admitted past the fork’s no-MSC stance, playback having shipped from the start. A microphone button in the toolbar records through GStreamer — Opus in Ogg, the encoding every peer’s voice implementation reads — and the finished take is analyzed by the same code the attachment dialog uses, so the duration and the 30–120-sample normalized waveform the proposal asks for are measured from what was actually recorded. The SDK writes the wire format, both the stable-intended and unstable field names. A recording is dropped, never sent, when the room, the thread or the permission changes under it; a machine without a microphone gets a toast, not a broken page.</td>
+            <td><span class="chip out">Outside</span><span class="chip-note">An MSC, not yet a module — graded here because every maintained peer ships it. Recording needs a real capture device, which a remote desktop has not got: unwatched.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Rooms in common with a user</span></td>
+            <td class="mod">Mutual Rooms</td>
+            <td class="state">A Shared Rooms section on the profile page, drawn from <code>GET /_matrix/client/v1/mutual_rooms</code> — stable since v1.19 but absent from the pinned ruma, whose request macros refuse to expand outside their own tree, so the request is spelled out over the SDK’s own HTTP client. The unstable MSC2666 path is the fallback on a 404, for a homeserver that has not caught up; a server answering neither gets no section at all, since the endpoint’s absence should look like nothing rather than an error. The section never asks about the account’s own user, which the spec makes an error, and only draws rooms the local store can resolve.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">No client on the comparison page offers this. Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Saying what m.room.policy means</span></td>
+            <td class="mod">Policy Servers</td>
+            <td class="state">The state event joined the timeline’s allow-list and reads as a sentence: who made which server check the room’s messages, and when the checking stopped — an act of moderation worth saying, like the ACL and join-rule changes beside it. The plan’s original scope, “mark spam-checked events”, was cut for the best reason: the spec has no such thing. Clients never talk to the policy server; flagged events are redacted or rejected between homeservers before a client sees them. Setting the event is not offered yet, which is what keeps the module in the partial column above.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
             <td><span class="feat">Email and phone on the account</span></td>
             <td class="mod">Client-Server API</td>
             <td class="state">Since 26 August 2026, a subpage off the account settings lists every identifier on the account; an email address can be added — the request-token flow, then <code>/account/3pid/add</code> through the UIAA dialog — and any identifier can be removed behind a confirmation that says what is lost. What keeps the row here: a phone number can only be seen and removed, never added, because validating one takes a text message and the infrastructure to send one is not something a client can assume — a stance, not a backlog. On a homeserver whose account management is in the browser (matrix.org included) the whole page defers there, which is the spec's own delegation.</td>
+            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Policy servers</span></td>
+            <td class="mod">Policy Servers</td>
+            <td class="state">Since 26 August 2026 the timeline reads <code>m.room.policy</code> and says it plainly: who made which server check the room's messages, and when the checking stopped. That is most of the client role — the spec is explicit that clients never talk to the policy server itself, and events it flags are dealt with between homeservers before a client sees them. What keeps the row here: setting the event is not offered, so appointing a policy server still takes another client. A moderation control for a later round.</td>
             <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
@@ -690,13 +710,13 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">26 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">29 touch the protocol</span></h2>
       <p class="sec-sub">
-309 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
+314 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Nineteen additions do touch the protocol,
+        rebrand, which the spec has no opinion about. The additions below do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
-        the sixteen that a module covers follow it, and the other two are in space the standard
+        those a module covers follow it, and the rest are in space the standard
         leaves empty. Two of them — the server access list and the quick reactions — were closed
         on 22 August and left out of this table until 23 August; the notes further down had them
         all along, which is how they went unmissed and uncounted at the same time.
@@ -878,7 +898,7 @@
       </table>
     </div>
     <p class="sec-sub">
-      The rest of the 309 commits stay clear of the protocol: the macOS port — its own
+      The rest of the 314 commits stay clear of the protocol: the macOS port — its own
       <code style="font-family:var(--f-mono);font-size:0.875em">GtkMediaStream</code> for audio and
       video, an image-decoder API with a pure-Rust backend, Keychain storage, the menu bar, the
       bundle, icons and fonts — plus the rebrand to Commune, the media history viewer's age
@@ -1329,7 +1349,7 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>98403036</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>a8fe620f</code>, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link
