@@ -651,6 +651,13 @@ code as macOS, same reason.
 SVG, HEIC and AVIF render as stills through the loaders MSYS2 ships; **JXL** has no loader
 anywhere and reports "Image format not supported".
 
+**Attaching an image used to send it as a plain file**, here and on macOS both: GIO's content
+types are MIME types only on Linux — Windows reports registry extensions (`.png`), macOS reports
+UTIs (`public.png`) — so the attachment's type parsed as nothing, fell back to
+`application/octet-stream`, and arrived as a downloadable file row. `FileInfo::try_from_file` now
+converts through `g_content_type_get_mime_type` before parsing (`cd668da1`). Worth one fresh
+eyeball here: an attached image should arrive as a picture.
+
 **Notifications are ours rather than GLib's**, and clicking one works whether or not Commune is
 running. Three registry entries make that true, all written by the application itself at startup
 so that an unpacked `.zip` behaves like an installed copy:
