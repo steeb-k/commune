@@ -220,6 +220,14 @@ mod imp {
             )
         }
 
+        /// Go back one page of the login flow, if there is one to go back to.
+        ///
+        /// Returns whether a page was popped. See `Window::close_request()`.
+        #[cfg(target_os = "android")]
+        pub(super) fn handle_back_navigation(&self) -> bool {
+            self.navigation.pop()
+        }
+
         /// Set whether auto-discovery is enabled.
         pub fn set_autodiscovery(&self, autodiscovery: bool) {
             if self.autodiscovery.get() == autodiscovery {
@@ -529,6 +537,14 @@ glib::wrapper! {
 impl Login {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// Go back one page of the login flow, if there is one to go back to.
+    ///
+    /// Returns whether a page was popped. See `Window::close_request()`.
+    #[cfg(target_os = "android")]
+    pub(crate) fn handle_back_navigation(&self) -> bool {
+        self.imp().handle_back_navigation()
     }
 
     /// Set the Matrix client.

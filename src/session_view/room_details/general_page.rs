@@ -169,13 +169,14 @@ mod imp {
                     else {
                         return glib::Propagation::Proceed;
                     };
-                    let Some(parent_window) = room_details.transient_for().and_downcast::<Window>()
-                    else {
+                    let Some(parent_window) = room_details.root().and_downcast::<Window>() else {
                         return glib::Propagation::Proceed;
                     };
 
                     parent_window.session_view().show_matrix_uri(uri);
-                    room_details.close();
+                    // Not `close()`: on Android that is a back step. See
+                    // `RoomDetails`'s `close_attempt()`.
+                    room_details.force_close();
 
                     glib::Propagation::Stop
                 }

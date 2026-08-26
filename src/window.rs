@@ -264,6 +264,18 @@ mod imp {
 
     impl WindowImpl for Window {
         fn close_request(&self) -> glib::Propagation {
+            // Android has no window to close: the system's back gesture and
+            // back button arrive here as a close request, because a delete
+            // event is all GDK's Android backend has to turn them into. Back
+            // means "leave the thing I am looking at", and only leaves the app
+            // when there is nothing left to leave, so this has to be answered
+            // by unwinding the view one step at a time and letting the close
+            // through only once there is nothing to unwind.
+            #[cfg(target_os = "android")]
+            if self.handle_back_navigation() {
+                return glib::Propagation::Stop;
+            }
+
             if let Err(error) = self.save_window_size() {
                 warn!("Could not save window state: {error}");
             }
@@ -290,6 +302,47 @@ mod imp {
     impl AdwApplicationWindowImpl for Window {}
 
     impl Window {
+        /// Go back one step through what is on screen, if there is a step to
+        /// go back through.
+        ///
+        /// Returns whether anything was closed, which is whether the close
+        /// request that asked should be refused.
+        ///
+        /// The order is what is on top: a popover is above a dialog, a dialog
+        /// is above the page under it, and the page decides for itself.
+        #[cfg(target_os = "android")]
+        fn handle_back_navigation(&self) -> bool {
+            let obj = self.obj();
+
+            // A popover holds the focus while it is up, which is the only
+            // handle on it from here -- GTK exposes no list of open popovers.
+            // Spelled out because `GtkWindow` and `GtkRoot` both have a
+            // `focus` getter and the compiler cannot pick between them.
+            let focus = gtk::prelude::GtkWindowExt::focus(&*obj);
+            if let Some(popover) = focus
+                .and_then(|widget| widget.ancestor(gtk::Popover::static_type()))
+                .and_downcast::<gtk::Popover>()
+            {
+                popover.popdown();
+                return true;
+            }
+
+            // A dialog is not handled here and cannot be: `close-request` is
+            // `G_SIGNAL_RUN_LAST` with a boolean accumulator, and
+            // `AdwDialogHost` connects a handler that closes the visible dialog
+            // and stops the emission. Connected handlers run before the class
+            // closure, so by the time this vfunc could look, libadwaita has
+            // already closed the dialog and this was never called. Which is the
+            // behaviour we want anyway; a dialog that wants back to mean
+            // something else says so in its own `close_attempt`.
+
+            match self.visible_page() {
+                WindowPage::Login => self.login.handle_back_navigation(),
+                WindowPage::Session => self.session_view.handle_back_navigation(),
+                WindowPage::Loading | WindowPage::Error => false,
+            }
+        }
+
         /// Set whether the window should be in compact view.
         fn set_compact(&self, compact: bool) {
             if compact == self.compact.get() {

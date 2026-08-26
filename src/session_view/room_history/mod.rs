@@ -1589,10 +1589,8 @@ mod imp {
                 return;
             };
 
-            let window =
-                RoomDetails::new(self.obj().root().and_downcast_ref(), &room, initial_view);
-
-            window.present();
+            let dialog = RoomDetails::new(&room, initial_view);
+            dialog.present(Some(&*self.obj()));
         }
 
         /// View the list of pending knock requests.

@@ -71,7 +71,6 @@ use crate::{
 ///
 /// - `ToastableDialog`
 /// - `AdwPreferencesDialog`
-/// - `AdwPreferencesWindow`
 /// - `Window`
 ///
 /// [`PillSource`]: crate::components::PillSource
@@ -154,7 +153,6 @@ macro_rules! _toast_accum {
 ///
 /// - `ToastableDialog`
 /// - `AdwPreferencesDialog`
-/// - `AdwPreferencesWindow`
 /// - `Window`
 pub(crate) fn add_toast(widget: &gtk::Widget, toast: adw::Toast) {
     if let Some(dialog) = widget
@@ -168,12 +166,7 @@ pub(crate) fn add_toast(widget: &gtk::Widget, toast: adw::Toast) {
     {
         dialog.add_toast(toast);
     } else if let Some(root) = widget.root() {
-        // FIXME: AdwPreferencesWindow is deprecated but RoomDetails uses it.
-        #[allow(deprecated)]
-        if let Some(window) = root.downcast_ref::<adw::PreferencesWindow>() {
-            use adw::prelude::PreferencesWindowExt;
-            window.add_toast(toast);
-        } else if let Some(window) = root.downcast_ref::<Window>() {
+        if let Some(window) = root.downcast_ref::<Window>() {
             window.add_toast(toast);
         } else {
             panic!("Trying to display a toast when the parent doesn't support it");
@@ -188,7 +181,6 @@ pub(crate) fn add_toast(widget: &gtk::Widget, toast: adw::Toast) {
 ///
 /// - `ToastableDialog`
 /// - `AdwPreferencesDialog`
-/// - `AdwPreferencesWindow`
 /// - `Window`
 pub(crate) fn add_toast_with_vars(
     widget: &gtk::Widget,
