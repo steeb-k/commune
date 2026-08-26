@@ -1188,6 +1188,9 @@ mod imp {
         async fn send_file_inner(&self, file: gio::File) {
             let obj = self.obj();
 
+            #[cfg(target_os = "macos")]
+            let file = crate::utils::repair_pasteboard_file(file);
+
             let Some(path) = file.path() else {
                 warn!("Could not read file: file does not have a path");
                 toast!(obj, gettext("Error reading file"));

@@ -144,6 +144,24 @@ impl DataType {
     }
 }
 
+/// Repair a file handed over by GTK's broken macOS pasteboard encoding.
+///
+/// GTK 4.22's macOS backend percent-encodes the whole `file://…` string it
+/// builds for a file that is dropped on the window or read from the
+/// clipboard, so the scheme's own colon comes out as `%3A` and GIO, unable
+/// to parse a scheme, hands us a dummy file with no path. The rest of the
+/// string *is* correctly encoded, so putting the colon back yields exactly
+/// the URI a fixed GTK produces. Upstream fixed it on `main` in `2a8a2895`;
+/// no 4.22 release carries the fix. Once one does, this never triggers: a
+/// healthy local file has a path.
+#[cfg(target_os = "macos")]
+pub(crate) fn repair_pasteboard_file(file: gio::File) -> gio::File {
+    match file.uri().strip_prefix("file%3A//") {
+        Some(rest) if file.path().is_none() => gio::File::for_uri(&format!("file://{rest}")),
+        _ => file,
+    }
+}
+
 /// Replace variables in the given string with the given dictionary.
 ///
 /// The expected format to replace is `{name}`, where `name` is the first string
@@ -924,5 +942,31 @@ where
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move { self.0.await.unwrap_or_default() })
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_mangled_pasteboard_uri_gets_its_scheme_back() {
+        // The exact string GTK 4.22's macOS backend produces for
+        // "/tmp/test file ü.png" dropped from the Finder.
+        let broken = gio::File::for_uri("file%3A///tmp/test%20file%20u%CC%88.png");
+        assert!(broken.path().is_none());
+
+        let repaired = repair_pasteboard_file(broken);
+        assert_eq!(
+            repaired.path().as_deref(),
+            Some(Path::new("/tmp/test file u\u{308}.png"))
+        );
+    }
+
+    #[test]
+    fn a_healthy_file_is_left_alone() {
+        let file = gio::File::for_path("/tmp/plain.png");
+        let same = repair_pasteboard_file(file.clone());
+        assert_eq!(same.uri(), file.uri());
     }
 }
