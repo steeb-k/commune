@@ -6,7 +6,7 @@
 # purpose: it only ever rewrites the hash it last wrote.
 commit 033e6b04
 count 280
-sha256 cf5306ad60d582bb8ebd8b62fe957e26bac0527f4f1e71f55feca459a0e8fe53 doc/client-comparison.html
-sha256 d4cd54b438f5375669d8e53422cc218220957fe5859e75130751583241bacac5 doc/spec-gaps.html
+sha256 acc8a597ed8a88c7c8e89c087c4983df1f94b7a93f99dc09715ead4100dcef1e doc/client-comparison.html
+sha256 2415728fe2ff9a498c9290085e89b0ad2e2b9d57fc2aa97ce8102cf25dfe6562 doc/spec-gaps.html
 sha256 e0be99c1c2cb50f805591bca2390009fbce25fcc51fb7137ee7684c28f09c922 doc/upstream-defects.html
 sha256 73426fea225a91f0725dbb6ff86ed52c4bdbae31094afef8f079326dac1bd2c4 doc/eyeball-run.html
