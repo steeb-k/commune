@@ -405,9 +405,27 @@ message's avatar entirely; the user asked for it on the right, so it now
 moves to the far grid column, the continuation margin mirrors, and only
 the name stays hidden.
 
-**Next: round 8 — finish what we already claim** (per-message encryption
-shields, retry/discard for failed sends, `UtdCause`), per the decided
-rounds below.
+**Round 8 is built, 26 August 2026 — finish what we already claim, three
+items in three commits.** The audit's framing held: every one was a
+computed answer nobody was saying. Per-message shields
+(`Event::shield()` over `get_shield(false)`, an icon beside the delivery
+state, a sentence per code) and the real `UtdCause` sentences — sent
+before joining, withheld with or without this device's verification being
+the reason, history gated on backup or on verifying the session — with
+only the unknown cause still promising a retry; `matrix-sdk-base` joined
+the dependencies for the type. _Try Sending Again_ over
+`SendHandle::unwedge()` beside the _Discard_ upstream already had, both
+error states retryable on purpose. And the knock banner got its memory:
+`subscribe_to_knock_requests` counts only unreviewed requests, _View_
+marks them seen, and one correction against the plan's assumption —
+**the seen list is the SDK's local store, not account data**, so another
+device announces the same knocks again, by the SDK's contract. Ledgers:
+`doc/message-shields.md`, `doc/failed-sends.md`, `doc/knocks.md`. The
+audit's riders (captions, upload progress, the outbox listing) stayed
+out, recorded in the failed-sends ledger.
+
+**Next: round 9, optional — tag order and moderation policy lists**, or
+the audit's smaller wins, per the decided rounds below.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:

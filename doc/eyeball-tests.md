@@ -1318,3 +1318,49 @@ messages; it now sits to the right of the bubble.
 * [ ] **Continuations still align.** Your second bubble in a group lines
       up with the first one's right edge rather than sticking out past it.
 * [ ] **Clicking it opens your profile**, the same as any sender avatar.
+
+## Message shields — `doc/message-shields.md`
+
+A small shield icon beside a message's delivery state in encrypted rooms,
+and honest sentences on undecryptable messages. Needs an encrypted room
+and a second account with an unverified session.
+
+* [ ] **A clean message draws nothing.** In an encrypted room where both
+      sides are verified, no shield appears on ordinary messages.
+* [ ] **An unverified sender draws a shield.** A message from an account
+      whose session is not verified carries the icon; hovering it says
+      why in a sentence, not a code.
+* [ ] **A message sent in the clear is called out.** Send a plain event
+      into an encrypted room (curl with an m.room.message via
+      /send/m.room.message): the red shield reads that the message was
+      not encrypted, in a room that is.
+* [ ] **An undecryptable message says why.** A message sent to the room
+      before you joined reads as exactly that — not "waiting for keys".
+      Log in on a fresh session with backup off: history reads as
+      unavailable on this device, and with an unverified session it tells
+      you to verify.
+
+## Failed sends — `doc/failed-sends.md`
+
+_Try Sending Again_ in the context menu of a message that failed.
+
+* [ ] **A failed message can be retried.** Cut the network (or suspend
+      the harness), send a message, wait for the error icon, restore the
+      network: the context menu offers _Try Sending Again_, and using it
+      delivers the message.
+* [ ] **Discard still works** beside it, and a message that is merely
+      sending offers only _Discard_, not retry.
+
+## Knock banner memory — `doc/knocks.md`
+
+The pending-knocks banner counts only requests not yet reviewed on this
+device.
+
+* [ ] **A knock raises the banner** in a knock-rule room where you can
+      act on it, counting the pending requests.
+* [ ] **Viewing is reviewing.** Press _View_: the members page opens on
+      the knocking list, and back in the room the banner is gone — even
+      though the knock is still pending.
+* [ ] **A new knock raises it again**, counting only the new one.
+* [ ] **Answering from the members page needs no banner.** Accept or
+      decline a knock there: nothing re-appears.

@@ -52,6 +52,9 @@ room the homeserver talks to the user in,
 `doc/policy-servers.md` for the `m.room.policy` state event in the
 timeline, `doc/chat-bubbles.md` for the bubbled timeline layout,
 `doc/invite-by-email.md` for inviting somebody who has no account yet,
+`doc/message-shields.md` for the per-message trust verdicts,
+`doc/failed-sends.md` for retrying a message that failed to send,
+`doc/knocks.md` for the banner that announces pending knocks,
 and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.

@@ -538,7 +538,10 @@
       against <code>m.accepted_terms</code>; the invite subpage offers the invitation the
       moment the search text is an email address; and a settings row names the identity server
       in use, on whose word, and lets the account set, decline or defer the choice. The
-      build-first shortlist below is empty for the first time.
+      build-first shortlist below is empty for the first time. Round 8 closed the day out by
+      finishing what was already claimed: the trust verdict the SDK computed for every message
+      of an encrypted room is drawn, an undecryptable message names its actual cause, a failed
+      send can be retried, and the knock banner remembers what was reviewed.
     </p>
   </header>
 
@@ -653,6 +656,12 @@
         </thead>
         <tbody>
           <tr>
+            <td><span class="feat">Saying what the SDK already knew</span></td>
+            <td class="mod">End-to-End Encryption<br>Knocking</td>
+            <td class="state">Round 8, three answers the SDK computed on every item and nothing repeated. Every message of an encrypted room now carries its trust verdict — a red shield and a sentence for an unverified or mismatched sender, an unsigned or unknown device, or a message sent in the clear; a grey one for a caveat; nothing for the ordinary case, which is what keeps the others readable. An undecryptable message names its cause instead of promising a retry it cannot keep: sent before the account joined, withheld by the sender (with or without this device’s verification being the reason), history gated on key backup being on or on this session being verified — only the unknown cause still says the keys may arrive. A message that failed to send offers <em>Try Sending Again</em> over the send queue’s own unwedge, beside the Discard that always existed. And the pending-knocks banner counts only requests not yet reviewed on this device — viewing them marks them seen, in the SDK’s local store by its contract.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen; the shield checks need a second account with an unverified session.</span></td>
+          </tr>
+          <tr>
             <td><span class="feat">Inviting somebody by email</span></td>
             <td class="mod">Third-party invites<br>Identity Service API</td>
             <td class="state">The invite subpage offers "Invite {address} by email" the moment the search text is an address. Behind it, a module of the session talks to an identity server the way the two specifications lay out: the server is resolved from the <code>m.identity_server</code> account data — whose explicit null is honored as "none, and stop asking" — or the <code>.well-known</code> of the account’s server name, and must answer the status endpoint before it is believed; registration exchanges the homeserver’s OpenID token for the identity server’s own; the terms of service are fetched, filtered against <code>m.accepted_terms</code>, presented in the interface’s language with links to the documents, and recorded back on acceptance. The invitation itself is <code>POST /invite</code> with the 3PID block, which the SDK carries. A settings row edits the whole tri-state of the preference, validating a named server before writing it.</td>
@@ -711,7 +720,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">30 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">31 touch the protocol</span></h2>
       <p class="sec-sub">
 321 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
