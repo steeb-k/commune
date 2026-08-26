@@ -123,6 +123,24 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                     ))
                     .build()]);
             }
+
+            if matches!(
+                state,
+                MessageState::RecoverableError | MessageState::PermanentError
+            ) {
+                // Retry sending the event.
+                action_group.add_action_entries([gio::ActionEntry::builder("retry-send")
+                    .activate(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                imp.retry_send().await;
+                            });
+                        }
+                    ))
+                    .build()]);
+            }
         }
 
         self.add_message_like_actions(&action_group, &room, &event);
@@ -734,6 +752,32 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
     }
 
     /// Cancel sending the event of this row.
+    /// Try to send the current failed event again.
+    async fn retry_send(&self)
+    where
+        Self::Type: IsA<gtk::Widget>,
+    {
+        let Some(event) = self.event() else {
+            error!("Could not retry timeline item that is not an event");
+            return;
+        };
+        let Some(handle) = event.item().local_echo_send_handle() else {
+            error!("Could not retry event without a send handle");
+            return;
+        };
+
+        let result = spawn_tokio!(async move { handle.unwedge().await })
+            .await
+            .expect("task was not aborted");
+        if let Err(error) = result {
+            error!("Could not retry sending the message: {error}");
+            toast!(
+                self.obj(),
+                gettext("Could not try sending the message again")
+            );
+        }
+    }
+
     async fn cancel_send(&self)
     where
         Self::Type: IsA<gtk::Widget>,
