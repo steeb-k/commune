@@ -520,13 +520,39 @@ fi
 IDENTITY="${CODESIGN_IDENTITY:--}"
 note "signing with identity '$IDENTITY'"
 
+# An ad-hoc signature cannot carry a timestamp, and the hardened runtime buys
+# nothing without notarization -- but a real identity gets both, because a
+# secure timestamp and the hardened runtime are exactly what notarization
+# checks beyond the signature itself. A real identity also stops discarding
+# codesign's stderr: a timestamp-server failure leaves the file's previous
+# signature in place, which the verify below cannot tell from success, and
+# notarization would reject the bundle much later with much less to go on.
+if [ "$IDENTITY" = '-' ]; then
+    SIGN_FLAGS='--timestamp=none'
+    SIGN_ERR='/dev/null'
+else
+    SIGN_FLAGS='--timestamp --options runtime'
+    SIGN_ERR="$OUT_DIR/.codesign-err"
+fi
+
 # Nested code first, the bundle last. `--deep` would do this in one call but is
 # deprecated, and it signs in an order codesign itself warns about.
 while read -r f; do
     file "$f" | grep -q 'Mach-O' || continue
-    codesign --force --timestamp=none --sign "$IDENTITY" "$f" 2>/dev/null
+    # shellcheck disable=SC2086 -- SIGN_FLAGS is a flag list on purpose
+    codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$f" 2>"$SIGN_ERR" || {
+        echo "bundle: signing failed for $f:" >&2
+        [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+        exit 1
+    }
 done <"$ALL_BINARIES"
-codesign --force --timestamp=none --sign "$IDENTITY" "$APP" 2>/dev/null
+# shellcheck disable=SC2086
+codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR" || {
+    echo "bundle: signing failed for $APP:" >&2
+    [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+    exit 1
+}
+[ "$SIGN_ERR" != '/dev/null' ] && rm -f "$SIGN_ERR"
 codesign --verify --deep --strict "$APP"
 
 # ---------------------------------------------------------------------------

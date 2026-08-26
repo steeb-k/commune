@@ -435,22 +435,42 @@ it in one call but is deprecated and signs in an order `codesign` itself warns a
 
 The default is an ad-hoc signature (`-`), which is a **new identity on every build**. The Keychain
 binds an item's access control to the signing identity, so every rebuild makes macOS ask again
-whether the app may read the session it stored last time. The fix is a stable identity: make a
-self-signed **Code Signing** certificate in Keychain Access (Certificate Assistant → Create a
-Certificate, type "Code Signing", self-signed), then
+whether the app may read the session it stored last time. The fix is any stable identity, and there
+is now a real one — the paid team is `VLC2KZKNBH`:
 
 ```sh
-CODESIGN_IDENTITY="Commune Dev" meson compile -C _build macos-bundle
+CODESIGN_IDENTITY='Developer ID Application: Steve Kaznak (VLC2KZKNBH)' \
+    meson compile -C _build-release macos-dmg
 ```
+
+A real identity changes what `bundle.sh` asks `codesign` for: ad-hoc keeps `--timestamp=none`, but
+anything else signs with `--timestamp --options runtime`, because a secure timestamp and the
+hardened runtime are exactly what notarization checks beyond the signature itself. The hardened
+runtime's library validation is satisfied by construction — every dylib and plugin in the bundle is
+signed by the same identity in the same pass — and a signed release build has been seen running
+with it: session restore, sync, the lot.
+
+Two one-time behaviours worth expecting. Signing with the key pops a Keychain consent dialog on
+first use — "Always Allow" covers the several dozen files of a bundle pass. And the first launch of
+a Developer-ID build over a session stored by an ad-hoc build re-asks for Keychain access once —
+the item's ACL names the old identity — after which updates signed with the same identity are
+silent, which is the entire point. The certificates themselves are Xcode's cloud-managed kind:
+the private keys sync through iCloud Keychain, are **not exportable** as `.p12`, and their backup
+is the Apple ID itself. `spctl -a -t exec -vv` on a signed, un-notarized bundle says
+`rejected — Unnotarized Developer ID`; that is the expected resting state until a release is
+notarized and stapled.
 
 ### `.dmg` or `.tar.gz`
 
 Both are built, and the difference matters more than it looks.
 
 A `.dmg` is the familiar shape — open it, drag the icon onto `Applications`. But anything a browser
-downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc or self-signed
-signature for a quarantined app, so the **first launch is refused outright**. Until there is a
-Developer ID to sign and notarize with, the `.dmg` is the artefact that will not open.
+downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc signature — or
+a Developer ID one it cannot check a notarization ticket for — on a quarantined app, so the
+**first launch is refused outright**. The Developer ID now exists and the bundle signs with it;
+what still stands between the `.dmg` and a clean download-and-open is a `notarytool submit` and a
+staple. The `notarytool` credentials are already stored on this machine under the profile name
+`notary`.
 
 Files extracted from a tarball on the command line are never quarantined in the first place, which
 is why the sibling SEED Sync project ships a `curl | sh` tarball. **`make-tarball.sh` produces the
