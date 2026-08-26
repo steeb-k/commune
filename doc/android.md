@@ -2306,7 +2306,7 @@ from a desktop.
 
 > _"the compose textbox doesn't capitalize at the beginning of the line or after a period — it
 > doesn't act like a normal input box on Android."_
-
+>
 > _"opening a picture — it goes full screen, and on Android you swipe from the edge to go back on a
 > view like that, but this app acts like you are swiping back from the main view, sending you back
 > to the desktop."_
@@ -2326,7 +2326,7 @@ homeserver is a URL, a search box is a query, and a keyboard that shifts the fir
 them is a keyboard fighting the user.
 
 `word-completion` was deliberately left off. It maps to `TYPE_TEXT_FLAG_AUTO_COMPLETE`, which tells
-the keyboard the *application* is completing what is typed — true here, the composer completes
+the keyboard the _application_ is completing what is typed — true here, the composer completes
 mentions and emoji — and the cost is that some keyboards then stop offering their own suggestions.
 The composer's completion is for `@` and `:`; the keyboard's is for every other word. Both are
 wanted.
@@ -2485,7 +2485,7 @@ guard (`gtkmain.c:1723`, which drops delete events when a grab lives outside the
 `debuggerd -b <pid>` settled it in one shot. The GTK thread and GStreamer's own thread are deadlocked
 against each other:
 
-```
+```text
 "GTK Thread"                              "GstPlay"
 ScaleRevealer::transition_done            gst_play_stop_internal
   set_visible(false)                        gst_element_set_state
@@ -2523,7 +2523,6 @@ was already closed. `MediaViewer::is_open()` asks the revealer's `reveal-child` 
 `close()` sets synchronously. The session view's own check had the same bug latent in it and now
 uses the same method.
 
-
 ### What was measured
 
 Every surface reachable on the emulator, with both the BACK key and a real edge swipe
@@ -2557,7 +2556,6 @@ One thing this deliberately does not touch: dismissing the soft keyboard. Androi
 IME before the activity while the keyboard is up, so the app never sees that press, and the
 behaviour recorded under [Known gaps](#known-gaps) — BACK hides the keyboard and leaves the room
 open — is unchanged.
-
 
 ## Before this ships
 
@@ -2594,10 +2592,10 @@ all of it blocks calling the port finished.
   | `patch-gtk-caps-sentences.sh` | the JNI field cache reads `TEXT_FLAG_CAP_WORDS` into `text_flag_cap_sentences`, so `UPPERCASE_SENTENCES` capitalises every word |
 
   The first three and the sixth are defects with one-line fixes, and the fifth is a six-line
-  override that only became worth writing once the fourth had put the real text within reach. The fourth is a missing
-  feature, and the honest part of it is that `GtkIMContext` cannot express "put the cursor here" at
-  all — so what is carried here is a workaround (synthesised arrow keys) rather than something to
-  propose as a patch without asking the maintainers first.
+  override that only became worth writing once the fourth had put the real text within reach. The
+  fourth is a missing feature, and the honest part of it is that `GtkIMContext` cannot express "put
+  the cursor here" at all — so what is carried here is a workaround (synthesised arrow keys) rather
+  than something to propose as a patch without asking the maintainers first.
 
   This does not block Commune shipping. It is on the list because carrying six downstream patches
   against a moving `main` branch is a standing cost, and because the fixes are worth more to other
@@ -2614,7 +2612,7 @@ all of it blocks calling the port finished.
   toplevel — and GDK's Android backend gives every toplevel its own Activity, so presenting it
   started a second `ToplevelActivity`:
 
-  ```
+  ```text
   START u0 {cmp=io.github.steeb_k.commune/org.gtk.android.ToplevelActivity (has extras)}
       with LAUNCH_SINGLE_TASK ... result code=3
   ```
@@ -2645,7 +2643,6 @@ all of it blocks calling the port finished.
   Nothing else in the application is a toplevel. `Adw.ShortcutsDialog`, `Adw.AboutDialog`,
   `AccountSettings` and every `ToastableDialog` are dialogs already, and nothing constructs a
   `GtkWindow`, `GtkAlertDialog` or `GtkAboutDialog` at runtime.
-
 * **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
   search bar being dismissed, and through rotation — where it covers most of a landscape screen.
   Only the system's own dismiss chevron or BACK put it away.
