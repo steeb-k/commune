@@ -22,6 +22,7 @@ mod notifications_settings;
 
 pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
+    NotificationsSpecialRule,
 };
 use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
 #[cfg(target_os = "macos")]

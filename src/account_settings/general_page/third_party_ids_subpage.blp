@@ -1,0 +1,104 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ThirdPartyIdsSubpage: Adw.NavigationPage {
+  title: _("Email and Phone Numbers");
+
+  styles [
+    "form-page",
+  ]
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Gtk.Stack stack {
+      transition-type: crossfade;
+
+      Gtk.StackPage {
+        name: "loading";
+        title: _("Loading");
+
+        child: Adw.Spinner {};
+      }
+
+      Gtk.StackPage {
+        name: "error";
+        title: _("Could Not Load Email and Phone Numbers");
+
+        child: Adw.StatusPage {
+          visible: true;
+          hexpand: true;
+          vexpand: true;
+          icon-name: "error-symbolic";
+          title: _("Could Not Load Email and Phone Numbers");
+          description: _("Check your network connection");
+
+          child: Gtk.Button {
+            can-shrink: true;
+            label: _("Try Again");
+            halign: center;
+            clicked => $load() swapped;
+
+            styles [
+              "pill",
+            ]
+          };
+        };
+      }
+
+      Gtk.StackPage {
+        name: "content";
+        title: _("Email and Phone Numbers");
+
+        child: Gtk.ScrolledWindow {
+          hscrollbar-policy: never;
+          propagate-natural-height: true;
+          vexpand: true;
+
+          child: Adw.Clamp {
+            maximum-size: 444;
+
+            child: Gtk.Box {
+              orientation: vertical;
+              spacing: 24;
+
+              Adw.PreferencesGroup emails_group {
+                title: _("Email Addresses");
+                description: _("The homeserver can use these to let you reset your password");
+
+                Gtk.ListBox emails_list {
+                  styles [
+                    "boxed-list",
+                  ]
+                }
+              }
+
+              Adw.PreferencesGroup phones_group {
+                visible: false;
+                title: _("Phone Numbers");
+                description: _("A phone number can be removed here, but only a client that can receive its verification text message can add one");
+
+                Gtk.ListBox phones_list {
+                  selection-mode: none;
+
+                  styles [
+                    "boxed-list",
+                  ]
+                }
+              }
+            };
+          };
+        };
+      }
+    };
+  };
+}
+
+$EntryAddRow email_add_row {
+  title: _("Add Email Address");
+  add-button-tooltip-text: _("Add Email Address");
+  changed => $update_add_email() swapped;
+  add => $add_email() swapped;
+  entry-activated => $add_email() swapped;
+}
