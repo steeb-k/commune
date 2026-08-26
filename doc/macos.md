@@ -642,6 +642,29 @@ MSYS2 on Windows has both. Two caveats. A dev prefix created before the fallback
 tests are `#[gtk::test]`, which macOS cannot run, so this path is eyeball-only here. An
 ImageIO-backed decoder would close the remaining gap and is the obvious later option.
 
+**Attachments used to send as plain files.** GIO's content types are MIME types only on Linux:
+macOS reports UTIs (`public.png`) and Windows reports registry extensions (`.png`), neither of
+which parses as a MIME type, so every attachment fell back to `application/octet-stream` and
+arrived in the timeline as a downloadable file row rather than a picture.
+`FileInfo::try_from_file` now asks GIO to translate its own platform's type
+(`g_content_type_get_mime_type`, which is `public.png` → `image/png` here — measured against the
+prefix's GLib) before parsing it (`cd668da1`). The bug was shared with Windows and the fix is
+shared too; only Linux never saw it. A test in `utils/media` pins the behaviour on all three
+platforms, since it needs no GTK and so is not caught by the `#[gtk::test]` exclusion.
+
+**Dropping and pasting files was broken by GTK, and is repaired on the way in.** GTK 4.22's macOS
+backend builds the `text/uri-list` for a file dropped on the window — or copied in the Finder —
+by percent-encoding the whole assembled `file://…` string, and the scheme's own colon comes out
+as `%3A`. GIO cannot parse a scheme from `file%3A//…`, so every drop and every pasted file
+surfaced a file with no path and failed with "Error reading file", no special characters in the
+name required. Upstream introduced this in `8d3e15b8` (in every 4.22 release) and fixed it on
+`main` in `2a8a2895` (May 2026), which no 4.22 tag carries. Measured against AppKit directly: the
+broken and the fixed backend produce byte-identical URIs except for that one `%3A`. So
+`utils::repair_pasteboard_file` (`afe47e75`) puts the colon back — `send_file_inner` runs every
+incoming file through it, covering the drop target and the clipboard alike — and the repair stops
+matching the
+day a fixed GTK arrives, because a healthy local file has a path and is passed through untouched.
+
 **Video and audio playback.** `GtkVideo` plays a file with `GtkMediaFile`, and `GtkMediaFile` has
 no backend of its own: GTK 4.22 compiles a GStreamer one into `libgtk`, but only when the
 GStreamer libraries happen to be found while GTK itself is built, and conda-forge's `gtk4` is
@@ -923,7 +946,10 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
   The candidate fix, when there is something to test it against: a focus controller on the picker
   that calls `popdown()` when focus leaves its subtree, belt-and-braces beside the grab.
 
-Still unverified: GTK's macOS backend for input methods and drag and drop.
+Still unverified: GTK's macOS backend for input methods. Drag and drop has now been exercised —
+and found broken upstream, then repaired; see
+[What differs from Linux](#what-differs-from-linux). A drop and a Finder-copy paste both want a
+fresh eyeball with the repair in place.
 
 Two cosmetic things a run turns up that are nobody's bug in particular. GTK's macOS backend
 reports the system font as `.AppleSystemUIFont`, and libadwaita's stylesheet feeds that
