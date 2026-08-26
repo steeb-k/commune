@@ -20,6 +20,7 @@ use tracing::{debug, error, info};
 
 mod calls;
 mod global_account_data;
+mod identity_server;
 mod ignored_users;
 mod image_packs;
 mod notifications;
@@ -35,9 +36,9 @@ mod user_sessions_list;
 mod verification;
 
 pub(crate) use self::{
-    calls::*, global_account_data::*, ignored_users::*, image_packs::*, notifications::*,
-    presence::*, remote::*, room::*, room_list::*, security::*, session_settings::*,
-    sidebar_data::*, user::*, user_sessions_list::*, verification::*,
+    calls::*, global_account_data::*, identity_server::*, ignored_users::*, image_packs::*,
+    notifications::*, presence::*, remote::*, room::*, room_list::*, security::*,
+    session_settings::*, sidebar_data::*, user::*, user_sessions_list::*, verification::*,
 };
 use crate::{
     Application,
@@ -130,6 +131,8 @@ mod imp {
         security: SessionSecurity,
         /// The cache for remote data.
         remote_cache: OnceCell<RemoteCache>,
+        /// The identity server of this session, once something asked for it.
+        identity_server: OnceCell<IdentityServer>,
         session_changes_handle: RefCell<Option<AbortHandle>>,
         sync_handle: RefCell<Option<AbortHandle>>,
         network_monitor_handler_id: RefCell<Option<glib::SignalHandlerId>>,
@@ -402,6 +405,11 @@ mod imp {
         pub(super) fn remote_cache(&self) -> &RemoteCache {
             self.remote_cache
                 .get_or_init(|| RemoteCache::new(self.obj().clone()))
+        }
+
+        /// The identity server of this session.
+        pub(super) fn identity_server(&self) -> &IdentityServer {
+            self.identity_server.get_or_init(IdentityServer::default)
         }
 
         /// Finish initialization of this session.
@@ -848,6 +856,11 @@ impl Session {
     /// The cache for remote data.
     pub(crate) fn remote_cache(&self) -> &RemoteCache {
         self.imp().remote_cache()
+    }
+
+    /// The identity server of this session.
+    pub(crate) fn identity_server(&self) -> &IdentityServer {
+        self.imp().identity_server()
     }
 
     /// Log out of this session.

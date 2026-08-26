@@ -719,6 +719,7 @@ dependencies = [
  "gstreamer-video",
  "gstreamer-webrtc",
  "gtk4",
+ "http",
  "image",
  "indexmap",
  "libadwaita",
@@ -4695,6 +4696,7 @@ dependencies = [
  "ruma-common",
  "ruma-events",
  "ruma-html",
+ "ruma-identity-service-api",
  "web-time",
 ]
 
@@ -4794,6 +4796,17 @@ source = "git+https://github.com/ruma/ruma.git?rev=db24422e03aea7c7974230098fe9a
 dependencies = [
  "js_int",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "ruma-identity-service-api"
+version = "0.15.0"
+source = "git+https://github.com/ruma/ruma.git?rev=db24422e03aea7c7974230098fe9aeb5481cddc6#db24422e03aea7c7974230098fe9aeb5481cddc6"
+dependencies = [
+ "js_int",
+ "ruma-common",
+ "ruma-events",
+ "serde",
 ]
 
 [[package]]
