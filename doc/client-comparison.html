@@ -688,7 +688,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Everyone but us <span class="tick gone">2 rows</span></h2>
+      <h2>Everyone but us <span class="tick gone">1 row</span></h2>
       <p class="sec-sub">
         The rows where the field has settled and Commune hasn't. None of these is a judgement
         call about taste: each is a thing a person moving from any other client expects to find
@@ -696,6 +696,8 @@
         <strong>Three rows left this section on 23 August 2026</strong> — pinned messages,
         presence, and signing up with the password reset that went with it. Their notes are gone
         rather than struck; what they became is in the table above, in the Commune cell of each.
+        <strong>Threads left on 26 August 2026</strong>, whole, in a day of three slices — its
+        note below is kept as the record of what the gap was.
         <strong>Spaces left this section on 24 August 2026</strong>, after all three of its
         slices and then the rest of the module landed the same day. Its note is kept rather than
         deleted, as a record of what the gap was.
@@ -735,15 +737,19 @@
         </p>
       </div>
       <div class="note">
-        <span class="note-tag">4 of 9 peers, 2 partial · Threading</span>
-        <span class="note-head">Threads</span>
+        <span class="note-tag">closed 26 August 2026 · Threading</span>
+        <span class="note-head">Threads <span style="font-weight:400;color:var(--ink-soft)">— done</span></span>
         <p class="note-body">
           The largest job in the table and the one with the least consensus: Element Web, Element
           Classic, FluffyChat and Nheko have real threads, Element X keeps them behind Labs and
           calls them incomplete, NeoChat renders a thread's body but names threads a notable
-          exception, SchildiChat Next and Cinny have none. <strong>The only high-value row where
-          being late is still normal.</strong> Commune joined the partials on 26 August 2026:
-          a thread can be seen, opened, read and written — the thread list is what is left.
+          exception, SchildiChat Next and Cinny have none. It was the only high-value row where
+          being late was still normal — <strong>and Commune stopped being late on
+          26 August 2026</strong>, in a day of three slices: a thread root announces itself with
+          a reply count, opens in place with the composer, receipts and drafts scoped to the
+          thread, threaded replies left the main timeline, and a header button lists every
+          thread of the room. What remains off is thread subscriptions (MSC4306), which are off
+          spec everywhere.
         </p>
       </div>
     </div>
@@ -908,8 +914,8 @@
 
     { f: "Threads", g: "Messaging", kind: "spec", tag: "Threading",
       note: "Thread list, thread view, per-thread receipts, composer routing.",
-      c: { commune:0.5, fractal:0, ew:1, ex:0.5, ec:1, sc:0, fc:1, nh:1, nc:0.5, ci:0 },
-      cn: { commune:"A thread root carries an \"N replies\" chip that opens the thread in place; the composer writes into it, receipts and drafts are the thread's own, and threaded replies no longer land inline in the main timeline. Partial for want of the thread list — a thread can only be entered through its root.",
+      c: { commune:1, fractal:0, ew:1, ex:0.5, ec:1, sc:0, fc:1, nh:1, nc:0.5, ci:0 },
+      cn: { commune:"The whole module since 26 August 2026: a thread root carries an \"N replies\" chip that opens the thread in place, the composer writes into it, receipts and drafts are the thread's own, threaded replies have left the main timeline, and a header button lists every thread of the room off /threads, paginated and updated live.",
             ex:"Behind Labs and described by Element as incomplete.",
             nc:"A thread's body renders, but the README still names threads a notable exception." } },
 

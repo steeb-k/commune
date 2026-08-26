@@ -123,6 +123,7 @@ src/session/notifications/mod.rs
 src/session/room/join_rule.rs
 src/session/room/mod.rs
 src/session/room/permissions.rs
+src/session/room/thread_list.rs
 src/session/room_list/mod.rs
 src/session/sidebar_data/icon_item.rs
 src/session/sidebar_data/section/name.rs
@@ -230,6 +231,8 @@ src/session_view/room_history/state/content.rs
 src/session_view/room_history/state/creation.blp
 src/session_view/room_history/state/creation.rs
 src/session_view/room_history/state/group_row.rs
+src/session_view/room_history/threads/mod.blp
+src/session_view/room_history/threads/row.rs
 src/session_view/room_history/title.blp
 src/session_view/room_history/typing_row.rs
 src/session_view/room_history/verification_info_bar.rs

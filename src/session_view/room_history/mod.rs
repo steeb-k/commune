@@ -24,6 +24,7 @@ mod pinned;
 mod read_receipts_list;
 mod search;
 mod state;
+mod threads;
 mod title;
 mod typing_row;
 mod verification_info_bar;
@@ -40,6 +41,7 @@ use self::{
     read_receipts_list::ReadReceiptsList,
     search::RoomHistorySearch,
     state::{StateGroupRow, StateRow},
+    threads::RoomHistoryThreads,
     title::RoomHistoryTitle,
     typing_row::TypingRow,
     verification_info_bar::VerificationInfoBar,
@@ -131,6 +133,8 @@ mod imp {
         drag_overlay: TemplateChild<DragOverlay>,
         #[template_child]
         pinned_view: TemplateChild<RoomHistoryPinned>,
+        #[template_child]
+        threads_view: TemplateChild<RoomHistoryThreads>,
         /// The context menu for rows presenting an [`Event`].
         event_context_menu: OnceCell<EventActionsContextMenu>,
         /// The timeline currently displayed.
@@ -142,6 +146,9 @@ mod imp {
         /// Whether the pinned messages take the place of the timeline.
         #[property(get, set = Self::set_is_showing_pinned, explicit_notify)]
         is_showing_pinned: Cell<bool>,
+        /// Whether the list of threads takes the place of the timeline.
+        #[property(get, set = Self::set_is_showing_threads, explicit_notify)]
+        is_showing_threads: Cell<bool>,
         /// The members of the current room.
         ///
         /// We hold a strong reference here to keep the list in memory as long
@@ -195,6 +202,7 @@ mod imp {
             VerificationInfoBar::ensure_type();
             RoomHistoryPinned::ensure_type();
             RoomHistorySearch::ensure_type();
+            RoomHistoryThreads::ensure_type();
 
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
@@ -361,6 +369,7 @@ mod imp {
             self.init_drop_target();
             self.init_search();
             self.init_pinned();
+            self.init_threads();
 
             self.scroll_btn_revealer
                 .connect_child_revealed_notify(|revealer| {
@@ -492,8 +501,43 @@ mod imp {
 
             self.is_showing_pinned.set(is_showing_pinned);
 
+            if is_showing_pinned {
+                // Only one list can take the place of the timeline.
+                self.set_is_showing_threads(false);
+            }
+
             self.update_view();
             self.obj().notify_is_showing_pinned();
+        }
+
+        /// Set whether the list of threads takes the place of the timeline.
+        fn set_is_showing_threads(&self, is_showing_threads: bool) {
+            if self.is_showing_threads.get() == is_showing_threads {
+                return;
+            }
+
+            self.is_showing_threads.set(is_showing_threads);
+
+            if is_showing_threads {
+                // Only one list can take the place of the timeline.
+                self.set_is_showing_pinned(false);
+            }
+
+            self.update_view();
+            self.obj().notify_is_showing_threads();
+        }
+
+        /// Whether the banner naming the thread view should be revealed.
+        ///
+        /// Not over the list of threads: that is where somebody goes to switch
+        /// threads, and a banner saying they are viewing one would only
+        /// confuse.
+        ///
+        /// `function` for the same reason as
+        /// [`Self::server_notice_button_label()`].
+        #[template_callback(function)]
+        fn thread_banner_revealed(is_thread: bool, is_showing_threads: bool) -> bool {
+            is_thread && !is_showing_threads
         }
 
         /// The label of the button of the server notice banner.
@@ -664,6 +708,24 @@ mod imp {
                     // Close the pinned messages to show the message in the timeline.
                     imp.set_is_showing_pinned(false);
                     imp.obj().focus_on_event(event_id);
+                }
+            ));
+        }
+
+        /// Initialize the view of the threads of the room.
+        fn init_threads(&self) {
+            self.threads_view.connect_thread_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, root_event_id| {
+                    let Ok(root_event_id) = EventId::parse(&root_event_id) else {
+                        error!("Could not parse event ID of activated thread");
+                        return;
+                    };
+
+                    // Close the list of threads to show the thread.
+                    imp.set_is_showing_threads(false);
+                    imp.show_thread(root_event_id);
                 }
             ));
         }
@@ -884,6 +946,7 @@ mod imp {
 
                 self.search_view.set_room(Some(room.clone()));
                 self.pinned_view.set_room(Some(room.clone()));
+                self.threads_view.set_room(Some(room.clone()));
 
                 if timeline.is_focused() {
                     // The bottom of a focused timeline is not the present, so we must not
@@ -901,10 +964,13 @@ mod imp {
                 self.grouping_model().set_model(None::<gio::ListModel>);
                 self.search_view.set_room(None::<Room>);
                 self.pinned_view.set_room(None::<Room>);
+                self.threads_view.set_room(None::<Room>);
             }
 
-            // A room is not left showing the pinned messages of the last one.
+            // A room is not left showing the pinned messages or the threads of
+            // the last one.
             self.set_is_showing_pinned(false);
+            self.set_is_showing_threads(false);
 
             self.update_view();
             self.load_more_events_if_needed();
@@ -1402,6 +1468,12 @@ mod imp {
             if self.is_showing_pinned.get() {
                 // So do the pinned messages.
                 self.stack.set_visible_child_name("pinned");
+                return;
+            }
+
+            if self.is_showing_threads.get() {
+                // And the list of threads.
+                self.stack.set_visible_child_name("threads");
                 return;
             }
 

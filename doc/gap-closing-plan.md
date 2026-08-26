@@ -289,8 +289,29 @@ plan's own list:
 * The chip became a button (`room-history.show-thread` with the root as
   target) and the context menu gained _View Thread_.
 
-**Next: round 4, item 11 (threads, slice 3 — the thread list). That flips the
-row in both ledgers.**
+**Round 4 slice 3 (item 11) is built — the thread list, and the row flips.**
+It went exactly the way item 11 said: `ThreadList`
+(`src/session/room/thread_list.rs`) wraps the SDK's `ThreadListService` the
+way `RoomSearch` wraps its endpoint — a `gio::ListStore` mirroring the
+service's `VectorDiff`s, `load_more()` paginating `/threads`, live updates
+arriving as `Set` diffs that replace a row wholesale. The view is the search
+page's shape (stack, cut-down rows, paginate near the bottom), reached from
+an always-visible header toggle; activating a row closes the list and opens
+the thread view from slice 2, so the list finds and the view reads. The
+pinned and threads toggles put each other out, and the slice-2 banner is not
+revealed over the list. Thread subscriptions (MSC4306) stayed out, as
+decided. `seed_thread()` seeds a second thread so the list has two rows in a
+known order. One SDK wrinkle: `ThreadListService` does not implement `Debug`,
+so the model's imp writes it by hand — the `VisualMediaRowModel` precedent.
+
+**Round 4 is finished.** Threads moved into the implemented column of
+`spec-gaps.html` and to a full mark on the comparison page; with polls out by
+decision, "Everyone but us" is down to that single off-spec row.
+
+**Next: round 5 — push rules and email on the account.** Before scoping it,
+re-read its entry in the decided rounds below and `doc/sdk-unused.md`: much
+of `NotificationSettings` already has call sites, so check what the settings
+UI actually draws first — the round may be smaller than a round.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
@@ -393,7 +414,7 @@ drift: they go in the feature's own commit.**
 | Subspaces expand in place | `ce984576`, `21f89afe` | done, seen |
 | 9. Threads, slice 1 | `fabc003f` | done, not yet seen |
 | 10. Threads, slice 2 | `6a2699d9` | done, not yet seen |
-| 11 | — | not started |
+| 11. Threads, slice 3 | hash goes in with the masthead refresh | done, not yet seen |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

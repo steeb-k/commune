@@ -765,49 +765,71 @@ seed_peekable_room() {
   log "Test Space now holds six rooms."
 }
 
-# A thread for the timeline to summarise.
+# Two threads for the timeline to summarise and the thread list to list.
 #
 # Alice sends a root message in Invite Room and bob replies into it three
-# times with the `m.thread` relation. The server then attaches the bundled
-# `m.thread` aggregation to the root event on its way down `/sync`, which is
-# what the "N replies" chip draws. It has a marker of its own rather than
-# riding on `seeded.json`'s gate, so a server seeded before this existed picks
-# it up on the next `up`.
+# times with the `m.thread` relation; then bob roots a second thread and
+# alice replies once, so the thread list has two rows in a known order. The
+# server attaches the bundled `m.thread` aggregation to each root on its way
+# down `/sync`, which is what the "N replies" chip draws. Each thread has a
+# marker of its own rather than riding on `seeded.json`'s gate, so a server
+# seeded before either existed picks them up on the next `up`.
 seed_thread() {
-  local alice bob room root i
+  local alice bob room root root2 i
   [ -f "$STATE" ] || return 0
 
   room=$(jq -r '.invite_room // empty' "$STATE")
   [ -n "$room" ] || return 0
 
-  if [ "$(jq -r '.thread_root // empty' "$STATE")" != "" ]; then
-    log "Invite Room already holds a thread."
-    return 0
-  fi
-
   alice=$(login alice "$ALICE_PASS")
   bob=$(login bob "$BOB_PASS")
   [ -n "$alice" ] && [ -n "$bob" ] || return 0
 
-  log "Seeding a thread in Invite Room…"
+  if [ "$(jq -r '.thread_root // empty' "$STATE")" != "" ]; then
+    log "Invite Room already holds a thread."
+  else
+    log "Seeding a thread in Invite Room…"
 
-  root=$(curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-root" \
-    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
-    -d '{"msgtype": "m.text", "body": "Does anybody else think this deserves a thread?"}' \
-    | jq -r '.event_id // empty')
-  [ -n "$root" ] || return 0
+    root=$(curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-root" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d '{"msgtype": "m.text", "body": "Does anybody else think this deserves a thread?"}' \
+      | jq -r '.event_id // empty')
+    [ -n "$root" ] || return 0
 
-  for i in 1 2 3; do
-    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-reply-$i" \
+    for i in 1 2 3; do
+      curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-reply-$i" \
+        -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+        -d "{\"msgtype\": \"m.text\", \"body\": \"Threaded reply $i.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root\"}}" >/dev/null \
+        || warn "the server refused threaded reply $i"
+    done
+
+    jq --arg thread_root "$root" '. + {$thread_root}' \
+       "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+    log "Invite Room now has a thread with three replies."
+  fi
+
+  if [ "$(jq -r '.thread_root_2 // empty' "$STATE")" != "" ]; then
+    log "Invite Room already holds a second thread."
+  else
+    log "Seeding a second thread in Invite Room…"
+
+    root2=$(curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-root-2" \
       -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
-      -d "{\"msgtype\": \"m.text\", \"body\": \"Threaded reply $i.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root\"}}" >/dev/null \
-      || warn "the server refused threaded reply $i"
-  done
+      -d '{"msgtype": "m.text", "body": "The second thread, for the list to have two rows."}' \
+      | jq -r '.event_id // empty')
+    [ -n "$root2" ] || return 0
 
-  jq --arg thread_root "$root" '. + {$thread_root}' \
-     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-2-reply-1" \
+      -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+      -d "{\"msgtype\": \"m.text\", \"body\": \"And the list draws its latest reply.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root2\"}}" >/dev/null \
+      || warn "the server refused the reply in the second thread"
 
-  log "Invite Room now has a thread with three replies."
+    jq --arg thread_root_2 "$root2" '. + {$thread_root_2}' \
+       "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+    log "Invite Room now has a second thread with one reply."
+  fi
 }
 
 # Put alice back in the rooms she is meant to be in, and publish the ones that

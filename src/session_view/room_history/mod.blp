@@ -102,6 +102,14 @@ template $ContentRoomHistory: Adw.Bin {
       }
 
       [end]
+      Gtk.ToggleButton threads_button {
+        valign: center;
+        icon-name: "thread-symbolic";
+        tooltip-text: _("Threads");
+        active: bind template.is-showing-threads bidirectional;
+      }
+
+      [end]
       Gtk.MenuButton room_menu {
         valign: center;
         icon-name: "menu-secondary-symbolic";
@@ -164,7 +172,10 @@ template $ContentRoomHistory: Adw.Bin {
       Adw.Banner thread_banner {
         title: _("Viewing a thread");
         button-label: _("Back to All Messages");
-        revealed: bind template.timeline as <$Timeline>.is-thread;
+        revealed: bind $thread_banner_revealed(
+          template.timeline as <$Timeline>.is-thread,
+          template.is-showing-threads
+        ) as <bool>;
         button-clicked => $leave_thread() swapped;
       }
 
@@ -215,6 +226,13 @@ template $ContentRoomHistory: Adw.Bin {
           title: _("Pinned Messages");
 
           child: $RoomHistoryPinned pinned_view {};
+        }
+
+        Gtk.StackPage {
+          name: "threads";
+          title: _("Threads");
+
+          child: $RoomHistoryThreads threads_view {};
         }
 
         Gtk.StackPage {
