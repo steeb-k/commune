@@ -39,17 +39,27 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use gtk::glib;
+use gtk::{
+    glib::{self, GString},
+    prelude::*,
+};
 use jni::{
     JNIEnv,
     objects::{JByteArray, JClass, JObject, JString, JValue},
+};
+use matrix_sdk::{Client, reqwest::Url};
+use ruma::{
+    api::client::push::{PusherIds, PusherInit, PusherKind, get_pushers},
+    push::{HttpPusherData, PushFormat},
 };
 use tracing::{debug, info, warn};
 
 use super::{
     DataType,
     android::{self, AndroidJniError},
+    http::{self, HttpError},
 };
+use crate::{Application, session::Session, spawn_tokio};
 
 /// The actions a connector sends a distributor.
 const ACTION_REGISTER: &str = "org.unifiedpush.android.distributor.REGISTER";
@@ -87,6 +97,12 @@ struct State {
     distributor: Option<String>,
     /// The endpoint the distributor last announced.
     endpoint: Option<String>,
+    /// The endpoint before that, kept until its pusher has been removed.
+    ///
+    /// Only pushkeys this device has held may ever be deleted: the `app_id`
+    /// is the same for every Commune on Android, so "everything under our
+    /// `app_id`" on the homeserver includes the user's other devices.
+    previous_endpoint: Option<String>,
 }
 
 impl State {
@@ -110,6 +126,7 @@ impl State {
             token: string("token"),
             distributor: string("distributor"),
             endpoint: string("endpoint"),
+            previous_endpoint: string("previous_endpoint"),
         }
     }
 
@@ -119,6 +136,7 @@ impl State {
             ("token", &self.token),
             ("distributor", &self.distributor),
             ("endpoint", &self.endpoint),
+            ("previous_endpoint", &self.previous_endpoint),
         ] {
             if let Some(value) = value {
                 keyfile.set_string(STATE_GROUP, key, value);
@@ -306,6 +324,200 @@ fn distributors() -> Result<Vec<String>, AndroidJniError> {
 
         Ok(found)
     })
+}
+
+/// The pusher `app_id` — one per platform, so a homeserver (and the user, in
+/// another client's session list) can tell this apart from a future FCM build,
+/// and so that removing this device's pusher can never touch another's: what
+/// distinguishes two Androids under the same `app_id` is the pushkey alone.
+const PUSHER_APP_ID: &str = "io.github.steeb_k.commune.android";
+
+/// The path of the Matrix push gateway on the endpoint's server, per the
+/// UnifiedPush Matrix convention; answering on it is what makes an endpoint
+/// usable as a pushkey. Measured against ntfy in step 0 of the plan.
+const GATEWAY_PATH: &str = "/_matrix/push/v1/notify";
+
+/// The errors that can occur keeping a session's pusher current.
+#[derive(Debug, thiserror::Error)]
+enum PusherError {
+    /// A request to the homeserver failed.
+    #[error(transparent)]
+    Matrix(#[from] matrix_sdk::Error),
+    /// The pusher listing failed.
+    #[error(transparent)]
+    MatrixHttp(#[from] matrix_sdk::HttpError),
+    /// The gateway probe failed on the wire.
+    #[error(transparent)]
+    Probe(#[from] HttpError),
+    /// The endpoint, or what its server answered, is not usable.
+    #[error("{0}")]
+    Gateway(String),
+}
+
+/// Make sure the account behind `client` has a pusher for the current
+/// endpoint, and no pusher for an endpoint this device has abandoned.
+///
+/// Must be called from the tokio runtime. Called when a session becomes ready
+/// — once per run per session, which also repairs a registration a previous
+/// run left half-done — and for every session when the endpoint changes.
+///
+/// With no endpoint this does nothing, which is what makes it safe to call
+/// unconditionally: no distributor, no pusher, and the foreground service
+/// remains the only delivery.
+pub(crate) async fn ensure_pusher(client: Client) {
+    // The two callers race on a fresh registration — the endpoint arriving
+    // and the session becoming ready happen within milliseconds of each other
+    // — and each would see no pusher and register one. An upsert makes that
+    // harmless on the homeserver and wasteful on the wire (measured: the same
+    // registration logged twice, 23 ms apart). One at a time; the loser
+    // re-reads and finds the work done.
+    static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _serialized = ONE_AT_A_TIME.lock().await;
+
+    if let Err(error) = try_ensure_pusher(&client).await {
+        warn!("Could not keep the push endpoint registered as a pusher: {error}");
+    }
+}
+
+/// The body of [`ensure_pusher()`], so that one place reports what went wrong.
+async fn try_ensure_pusher(client: &Client) -> Result<(), PusherError> {
+    let state = State::load();
+    let Some(endpoint) = state.endpoint else {
+        debug!("No push endpoint to register as a pusher");
+        return Ok(());
+    };
+
+    let pushers = client.send(get_pushers::v3::Request::new()).await?.pushers;
+    let ours: Vec<&str> = pushers
+        .iter()
+        .filter(|pusher| pusher.ids.app_id == PUSHER_APP_ID)
+        .map(|pusher| pusher.ids.pushkey.as_str())
+        .collect();
+
+    // The pusher of an endpoint this registration has moved off — and only
+    // that one. See the note on [`State::previous_endpoint`].
+    if let Some(previous) = &state.previous_endpoint
+        && previous != &endpoint
+        && ours.contains(&previous.as_str())
+    {
+        client
+            .pusher()
+            .delete(PusherIds::new(previous.clone(), PUSHER_APP_ID.to_owned()))
+            .await?;
+        info!("Removed the pusher of a superseded push endpoint");
+    }
+
+    if ours.contains(&endpoint.as_str()) {
+        debug!("The push endpoint is already registered as a pusher");
+        return Ok(());
+    }
+
+    let gateway = matrix_gateway(&endpoint).await?;
+
+    let mut data = HttpPusherData::new(gateway);
+    // Mandatory for content, not merely preferred: events are E2EE, so a full
+    // payload would carry ciphertext at best — and the metadata that does not
+    // need to travel, still would.
+    data.format = Some(PushFormat::EventIdOnly);
+
+    let pusher = PusherInit {
+        ids: PusherIds::new(endpoint.clone(), PUSHER_APP_ID.to_owned()),
+        kind: PusherKind::Http(data),
+        app_display_name: "Commune".to_owned(),
+        // Shown in other clients' session lists; not translated because it
+        // describes this installation to readers elsewhere, in whatever
+        // language they use.
+        device_display_name: "Commune on Android".to_owned(),
+        profile_tag: None,
+        lang: pusher_lang(),
+    };
+
+    client.pusher().set(pusher.into(), false).await?;
+    info!("Registered the push endpoint as a pusher");
+
+    Ok(())
+}
+
+/// The URL of the Matrix push gateway serving `endpoint`, confirmed to be one.
+///
+/// The UnifiedPush convention is that the gateway lives on the endpoint's own
+/// server — with ntfy they are the same service — and announces itself at
+/// [`GATEWAY_PATH`]. An endpoint whose server does not answer there gets no
+/// pusher at all: the alternative would be routing every notification through
+/// some third-party gateway the user never chose.
+async fn matrix_gateway(endpoint: &str) -> Result<String, PusherError> {
+    let url = Url::parse(endpoint)
+        .and_then(|url| url.join(GATEWAY_PATH))
+        .map_err(|error| PusherError::Gateway(format!("Unusable endpoint URL: {error}")))?;
+
+    let body = http::fetch(url.as_str(), 4096).await?;
+    let answer: serde_json::Value = serde_json::from_slice(&body)
+        .map_err(|error| PusherError::Gateway(format!("Unreadable gateway answer: {error}")))?;
+
+    if answer["unifiedpush"]["gateway"] != "matrix" {
+        return Err(PusherError::Gateway(
+            "The endpoint's server has no Matrix push gateway".to_owned(),
+        ));
+    }
+
+    Ok(url.into())
+}
+
+/// The language for the pusher, from the session locale.
+///
+/// `language_names()` speaks glibc (`en_US.UTF-8`, `C`); the pusher field
+/// wants the shape of a language tag (`en`, `en-US`).
+fn pusher_lang() -> String {
+    let names = glib::language_names();
+    let name = names.first().map_or("C", GString::as_str);
+    let base = name.split(['.', '@']).next().unwrap_or_default();
+
+    if base.is_empty() || base == "C" || base == "POSIX" {
+        return "en".to_owned();
+    }
+    base.replace('_', "-")
+}
+
+/// Remove the pushers this device holds on the account behind `client`.
+///
+/// Must be called from the tokio runtime, and before the session is logged
+/// out — the pusher belongs to the account, not to the device, so nothing
+/// removes it implicitly, and after logout there is no token to remove it
+/// with. Best-effort: the homeserver refuses to delete a pusher that is not
+/// there, which is the common case for a session that never had one.
+pub(crate) async fn remove_pusher(client: Client) {
+    let state = State::load();
+
+    for endpoint in [state.endpoint, state.previous_endpoint]
+        .into_iter()
+        .flatten()
+    {
+        if let Err(error) = client
+            .pusher()
+            .delete(PusherIds::new(endpoint, PUSHER_APP_ID.to_owned()))
+            .await
+        {
+            debug!("Could not remove a pusher while logging out: {error}");
+        }
+    }
+}
+
+/// Re-register the current endpoint as a pusher, for every session.
+///
+/// Callable from any thread — the session list belongs to the main context,
+/// so that is where the walk happens; each session's work then goes to tokio.
+fn ensure_pushers_of_sessions() {
+    glib::MainContext::default().invoke(|| {
+        for object in Application::default().session_list().snapshot() {
+            let Ok(session) = object.downcast::<Session>() else {
+                continue;
+            };
+            let client = session.client();
+            spawn_tokio!(async move {
+                ensure_pusher(client).await;
+            });
+        }
+    });
 }
 
 /// Send `intent` as a broadcast, sharing this application's identity with the
@@ -496,10 +708,15 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
                 warn!("A UnifiedPush endpoint announcement carried no endpoint");
                 return;
             };
-            // The step 1 measurement, and step 2's cue to register a pusher.
             info!("UnifiedPush endpoint: {endpoint}");
+            if state.endpoint.as_deref() != Some(endpoint.as_str()) {
+                // The old endpoint's pusher has to be found and removed later,
+                // and this is the last moment its address is known.
+                state.previous_endpoint = state.endpoint.take();
+            }
             state.endpoint = Some(endpoint);
             state.save();
+            ensure_pushers_of_sessions();
         }
         ACTION_MESSAGE => {
             // Step 3 turns this into a notification; today it is only proof of

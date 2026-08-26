@@ -567,6 +567,18 @@ mod imp {
                     if self.state.get() < SessionState::Ready {
                         self.set_state(SessionState::Ready);
                         self.init_notifications();
+
+                        // Make sure the UnifiedPush endpoint, when there is
+                        // one, is registered with this session's homeserver.
+                        // Once per run, at readiness, so a registration a
+                        // previous run left half-done heals here.
+                        #[cfg(target_os = "android")]
+                        {
+                            let client = self.client().clone();
+                            crate::spawn_tokio!(async move {
+                                crate::utils::android_push::ensure_pusher(client).await;
+                            });
+                        }
                     }
 
                     self.set_offline(false);
@@ -860,6 +872,20 @@ impl Session {
             session = self.session_id(),
             "The session is about to be logged out"
         );
+
+        // The pusher belongs to the account, so nothing removes it with the
+        // device — and it has to go before the access token that can remove
+        // it does. Best-effort: an account that never had one refuses the
+        // delete, quietly.
+        #[cfg(target_os = "android")]
+        {
+            let client = self.client();
+            let handle =
+                spawn_tokio!(
+                    async move { crate::utils::android_push::remove_pusher(client).await }
+                );
+            handle.await.expect("task was not aborted");
+        }
 
         let client = self.client();
         let handle = spawn_tokio!(async move { client.logout().await });
