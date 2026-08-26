@@ -226,19 +226,19 @@ mod imp {
             };
 
             let header_state = event.header_state();
-            // A bubble on the right needs no name or avatar to say whose it
-            // is: the side says so, the way it does in every other bubbled
-            // messenger. The timestamp stays.
-            let avatar_name_visible =
-                header_state == EventHeaderState::Full && !self.is_own_bubble();
+            // An own bubble keeps its avatar — moved to its side of the
+            // line by `update_bubbles` — but needs no name: the side and
+            // the face say whose it is. The timestamp stays too.
+            let avatar_visible = header_state == EventHeaderState::Full;
+            let name_visible = avatar_visible && !self.is_own_bubble();
             let header_visible = header_state != EventHeaderState::Hidden;
 
-            self.avatar_button.set_visible(avatar_name_visible);
-            self.display_name.set_visible(avatar_name_visible);
+            self.avatar_button.set_visible(avatar_visible);
+            self.display_name.set_visible(name_visible);
             self.header.set_visible(header_visible);
 
             if let Some(row) = self.obj().parent() {
-                if avatar_name_visible {
+                if avatar_visible {
                     row.add_css_class("has-avatar");
                 } else {
                     row.remove_css_class("has-avatar");
@@ -294,6 +294,19 @@ mod imp {
             self.reactions
                 .set_halign(if enabled { trailing } else { gtk::Align::Fill });
             self.thread_chip.set_halign(trailing);
+
+            // The avatar of an own bubble sits on the bubble's side of the
+            // line: the far column of the grid instead of the first.
+            if let Some(layout_child) = self
+                .avatar_button
+                .parent()
+                .and_downcast::<gtk::Grid>()
+                .and_then(|grid| grid.layout_manager())
+                .map(|manager| manager.layout_child(&*self.avatar_button))
+                .and_downcast::<gtk::GridLayoutChild>()
+            {
+                layout_child.set_column(if own { 3 } else { 0 });
+            }
         }
 
         /// Update the content for the current event.
