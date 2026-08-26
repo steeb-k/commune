@@ -8,8 +8,11 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     UserId,
     events::{
-        StateEventContentChange,
-        room::{member::MembershipState, server_acl::RoomServerAclEventContent},
+        StateEventContentChange, StateEventType,
+        room::{
+            member::MembershipState, policy::RoomPolicyEventContent,
+            server_acl::RoomServerAclEventContent,
+        },
     },
 };
 use tracing::warn;
@@ -87,14 +90,19 @@ mod imp {
                     self.update_with_profile_change(&profile_change, &sender);
                 }
                 TimelineItemContent::OtherState(other_state) => {
-                    self.update_with_other_state(&other_state, &sender);
+                    self.update_with_other_state(&other_state, &sender, &event);
                 }
                 _ => unreachable!(),
             }
         }
 
         /// Update this row with the given [`OtherState`].
-        fn update_with_other_state(&self, other_state: &OtherState, sender: &Member) {
+        fn update_with_other_state(
+            &self,
+            other_state: &OtherState,
+            sender: &Member,
+            event: &Event,
+        ) {
             let widget = match other_state.content() {
                 AnyOtherStateEventContentChange::RoomCreate(content) => {
                     WidgetType::Creation(StateCreation::new(content))
@@ -150,6 +158,12 @@ mod imp {
                         ),
                     };
                     WidgetType::Text(message)
+                }
+                // The SDK's state-change enum does not carry `m.room.policy`,
+                // so the event arrives as its custom variant and the server
+                // name is read from the raw event instead.
+                _ if other_state.content().event_type() == StateEventType::RoomPolicy => {
+                    WidgetType::Text(policy_server_message(event, &sender.disambiguated_name()))
                 }
                 _ => {
                     warn!(
@@ -514,6 +528,38 @@ fn server_acl_message(
             &[("sender", sender_name), ("servers", &unblocked.join(", "))],
         ),
         _ => generic(),
+    }
+}
+
+/// The sentence for an `m.room.policy` event.
+///
+/// The SDK hands the event over as a custom state change, without its
+/// content, so the server name is read from the raw event. An event whose
+/// content does not parse — including one written empty to unset the policy
+/// server, and a redacted one — reads as the policy server being removed,
+/// which is what the specification says an invalid content means.
+fn policy_server_message(event: &Event, sender_name: &str) -> String {
+    let via = event.raw().and_then(|raw| {
+        raw.get_field::<RoomPolicyEventContent>("content")
+            .ok()
+            .flatten()
+            .map(|content| content.via)
+    });
+
+    if let Some(via) = via {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', these are
+            // variable names. The server checks the messages of the room for spam.
+            "{sender} made {server} check the messages of this room.",
+            &[("sender", sender_name), ("server", via.as_str())],
+        )
+    } else {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            "{sender} stopped the checking of this room’s messages.",
+            &[("sender", sender_name)],
+        )
     }
 }
 

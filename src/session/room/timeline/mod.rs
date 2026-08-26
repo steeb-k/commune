@@ -1570,6 +1570,9 @@ fn show_in_timeline(
                 // one since the ACL editor landed, and this list is what kept
                 // it from ever being drawn.
                 | AnySyncStateEvent::RoomServerAcl(_)
+                // Which server checks this room's messages is an act of
+                // moderation too, and one worth a sentence.
+                | AnySyncStateEvent::RoomPolicy(_)
         ),
     }
 }
