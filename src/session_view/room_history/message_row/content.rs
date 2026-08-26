@@ -2,7 +2,10 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
 use matrix_sdk::EncryptionState;
-use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
+use matrix_sdk_base::crypto::types::events::UtdCause;
+use matrix_sdk_ui::timeline::{
+    EncryptedMessage, MsgLikeKind, TimelineDetails, TimelineItemContent,
+};
 use ruma::{
     OwnedEventId, OwnedTransactionId,
     events::room::message::{FormattedBody, MessageType},
@@ -320,11 +323,11 @@ trait MessageContentContainer: ChildPropertyExt {
                         },
                     );
                 }
-                MsgLikeKind::UnableToDecrypt(_) => {
+                MsgLikeKind::UnableToDecrypt(encrypted_message) => {
                     let child = self.child_or_default::<MessageInfo>();
                     child.set_info(
                         MessageInfoIcon::Warning,
-                        &gettext("Could not decrypt this message, decryption will be retried once the keys are available.")
+                        &could_not_decrypt_message(&encrypted_message),
                     );
                 }
                 MsgLikeKind::Redacted => {
@@ -510,6 +513,47 @@ impl<W> MessageContentContainer for W where W: IsABin {}
 impl MessageContentContainer for MessageCaption {}
 
 impl MessageContentContainer for MessageUrlPreview {}
+
+/// The sentence for a message that could not be decrypted.
+///
+/// The SDK works out why — sent before the account joined, withheld by the
+/// sender, a verification problem — and each cause reads differently,
+/// because "waiting for keys" and "the sender refused this device" call for
+/// different reactions. Only the unknown cause promises a retry; for the
+/// others, the sentence is the outcome.
+fn could_not_decrypt_message(encrypted_message: &EncryptedMessage) -> String {
+    let EncryptedMessage::MegolmV1AesSha2 { cause, .. } = encrypted_message else {
+        return gettext("Could not decrypt this message, it uses an unsupported algorithm.");
+    };
+
+    match cause {
+        UtdCause::SentBeforeWeJoined => {
+            gettext("This message cannot be decrypted, it was sent before you joined the room.")
+        }
+        UtdCause::VerificationViolation => gettext(
+            "This message cannot be decrypted, the sender was verified once and has changed identity since.",
+        ),
+        UtdCause::UnsignedDevice => gettext(
+            "This message cannot be decrypted, the device that sent it has not been verified by its owner.",
+        ),
+        UtdCause::UnknownDevice => gettext(
+            "This message cannot be decrypted, the device that sent it could not be securely found.",
+        ),
+        UtdCause::HistoricalMessageAndBackupIsDisabled => gettext(
+            "This message predates this session, and key backup is off, so it is not available on this device.",
+        ),
+        UtdCause::HistoricalMessageAndDeviceIsUnverified => gettext(
+            "This message predates this session. Verify this session to read the history it is allowed.",
+        ),
+        UtdCause::WithheldForUnverifiedOrInsecureDevice => gettext(
+            "The sender did not share the key with this device, because it is not verified.",
+        ),
+        UtdCause::WithheldBySender => gettext("The sender did not share the key with this device."),
+        UtdCause::Unknown => gettext(
+            "Could not decrypt this message, decryption will be retried once the keys are available.",
+        ),
+    }
+}
 
 /// The link of the given message that should be previewed, if there is one.
 ///

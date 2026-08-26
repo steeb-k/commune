@@ -64,13 +64,21 @@ template $ContentMessageRow: Adw.Bin {
       }
     }
 
-    $MessageStateStack message_state {
+    Gtk.Box {
       valign: end;
+      spacing: 2;
 
       layout {
         column: 2;
         row: 1;
       }
+
+      Gtk.Image shield_icon {
+        visible: false;
+        pixel-size: 12;
+      }
+
+      $MessageStateStack message_state {}
     }
 
     $ContentMessageReactionList reactions {

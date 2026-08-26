@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherStateEventContentChange, EmbeddedEvent, Error as TimelineError, EventSendState,
     EventTimelineItem, MembershipChange, Message, MsgLikeKind, ThreadSummary, TimelineDetails,
-    TimelineEventItemId, TimelineItemContent,
+    TimelineEventItemId, TimelineEventShieldState, TimelineItemContent,
 };
 use ruma::{
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
@@ -771,6 +771,16 @@ impl Event {
             TimelineItemContent::MsgLike(msg_like) => msg_like.thread_summary.clone(),
             _ => None,
         }
+    }
+
+    /// The authenticity verdict on this event.
+    ///
+    /// The SDK computes it for every item of an encrypted room: whether the
+    /// sending device is known and signed, whether the sender is verified,
+    /// and whether the event was encrypted at all. The non-strict mode is
+    /// asked for, the same bar the other clients present by default.
+    pub(crate) fn shield(&self) -> TimelineEventShieldState {
+        self.item().get_shield(false)
     }
 
     /// The root of the thread this event belongs to, if any.
