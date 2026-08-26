@@ -343,15 +343,18 @@ because two bundles cannot share one name.
 `src/utils/app_bundle.rs`, which reads it back at startup and points GLib, GdkPixbuf, GStreamer and
 fontconfig at it. Moving anything in one means moving it in the other.
 
-**`Info.plist` carries only the numeric prefix of the version.** `CFBundleVersion` and
-`CFBundleShortVersionString` accept nothing but period-separated numbers — LaunchServices shrugs
-at anything else today, but notarization and the App Store validate — so `bundle.sh` computes the
-longest numeric prefix (`c36f52dc`): `1.rc1` goes in as `1`, and a stable `1` or `1.1` passes
-through whole.
-The full version keeps appearing where a human reads it, in the artefact names and the About
-dialog. The prefix not moving between release candidates is fine for a bundle that is rebuilt in
-place; it starts mattering when signed updates get compared by version, which is a stable-release
-concern.
+**`Info.plist` never sees the rc suffix.** Its two version keys accept nothing but
+period-separated numbers — LaunchServices shrugs at anything else today, but notarization and the
+App Store validate — and Apple's three-integer format cannot even express "before 1.0" as a
+suffix, since `1.0.1` would order _above_ a stable `1.0`. That is the problem Debian's `~` solves
+and Apple simply does not have, so `bundle.sh` follows Apple's own model instead of fighting it:
+`CFBundleShortVersionString` is the marketing version's longest numeric prefix (`c36f52dc`) —
+`1.rc1` goes in as `1`, a stable `1` or `1.1` passes through whole — and `CFBundleVersion` is not
+a version at all but a **build number**, the commit count of the checkout (`28351aa7`), monotonic
+across every rc and release with nothing to remember at release time. Outside a git checkout it
+falls back to the numeric prefix. The full `1.rc1` still appears everywhere a human reads a
+version: the About dialog, and the artefact names, which take it from the bundle's own
+`CommuneVersion` key (`9e840906`) because the Apple keys no longer carry it.
 
 ### The release profile does not fit in 8 GB
 
