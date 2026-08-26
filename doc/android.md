@@ -72,12 +72,20 @@ a WSL-native `CARGO_TARGET_DIR`; building on the 9p mount is painfully slow.
 
 ### Re-running the S2 checks
 
+Since S4 this needs GStreamer on the search path, and GStreamer is not stubbed for Android — it is
+a real dependency there now, and `pkgconfig-stubs.sh` only stubs it under `WITH_LINUX_ONLY=1`. So
+the view is taken from **Commune's own** build tree rather than libadwaita's, and the pruned
+GStreamer prefix is appended to the search path exactly as `meson.build` does it. Note that
+`$GSTREAMER_ANDROID_PREFIX` names the **per-architecture** directory,
+`~/android/gst-android/x86_64`, not `~/android/gst-android`.
+
 ```sh
-sh build-aux/android/pkgconfig-stubs.sh                    # ~/android/commune-pc
+sh build-aux/android/pkgconfig-stubs.sh     $HOME/android/commune-pc $PWD/.pixiewood/bin-x86_64
+GST=${GSTREAMER_ANDROID_PREFIX:-$HOME/android/gst-android/x86_64}
 NDK=$HOME/android/sdk/ndk/27.2.12479018
 TOOL=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
-export PKG_CONFIG_PATH=$HOME/android/commune-pc
-export PKG_CONFIG_LIBDIR=$HOME/android/commune-pc
+export PKG_CONFIG_PATH=$HOME/android/commune-pc:$GST/lib/pkgconfig
+export PKG_CONFIG_LIBDIR=$HOME/android/commune-pc:$GST/lib/pkgconfig
 export PKG_CONFIG_ALLOW_CROSS=1
 export CC_x86_64_linux_android=$TOOL/x86_64-linux-android31-clang
 export CXX_x86_64_linux_android=$TOOL/x86_64-linux-android31-clang++
