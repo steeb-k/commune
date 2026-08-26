@@ -76,6 +76,18 @@ room-title {
         margin-right: 54px;
       }
     }
+
+    // An own bubble's avatar sits on the trailing side, so the margin
+    // that aligns an avatar-less row under its group mirrors over too.
+    message-row.bubble-own .event-content {
+      &:dir(ltr) {
+        margin-right: 54px;
+      }
+
+      &:dir(rtl) {
+        margin-left: 54px;
+      }
+    }
   }
 
   &.has-open-popup  {
