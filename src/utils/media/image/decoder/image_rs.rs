@@ -777,7 +777,15 @@ impl From<ImageCrateError> for Error {
     }
 }
 
-#[cfg(test)]
+// Each of these needs GTK started, for `GdkPixbuf` and the SVG loader.
+// `#[gtk::test]` starts it on a shared `GThreadPool` thread, which is the only
+// way three tests in one binary can have it: the harness gives every test its
+// own thread, and `gtk::init()` panics the moment a second one calls it. On
+// macOS GTK insists on the process main thread, which no harness we use runs a
+// test body on — the decoder has nothing platform-specific in it, so the other
+// platforms cover it. The same reasoning, and the same exclusion, as
+// `session_view::room_details::history_viewer::visual_media_row_model`.
+#[cfg(all(test, not(target_os = "macos")))]
 mod tests {
     use super::*;
 
@@ -801,10 +809,8 @@ mod tests {
     /// This needs GTK's type system for `GdkPixbuf`, and it needs the SVG
     /// loader to be installed — which it must be anyway, or none of the
     /// application's own icons would draw.
-    #[test]
+    #[gtk::test]
     fn an_svg_decodes_through_the_fallback() {
-        gtk::init().expect("GTK should start");
-
         let image = probe(Arc::from(SVG)).expect("the SVG should decode");
 
         assert_eq!(image.width(), 8);
@@ -817,10 +823,8 @@ mod tests {
 
     /// And the fallback must stay a fallback: anything the `image` crate reads
     /// has to keep going through it, animations included.
-    #[test]
+    #[gtk::test]
     fn a_png_does_not_reach_the_fallback() {
-        gtk::init().expect("GTK should start");
-
         let image = probe(Arc::from(PNG)).expect("the PNG should decode");
 
         assert!(
@@ -831,10 +835,8 @@ mod tests {
 
     /// Something no loader anywhere will claim still reports the error the UI
     /// knows how to show.
-    #[test]
+    #[gtk::test]
     fn nonsense_is_still_an_unknown_format() {
-        gtk::init().expect("GTK should start");
-
         let error = probe(Arc::from(&b"not an image, nor anything else"[..]))
             .expect_err("nonsense should not decode");
 
