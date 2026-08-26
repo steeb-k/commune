@@ -476,6 +476,7 @@ sed -e "s|@APP_ID@|$APP_ID|g" \
     -e "s|@APP_NAME@|$APP_NAME|g" \
     -e "s|@EXECUTABLE@|$EXECUTABLE|g" \
     -e "s|@ICON@|$EXECUTABLE.icns|g" \
+    -e "s|@VERSION@|$VERSION|g" \
     -e "s|@PLIST_VERSION@|$PLIST_VERSION|g" \
     -e "s|@MIN_OS@|$MIN_OS|g" \
     "$HERE/Info.plist.in" >"$CONTENTS/Info.plist"
