@@ -118,7 +118,8 @@ and [updates](https://docs.flathub.org/docs/for-app-authors/updates).
 Both ports package from a build directory configured as `-Dprofile=default`, which is what names
 the bundle `Commune` rather than `Commune Devel` and gives it the plain icon. Each platform's
 ledger carries the details and the traps — notably the release profile's memory appetite on
-macOS, and `Info.plist` accepting only the numeric prefix of the version.
+macOS, and `Info.plist` carrying a numeric prefix and a commit-count build number rather than
+the version itself.
 
 On a Mac ([`doc/macos.md`](doc/macos.md)):
 
