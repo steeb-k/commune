@@ -440,8 +440,8 @@ drift: they go in the feature's own commit.**
 | 9. Threads, slice 1 | `fabc003f` | done, not yet seen |
 | 10. Threads, slice 2 | `6a2699d9` | done, not yet seen |
 | 11. Threads, slice 3 | `9c85de03` | done, not yet seen |
-| R5. Predefined notification rules | hash goes in with the masthead refresh | done, not yet seen |
-| R5. Email and phone on the account | hash goes in with the masthead refresh | done, not yet seen |
+| R5. Predefined notification rules | `98403036` | done, not yet seen |
+| R5. Email and phone on the account | `98403036` | done, not yet seen |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 
