@@ -1017,6 +1017,7 @@ sh build-aux/android/patch-gtk-ime-reset.sh      # likewise; see S9
 sh build-aux/android/patch-gtk-ime-caps.sh       # likewise, and after the one above; see S10
 sh build-aux/android/patch-gtk-caps-sentences.sh  # likewise; see S10
 sh build-aux/android/patch-gtk-jni-attach.sh     # likewise; see the attachment crash below
+sh build-aux/android/patch-notification-icon.sh  # likewise; see the small icon below
 $PW build
 ```
 
@@ -1035,7 +1036,7 @@ wrap's own git rather than from the other path:
 git -C subprojects/gtk checkout -- gdk/android/glue/java/org/gtk/android/ImContext.java
 ```
 
-All nine patches run between every `generate` and `build`. `generate` rewrites the manifest from
+All eleven patches run between every `generate` and `build`. `generate` rewrites the manifest from
 its own XSL each time, and the Java ones write into `subprojects/gtk`, which a re-extracted wrap
 loses. Each script is a no-op when its change is already in place, so running them all every time
 is the cheap and correct habit.
@@ -1688,10 +1689,20 @@ isNoisy=true
 ```
 
 Every part of that is load-bearing. The small icon is a resource of ours, not the
-`android.R.drawable.stat_notify_chat` fallback, so `getIdentifier("ic_launcher_monochrome")` found
-the drawable pixiewood generates for the launcher's monochrome layer — which is the right shape for
-a status bar icon precisely because it is a silhouette, since Android masks a small icon down to
-its alpha channel and tints it. The large icon decoded to a 96×96 `Bitmap`, so the PNG bytes made
+`android.R.drawable.stat_notify_chat` fallback, so `getIdentifier()` found a drawable of ours —
+which is the right shape for a status bar icon precisely because it is a silhouette, since Android
+masks a small icon down to its alpha channel and tints it.
+
+That lookup originally named `ic_launcher_monochrome`, and the shape was the only thing it got
+right. **It is the wrong size, and S5 did not catch it** — `dumpsys` reports that a small icon
+exists, not that it is legible. The drawable is the launcher's monochrome layer, so pixiewood bakes
+in the adaptive-icon inset from `scale=".45"` in the manifest: correct for the launcher, where 45%
+of a 108dp canvas keeps the glyph inside the 66dp safe zone, and wrong for a small icon, which is
+drawn inside the shade's own badge and is expected to carry about 22dp of content in 24dp. The
+glyph landed at roughly 40% of its slot, about half the diameter of every other notification's icon
+in the same shade. `build-aux/android/patch-notification-icon.sh` strips the inset into an
+`ic_notification` of its own and `SMALL_ICON_NAME` names that instead; the script's header carries
+the detail. The large icon decoded to a 96×96 `Bitmap`, so the PNG bytes made
 it across JNI. The tag is the ID `GApplication::send_notification()` would have been given, with
 the `int` left at zero, which is what keeps replace-by-ID and makes `withdraw_notification()`
 addressable. Nothing from our own code appears in logcat: no avatar that failed to decode, no
