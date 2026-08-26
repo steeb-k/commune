@@ -61,11 +61,10 @@ Content, decryption and the decision whether to show anything at all happen on t
 the wake. That is the hard problem, and it has [its own section](#the-hard-problem-the-wake).
 
 Gateway discovery, per the UnifiedPush spec: probe the endpoint for
-`/_matrix/push/v1/notify` answering `{"unifiedpush": {"gateway": "matrix"}}` (_unverified_ —
-confirm the exact shape against the current spec and against ntfy in step 0). If the user's
-distributor has no Matrix gateway behind it, we do not silently route their metadata through a
-third-party public gateway; we say so and fall back to the foreground service. ntfy-first UX makes
-that the rare case.
+`/_matrix/push/v1/notify` answering `{"unifiedpush": {"gateway": "matrix"}}` (_measured_ against
+ntfy.sh in step 0, byte for byte). If the user's distributor has no Matrix gateway behind it, we
+do not silently route their metadata through a third-party public gateway; we say so and fall back
+to the foreground service. ntfy-first UX makes that the rare case.
 
 ## What already exists that this builds on
 
@@ -87,23 +86,27 @@ _Measured_, all of it, in S3–S5:
 A push arrives as a broadcast to a process that is usually dead. Three layers of problem, in
 order of certainty:
 
-**Getting native code running without `main`.** GTK's glue loads the shared object and calls
-`main` from the `Activity`; a broadcast must not start the UI. The receiver instead calls a
-JNI-exported function of ours (`#[unsafe(no_mangle)] extern "system" fn Java_org_gtk_android_…`) —
-the staticlib's exports are exports of the `android_exe_type` shared object. Two prerequisites to
-measure in step 0: whether `RuntimeApplication.onCreate` already loads the library and runs
-`writeResources()` on a broadcast-only process start (if it does, the wipe-on-fingerprint-change
-runs too — harmless since S5 moved everything to `no_backup`, but worth knowing the wake pays that
-cost), and how much work a receiver may do — `goAsync()` buys roughly ten seconds (_unverified_);
-if that is not enough, the escalation path is a platform `JobService` (no dependency) rather than
-WorkManager (an AAR pixiewood cannot add).
+**Getting native code running without `main` — impossible, and unnecessary.** This plan first
+assumed the glue loads `main` from the `Activity` and a receiver would need a JNI entry of its own
+that bypasses it. Step 0 read the glue and the assumption is wrong: `RuntimeApplication.onCreate`
+calls `startRuntime()` (`gdkandroidruntime.c`), which dlopens the application library, spawns the
+GTK thread, **calls `main` on it, and blocks `onCreate` until the GLib event loop is running** —
+on _every_ process start, an `Application.onCreate` for a broadcast included (_measured_ in the
+source, not yet on the emulator). So by the time `onReceive` runs, the full application is up with
+its main loop live and `android.rs` initialized the ordinary way; the receiver's only JNI job is
+handing the message across, and `writeResources()` has already run (harmless since S5 moved
+everything to `no_backup`, but it is a cost every wake pays).
 
-**A JNI context with no GTK.** `utils::android::with_env()` captures the `JavaVM` from
-`gdk_android_display_get_env()`, which only exists once GTK runs. The receiver has an env and a
-`Context` in hand and passes them down; `android.rs` grows an init-from-receiver path that seeds
-the same statics, so `android_notifications::send()` works unmodified in a process that has never
-seen a window. (`send()`'s "must be called on the GTK thread" note is about where the `Activity`
-comes from; with the context seeded directly, that constraint dissolves — verify, don't assume.)
+What that trades away is lightness — a push wake boots all of Commune — and what it leaves open is
+what a window-less start does: with no `Activity`, does anything fire `activate` and try to
+present a window (Android blocks background `Activity` starts since 10, so the attempt would be
+discarded — but what does GDK do with the refusal?), or does the application idle in its main loop
+under the glue's `g_application_hold` with no session restored? The first measurement of step 3,
+gated only on step 1's receiver existing. Budget-wise the spec helps: the distributor raises the
+app to foreground importance for five seconds around delivery, and a connector may expose a
+`RAISE_TO_FOREGROUND`-bindable service when it needs longer; if neither is enough for a cold boot
+plus a `/context` query, the escalation path is a platform `JobService` (no dependency), not
+WorkManager (an AAR pixiewood cannot add).
 
 **Turning an event ID into a notification, headlessly.** Two candidate strategies, and this is
 the real fork in the plan:
@@ -139,14 +142,44 @@ declaration, is a step 3 measurement, not a guess to build on.
 
 Each step is independently measurable, and the first one needs no code at all.
 
-**Step 0 — prove the server side with `curl`, and read the ground.** Register an HTTP pusher by
-hand against the test account, pointed at an ntfy topic URL; send a message from another account;
-watch the POST arrive (ntfy shows deliveries). That proves homeserver → gateway → distributor
-end-to-end before any APK changes. Alongside: read the current UnifiedPush spec (the connector
-handshake is deliberately implementable without the library — actions, extras, `<queries>`
-entries), read `RuntimeApplication.onCreate` for what a broadcast-only start already does, and
-confirm the gateway-discovery response shape against ntfy. Everything marked _unverified_ above
-either becomes _measured_ here or changes the plan.
+**Step 0 — prove the server side with `curl`, and read the ground. Done, 26 August 2026.** The
+whole server-side chain ran with `curl` alone, and no real account was touched: the throwaway
+Synapse from `testing/local-homeserver.sh` (podman is now installed on the WSL Arch build host for
+it), alice given an HTTP pusher via `pushers/set`, bob speaking in their DM, and the notify
+arriving at a `curl` subscriber on the ntfy topic seconds later. What the wire actually carried:
+
+```json
+{"notification":{"counts":{"unread":3},"devices":[{"app_id":"io.github.steeb_k.commune.android",
+"data":{"format":"event_id_only"},"pushkey":"https://ntfy.sh/upqBLho454KJ5w?up=1",
+"pushkey_ts":1787770567}],"event_id":"$9N8Sge…","prio":"high","room_id":"!NULGBt…:localhost"}}
+```
+
+_Measured_, each previously a claim: gateway discovery on ntfy.sh answers exactly
+`{"unifiedpush":{"gateway":"matrix"}}`; the pusher registers and lists back; `event_id_only` is
+honored — event ID, room ID, counts and priority, no content; and **the payload reaches the
+subscriber as plaintext JSON**, so the receiver parses `bytesMessage` directly and RFC 8291
+decryption is not needed on the ntfy path (spec AND_3.1.0 allows encrypted WebPush in general —
+handle "starts with `{`" and "aes128gcm" as two arms if another gateway ever matters).
+
+Two ntfy server rules worth knowing, read out of `server.go` after the 507s they caused:
+subscriber-based rate limiting only attaches to topics named `up` + 12 characters (exactly 14 — the
+distributor names topics, so never our code's concern), and publishing to a UP topic with no
+active subscriber is refused with 507 — which the Matrix gateway converts, once the topic has been
+quiet long enough, into **rejecting the pushkey, so the homeserver deletes the pusher itself**. A
+dead subscription self-cleans server-side; the client still handles `UNREGISTERED` for the local
+half.
+
+The spec reading (AND_3.1.0) pinned the handshake for step 1: the app broadcasts
+`org.unifiedpush.android.distributor.REGISTER` / `…UNREGISTER` to the distributor with a `token`
+(UUIDv4, unique per registration — multi-account is answered: one token per session); identity
+travels via `FLAG_SHARE_IDENTITY` on SDK ≥ 34 and a `PendingIntent` extra below; the distributor
+answers on the app's receiver with `org.unifiedpush.android.connector.NEW_ENDPOINT` (`token`,
+`endpoint`), `MESSAGE` (`token`, `bytesMessage`, and an `id` that must be answered with
+`MESSAGE_ACK`), `REGISTRATION_FAILED` (`reason`, including `VAPID_REQUIRED`), `TEMP_UNAVAILABLE`,
+and `UNREGISTERED` (optionally naming a `useDistributor` to move to). Distributor _discovery_ is
+not a receiver query: a distributor exposes an activity on the `unifiedpush://link` deep link, so
+the `<queries>` entry matches that `VIEW` intent and selection can go through
+`startActivityForResult`.
 
 **Step 1 — the receiver, and an endpoint in the log.** `PushReceiver.java` copied in by a new
 patch script exactly as `SyncService.java` is; `<receiver>` and `<queries>` added by
@@ -160,11 +193,15 @@ fall back to the service on `UNREGISTERED` or a failed probe. Measured when: the
 in `GET /pushers`, and a message sent to a **frozen** Commune produces a broadcast in logcat —
 even though nothing is posted yet.
 
-**Step 3 — the wake.** The JNI entry, the init-from-receiver path in `android.rs`, the headless
-session restore from `no_backup`, strategy (B) with (A) held in reserve, and the
-`NotificationProcessSetup` question answered. Measured when: with Commune force-stopped, a real
-message posts a real notification with the sender's name and the decrypted body, and tapping it
-opens the conversation — the S5 measurement, repeated with the process dead the whole time.
+**Step 3 — the wake.** First measurement: what a broadcast-only start does with no `Activity` —
+whether anything fires `activate` or tries to present a window, and whether the application idles
+usably in its main loop (step 0 established `main` runs regardless; see the wake section). Then:
+a "started for push" path inside the ordinary application — session restore without a window,
+strategy (B) with (A) held in reserve, the `NotificationProcessSetup` question answered, and the
+receiver handing `room_id`/`event_id` across JNI to the running main loop. Measured when: with
+Commune force-stopped, a real message posts a real notification with the sender's name and the
+decrypted body, and tapping it opens the conversation — the S5 measurement, repeated with the
+process dead the whole time.
 
 **Step 4 — one mode at a time.** Push mode and service mode become an explicit setting: with a
 working pusher the foreground service does not run; losing the pusher falls back. The setting
@@ -177,8 +214,8 @@ three things in order:
 
 1. Says why notifications matter for a chat app and lets the `POST_NOTIFICATIONS` prompt make
    sense instead of arriving cold — the request moves here from `init()`.
-2. Detects a distributor (a `PackageManager` query for the UnifiedPush action — this is what the
-   `<queries>` entry earns; _unverified_ until step 0 pins the action name). If one is present:
+2. Detects a distributor (a `PackageManager` query for activities on the `unifiedpush://link`
+   `VIEW` intent — this is what the `<queries>` entry earns; pinned by step 0). If one is present:
    offers to set push up, one tap. If none: **recommends installing ntfy**, with a link out
    through the existing `launch_uri()` — to Play or F-Droid, whichever is installed — and a plain
    explanation that without it, delivery pauses after six background hours a day.
@@ -210,13 +247,20 @@ None of this changes steps 0–5, which is the point of the embedded-distributor
 
 ## Open questions
 
-* The exact UnifiedPush spec version to implement against, and whether ntfy's distributor speaks
-  it (step 0).
-* Whether `goAsync()`'s budget covers a cold wake with a `/context` query and a decryption retry,
-  or step 3 needs a `JobService` (measure with the process force-stopped and the network slow).
+Answered by step 0, kept for the record: the spec version is AND_3.1.0 and the handshake is pinned
+in the step 0 notes; multi-account is one token (and so one pusher) per session, which is the
+spec's multiple-registrations design. Still open:
+
+* What a window-less application start actually does — `activate`, window attempts, or a quiet
+  main loop — and where session restore hooks when no window ever appears (step 3's first
+  measurement).
+* Whether the five seconds of foreground importance around delivery cover a cold boot of the full
+  application plus a `/context` query and a decryption retry, or step 3 needs the
+  `RAISE_TO_FOREGROUND` service or a platform `JobService` (measure with the process force-stopped
+  and the network slow).
 * What `NotificationClient` does about an undecryptable event against a homeserver without
   simplified sliding sync — the (A)/(B) fork.
 * Whether the six-hour service and push mode ever need to coexist (a distributor that flakes), or
-  whether fallback-on-`UNREGISTERED` is enough.
-* Multi-account: one pusher per session, one endpoint shared — the UnifiedPush "instance" concept
-  exists for exactly this (_unverified_; step 0).
+  whether fallback-on-`UNREGISTERED` plus the gateway's own pushkey rejection is enough.
+* Which spec versions the ntfy distributor app actually speaks on-device — the AND_3.1.0 `LINK`
+  discovery against the shipping ntfy APK is a step 1 measurement.
