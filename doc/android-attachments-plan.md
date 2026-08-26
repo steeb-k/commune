@@ -39,8 +39,8 @@ and fails somewhere else entirely, which is exactly how "Invalid attachment data
 | History viewer, **save file** | same | **untested**, same shape |
 | Avatar picker | `query_info_future`, `load_contents_future` | **untested**; GIO-level, expected to work post-patch |
 | Image pack editor | `open_multiple_future` then `load_contents_future` | **untested**, same shape |
-| **Key import** | hands the path to `import_room_keys` | **broken** — _inference_, the path does not exist |
-| **Key export** | hands the path to `export_room_keys` | **broken** — _inference_, same |
+| **Key import** | hands the path to `import_room_keys` | **fixed** — _measured_, round-tripped a real export through the picker |
+| **Key export** | hands the path to `export_room_keys` | **fixed** — _measured_, same round trip |
 
 Two smaller things found while reading, neither a crash:
 
@@ -153,6 +153,24 @@ with it.
    `std::fs::File::create` on the path itself, and handing it a path we still hold open is asking
    for trouble on Windows. `can_proceed` stops asking for a path at all and asks only that a file
    was chosen.
+
+   **Done**, and _measured_ on the emulator with a real round trip: exported through
+   `ACTION_CREATE_DOCUMENT` to a `content://` destination, pulled the file off the device — a
+   165-byte, well-formed `-----BEGIN MEGOLM SESSION DATA-----` block — then fed that same file back
+   through the picker into Import. Both directions closed their subpage and neither logged a
+   warning or an error, which is this subpage's only success signal; a failure leaves the subpage
+   open with a toast instead. The `/document/17` file the picker chose is the same on both sides,
+   which is what proves the round trip used the actual exported bytes rather than two unrelated
+   successes.
+
+   One bug found only by running it: `finish_export`'s first draft read the temporary file back
+   with `tokio::fs::read`, which needs an _ambient_ Tokio runtime — `Handle::current()` — and
+   `proceed` is a template callback running on the GLib main context, not inside `spawn_tokio!`.
+   It panicked with "there is no reactor running" the first time it actually ran. `RUNTIME
+   .spawn_blocking(move || std::fs::read(path))` is the fix, and it is what
+   `save_data_to_tmp_file`/`tmp_file_path` already do for the same reason -- `spawn_blocking`
+   carries its own runtime handle, so it works from a plain async fn with no ambient runtime.
+   Nothing else in this change used `tokio::fs`, so this was the only site to check.
 3. **Test the save-as routes.** `replace_contents` on a picked `GFile` should work; `save_future`
    on Android should present `ACTION_CREATE_DOCUMENT`. Both are plausible and neither is measured.
    If they work, this step is a paragraph in `doc/android.md` and nothing else.

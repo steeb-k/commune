@@ -667,6 +667,24 @@ static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
     dir.into_boxed_path()
 });
 
+/// Ensure the temporary file directory exists, and return it.
+///
+/// `create_dir_all`, not `create_dir`: the parent is not guaranteed to exist.
+/// On Android nothing has created the cache directory when the first
+/// attachment is opened, and `create_dir` fails with `ENOENT` rather than
+/// creating it.
+fn ensure_tmp_dir() -> Result<&'static Path, std::io::Error> {
+    let dir = TMP_DIR.as_ref();
+    if !dir.exists()
+        && let Err(error) = fs::create_dir_all(dir)
+        && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
+    {
+        return Err(error);
+    }
+
+    Ok(dir)
+}
+
 /// Save the given data to a temporary file.
 ///
 /// When all strong references to the returned file are destroyed, the file will
@@ -674,23 +692,26 @@ static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
 pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io::Error> {
     RUNTIME
         .spawn_blocking(move || {
-            // `create_dir_all`, not `create_dir`: the parent is not guaranteed to
-            // exist. On Android nothing has created the cache directory when the
-            // first attachment is opened, and `create_dir` fails with `ENOENT`
-            // rather than creating it.
-            let dir = TMP_DIR.as_ref();
-            if !dir.exists()
-                && let Err(error) = fs::create_dir_all(dir)
-                && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
-            {
-                return Err(error);
-            }
-
-            let mut file = NamedTempFile::new_in(dir)?;
+            let mut file = NamedTempFile::new_in(ensure_tmp_dir()?)?;
             file.write_all(&data)?;
 
             Ok(file.into())
         })
+        .await
+        .expect("task was not aborted")
+}
+
+/// Create an empty temporary file and return its path, with the file closed.
+///
+/// Use this instead of [`save_data_to_tmp_file`] when the caller hands the
+/// path to something outside GIO that opens the file itself — matrix-sdk's
+/// key export writes to its path with `std::fs::File::create`, and on Windows
+/// that fails while this process still holds the same file open, which a live
+/// `NamedTempFile` does. The file is deleted when the returned `TempPath` is
+/// dropped, the same as [`File::Temp`].
+pub(crate) async fn tmp_file_path() -> Result<tempfile::TempPath, std::io::Error> {
+    RUNTIME
+        .spawn_blocking(|| Ok(NamedTempFile::new_in(ensure_tmp_dir()?)?.into_temp_path()))
         .await
         .expect("task was not aborted")
 }
