@@ -26,6 +26,20 @@ Fact 2 is the expensive one, because it defeats every `if let Some(path)` guard 
 Code that would have failed loudly and early instead proceeds with a path that points at nothing
 and fails somewhere else entirely, which is exactly how "Invalid attachment data" was reached.
 
+**Fact 2 is not the same lie for every provider, found while testing step 4.** The Android picker
+is a front end onto several document providers at once, and `Uri.getPath()` answers differently
+depending on which one backed the pick. `ExternalStorageProvider` — the "Downloads" folder
+browser, and every other raw-storage location the picker's left rail lists — mints document ids of
+the form `raw%3A/storage/emulated/0/Download/…`, and that `raw:` segment **is** the real absolute
+path, so `Uri.getPath()` answers with a path that genuinely exists. `local_path` still does the
+right thing here, it just doesn't have to fall back to a copy. It is `MediaDocumentsProvider` and
+the unified Photo Picker — the "Images" root, sorted into buckets like a gallery — that mint opaque
+numeric ids, and that is where fact 2's "plausible lie" is real: `Uri.getPath()` answers with
+something that looks like a path and is not one. `local_path` handles both correctly by construction
+(`.filter(|path| path.exists())` doesn't care why a path is fake, only that it is), but anything
+that reads a `content://` file's path for a _name_ rather than a location — `file.basename()`, most
+notably — gets a real filename from the first provider and garbage from the second. See step 4.
+
 ## Inventory
 
 | Route | Reaches a file by | State |
@@ -37,8 +51,8 @@ and fails somewhere else entirely, which is exactly how "Invalid attachment data
 | Received attachment, view | temp file we wrote | **fixed earlier** (`eb951d5a`) — _measured_ |
 | Received attachment, **save as** | `GFile::replace_contents` on the chosen file | **works, unchanged** — _measured_, a received file round-tripped through the picker byte-for-byte |
 | History viewer, **save file** | same | **untested**, same shape — not separately clicked through, see step 3 |
-| Avatar picker | `query_info_future`, `load_contents_future` | **untested**; GIO-level, expected to work post-patch |
-| Image pack editor | `open_multiple_future` then `load_contents_future` | **untested**, same shape |
+| Avatar picker | `query_info_future`, `load_contents_future` | **works, unchanged** — _measured_, an SVG picked and uploaded successfully |
+| Image pack editor | `open_multiple_future` then `load_contents_future` | **works, unchanged, but see the new finding below** — _measured_ |
 | **Key import** | hands the path to `import_room_keys` | **fixed** — _measured_, round-tripped a real export through the picker |
 | **Key export** | hands the path to `export_room_keys` | **fixed** — _measured_, same round trip |
 
@@ -111,10 +125,15 @@ with it.
    site that would turn a NULL into a panic if the GTK patch is ever reached for.
 
    **Done**, and _measured_ on the emulator: picking `t3.png` from the document picker previewed
-   it and sent it, and it came back down as an image in the timeline. That one flow exercises both
-   halves of the change — the preview renders from the temporary copy, which only exists because
-   `local_path` answered `None`, and the preview is an `ImageRequestSource::File` going through the
-   image queue on its new URI key. Nothing was logged at warn or above for the whole flow.
+   it and sent it, and it came back down as an image in the timeline. The preview is an
+   `ImageRequestSource::File` going through the image queue on its new URI key either way, which is
+   the half of this that was actually reliably measured. Whether that specific run took the
+   temporary-copy branch or the direct-path branch is open again on reflection: it was written up as
+   the former on the assumption every Android pick lacks a real path, and step 4 found that is only
+   true for `MediaDocumentsProvider`/Photo Picker picks, not for an `ExternalStorageProvider` browse
+   like plain "Downloads" — which is where this pick, like every other one in this document, came
+   from. Not re-verified either way; the correction is to the claim about which branch ran, not to
+   whether attachments work. Nothing was logged at warn or above for the whole flow.
 
    `crate::utils::local_path` is the helper; the composer now calls it instead of
    spelling the check out inline, and the image queue keys on a URI. Two `.path()` call sites were
@@ -199,6 +218,31 @@ with it.
    whether the instance was reached by relaunching over a running one first.
 4. **Test avatar and image-pack pickers.** Both are GIO-level and expected to be fine post-patch,
    which is exactly the kind of expectation this port has already punished twice.
+
+   **Both work, unchanged, and measured.** The avatar picker uploaded a picked SVG and the account
+   avatar changed successfully. The image pack editor's `open_multiple_future` uploaded two picked
+   images into a new pack and saved it. Neither path touches `.path()` or `.basename()` on the
+   upload side — `FileInfo::try_from_file` reads the content type, display name and size entirely
+   through `query_info_future`, the same real display name `AudioPlayerSource::name` should be
+   using instead of a path (step 1) — so this port's usual expectation-punishing did not repeat
+   here.
+
+   **New finding, not in the original inventory: `image_pack_editor`'s auto-generated shortcode
+   is wrong for a Photo-Picker-backed image.** `upload_image` names the pack entry from
+   `file.basename()`, not from `FileInfo`'s real display name, and `basename()` inherits whichever
+   of the two lies in fact 2 the source provider tells (see the fact 2 addendum above). Picking the
+   same kind of file from two different pickers proved both sides of it in one sitting: a file
+   picked from the plain "Downloads" browser (`ExternalStorageProvider`, a real path) got the
+   shortcode `test-svg`, its actual file name; a file picked from the "Images" root
+   (`MediaDocumentsProvider`, an opaque id) got `w1` — nothing about the file, and useless to
+   whoever has to type `:w1:` to use it. Nothing crashes and nothing is lost — the upload itself
+   is correct either way, and the shortcode field is editable after the fact — but the pack editor
+   is the first place in this document where the fake path corrupts something the user keeps and
+   others see, rather than a preview label or a request-queue key. Worth fixing the same way
+   `AudioPlayerSource::name` should be: read `query_info_future`'s
+   `G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME` instead of `basename()`. Not fixed here — this step was
+   testing, not fixing, and the two sites are different enough (one names a UI label, this one
+   seeds a persisted shortcode) to want their own change.
 5. **Sweep for the pattern.** `grep` for `.path()` and for `file.uri()`, and check each against the
    two facts above. The list in this document was built that way and is only as good as that grep.
 
