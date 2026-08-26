@@ -1269,3 +1269,52 @@ off by default. All of this is presentation; nothing goes over the wire.
 * [ ] **A bubbled sticker is a known compromise:** it gets a bubble around
       its transparency where Element strips it. Say whether it looks wrong
       enough to earn the special case.
+
+## Invite by email — `doc/invite-by-email.md`
+
+Room Details ▸ Invite New Members. Needs an identity server: matrix.org
+suggests vector.im through its `.well-known`, so a matrix.org account is
+the easy test bed. The local harness has none, which is itself a check.
+
+* [ ] **Typing an email offers the card.** Type `somebody@example.org` in
+      the search: a card appears under the entry reading "Invite
+      `somebody@example.org` by email". Typing a Matrix ID or a name does
+      not summon it; adding a space makes it go away.
+* [ ] **Without an identity server it says so.** Against the local
+      harness, the card toasts that inviting by email needs an identity
+      server and there is none to use — no crash, no silent nothing.
+* [ ] **The terms come first, once.** On an account that never used
+      vector.im, the first invite raises the terms dialog with a working
+      link to the document; Agree sends the invite, and a second invite
+      to another address asks nothing.
+* [ ] **Cancel on the terms sends nothing.** The dialog closes and no
+      invitation reaches the address.
+* [ ] **The invite lands.** Use a real address you control: the toast
+      names it, and the email arrives with the room invitation (and an
+      `m.room.third_party_invite` event appears in the room state). If
+      the address has a bound Matrix account, it becomes an ordinary
+      invite for that account instead.
+* [ ] **The Identity Server row tells the truth.** Account Settings ▸
+      General ▸ Privacy: on matrix.org it reads vector.im, suggested by
+      the homeserver; on the harness it reads None.
+* [ ] **Setting a server validates it.** Enter nonsense or a URL that is
+      not an identity server: the toast refuses it and nothing is saved.
+      Enter `https://vector.im`: the row now says it is set on this
+      account, and another client (or `/_matrix/client/v3/user/{id}/account_data/m.identity_server`)
+      shows the account data.
+* [ ] **An empty field declines on purpose.** Save with the field empty:
+      the row reads "None, by choice on this account", and the invite
+      card toasts that there is no identity server even on matrix.org.
+      _Use the Homeserver's_ brings the suggestion back.
+
+## Own bubbles carry the avatar — fix of 26 August 2026
+
+The first pass of chat bubbles dropped the sender's avatar entirely on own
+messages; it now sits to the right of the bubble.
+
+* [ ] **Your avatar is on the right.** With Chat Bubbles on, the first
+      message of one of your groups draws your avatar at the line's end,
+      right of the bubble, where everybody else has theirs on the left.
+* [ ] **Continuations still align.** Your second bubble in a group lines
+      up with the first one's right edge rather than sticking out past it.
+* [ ] **Clicking it opens your profile**, the same as any sender avatar.

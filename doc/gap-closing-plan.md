@@ -377,8 +377,37 @@ only — no page on the spec boards moves for it. `doc/chat-bubbles.md` is
 the ledger; the known compromise (a sticker keeps its bubble, where Element
 strips it) is written there and on the eyeball list.
 
-**Next: round 7 — invite by email.** See the decided rounds below before
-scoping.
+**Round 7 is built, 26 August 2026 — invite by email, in three slices.**
+The repricing held: `Room::invite_user_by_3pid()` was ready-made, and the
+module of its own turned out to be `src/session/identity_server.rs` —
+resolution (`m.identity_server` account data first, its explicit null
+honored as "none, and stop asking"; the `.well-known` of the server name
+as fallback; the status endpoint as the test of whoever is named),
+registration (the OpenID response body is exactly the register body), and
+terms (fetched, filtered against `m.accepted_terms`, presented in the
+interface's language, recorded back on acceptance). One transport lesson:
+ruma's identity-service request types work fine in-app — it is _defining_
+endpoints here that panics — driven through `try_into_http_request` over
+the SDK's reqwest client, since `client.send()` only ever targets the
+homeserver. The invite subpage grew a card under the search entry when the
+text is an email address; the address deliberately never joins the
+checkbox list, which is keyed on user IDs down to its failure handling,
+and an email invitee has no membership to track anyway. The settings row
+(Account Settings ▸ General ▸ Privacy) names the identity server in use
+and on whose word, and edits the account data's whole tri-state: a URL,
+validated before written; an empty field for "none at all"; or the
+homeserver's suggestion. `doc/invite-by-email.md` is the ledger. **The
+"Build these first" shortlist is now empty** — everything the spec-gaps
+page ever ranked buildable-first has been built.
+
+**A bubbles correction rode along:** the first pass dropped an own
+message's avatar entirely; the user asked for it on the right, so it now
+moves to the far grid column, the continuation margin mirrors, and only
+the name stays hidden.
+
+**Next: round 8 — finish what we already claim** (per-message encryption
+shields, retry/discard for failed sends, `UtdCause`), per the decided
+rounds below.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:

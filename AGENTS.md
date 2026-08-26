@@ -51,6 +51,7 @@ room the homeserver talks to the user in,
 `doc/mutual-rooms.md` for the shared rooms on a profile,
 `doc/policy-servers.md` for the `m.room.policy` state event in the
 timeline, `doc/chat-bubbles.md` for the bubbled timeline layout,
+`doc/invite-by-email.md` for inviting somebody who has no account yet,
 and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.

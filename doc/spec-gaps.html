@@ -491,8 +491,8 @@
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Seven gaps:
-      three with no implementation at all, four implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Six gaps:
+      two with no implementation at all, four implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -531,13 +531,20 @@
       moved to the partial column, the timeline saying what <code>m.room.policy</code> means
       while setting it stays unoffered. Voice messages, the one proposal this fork admitted
       past its no-MSC stance, got their recording half the same round; that row lives on the
-      comparison page rather than here, being an MSC.
+      comparison page rather than here, being an MSC. And round 7, the same day again, closed
+      the gap this page ranked highest since threads: inviting by email. An identity-server
+      module resolves (account data first, its explicit null honored), registers (the OpenID
+      response body is exactly the register body) and handles the terms of service, filtered
+      against <code>m.accepted_terms</code>; the invite subpage offers the invitation the
+      moment the search text is an email address; and a settings row names the identity server
+      in use, on whose word, and lets the account set, decline or defer the choice. The
+      build-first shortlist below is empty for the first time.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">3</div>
+      <div class="score-num">2</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
@@ -547,7 +554,7 @@
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">41</div>
+      <div class="score-num">42</div>
       <div class="score-label">Implemented</div>
       <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces, threads, mutual rooms and one-to-one calls.</div>
     </div>
@@ -575,18 +582,13 @@
       </p>
     </div>
     <div class="shortlist">
-      <ol>
-        <li>
-          <span class="pick-name">Invite by email</span>
-          <span class="pick-why">The invite subpage takes Matrix user IDs and nothing else, so nobody can be invited who has not got an account yet. That is the moment somebody decides whether to use Matrix at all, and it is the one this client cannot help with. Needs an identity server flow — though the SDK audit found <code>Room::invite_user_by_3pid()</code> ready-made, so the module of its own is identity-server configuration UI rather than protocol work.</span>
-        </li>
-      </ol>
+      <p class="sec-sub"><strong>Empty since 26 August 2026.</strong> Invite by email was the last row standing, and round 7 built it: an identity-server module (resolution, registration, terms), a card on the invite subpage when the search text is an email address, and a settings row for the account’s identity-server preference. What remains on this page is remains by decision — low value, or waiting on infrastructure no homeserver has.</p>
     </div>
   </section>
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">3 modules</span></h2>
+      <h2>Absent <span class="tick gone">2 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -601,13 +603,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="feat">Invite by email</span></td>
-            <td class="mod">Third-party invites</td>
-            <td class="state">The invite subpage takes Matrix user IDs only. No identity-server flow, so nobody can be invited who hasn't got an account yet — a real gap when onboarding people.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
           <tr>
             <td><span class="feat">Moderation policy lists</span></td>
             <td class="mod">Moderation policy lists</td>
@@ -657,6 +652,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Inviting somebody by email</span></td>
+            <td class="mod">Third-party invites<br>Identity Service API</td>
+            <td class="state">The invite subpage offers "Invite {address} by email" the moment the search text is an address. Behind it, a module of the session talks to an identity server the way the two specifications lay out: the server is resolved from the <code>m.identity_server</code> account data — whose explicit null is honored as "none, and stop asking" — or the <code>.well-known</code> of the account’s server name, and must answer the status endpoint before it is believed; registration exchanges the homeserver’s OpenID token for the identity server’s own; the terms of service are fetched, filtered against <code>m.accepted_terms</code>, presented in the interface’s language with links to the documents, and recorded back on acceptance. The invitation itself is <code>POST /invite</code> with the 3PID block, which the SDK carries. A settings row edits the whole tri-state of the preference, validating a named server before writing it.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen; the terms flow needs an identity server that has terms, which vector.im does.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">Recording a voice message</span></td>
             <td class="mod">MSC3245</td>
@@ -710,7 +711,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">29 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">30 touch the protocol</span></h2>
       <p class="sec-sub">
 316 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
