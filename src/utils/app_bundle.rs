@@ -11,11 +11,11 @@
 //! simpler of the two: `bundle.sh` lays out `bin\commune.exe` beside
 //! `share\commune\*.gresource` and `share\locale`, which is the same shape
 //! `meson install` gives the MSYS2 prefix, so one relative computation
-//! serves both a packaged bundle and a plain dev install. GLib itself
-//! already finds its *own* data — schemas, pixbuf loaders, GStreamer
+//! serves both a packaged bundle and a plain dev install. `GLib` itself
+//! already finds its *own* data — schemas, pixbuf loaders, `GStreamer`
 //! plugins, fontconfig — relative to its own DLL automatically on Windows,
 //! which is what lets `bundle.sh` call the layout self-relocating; our two
-//! gresources are not a GLib lookup, so they needed the same treatment
+//! gresources are not a `GLib` lookup, so they needed the same treatment
 //! explicitly. Without it, the baked-in path only ever resolved on the
 //! machine that built the binary — every other machine panicked on start,
 //! silently, since a release build has no console for the message to reach.
