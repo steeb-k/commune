@@ -491,8 +491,8 @@
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Nine gaps:
-      six with no implementation at all, three implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Eight gaps:
+      six with no implementation at all, two implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -518,8 +518,10 @@
       hold it. Spaces leaves the partial column entirely. Threads left Absent on
       26 August 2026 and took its second slice the same day: a thread root announces itself
       with a reply count, opening it shows the thread in place with the composer, receipts
-      and drafts scoped to it, and threaded replies have left the main timeline — the thread
-      list is the one slice keeping the module in the partial column.
+      and drafts scoped to it, threaded replies have left the main timeline, and the third
+      slice — the thread list, off the <code>/threads</code> endpoint — landed the same day,
+      which moves Threads into the implemented column. The last whole module this client did
+      not speak is spoken.
     </p>
   </header>
 
@@ -530,14 +532,14 @@
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">3</div>
+      <div class="score-num">2</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">39</div>
+      <div class="score-num">40</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces and one-to-one calls.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces, threads and one-to-one calls.</div>
     </div>
   </div>
 
@@ -557,18 +559,16 @@
         dearer. Both notes are further down. The reordering held — signing up and resetting a
         password, which went to the top of this list that morning, were both built by the end of
         the day, and so was every slice of spaces, which stood above everything until it was
-        done. Threads is what stands above everything now.
+        done. Threads stood above everything from 25 August 2026 and went in three slices on
+        26 August 2026 — chip, view, list — so the top of this list is inherited by the
+        runner-up.
       </p>
     </div>
     <div class="shortlist">
       <ol>
         <li>
-          <span class="pick-name">Threads</span>
-          <span class="pick-why">The last module of the standard this client does not finish, and the one people notice. Under way since 26 August 2026, and mostly there: a thread root carries an "N replies" chip that opens the thread in place, the composer writes into it, receipts and drafts are the thread's own, and threaded replies have left the main timeline. What is left is the thread list — <code>ThreadListService</code> wrapped in a page — without which a thread can only be entered through its root. One slice remains of three.</span>
-        </li>
-        <li>
           <span class="pick-name">Invite by email</span>
-          <span class="pick-why">The invite subpage takes Matrix user IDs and nothing else, so nobody can be invited who has not got an account yet. That is the moment somebody decides whether to use Matrix at all, and it is the one this client cannot help with. Needs an identity server flow, which is a module of its own and the reason this sits second rather than first.</span>
+          <span class="pick-why">The invite subpage takes Matrix user IDs and nothing else, so nobody can be invited who has not got an account yet. That is the moment somebody decides whether to use Matrix at all, and it is the one this client cannot help with. Needs an identity server flow — though the SDK audit found <code>Room::invite_user_by_3pid()</code> ready-made, so the module of its own is identity-server configuration UI rather than protocol work.</span>
         </li>
       </ol>
     </div>
@@ -640,14 +640,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">3 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">2 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Every one of these is a
         gap in coverage rather than a choice: the last deliberate departure, image packs
         writing unstable names, was closed on 22 August 2026. Spaces passed through this column
-        and out of it in August 2026, and threads arrived on 26 August 2026 from the absent
-        side: two of its three slices are built, so a thread announces itself and can be read
-        and written — the thread list is what keeps the row here. Voice over IP left this column on 23 August 2026 and
+        and out of it in August 2026; threads passed through it in a single day, arriving from
+        the absent side on 26 August 2026 with its first slice and leaving with its third.
+        Voice over IP left this column on 23 August 2026 and
         the row it left behind is now a note further down; account registration passed through it
         the same day, halved into a password reset and then closed by it.
       </p>
@@ -664,13 +664,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="feat">Threads</span></td>
-            <td class="mod">Threading</td>
-            <td class="state">A thread announces itself and can be read and written: the root's "N replies" chip and a <em>View Thread</em> menu entry open the thread in place — a banner names the state and offers the way back — the composer sends into it with the thread relation attached, read receipts sent while reading it are the thread's own, each thread keeps its own draft, and threaded replies no longer land inline in the main timeline. What is missing is the thread list: a thread can only be entered through its root, so one whose root has scrolled out of reach cannot be found. Slice 3 is the remainder.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-          </tr>
           <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
@@ -692,7 +685,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">23 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">24 touch the protocol</span></h2>
       <p class="sec-sub">
 305 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
@@ -720,6 +713,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Threads</span></td>
+            <td class="mod">Threading</td>
+            <td class="state">The whole module, in three slices on 26 August 2026. A thread root carries an "N replies" chip drawn from the server's bundled <code>m.thread</code> aggregation and kept current by the event cache. The chip — or <em>View Thread</em> in the context menu — swaps the room history's displayed timeline for a <code>TimelineFocus::Thread</code> one, the way a focused timeline already swapped in and out, so every row is the real one and reactions, edits and context menus work unchanged; a banner names the state and offers the way back. The composer is pointed at the displayed timeline while it is a thread, and the SDK attaches the <code>m.thread</code> relation to whatever is sent. Read receipts travel through the displayed timeline too, so the SDK stamps them with the thread; the room's fully-read marker is never moved from a thread, because a thread event may sit far back in room order. Drafts are per-thread and server-side, under the thread root's own key. With somewhere to read them, threaded replies are hidden from the live timeline — <code>hide_threaded_events</code>, the flag the SDK reserves for exactly this moment. And the threads button lists every thread of the room off <code>GET /rooms/{id}/threads</code>, most recent activity first, paginated, each row updated in place as thread events arrive. Thread subscriptions (MSC4306) are out — off spec.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">The spaces somebody is already in</span></td>
             <td class="mod">Spaces</td>
@@ -1002,9 +1001,9 @@
           client sends is malformed and nothing another client sees is broken by it; the whole
           of the difference is that this end cannot <em>see</em> a thread. When this was
           written, threaded events sat inline in the main timeline looking like ordinary
-          messages, no thread could be listed, and none could be opened — since 26 August 2026
-          the first of those three is half-gone, a thread root announcing itself with a reply
-          count. That is an argument for doing threads carefully rather than
+          messages, no thread could be listed, and none could be opened — all three gone on
+          26 August 2026, when the module went in whole. That was an argument for doing
+          threads carefully rather than
           urgently — and it moves the row out of the "we are getting this wrong" column, where
           this page had wrongly put it.
         </p>
@@ -1250,7 +1249,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Already conformant <span class="tick have">39 modules</span></h2>
+      <h2>Already conformant <span class="tick have">40 modules</span></h2>
       <p class="sec-sub">
         For context on where the effort has gone. Encryption in particular is complete: cross-signing,
         SAS and QR verification, recovery through secret storage, and key import/export.
@@ -1295,6 +1294,7 @@
       <span>Voice over IP</span>
       <span>Pinned Events</span>
       <span>Presence</span>
+      <span>Threads</span>
       <span>Account registration and password reset</span>
     </div>
   </section>
@@ -1326,14 +1326,14 @@
     read it finally read without joining, a restricted join rule made creatable rather than only
     preservable, a room put into a space for the first time and taken back out of one, a space made
     rather than only found, a thread root given its reply count and then the thread behind it
-    opened, read and written in place,
+    opened, read, written in place and listed with every other thread of its room,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
     Client-Server API at <code>spec.matrix.org/v1.19</code>, and module names follow its own section
     headings. Effort estimates assume the pinned <code>matrix-sdk</code> already exposes the
-    endpoint, which holds for everything above except threads, where the SDK work is real
-    but the UI work dominates. The fork point is <code>1e5c1cab</code>, 18 August 2026.
+    endpoint, which holds for everything above. The fork point is <code>1e5c1cab</code>,
+    18 August 2026.
   </footer>
 
 </div>

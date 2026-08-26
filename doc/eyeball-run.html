@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 6a2699d9</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; b2de3f73</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Threads, slices 1 and 2: the chip, and the view it opens</span><b>15</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -222,7 +222,7 @@ a screenshot; <em>Copy report</em> or <em>Save report</em> then gathers them up.
 <section id="s0" data-open="1" data-checks="0"><header><h2>How to run this</h2></header><div class="body"><p>The sections below are ordered oldest first, which is the wrong order to read them in. <strong>Work newest first</strong>: the code nobody has looked at yet is the code most likely to be wrong, and four of the five bugs found on 24 August 2026 were in work less than a day old.</p><p><code>doc/eyeball-run.html</code> is this file with checkboxes, generated from it by <code>doc/eyeball-page.py</code> and published at &lt;https://claude.ai/code/artifact/9b66f090-2f6d-407e-a802-ea4079773fe9&gt;. Regenerate and republish it whenever this file changes — the ledger is the source, the page only draws it, and <strong>a result is not recorded until it is struck here</strong>. The page keeps its marks in one browser and nowhere else.</p><h3>Before anything</h3><pre><code>testing/local-homeserver.sh up      # or `reset` for a clean slate
 testing/local-homeserver.sh verify  # says whether it is in the state below
 meson install -C _build             # the binary must be newer than the code
-commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</code> repairs. Run it before a session and whatever is wrong arrives at once rather than one room at a time in the middle of the list.</p><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. The harness sets four passwords: <code>alice-is-testing</code>, <code>bob-is-testing</code>, <code>carol-is-testing</code>, <code>admin-is-testing</code>.</p><p><strong>Who is who.</strong> Alice owns nearly everything. <strong>Bob</strong> is a second member — including of both spaces, so that alice leaving one does not destroy it — which means he can never be invited to them. <strong>Carol</strong> exists and has joined nothing, and is who the invite checks are for. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p><h3>What to do last</h3><p>Anything marked <strong>Destructive</strong> takes away what the rest of its section is looking at. Those subsections sit at the end of each section for that reason, and the run sheet marks them. Nothing here is unrecoverable — <code>Test Space</code> and <code>Sub Space</code> are public, so rejoining them is a search in Explore — but it is ten minutes you do not need to spend.</p></div></section><section id="s1" data-open="1" data-checks="15"><header><h2>Threads, slices 1 and 2: the chip, and the view it opens</h2><span class="src">doc/threads.md</span><span class="cnt" data-count>15 left</span></header><div class="body"><p>A message that roots a thread carries a chip under its content — a thread icon and a reply count — and pressing it swaps the room history for the thread itself, with a banner naming the state and the composer sending into the thread. <code>testing/local-homeserver.sh up</code> seeds a thread in <strong>Invite Room</strong>: alice&#x27;s &quot;Does anybody else think this deserves a thread?&quot; with three replies from bob. Some checks grow the thread from a terminal — run this from the repository root, with a token from the script&#x27;s usual login curl, changing the transaction ID and the body each time:</p><pre><code>root=$(jq -r .thread_root testing/.homeserver/seeded.json)
+commune</code></pre><p><code>verify</code> reports and never repairs; <code>up</code> repairs. Run it before a session and whatever is wrong arrives at once rather than one room at a time in the middle of the list.</p><p>Log in as <strong>alice</strong> — the greeter offers matrix.org first, so this means <em>Another Homeserver</em> → <code>localhost:8008</code>. The harness sets four passwords: <code>alice-is-testing</code>, <code>bob-is-testing</code>, <code>carol-is-testing</code>, <code>admin-is-testing</code>.</p><p><strong>Who is who.</strong> Alice owns nearly everything. <strong>Bob</strong> is a second member — including of both spaces, so that alice leaving one does not destroy it — which means he can never be invited to them. <strong>Carol</strong> exists and has joined nothing, and is who the invite checks are for. Some checks want <strong>bob</strong> as well; a second Commune on the same machine cannot hold two sessions at once, so those are gathered together rather than scattered.</p><h3>The order, and roughly what each costs</h3><div class="scroller"><table><thead><tr><th></th><th>Section</th><th>Why here</th></tr></thead><tbody><tr><td>1</td><td>Spaces</td><td>Largest, newest, and the sidebar section is all anybody has seen</td></tr><tr><td>2</td><td>Choosing a space, restricting, putting one in</td><td>Same day&#x27;s work, and the restricted rule can lock people out if it is wrong</td></tr><tr><td>3</td><td>Reading a room without joining it</td><td>Partly seen already; the negatives are untouched</td></tr><tr><td>4</td><td>Going to a message without leaving the present</td><td>Small, and it is a fix rather than a feature</td></tr><tr><td>5</td><td>Signing up and resetting a password</td><td>Never looked at, and it is the first thing a new person meets</td></tr><tr><td>6</td><td>Presence</td><td>Never looked at</td></tr><tr><td>7</td><td>Pinned messages, Calls, Server ACLs</td><td>Mostly seen; the leftovers</td></tr></tbody></table></div><h3>The half worth caring about</h3><p>Every section has checks phrased as <em>something should <strong>not</strong> happen</em> — a button absent, a control insensitive, a room not listed. <strong>Those are the ones to do.</strong> A feature that works when you use it properly is the easy case; the bugs found so far were all a flag read backwards, a list not kept in step, or a control that was never wired at all, and every one of them showed up as something appearing where it should not have.</p><p>If a check fails, say <strong>what happened</strong>, not what should have. A screenshot is worth more than either.</p><h3>What to do last</h3><p>Anything marked <strong>Destructive</strong> takes away what the rest of its section is looking at. Those subsections sit at the end of each section for that reason, and the run sheet marks them. Nothing here is unrecoverable — <code>Test Space</code> and <code>Sub Space</code> are public, so rejoining them is a search in Explore — but it is ten minutes you do not need to spend.</p></div></section><section id="s1" data-open="1" data-checks="25"><header><h2>Threads: the chip, the view, and the list</h2><span class="src">doc/threads.md</span><span class="cnt" data-count>25 left</span></header><div class="body"><p>A message that roots a thread carries a chip under its content — a thread icon and a reply count — pressing it swaps the room history for the thread itself, with a banner naming the state and the composer sending into the thread, and a threads button in the header lists every thread of the room. <code>testing/local-homeserver.sh up</code> seeds two threads in <strong>Invite Room</strong>: alice&#x27;s &quot;Does anybody else think this deserves a thread?&quot; with three replies from bob, and bob&#x27;s &quot;The second thread, for the list to have two rows.&quot; with one reply from alice. Some checks grow a thread from a terminal — run this from the repository root, with a token from the script&#x27;s usual login curl, changing the transaction ID and the body each time:</p><pre><code>root=$(jq -r .thread_root testing/.homeserver/seeded.json)
 curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room testing/.homeserver/seeded.json)/send/m.room.message/eyeball-$RANDOM&quot; \
   -H &quot;Authorization: Bearer $BOB_TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
   -d &quot;{\&quot;msgtype\&quot;: \&quot;m.text\&quot;, \&quot;body\&quot;: \&quot;A fourth reply.\&quot;, \&quot;m.relates_to\&quot;: {\&quot;rel_type\&quot;: \&quot;m.thread\&quot;, \&quot;event_id\&quot;: \&quot;$root\&quot;}}&quot;</code></pre><h3>The chip</h3><div class="chk" data-id="k4e2c852449" data-state="" data-lead="The chip appears on the root.">
@@ -413,6 +413,136 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
 <div class="txt"><strong>Switching rooms while in a thread</strong> lands the other room in its ordinary live timeline, banner gone, and coming back to Invite Room is live too — the thread is left by leaving, not remembered.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><h3>The list</h3><div class="chk" data-id="kc6641fd19d" data-state="" data-lead="The threads button is in the header bar">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The threads button is in the header bar</strong>, a toggle with the thread icon, in every room — there is no cheap way to know whether a room has threads before asking, so it does not hide.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k24b2e6955e" data-state="" data-lead="Pressing it lists both seeded threads">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Pressing it lists both seeded threads</strong>, most recent activity first: bob&#x27;s second thread above alice&#x27;s first. Each row shows the root&#x27;s sender with avatar and timestamp, a preview of the root message, the reply count (&quot;1 reply&quot; / &quot;3 replies&quot;), and the latest reply as &quot;name: message&quot;.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kfccf644167" data-state="" data-lead="Activating a row opens that thread">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Activating a row opens that thread</strong> — the list closes, the thread view appears with its banner, and the composer writes into that thread.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kccbdd83e2f" data-state="" data-lead="A room with no threads says so.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A room with no threads says so.</strong> Open the threads list in Public Room: &quot;No Threads&quot;, with the thread icon, not a spinner that never stops.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k9ca9b83d33" data-state="" data-lead="The list stays current.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The list stays current.</strong> With the list open, send a reply into a seeded thread with the curl above: that row&#x27;s count and latest-reply line must update without closing the list. A brand-new thread rooted while the list is open is <strong>not</strong> expected to appear as a new row — the endpoint is paginated and the live half only updates threads already listed; reopening the list picks it up.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kfa51678d64" data-state="" data-lead="The pinned and threads toggles put each other out.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The pinned and threads toggles put each other out.</strong> With pinned messages open, press the threads button: the threads list shows and the pin toggle pops out, and the other way round.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k28bd8186ee" data-state="" data-lead="The thread banner does not sit over the list.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The thread banner does not sit over the list.</strong> Enter a thread, then open the threads list: the &quot;Viewing a thread&quot; banner must go while the list shows and come back if the list is closed with the thread still displayed.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ke03c1abff3" data-state="" data-lead="Switching rooms resets the list.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Switching rooms resets the list.</strong> Open the threads list in Invite Room, switch to Public Room, open its list: never the first room&#x27;s threads, not even for an instant.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ke10c7f8126" data-state="" data-lead="The error page recovers.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The error page recovers.</strong> Stop the homeserver, open the threads list in a room whose list was never opened this session: it should say the threads could not be listed and offer <em>Try Again</em>. Bring the server back and press it — the list fills in.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd2eab36247" data-state="" data-lead="Against the real world.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Against the real world.</strong> On a matrix.org account, open the threads list of a busy room that uses threads: rows with plausible counts and previews, and scrolling to the bottom loads older threads.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">

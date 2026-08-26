@@ -3,23 +3,25 @@
 Threading is a stable module of the Client-Server API (`m.thread` relations,
 the `/threads` endpoint, per-thread receipts), not a proposal. This ledger
 covers what this fork draws of it. The build order and the reasoning are in
-`doc/gap-closing-plan.md`, round 4: three slices, and only the third flips the
-row in `doc/spec-gaps.html`.
+`doc/gap-closing-plan.md`, round 4: three slices, built in three commits on
+26 August 2026, the third of which moved the row into the implemented column
+of `doc/spec-gaps.html`.
 
 ## Scope
 
-**Slices 1 and 2 are built: a thread announces itself, and can be read and
-written.** A message that is the root of a thread carries a chip under its
-content — a thread icon and "N replies" — in every timeline the ordinary
-message row draws. The chip opens the thread: the room history swaps to a
-timeline holding the thread and nothing else, a banner over it names the state
-and offers the way back, the composer at the bottom sends into the thread,
-read receipts sent while reading it are the thread's own, and the thread keeps
-a draft of its own. With somewhere to read them, threaded replies no longer
-land inline in the main timeline: `hide_threaded_events` is on.
-
-Not built yet: the thread list (slice 3), which is what flips the row in the
-ledgers — a thread can be found only through its root today.
+**All three slices are built: a thread announces itself, can be read and
+written, and can be found.** A message that is the root of a thread carries a
+chip under its content — a thread icon and "N replies" — in every timeline
+the ordinary message row draws. The chip opens the thread: the room history
+swaps to a timeline holding the thread and nothing else, a banner over it
+names the state and offers the way back, the composer at the bottom sends
+into the thread, read receipts sent while reading it are the thread's own,
+and the thread keeps a draft of its own. With somewhere to read them,
+threaded replies do not land inline in the main timeline:
+`hide_threaded_events` is on. And the threads button in the room history's
+header lists every thread of the room off the `/threads` endpoint, most
+recent activity first, kept current as thread events arrive — so a thread
+whose root has scrolled out of reach is one press away.
 
 ## The summary is the server's, not ours
 
@@ -128,6 +130,44 @@ _target_ is a threaded event still shows the thread, which is what `Automatic`
 means: a permalink or notification for a thread reply lands in the thread's
 context rather than nowhere.
 
+## The list is the service, mirrored
+
+`ThreadList` (`src/session/room/thread_list.rs`) wraps the SDK's
+`ThreadListService` the way `RoomSearch` wraps the search endpoint: a
+`gio::ListStore` of `ThreadListEntry` objects, a `LoadingState`, and a
+`load_more()` that asks the service to paginate. The service owns the truth —
+it fetches pages from `/threads`, resolves sender profiles, parses content,
+and rewrites an item in place when a new thread event arrives from sync — and
+the model only mirrors its `VectorDiff`s into the `GListModel`, mapping each
+item to a fresh entry object. A `Set` diff therefore replaces the row
+wholesale, which is what keeps the reply count and the latest-reply preview
+current without any binding plumbing.
+
+The service spawns its live-update task at construction, so it is built
+inside the Tokio runtime and dropped (aborting the task) when the view lets
+go of the model — which happens when the room changes, the same lazy
+lifecycle as the pinned view: nothing is fetched until the first time the
+threads page is mapped.
+
+The view (`src/session_view/room_history/threads/`) is the search page's
+shape: a stack of loading/empty/error/results, a `GtkListView` of cut-down
+rows — avatar, root sender, timestamp, a two-line preview of the root, and a
+dimmed line with the thread icon, the reply count and the latest reply — and
+pagination when the scroll approaches the bottom. Activating a row closes the
+list and calls `show_thread()`, so the list is the finder and the thread view
+stays the reader. The header button is a toggle like the search one, always
+visible; unlike pinned messages there is no cheap "has threads" signal to
+gate it on, and an empty list page says so. The pinned and threads toggles
+put each other out: only one list takes the place of the timeline.
+
+A one-line preview cannot use the real message widgets, so
+`content_preview()` flattens `TimelineItemContent` to a sentence — a
+message's body, a sticker's, or a phrase for redacted and undecryptable
+events. The thread banner from slice 2 is _not_ revealed over the threads
+list, even when the displayed timeline is a thread: the list is where
+somebody goes to switch threads, and a banner saying they are viewing one
+would only confuse.
+
 ## The icon is ours
 
 `thread-symbolic.svg` (a speech bubble with two lines knocked out,
@@ -154,12 +194,16 @@ registered in `resources.gresource.xml`.
   `context_menu.blp` — the _View Thread_ entry.
 * `src/session_view/room_history/message_toolbar/mod.rs` +
   `composer_state.rs` — per-thread composer states and drafts.
+* `src/session/room/thread_list.rs` — `ThreadList` and `ThreadListEntry`,
+  wrapping `ThreadListService`.
+* `src/session_view/room_history/threads/` — the list page and its row.
 * `data/resources/icons/scalable/actions/thread-symbolic.svg` +
   `resources.gresource.xml`.
 * `data/resources/stylesheet/_room_history.scss` — `.thread-chip`.
-* `testing/local-homeserver.sh` — `seed_thread()`: alice roots a thread in
-  Invite Room, bob sends three `m.thread` replies, behind a `thread_root`
-  marker of its own so an old seed picks it up on the next `up`.
+* `testing/local-homeserver.sh` — `seed_thread()`: two threads in Invite
+  Room — alice's root with three replies from bob, bob's root with one from
+  alice — each behind a marker of its own so an old seed picks them up on the
+  next `up`.
 
 ## Rebase guide
 

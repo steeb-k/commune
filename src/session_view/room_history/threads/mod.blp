@@ -1,0 +1,84 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $RoomHistoryThreads: Adw.Bin {
+  vexpand: true;
+  hexpand: true;
+
+  Gtk.Stack stack {
+    transition-type: crossfade;
+
+    Gtk.StackPage {
+      name: "loading";
+      title: _("Loading");
+
+      child: Adw.Spinner {};
+    }
+
+    Gtk.StackPage {
+      name: "empty";
+      title: _("No Threads");
+
+      child: Adw.StatusPage {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "thread-symbolic";
+        title: _("No Threads");
+        description: _("Reply in a thread from a message’s context menu to start one");
+      };
+    }
+
+    Gtk.StackPage {
+      name: "error";
+      title: _("Could Not List Threads");
+
+      child: Adw.StatusPage {
+        visible: true;
+        hexpand: true;
+        vexpand: true;
+        icon-name: "error-symbolic";
+        title: _("Could Not List Threads");
+        description: _("Check your network connection");
+
+        child: Gtk.Button {
+          can-shrink: true;
+          label: _("Try Again");
+          halign: center;
+          clicked => $retry() swapped;
+
+          styles [
+            "pill",
+          ]
+        };
+      };
+    }
+
+    Gtk.StackPage {
+      name: "results";
+      title: _("Threads");
+
+      child: Gtk.ScrolledWindow {
+        hscrollbar-policy: never;
+        vexpand: true;
+
+        child: Adw.ClampScrollable {
+          vexpand: true;
+          hexpand: true;
+          maximum-size: 750;
+          tightening-threshold: 550;
+
+          child: Gtk.ListView list_view {
+            show-separators: true;
+            single-click-activate: true;
+            activate => $row_activated() swapped;
+
+            styles [
+              "navigation-sidebar",
+            ]
+          };
+        };
+      };
+    }
+  }
+}
