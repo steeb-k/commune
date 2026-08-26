@@ -23,7 +23,7 @@ template $ContentMessageRow: Adw.Bin {
       layout {
         column: 0;
         row: 0;
-        row-span: 4;
+        row-span: 5;
       }
 
       child: $Avatar avatar {
@@ -81,6 +81,30 @@ template $ContentMessageRow: Adw.Bin {
       }
     }
 
+    Gtk.Box thread_chip {
+      visible: false;
+      spacing: 4;
+      halign: start;
+
+      styles [
+        "thread-chip",
+        "dim-label",
+      ]
+
+      layout {
+        column: 1;
+        row: 3;
+        column-span: 2;
+      }
+
+      Gtk.Image {
+        icon-name: "thread-symbolic";
+        accessible-role: presentation;
+      }
+
+      Gtk.Label thread_replies_label {}
+    }
+
     $ContentReadReceiptsList read_receipts {
       visible: bind template.event as <$RoomEvent>.has-read-receipts;
       members: bind template.event as <$RoomEvent>.timeline as <$Timeline>.room as <$Room>.members;
@@ -88,7 +112,7 @@ template $ContentMessageRow: Adw.Bin {
 
       layout {
         column: 1;
-        row: 3;
+        row: 4;
         column-span: 2;
       }
     }

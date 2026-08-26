@@ -29,6 +29,7 @@ ARTIFACT_URL = "https://claude.ai/code/artifact/9b66f090-2f6d-407e-a802-ea407977
 # Anything unlisted follows, in the order the ledger has it.
 RUN_ORDER = [
     "How to run this",
+    "Threads",
     "Spaces",
     "Choosing a space",
     "Reading a room without joining it",
@@ -967,8 +968,10 @@ a screenshot; <em>Copy report</em> or <em>Save report</em> then gathers them up.
 
 
 def main() -> int:
-    sections = ordered(parse(LEDGER.read_text()))
-    OUTPUT.write_text(render(sections, commit()))
+    sections = ordered(parse(LEDGER.read_text(encoding="utf-8")))
+    # Windows Python would otherwise write the locale codepage with CRLF, and
+    # a page that is not valid UTF-8 stops `typos`' ignore-patterns matching.
+    OUTPUT.write_text(render(sections, commit()), encoding="utf-8", newline="\n")
 
     total = sum(len(section.checks) for section in sections)
     left = sum(1 for s in sections for c in s.checks if not c.done)

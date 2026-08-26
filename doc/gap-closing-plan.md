@@ -230,7 +230,37 @@ checks, so a check done and not clicked reads as "not looked at". That produced
 a phantom "eleven not looked at" on the first pass, and the number should not
 be read as a list of what was skipped.
 
-**Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
+**Round 4 slice 1 (item 9) is built — a thread announces itself.** The
+"N replies" chip sits under a thread root's content in every timeline the
+ordinary message row draws, fed by `Event::thread_summary()` reading the
+`ThreadSummary` the SDK already puts on every message item. Three things worth
+knowing beyond what `doc/threads.md` records:
+
+* **No request is involved anywhere.** The summary comes from the bundled
+  `m.thread` aggregation under `unsigned.m.relations`, extracted in
+  `TimelineEvent::new` on every event built from raw — so the chip works on
+  old roots the moment they scroll into view, and updates live through
+  `Event`'s unconditional `item-changed` emission when the event cache
+  recomputes the count.
+* **The chip is a passive `Gtk.Box` on purpose.** Slice 2 builds the thread
+  view; a button that does nothing until then would read as broken. Two
+  visibility rules: `num_replies == 0` (an all-redacted thread) hides it, and
+  the compact content formats hide it under exactly the condition that hides
+  the reaction list.
+* **`thread-symbolic.svg` is hand-drawn** — nothing shippable across the three
+  platforms carries a thread glyph. `seed_thread()` in
+  `testing/local-homeserver.sh` gives alice a three-reply thread in Invite
+  Room behind its own `thread_root` marker.
+
+The pages moved in the commit: threads left the Absent column of
+`spec-gaps.html` for Partial (six absent, three partial now), and the
+comparison page's grade deliberately stays at 0 — a chip satisfies none of
+the four things that row measures — with only its note updated. `AGENTS.md`'s
+ledger list turned out never to have picked up round 3 (`spaces.md`,
+`peeking.md`); both were added alongside `threads.md`.
+
+**Next: round 4, item 10 (threads, slice 2 — read a thread, and write into
+it).**
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
@@ -331,7 +361,8 @@ drift: they go in the feature's own commit.**
 | 8b. `m.space.child` | `37d318aa`, `9db20bfa` | done, seen; two faults, fixed and re-seen |
 | Finishing the module | `b3deab0d`, `aec0710a` | done, seen; two faults, fixed and re-seen |
 | Subspaces expand in place | `ce984576`, `21f89afe` | done, seen |
-| 9–11 | — | not started |
+| 9. Threads, slice 1 | hash goes in with the masthead refresh | done, not yet seen |
+| 10–11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

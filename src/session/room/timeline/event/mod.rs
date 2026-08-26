@@ -4,7 +4,7 @@ use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherStateEventContentChange, EmbeddedEvent, Error as TimelineError, EventSendState,
-    EventTimelineItem, MembershipChange, Message, MsgLikeKind, TimelineDetails,
+    EventTimelineItem, MembershipChange, Message, MsgLikeKind, ThreadSummary, TimelineDetails,
     TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
@@ -757,6 +757,18 @@ impl Event {
             TimelineItemContent::MsgLike(msg_like) => {
                 msg_like.in_reply_to.as_ref().map(|d| d.event_id.clone())
             }
+            _ => None,
+        }
+    }
+
+    /// The summary of the thread this event is the root of, if any.
+    ///
+    /// The SDK builds it from the bundled `m.thread` aggregation the server
+    /// attaches to the root event, so it is present even when none of the
+    /// thread's replies have been loaded.
+    pub(crate) fn thread_summary(&self) -> Option<ThreadSummary> {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => msg_like.thread_summary.clone(),
             _ => None,
         }
     }
