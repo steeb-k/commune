@@ -135,6 +135,24 @@ with it.
    from that. Export is the mirror and is harder, because `export_room_keys` writes to a path —
    export to a temp file, then `replace_contents` into the chosen `GFile`. Check first whether
    `matrix-sdk` has a variant that returns bytes.
+
+   **Checked: it does not, and the pieces to build one are out of reach.** `Encryption::export_room_keys`
+   and `Encryption::import_room_keys` are the only public entry points and both take a `PathBuf`.
+   The primitives underneath are bytes-first and public — `encrypt_room_key_export` returns a
+   `String`, `decrypt_room_key_export` takes any `Read` — but reaching them means going through
+   `Client::olm_machine()`, which is `pub(crate)`; the only public accessor is
+   `olm_machine_for_testing`. Reimplementing on top of that would also mean reimplementing the
+   `maybe_trigger_backup` that `import_room_keys` does afterwards. So the temp file is the answer
+   in both directions, and it is the same answer on every platform.
+
+   Two details that fall out of it. Export cannot decide whether to skip the temporary file by
+   asking `local_path`, because the destination has not been created yet and the helper answers
+   `None` for every save target — so export goes through a temporary file **always**, and
+   `replace_contents` writes the result. And the temporary file for export wants
+   `NamedTempFile::into_temp_path()` rather than a live `NamedTempFile`: `export_room_keys` calls
+   `std::fs::File::create` on the path itself, and handing it a path we still hold open is asking
+   for trouble on Windows. `can_proceed` stops asking for a path at all and asks only that a file
+   was chosen.
 3. **Test the save-as routes.** `replace_contents` on a picked `GFile` should work; `save_future`
    on Android should present `ACTION_CREATE_DOCUMENT`. Both are plausible and neither is measured.
    If they work, this step is a paragraph in `doc/android.md` and nothing else.
