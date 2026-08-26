@@ -492,7 +492,7 @@
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
       Every module in the v1.19 Client-Server API, checked against the tree. Nine gaps:
-      seven with no implementation at all, two implemented partly. Effort is measured in UI
+      six with no implementation at all, three implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -560,7 +560,7 @@
       <ol>
         <li>
           <span class="pick-name">Threads</span>
-          <span class="pick-why">The last whole module of the standard this client does not speak, and the one people notice: a threaded message lands in the main timeline here, indistinguishable from the rest. The SDK carries all of it on the wire — <code>TimelineFocus::Thread</code>, <code>ThreadListService</code>, thread-aware sending and receipts — so what is left is a thread list, a thread view and pointing the composer at it. Interface work, and an <em>L</em> rather than the <em>XL</em> it looks like.</span>
+          <span class="pick-why">The last module of the standard this client barely speaks, and the one people notice. Under way since 26 August 2026: a thread root now carries an "N replies" chip, but a threaded reply still lands in the main timeline indistinguishable from the rest. The SDK carries all of it on the wire — <code>TimelineFocus::Thread</code>, <code>ThreadListService</code>, thread-aware sending and receipts — so what is left is a thread view, a thread list and pointing the composer at them. Interface work, and an <em>L</em> rather than the <em>XL</em> it looks like.</span>
         </li>
         <li>
           <span class="pick-name">Invite by email</span>
@@ -572,7 +572,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">7 modules</span></h2>
+      <h2>Absent <span class="tick gone">6 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -587,13 +587,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="feat">Threads</span></td>
-            <td class="mod">Threading</td>
-            <td class="state">No thread anywhere. Threaded messages land in the main timeline as ordinary events, indistinguishable from the rest; a thread is never listed and never opened. Sending is already correct — the SDK forwards the thread relation — so what is missing is a thread list, a thread view, composer routing and per-thread receipts. The SDK carries all four on the wire; the work is interface.</td>
-            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-          </tr>
           <tr>
             <td><span class="feat">Invite by email</span></td>
             <td class="mod">Third-party invites</td>
@@ -643,13 +636,14 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">2 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">3 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Every one of these is a
         gap in coverage rather than a choice: the last deliberate departure, image packs
-        writing unstable names, was closed on 22 August 2026. Three of them are waiting on the
-        same thing — a way to pick a space — and one of those three <em>is</em> spaces, which
-        arrived in this column on 24 August 2026 from the other side. Voice over IP left this column on 23 August 2026 and
+        writing unstable names, was closed on 22 August 2026. Spaces passed through this column
+        and out of it in August 2026, and threads arrived on 26 August 2026 from the absent
+        side: the first of its three slices is built, so a thread now at least announces
+        itself. Voice over IP left this column on 23 August 2026 and
         the row it left behind is now a note further down; account registration passed through it
         the same day, halved into a password reset and then closed by it.
       </p>
@@ -666,6 +660,13 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Threads</span></td>
+            <td class="mod">Threading</td>
+            <td class="state">A thread announces itself: the root message carries an "N replies" chip, drawn from the server's bundled summary and updated live. Nothing opens yet — no thread can be listed or read, threaded replies still land inline in the main timeline, and receipts and composer routing are unthreaded. Sending has always been correct — the SDK forwards the thread relation — and the SDK carries the view and the list on the wire; slices 2 and 3 are the remainder.</td>
+            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
+          </tr>
           <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
@@ -995,9 +996,11 @@
         <p>
           The correction matters because it changes what kind of gap threading is. Nothing this
           client sends is malformed and nothing another client sees is broken by it; the whole
-          of the difference is that this end cannot <em>see</em> a thread. Threaded events sit
-          inline in the main timeline looking like ordinary messages, no thread can be listed,
-          and none can be opened. That is an argument for doing threads carefully rather than
+          of the difference is that this end cannot <em>see</em> a thread. When this was
+          written, threaded events sat inline in the main timeline looking like ordinary
+          messages, no thread could be listed, and none could be opened — since 26 August 2026
+          the first of those three is half-gone, a thread root announcing itself with a reply
+          count. That is an argument for doing threads carefully rather than
           urgently — and it moves the row out of the "we are getting this wrong" column, where
           this page had wrongly put it.
         </p>

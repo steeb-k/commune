@@ -765,6 +765,51 @@ seed_peekable_room() {
   log "Test Space now holds six rooms."
 }
 
+# A thread for the timeline to summarise.
+#
+# Alice sends a root message in Invite Room and bob replies into it three
+# times with the `m.thread` relation. The server then attaches the bundled
+# `m.thread` aggregation to the root event on its way down `/sync`, which is
+# what the "N replies" chip draws. It has a marker of its own rather than
+# riding on `seeded.json`'s gate, so a server seeded before this existed picks
+# it up on the next `up`.
+seed_thread() {
+  local alice bob room root i
+  [ -f "$STATE" ] || return 0
+
+  room=$(jq -r '.invite_room // empty' "$STATE")
+  [ -n "$room" ] || return 0
+
+  if [ "$(jq -r '.thread_root // empty' "$STATE")" != "" ]; then
+    log "Invite Room already holds a thread."
+    return 0
+  fi
+
+  alice=$(login alice "$ALICE_PASS")
+  bob=$(login bob "$BOB_PASS")
+  [ -n "$alice" ] && [ -n "$bob" ] || return 0
+
+  log "Seeding a thread in Invite Room…"
+
+  root=$(curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-root" \
+    -H "Authorization: Bearer $alice" -H 'Content-Type: application/json' \
+    -d '{"msgtype": "m.text", "body": "Does anybody else think this deserves a thread?"}' \
+    | jq -r '.event_id // empty')
+  [ -n "$root" ] || return 0
+
+  for i in 1 2 3; do
+    curl -sf -X PUT "$HS/_matrix/client/v3/rooms/$room/send/m.room.message/thread-reply-$i" \
+      -H "Authorization: Bearer $bob" -H 'Content-Type: application/json' \
+      -d "{\"msgtype\": \"m.text\", \"body\": \"Threaded reply $i.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root\"}}" >/dev/null \
+      || warn "the server refused threaded reply $i"
+  done
+
+  jq --arg thread_root "$root" '. + {$thread_root}' \
+     "$STATE" > "$STATE.new" && mv "$STATE.new" "$STATE"
+
+  log "Invite Room now has a thread with three replies."
+}
+
 # Put alice back in the rooms she is meant to be in, and publish the ones that
 # are meant to be findable.
 #
@@ -1615,6 +1660,7 @@ case "${1:-up}" in
     seed_direct_chat
     seed_space_children
     seed_peekable_room
+    seed_thread
     repair_sub_space
     seed_directory
     send_notice || true

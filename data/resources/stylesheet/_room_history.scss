@@ -418,6 +418,12 @@ message-reactions {
   }
 }
 
+.thread-chip {
+  margin-top: 3px;
+  font-size: 0.9em;
+  -gtk-icon-size: 14px;
+}
+
 .reaction-chooser {
   margin: 6px;
 

@@ -978,3 +978,40 @@ is unfocused — two accounts, or a phone.
       but worth noticing if it happens every time.
 * [x] **Clicking a notification for a room you are already reading** does not
       jump anywhere unpleasant or steal the scroll position for long.
+
+## Threads, slice 1: the chip — `doc/threads.md`
+
+A message that roots a thread now carries a chip under its content — a thread
+icon and a reply count. Nothing opens yet; the chip is deliberately passive
+until slice 2 builds the thread view. `testing/local-homeserver.sh up` seeds a
+thread in **Invite Room**: alice's "Does anybody else think this deserves a
+thread?" with three replies from bob. Two of the checks grow the thread
+from a terminal — run this from the repository root, with a token from the
+script's usual login curl, changing the transaction ID and the body each
+time:
+
+```sh
+root=$(jq -r .thread_root testing/.homeserver/seeded.json)
+curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room testing/.homeserver/seeded.json)/send/m.room.message/eyeball-$RANDOM" \
+  -H "Authorization: Bearer $BOB_TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"msgtype\": \"m.text\", \"body\": \"A fourth reply.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root\"}}"
+```
+
+* [ ] **The chip appears on the root.** Open Invite Room as alice: the seeded
+      root message carries a chip reading "3 replies", with the thread icon
+      legible in both the light and dark styles.
+* [ ] **Only on the root.** Bob's three threaded replies sit inline in the
+      timeline as ordinary messages — that is the documented state until
+      slices 2 and 3 — and none of them, and no unthreaded message anywhere,
+      carries a chip.
+* [ ] **The count moves while the room is open.** With Invite Room on screen,
+      send a fourth reply with the curl above and watch the chip say
+      "4 replies" without the room being reopened.
+* [ ] **The singular reads "1 reply".** Start a fresh thread with exactly one
+      reply — the same curl against any other message's event ID — and check
+      the chip says "1 reply", not "1 replies".
+* [ ] **Against the real world.** On a matrix.org account, open a busy public
+      room that uses threads (Element's own rooms do): roots show chips with
+      plausible counts, and a thread rooted before this session's sync window
+      still gets one — the count comes from the server's bundled summary, not
+      from anything we witnessed.

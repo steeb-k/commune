@@ -25,6 +25,7 @@ use self::{
 use super::{EventTimestamp, ReadReceiptsList};
 use crate::{
     components::UserProfileDialog,
+    ngettext_f,
     prelude::*,
     session::{Event, EventHeaderState, Member},
     utils::BoundObject,
@@ -53,6 +54,10 @@ mod imp {
         message_state: TemplateChild<MessageStateStack>,
         #[template_child]
         reactions: TemplateChild<MessageReactionList>,
+        #[template_child]
+        thread_chip: TemplateChild<gtk::Box>,
+        #[template_child]
+        thread_replies_label: TemplateChild<gtk::Label>,
         binding: RefCell<Option<glib::Binding>>,
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
@@ -100,6 +105,7 @@ mod imp {
                         content.format(),
                         ContentFormat::Compact | ContentFormat::Ellipsized
                     ));
+                    imp.update_thread_chip();
                 }
             ));
             self.content.connect_texture_notify(clone!(
@@ -158,6 +164,7 @@ mod imp {
                 self,
                 move |_| {
                     imp.update_content();
+                    imp.update_thread_chip();
                 }
             ));
 
@@ -171,6 +178,7 @@ mod imp {
 
             self.update_content();
             self.update_header();
+            self.update_thread_chip();
         }
 
         /// The sender of the event that is presented.
@@ -208,6 +216,40 @@ mod imp {
             };
 
             self.content.update_for_event(&event);
+        }
+
+        /// Update the thread chip for the current event.
+        fn update_thread_chip(&self) {
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+
+            // The count can be zero when every reply in the thread has been
+            // redacted; a chip announcing a thread with nothing to read is
+            // worse than none.
+            let num_replies = event
+                .thread_summary()
+                .map(|summary| summary.num_replies)
+                .filter(|count| *count > 0);
+
+            let compact = matches!(
+                self.content.format(),
+                ContentFormat::Compact | ContentFormat::Ellipsized
+            );
+
+            if let Some(count) = num_replies {
+                self.thread_replies_label.set_label(&ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and
+                    // '}', this is a variable name.
+                    "1 reply",
+                    "{n} replies",
+                    count,
+                    &[("n", &count.to_string())],
+                ));
+            }
+
+            self.thread_chip
+                .set_visible(num_replies.is_some() && !compact);
         }
 
         /// Get the texture displayed by this widget, if any.

@@ -40,6 +40,8 @@ change to it: `doc/image-packs.md`, `doc/search.md` for message search,
 `doc/pinned-messages.md` for pinning a message in any room,
 `doc/presence.md` for who is around and whether you say that you are,
 `doc/registration.md` for creating an account from inside the app,
+`doc/spaces.md` for spaces, `doc/peeking.md` for reading a room without
+joining it, `doc/threads.md` for threads,
 `doc/recent-emoji.md` for the quick reactions, `doc/url-previews.md` for
 the card under a message that has a link, `doc/server-notices.md` for the
 room the homeserver talks to the user in, and `doc/calls.md` for one-to-one
