@@ -34,9 +34,10 @@ use thiserror::Error;
 
 pub(crate) mod ext_traits;
 mod media_message;
+mod mutual_rooms;
 mod url_preview;
 
-pub(crate) use self::{media_message::*, url_preview::*};
+pub(crate) use self::{media_message::*, mutual_rooms::fetch_mutual_rooms, url_preview::*};
 use crate::{
     components::{AvatarImageSafetySetting, Pill},
     prelude::*,
