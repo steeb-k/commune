@@ -75,9 +75,14 @@ impl FileInfo {
             )
             .await?;
 
+        // GIO content types are only MIME types on Linux; macOS reports UTIs
+        // ("public.png") and Windows reports registry extensions (".png"),
+        // and both parse as nothing. GIO knows how to translate its own
+        // platform's types, so ask it before parsing.
         let mime = info
             .content_type()
-            .and_then(|content_type| Mime::from_str(&content_type).ok())
+            .and_then(|content_type| gio::content_type_get_mime_type(&content_type))
+            .and_then(|mime_type| Mime::from_str(&mime_type).ok())
             .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
         let filename = info.display_name().to_string();
@@ -248,5 +253,28 @@ pub(crate) fn time_to_label(time: &Duration) -> String {
         // FIXME: Find how to localize this.
         // minutes:seconds
         format!("{min:02}:{sec:02}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use super::*;
+
+    #[test]
+    fn file_info_reports_a_mime_type_not_a_platform_type() {
+        // GIO's content type for this file is "image/png" only on Linux; on
+        // macOS it is the UTI "public.png" and on Windows the extension
+        // ".png". The mime must come out the same everywhere regardless.
+        let mut file = tempfile::Builder::new().suffix(".png").tempfile().unwrap();
+        file.write_all(b"\x89PNG\r\n\x1a\n").unwrap();
+
+        let gfile = gio::File::for_path(file.path());
+        let info = glib::MainContext::new()
+            .block_on(FileInfo::try_from_file(&gfile))
+            .unwrap();
+
+        assert_eq!(info.mime, mime::IMAGE_PNG);
     }
 }
