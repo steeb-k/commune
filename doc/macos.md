@@ -468,9 +468,21 @@ A `.dmg` is the familiar shape — open it, drag the icon onto `Applications`. B
 downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc signature — or
 a Developer ID one it cannot check a notarization ticket for — on a quarantined app, so the
 **first launch is refused outright**. The Developer ID now exists and the bundle signs with it;
-what still stands between the `.dmg` and a clean download-and-open is a `notarytool submit` and a
-staple. The `notarytool` credentials are already stored on this machine under the profile name
-`notary`.
+what stands between the `.dmg` and a clean download-and-open is notarization, and `make-dmg.sh`
+does it on request:
+
+```sh
+CODESIGN_IDENTITY='Developer ID Application: Steve Kaznak (VLC2KZKNBH)' \
+NOTARIZE_PROFILE=notary \
+    meson compile -C _build-release macos-dmg
+```
+
+`NOTARIZE_PROFILE` names a `notarytool store-credentials` profile — `notary` is the one stored on
+this machine — and the step is opt-in because the same target is the dev-iteration one: a
+submission uploads the image to Apple and takes a few minutes, which a local test build should not
+pay. The script refuses an ad-hoc bundle before anything leaves the machine, waits for the
+verdict, and staples the ticket so a downloaded copy verifies offline. On a rejection,
+`xcrun notarytool log <submission id>` names the exact file and reason.
 
 Files extracted from a tarball on the command line are never quarantined in the first place, which
 is why the sibling SEED Sync project ships a `curl | sh` tarball. **`make-tarball.sh` produces the
