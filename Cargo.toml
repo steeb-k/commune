@@ -1,6 +1,6 @@
 [package]
 name = "commune"
-version = "14.1.0"
+version = "1.0.0-rc1"
 authors = ["Julian Sparber <julian@sparber.net>"]
 license = "GPL-3.0-or-later"
 edition = "2024"
