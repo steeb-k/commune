@@ -583,6 +583,31 @@ pub(crate) fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTrist
     }
 }
 
+/// The path of the given file on the local filesystem, if it has one.
+///
+/// Use this instead of `gio::File::path()` everywhere the path is about to be
+/// opened, read, or handed to something that is not GIO.
+///
+/// GTK's Android backend answers `g_file_get_path()` for a `content://` URI
+/// with `Uri.getPath()`, so a file the picker returned reports a plausible
+/// absolute path -- `/document/video:1000000034` -- that no filesystem has.
+/// GIO's contract is that a file with no local path returns `NULL`, and every
+/// `if let Some(path)` guard here was written against that contract, so the lie
+/// defeats all of them at once and the failure surfaces far from the picker
+/// that caused it. Checking that the path exists restores the contract without
+/// diverging from upstream GTK, and is correct everywhere else too, because a
+/// stale path is stale on every platform.
+///
+/// This is a test for *reading*. A file the user has just chosen as a save
+/// destination does not exist yet, so this returns `None` for it; check the
+/// parent directory instead in that case.
+///
+/// See `doc/android-attachments-plan.md` for why this is a helper here rather
+/// than a patch to GTK.
+pub(crate) fn local_path(file: &gio::File) -> Option<PathBuf> {
+    file.path().filter(|path| path.exists())
+}
+
 /// A wrapper around several sources of files.
 #[derive(Debug, Clone)]
 pub enum File {
@@ -596,14 +621,6 @@ pub enum File {
 }
 
 impl File {
-    /// The path to the file.
-    pub(crate) fn path(&self) -> Option<PathBuf> {
-        match self {
-            Self::Gio(file) => file.path(),
-            Self::Temp(file) => Some(file.path().to_owned()),
-        }
-    }
-
     /// Get a `GFile` for this file.
     pub(crate) fn as_gfile(&self) -> gio::File {
         match self {
