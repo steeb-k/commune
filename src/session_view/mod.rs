@@ -648,6 +648,35 @@ mod imp {
             self.media_viewer.reveal(source_widget);
         }
 
+        /// Go back one step within this view, if there is one to go back
+        /// from.
+        ///
+        /// Returns whether anything was closed. See `Window::close_request()`.
+        #[cfg(target_os = "android")]
+        pub(super) fn handle_back_navigation(&self) -> bool {
+            if self.media_viewer.is_open() {
+                self.media_viewer.close();
+                return true;
+            }
+
+            // A search bar is a mode the view is in, so it is the next thing
+            // to come out of.
+            if let Some(search_bar) = open_search_bar(self.obj().upcast_ref()) {
+                search_bar.set_search_mode(false);
+                return true;
+            }
+
+            // The sidebar and the content are two pages of the same view when
+            // the window is narrow, and only then is the content something to
+            // come back from.
+            if self.split_view.is_collapsed() && self.split_view.shows_content() {
+                self.select_item(None);
+                return true;
+            }
+
+            false
+        }
+
         /// Show the profile of the given user.
         pub(super) fn show_user_profile_dialog(&self, user_id: OwnedUserId) {
             let Some(session) = self.session.upgrade() else {
@@ -810,6 +839,76 @@ impl SessionView {
     pub(crate) fn process_intent(&self, intent: SessionIntent) {
         self.imp().process_intent(intent);
     }
+
+    /// Go back one step within this view, if there is one to go back from.
+    ///
+    /// Returns whether anything was closed. See `Window::close_request()`.
+    #[cfg(target_os = "android")]
+    pub(crate) fn handle_back_navigation(&self) -> bool {
+        self.imp().handle_back_navigation()
+    }
+}
+
+/// The media viewer that is open in the given widget's mapped subtree, if
+/// there is one.
+///
+/// The session view's own viewer is a template child and does not need
+/// finding. This is for the one the media history viewer carries inside room
+/// details, which is several subpages down from anything that can name it.
+#[cfg(target_os = "android")]
+pub(super) fn open_media_viewer(widget: &gtk::Widget) -> Option<MediaViewer> {
+    let mut child = widget.first_child();
+
+    while let Some(current) = child {
+        if current.is_mapped() {
+            if let Some(media_viewer) = current.downcast_ref::<MediaViewer>()
+                && media_viewer.is_open()
+            {
+                return Some(media_viewer.clone());
+            }
+
+            if let Some(found) = open_media_viewer(&current) {
+                return Some(found);
+            }
+        }
+
+        child = current.next_sibling();
+    }
+
+    None
+}
+
+/// The search bar that is open in the given widget's mapped subtree, if there
+/// is one.
+///
+/// A walk rather than a list of the search bars this view contains: only the
+/// page that is on screen is mapped, so this finds whichever one the user is
+/// actually looking at without having to know where any of them live.
+#[cfg(target_os = "android")]
+fn open_search_bar(widget: &gtk::Widget) -> Option<gtk::SearchBar> {
+    let mut child = widget.first_child();
+
+    while let Some(current) = child {
+        // An unmapped subtree is a page that is not on screen, and a search bar
+        // in one is not what a back gesture is about.
+        if current.is_mapped() {
+            // A search bar is mapped whether or not it is open -- it is a
+            // revealer -- so the mode is what makes it something to close.
+            if let Some(search_bar) = current.downcast_ref::<gtk::SearchBar>()
+                && search_bar.is_search_mode()
+            {
+                return Some(search_bar.clone());
+            }
+
+            if let Some(found) = open_search_bar(&current) {
+                return Some(found);
+            }
+        }
+
+        child = current.next_sibling();
+    }
+
+    None
 }
 
 /// A predicate to filter rooms depending on whether they have unread messages.

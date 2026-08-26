@@ -1,11 +1,9 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $RoomDetails: Adw.PreferencesWindow {
+template $RoomDetails: Adw.PreferencesDialog {
   title: _("Room Details");
-  modal: true;
-  destroy-with-parent: true;
-  default-height: 780;
+  content-height: 780;
   search-enabled: false;
 
   styles [

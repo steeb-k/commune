@@ -162,14 +162,19 @@ mod imp {
         #[template_callback]
         fn close(&self) {
             let obj = self.obj();
-            let Some(window) = obj.root().and_downcast::<adw::PreferencesWindow>() else {
+            let Some(dialog) = obj
+                .ancestor(adw::PreferencesDialog::static_type())
+                .and_downcast::<adw::PreferencesDialog>()
+            else {
                 return;
             };
 
             if obj.can_pop() {
-                window.pop_subpage();
+                dialog.pop_subpage();
             } else {
-                window.close();
+                // Not `close()`: on Android that is a back step. See
+                // `RoomDetails`'s `close_attempt()`.
+                dialog.force_close();
             }
         }
 

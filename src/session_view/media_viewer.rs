@@ -397,8 +397,17 @@ mod imp {
             }
         }
 
+        /// Whether the viewer is showing something.
+        ///
+        /// Not the widget's visibility: that stays set until the closing
+        /// transition finishes and `transition_done` puts it away, which on
+        /// Android does not always arrive. The revealer knows synchronously.
+        pub(super) fn is_open(&self) -> bool {
+            self.revealer.reveal_child()
+        }
+
         /// Close the viewer.
-        fn close(&self) {
+        pub(super) fn close(&self) {
             if self.fullscreened.get() {
                 // Deactivate the fullscreen.
                 let _ = self.obj().activate_action("win.toggle-fullscreen", None);
@@ -537,6 +546,19 @@ impl MediaViewer {
     /// Reveal this widget by transitioning from `source_widget`.
     pub(crate) fn reveal(&self, source_widget: &impl IsA<gtk::Widget>) {
         self.imp().reveal(source_widget.upcast_ref());
+    }
+
+    /// Whether this widget is showing something.
+    pub(crate) fn is_open(&self) -> bool {
+        self.imp().is_open()
+    }
+
+    /// Close this widget, transitioning back to where it was revealed from.
+    ///
+    /// This is what the `media-viewer.close` action does, for callers that
+    /// have the widget rather than an action context.
+    pub(crate) fn close(&self) {
+        self.imp().close();
     }
 
     /// Set the media message to display in the given room.

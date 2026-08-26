@@ -118,7 +118,9 @@ mod imp {
             );
 
             klass.install_action("account-settings.close", None, |obj, _, _| {
-                obj.close();
+                // Not `close()`: on Android that is a back step. See
+                // `close_attempt()`.
+                obj.force_close();
             });
 
             klass.install_action("account-settings.close-subpage", None, |obj, _, _| {
@@ -141,7 +143,25 @@ mod imp {
     }
 
     impl WidgetImpl for AccountSettings {}
-    impl AdwDialogImpl for AccountSettings {}
+
+    impl AdwDialogImpl for AccountSettings {
+        /// Handle an attempt to close this dialog.
+        ///
+        /// Only reached on Android, where `can-close` is unset so that the
+        /// system back gesture -- which arrives as the window's close request,
+        /// which `AdwDialogHost` turns into closing this dialog -- can mean one
+        /// step back rather than the whole dialog. Everywhere else `can-close`
+        /// is left alone and this is never emitted.
+        #[cfg(target_os = "android")]
+        fn close_attempt(&self) {
+            let obj = self.obj();
+
+            if !obj.pop_subpage() {
+                obj.force_close();
+            }
+        }
+    }
+
     impl PreferencesDialogImpl for AccountSettings {}
 
     impl AccountSettings {
@@ -160,7 +180,9 @@ mod imp {
                     #[weak]
                     obj,
                     move |_| {
-                        obj.close();
+                        // Not `close()`: on Android that is a back step. See
+                        // `close_attempt()`.
+                        obj.force_close();
                     }
                 ));
                 self.session.set(&session, vec![logged_out_handler]);
@@ -243,7 +265,13 @@ glib::wrapper! {
 impl AccountSettings {
     /// Construct new `AccountSettings` for the given session.
     pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
+        let obj: Self = glib::Object::builder().property("session", session).build();
+
+        // See `AdwDialogImpl::close_attempt()`.
+        #[cfg(target_os = "android")]
+        obj.set_can_close(false);
+
+        obj
     }
 
     /// The OAuth 2.0 authorization server metadata, if any.
