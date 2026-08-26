@@ -38,7 +38,6 @@ mod window;
 use std::sync::LazyLock;
 
 use gettextrs::*;
-use gtk::{IconTheme, gdk::Display, gio};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 use self::{
@@ -109,7 +108,8 @@ fn main() {
     // left unset, GTK gives an undecorated win32 toplevel its own default
     // `GtkHeaderBar` at realize.
     #[cfg(target_os = "windows")]
-    // SAFETY: called before `gtk::init()`, before any other thread exists.
+    // SAFETY: called before GTK is started -- which is now `startup()`'s job
+    // -- and before any other thread exists.
     unsafe {
         std::env::set_var("GTK_CSD", "0");
     }
@@ -130,7 +130,8 @@ fn main() {
     // instead starts rendering through GL/Vulkan cleanly, that is the signal
     // to test carrying it into release builds too.
     #[cfg(all(target_os = "windows", debug_assertions))]
-    // SAFETY: called before `gtk::init()`, before any other thread exists.
+    // SAFETY: called before GTK is started -- which is now `startup()`'s job
+    // -- and before any other thread exists.
     unsafe {
         let value = match std::env::var("GDK_DEBUG") {
             Ok(existing) if !existing.is_empty() => format!("{existing}:dcomp"),
@@ -139,27 +140,14 @@ fn main() {
         std::env::set_var("GDK_DEBUG", value);
     }
 
-    gtk::init().expect("Could not start GTK4");
-
-    // Now that there are settings to change, make text resolve to the size it
-    // is on every other platform.
-    #[cfg(target_os = "macos")]
-    utils::macos_text_scale::init();
-
-    gst::init().expect("Could not initialize gst");
-
-    #[cfg(target_os = "linux")]
-    aperture::init(APP_ID);
-
-    let res = gio::Resource::load(&paths.resources_file).expect("Could not load gresource file");
-    gio::resources_register(&res);
-    let ui_res =
-        gio::Resource::load(&paths.ui_resources_file).expect("Could not load UI gresource file");
-    gio::resources_register(&ui_res);
-
-    IconTheme::for_display(&Display::default().unwrap())
-        .add_resource_path("/org/gnome/Fractal/icons");
-
+    // Nothing above this line takes longer than a few milliseconds, and that is
+    // the point. Everything the process actually needs — GTK, GStreamer, both
+    // gresources, the icon theme — is set up in `ApplicationImpl::startup`,
+    // which `GApplication` runs only on the instance that won registration.
+    // `gtk::init()` is not called here at all: `GtkApplication` does it in the
+    // `startup` our own chains up to, which is the ordinary way to write a GTK
+    // application and, at 459ms measured, by far the largest thing a second
+    // launch was being charged for. See `doc/startup-registration-race.md`.
     let app = Application::new();
     app.run(&paths);
 }
