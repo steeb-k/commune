@@ -82,8 +82,11 @@ Build and packaging, all of it ours to keep on a rebase:
   files. The Devel one carries GNOME's hazard tape. Nothing draws that tape
   for you — a `.Devel` icon is an ordinary hand-drawn file, and
   `data/icons/meson.build` simply installs it under the real application ID
-  when the profile is Devel. The symbolic one is drawn separately at 16px,
-  because the interlocking bars do not survive being scaled down that far.
+  when the profile is Devel. The symbolic one is a byte copy of
+  `assets/symbolic.svg` and is drawn separately, on a 24px grid: it is the
+  two-band bubble, not a shrunk application icon, because the bevel and the
+  colour of that one carry none of their meaning once the system has masked a
+  symbolic icon down to its alpha channel and tinted it.
 
   All three carry no `clipPath`, `mask` or `filter`, and new shapes must keep
   it that way. QtSvg renders only SVG Tiny 1.2 and silently ignores
