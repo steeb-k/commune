@@ -246,12 +246,50 @@ with it.
 5. **Sweep for the pattern.** `grep` for `.path()` and for `file.uri()`, and check each against the
    two facts above. The list in this document was built that way and is only as good as that grep.
 
+   **Done.** Every `.path()` call site as of this sweep: the helper's own definition and its
+   `File::as_gfile` sibling in `utils/mod.rs`; the one deliberately-untouched site in
+   `AudioPlayerSource::name`; a `NamedTempFile` inside our own temp-file plumbing
+   (`import_export_keys_subpage.rs`); and two directory walks over real local filesystem paths that
+   were never part of this — `secret/android/mod.rs`'s session directory and `utils/tls.rs`'s CA
+   trust store, both plain `std::fs::read_dir`, no `gio::File` involved. Nothing new. Every
+   `file.uri()` call site handing a URI to `GStreamer` — `gst_media_stream.rs`, `video_player.rs`,
+   `utils/media/audio.rs`, `utils/media/mod.rs`'s discoverer, `utils/media/video.rs`'s
+   thumbnailer — was already accounted for by fact 3. `image/queue.rs`'s own `.uri()`, added in
+   step 1, is not: it is a `HashMap` key, never handed to anything that resolves a scheme.
+
+   **Fact 3 does not hold the way it is written, at least not for every path this document's own
+   code takes, found while re-checking those `GStreamer` call sites against a real pick instead of
+   against the claim.** The composer had never actually been tested with an audio or video file
+   picked from a location where `local_path` finds a real path — step 1 measured an image, which
+   never touches `GStreamer` at all, and every other step either received media over Matrix or
+   used a temporary file. Picking `test-video.mp4` from the plain "Downloads" browser
+   (`ExternalStorageProvider`, a confirmed real path, so `source_file` stays the original
+   `content://` `GFile` and nothing is copied) produced a working thumbnail in the attachment
+   dialog immediately, with nothing logged. That is `load_video_info` calling
+   `load_gstreamer_media_info`, which hands `GstDiscoverer` `file.uri()` on the _original_
+   `content://` object — exactly the call fact 3 says fails. It did not. Picking the same file
+   again from the "Videos" root (`MediaDocumentsProvider`, an opaque id) also produced a working
+   thumbnail, but that case is confounded by the copy: if `local_path` answered `None` there, as
+   expected, the preview came from the temporary file's `file://` URI regardless of what
+   `GStreamer` can or cannot do with `content://`, so it does not by itself say anything new. The
+   first case does, because no copy happened. Not chased further — this document does not know
+   _why_ `giosrc` (or whatever `GstDiscoverer` fell back to) succeeded on an unregistered scheme,
+   only that it did, on this device, with this GTK build. Worth a real re-check, with logging
+   added rather than inferred, before anyone spends time on the GVfs-backend registration the next
+   section describes as the fix for this.
+
 ## What would make this unnecessary
 
 Registering `GdkAndroidContentFile` as a GVfs backend for the `content` scheme would fix fact 3
 outright: `GStreamer` would resolve `content://` through `giosrc` like any other GIO URI, and the
 copy in the composer could go away. That is a real GTK feature request rather than a patch, and it
 does nothing about fact 2. Worth raising upstream alongside the JNI one; not worth waiting for.
+
+Step 5 measured `GStreamer` resolving a `content://` file without this registration, for the one
+case where nothing else could have accounted for it (see step 5). If that holds up under a real
+re-check, this section's premise needs revisiting before anyone files the feature request: it may
+already work, at least for real-path picks, on the GTK version this port currently builds against.
+Not verified enough to act on either way.
 
 ## Upstream
 
