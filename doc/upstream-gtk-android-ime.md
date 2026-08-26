@@ -1,9 +1,12 @@
 # GTK on Android: the IME loses the cursor — notes for an upstream report
 
 Working notes for a report against [GNOME/gtk](https://gitlab.gnome.org/GNOME/gtk/-/issues),
-written while fixing this downstream in Commune. Two separate defects are described. **The first is
-the real bug and is worth reporting on its own**; the second is a missing feature that is only
-visible once the first is fixed.
+written while fixing this downstream in Commune. Four separate defects are described. **The first
+is the real bug and is worth reporting on its own**; the second is a missing feature that is only
+visible once the first is fixed; the third is a one-method omission with the same root cause as the
+second, and is only visible once an application asks for auto-capitalisation; the fourth is a
+one-line typo in a JNI field cache that produces the same symptom as the third by a different
+route.
 
 Everything marked _measured_ was measured. Everything marked _inference_ was not.
 
@@ -216,6 +219,95 @@ Also worth knowing: `gtk_text_get_display_text` returns the invisible character 
 entry, so a password is **not** handed to the keyboard in clear. The exception is GTK's transient
 "password hint" character — the most recently typed one, briefly shown — which does appear in that
 string.
+
+---
+
+## Defect 3 — `getCursorCapsMode` is answered from the cleared scratch buffer
+
+Same root cause as Defect 2, separate symptom, and one an application only meets once it sets
+`GTK_INPUT_HINT_UPPERCASE_SENTENCES`.
+
+### Symptom
+
+_Inference, not measurement._ A `GtkTextView` with
+`input-hints: GTK_INPUT_HINT_UPPERCASE_SENTENCES` — which
+`_gtk_im_context_android_get_input_type` correctly turns into
+`InputType.TYPE_TEXT_FLAG_CAP_SENTENCES` — should get a keyboard that shifts the first letter of
+*every* word rather than of every sentence.
+
+Marked as inference because it was read out of the code and fixed in the same change that first set
+the hint downstream, so the broken behaviour was never shipped and never watched. What _is_
+measured is the fixed behaviour: with the override below, sentence capitalisation in a real
+composer is correct. Whoever files this should reproduce the unfixed case before quoting it.
+
+### Cause
+
+Android does not decide by itself which positions are sentence-initial: it asks the field, through
+`InputConnection.getCursorCapsMode()`. `ImeConnection` does not override it, so the answer comes
+from `BaseInputConnection.getCursorCapsMode`, which calls `TextUtils.getCapsMode` on the `Editable`
+returned by `getEditable()` — the composing scratch buffer that `commitText` and
+`finishComposingText` `clear()`.
+
+Every call therefore describes an empty document with the cursor at 0, which is the start of a
+sentence. The keyboard is being told the truth about the wrong document.
+
+### Suggested fix
+
+The same one-line-per-query shape as Defect 2, over the same `getSurrounding()`:
+
+```java
+@Override
+public int getCursorCapsMode(int reqModes) {
+	/* text and cursor from getSurrounding(), UTF-16 offsets */
+	return TextUtils.getCapsMode(text, cursor, reqModes);
+}
+```
+
+Unlike `setSelection`, nothing here needs new `GtkIMContext` API: caps mode is a pure question about
+text GTK already hands over. Trap 3 from Defect 2 applies and is milder — caps mode only looks
+backwards from the cursor, so `gtk_text_view_retrieve_surrounding_handler`'s window is enough
+whenever the sentence began inside it. A sentence carried across a hard line break is reported as a
+fresh one.
+
+Carried downstream as [`patch-gtk-ime-caps.sh`](../build-aux/android/patch-gtk-ime-caps.sh).
+
+---
+
+## Defect 4 — `text_flag_cap_sentences` is filled from `TEXT_FLAG_CAP_WORDS`
+
+A one-line typo, independent of the other three, with the same symptom as Defect 3.
+
+### Cause
+
+In `gtk_im_context_android_init_java_cache` (`gtk/gtkimcontextandroid.c`):
+
+```c
+FILL_INPUT_TYPE (text_flag_cap_words, "TEXT_FLAG_CAP_WORDS")
+FILL_INPUT_TYPE (text_flag_cap_sentences, "TEXT_FLAG_CAP_WORDS")
+```
+
+The second line caches Android's `TYPE_TEXT_FLAG_CAP_WORDS` under the name
+`text_flag_cap_sentences`. `_gtk_im_context_android_get_input_type` reads it for
+`GTK_INPUT_HINT_UPPERCASE_SENTENCES`, so that hint asks the keyboard to capitalise every word.
+
+### Evidence
+
+_Measured_ on the emulator, `dumpsys input_method`, on a `GtkTextView` whose hints are
+`GTK_INPUT_HINT_SPELLCHECK | GTK_INPUT_HINT_UPPERCASE_SENTENCES`:
+
+| | `inputType` | means |
+| --- | --- | --- |
+| Before | `0xa001` | `CLASS_TEXT \| CAP_WORDS \| AUTO_CORRECT` |
+| After | `0xc001` | `CLASS_TEXT \| CAP_SENTENCES \| AUTO_CORRECT` |
+
+### Suggested fix
+
+```c
+FILL_INPUT_TYPE (text_flag_cap_sentences, "TEXT_FLAG_CAP_SENTENCES")
+```
+
+Carried downstream as
+[`patch-gtk-caps-sentences.sh`](../build-aux/android/patch-gtk-caps-sentences.sh).
 
 ---
 

@@ -26,6 +26,7 @@ whole route hung on.
 * [S7 — aarch64, and an emulator that runs it](#s7--aarch64-and-an-emulator-that-runs-it)
 * [S8 — Three input bugs that were one](#s8--three-input-bugs-that-were-one)
 * [S9 — The space bar, and the reset that cancelled it](#s9--the-space-bar-and-the-reset-that-cancelled-it)
+* [S10 — The keyboard that would not capitalise, and the gesture that left](#s10--the-keyboard-that-would-not-capitalise-and-the-gesture-that-left)
 * [Before this ships](#before-this-ships)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
@@ -44,6 +45,7 @@ whole route hung on.
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
 | S9 — the space-bar cursor slide | **fixed, and confirmed on a Pixel 9a on 25 August 2026**. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
+| S10 — auto-capitalisation and the back gesture | **fixed, 25 August 2026, on the emulator.** Two unrelated things that both made the app feel unlike an Android app: the composer never asked for sentence capitalisation, and every back gesture closed the application from wherever you were, media viewer included |
 
 ## Where things are
 
@@ -1012,6 +1014,8 @@ sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground servi
 sh build-aux/android/patch-gtk-input-purpose.sh  # likewise; see the input purpose
 sh build-aux/android/patch-gtk-ime-selection.sh  # likewise; see S9
 sh build-aux/android/patch-gtk-ime-reset.sh      # likewise; see S9
+sh build-aux/android/patch-gtk-ime-caps.sh       # likewise, and after the one above; see S10
+sh build-aux/android/patch-gtk-caps-sentences.sh  # likewise; see S10
 sh build-aux/android/patch-gtk-jni-attach.sh     # likewise; see the attachment crash below
 $PW build
 ```
@@ -1031,7 +1035,7 @@ wrap's own git rather than from the other path:
 git -C subprojects/gtk checkout -- gdk/android/glue/java/org/gtk/android/ImContext.java
 ```
 
-All seven patches run between every `generate` and `build`. `generate` rewrites the manifest from
+All nine patches run between every `generate` and `build`. `generate` rewrites the manifest from
 its own XSL each time, and the Java ones write into `subprojects/gtk`, which a re-extracted wrap
 loses. Each script is a no-op when its change is already in place, so running them all every time
 is the cheap and correct habit.
@@ -2293,6 +2297,268 @@ nothing upstream has caught it, and why no property Commune sets could ever have
 That makes it a better-shaped upstream contribution than the previous two: a one-line guard with a
 reproducible measurement behind it.
 
+## S10 — The keyboard that would not capitalise, and the gesture that left
+
+Two reports from using the port as a phone application rather than testing it as one, on 25 August
+2026. They share nothing technically, and they share everything else: each is a place where the app
+does what a GTK application does and not what an Android application does, and neither is visible
+from a desktop.
+
+> _"the compose textbox doesn't capitalize at the beginning of the line or after a period — it
+> doesn't act like a normal input box on Android."_
+
+> _"opening a picture — it goes full screen, and on Android you swipe from the edge to go back on a
+> view like that, but this app acts like you are swiping back from the main view, sending you back
+> to the desktop."_
+
+### The composer never asked to be capitalised
+
+[S8](#s8--three-input-bugs-that-were-one) fixed the field that carries this: `input-purpose` and
+`input-hints` reach `GtkIMContextAndroid`, and its switch turns them into an Android `InputType`
+with all the flags Android has for a text field, `TYPE_TEXT_FLAG_CAP_SENTENCES` included.
+
+Nothing in Commune sets a hint. The default is `GTK_INPUT_HINT_NONE`, which is right for a
+desktop — a hardware keyboard has a shift key and the user is holding it — and wrong for the one
+widget in the application that is prose. So the composer gets
+`input-hints: spellcheck | uppercase-sentences`, which becomes `TYPE_TEXT_FLAG_AUTO_CORRECT |
+TYPE_TEXT_FLAG_CAP_SENTENCES`, and nothing else in the app gets either: a room name is a name, a
+homeserver is a URL, a search box is a query, and a keyboard that shifts the first letter of any of
+them is a keyboard fighting the user.
+
+`word-completion` was deliberately left off. It maps to `TYPE_TEXT_FLAG_AUTO_COMPLETE`, which tells
+the keyboard the *application* is completing what is typed — true here, the composer completes
+mentions and emoji — and the cost is that some keyboards then stop offering their own suggestions.
+The composer's completion is for `@` and `:`; the keyboard's is for every other word. Both are
+wanted.
+
+### Which is when the keyboard capitalised everything
+
+Setting the flag alone is worse than not setting it, and this was found by reading the glue rather
+than by shipping it.
+
+Android does not decide by itself which letters are sentence-initial. It asks the field, through
+`InputConnection.getCursorCapsMode()`, and shifts whatever the field calls the start of a sentence.
+`ImeConnection` does not override it, so the answer comes from `BaseInputConnection`, which reads
+the `Editable` that `getEditable()` returns — the composing scratch buffer that `commitText` and
+`finishComposingText` `clear()` after every commit. The question is therefore always asked of an
+empty document with the cursor at 0. That is the start of a sentence, truthfully, for that buffer.
+The keyboard would have shifted the first letter of every word.
+
+This is the same root cause as [S9](#s9--the-space-bar-and-the-reset-that-cancelled-it) — the
+scratch buffer answering questions about a document it does not hold — and the same fix shape.
+`patch-gtk-ime-caps.sh` overrides `getCursorCapsMode` and hands `TextUtils.getCapsMode` the text
+around the cursor from the `snapshot()` that `patch-gtk-ime-selection.sh` already built. It has to
+run after that patch, and it says so.
+
+What it does not fix is the same limitation S9 records: `gtk_text_view_retrieve_surrounding_handler`
+returns the cursor's line widened to three word boundaries, not the buffer. Caps mode only looks
+backwards from the cursor, so the window is enough whenever the sentence started inside it — which
+in a composer is a line, and so nearly always. A sentence carried across a hard line break gets a
+capital it did not earn.
+
+### And then capitalised every word anyway, for a second reason
+
+Measuring the fix rather than trusting it found a third bug, one line long, in the JNI field cache
+`gtk_im_context_android_init_java_cache` fills:
+
+```c
+FILL_INPUT_TYPE (text_flag_cap_words, "TEXT_FLAG_CAP_WORDS")
+FILL_INPUT_TYPE (text_flag_cap_sentences, "TEXT_FLAG_CAP_WORDS")
+```
+
+The second line reads Android's `TEXT_FLAG_CAP_WORDS` into the field called
+`text_flag_cap_sentences`. `_gtk_im_context_android_get_input_type` is correct; the constant it
+reaches for is not. `GTK_INPUT_HINT_UPPERCASE_SENTENCES` therefore sends `CAP_WORDS`, and the
+keyboard shifts the first letter of every word — the same visible symptom the `getCursorCapsMode`
+omission would have produced, arriving by a completely different route.
+
+_Measured_ with `dumpsys input_method` on the composer, which is the only reason it was caught:
+
+| | `inputType` | means |
+| --- | --- | --- |
+| Before | `0xa001` | `CLASS_TEXT \| CAP_WORDS \| AUTO_CORRECT` |
+| After | `0xc001` | `CLASS_TEXT \| CAP_SENTENCES \| AUTO_CORRECT` |
+
+Carried as `patch-gtk-caps-sentences.sh`. It is the third defect in this file found by asking what
+a value actually is rather than what the code says it is, after the dead struct fields of
+[S8](#s8--three-input-bugs-that-were-one) and the cleared scratch buffer of
+[S9](#s9--the-space-bar-and-the-reset-that-cancelled-it).
+
+### Back is not close
+
+GDK's Android backend registers an `OnBackInvokedCallback` and turns it into exactly one thing:
+
+```c
+GdkEvent *event = gdk_delete_event_new (surface);
+gdk_surface_handle_event (event);
+```
+
+`gdkandroidtoplevel.c:133`. A delete event is the only thing GDK has to say here, and GTK turns it
+into `GtkWindow::close-request`. So the system back gesture, the back button and closing the window
+are one signal, and `Window::close_request` answered all three the way a desktop answers the third:
+save the window size, save the session, quit.
+
+That is right in exactly one place — the room list, where there is nothing left to go back through —
+and wrong everywhere else. It is most obviously wrong in the media viewer, which is full-screen, has
+a back button of its own in its header bar, and is the view where the edge swipe is most natural.
+
+The fix is on the Commune side, not upstream: GDK is not wrong to send a delete event, and there is
+nothing else it could send. `Window::close_request` unwinds what is on screen one step at a time and
+only lets the close through when there is nothing left to unwind. The order is what is on top:
+
+1. **A popover**, which holds the focus while it is up — the only handle on one from here, since
+   GTK exposes no list of open popovers.
+2. **A dialog**, through `adw_application_window_get_visible_dialog()`. `AdwDialog::close()` returns
+   whether it closed, so a dialog that refuses (`can-close: false`, a confirmation in flight) does
+   not silently eat the gesture.
+3. **The visible page**, which decides for itself. The login flow pops its `AdwNavigationView`; the
+   session view closes the media viewer if it is up, then closes an open search bar, and otherwise —
+   only when the split view is collapsed, which is to say only on a phone-shaped window — deselects
+   the room, which is the same thing `Escape` and the header bar's back button do.
+
+The search bar is found by walking the mapped part of the widget tree for a `GtkSearchBar` in
+search mode rather than by listing the five this application has. Only the page on screen is
+mapped, so the walk finds the one the user is looking at and cannot reach into a page they are not.
+It was added after the first round of measurement below found back leaving the room while the
+search bar was still open.
+
+All of it is `#[cfg(target_os = "android")]`. On every other platform closing a window closes the
+window, and a stack of things to unwind first would be a bug rather than a feature.
+
+### Room Details was a window, which on Android is an Activity that never arrives
+
+Testing the gesture everywhere found the one place it could not be tested: opening _Room Details_
+wedged the application. The diagnosis is under [Known gaps](#known-gaps); the short version is that
+it was an `AdwPreferencesWindow`, GDK gives every GTK toplevel its own Activity, and `singleTask`
+in the manifest means Android hands that Activity's intent to the one that already exists.
+
+The manifest keeps `singleTask` — it is what makes the launcher relaunch and the SSO redirect work.
+`RoomDetails` stops being a window instead:
+
+* `AdwPreferencesWindow` → `AdwPreferencesDialog`, which is where libadwaita has gone and which the
+  build had been warning about on every run. The FIXME at the top of the file said this could not be
+  done "because we need to be able to open the media viewer"; the media viewer in question is the
+  history viewer's own, an overlay inside the widget, and it works in a dialog because an
+  `AdwDialog` on a phone-shaped window is very nearly the whole screen anyway.
+* `modal` and `destroy-with-parent` go — a dialog is both — and `default-height` becomes
+  `content-height`.
+* The `win.toggle-fullscreen` action that `RoomDetails` installed for that media viewer goes too. A
+  dialog cannot be fullscreened, and now that the dialog's root is the main window the action falls
+  through to the one `Window` already installs, which is the window the viewer wanted fullscreened
+  in the first place. The viewer's `fullscreened` binding follows the same path.
+* Two call sites had reached for the window: `general_page` took `transient_for()` to find the main
+  window, which is now `root()`, and `invite_subpage` closed itself by finding an
+  `AdwPreferencesWindow` above it, which is now the `AdwPreferencesDialog` ancestor.
+* `add_toast` loses its `AdwPreferencesWindow` branch, which nothing can reach any more.
+
+### Where a dialog's back actually has to live
+
+The first attempt at "back pops a subpage before closing the dialog" was written into
+`Window::close_request` and never ran once. `close-request` is `G_SIGNAL_RUN_LAST` with a boolean
+accumulator (`gtkwindow.c:1271`), so connected handlers run **before** the class closure, and
+`AdwDialogHost` connects one (`adw-dialog-host.c:276`) that closes the visible dialog and returns
+`GDK_EVENT_STOP`. The emission ends there. Every dialog closing correctly on back — which it did
+from the first build — was libadwaita doing it, not this port.
+
+That is the behaviour to want, so the window keeps out of it and the two dialogs with subpages say
+what back means for them instead. On Android they are constructed with `can-close` unset, which
+turns `AdwDialogHost`'s `adw_dialog_close()` into a `close-attempt` emission, and their
+`close_attempt` pops a subpage or `force_close()`s if there is none. `RoomDetails` and
+`AccountSettings` both do this; nothing else in the application has a subpage stack.
+
+The cost of `can-close` is that a programmatic `close()` becomes a back step too, so the four places
+that meant "close this now" — following a Matrix URI out of the general page, the invite subpage
+finishing, `account-settings.close`, and the session logging out — say `force_close()`.
+
+`RoomDetails` has one step above the subpages: the media history viewer carries a `MediaViewer` of
+its own, several subpages down from anything that can name it, and back was skipping it — popping
+the whole Media subpage and taking the viewer with it. `close_attempt` looks for it first, by the
+same mapped-subtree walk the search bar uses.
+
+### The deadlock underneath, which had been hiding behind an unreachable window
+
+Back inside room details then stopped working entirely — and so did every touch. The first two
+theories were both wrong and both cost a build each: it is not a stale `GtkPopover` grab (the walk
+found no mapped popover, and a tap does not clear it), and it is not `GtkWindow`'s delete-event grab
+guard (`gtkmain.c:1723`, which drops delete events when a grab lives outside the window).
+
+`debuggerd -b <pid>` settled it in one shot. The GTK thread and GStreamer's own thread are deadlocked
+against each other:
+
+```
+"GTK Thread"                              "GstPlay"
+ScaleRevealer::transition_done            gst_play_stop_internal
+  set_visible(false)                        gst_element_set_state
+    gtk_widget_unmap                          gst_play_sink_change_state
+      MediaContentViewer::clear                 g_rec_mutex_lock  ← waits
+        gtk_video_set_media_stream(NULL)
+          gtk_picture_clear_paintable
+            g_object_unref(GstMediaStream)
+              gst_play_dispose
+                g_thread_join  ← waits
+```
+
+Detaching the stream tears down the paintable the video sink owns, and the GTK thread holds the
+sink's lock while it does it. Dropping the last reference to the stream in the middle of that
+disposes `GstPlay`, and `gst_play_dispose` joins its own thread — which is sitting in
+`gst_play_sink_change_state` waiting for the lock the GTK thread is holding. Neither moves again.
+The application is not slow or confused at that point, it is stopped; Android keeps compositing the
+last frame, which is why it looks alive.
+
+The fix is one line of ordering in `clear_video`, which is the macOS and Android arm of
+`MediaContentViewer`: keep the stream alive across the detach and let go of the last reference on an
+idle, once the unmap has returned and the lock is free.
+
+This is not a room-details bug and was not introduced by making it a dialog — it is in the media
+stack, and room details is simply the first place on Android that could reach it, because the window
+it used to be never opened. The timeline's media viewer does not reproduce it, which is a timing
+difference rather than a structural one and is not a reason to think it cannot.
+
+Which then wedged back inside room details entirely, and the reason is worth keeping. "Is the media
+viewer open" had been asked as `is_visible()`, because that is what `reveal()` sets. It is not what
+`close()` clears: closing starts a transition, and the widget is hidden in
+`ScaleRevealer::transition_done`, which on Android does not reliably arrive. So the viewer stayed
+`visible` after it had gone, the walk found it on every back, and every back closed something that
+was already closed. `MediaViewer::is_open()` asks the revealer's `reveal-child` instead, which
+`close()` sets synchronously. The session view's own check had the same bug latent in it and now
+uses the same method.
+
+
+### What was measured
+
+Every surface reachable on the emulator, with both the BACK key and a real edge swipe
+(`input swipe 3 1300 750 1320 250`):
+
+| Where | What back does |
+| --- | --- |
+| Room, narrow window | Returns to the room list |
+| Media viewer | Closes it, returns to the room |
+| Media viewer, fullscreened | Closes it — **with the key**; see below |
+| Explore | Returns to the room list |
+| Search bar open in a room | Closes the search bar (after the fix above; before it, left the room) |
+| Dialog (About) | Closes the dialog |
+| Popover (the main menu) | Closes the popover |
+| Room list | Leaves the application, which is correct |
+
+Two things the matrix does not say plainly.
+
+**In the fullscreened media viewer the edge swipe does not reach the application.** Android's
+immersive mode takes the gesture insets for itself, so an edge swipe there shows the system bars
+instead of invoking back; the BACK key, the header bar's own back button and the swipe-down
+dismissal all still work. This is how every immersive-mode Android application behaves and is not
+something the port can change from its side.
+
+**A popover is dismissed by the touch, not by the gesture.** Touching anywhere outside a popover
+closes it, which happens on the swipe's first touch, so the gesture that follows is a back from the
+page underneath. The BACK key, which involves no touch, closes the popover and stops there. Normal
+behaviour rather than a defect — nobody swipes from the edge to dismiss a menu.
+
+One thing this deliberately does not touch: dismissing the soft keyboard. Android hands BACK to the
+IME before the activity while the keyboard is up, so the app never sees that press, and the
+behaviour recorded under [Known gaps](#known-gaps) — BACK hides the keyboard and leaves the room
+open — is unchanged.
+
+
 ## Before this ships
 
 A running list, in the user's words where they said it. Nothing here blocks further development;
@@ -2314,7 +2580,7 @@ all of it blocks calling the port finished.
   application is English-only on Android. Recorded much earlier as something that _"should be fixed
   before anyone sees it"_, and still true.
 * **File the GTK IME defects upstream.** Notes are written and ready to paste:
-  [doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md). Four of the seven patch scripts
+  [doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md). Six of the nine patch scripts
   this port carries are GTK bugs rather than Commune glue, and every one of them is a local patch
   that has to be re-applied after each `pixiewood generate` and re-checked against each GTK update:
 
@@ -2324,17 +2590,61 @@ all of it blocks calling the port finished.
   | `patch-gtk-input-purpose.sh` | `input_purpose`/`input_hints` read from struct fields nothing assigns after `_init` — every field announced as free-form prose, passwords included |
   | `patch-gtk-ime-reset.sh` | `reset` calls `restartInput` on every cursor movement, cancelling any IME interaction in flight |
   | `patch-gtk-ime-selection.sh` | `ImeConnection` answers no text query and has no `setSelection` |
+  | `patch-gtk-ime-caps.sh` | `ImeConnection` answers `getCursorCapsMode` from the cleared scratch buffer, so every word looks sentence-initial |
+  | `patch-gtk-caps-sentences.sh` | the JNI field cache reads `TEXT_FLAG_CAP_WORDS` into `text_flag_cap_sentences`, so `UPPERCASE_SENTENCES` capitalises every word |
 
-  The first three are defects with one-line fixes. The fourth is a missing feature, and the honest
-  part of it is that `GtkIMContext` cannot express "put the cursor here" at all — so what is carried
-  here is a workaround (synthesised arrow keys) rather than something to propose as a patch without
-  asking the maintainers first.
+  The first three and the sixth are defects with one-line fixes, and the fifth is a six-line
+  override that only became worth writing once the fourth had put the real text within reach. The fourth is a missing
+  feature, and the honest part of it is that `GtkIMContext` cannot express "put the cursor here" at
+  all — so what is carried here is a workaround (synthesised arrow keys) rather than something to
+  propose as a patch without asking the maintainers first.
 
-  This does not block Commune shipping. It is on the list because carrying four downstream patches
+  This does not block Commune shipping. It is on the list because carrying six downstream patches
   against a moving `main` branch is a standing cost, and because the fixes are worth more to other
   GTK-on-Android applications than they are here.
 
 ## Known gaps
+
+* ~~**Room Details wedges the application, and it is a second toplevel that does it.**~~ **Fixed on
+  25 August 2026**, the same day it was found, by making it stop being a toplevel. Kept here because
+  the diagnosis is the useful part and the trap is still set for the next widget that wants a window.
+
+  Opening _Room Details_ used to leave the room on screen with every touch and every back press
+  dead; only force-stopping recovered. `RoomDetails` was an `AdwPreferencesWindow` — a second GTK
+  toplevel — and GDK's Android backend gives every toplevel its own Activity, so presenting it
+  started a second `ToplevelActivity`:
+
+  ```
+  START u0 {cmp=io.github.steeb_k.commune/org.gtk.android.ToplevelActivity (has extras)}
+      with LAUNCH_SINGLE_TASK ... result code=3
+  ```
+
+  `result code=3` is `START_DELIVERED_TO_TOP`. The intent went to the Activity that already existed
+  instead of creating another, because
+  [`patch-manifest.sh`](../build-aux/android/patch-manifest.sh) sets
+  `android:launchMode="singleTask"` — on the reasoning, written into that script, that _"GTK has a
+  single toplevel"_. That was true when it was written and was not true here. The new GTK toplevel
+  got no Android window while still holding GTK's focus and grab, and every event went to a window
+  nobody could see.
+
+  **The manifest was left alone.** `singleTask` is load-bearing for two other things — the launcher
+  relaunch it was added for, and the SSO redirect, which reaches a running Commune through
+  `onNewIntent` and therefore only because of it. What changed instead is the widget:
+  `AdwPreferencesWindow` → `AdwPreferencesDialog`, which is where libadwaita has gone anyway and
+  which the build had been warning about. See
+  [S10](#s10--the-keyboard-that-would-not-capitalise-and-the-gesture-that-left).
+
+  **`CallView` is the only other window in the application, and Android never sees it.** It is an
+  `AdwWindow`, and the whole of it — `mod call_view`, the import, the `call_view` field,
+  `watch_calls`, `present_call_view` and `handle_call_action` — is already
+  `#[cfg(not(target_os = "android"))]`, because the WebRTC-over-GStreamer stack behind it is not on
+  Android yet. So it cannot spring this trap today. It will, unchanged, on the day calls arrive:
+  whoever does that work has to decide between a dialog (modal, so no reading the room during a
+  call), a page in the main window, and reopening the `launchMode` question.
+
+  Nothing else in the application is a toplevel. `Adw.ShortcutsDialog`, `Adw.AboutDialog`,
+  `AccountSettings` and every `ToastableDialog` are dialogs already, and nothing constructs a
+  `GtkWindow`, `GtkAlertDialog` or `GtkAboutDialog` at runtime.
 
 * **The soft keyboard did not hide itself.** Once shown it stayed, through `ESC`, through the
   search bar being dismissed, and through rotation — where it covers most of a landscape screen.
