@@ -55,7 +55,7 @@ mod imp {
         #[template_child]
         reactions: TemplateChild<MessageReactionList>,
         #[template_child]
-        thread_chip: TemplateChild<gtk::Box>,
+        thread_chip: TemplateChild<gtk::Button>,
         #[template_child]
         thread_replies_label: TemplateChild<gtk::Label>,
         binding: RefCell<Option<glib::Binding>>,
@@ -224,6 +224,10 @@ mod imp {
                 return;
             };
 
+            // The chip is also the way into the thread, so it needs the
+            // root's event ID as the action target.
+            let event_id = event.event_id();
+
             // The count can be zero when every reply in the thread has been
             // redacted; a chip announcing a thread with nothing to read is
             // worse than none.
@@ -237,7 +241,7 @@ mod imp {
                 ContentFormat::Compact | ContentFormat::Ellipsized
             );
 
-            if let Some(count) = num_replies {
+            if let (Some(count), Some(event_id)) = (num_replies, &event_id) {
                 self.thread_replies_label.set_label(&ngettext_f(
                     // Translators: Do NOT translate the content between '{' and
                     // '}', this is a variable name.
@@ -246,10 +250,12 @@ mod imp {
                     count,
                     &[("n", &count.to_string())],
                 ));
+                self.thread_chip
+                    .set_action_target_value(Some(&event_id.as_str().to_variant()));
             }
 
             self.thread_chip
-                .set_visible(num_replies.is_some() && !compact);
+                .set_visible(num_replies.is_some() && event_id.is_some() && !compact);
         }
 
         /// Get the texture displayed by this widget, if any.

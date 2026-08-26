@@ -259,8 +259,38 @@ the four things that row measures — with only its note updated. `AGENTS.md`'s
 ledger list turned out never to have picked up round 3 (`spaces.md`,
 `peeking.md`); both were added alongside `threads.md`.
 
-**Next: round 4, item 10 (threads, slice 2 — read a thread, and write into
-it).**
+**Round 4 slice 2 (item 10) is built — a thread can be read and written.**
+The plan said "a side sheet or subpage"; the code says neither, and the code
+is right: the room history already swaps its displayed timeline for a focused
+one and back, so the thread view is `Timeline::new_threaded` set as the
+displayed timeline, with an `Adw.Banner` (_Viewing a thread_ /
+_Back to All Messages_) naming the state. Every row is the real `EventRow` —
+context menus, reactions, editing all work in a thread for free. Beyond the
+plan's own list:
+
+* **Composer routing is one closure**: `$compose_timeline` in the room
+  history's template picks the displayed timeline when it is a thread, the
+  room's live timeline otherwise. A thread timeline receives its own local
+  echoes, which is what makes composing into it directly possible at all.
+* **Receipts travel through the timeline that shows them.**
+  `Room::send_receipt`'s body moved to `Timeline::send_receipt`; the room
+  history sends `Read` receipts through the displayed timeline, so the SDK
+  stamps thread receipts in a thread. `FullyRead` is never sent from a
+  thread — it is the room's marker and a thread event may sit far back in
+  room order.
+* **Drafts are per-thread and server-side** — the SDK's composer-draft API
+  takes a thread root, so `ComposerState` carries one and the toolbar's
+  states map is keyed by `(room, thread root)`. A draft typed for the room
+  can no longer be sent into a thread by accident.
+* **`hide_threaded_events` is on** for the live focus and the focused
+  timeline's `Automatic` mode, in the same commit — the plan's ordering rule
+  held. Threaded replies left the main timeline the moment they had somewhere
+  to be read.
+* The chip became a button (`room-history.show-thread` with the root as
+  target) and the context menu gained _View Thread_.
+
+**Next: round 4, item 11 (threads, slice 3 — the thread list). That flips the
+row in both ledgers.**
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
@@ -362,7 +392,8 @@ drift: they go in the feature's own commit.**
 | Finishing the module | `b3deab0d`, `aec0710a` | done, seen; two faults, fixed and re-seen |
 | Subspaces expand in place | `ce984576`, `21f89afe` | done, seen |
 | 9. Threads, slice 1 | `fabc003f` | done, not yet seen |
-| 10–11 | — | not started |
+| 10. Threads, slice 2 | hash goes in with the masthead refresh | done, not yet seen |
+| 11 | — | not started |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

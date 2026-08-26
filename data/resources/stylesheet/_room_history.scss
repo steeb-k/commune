@@ -420,6 +420,8 @@ message-reactions {
 
 .thread-chip {
   margin-top: 3px;
+  padding: 1px 8px;
+  min-height: 0;
   font-size: 0.9em;
   -gtk-icon-size: 14px;
 }

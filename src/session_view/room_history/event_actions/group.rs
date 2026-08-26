@@ -245,6 +245,34 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                 .build()]);
         }
 
+        // View the thread the event is in, or is the root of.
+        //
+        // A threaded reply names its root; a root carries a summary of its
+        // thread and is its own root.
+        let thread_root = event
+            .thread_root()
+            .or_else(|| event.thread_summary().and_then(|_| event.event_id()));
+        if let Some(thread_root) = thread_root {
+            action_group.add_action_entries([gio::ActionEntry::builder("view-thread")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        if imp
+                            .obj()
+                            .activate_action(
+                                "room-history.show-thread",
+                                Some(&thread_root.as_str().to_variant()),
+                            )
+                            .is_err()
+                        {
+                            error!("Could not activate `room-history.show-thread` action");
+                        }
+                    }
+                ))
+                .build()]);
+        }
+
         // Pin or unpin the event.
         if has_event_id && permissions.can_pin_events() {
             let is_pinned = event

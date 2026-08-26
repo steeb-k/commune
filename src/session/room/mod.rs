@@ -2122,31 +2122,9 @@ impl Room {
         receipt_type: ApiReceiptType,
         position: ReceiptPosition,
     ) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let send_public_receipt = session.settings().public_read_receipts_enabled();
-
-        let receipt_type = match receipt_type {
-            ApiReceiptType::Read if !send_public_receipt => ApiReceiptType::ReadPrivate,
-            t => t,
-        };
-
-        let matrix_timeline = self.live_timeline().matrix_timeline();
-        let handle = spawn_tokio!(async move {
-            match position {
-                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
-                ReceiptPosition::Event(event_id) => {
-                    matrix_timeline
-                        .send_single_receipt(receipt_type, event_id)
-                        .await
-                }
-            }
-        });
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not send read receipt: {error}");
-        }
+        self.live_timeline()
+            .send_receipt(receipt_type, position)
+            .await;
     }
 
     /// Mark the room as unread.

@@ -773,6 +773,17 @@ impl Event {
         }
     }
 
+    /// The root of the thread this event belongs to, if any.
+    ///
+    /// This is the thread the event is *in*; an event that is itself the root
+    /// of a thread carries a [`Self::thread_summary()`] instead.
+    pub(crate) fn thread_root(&self) -> Option<OwnedEventId> {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => msg_like.thread_root.clone(),
+            _ => None,
+        }
+    }
+
     /// Get the details of the event this event replies to, if any.
     ///
     /// Returns `None(_)` if this event is not a reply.

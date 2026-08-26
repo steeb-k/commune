@@ -516,9 +516,10 @@
       same day with <code>m.space.child</code>, and then the rest of the module went with it:
       a space can be made, a room can be taken back out of one, and a room says which spaces
       hold it. Spaces leaves the partial column entirely. Threads left Absent on
-      26 August 2026 with the first of its three slices: a thread root now announces itself
-      with a reply count, and the view and the list that would open it are what keep the
-      module in the partial column.
+      26 August 2026 and took its second slice the same day: a thread root announces itself
+      with a reply count, opening it shows the thread in place with the composer, receipts
+      and drafts scoped to it, and threaded replies have left the main timeline — the thread
+      list is the one slice keeping the module in the partial column.
     </p>
   </header>
 
@@ -563,7 +564,7 @@
       <ol>
         <li>
           <span class="pick-name">Threads</span>
-          <span class="pick-why">The last module of the standard this client barely speaks, and the one people notice. Under way since 26 August 2026: a thread root now carries an "N replies" chip, but a threaded reply still lands in the main timeline indistinguishable from the rest. The SDK carries all of it on the wire — <code>TimelineFocus::Thread</code>, <code>ThreadListService</code>, thread-aware sending and receipts — so what is left is a thread view, a thread list and pointing the composer at them. Interface work, and an <em>L</em> rather than the <em>XL</em> it looks like.</span>
+          <span class="pick-why">The last module of the standard this client does not finish, and the one people notice. Under way since 26 August 2026, and mostly there: a thread root carries an "N replies" chip that opens the thread in place, the composer writes into it, receipts and drafts are the thread's own, and threaded replies have left the main timeline. What is left is the thread list — <code>ThreadListService</code> wrapped in a page — without which a thread can only be entered through its root. One slice remains of three.</span>
         </li>
         <li>
           <span class="pick-name">Invite by email</span>
@@ -645,8 +646,8 @@
         gap in coverage rather than a choice: the last deliberate departure, image packs
         writing unstable names, was closed on 22 August 2026. Spaces passed through this column
         and out of it in August 2026, and threads arrived on 26 August 2026 from the absent
-        side: the first of its three slices is built, so a thread now at least announces
-        itself. Voice over IP left this column on 23 August 2026 and
+        side: two of its three slices are built, so a thread announces itself and can be read
+        and written — the thread list is what keeps the row here. Voice over IP left this column on 23 August 2026 and
         the row it left behind is now a note further down; account registration passed through it
         the same day, halved into a password reset and then closed by it.
       </p>
@@ -666,8 +667,8 @@
           <tr>
             <td><span class="feat">Threads</span></td>
             <td class="mod">Threading</td>
-            <td class="state">A thread announces itself: the root message carries an "N replies" chip, drawn from the server's bundled summary and updated live. Nothing opens yet — no thread can be listed or read, threaded replies still land inline in the main timeline, and receipts and composer routing are unthreaded. Sending has always been correct — the SDK forwards the thread relation — and the SDK carries the view and the list on the wire; slices 2 and 3 are the remainder.</td>
-            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
+            <td class="state">A thread announces itself and can be read and written: the root's "N replies" chip and a <em>View Thread</em> menu entry open the thread in place — a banner names the state and offers the way back — the composer sends into it with the thread relation attached, read receipts sent while reading it are the thread's own, each thread keeps its own draft, and threaded replies no longer land inline in the main timeline. What is missing is the thread list: a thread can only be entered through its root, so one whose root has scrolled out of reach cannot be found. Slice 3 is the remainder.</td>
+            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
           </tr>
           <tr>
@@ -1324,7 +1325,8 @@
     page that lists what is inside them instead of being hidden, a room that says anybody may
     read it finally read without joining, a restricted join rule made creatable rather than only
     preservable, a room put into a space for the first time and taken back out of one, a space made
-    rather than only found, a thread root given its reply count,
+    rather than only found, a thread root given its reply count and then the thread behind it
+    opened, read and written in place,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
