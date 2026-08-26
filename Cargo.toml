@@ -103,6 +103,13 @@ features = [
     "sso-login",
 ]
 
+[dependencies.matrix-sdk-base]
+# version = "0.18"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
+default-features = false
+features = ["e2e-encryption"]
+
 [dependencies.matrix-sdk-store-encryption]
 # version = "0.18"
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"

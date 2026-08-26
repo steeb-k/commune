@@ -17,6 +17,9 @@ mod text;
 mod url_preview;
 mod visual_media;
 
+use gettextrs::gettext;
+use matrix_sdk_ui::timeline::{TimelineEventShieldState, TimelineEventShieldStateCode};
+
 pub use self::content::{ContentFormat, MessageContent};
 use self::{
     message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
@@ -59,6 +62,8 @@ mod imp {
         content: TemplateChild<MessageContent>,
         #[template_child]
         message_state: TemplateChild<MessageStateStack>,
+        #[template_child]
+        shield_icon: TemplateChild<gtk::Image>,
         #[template_child]
         reactions: TemplateChild<MessageReactionList>,
         #[template_child]
@@ -197,6 +202,7 @@ mod imp {
                 move |_| {
                     imp.update_content();
                     imp.update_thread_chip();
+                    imp.update_shield();
                 }
             ));
 
@@ -212,6 +218,7 @@ mod imp {
             self.update_bubbles();
             self.update_header();
             self.update_thread_chip();
+            self.update_shield();
         }
 
         /// The sender of the event that is presented.
@@ -309,6 +316,39 @@ mod imp {
             }
         }
 
+        /// Update the authenticity shield for the current event.
+        ///
+        /// A red shield is a warning — an unverified or mismatched sender, a
+        /// message sent in the clear — and a grey one is a caveat. Most
+        /// messages draw neither, which is what keeps the two readable.
+        fn update_shield(&self) {
+            let Some(event) = self.event.obj() else {
+                return;
+            };
+
+            let (visible, code) = match event.shield() {
+                TimelineEventShieldState::Red { code } => {
+                    self.shield_icon
+                        .set_icon_name(Some("verified-danger-symbolic"));
+                    self.shield_icon.add_css_class("error");
+                    self.shield_icon.remove_css_class("dim-label");
+                    (true, Some(code))
+                }
+                TimelineEventShieldState::Grey { code } => {
+                    self.shield_icon
+                        .set_icon_name(Some("verified-warning-symbolic"));
+                    self.shield_icon.add_css_class("dim-label");
+                    self.shield_icon.remove_css_class("error");
+                    (true, Some(code))
+                }
+                TimelineEventShieldState::None => (false, None),
+            };
+
+            self.shield_icon.set_visible(visible);
+            self.shield_icon
+                .set_tooltip_text(code.map(shield_message).as_deref());
+        }
+
         /// Update the content for the current event.
         fn update_content(&self) {
             let Some(event) = self.event.obj() else {
@@ -374,6 +414,33 @@ mod imp {
             let dialog = UserProfileDialog::new();
             dialog.set_room_member(sender);
             dialog.present(Some(&*self.obj()));
+        }
+    }
+}
+
+/// The sentence for the given shield code.
+fn shield_message(code: TimelineEventShieldStateCode) -> String {
+    match code {
+        TimelineEventShieldStateCode::AuthenticityNotGuaranteed => {
+            gettext("The authenticity of this message cannot be guaranteed on this device.")
+        }
+        TimelineEventShieldStateCode::UnknownDevice => {
+            gettext("The device that sent this message is not known.")
+        }
+        TimelineEventShieldStateCode::UnsignedDevice => {
+            gettext("The device that sent this message has not been verified by its owner.")
+        }
+        TimelineEventShieldStateCode::UnverifiedIdentity => {
+            gettext("The sender of this message has not been verified.")
+        }
+        TimelineEventShieldStateCode::VerificationViolation => {
+            gettext("The sender of this message was verified once, and has changed identity since.")
+        }
+        TimelineEventShieldStateCode::MismatchedSender => {
+            gettext("The sender of this message does not match the device that encrypted it.")
+        }
+        TimelineEventShieldStateCode::SentInClear => {
+            gettext("This message was not encrypted, in a room that is.")
         }
     }
 }
