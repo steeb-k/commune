@@ -14,6 +14,11 @@ extend-ignore-re = [
   # same hazard arrives a hundred and ninety-three times over. They only ever
   # appear as an attribute value or a key of the map that migrates them.
   "\"k[0-9a-f]{10}\"",
+  # doc/pages.state is machine-written by hooks/doc-freshness. Its hex spells
+  # words by accident too — `afe47e75` carries `afe` — and it arrives in two
+  # forms: the marker line and the published-page checksums.
+  "commit [0-9a-f]{7,40}",
+  "sha256 [0-9a-f]{64}",
 ]
 
 [default.extend-words]
