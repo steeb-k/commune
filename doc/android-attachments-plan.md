@@ -44,12 +44,17 @@ and fails somewhere else entirely, which is exactly how "Invalid attachment data
 
 Two smaller things found while reading, neither a crash:
 
-* `utils/media/image/queue.rs` does `file.path().expect("file should have a path")` for a cache
-  key. It does not fire today only because of fact 2 — the lie is at least unique and stable. If
-  `get_path` is ever fixed to return NULL, **this panics**, so it has to be dealt with in the same
-  change.
+* `utils/media/image/queue.rs` did `file.path().expect("file should have a path")` for a cache
+  key. It did not fire only because of fact 2 — the lie is at least unique and stable. **Fixed in
+  step 1**, and not by reaching for `local_path`: the request id wants a key that always exists,
+  not a path, so `ImageRequestId::File` now holds `file.as_gfile().uri()`. Every `GFile` has a URI,
+  `content://` ones included, and for a temporary file it is the same `file://` path spelled
+  differently. There is nothing left to panic on.
 * `AudioPlayerSource::name` takes the display name from the path's last component, so previewing a
-  picked audio file names it after a document id, or after our temp file. Cosmetic.
+  picked audio file names it after a document id, or after our temp file. Cosmetic, and
+  **deliberately left in step 1**: routing it through `local_path` would turn a bad name into an
+  empty one. The fix is a real display name — `query_info` for `G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME`
+  — not a path check, so it is its own change.
 
 ## Where to handle the missing path
 
@@ -80,6 +85,13 @@ from upstream, no blast radius, and correct on every platform, because a stale p
 anywhere. It is what `send_file_inner` already does, promoted to a name. The cost is discipline: a
 convention enforced by grep and review rather than by the compiler.
 
+One limit of it, found while writing it and relevant to steps 2 and 3: **it is a test for reading.**
+A file the user has just picked as a _save_ destination does not exist yet, so `local_path` answers
+`None` for a perfectly good one. Key export and every save-as route below choose a file that is
+about to be created, and none of them may use this helper as their guard — they want the parent
+directory, or they want `replace_contents` on the `GFile` and no path at all. The doc comment on
+the helper says so; this is the reason it says so.
+
 Two findings that cut the other way, recorded so nobody re-derives them:
 
 * `gdkcontentserializer.c` already handles a NULL path and falls back to the URI — and today it
@@ -97,6 +109,28 @@ with it.
 1. **Add `local_path`** and route every `.path()` in the inventory through it. Fix the `expect` in
    the image queue at the same time — not because it fires today, but because it is the one call
    site that would turn a NULL into a panic if the GTK patch is ever reached for.
+
+   **Done**, and _measured_ on the emulator: picking `t3.png` from the document picker previewed
+   it and sent it, and it came back down as an image in the timeline. That one flow exercises both
+   halves of the change — the preview renders from the temporary copy, which only exists because
+   `local_path` answered `None`, and the preview is an `ImageRequestSource::File` going through the
+   image queue on its new URI key. Nothing was logged at warn or above for the whole flow.
+
+   `crate::utils::local_path` is the helper; the composer now calls it instead of
+   spelling the check out inline, and the image queue keys on a URI. Two `.path()` call sites were
+   left alone on purpose, and both are the point rather than an oversight:
+
+   * `AudioPlayerSource::name`, for the reason above.
+   * `ImportExportKeysSubpage`, in `can_proceed` and in `proceed`. Routing those through
+     `local_path` disables the button on Android, and **today the page fails loudly**: import runs,
+     `import_room_keys` cannot open `/document/…`, and a "Could not import the keys" toast says so.
+     Trading a wrong-but-visible failure for a dead control with no explanation is the exact trap
+     this document argues against for the GTK patch, and it would apply here too. Step 2 is what
+     makes the page work; it can take these two call sites with it.
+
+   `utils::File` lost its `path()` accessor rather than gaining a `local_path()` one — the image
+   queue was its only caller. Everything else reaches a `File` through `as_gfile()`, so the free
+   function covers them.
 2. **Key import and export.** Import is the composer's problem again: copy to a temp file, import
    from that. Export is the mirror and is harder, because `export_room_keys` writes to a path —
    export to a temp file, then `replace_contents` into the chosen `GFile`. Check first whether

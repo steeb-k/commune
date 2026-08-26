@@ -48,6 +48,7 @@ use crate::{
     utils::{
         File, Location, LocationError, TemplateCallbacks, TokioDrop, http,
         klipy::{self, SelectedGif},
+        local_path,
         media::{
             FileInfo, audio::load_audio_info, filename_for_mime, image::ImageInfoLoader,
             video::load_video_info,
@@ -1203,16 +1204,14 @@ mod imp {
             // and the upload hands a path to the send queue. A file the Android
             // picker returns has neither in a usable form. Its URI is
             // `content://...`, which `GStreamer` has no handler for, and its
-            // `g_file_get_path` is GTK answering with `Uri.getPath()` -- a
-            // document id like `/document/video:1000000034`, which looks
-            // absolute and points at nothing, so it has to be checked rather
-            // than trusted. Copying it once here is what makes the rest work,
-            // and on every other platform the path is real and nothing is
-            // copied.
+            // path is a document id that points at nothing, which is what
+            // `local_path` is checking for. Copying it once here is what makes
+            // the rest work, and on every other platform the path is real and
+            // nothing is copied.
             //
             // `source_file` is held until this function returns, because a
             // temporary one deletes itself when the last reference to it goes.
-            let (source_file, source) = match file.path().filter(|path| path.exists()) {
+            let (source_file, source) = match local_path(&file) {
                 Some(path) => (File::from(file), AttachmentSource::from(path)),
                 None => {
                     let data = match file.load_contents_future().await {

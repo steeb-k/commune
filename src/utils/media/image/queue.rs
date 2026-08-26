@@ -2,13 +2,12 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     fmt,
     future::IntoFuture,
-    path::PathBuf,
     sync::{Arc, LazyLock, Mutex, MutexGuard},
     time::Duration,
 };
 
 use futures_util::future::{BoxFuture, LocalBoxFuture};
-use gtk::glib;
+use gtk::{gio::prelude::FileExt, glib};
 use matrix_sdk::{
     Client,
     media::{MediaRequestParameters, UniqueKey},
@@ -618,7 +617,7 @@ impl ImageRequestSource {
             Self::Download(download_request) => {
                 ImageRequestId::Download(download_request.settings.unique_key())
             }
-            Self::File(file) => ImageRequestId::File(file.path().expect("file should have a path")),
+            Self::File(file) => ImageRequestId::File(file.as_gfile().uri().into()),
             Self::Http(request) => ImageRequestId::Http(request.url.clone()),
         }
     }
@@ -643,8 +642,13 @@ impl ImageRequestSource {
 enum ImageRequestId {
     /// The identifier for a download request.
     Download(String),
-    /// The identifier for a file request.
-    File(PathBuf),
+    /// The identifier for a file request, its URI.
+    ///
+    /// The URI rather than the path, because a file picked on Android is a
+    /// `content://` URI with no path at all -- see `utils::local_path`. The
+    /// URI is the one identifier every `GFile` has, and for a temporary file
+    /// it is the same path spelled differently.
+    File(String),
     /// The identifier for an HTTP request, its URL.
     Http(String),
 }
@@ -653,7 +657,7 @@ impl fmt::Display for ImageRequestId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Download(id) => id.fmt(f),
-            Self::File(path) => path.to_string_lossy().fmt(f),
+            Self::File(uri) => uri.fmt(f),
             Self::Http(url) => url.fmt(f),
         }
     }
