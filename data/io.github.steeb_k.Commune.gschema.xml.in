@@ -23,6 +23,11 @@
       <summary>Always use the dark theme</summary>
       <description>Whether to use the dark theme whatever the system is set to. When this is off, the system decides</description>
     </key>
+    <key name="chat-bubbles-enabled" type="b">
+      <default>false</default>
+      <summary>Present messages as chat bubbles</summary>
+      <description>Whether each message in the timeline is drawn inside a bubble, with your own messages on the right</description>
+    </key>
     <key name="url-previews-enabled" type="b">
       <default>true</default>
       <summary>Show a preview of links</summary>

@@ -1240,3 +1240,32 @@ to refuse to shrink below it.
 * [ ] **An `m.sticker` sticker still fits too.** A sticker from the sticker
       picker in the same narrowed window scales down as before — this path
       was checked by harness and should already behave.
+
+## Chat bubbles — `doc/chat-bubbles.md`
+
+A _Chat Bubbles_ switch under Account Settings ▸ General ▸ Appearance,
+off by default. All of this is presentation; nothing goes over the wire.
+
+* [ ] **Off by default, nothing changed.** Before touching the switch, the
+      timeline looks exactly as it did yesterday.
+* [ ] **The switch moves the live timeline.** Flip it with a busy room open:
+      every message gains a bubble without reopening the room, and flipping
+      it back restores the flat rows.
+* [ ] **Your messages sit on the right**, in an accent-tinted bubble, with
+      no avatar and no name — just the timestamp above the first of a group
+      and the delivery checkmark beside it.
+* [ ] **Everybody else sits on the left**, avatar and name on the first
+      message of a group, bubbles hugging their text instead of spanning
+      the window.
+* [ ] **Reactions and the thread chip follow their bubble's side.** React
+      to one of your own bubbled messages: the pill sits at the right, and
+      a thread chip on an own root does too.
+* [ ] **Replies, images and code blocks live inside the bubble** without
+      the bubble breaking: a quoted reply draws above the message in the
+      same bubble, and a wide image stays within its rounded corners.
+* [ ] **Both themes read.** The neutral bubble is visible but quiet in
+      light and dark; the own bubble reads as yours in both.
+* [ ] **The thread view bubbles too**, since it is the same rows.
+* [ ] **A bubbled sticker is a known compromise:** it gets a bubble around
+      its transparency where Element strips it. Say whether it looks wrong
+      enough to earn the special case.
