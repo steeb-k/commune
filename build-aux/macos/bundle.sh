@@ -472,12 +472,23 @@ note "icon $(basename "$ICON_SRC")"
 PLIST_VERSION=$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*$/\1/')
 printf '%s' "$PLIST_VERSION" | grep -qE '^[0-9]+(\.[0-9]+)*$' || PLIST_VERSION=0
 
+# CFBundleVersion is not a version but a build number: Apple's model wants a
+# monotonic counter there, so that two builds can be told apart and ordered --
+# by LaunchServices when two copies are installed today, and by any updater or
+# TestFlight upload later. The commit count is exactly that counter, is
+# already tracked as one in doc/pages.state, and costs nothing at release
+# time. Outside a git checkout it falls back to the numeric prefix, which
+# stays valid, merely unordered between release candidates.
+BUILD_NUMBER=$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || true)
+[ -n "$BUILD_NUMBER" ] || BUILD_NUMBER="$PLIST_VERSION"
+
 sed -e "s|@APP_ID@|$APP_ID|g" \
     -e "s|@APP_NAME@|$APP_NAME|g" \
     -e "s|@EXECUTABLE@|$EXECUTABLE|g" \
     -e "s|@ICON@|$EXECUTABLE.icns|g" \
     -e "s|@VERSION@|$VERSION|g" \
     -e "s|@PLIST_VERSION@|$PLIST_VERSION|g" \
+    -e "s|@BUILD_NUMBER@|$BUILD_NUMBER|g" \
     -e "s|@MIN_OS@|$MIN_OS|g" \
     "$HERE/Info.plist.in" >"$CONTENTS/Info.plist"
 
