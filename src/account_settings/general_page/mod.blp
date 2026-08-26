@@ -135,6 +135,18 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
       title: _("Share When You Are Online");
       subtitle: _("Tell your homeserver that you are here while this app is running. It has no effect on a homeserver that does not keep presence, which most do not.");
     }
+
+    Adw.ActionRow identity_server_row {
+      title: _("Identity Server");
+      activatable: true;
+      activated => $edit_identity_server() swapped;
+
+      [suffix]
+      Gtk.Image {
+        icon-name: "go-next-symbolic";
+        accessible-role: presentation;
+      }
+    }
   }
 
   Adw.PreferencesGroup gif_search_group {

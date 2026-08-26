@@ -23,8 +23,11 @@ use super::AccountSettings;
 use crate::{
     Application,
     components::{ActionButton, ActionState, ButtonCountRow, CopyableRow, EditableAvatar},
+    gettext_f,
     prelude::*,
-    session::Session,
+    session::{
+        IdentityServerChoice, Session, identity_server_choice, set_identity_server_preference,
+    },
     spawn, spawn_tokio, toast,
     utils::{OngoingAsyncAction, TemplateCallbacks, klipy, media::FileInfo},
 };
@@ -74,6 +77,8 @@ mod imp {
         url_previews_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         share_presence_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        identity_server_row: TemplateChild<adw::ActionRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -233,6 +238,109 @@ mod imp {
                     }
                 )
             );
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.update_identity_server_row().await;
+                    }
+                )
+            );
+        }
+
+        /// Say which identity server would be used, and on whose word.
+        async fn update_identity_server_row(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let subtitle = match identity_server_choice(&session).await {
+                IdentityServerChoice::Account(base_url) => gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{server}, set on this account",
+                    &[("server", &base_url)],
+                ),
+                IdentityServerChoice::Declined => gettext("None, by choice on this account"),
+                IdentityServerChoice::Homeserver(base_url) => gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{server}, suggested by the homeserver",
+                    &[("server", &base_url)],
+                ),
+                IdentityServerChoice::None => gettext("None"),
+            };
+            self.identity_server_row.set_subtitle(&subtitle);
+        }
+
+        /// Ask which identity server to use.
+        #[template_callback]
+        async fn edit_identity_server(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let dialog = adw::AlertDialog::builder()
+                .heading(gettext("Identity Server"))
+                .body(gettext(
+                    "An identity server is only used to invite somebody by email address. Leave the field empty to use none at all.",
+                ))
+                .build();
+
+            let entry = gtk::Entry::builder()
+                .placeholder_text("https://…")
+                .activates_default(true)
+                .build();
+            if let IdentityServerChoice::Account(base_url) = identity_server_choice(&session).await
+            {
+                entry.set_text(&base_url);
+            }
+            dialog.set_extra_child(Some(&entry));
+
+            dialog.add_responses(&[
+                ("cancel", &gettext("Cancel")),
+                ("default", &gettext("Use the Homeserver’s")),
+                ("save", &gettext("Save")),
+            ]);
+            dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("save"));
+            dialog.set_close_response("cancel");
+
+            let preference = match dialog.choose_future(Some(&*self.obj())).await.as_str() {
+                "save" => {
+                    let text = entry.text();
+                    let text = text.trim();
+                    if text.is_empty() {
+                        // An empty field is a choice: no identity server.
+                        ruma::JsOption::Null
+                    } else {
+                        ruma::JsOption::Some(text.to_owned())
+                    }
+                }
+                "default" => ruma::JsOption::Undefined,
+                _ => return,
+            };
+
+            match set_identity_server_preference(&session, preference).await {
+                Ok(()) => {
+                    self.update_identity_server_row().await;
+                }
+                Err(crate::session::IdentityServerError::NoServer) => {
+                    toast!(
+                        self.obj(),
+                        gettext("That server does not answer as an identity server")
+                    );
+                }
+                Err(crate::session::IdentityServerError::Other) => {
+                    toast!(
+                        self.obj(),
+                        gettext("Could not save the identity server preference")
+                    );
+                }
+            }
         }
 
         /// Set the ancestor [`AccountSettings`].
