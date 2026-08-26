@@ -111,6 +111,12 @@ menu event-actions-menu {
 
   section {
     item {
+      label: _("Try Sending _Again");
+      action: "event.retry-send";
+      hidden-when: "action-missing";
+    }
+
+    item {
       label: _("_Discard");
       action: "event.cancel-send";
       hidden-when: "action-missing";
