@@ -1,15 +1,17 @@
 use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
+use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, graphene};
-use matrix_sdk::ruma::EventId;
+use matrix_sdk::{room::knock_requests::KnockRequest, ruma::EventId};
 use matrix_sdk_ui::timeline::TimelineEventItemId;
 use ruma::{
     OwnedEventId,
     api::client::receipt::create_receipt::v3::ReceiptType,
     events::room::{message::MessageType, power_levels::PowerLevelAction},
 };
+use tokio::task::AbortHandle;
 use tracing::{error, warn};
 
 mod call_row;
@@ -57,7 +59,7 @@ use crate::{
         TargetRoomCategory, Timeline, VirtualItem, VirtualItemKind, can_call,
         is_cannot_leave_server_notice_room,
     },
-    spawn, toast,
+    spawn, spawn_tokio, toast,
     utils::{
         BoundObject, GroupingListGroup, GroupingListModel, LoadingState, TemplateCallbacks,
         key_bindings,
@@ -187,7 +189,11 @@ mod imp {
         permissions_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
-        knock_items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The pending knock requests of the current room, from the SDK's
+        /// subscription.
+        knock_requests: RefCell<Vec<KnockRequest>>,
+        /// The abort handles of the knock requests subscription.
+        knock_requests_aborts: RefCell<Vec<AbortHandle>>,
         window_active_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -796,13 +802,12 @@ mod imp {
                 }
             }
 
-            if let Some(members) = self.room_members.take()
-                && let Some(handler) = self.knock_items_changed_handler.take()
-            {
-                members
-                    .membership_list(MembershipListKind::Knock)
-                    .disconnect(handler);
+            self.room_members.take();
+
+            for abort_handle in self.knock_requests_aborts.take() {
+                abort_handle.abort();
             }
+            self.knock_requests.take();
 
             self.timeline.disconnect_signals();
         }
@@ -837,19 +842,15 @@ mod imp {
                 // events use the same list.
                 let room_members = room.get_or_create_members();
 
-                let knock_items_changed_handler = room_members
-                    .membership_list(MembershipListKind::Knock)
-                    .connect_items_changed(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |_, _, _, _| {
-                            imp.update_pending_knocks();
-                        }
-                    ));
-                self.knock_items_changed_handler
-                    .replace(Some(knock_items_changed_handler));
-
                 self.room_members.replace(Some(room_members));
+
+                spawn!(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.watch_knock_requests().await;
+                    }
+                ));
 
                 let membership_handler = room.own_member().connect_membership_notify(clone!(
                     #[weak(rename_to = imp)]
@@ -1919,6 +1920,57 @@ mod imp {
                 .action_set_enabled("room-history.invite-members", can_invite);
         }
 
+        /// Watch the knock requests of the current room.
+        ///
+        /// The SDK's subscription folds the member events and the list of
+        /// already-seen requests into one stream, which is what lets the
+        /// banner stay quiet about a knock already reviewed on this device —
+        /// the seen list lives in the SDK's local store.
+        async fn watch_knock_requests(&self) {
+            let Some(room) = self.room() else {
+                return;
+            };
+
+            let matrix_room = room.matrix_room().clone();
+            let handle =
+                spawn_tokio!(async move { matrix_room.subscribe_to_knock_requests().await });
+            let (stream, cleanup_handle) = match handle.await.expect("task was not aborted") {
+                Ok(subscription) => subscription,
+                Err(error) => {
+                    error!("Could not subscribe to the knock requests: {error}");
+                    return;
+                }
+            };
+
+            if self.room() != Some(room) {
+                // The room changed while subscribing.
+                cleanup_handle.abort();
+                return;
+            }
+
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let fut = stream.for_each(move |requests| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.imp().knock_requests.replace(requests);
+                                obj.imp().update_pending_knocks();
+                            }
+                        });
+                    });
+                }
+            });
+            let stream_handle = spawn_tokio!(fut);
+
+            self.knock_requests_aborts.replace(vec![
+                stream_handle.abort_handle(),
+                cleanup_handle.abort_handle(),
+            ]);
+        }
+
         // Update the pending knocks according to the current state.
         fn update_pending_knocks(&self) {
             if self.room().is_none_or(|room| {
@@ -1932,12 +1984,17 @@ mod imp {
                 return;
             }
 
-            let Some(members) = self.room_members.borrow().clone() else {
-                self.pending_knocks_banner.set_revealed(false);
-                return;
-            };
-
-            let n = members.membership_list(MembershipListKind::Knock).n_items();
+            // Only the requests not yet reviewed on this device raise the
+            // banner: a knock already looked at stays available on the
+            // members page without nagging.
+            let n = u32::try_from(
+                self.knock_requests
+                    .borrow()
+                    .iter()
+                    .filter(|request| !request.is_seen)
+                    .count(),
+            )
+            .unwrap_or(u32::MAX);
             let reveal = n > 0;
 
             if reveal {
@@ -1972,11 +2029,34 @@ mod imp {
         }
 
         /// View the list of pending knock requests.
+        ///
+        /// Viewing them is reviewing them: every request the banner counted
+        /// is marked as seen, so the banner stands down until somebody new
+        /// knocks. The seen list is the SDK's and local to this device.
         #[template_callback]
         fn view_pending_knocks(&self) {
             self.open_room_details(room_details::InitialView::Members(
                 MembershipListKind::Knock,
             ));
+
+            let unseen: Vec<KnockRequest> = self
+                .knock_requests
+                .borrow()
+                .iter()
+                .filter(|request| !request.is_seen)
+                .cloned()
+                .collect();
+            if unseen.is_empty() {
+                return;
+            }
+
+            spawn_tokio!(async move {
+                for request in unseen {
+                    if let Err(error) = request.mark_as_seen().await {
+                        warn!("Could not mark a knock request as seen: {error}");
+                    }
+                }
+            });
         }
     }
 }
