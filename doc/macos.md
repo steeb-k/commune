@@ -36,6 +36,18 @@ macOS 26.
 There is now a **relocatable `Commune.app`**, and a `.dmg` and a `.tar.gz` around it. It launches
 from a shell with nothing exported, and loads no library from outside itself.
 
+**The Windows port and the feature rounds behind it merged clean under this port.** The first
+macOS build after the merge (`cdc9b942` and what followed) tripped over exactly two things, both
+fixed since: `build-aux/cargo-build.sh` — new, shared, and executed directly by `src/meson.build` —
+arrived without its executable bit, which only NTFS forgives (`6d3448e4`), and this machine's
+clippy raised six lints no machine in the merge saw (`702526e3`). With those settled the whole bar
+passes again on macOS 26: `cargo check`, clippy, fmt, `cargo nextest run` (148 tests),
+`meson test`, `meson compile` through the new wrapper, and `macos-bundle` — a 339 MB development
+bundle, deployment floor still 11.0, reference audit still clean, and every GStreamer plugin a
+call needs inside it (`sctp` is absent, and only data channels — which Matrix 1:1 calls never
+open — would miss it). What the merge owes this platform is eyeball time, not code: none of the
+200 checks in `doc/eyeball-tests.md` has been run here — see [Not done yet](#not-done-yet).
+
 The environment it all needs is created by a script in `build-aux/macos/`.
 
 | Area | State |
@@ -618,9 +630,17 @@ subprocess, without the process boundary. The thread exits when the last `Image`
 It reads one frame ahead when it starts, because a GIF container has no cheap frame count and a
 single-frame GIF has to be reported as a still image rather than a one-frame animation.
 
-**Formats not supported on macOS: SVG, HEIC, AVIF and JXL.** They surface in the UI as "Image
+**Formats not supported on macOS: HEIC, AVIF and JXL.** They surface in the UI as "Image
 format not supported". BMP, GIF, ICO, JPEG, PNG, APNG, TIFF and WebP all work, animated where the
-format allows. An ImageIO-backed decoder would close the gap and is the obvious later option.
+format allows. SVG came off this list with the Windows port: anything the `image` crate does not
+recognise is now handed to GdkPixbuf, which brings whatever loaders the platform ships, and the
+conda-forge prefix ships librsvg's — so an SVG renders as a still instead of an error. It is the
+only format the fallback gains here, because conda-forge packages no HEIC or AVIF loader, where
+MSYS2 on Windows has both. Two caveats. A dev prefix created before the fallback existed has a
+`loaders.cache` without the SVG loader — re-run the setup script (or its
+`gdk-pixbuf-query-loaders` line) before concluding the fallback is broken. And the fallback's
+tests are `#[gtk::test]`, which macOS cannot run, so this path is eyeball-only here. An
+ImageIO-backed decoder would close the remaining gap and is the obvious later option.
 
 **Video and audio playback.** `GtkVideo` plays a file with `GtkMediaFile`, and `GtkMediaFile` has
 no backend of its own: GTK 4.22 compiles a GStreamer one into `libgtk`, but only when the
@@ -841,6 +861,38 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
 ## Not done yet
 
+* **Nothing from the Windows merge has been eyeballed here.** The merge brought spaces, peeking,
+  access requests, pinned messages, presence, in-app registration and working calls, and all 200
+  checks in `doc/eyeball-tests.md` were struck on Linux — none on macOS. The checklist is not
+  platform-tagged, so a macOS pass is a genuinely fresh run. The rows that exercise macOS-only
+  machinery deserve to go first:
+
+  * **The startup reorder** (`033e6b04`) moved GTK's own init, the gresources, the colour scheme
+    and `macos_text_scale` out of `main()` into `Application::startup`, which only the winning
+    instance runs. It was verified on Windows and Arch, not here. The launch itself, a second
+    launch handing off to the first, the `matrix:` URL warm and cold, a notification tap, the
+    menu bar and the text size are all downstream of it.
+  * **SVG through the pixbuf fallback** — see [What differs from Linux](#what-differs-from-linux);
+    the tests for it cannot run on macOS, so a sticker or timeline SVG has to be looked at.
+  * **A call, both directions.** The webrtc plugins this environment builds have never carried a
+    real call; the RGBA capsfilter in the pipeline exists for `avfvideosrc`, which makes a Mac the
+    machine that can regress it.
+* **Calls do not ring on macOS**, by omission rather than decision: `ringtone.rs` resolves the
+  freedesktop sound theme event `phone-incoming-call` through the XDG data directories, and a Mac
+  has no such theme, so `sound_file()` finds nothing and the call is silent until the notification
+  is noticed. Bundling an `.oga` under `Contents/Resources/share/sounds/` would satisfy the
+  existing lookup without a platform branch.
+* **A call notification carries no Answer and Decline buttons on macOS.** The new
+  `send_notification_with_buttons` drops the buttons on the macOS arm —
+  `UNNotificationAction` is the missing wiring — so only the banner click works, which shows the
+  call rather than answering it.
+* **The local test homeserver has not run on macOS.** `testing/local-homeserver.sh` uses GNU
+  `sed -i` (BSD sed wants `sed -i ''`), and it gives coturn `--network=host`, which inside
+  podman's Linux VM is the VM's network, not the Mac's — the split-horizon failure the script
+  itself warns about. Synapse's own container uses `-p` and should be fine. The eyeball run
+  depends on this script, so it is first in line. `hooks/doc-freshness` has the same GNU habits
+  (`sed -i`, `sha256sum`, bash-4 `mapfile`) — its `--staged` pre-commit path survives on macOS,
+  but `--fix` and `--published` do not.
 * **M3 is mostly proven.** The menu bar, the File and View items, the hidden hamburger, the
   `matrix:` scheme warm and cold, session restore, the Keychain, video and audio have all been
   seen working. What is left on the [Testing by hand](#testing-by-hand) list is the Command keys,
