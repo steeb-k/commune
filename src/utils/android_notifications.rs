@@ -77,12 +77,18 @@ const CHANNEL_ID: &str = "im.received";
 
 /// The name of the drawable used as the status bar icon.
 ///
-/// pixiewood generates this from `data/icons/*-symbolic.svg` for the launcher's
-/// monochrome layer (`build-aux/android/io.github.steeb_k.Commune.xml`). A
-/// small icon is masked down to its alpha channel and tinted by the system, so
-/// a monochrome silhouette is exactly the right shape for one — the full-color
-/// launcher icon would come out as a white blob.
-const SMALL_ICON_NAME: &str = "ic_launcher_monochrome";
+/// `build-aux/android/patch-notification-icon.sh` writes this between
+/// `pixiewood generate` and `pixiewood build`, out of the monochrome layer
+/// pixiewood generates from `data/icons/*-symbolic.svg`. A small icon is
+/// masked down to its alpha channel and tinted by the system, so a monochrome
+/// silhouette is exactly the right shape for one — the full-color launcher
+/// icon would come out as a white blob.
+///
+/// Not `ic_launcher_monochrome` itself, which is that layer unmodified and
+/// carries the adaptive launcher icon's inset: it draws the glyph at 45% of
+/// its canvas, which is right for a launcher icon and about half the diameter
+/// the shade's badge expects. The patch script's header has the measurements.
+const SMALL_ICON_NAME: &str = "ic_notification";
 
 /// `android.R.drawable.stat_notify_chat`, used when the drawable above is not
 /// there.
