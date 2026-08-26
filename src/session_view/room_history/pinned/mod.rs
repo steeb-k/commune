@@ -103,7 +103,7 @@ mod imp {
             self.events.get_or_init(|| {
                 // A pinned timeline carries date dividers like any other. They
                 // say nothing here, where every row already shows its date.
-                let filter = gtk::CustomFilter::new(|item| item.is::<Event>());
+                let filter = gtk::CustomFilter::new(ObjectExt::is::<Event>);
                 gtk::FilterListModel::new(None::<gio::ListModel>, Some(filter))
             })
         }

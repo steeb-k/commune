@@ -231,6 +231,7 @@ mod imp {
         }
 
         /// Initialize the underlying SDK timeline.
+        #[allow(clippy::too_many_lines)]
         pub(super) async fn init_matrix_timeline(&self) {
             let room = self.room();
 
