@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; 9c85de03</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; a885013c</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a><a href="#s11" data-for="s11"><span>Notification rules</span><b>6</b></a><a href="#s12" data-for="s12"><span>Email and phone on the account</span><b>7</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -3143,6 +3143,175 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
 <div class="txt"><span class="tag seen">Seen</span><strong>The timeline line, which has never been drawn.</strong> <code>show_in_timeline()</code> dropped <code>m.room.server_acl</code> before it could reach a row; that was fixed on 23 August 2026 alongside pinned messages. Change an ACL and check the sentence appears — &quot;Alice blocked evil.example from taking part in this room&quot; for a deny-list-only change, &quot;changed which servers can take part in this room&quot; otherwise. Needs <code>testing/local-homeserver.sh</code>; do not do this to a real room.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s11" data-open="1" data-checks="6"><header><h2>Notification rules</h2><span class="src">doc/notifications.md</span><span class="cnt" data-count>6 left</span></header><div class="body"><p>A <em>Notify Me About</em> group on Account Settings ▸ Notifications, between the global defaults and the keywords: four switches for mentions of your name, @room messages, room invites and incoming calls. Everything else on that page predates this and was seen long ago.</p><div class="chk" data-id="k6e5ce544dd" data-state="" data-lead="The four switches draw and read on.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The four switches draw and read on.</strong> On a fresh account all four should be on — they mirror the server&#x27;s default rules — and none should flicker off and back on for more than the moment the page takes to load.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kc2b4902ff1" data-state="" data-lead="Flipping one sticks.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Flipping one sticks.</strong> Turn <em>Room Invites</em> off: the row spins, settles off, and stays off after closing and reopening the settings. From another client (or <code>curl</code> on <code>/_matrix/client/v3/pushrules/global/override/.m.rule.invite_for_me/enabled</code>), the rule reads disabled.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k3786590375" data-state="" data-lead="The mention switches move the deprecated rules too.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The mention switches move the deprecated rules too.</strong> Turn <em>Mentions of My Name</em> off and check from another client that <code>.m.rule.is_user_mention</code>, <code>.m.rule.contains_display_name</code> and <code>.m.rule.contains_user_name</code> are all disabled — the SDK keeps the Matrix 1.7 predecessors in step, and this is the check that it really does.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k9faf35ff18" data-state="" data-lead="A change from elsewhere moves the switch here.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A change from elsewhere moves the switch here.</strong> With the page open, disable <code>.m.rule.is_room_mention</code> from another client: the @room switch should follow without reopening the page.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k09b9d770f1" data-state="" data-lead="The group disables with the rest.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The group disables with the rest.</strong> Turn off <em>Enable for This Account</em> or <em>Enable for This Session</em>: the group greys out like the keywords do, and comes back.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k39a119121d" data-state="" data-lead="The behaviour is real, not just the switch.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The behaviour is real, not just the switch.</strong> With the global setting on mentions-only and <em>Mentions of My Name</em> off, a message mentioning you from bob must <strong>not</strong> notify; turn the switch back on and it must. The invite and call switches can be checked the same way with an invite from bob and a call from bob.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s12" data-open="1" data-checks="7"><header><h2>Email and phone on the account</h2><span class="src">doc/email-and-phone.md</span><span class="cnt" data-count>7 left</span></header><div class="body"><p><em>Email and Phone Numbers</em> under Account Settings ▸ General, beside <em>Change Password</em>. <strong>It only appears on a password-auth homeserver</strong> — on matrix.org the browser&#x27;s own account page covers it, so use the local harness. Synapse there has no SMTP, so the add flow can only be checked up to the email that never arrives; the full flow needs a homeserver that sends mail.</p><div class="chk" data-id="k9023a4a1ff" data-state="" data-lead="The row is there against the harness">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The row is there against the harness</strong> and opens a page listing the account&#x27;s email addresses. A fresh alice has none, so the list is just the <em>Add Email Address</em> entry; the phone group must be absent entirely.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k798fad4667" data-state="" data-lead="The row is not there on matrix.org">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The row is not there on matrix.org</strong> — its account management is in the browser, and <em>Manage Account</em> is what shows instead.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k6d9c98500b" data-state="" data-lead="Adding starts the flow.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Adding starts the flow.</strong> Type an address, press add: against the harness the toast should say the validation email could not be sent (Synapse has no SMTP) — not a crash, not a silent nothing.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ka6c759b14b" data-state="" data-lead="A nonsense address cannot be submitted.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A nonsense address cannot be submitted.</strong> Without an @ between two non-empty halves, the add button stays inhibited.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k1fd680f391" data-state="" data-lead="The full flow, on a homeserver that sends email:">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><span class="tag key" title="The ledger names this one as carrying the most weight">Key</span><strong>The full flow, on a homeserver that sends email:</strong> request, open the link, <em>Continue</em>, give the password to the auth dialog, and the address appears in the list. Pressing <em>Continue</em> <strong>before</strong> opening the link must toast &quot;Open the link in the email first, then try again&quot; and offer the dialog again — that is the check most worth doing, since it is the path every real user will hit at least once.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k5ff6de2bc6" data-state="" data-lead="Removing asks first and says what is lost.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Removing asks first and says what is lost.</strong> With an address on the account (<code>testing/local-homeserver.sh</code> can add one with the admin API, or use the full-flow server), the remove button raises a dialog naming the address; confirming removes it from the list and, checked from another client, from the account.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kb913b253ce" data-state="" data-lead="A phone number from elsewhere is listed and removable.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A phone number from elsewhere is listed and removable.</strong> Add an msisdn to alice through the Synapse admin API, reopen the page: a <em>Phone Numbers</em> group appears, its description says why one cannot be added here, and removing it works.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">

@@ -308,10 +308,35 @@ so the model's imp writes it by hand — the `VisualMediaRowModel` precedent.
 `spec-gaps.html` and to a full mark on the comparison page; with polls out by
 decision, "Everyone but us" is down to that single off-spec row.
 
-**Next: round 5 — push rules and email on the account.** Before scoping it,
-re-read its entry in the decided rounds below and `doc/sdk-unused.md`: much
-of `NotificationSettings` already has call sites, so check what the settings
-UI actually draws first — the round may be smaller than a round.
+**Round 5 began with the check the plan ordered, and the check was right.**
+The notifications page already draws the account and session switches, the
+three global defaults, and keyword add/remove — all upstream Fractal's, at
+the fork point — and the room details page already offers the four per-room
+modes. The push half of round 5 therefore shrank to one group: **the
+predefined rules**, four `SwitchLoadingRow`s for mentions of you, @room,
+invites and incoming calls, over `is_push_rule_enabled` /
+`set_push_rule_enabled`. The SDK special-cases the two mention rules and
+keeps their deprecated pre-1.7 predecessors in step, which is why they are
+set through `NotificationSettings` rather than raw requests. That completed
+the editable-push-rules surface and took the comparison row to a full mark.
+`doc/notifications.md` is the ledger.
+
+**Round 5's second half is built the same day — email on the account.**
+`ThirdPartyIdsSubpage` off the general page, beside _Change Password_ and
+behind the same browser-management gate, so it never appears on matrix.org.
+Every identifier is listed off `GET /account/3pid`; an email address is
+added with the request-token flow the password reset established (same
+client-secret bookkeeping, same `send_attempt` bump on retry) and
+`/account/3pid/add` through `AuthDialog`'s UIAA; removal confirms and names
+what is lost. Phones are listed and removable, never addable — the stance
+from the round's scoping. `M_THREEPID_AUTH_FAILED` is answered as a "not
+yet" with the dialog offered again, mirroring the reset page's treatment of
+the unopened link. `doc/email-and-phone.md` is the ledger. Round 5 is
+finished; the account row sits in the partial column by decision (the
+msisdn-add half), and the push row closed whole.
+
+**Next: round 6 — voice message recording (MSC3245), mutual rooms, policy
+servers.** See the decided rounds below before scoping.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
@@ -415,6 +440,8 @@ drift: they go in the feature's own commit.**
 | 9. Threads, slice 1 | `fabc003f` | done, not yet seen |
 | 10. Threads, slice 2 | `6a2699d9` | done, not yet seen |
 | 11. Threads, slice 3 | `9c85de03` | done, not yet seen |
+| R5. Predefined notification rules | hash goes in with the masthead refresh | done, not yet seen |
+| R5. Email and phone on the account | hash goes in with the masthead refresh | done, not yet seen |
 
 **Round 2 came out slightly differently from the plan, and the code is right:**
 

@@ -62,6 +62,15 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
       action-target: "'change-password'";
     }
 
+    Adw.ButtonRow third_party_ids_row {
+      visible: false;
+      selectable: false;
+      title: _("Email and Phone Numbers");
+      end-icon-name: "go-next-symbolic";
+      action-name: "account-settings.show-subpage";
+      action-target: "'third-party-ids'";
+    }
+
     Adw.ButtonRow manage_account_row {
       visible: false;
       selectable: false;

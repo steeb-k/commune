@@ -7,6 +7,7 @@ account_settings/encryption_page/mod.blp
 account_settings/general_page/deactivate_account_subpage.blp
 account_settings/general_page/log_out_subpage.blp
 account_settings/general_page/mod.blp
+account_settings/general_page/third_party_ids_subpage.blp
 account_settings/image_packs_page/mod.blp
 account_settings/mod.blp
 account_settings/notifications_page.blp

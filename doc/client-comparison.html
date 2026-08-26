@@ -1052,8 +1052,8 @@
 
     { f: "Email and phone on the account", g: "Account", kind: "spec", tag: "Spec",
       note: "Adding, seeing and removing third-party identifiers.",
-      c: { commune:0, fractal:0, ew:1, ex:-1, ec:1, sc:-1, fc:1, nh:-1, nc:1, ci:1 },
-      cn: { commune:"Account settings defers to “Manage Account” in a browser." } },
+      c: { commune:0.5, fractal:0, ew:1, ex:-1, ec:1, sc:-1, fc:1, nh:-1, nc:1, ci:1 },
+      cn: { commune:"Since 26 August 2026: every identifier is listed, an email address can be added through the request-token flow and the UIAA dialog, and anything can be removed. A phone number cannot be added — verifying one takes an SMS almost no homeserver can send, a stance rather than a backlog — and on an OAuth homeserver the browser's own account page covers all of it." } },
 
     { f: "Invite someone by email", g: "Account", kind: "spec", tag: "Third-party invites",
       note: "Inviting a person who has not signed up yet.",
@@ -1111,8 +1111,9 @@
       c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
 
     { f: "Notification rules you can edit", g: "Server", kind: "spec", tag: "Push",
-      c: { commune:0.5, fractal:0.5, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
-      cn: { commune:"Per-room and global toggles; the underlying push rules are not exposed.",
+      c: { commune:1, fractal:0.5, ew:1, ex:0.5, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Since 26 August 2026, the whole editable surface: global defaults, keyword rules, per-room modes, and switches for the predefined rules — mentions of you, @room, invites, incoming calls — with the deprecated pre-1.7 mention rules kept in step by the SDK.",
+            fractal:"Global defaults, keywords and per-room modes; the predefined rules — mentions, @room, invites, calls — are not exposed.",
             ex:"Deliberately simplified." } },
 
     { f: "Rooms in common with a user", g: "Server", kind: "spec", tag: "Mutual rooms",

@@ -492,7 +492,7 @@
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
       Every module in the v1.19 Client-Server API, checked against the tree. Eight gaps:
-      six with no implementation at all, two implemented partly. Effort is measured in UI
+      five with no implementation at all, three implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -521,18 +521,21 @@
       and drafts scoped to it, threaded replies have left the main timeline, and the third
       slice — the thread list, off the <code>/threads</code> endpoint — landed the same day,
       which moves Threads into the implemented column. The last whole module this client did
-      not speak is spoken.
+      not speak is spoken. Round 5 followed the same day: the predefined notification rules
+      got their switches, and the identifiers on the account became visible on a
+      password-auth homeserver — an email address can be added and removed, a phone number
+      only seen and removed, the stance that keeps that row partial.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">6</div>
+      <div class="score-num">5</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">2</div>
+      <div class="score-num">3</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
@@ -576,7 +579,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">6 modules</span></h2>
+      <h2>Absent <span class="tick gone">5 modules</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -597,13 +600,6 @@
             <td class="state">The invite subpage takes Matrix user IDs only. No identity-server flow, so nobody can be invited who hasn't got an account yet — a real gap when onboarding people.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Email and phone on the account</span></td>
-            <td class="mod">Client-Server API</td>
-            <td class="state">Account settings shows the user ID, display name, avatar and homeserver. Third-party identifiers can't be added, seen or removed — the page defers to "Manage Account" in a browser.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
           <tr>
             <td><span class="feat">Moderation policy lists</span></td>
@@ -640,10 +636,12 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">2 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">3 modules</span></h2>
       <p class="sec-sub">
-        Something is there, but it is narrower than the spec says. Every one of these is a
-        gap in coverage rather than a choice: the last deliberate departure, image packs
+        Something is there, but it is narrower than the spec says. Two are gaps in coverage;
+        the third — the account's identifiers — is narrower by decision, since adding a phone
+        number takes SMS infrastructure almost no homeserver runs. The last deliberate
+        departure before it, image packs
         writing unstable names, was closed on 22 August 2026. Spaces passed through this column
         and out of it in August 2026; threads passed through it in a single day, arriving from
         the absent side on 26 August 2026 with its first slice and leaving with its third.
@@ -665,6 +663,13 @@
         </thead>
         <tbody>
           <tr>
+            <td><span class="feat">Email and phone on the account</span></td>
+            <td class="mod">Client-Server API</td>
+            <td class="state">Since 26 August 2026, a subpage off the account settings lists every identifier on the account; an email address can be added — the request-token flow, then <code>/account/3pid/add</code> through the UIAA dialog — and any identifier can be removed behind a confirmation that says what is lost. What keeps the row here: a phone number can only be seen and removed, never added, because validating one takes a text message and the infrastructure to send one is not something a client can assume — a stance, not a backlog. On a homeserver whose account management is in the browser (matrix.org included) the whole page defers there, which is the spec's own delegation.</td>
+            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+          </tr>
+          <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
             <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Arbitrary user tags aren't supported and the <code>order</code> field is neither read nor written, so manual ordering is lost across clients.</td>
@@ -685,7 +690,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">24 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">26 touch the protocol</span></h2>
       <p class="sec-sub">
 307 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
@@ -713,6 +718,18 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Email and phone on the account</span></td>
+            <td class="mod">Client-Server API</td>
+            <td class="state">A subpage off the account settings lists the identifiers from <code>GET /account/3pid</code>. An email address is added the way the standard lays it out: <code>requestToken</code> with a generated client secret, the link in the email, then <code>/account/3pid/add</code> through the UIAA dialog — pressing continue before opening the link is answered as a "not yet", not a failure, and asking again for the same address bumps <code>send_attempt</code> so the homeserver resends rather than starting over. Removal is <code>/account/3pid/delete</code> behind a confirmation naming what is lost. The <code>m.3pid_changes</code> capability gates the affordances; a homeserver that forbids changes still gets the list. Identity-server binding is untouched — the identifiers are only between the account and its homeserver.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Only reachable on a password-auth homeserver; matrix.org manages this in the browser.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">The predefined notification rules</span></td>
+            <td class="mod">Push Notifications</td>
+            <td class="state">Upstream carried the account and session switches, the global defaults, keyword rules and per-room modes; what it never exposed were the predefined rules that apply across every room. Four switches on the notifications page now toggle them: mentions of you (<code>.m.rule.is_user_mention</code>), messages addressing the whole room (<code>.m.rule.is_room_mention</code>), room invites (<code>.m.rule.invite_for_me</code>) and incoming calls (<code>.m.rule.call</code>). The two mention rules are set through the SDK, which keeps their deprecated Matrix&nbsp;1.6 predecessors in step so older clients read the same answer. Raw rule editing — custom conditions, tweak actions, sounds — is offered nowhere in the field as UI and not here either.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">Threads</span></td>
             <td class="mod">Threading</td>
@@ -1326,7 +1343,9 @@
     read it finally read without joining, a restricted join rule made creatable rather than only
     preservable, a room put into a space for the first time and taken back out of one, a space made
     rather than only found, a thread root given its reply count and then the thread behind it
-    opened, read, written in place and listed with every other thread of its room,
+    opened, read, written in place and listed with every other thread of its room, the
+    predefined notification rules given their switches, the account's email addresses made
+    visible, addable and removable where the homeserver does not manage them in the browser,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the

@@ -1096,3 +1096,71 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
 * [ ] **Against the real world.** On a matrix.org account, open the threads
       list of a busy room that uses threads: rows with plausible counts and
       previews, and scrolling to the bottom loads older threads.
+
+## Notification rules — `doc/notifications.md`
+
+A _Notify Me About_ group on Account Settings ▸ Notifications, between the
+global defaults and the keywords: four switches for mentions of your name,
+@room messages, room invites and incoming calls. Everything else on that page
+predates this and was seen long ago.
+
+* [ ] **The four switches draw and read on.** On a fresh account all four
+      should be on — they mirror the server's default rules — and none should
+      flicker off and back on for more than the moment the page takes to
+      load.
+* [ ] **Flipping one sticks.** Turn _Room Invites_ off: the row spins,
+      settles off, and stays off after closing and reopening the settings.
+      From another client (or `curl` on
+      `/_matrix/client/v3/pushrules/global/override/.m.rule.invite_for_me/enabled`),
+      the rule reads disabled.
+* [ ] **The mention switches move the deprecated rules too.** Turn
+      _Mentions of My Name_ off and check from another client that
+      `.m.rule.is_user_mention`, `.m.rule.contains_display_name` and
+      `.m.rule.contains_user_name` are all disabled — the SDK keeps the
+      Matrix 1.7 predecessors in step, and this is the check that it really
+      does.
+* [ ] **A change from elsewhere moves the switch here.** With the page open,
+      disable `.m.rule.is_room_mention` from another client: the @room switch
+      should follow without reopening the page.
+* [ ] **The group disables with the rest.** Turn off _Enable for This
+      Account_ or _Enable for This Session_: the group greys out like the
+      keywords do, and comes back.
+* [ ] **The behaviour is real, not just the switch.** With the global setting
+      on mentions-only and _Mentions of My Name_ off, a message mentioning
+      you from bob must **not** notify; turn the switch back on and it must.
+      The invite and call switches can be checked the same way with an invite
+      from bob and a call from bob.
+
+## Email and phone on the account — `doc/email-and-phone.md`
+
+_Email and Phone Numbers_ under Account Settings ▸ General, beside _Change
+Password_. **It only appears on a password-auth homeserver** — on matrix.org
+the browser's own account page covers it, so use the local harness. Synapse
+there has no SMTP, so the add flow can only be checked up to the email that
+never arrives; the full flow needs a homeserver that sends mail.
+
+* [ ] **The row is there against the harness** and opens a page listing the
+      account's email addresses. A fresh alice has none, so the list is just
+      the _Add Email Address_ entry; the phone group must be absent entirely.
+* [ ] **The row is not there on matrix.org** — its account management is in
+      the browser, and _Manage Account_ is what shows instead.
+* [ ] **Adding starts the flow.** Type an address, press add: against the
+      harness the toast should say the validation email could not be sent
+      (Synapse has no SMTP) — not a crash, not a silent nothing.
+* [ ] **A nonsense address cannot be submitted.** Without an @ between two
+      non-empty halves, the add button stays inhibited.
+* [ ] **The full flow, on a homeserver that sends email:** request, open the
+      link, _Continue_, give the password to the auth dialog, and the address
+      appears in the list. Pressing _Continue_ **before** opening the link
+      must toast "Open the link in the email first, then try again" and offer
+      the dialog again — that is the check most worth doing, since it is the
+      path every real user will hit at least once.
+* [ ] **Removing asks first and says what is lost.** With an address on the
+      account (`testing/local-homeserver.sh` can add one with the admin API,
+      or use the full-flow server), the remove button raises a dialog naming
+      the address; confirming removes it from the list and, checked from
+      another client, from the account.
+* [ ] **A phone number from elsewhere is listed and removable.** Add an
+      msisdn to alice through the Synapse admin API, reopen the page: a
+      _Phone Numbers_ group appears, its description says why one cannot be
+      added here, and removing it works.

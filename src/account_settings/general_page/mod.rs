@@ -12,10 +12,12 @@ use tracing::error;
 mod change_password_subpage;
 mod deactivate_account_subpage;
 mod log_out_subpage;
+mod third_party_ids_subpage;
 
 pub use self::{
     change_password_subpage::ChangePasswordSubpage,
     deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
+    third_party_ids_subpage::ThirdPartyIdsSubpage,
 };
 use super::AccountSettings;
 use crate::{
@@ -50,6 +52,8 @@ mod imp {
         user_sessions_row: TemplateChild<ButtonCountRow>,
         #[template_child]
         change_password_row: TemplateChild<adw::ButtonRow>,
+        #[template_child]
+        third_party_ids_row: TemplateChild<adw::ButtonRow>,
         #[template_child]
         manage_account_row: TemplateChild<adw::ButtonRow>,
         #[template_child]
@@ -301,6 +305,11 @@ mod imp {
                 .set_editable(capabilities_data.can_change_displayname);
             self.change_password_row
                 .set_visible(!has_account_management_url && capabilities_data.can_change_password);
+            // On a homeserver whose account management is in the browser, the
+            // identifiers are managed there — the same page the row below
+            // opens.
+            self.third_party_ids_row
+                .set_visible(!has_account_management_url);
             self.manage_account_row
                 .set_visible(has_account_management_url);
             self.deactivate_account_button
