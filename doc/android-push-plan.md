@@ -97,16 +97,17 @@ its main loop live and `android.rs` initialized the ordinary way; the receiver's
 handing the message across, and `writeResources()` has already run (harmless since S5 moved
 everything to `no_backup`, but it is a cost every wake pays).
 
-What that trades away is lightness — a push wake boots all of Commune — and what it leaves open is
-what a window-less start does: with no `Activity`, does anything fire `activate` and try to
-present a window (Android blocks background `Activity` starts since 10, so the attempt would be
-discarded — but what does GDK do with the refusal?), or does the application idle in its main loop
-under the glue's `g_application_hold` with no session restored? The first measurement of step 3,
-gated only on step 1's receiver existing. Budget-wise the spec helps: the distributor raises the
-app to foreground importance for five seconds around delivery, and a connector may expose a
-`RAISE_TO_FOREGROUND`-bindable service when it needs longer; if neither is enough for a cold boot
-plus a `/context` query, the escalation path is a platform `JobService` (no dependency), not
-WorkManager (an AAR pixiewood cannot add).
+What that trades away is lightness — a push wake boots all of Commune — and the window-less start
+is now _measured_, a step early, in the ledger's S5b section: `activate` never fires, so nothing
+tries to present a window and nothing crashes; the application idles in its main loop; **session
+restore runs anyway** (it hangs off startup, not the window — the Keystore unseals from a
+background process); the restore trips the API 31 foreground-service refusal, absorbed by an
+error arm that existed for other reasons; and **the freezer stops the process 10.6 seconds after
+the wake**, mid-long-poll. That last number is the budget, and it is the measured version of why
+strategy (B) below — one bounded fetch, not a classic sync — is the bet. If ten seconds is not
+enough for a cold `/context` plus a decryption retry, the spec's `RAISE_TO_FOREGROUND` bindable
+service is the extension mechanism (ntfy already tries to use it — `NtfyUpRaiseFg` in the logs),
+and a platform `JobService` (no dependency, unlike WorkManager) the escalation past that.
 
 **Turning an event ID into a notification, headlessly.** Two candidate strategies, and this is
 the real fork in the plan:
@@ -181,11 +182,14 @@ not a receiver query: a distributor exposes an activity on the `unifiedpush://li
 the `<queries>` entry matches that `VIEW` intent and selection can go through
 `startActivityForResult`.
 
-**Step 1 — the receiver, and an endpoint in the log.** `PushReceiver.java` copied in by a new
-patch script exactly as `SyncService.java` is; `<receiver>` and `<queries>` added by
-`patch-manifest.sh`; the registration handshake with the distributor (ntfy from F-Droid on the
-emulator — no Play services needed). Measured when: the endpoint string reaches the Rust side and
-survives a reinstall via `NEW_ENDPOINT`.
+**Step 1 — the receiver, and an endpoint in the log. Done, 26 August 2026** — the full account is
+the ledger's S5b section. Discovery finds ntfy through `unifiedpush://link`, the endpoint reaches
+`nativeReceive` and the Rust log, a gateway POST reaches the running app as a `MESSAGE` in about
+five seconds, and the same POST at a dead process starts the process and delivers in under a
+second — which pulled step 3's first measurements forward; see the wake section above. Two traps
+recorded there: the JVM does not resolve natives out of `g_module_open`ed libraries, and a
+never-opened distributor is in the stopped state and receives nothing
+(`FLAG_INCLUDE_STOPPED_PACKAGES` is the fix).
 
 **Step 2 — the pusher, registered by Commune.** On receiving an endpoint: probe for the gateway,
 `Client::pusher().set()` with `event_id_only`, re-register on `NEW_ENDPOINT`, delete on logout,
@@ -193,15 +197,14 @@ fall back to the service on `UNREGISTERED` or a failed probe. Measured when: the
 in `GET /pushers`, and a message sent to a **frozen** Commune produces a broadcast in logcat —
 even though nothing is posted yet.
 
-**Step 3 — the wake.** First measurement: what a broadcast-only start does with no `Activity` —
-whether anything fires `activate` or tries to present a window, and whether the application idles
-usably in its main loop (step 0 established `main` runs regardless; see the wake section). Then:
-a "started for push" path inside the ordinary application — session restore without a window,
-strategy (B) with (A) held in reserve, the `NotificationProcessSetup` question answered, and the
-receiver handing `room_id`/`event_id` across JNI to the running main loop. Measured when: with
-Commune force-stopped, a real message posts a real notification with the sender's name and the
-decrypted body, and tapping it opens the conversation — the S5 measurement, repeated with the
-process dead the whole time.
+**Step 3 — the wake.** Its first measurements came a step early — the broadcast-only start idles
+usably, restores the session, and gets ten seconds; see the wake section. What remains is the
+work itself: a "started for push" path inside the ordinary application — strategy (B) with (A)
+held in reserve, the `NotificationProcessSetup` question answered, and the receiver handing
+`room_id`/`event_id` across JNI to the running main loop instead of only logging arrival.
+Measured when: with Commune dead, a real message posts a real notification with the sender's name
+and the decrypted body, and tapping it opens the conversation — the S5 measurement, repeated with
+the process dead the whole time.
 
 **Step 4 — one mode at a time.** Push mode and service mode become an explicit setting: with a
 working pusher the foreground service does not run; losing the pusher falls back. The setting
@@ -249,15 +252,14 @@ None of this changes steps 0–5, which is the point of the embedded-distributor
 
 Answered by step 0, kept for the record: the spec version is AND_3.1.0 and the handshake is pinned
 in the step 0 notes; multi-account is one token (and so one pusher) per session, which is the
-spec's multiple-registrations design. Still open:
+spec's multiple-registrations design. Answered by step 1: the window-less start idles with no
+`activate` and no crash, session restore runs from startup without a window, and the freezer
+allows about ten seconds — the wake section carries the numbers. Still open:
 
-* What a window-less application start actually does — `activate`, window attempts, or a quiet
-  main loop — and where session restore hooks when no window ever appears (step 3's first
-  measurement).
-* Whether the five seconds of foreground importance around delivery cover a cold boot of the full
-  application plus a `/context` query and a decryption retry, or step 3 needs the
-  `RAISE_TO_FOREGROUND` service or a platform `JobService` (measure with the process force-stopped
-  and the network slow).
+* Whether ten unfrozen seconds cover a cold `/context` query plus a decryption retry on a slow
+  network, or step 3 needs the `RAISE_TO_FOREGROUND` service or a platform `JobService`.
+* The woken process's syncs failed with DNS errors on the emulator, against a homeserver the same
+  emulator resolves when foregrounded — unexplained, retest on hardware before believing it.
 * What `NotificationClient` does about an undecryptable event against a homeserver without
   simplified sliding sync — the (A)/(B) fork.
 * Whether the six-hour service and push mode ever need to coexist (a distributor that flakes), or

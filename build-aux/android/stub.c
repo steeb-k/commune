@@ -19,6 +19,18 @@
 
 int commune_main (void);
 
+/* The JNI entry `PushReceiver.java` resolves by name.
+ *
+ * An archive on the link line only contributes the objects something
+ * references, and nothing on the native side references this function — its
+ * only caller is the JVM, by symbol name, after `System.loadLibrary`. Taking
+ * its address here is what pulls its object into the link. The signature is
+ * deliberately not repeated: at link level only the name exists, and the real
+ * one is in `src/utils/android_push.rs`.
+ */
+extern void Java_org_gtk_android_PushReceiver_nativeReceive (void);
+void *commune_keep_push_receiver = (void *) Java_org_gtk_android_PushReceiver_nativeReceive;
+
 int
 main (int argc, char **argv, char **envp)
 {
