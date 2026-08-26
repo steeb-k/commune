@@ -47,17 +47,60 @@ than a duplicate window: it is two writers.
 The idiomatic `GApplication` pattern is for `main()` to do as little as possible before constructing
 the `Application` and calling `.run()`, with first-run setup living in the `startup` vtable
 instead — which `GApplication` only ever invokes on the confirmed primary, after registration
-succeeds. A rejected second instance never reaches it. Moving `gtk::init()`, `gst::init()`,
-gresource loading, icon theme setup, and the Windows notification/toast COM registration into
-`ApplicationImpl::startup()` (or equivalent) would narrow the race window to whatever
-`g_application_register()` itself costs, which is small, rather than to all of that besides.
-`app_bundle::init()` looks like it has to stay in `main()`, since it sets environment variables
-that must land before any thread exists — worth confirming when this is actually picked up, not
-assumed here.
+succeeds. A rejected second instance never reaches it.
 
-Not attempted on `windows-port`: this touches cross-platform startup ordering, not anything
-Windows-specific, and a platform port branch is the wrong place to carry a refactor like that alone.
-Flagging it here for whoever does the merge back to `main`.
+**Done, on the merge back to `main`, where this said it belonged.** `ApplicationImpl::startup` now
+loads both gresources, chains up to the parent, and then does `gst::init()`, `aperture::init()`,
+the icon theme and the colour scheme. `main()` keeps only what cannot move:
+
+* `app_bundle::init()`, which sets environment variables and so must land while the process is
+  still single-threaded. The guess above was right.
+* On Windows, `windows_app_id::init()` and the two COM registrations. The toast activator chooses
+  the process's COM apartment deliberately, _before_ GTK can choose it — so it has to stay ahead of
+  GTK, and GTK is now started later rather than earlier, which preserves that ordering rather than
+  disturbing it.
+
+Two things this said or implied turned out to be wrong, and both were found by measuring rather
+than reasoning:
+
+* **`gtk::init()` is not called in `main()` at all now.** `GtkApplication` starts GTK in the
+  `startup` ours chains up to, which is how a GTK application is ordinarily written. That single
+  line was **459ms** of the pre-registration path — far more than everything this document
+  originally pointed at.
+* **`set_up_color_scheme()` had to move too, and it was not on the list.** It runs from
+  `ObjectImpl::constructed`, which fires while `main()` builds the `Application` — before anything
+  has started libadwaita. It reaches `AdwStyleManager::default()`, and with GTK no longer started
+  in `main()` it aborted the process outright. It is called from `startup` now, which is also the
+  first moment it could matter, since there is no window until `activate`.
+
+## What it cost, measured
+
+The width of the race window is how long a launch takes to find out it is not primary: a rejected
+second instance's whole lifetime. Measured by interleaving the two binaries in the same directory,
+alternating launch by launch against one warm primary, so machine load fell on both equally — which
+matters, because consecutive runs of the _same_ binary varied by a factor of two when a Rust build
+had just finished:
+
+| | pre-fix | fixed |
+| --- | --- | --- |
+| second-instance lifetime | 997ms avg, 936ms min | **442ms avg, 413ms min** |
+| of which is our own code, before registration | 598ms | **63ms** |
+
+So the application's own share of the window is gone — 598ms to 63ms — and the window itself is
+**56% narrower**.
+
+**It is narrowed, not closed, and this document should not have implied otherwise.** "Whatever
+`g_application_register()` itself costs, which is small" was wrong: roughly 380ms of the remaining
+442ms is spent before `main()` is entered at all, mapping the GTK, GStreamer and libadwaita DLLs
+that the executable links against. No amount of reordering reaches code that has not started
+running. Closing the rest would mean not linking them, or taking a lock outside the process before
+loading anything — neither of which is worth it for a window that now needs two launches inside
+four tenths of a second.
+
+Verified on both platforms after the change: Windows (a second launch still exits clean, still
+forwards a `matrix:` URI to the primary's `open`, the toast activator still registers ahead of GTK
+and notifications still arrive) and Arch Linux (a second launch on one session bus still exits on
+its own; 156 tests pass).
 
 ## Reproducing it
 
@@ -68,3 +111,8 @@ Start-Process -FilePath "path\to\commune.exe"
 Start-Sleep -Seconds 4
 Get-Process commune | Select-Object Id, StartTime   # two rows means it happened
 ```
+
+A warm machine does not reproduce it at four seconds any more, and did not reliably before the fix
+either — the session that found it had a colder one. To see the window rather than wait for it to
+be hit, measure the second instance instead: start one, let it settle, then time how long a second
+launch lives before it exits. That number is the window, and it is the one in the table above.

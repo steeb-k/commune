@@ -25,7 +25,7 @@ pub(crate) const APP_NAME: &str = "Commune";
 pub(crate) const APP_HOMEPAGE_URL: &str = "https://github.com/steeb-k/commune";
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -39,6 +39,12 @@ mod imp {
         pub(super) session_list: SessionList,
         intent_handler: BoundObjectWeakRef<glib::Object>,
         last_network_state: Cell<NetworkState>,
+        /// Where to load the app's own resources from.
+        ///
+        /// `run()` puts them here for `startup()`, which is the only place
+        /// they are loaded and the only place that runs on the instance that
+        /// won registration.
+        pub(super) paths: OnceCell<RuntimePaths>,
     }
 
     impl Default for Application {
@@ -49,6 +55,7 @@ mod imp {
                 session_list: Default::default(),
                 intent_handler: Default::default(),
                 last_network_state: Default::default(),
+                paths: Default::default(),
             }
         }
     }
@@ -98,7 +105,12 @@ mod imp {
                 }
             ));
 
-            self.set_up_color_scheme();
+            // The colour scheme is not set up here: it goes through
+            // `AdwStyleManager`, which needs libadwaita started, and nothing
+            // has started it at construction time — `main()` builds the
+            // `Application` before `startup()` has run. It is done there
+            // instead, which is also the first place it could matter, since
+            // there is no window until `activate()`.
 
             #[cfg(debug_assertions)]
             self.set_up_test_notification();
@@ -132,7 +144,49 @@ mod imp {
         }
 
         fn startup(&self) {
+            // Everything below happens here rather than in `main()` because
+            // `GApplication` calls `startup` only on the instance that won
+            // registration. Work done in `main()` is work a second launch does
+            // too, in the window before either process knows which one it is,
+            // and that window is the single-instance race in
+            // `doc/startup-registration-race.md`: two launches a few seconds
+            // apart could both become primary, and two primaries are two
+            // writers on one `matrix-sdk-sqlite` store.
+            let paths = self
+                .paths
+                .get()
+                .expect("`run()` stores the paths before starting the application");
+
+            // Before the parent, which looks for its own menus under the
+            // application's `resource-base-path`.
+            let res =
+                gio::Resource::load(&paths.resources_file).expect("Could not load gresource file");
+            gio::resources_register(&res);
+            let ui_res = gio::Resource::load(&paths.ui_resources_file)
+                .expect("Could not load UI gresource file");
+            gio::resources_register(&ui_res);
+
+            // Starts GTK and libadwaita, among much else. `main()`
+            // deliberately does neither.
             self.parent_startup();
+
+            // Needs libadwaita started, so it cannot be done at construction.
+            self.set_up_color_scheme();
+
+            // The slowest thing the process does: GStreamer scans its plugin
+            // registry, which is not fast, and is cold on a first run.
+            gst::init().expect("Could not initialize gst");
+
+            #[cfg(target_os = "linux")]
+            aperture::init(crate::APP_ID);
+
+            // Now that there are settings to change, make text resolve to the
+            // size it is on every other platform.
+            #[cfg(target_os = "macos")]
+            crate::utils::macos_text_scale::init();
+
+            gtk::IconTheme::for_display(&gtk::gdk::Display::default().unwrap())
+                .add_resource_path("/org/gnome/Fractal/icons");
 
             // Set icons for shell
             gtk::Window::set_default_icon_name(crate::APP_ID);
@@ -682,6 +736,13 @@ impl Application {
         info!("Commune ({})", config::APP_ID);
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
         info!("Datadir: {}", paths.pkgdata_dir().display());
+
+        // `startup()` loads the resources from these, and it runs inside the
+        // `run()` calls below.
+        self.imp()
+            .paths
+            .set(paths.clone())
+            .expect("`run()` is called once");
 
         #[cfg(not(target_os = "windows"))]
         ApplicationExtManual::run(self);
