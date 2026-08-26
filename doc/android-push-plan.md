@@ -191,11 +191,12 @@ recorded there: the JVM does not resolve natives out of `g_module_open`ed librar
 never-opened distributor is in the stopped state and receives nothing
 (`FLAG_INCLUDE_STOPPED_PACKAGES` is the fix).
 
-**Step 2 — the pusher, registered by Commune.** On receiving an endpoint: probe for the gateway,
-`Client::pusher().set()` with `event_id_only`, re-register on `NEW_ENDPOINT`, delete on logout,
-fall back to the service on `UNREGISTERED` or a failed probe. Measured when: the pusher is visible
-in `GET /pushers`, and a message sent to a **frozen** Commune produces a broadcast in logcat —
-even though nothing is posted yet.
+**Step 2 — the pusher, registered by Commune. Done, 26 August 2026** — the ledger's S5b section
+has the account. The probe, the registration with `event_id_only`, re-registration on
+`NEW_ENDPOINT`, removal on logout before the token dies, and the only-our-pushkeys deletion rule
+are all in; measured against the emulator session's real homeserver. The frozen-Commune
+message-to-broadcast measurement is deliberately deferred into step 3's headline measurement,
+where the posted notification proves the whole chain at once.
 
 **Step 3 — the wake.** Its first measurements came a step early — the broadcast-only start idles
 usably, restores the session, and gets ten seconds; see the wake section. What remains is the

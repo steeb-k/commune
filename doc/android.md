@@ -1886,6 +1886,45 @@ having survived under `no_backup`, ntfy matched its existing subscription and re
 same endpoint** instead of minting a second registration. That is the plan's
 "survives a reinstall via `NEW_ENDPOINT`" measurement, made exactly as hoped.
 
+### Step 2 — the endpoint becomes a pusher
+
+**Done, 26 August 2026, on the emulator.** When a session reaches `Ready` — and for every session
+when the endpoint changes — `ensure_pusher()` reconciles the account with the state file: list
+the pushers, remove the one for an endpoint this device has moved off, and if the current
+endpoint is not among them, probe its server for the Matrix gateway
+(`/_matrix/push/v1/notify` answering `{"unifiedpush":{"gateway":"matrix"}}`, through
+`utils::http` — which matters on Android, where reqwest's stock TLS panics) and register it with
+`format: event_id_only`. On logout the pusher is removed **before** `client.logout()`, because a
+pusher belongs to the account rather than the device, and after logout there is no token left to
+remove it with.
+
+Three judgement calls worth recording:
+
+* **Only pushkeys this device has held are ever deleted.** The `app_id`
+  (`io.github.steeb_k.commune.android`) is the same for every Commune on Android, so "everything
+  under our `app_id`" on the homeserver includes the user's other phones. The state file carries
+  `previous_endpoint` for exactly as long as its pusher may still need removing.
+* **No gateway, no pusher.** An endpoint whose server does not answer the probe is not registered
+  at all — the alternative is routing notification metadata through a third-party gateway the
+  user never chose. The setup screen (step 5) is where that refusal becomes visible.
+* **The two callers race, so they take turns.** The endpoint arriving and the session becoming
+  ready happen within milliseconds on a fresh registration, and both saw "no pusher" — measured:
+  _"Registered the push endpoint as a pusher"_, twice, 23 ms apart. The homeserver treats the
+  second as an upsert, so nothing broke; a mutex now makes the loser re-read and find the work
+  done.
+
+**Measured:** against the emulator session's real homeserver, the probe passed and the pusher
+registered on the first launch that had an endpoint, and a relaunch — including the `NEW_ENDPOINT`
+fan-out re-running the reconciliation — registers nothing again and warns about nothing. What
+step 2 deliberately does not claim: that a real message now pushes a frozen Commune end-to-end —
+that needs a second account sending a real message, and it is step 3's headline measurement, the
+S5 methodology repeated with the process dead.
+
+One scheduling fact from the same session, not a bug of ours but worth knowing when a measurement
+looks like a failure: right after a device boot, the broadcast queue deferred the `REGISTER` by a
+full hundred seconds between enqueue and dispatch (`dumpsys activity broadcasts history` shows
+both timestamps). A `NEW_ENDPOINT` that seems to never come may merely not have been sent yet.
+
 **Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
 `["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
 `https://ntfy.sh/upeOjmM0pSDm0r?up=1`, the `up` + 12 naming the plan documents — arrives at
@@ -2683,6 +2722,27 @@ all of it blocks calling the port finished.
   This does not block Commune shipping. It is on the list because carrying six downstream patches
   against a moving `main` branch is a standing cost, and because the fixes are worth more to other
   GTK-on-Android applications than they are here.
+* **Two loose ends from the push round (S5b), to be revisited once the push implementation is
+  complete** — parked deliberately, because both were seen exactly once and chasing them
+  mid-implementation would be debugging a moving target:
+  * **The woken process's syncs failed with DNS errors on the emulator** — `failed to lookup
+    address information` against a homeserver the same emulator resolves when foregrounded, in the
+    process a push had started in the background. Possibly emulator DNS flakiness, possibly
+    something real about resolver behavior in a background-started process (the same logcat showed
+    `netlink_route_socket` SELinux denials). If it is real, the step 3 wake path inherits it.
+    Retest on the Pixel 9a with the finished wake path: kill Commune, push, watch whether the
+    single-event fetch resolves and completes. **Second sighting, 26 August 2026, and it widens
+    the suspect pool**: a fresh _foreground_ launch hung at "Fetching Account Data…" with every
+    in-app request stalled while `adb shell ping matrix.kzenjak.com` resolved fine, after the
+    emulator had been up all day — and an emulator reboot cured it completely. So it is not
+    specific to background-started processes; "long-running emulator's networking degrades" is
+    now the leading theory, and the hardware retest is what settles it.
+  * **One launch died silently at the splash screen**, right after a reinstall, on 26 August 2026
+    — no crash-buffer entry, no `GTK Runtime` line, `binderDied` about 24 seconds after process
+    start — and the identical launch a minute later worked. Seen once, unexplained. If it recurs,
+    treat it as the panic-hook lesson says: a hang or death with an empty logcat is usually a
+    panic in a tokio task. Check it has not become reproducible before shipping — a first launch
+    after install is exactly the launch a new user sees.
 
 ## Known gaps
 
