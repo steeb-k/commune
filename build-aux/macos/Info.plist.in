@@ -41,7 +41,7 @@
     <key>CFBundleShortVersionString</key>
     <string>@PLIST_VERSION@</string>
     <key>CFBundleVersion</key>
-    <string>@PLIST_VERSION@</string>
+    <string>@BUILD_NUMBER@</string>
     <!-- The full version, rc suffix included; the two keys above only accept
          numbers. make-dmg.sh and make-tarball.sh name their artefacts by it. -->
     <key>CommuneVersion</key>
