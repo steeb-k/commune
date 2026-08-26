@@ -232,6 +232,78 @@ be read as a list of what was skipped.
 
 **Next: round 4, item 9 (threads, slice 1 — see that a thread exists).**
 
+**Decided 26 August 2026 — what follows round 4.** The rest of the board was
+walked and the next rounds settled, so they are not re-derived later:
+
+* **Round 5 — push rules and email on the account.** Editable push rules are
+  stable spec and cheaper than they look: the pinned SDK carries a
+  `NotificationSettings` API (per-room modes, keyword rules, mention toggles),
+  so the work is settings UI. **Repriced again by the 26 August SDK audit
+  (`doc/sdk-unused.md`): much of `NotificationSettings` — keywords included —
+  already has call sites.** Before scoping, check what the settings UI
+  actually draws; the round may be smaller than a round. Third-party
+  identifiers are **email only** — MSISDN verification needs SMS
+  infrastructure almost no homeserver has — and
+  reuse the request-token half password reset built plus `AuthDialog`'s UIAA
+  for `/account/3pid/add`. Know before starting: on an OAuth homeserver
+  (including matrix.org, the default) 3PIDs are managed in the browser page we
+  already link to, so the in-app UI only ever appears on password-auth
+  servers, the same reachability as the _Forgot Password?_ link.
+* **Round 6 — voice message recording (MSC3245), mutual rooms, policy
+  servers.** Voice recording is the one MSC admitted past the stance: the
+  playback half already ships, every maintained peer has the other half, and
+  recording is a genuine tack-on — a composer control and the extra fields on
+  an `m.audio` send. Mutual rooms is one endpoint
+  (`GET /_matrix/client/v1/mutual_rooms`) and a profile-dialog section that
+  **no client on the comparison page has**. Policy servers was standardised in
+  v1.16 and nobody has picked it up either — read `m.room.policy`, mark
+  spam-checked events.
+* **Round 7 — invite by email.** The highest-value gap left anywhere on the
+  board (`spec-gaps.html` ranks it second after threads): the invite subpage
+  takes Matrix IDs only, so the person deciding whether to try Matrix at all
+  is the one person unreachable. It costs an identity-server flow, a small
+  module of its own, which is why it sits after the cheap wins rather than
+  before them. _Repriced by the SDK audit: `Room::invite_user_by_3pid()` is
+  ready-made, so the module of its own is identity-server configuration UI,
+  not protocol work._
+* **Round 8 — finish what we already claim.** From the 26 August SDK audit
+  (`doc/sdk-unused.md`), three things where the feature exists and the SDK
+  computed the missing half all along: **per-message encryption shields**
+  (`EventTimelineItem::get_shield()` — no per-message trust indicator exists
+  today — plus reading `UtdCause` instead of a generic placeholder);
+  **retry/discard for failed sends** (`SendHandle::{unwedge, abort}` off the
+  send queue that is already on); and **knock notifications** — answering a
+  knock works today through the members page, standard membership calls, but
+  nothing surfaces that a knock is waiting
+  (`Room::subscribe_to_knock_requests`, `mark_as_seen`). Attachment captions
+  and upload progress ride along if the round has room.
+* **Round 9, optional — tag order, moderation policy lists.** Arbitrary tags
+  and `order` close a partial row every client on the page sits at ◐ on;
+  policy lists pair with policy servers as the moderation story and matter to
+  anyone running a public space. The audit's smaller wins —
+  `is_last_device()` before logout, `get_dm_room()` before creating a DM, a
+  storage settings page — are the same size and slot in wherever a round
+  runs short.
+* **2.0 — sliding sync, and only sliding sync.** MSC4186 was **accepted into
+  the spec on 3 July 2026**, so the "off spec" rejection below is out of date;
+  what stands is the size. It is not a tack-on: the SDK's sliding-sync path is
+  the `SyncService`/`RoomListService` stack, a different architecture from the
+  classic-sync session core, so migrating reshapes the room list, the sidebar's
+  data source and the sync lifecycle. Two things to decide deliberately when
+  the round is planned: **presence regresses** — simplified sliding sync
+  carries no presence, so round 1's feature goes dark until the spec grows an
+  extension — and fork divergence is **not** a reason to wait: `doc/fork.md`
+  says this is a permanent fork and feature parity with upstream is not a
+  goal. In sliding sync's favour, the SDK's maintained, exercised path _is_
+  that stack; classic sync is its legacy path.
+* **Watch list, not 2.0 — QR sign-in (MSC4108) and MatrixRTC (MSC4143).**
+  Both verified 26 August 2026: MSC4108 is marked "rework in progress" with a
+  competing rendezvous transport (MSC4388) unsettled, and only works against
+  OAuth homeservers running MAS; MSC4143 cannot enter FCP for want of a
+  qualifying implementation, and its transport rides MSC4195, a LiveKit
+  backend that is Element infrastructure in all but name. Neither is "going
+  to be spec" on any near horizon. Revisit if either reaches FCP.
+
 The three HTML ledgers did not move with round 1 and were caught up afterwards —
 pinned messages and presence marked as shipped in `client-comparison.html`, both
 modules moved into the implemented column of `spec-gaps.html` (Pinned Events had
@@ -618,10 +690,19 @@ and content already parsed, updated live, paginated by `paginate()`. Thread subs
   overstates it: one arm in `show_in_timeline` (`timeline/mod.rs:1373`) and one arm in
   `message_row/content.rs:295-338` rendering `MsgLikeKind::Poll(PollState)` via
   `PollState::results()`. Render-only puts nothing non-standard on the wire; voting would.
-* **Voice message recording (MSC3245), MatrixRTC (MSC4143), sliding sync (MSC4186), widgets,
-  thread subscriptions (MSC4306).** Off spec and none is a tack-on. Out.
-* **Email and phone on the account, third-party invites, mutual rooms, policy servers, tag
-  order, editable push rules.** On spec, low value; the natural next tier after round 4.
+* **MatrixRTC (MSC4143), QR sign-in (MSC4108), widgets, thread subscriptions
+  (MSC4306).** Off spec and none is a tack-on. Out — on the watch list above,
+  revisit at FCP. _(This bullet originally also named voice recording and
+  sliding sync; both were repriced on 26 August 2026 — see the decided rounds
+  above. Sliding sync is accepted spec now and is the 2.0 feature; voice
+  recording is round 6.)_
+* **Guest access, OpenID.** On spec, and out anyway: guest access is an L for
+  the worst value ratio on the board, and OpenID only proves identity to
+  widgets and integration managers, which Commune does not host.
+* ~~**Email and phone on the account, third-party invites, mutual rooms, policy
+  servers, tag order, editable push rules.** On spec, low value; the natural
+  next tier after round 4.~~ _All six are scheduled now, rounds 5 through 8
+  above._
 
 ---
 
