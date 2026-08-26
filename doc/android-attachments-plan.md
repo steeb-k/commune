@@ -35,8 +35,8 @@ and fails somewhere else entirely, which is exactly how "Invalid attachment data
 | Composer, voice recorder | writes its own temp file | **inference**: fine |
 | Composer, camera | — | declined on Android (`c3724a3c`) |
 | Received attachment, view | temp file we wrote | **fixed earlier** (`eb951d5a`) — _measured_ |
-| Received attachment, **save as** | `GFile::replace_contents` on the chosen file | **untested**; GIO-level, so it may already work |
-| History viewer, **save file** | same | **untested**, same shape |
+| Received attachment, **save as** | `GFile::replace_contents` on the chosen file | **works, unchanged** — _measured_, a received file round-tripped through the picker byte-for-byte |
+| History viewer, **save file** | same | **untested**, same shape — not separately clicked through, see step 3 |
 | Avatar picker | `query_info_future`, `load_contents_future` | **untested**; GIO-level, expected to work post-patch |
 | Image pack editor | `open_multiple_future` then `load_contents_future` | **untested**, same shape |
 | **Key import** | hands the path to `import_room_keys` | **fixed** — _measured_, round-tripped a real export through the picker |
@@ -174,6 +174,29 @@ with it.
 3. **Test the save-as routes.** `replace_contents` on a picked `GFile` should work; `save_future`
    on Android should present `ACTION_CREATE_DOCUMENT`. Both are plausible and neither is measured.
    If they work, this step is a paragraph in `doc/android.md` and nothing else.
+
+   **Confirmed for one of the two, unchanged.** The composer's own message row has a direct "Save
+   File" button (`event.file-save`, no context menu involved), and tapping it on `simulacra-vm.md`
+   -- a real file already in the room from an earlier session -- did present
+   `ACTION_CREATE_DOCUMENT`, and the saved file pulled off the device was byte-identical to the
+   original: 3974 bytes, same content. Nothing was logged at warn or above. This is
+   `media_message.rs::save_to_file`, reached from the message row's button and also from the
+   fullscreen media viewer's menu and the timeline's context menu -- none of those three call sites
+   touch a path anywhere, so this one measurement covers all of them.
+
+   The history viewer's own save button (`history_viewer/file_row.rs::save_file`) is the same
+   shape -- fetch bytes, `FileDialog::save_future`, `replace_contents` -- but was not separately
+   clicked through, so it stays **untested** in the table above rather than being marked from
+   inference.
+
+   One thing found while testing this that has nothing to do with attachments: a `monkey -c
+   android.intent.category.LAUNCHER` relaunch against an already-running instance left the app
+   fully unresponsive to input -- no crash, no ANR, the last frame kept rendering, but taps,
+   swipes and back all did nothing, for several minutes of trying before this was traced to that
+   relaunch. `adb shell am force-stop` followed by `am start -n
+   io.github.steeb_k.commune/org.gtk.android.ToplevelActivity` recovered it immediately. Worth
+   knowing before spending time debugging what looks like a broken gesture or a stuck popover: check
+   whether the instance was reached by relaunching over a running one first.
 4. **Test avatar and image-pack pickers.** Both are GIO-level and expected to be fine post-patch,
    which is exactly the kind of expectation this port has already punished twice.
 5. **Sweep for the pattern.** `grep` for `.path()` and for `file.uri()`, and check each against the
