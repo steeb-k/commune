@@ -343,6 +343,16 @@ because two bundles cannot share one name.
 `src/utils/app_bundle.rs`, which reads it back at startup and points GLib, GdkPixbuf, GStreamer and
 fontconfig at it. Moving anything in one means moving it in the other.
 
+**`Info.plist` carries only the numeric prefix of the version.** `CFBundleVersion` and
+`CFBundleShortVersionString` accept nothing but period-separated numbers — LaunchServices shrugs
+at anything else today, but notarization and the App Store validate — so `bundle.sh` computes the
+longest numeric prefix (`c36f52dc`): `1.rc1` goes in as `1`, and a stable `1` or `1.1` passes
+through whole.
+The full version keeps appearing where a human reads it, in the artefact names and the About
+dialog. The prefix not moving between release candidates is fine for a bundle that is rebuilt in
+place; it starts mattering when signed updates get compared by version, which is a stable-release
+concern.
+
 ### The release profile does not fit in 8 GB
 
 `Cargo.toml` asks for `debug = true`, `lto = "thin"` and `codegen-units = 1`. On the machine this

@@ -1,8 +1,11 @@
 # Releasing Commune
 
-Commune's version number tracks the Fractal release it is based on, so that it is always obvious
-which upstream tree a build came from. A release of Commune that adds nothing from upstream keeps
-the major version and bumps the pre-release part.
+Commune's version number is its own line, restarted at 1.rc1 after three feature rounds shipped
+under the 14.1 inherited from Fractal (`34bc0e16` has the reasoning). Release candidates count
+1.rc1, 1.rc2, … until a plain 1, and patch releases follow as 1.1. The same version wears three
+spellings — `major.pre_release` in Meson and the app, semver (`1.0.0-rc1`) in `Cargo.toml`, and a
+tilde (`1~rc1`) in the metainfo, which is the form appstream orders before the stable release.
+Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not the version's.
 
 ## Before making a new release
 
