@@ -24,6 +24,7 @@ use self::{
 };
 use super::{EventTimestamp, ReadReceiptsList};
 use crate::{
+    Application,
     components::UserProfileDialog,
     ngettext_f,
     prelude::*,
@@ -31,8 +32,14 @@ use crate::{
     utils::BoundObject,
 };
 
+/// The setting that says whether messages are presented as chat bubbles.
+const CHAT_BUBBLES_SETTING: &str = "chat-bubbles-enabled";
+
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -59,6 +66,10 @@ mod imp {
         #[template_child]
         thread_replies_label: TemplateChild<gtk::Label>,
         binding: RefCell<Option<glib::Binding>>,
+        /// Whether messages are presented as chat bubbles.
+        bubbles_enabled: Cell<bool>,
+        /// The handler watching the chat bubbles setting.
+        settings_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The event that is presented.
         #[property(get, set = Self::set_event, explicit_notify)]
         event: BoundObject<Event>,
@@ -115,11 +126,32 @@ mod imp {
                     obj.notify_texture();
                 }
             ));
+
+            let settings = Application::default().settings();
+            self.bubbles_enabled
+                .set(settings.boolean(CHAT_BUBBLES_SETTING));
+            let settings_handler = settings.connect_changed(
+                Some(CHAT_BUBBLES_SETTING),
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |settings, _| {
+                        imp.bubbles_enabled
+                            .set(settings.boolean(CHAT_BUBBLES_SETTING));
+                        imp.update_bubbles();
+                        imp.update_header();
+                    }
+                ),
+            );
+            self.settings_handler.replace(Some(settings_handler));
         }
 
         fn dispose(&self) {
             if let Some(binding) = self.binding.take() {
                 binding.unbind();
+            }
+            if let Some(handler) = self.settings_handler.take() {
+                Application::default().settings().disconnect(handler);
             }
         }
     }
@@ -177,6 +209,7 @@ mod imp {
             obj.notify_sender();
 
             self.update_content();
+            self.update_bubbles();
             self.update_header();
             self.update_thread_chip();
         }
@@ -193,7 +226,11 @@ mod imp {
             };
 
             let header_state = event.header_state();
-            let avatar_name_visible = header_state == EventHeaderState::Full;
+            // A bubble on the right needs no name or avatar to say whose it
+            // is: the side says so, the way it does in every other bubbled
+            // messenger. The timestamp stays.
+            let avatar_name_visible =
+                header_state == EventHeaderState::Full && !self.is_own_bubble();
             let header_visible = header_state != EventHeaderState::Hidden;
 
             self.avatar_button.set_visible(avatar_name_visible);
@@ -207,6 +244,56 @@ mod imp {
                     row.remove_css_class("has-avatar");
                 }
             }
+        }
+
+        /// Whether this row is a bubble of the account's own user.
+        fn is_own_bubble(&self) -> bool {
+            self.bubbles_enabled.get() && self.sender().is_some_and(|sender| sender.is_own_user())
+        }
+
+        /// Update the presentation for the chat bubbles setting.
+        ///
+        /// The classes carry the drawing, but a bubble also hugs its content
+        /// and an own bubble sits at the end of the line, which only the
+        /// alignments can say.
+        fn update_bubbles(&self) {
+            let enabled = self.bubbles_enabled.get();
+            let own = self.is_own_bubble();
+            let obj = self.obj();
+
+            if enabled {
+                obj.add_css_class("bubble");
+            } else {
+                obj.remove_css_class("bubble");
+            }
+            if own {
+                obj.add_css_class("bubble-own");
+            } else {
+                obj.remove_css_class("bubble-own");
+            }
+            if enabled {
+                self.content.add_css_class("bubble-surface");
+            } else {
+                self.content.remove_css_class("bubble-surface");
+            }
+
+            let content_halign = if !enabled {
+                gtk::Align::Fill
+            } else if own {
+                gtk::Align::End
+            } else {
+                gtk::Align::Start
+            };
+            self.content.set_halign(content_halign);
+
+            let trailing = if own {
+                gtk::Align::End
+            } else {
+                gtk::Align::Start
+            };
+            self.reactions
+                .set_halign(if enabled { trailing } else { gtk::Align::Fill });
+            self.thread_chip.set_halign(trailing);
         }
 
         /// Update the content for the current event.

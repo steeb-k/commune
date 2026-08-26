@@ -69,6 +69,8 @@ mod imp {
         #[template_child]
         dark_mode_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        chat_bubbles_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         url_previews_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         share_presence_row: TemplateChild<adw::SwitchRow>,
@@ -114,6 +116,11 @@ mod imp {
             Application::default()
                 .settings()
                 .bind("force-dark-mode", &*self.dark_mode_row, "active")
+                .build();
+
+            Application::default()
+                .settings()
+                .bind("chat-bubbles-enabled", &*self.chat_bubbles_row, "active")
                 .build();
 
             Application::default()

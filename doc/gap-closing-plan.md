@@ -368,13 +368,17 @@ zero and its height follows the aspect ratio down. The `m.sticker` path
 (`MessageVisualMedia`) was checked against the same report with a GTK
 harness and already shrank correctly.
 
+**The chat-bubble style the user queued is built, 26 August 2026, right
+after round 6's doc round trip.** A _Chat Bubbles_ switch in the Appearance
+group, off by default; own messages on the right in an accent-tinted bubble
+with no avatar or name, everybody else on the left in a neutral one, every
+row watching the setting so the switch moves a live timeline. Presentation
+only — no page on the spec boards moves for it. `doc/chat-bubbles.md` is
+the ledger; the known compromise (a sticker keeps its bubble, where Element
+strips it) is written there and on the eyeball list.
+
 **Next: round 7 — invite by email.** See the decided rounds below before
-scoping. **Also queued by the user, 26 August 2026: an optional chat-bubble
-message style**, like Element's setting of the same name — messages drawn in
-bubbles instead of the flat rows, chosen from preferences. It is
-presentation work outside the spec-gap board, sized like a small round of
-its own, and should be built as its own piece after round 6's doc round
-trip.
+scoping.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:

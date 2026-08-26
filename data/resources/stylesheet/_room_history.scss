@@ -233,6 +233,23 @@ message-sender {
   }
 }
 
+// The chat bubbles setting. The row's own code hides the name and the
+// avatar of an own message and aligns its pieces to the end; what is drawn
+// is decided here. `currentColor` keeps the neutral bubble legible in both
+// themes without naming a color twice, and the own bubble borrows the
+// accent the way the focused-event background above does.
+message-row.bubble {
+  .bubble-surface {
+    padding: 6px 10px;
+    border-radius: 12px;
+    background-color: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  &.bubble-own .bubble-surface {
+    background-color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);
+  }
+}
+
 state-group-row.room-history-row {
   &:not(.has-avatar) {
     .event-content {
