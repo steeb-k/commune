@@ -23,6 +23,12 @@ menu event-actions-menu {
       action: "event.forward";
       hidden-when: "action-missing";
     }
+
+    item {
+      label: _("View _Thread");
+      action: "event.view-thread";
+      hidden-when: "action-missing";
+    }
   }
 
   section {

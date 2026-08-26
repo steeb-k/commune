@@ -81,14 +81,15 @@ template $ContentMessageRow: Adw.Bin {
       }
     }
 
-    Gtk.Box thread_chip {
+    Gtk.Button thread_chip {
       visible: false;
-      spacing: 4;
       halign: start;
+      action-name: "room-history.show-thread";
+      tooltip-text: _("Open Thread");
 
       styles [
         "thread-chip",
-        "dim-label",
+        "flat",
       ]
 
       layout {
@@ -97,12 +98,20 @@ template $ContentMessageRow: Adw.Bin {
         column-span: 2;
       }
 
-      Gtk.Image {
-        icon-name: "thread-symbolic";
-        accessible-role: presentation;
-      }
+      child: Gtk.Box {
+        spacing: 4;
 
-      Gtk.Label thread_replies_label {}
+        styles [
+          "dim-label",
+        ]
+
+        Gtk.Image {
+          icon-name: "thread-symbolic";
+          accessible-role: presentation;
+        }
+
+        Gtk.Label thread_replies_label {}
+      };
     }
 
     $ContentReadReceiptsList read_receipts {

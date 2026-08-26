@@ -284,6 +284,22 @@ mod imp {
                 },
             );
 
+            klass.install_action(
+                "room-history.show-thread",
+                Some(&String::static_variant_type()),
+                |obj, _, v| {
+                    let Some(root_event_id) = v
+                        .and_then(String::from_variant)
+                        .and_then(|s| EventId::parse(s).ok())
+                    else {
+                        error!("Could not parse event ID of thread root to show");
+                        return;
+                    };
+
+                    obj.imp().show_thread(root_event_id);
+                },
+            );
+
             klass.install_action("room-history.return-to-live", None, |obj, _, _| {
                 obj.return_to_live();
             });
@@ -1096,6 +1112,52 @@ mod imp {
                 .is_some_and(|timeline| timeline.is_focused())
         }
 
+        /// Show the thread rooted at the event with the given ID.
+        pub(super) fn show_thread(&self, root_event_id: OwnedEventId) {
+            let Some(room) = self.room() else {
+                return;
+            };
+
+            if self
+                .timeline
+                .obj()
+                .is_some_and(|timeline| timeline.thread_root().as_ref() == Some(&root_event_id))
+            {
+                // We are already showing that thread.
+                return;
+            }
+
+            self.obj()
+                .set_timeline(Some(Timeline::new_threaded(&room, root_event_id)));
+        }
+
+        /// Leave the thread view and show the live timeline again.
+        #[template_callback]
+        fn leave_thread(&self) {
+            self.obj().return_to_live();
+        }
+
+        /// The timeline messages are composed into.
+        ///
+        /// A thread timeline receives its own local echoes and scopes what is
+        /// sent to the thread, so it is composed into directly. Any other
+        /// timeline defers to the room's live timeline: a focused timeline
+        /// never receives local echoes, so a message sent through it would not
+        /// appear.
+        ///
+        /// `function` for the same reason as
+        /// [`Self::server_notice_button_label()`].
+        #[template_callback(function)]
+        fn compose_timeline(timeline: Option<Timeline>) -> Option<Timeline> {
+            timeline.map(|timeline| {
+                if timeline.is_thread() {
+                    timeline
+                } else {
+                    timeline.room().live_timeline()
+                }
+            })
+        }
+
         /// Handle a click on the scroll button.
         #[template_callback]
         fn scroll_btn_clicked(&self) {
@@ -1582,8 +1644,13 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 async move {
-                    let Some(room) = imp.room() else { return };
-                    room.send_receipt(ReceiptType::Read, position).await;
+                    let Some(timeline) = imp.timeline.obj() else {
+                        return;
+                    };
+                    // Sent through the displayed timeline, so that reading a
+                    // thread moves the thread's receipt rather than the
+                    // room's.
+                    timeline.send_receipt(ReceiptType::Read, position).await;
                 }
             ));
         }
@@ -1593,6 +1660,17 @@ mod imp {
             self.read_timeout.take();
 
             if !self.is_active() {
+                return;
+            }
+
+            if self
+                .timeline
+                .obj()
+                .is_some_and(|timeline| timeline.is_thread())
+            {
+                // The fully-read marker belongs to the room, and a thread
+                // event may sit far back in the room's own order: moving the
+                // marker there would rewind it.
                 return;
             }
 
@@ -1909,13 +1987,16 @@ impl RoomHistory {
     }
 
     /// Show the live timeline of the room again, after it was focused on an
-    /// event.
+    /// event or showing a thread.
     pub(crate) fn return_to_live(&self) {
         let Some(room) = self.imp().room() else {
             return;
         };
 
-        if self.timeline().is_some_and(|t| !t.is_focused()) {
+        if self
+            .timeline()
+            .is_some_and(|t| !t.is_focused() && !t.is_thread())
+        {
             // We are already showing the live timeline.
             return;
         }

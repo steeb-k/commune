@@ -13,7 +13,7 @@ use matrix_sdk_ui::timeline::{
     AttachmentConfig, AttachmentSource, TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
-    OwnedRoomId,
+    OwnedEventId, OwnedRoomId,
     events::{
         AnyMessageLikeEventContent, Mentions,
         room::{
@@ -55,8 +55,13 @@ use crate::{
     },
 };
 
-/// A map of composer state per-session and per-room.
-type ComposerStatesMap = HashMap<Option<String>, HashMap<Option<OwnedRoomId>, ComposerState>>;
+/// A map of composer state per-session, then per-room and thread.
+///
+/// A thread keeps a composer state of its own — the state is where the
+/// half-typed draft and the reply selection live, and a draft typed for the
+/// room must not be one thread-open away from being sent into a thread.
+type ComposerStatesMap =
+    HashMap<Option<String>, HashMap<Option<(OwnedRoomId, Option<OwnedEventId>)>, ComposerState>>;
 
 /// The available stack pages of the [`MessageToolbar`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -479,7 +484,9 @@ mod imp {
             self.composer_state(timeline)
         }
 
-        /// The composer state for the given room.
+        /// The composer state for the given timeline.
+        ///
+        /// A room and a thread within it have composer states of their own.
         ///
         /// If the composer state does not exist, it is created.
         fn composer_state(&self, timeline: Option<Timeline>) -> ComposerState {
@@ -493,7 +500,12 @@ mod imp {
                         .map(|s| s.session_id().to_owned()),
                 )
                 .or_default()
-                .entry(room.map(|room| room.room_id().to_owned()))
+                .entry(room.map(|room| {
+                    (
+                        room.room_id().to_owned(),
+                        timeline.as_ref().and_then(Timeline::thread_root),
+                    )
+                }))
                 .or_insert_with(|| ComposerState::new(timeline))
                 .clone()
         }

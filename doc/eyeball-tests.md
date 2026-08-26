@@ -979,16 +979,16 @@ is unfocused — two accounts, or a phone.
 * [x] **Clicking a notification for a room you are already reading** does not
       jump anywhere unpleasant or steal the scroll position for long.
 
-## Threads, slice 1: the chip — `doc/threads.md`
+## Threads, slices 1 and 2: the chip, and the view it opens — `doc/threads.md`
 
-A message that roots a thread now carries a chip under its content — a thread
-icon and a reply count. Nothing opens yet; the chip is deliberately passive
-until slice 2 builds the thread view. `testing/local-homeserver.sh up` seeds a
-thread in **Invite Room**: alice's "Does anybody else think this deserves a
-thread?" with three replies from bob. Two of the checks grow the thread
-from a terminal — run this from the repository root, with a token from the
-script's usual login curl, changing the transaction ID and the body each
-time:
+A message that roots a thread carries a chip under its content — a thread
+icon and a reply count — and pressing it swaps the room history for the
+thread itself, with a banner naming the state and the composer sending into
+the thread. `testing/local-homeserver.sh up` seeds a thread in
+**Invite Room**: alice's "Does anybody else think this deserves a thread?"
+with three replies from bob. Some checks grow the thread from a terminal —
+run this from the repository root, with a token from the script's usual login
+curl, changing the transaction ID and the body each time:
 
 ```sh
 root=$(jq -r .thread_root testing/.homeserver/seeded.json)
@@ -997,13 +997,16 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
   -d "{\"msgtype\": \"m.text\", \"body\": \"A fourth reply.\", \"m.relates_to\": {\"rel_type\": \"m.thread\", \"event_id\": \"$root\"}}"
 ```
 
+### The chip
+
 * [ ] **The chip appears on the root.** Open Invite Room as alice: the seeded
       root message carries a chip reading "3 replies", with the thread icon
       legible in both the light and dark styles.
-* [ ] **Only on the root.** Bob's three threaded replies sit inline in the
-      timeline as ordinary messages — that is the documented state until
-      slices 2 and 3 — and none of them, and no unthreaded message anywhere,
-      carries a chip.
+* [ ] **The replies are not in the room.** Bob's three threaded replies do
+      **not** sit inline in the main timeline any more — `hide_threaded_events`
+      went on when the thread view landed. The root is there, with its chip;
+      the replies are only inside the thread. If they still show inline, the
+      flag did not reach the live timeline's focus.
 * [ ] **The count moves while the room is open.** With Invite Room on screen,
       send a fourth reply with the curl above and watch the chip say
       "4 replies" without the room being reopened.
@@ -1015,3 +1018,40 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
       plausible counts, and a thread rooted before this session's sync window
       still gets one — the count comes from the server's bundled summary, not
       from anything we witnessed.
+
+### The view
+
+* [ ] **The chip opens the thread.** The history swaps to the thread: the
+      root first, then bob's three replies, and nothing from the rest of the
+      room. A banner over it reads _Viewing a thread_ with a
+      _Back to All Messages_ button.
+* [ ] **_Back to All Messages_ goes back**, to the live timeline at the
+      bottom, with the banner gone.
+* [ ] **_View Thread_ is in the root's context menu** and does the same as
+      the chip. It must be absent on a message that is in no thread.
+* [ ] **A new reply arrives live.** With the thread open, send a reply with
+      the curl above: it must appear at the bottom of the thread without
+      touching anything.
+* [ ] **Composing sends into the thread.** Type into the composer while the
+      thread is shown and send. The message appears in the thread; pressing
+      _Back_, it is **not** in the main timeline, and the root's chip counts
+      one more. From another client (or the sync JSON), the event carries
+      `m.relates_to` with `rel_type: m.thread`.
+* [ ] **The drafts are separate.** Type into the room's composer without
+      sending, open the thread — the composer is empty. Type something there,
+      go back — the room's half-typed message is back, and reopening the
+      thread restores the thread's own.
+* [ ] **Reply inside the thread stays in the thread.** Use _Reply_ from a
+      thread message's context menu, send, and check from another client that
+      the event carries both the reply and the thread relation.
+* [ ] **A long thread paginates.** Grow the thread past twenty replies with
+      the curl in a loop, reopen it: it opens at the newest, and scrolling up
+      loads the older replies with the root at the very top.
+* [ ] **The room's read state does not suffer.** Read the thread to the
+      bottom, go back: the room is not suddenly marked unread, and the room's
+      read marker did not jump backwards. On matrix.org against Element, your
+      read receipt shows up inside the thread rather than on the main
+      timeline.
+* [ ] **Switching rooms while in a thread** lands the other room in its
+      ordinary live timeline, banner gone, and coming back to Invite Room is
+      live too — the thread is left by leaving, not remembered.
