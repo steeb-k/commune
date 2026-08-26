@@ -39,9 +39,9 @@
       About dialog shows the full version from `config.rs` anyway.
     -->
     <key>CFBundleShortVersionString</key>
-    <string>@VERSION@</string>
+    <string>@PLIST_VERSION@</string>
     <key>CFBundleVersion</key>
-    <string>@VERSION@</string>
+    <string>@PLIST_VERSION@</string>
 
     <key>LSMinimumSystemVersion</key>
     <string>@MIN_OS@</string>
