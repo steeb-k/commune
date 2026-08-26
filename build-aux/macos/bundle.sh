@@ -463,11 +463,20 @@ esac
 note "icon $(basename "$ICON_SRC")"
 "$HERE/make-icns.sh" "$ICON_SRC" "$RES/$EXECUTABLE.icns" >/dev/null
 
+# CFBundleVersion and CFBundleShortVersionString only accept period-separated
+# numbers, so a pre-release version like "1.rc1" cannot go into them as-is:
+# LaunchServices shrugs today, but notarization and the App Store validate.
+# The plist gets the longest numeric prefix -- "1.rc1" becomes "1", a final
+# "1.0" passes through whole -- and the full string stays everywhere else:
+# the artefact names, and the About dialog, which is where a human looks.
+PLIST_VERSION=$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*$/\1/')
+printf '%s' "$PLIST_VERSION" | grep -qE '^[0-9]+(\.[0-9]+)*$' || PLIST_VERSION=0
+
 sed -e "s|@APP_ID@|$APP_ID|g" \
     -e "s|@APP_NAME@|$APP_NAME|g" \
     -e "s|@EXECUTABLE@|$EXECUTABLE|g" \
     -e "s|@ICON@|$EXECUTABLE.icns|g" \
-    -e "s|@VERSION@|$VERSION|g" \
+    -e "s|@PLIST_VERSION@|$PLIST_VERSION|g" \
     -e "s|@MIN_OS@|$MIN_OS|g" \
     "$HERE/Info.plist.in" >"$CONTENTS/Info.plist"
 
