@@ -33,7 +33,12 @@ APP_NAME="$(basename "$APP" .app)"
 VOLNAME="$APP_NAME"
 
 # The version the bundle was built with, so the file name says what it holds.
-VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo 'unknown')"
+# CommuneVersion is the full string, rc suffix included; the CFBundle key only
+# carries the numeric prefix, and is the fallback for a bundle from before the
+# split.
+VERSION="$(defaults read "$APP/Contents/Info" CommuneVersion 2>/dev/null \
+    || defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null \
+    || echo 'unknown')"
 ARCH="$(uname -m)"
 
 if [ -z "$OUT" ]; then

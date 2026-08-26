@@ -42,6 +42,10 @@
     <string>@PLIST_VERSION@</string>
     <key>CFBundleVersion</key>
     <string>@PLIST_VERSION@</string>
+    <!-- The full version, rc suffix included; the two keys above only accept
+         numbers. make-dmg.sh and make-tarball.sh name their artefacts by it. -->
+    <key>CommuneVersion</key>
+    <string>@VERSION@</string>
 
     <key>LSMinimumSystemVersion</key>
     <string>@MIN_OS@</string>
