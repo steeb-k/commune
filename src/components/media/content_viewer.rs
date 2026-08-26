@@ -38,9 +38,22 @@ fn clear_video(video: &gtk::Video) {
 }
 
 /// Stop the given video widget and drop what it was playing.
+///
+/// The last reference is let go of on an idle rather than here, because here
+/// deadlocks. Detaching the stream tears down the paintable the video sink
+/// owns, and this thread holds the sink's lock while it does; dropping the
+/// stream in the middle of that disposes `GstPlay`, whose dispose joins its
+/// own thread -- and that thread is inside `gst_play_sink_change_state`
+/// waiting for the very lock this one is holding. Neither ever moves again.
+/// Measured on Android; see `doc/android.md`.
 #[cfg(any(target_os = "macos", target_os = "android"))]
 fn clear_video(video: &gtk::Video) {
+    let stream = video.media_stream();
     video.set_media_stream(None::<&gtk::MediaStream>);
+
+    if let Some(stream) = stream {
+        glib::idle_add_local_once(move || drop(stream));
+    }
 }
 
 /// The types of content supported by the [`MediaContentViewer`].
