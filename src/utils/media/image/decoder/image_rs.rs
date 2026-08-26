@@ -20,11 +20,11 @@
 //!
 //! Anything it does not recognise is handed to **`GdkPixbuf`**, which is
 //! already here — GTK loads every icon in the application through it — and
-//! which brings whatever loaders the platform installed with it. On the GTK
-//! stacks this port uses that is SVG, AVIF and HEIC/HEIF, none of which the
-//! `image` crate reads. A pixbuf-decoded image is always a still: the fallback
-//! exists to show a picture that would otherwise be an error, not to animate
-//! one.
+//! which brings whatever loaders the platform installed with it. What that
+//! adds depends on the stack: MSYS2 on Windows ships loaders for SVG, AVIF
+//! and HEIC/HEIF; the conda-forge stack the macOS builds use ships SVG only.
+//! A pixbuf-decoded image is always a still: the fallback exists to show a
+//! picture that would otherwise be an error, not to animate one.
 //!
 //! What is left over — **JXL**, and anything else with no loader installed —
 //! reports [`Error::UnknownFormat`], which the UI surfaces as "Image format not

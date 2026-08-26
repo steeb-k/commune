@@ -647,8 +647,9 @@ already carries the profile, so a development build never sees a stable build's 
 code as macOS, same reason.
 
 **Images decode with the `image` crate** rather than glycin, shared with macOS through
-`cfg(not(target_os = "linux"))`. The same formats are unsupported: **SVG, HEIC, AVIF and JXL** in
-the timeline report "Image format not supported" per image.
+`cfg(not(target_os = "linux"))`. What the crate does not recognise falls back to GdkPixbuf, so
+SVG, HEIC and AVIF render as stills through the loaders MSYS2 ships; **JXL** has no loader
+anywhere and reports "Image format not supported".
 
 **Notifications are ours rather than GLib's**, and clicking one works whether or not Commune is
 running. Three registry entries make that true, all written by the application itself at startup
