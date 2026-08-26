@@ -101,6 +101,34 @@ template $UserPage: Adw.NavigationPage {
             }
           }
 
+          Gtk.Box mutual_rooms_box {
+            visible: false;
+            orientation: vertical;
+            spacing: 12;
+
+            Gtk.Label {
+              label: _("Shared Rooms");
+              ellipsize: end;
+              xalign: 0.0;
+
+              styles [
+                "heading",
+                "h4",
+              ]
+            }
+
+            Gtk.ListBox mutual_rooms_list {
+              accessible-role: group;
+              selection-mode: none;
+
+              styles [
+                "boxed-list-separate",
+              ]
+
+              row-activated => $mutual_room_activated() swapped;
+            }
+          }
+
           Gtk.Box room_box {
             visible: false;
             orientation: vertical;
