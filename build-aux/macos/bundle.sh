@@ -77,7 +77,7 @@ fi
 }
 
 [ -n "$APP_ID" ] || APP_ID='io.github.steeb_k.Commune'
-[ -n "$VERSION" ] || VERSION='14.1'
+[ -n "$VERSION" ] || VERSION='1.rc1'
 [ -n "$PROFILE" ] || PROFILE='Stable'
 # A stable and a development build have to be able to sit in /Applications at
 # the same time, and two bundles cannot share a directory name. On Linux the

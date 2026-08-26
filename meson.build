@@ -1,7 +1,7 @@
 project(
     'commune',
     'rust',
-    version: '14.1',
+    version: '1.rc1',
     license: 'GPL-3.0-or-later',
     meson_version: '>= 1.4',
 )
@@ -13,8 +13,8 @@ i18n = import('i18n')
 base_id = 'io.github.steeb_k.Commune'
 application_id = base_id
 
-major_version = '14.1'
-pre_release_version = ''
+major_version = '1'
+pre_release_version = 'rc1'
 
 version = major_version
 if pre_release_version != ''

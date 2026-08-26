@@ -73,12 +73,12 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="14.1" type="stable" date="2026-08-19">
+    <release version="1~rc1" type="development" date="2026-08-25">
       <description>
         <p>
-          The first Commune release. Commune forks Fractal 14.1 and carries its own name, icon and
-          settings, so it installs and runs alongside Fractal without either app disturbing the
-          other’s sessions or preferences.
+          The first Commune release candidate. Commune forks Fractal 14.1 and carries its own name,
+          icon and settings, so it installs and runs alongside Fractal without either app disturbing
+          the other’s sessions or preferences.
         </p>
         <ul>
           <li>
