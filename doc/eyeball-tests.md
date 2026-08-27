@@ -1029,17 +1029,17 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
       _Back to All Messages_ button.
 * [x] **_Back to All Messages_ goes back**, to the live timeline at the
       bottom, with the banner gone.
-* [ ] **_View Thread_ is in the root's context menu** and does the same as
+* [x] **_View Thread_ is in the root's context menu** and does the same as
       the chip. It must be absent on a message that is in no thread.
-* [ ] **A new reply arrives live.** With the thread open, send a reply with
+* [x] **A new reply arrives live.** With the thread open, send a reply with
       the curl above: it must appear at the bottom of the thread without
       touching anything.
-* [ ] **Composing sends into the thread.** Type into the composer while the
+* [x] **Composing sends into the thread.** Type into the composer while the
       thread is shown and send. The message appears in the thread; pressing
       _Back_, it is **not** in the main timeline, and the root's chip counts
       one more. From another client (or the sync JSON), the event carries
       `m.relates_to` with `rel_type: m.thread`.
-* [ ] **The drafts are separate.** Type into the room's composer without
+* [x] **The drafts are separate.** Type into the room's composer without
       sending, open the thread — the composer is empty. Type something there,
       go back — the room's half-typed message is back, and reopening the
       thread restores the thread's own.
