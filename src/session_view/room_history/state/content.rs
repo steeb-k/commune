@@ -33,8 +33,8 @@ mod imp {
     #[properties(wrapper_type = super::StateContent)]
     pub struct StateContent {
         /// The state event displayed by this widget.
-        #[property(get, set = Self::set_event, nullable)]
-        event: glib::WeakRef<Event>,
+        #[property(get = Self::event_owned, set = Self::set_event, nullable)]
+        event: BoundObjectWeakRef<Event>,
         /// The sender of the event.
         sender: BoundObjectWeakRef<Member>,
     }
@@ -53,12 +53,20 @@ mod imp {
     impl BinImpl for StateContent {}
 
     impl StateContent {
+        /// The event presented by this row.
+        fn event_owned(&self) -> Option<Event> {
+            self.event.obj()
+        }
+
         /// Set the event presented by this row.
         fn set_event(&self, event: Option<&Event>) {
             let Some(event) = event else {
                 // Only handle when an event is set.
                 return;
             };
+
+            self.event.disconnect_signals();
+            self.sender.disconnect_signals();
 
             let sender = event.sender();
             let disambiguated_name_handler = sender.connect_disambiguated_name_notify(clone!(
@@ -70,13 +78,24 @@ mod imp {
             ));
             self.sender.set(&sender, vec![disambiguated_name_handler]);
 
-            self.event.set(Some(event));
+            // A state event can change under its row — a moderation policy
+            // rule redacted while the room is open, for one — and the
+            // sentence must follow it without waiting for a re-entry.
+            let item_changed_handler = event.connect_item_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_content();
+                }
+            ));
+            self.event.set(event, vec![item_changed_handler]);
+
             self.update_content();
         }
 
         /// Update the content for the current state.
         fn update_content(&self) {
-            let Some(event) = self.event.upgrade() else {
+            let Some(event) = self.event.obj() else {
                 return;
             };
             let Some(sender) = self.sender.obj() else {
