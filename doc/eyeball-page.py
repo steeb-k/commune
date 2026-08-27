@@ -184,11 +184,13 @@ def parse(markdown: str) -> list[Section]:
             # and everything under it is marked.
             rest = "\n".join(lines[i + 1 : i + 4])
             destructive = bool(re.search(r"^_Destructive", rest, re.MULTILINE))
+            # No backslash inside the f-string expression: Python before
+            # 3.12 refuses it, and this machine runs 3.11.
+            wrecks_class = ' class="wrecks"' if destructive else ""
             current.items.append(
                 Block(
                     "h",
-                    f'<h3{" class=\'wrecks\'" if destructive else ""}>'
-                    f"{inline(subheading.group(1))}</h3>",
+                    f"<h3{wrecks_class}>{inline(subheading.group(1))}</h3>",
                 )
             )
             i += 1
