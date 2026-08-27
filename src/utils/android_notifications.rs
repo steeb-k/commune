@@ -40,6 +40,14 @@
 //! [`super::macos_notifications`] writes the avatar to the cache and cleans up
 //! after itself; `BitmapFactory.decodeByteArray` takes the PNG directly, and
 //! nothing here touches the disk.
+//!
+//! **A conversation is one notification, not many.** Messages go through
+//! [`send_message()`], which keys the notification by room and stacks each
+//! new message into a `Notification.MessagingStyle` — the platform's own
+//! shape for a chat, sender names and all. The messages already on screen are
+//! read back from the active notification rather than remembered here, so the
+//! stack survives the process and empties when the user dismisses it. See
+//! [`send_message()`] for the rest.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -47,7 +55,7 @@ use gettextrs::gettext;
 use gtk::{gdk, glib, prelude::*};
 use jni::{
     AttachGuard,
-    objects::{JObject, JValue},
+    objects::{JObject, JObjectArray, JString, JValue},
 };
 use tracing::{debug, error, warn};
 
@@ -134,6 +142,30 @@ const PENDING_INTENT_FLAGS: i32 = 0x0400_0000 | 0x0800_0000;
 /// is a constant and the tag does all the work — including the replace-by-ID
 /// behavior `GNotification` has.
 const NOTIFICATION_ID: i32 = 0;
+
+/// The group key shared by every message notification.
+///
+/// Without an explicit group, the shade auto-bundles everything of ours under
+/// one heading — including the sync service's ongoing notification, whose
+/// plain open-the-app intent is what a tap on the collapsed bundle then fires
+/// (measured, S5b step 3). With this key, the conversations bundle among
+/// themselves under [`SUMMARY_TAG`]'s summary and the ongoing notification
+/// stays out of them.
+const GROUP_KEY: &str = "conversations";
+
+/// The tag of the summary notification for [`GROUP_KEY`].
+///
+/// Android requires a group to have a posted summary before it draws the
+/// bundle. Real notification tags all carry a `//`, so this cannot collide
+/// with one.
+const SUMMARY_TAG: &str = "conversations-summary";
+
+/// `Notification.EXTRA_MESSAGES`, where a posted `MessagingStyle` keeps its
+/// messages.
+const EXTRA_MESSAGES: &str = "android.messages";
+
+/// `Notification.FLAG_GROUP_SUMMARY`.
+const FLAG_GROUP_SUMMARY: i32 = 0x200;
 
 /// Whether permission to post notifications has been asked for this run.
 ///
@@ -320,12 +352,7 @@ fn show(
     android::with_env(|env| {
         let context = context.as_obj();
 
-        let channel = JObject::from(env.new_string(CHANNEL_ID)?);
-        let builder = env.new_object(
-            "android/app/Notification$Builder",
-            "(Landroid/content/Context;Ljava/lang/String;)V",
-            &[JValue::Object(context), JValue::Object(&channel)],
-        )?;
+        let builder = base_builder(env, context, icon_png.as_deref())?;
 
         let title = JObject::from(env.new_string(title)?);
         env.call_method(
@@ -342,65 +369,6 @@ fn show(
             "(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;",
             &[JValue::Object(&body)],
         )?;
-
-        let small_icon = small_icon_resource(env, context)?;
-        env.call_method(
-            &builder,
-            "setSmallIcon",
-            "(I)Landroid/app/Notification$Builder;",
-            &[JValue::Int(small_icon)],
-        )?;
-
-        // Dismiss the notification when it is tapped, which is what the other
-        // platforms do with theirs and what a person expects of one.
-        env.call_method(
-            &builder,
-            "setAutoCancel",
-            "(Z)Landroid/app/Notification$Builder;",
-            &[JValue::Bool(u8::from(true))],
-        )?;
-
-        // `Notification.CATEGORY_MESSAGE`, the counterpart of the `im.received`
-        // category the other platforms are given. Do Not Disturb and the
-        // shade's own sorting are what read it.
-        let category = JObject::from(env.new_string("msg")?);
-        env.call_method(
-            &builder,
-            "setCategory",
-            "(Ljava/lang/String;)Landroid/app/Notification$Builder;",
-            &[JValue::Object(&category)],
-        )?;
-
-        if let Some(png) = &icon_png {
-            let bytes = env.byte_array_from_slice(png)?;
-            let length = i32::try_from(png.len()).unwrap_or(i32::MAX);
-            let bitmap = env
-                .call_static_method(
-                    "android/graphics/BitmapFactory",
-                    "decodeByteArray",
-                    "([BII)Landroid/graphics/Bitmap;",
-                    &[
-                        JValue::Object(&JObject::from(bytes)),
-                        JValue::Int(0),
-                        JValue::Int(length),
-                    ],
-                )?
-                .l()?;
-
-            // A `Bitmap` that could not be decoded comes back as null rather
-            // than as an exception. Worth noticing, not worth refusing the
-            // whole notification over.
-            if bitmap.is_null() {
-                warn!("Could not decode the avatar of a notification");
-            } else {
-                env.call_method(
-                    &builder,
-                    "setLargeIcon",
-                    "(Landroid/graphics/Bitmap;)Landroid/app/Notification$Builder;",
-                    &[JValue::Object(&bitmap)],
-                )?;
-            }
-        }
 
         let intent = pending_intent(env, context, action, target)?;
         env.call_method(
@@ -456,6 +424,547 @@ fn show(
 
         Ok(())
     })
+}
+
+/// A `Notification.Builder` carrying everything a message-shaped notification
+/// shares: the channel, the status bar icon, the tap-to-dismiss behavior, the
+/// `msg` category, and the avatar when there is one.
+fn base_builder<'a>(
+    env: &mut AttachGuard<'a>,
+    context: &JObject,
+    icon_png: Option<&[u8]>,
+) -> Result<JObject<'a>, AndroidJniError> {
+    let channel = JObject::from(env.new_string(CHANNEL_ID)?);
+    let builder = env.new_object(
+        "android/app/Notification$Builder",
+        "(Landroid/content/Context;Ljava/lang/String;)V",
+        &[JValue::Object(context), JValue::Object(&channel)],
+    )?;
+
+    let small_icon = small_icon_resource(env, context)?;
+    env.call_method(
+        &builder,
+        "setSmallIcon",
+        "(I)Landroid/app/Notification$Builder;",
+        &[JValue::Int(small_icon)],
+    )?;
+
+    // Dismiss the notification when it is tapped, which is what the other
+    // platforms do with theirs and what a person expects of one.
+    env.call_method(
+        &builder,
+        "setAutoCancel",
+        "(Z)Landroid/app/Notification$Builder;",
+        &[JValue::Bool(u8::from(true))],
+    )?;
+
+    // `Notification.CATEGORY_MESSAGE`, the counterpart of the `im.received`
+    // category the other platforms are given. Do Not Disturb and the
+    // shade's own sorting are what read it.
+    let category = JObject::from(env.new_string("msg")?);
+    env.call_method(
+        &builder,
+        "setCategory",
+        "(Ljava/lang/String;)Landroid/app/Notification$Builder;",
+        &[JValue::Object(&category)],
+    )?;
+
+    if let Some(png) = icon_png {
+        let bytes = env.byte_array_from_slice(png)?;
+        let length = i32::try_from(png.len()).unwrap_or(i32::MAX);
+        let bitmap = env
+            .call_static_method(
+                "android/graphics/BitmapFactory",
+                "decodeByteArray",
+                "([BII)Landroid/graphics/Bitmap;",
+                &[
+                    JValue::Object(&JObject::from(bytes)),
+                    JValue::Int(0),
+                    JValue::Int(length),
+                ],
+            )?
+            .l()?;
+
+        // A `Bitmap` that could not be decoded comes back as null rather
+        // than as an exception. Worth noticing, not worth refusing the
+        // whole notification over.
+        if bitmap.is_null() {
+            warn!("Could not decode the avatar of a notification");
+        } else {
+            env.call_method(
+                &builder,
+                "setLargeIcon",
+                "(Landroid/graphics/Bitmap;)Landroid/app/Notification$Builder;",
+                &[JValue::Object(&bitmap)],
+            )?;
+        }
+    }
+
+    Ok(builder)
+}
+
+/// Show the given message, stacked into its conversation's notification.
+///
+/// Where [`send()`] posts one notification per ID, this posts one per
+/// conversation: the tag is the room's, and the message joins a
+/// `Notification.MessagingStyle` holding whatever the conversation's
+/// notification already shows. The already-shown messages are read back out of
+/// the active notification itself rather than kept on this side, which is what
+/// makes the stacking honest: a push-woken process that never saw the earlier
+/// messages still appends to them, and a notification the user dismissed
+/// starts over from nothing.
+///
+/// A message that is already shown — same timestamp, same text — is not posted
+/// again at all, so the push-wake path and the sync path, which both come here
+/// with the same event, alert once between them.
+///
+/// Must be called on the GTK thread, like [`send()`].
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn send_message(
+    tag: &str,
+    conversation_title: &str,
+    self_name: &str,
+    sender_name: &str,
+    body: &str,
+    timestamp_ms: i64,
+    is_group_conversation: bool,
+    action: &str,
+    target: &glib::Variant,
+    icon: Option<&gdk::Texture>,
+) {
+    if let Err(error) = show_message(
+        tag,
+        conversation_title,
+        self_name,
+        sender_name,
+        body,
+        timestamp_ms,
+        is_group_conversation,
+        action,
+        target,
+        icon,
+    ) {
+        error!(tag, "Could not show a message notification: {error}");
+    }
+}
+
+/// The body of [`send_message()`], so that one place reports what went wrong.
+#[allow(clippy::too_many_arguments)]
+fn show_message(
+    tag: &str,
+    conversation_title: &str,
+    self_name: &str,
+    sender_name: &str,
+    body: &str,
+    timestamp_ms: i64,
+    is_group_conversation: bool,
+    action: &str,
+    target: &glib::Variant,
+    icon: Option<&gdk::Texture>,
+) -> Result<(), AndroidJniError> {
+    let context = android::application_context()?;
+    let icon_png = icon.map(gdk::Texture::save_to_png_bytes);
+
+    android::with_env(|env| {
+        let context = context.as_obj();
+        let manager = notification_manager(env, context)?;
+
+        let shown = match shown_messages(env, &manager, tag) {
+            Ok(shown) => shown,
+            Err(error) => {
+                // The bundle keys are the framework's own but not API, so a
+                // future Android could stop answering to them. Starting the
+                // conversation over is better than refusing the new message.
+                env.exception_clear()?;
+                warn!(tag, "Could not read the shown messages back: {error}");
+                Vec::new()
+            }
+        };
+
+        if shown
+            .iter()
+            .any(|(text, time, _)| *time == timestamp_ms && text == body)
+        {
+            // The same event through the second of the two paths; reposting
+            // would alert again with nothing new to say.
+            debug!(tag, "The pushed event is already shown");
+            return Ok(());
+        }
+
+        let self_person = person(env, self_name)?;
+        let style = env.new_object(
+            "android/app/Notification$MessagingStyle",
+            "(Landroid/app/Person;)V",
+            &[JValue::Object(&self_person)],
+        )?;
+
+        for (text, time, sender) in &shown {
+            let text = JObject::from(env.new_string(text)?);
+            let message = env.new_object(
+                "android/app/Notification$MessagingStyle$Message",
+                "(Ljava/lang/CharSequence;JLandroid/app/Person;)V",
+                &[
+                    JValue::Object(&text),
+                    JValue::Long(*time),
+                    JValue::Object(sender),
+                ],
+            )?;
+            env.call_method(
+                &style,
+                "addMessage",
+                "(Landroid/app/Notification$MessagingStyle$Message;)Landroid/app/Notification$MessagingStyle;",
+                &[JValue::Object(&message)],
+            )?;
+        }
+
+        let sender = person(env, sender_name)?;
+        let text = JObject::from(env.new_string(body)?);
+        env.call_method(
+            &style,
+            "addMessage",
+            "(Ljava/lang/CharSequence;JLandroid/app/Person;)Landroid/app/Notification$MessagingStyle;",
+            &[
+                JValue::Object(&text),
+                JValue::Long(timestamp_ms),
+                JValue::Object(&sender),
+            ],
+        )?;
+
+        // A conversation title makes the shade render the group-chat layout,
+        // so a direct chat gets none — the sender's name is its whole heading.
+        // `setGroupConversation` is set explicitly either way because a title
+        // alone would imply it.
+        if is_group_conversation {
+            let title = JObject::from(env.new_string(conversation_title)?);
+            env.call_method(
+                &style,
+                "setConversationTitle",
+                "(Ljava/lang/CharSequence;)Landroid/app/Notification$MessagingStyle;",
+                &[JValue::Object(&title)],
+            )?;
+        }
+        env.call_method(
+            &style,
+            "setGroupConversation",
+            "(Z)Landroid/app/Notification$MessagingStyle;",
+            &[JValue::Bool(u8::from(is_group_conversation))],
+        )?;
+
+        let builder = base_builder(env, context, icon_png.as_deref())?;
+        env.call_method(
+            &builder,
+            "setStyle",
+            "(Landroid/app/Notification$Style;)Landroid/app/Notification$Builder;",
+            &[JValue::Object(&style)],
+        )?;
+
+        let group = JObject::from(env.new_string(GROUP_KEY)?);
+        env.call_method(
+            &builder,
+            "setGroup",
+            "(Ljava/lang/String;)Landroid/app/Notification$Builder;",
+            &[JValue::Object(&group)],
+        )?;
+
+        let intent = pending_intent(env, context, action, target)?;
+        env.call_method(
+            &builder,
+            "setContentIntent",
+            "(Landroid/app/PendingIntent;)Landroid/app/Notification$Builder;",
+            &[JValue::Object(&intent)],
+        )?;
+
+        let notification = env
+            .call_method(&builder, "build", "()Landroid/app/Notification;", &[])?
+            .l()?;
+
+        let tag = JObject::from(env.new_string(tag)?);
+        env.call_method(
+            &manager,
+            "notify",
+            "(Ljava/lang/String;ILandroid/app/Notification;)V",
+            &[
+                JValue::Object(&tag),
+                JValue::Int(NOTIFICATION_ID),
+                JValue::Object(&notification),
+            ],
+        )?;
+
+        post_group_summary(env, context, &manager)?;
+
+        Ok(())
+    })
+}
+
+/// The messages the conversation notification with the given tag currently
+/// shows, oldest first: each one text, timestamp, and sender `Person` (null
+/// for a message from the user themself).
+///
+/// Read out of `EXTRA_MESSAGES` on the active notification. The keys inside
+/// each message's `Bundle` — `text`, `time`, `sender_person`, written by
+/// `Notification.MessagingStyle.Message.toBundle()` — are the framework's
+/// internal ones, unchanged since `Person` arrived in API 28 and relied on by
+/// AndroidX's own `extractMessagingStyleFromNotification`, but they are not
+/// API: the caller treats a failure here as an empty history, not an error.
+fn shown_messages<'a>(
+    env: &mut AttachGuard<'a>,
+    manager: &JObject,
+    tag: &str,
+) -> Result<Vec<(String, i64, JObject<'a>)>, AndroidJniError> {
+    let actives = env
+        .call_method(
+            manager,
+            "getActiveNotifications",
+            "()[Landroid/service/notification/StatusBarNotification;",
+            &[],
+        )?
+        .l()?;
+    let actives = JObjectArray::from(actives);
+    let count = env.get_array_length(&actives)?;
+
+    for i in 0..count {
+        let sbn = env.get_object_array_element(&actives, i)?;
+
+        let sbn_tag = env
+            .call_method(&sbn, "getTag", "()Ljava/lang/String;", &[])?
+            .l()?;
+        // The sync service's notification is posted without a tag.
+        if sbn_tag.is_null() {
+            continue;
+        }
+        let sbn_tag = String::from(env.get_string(&JString::from(sbn_tag))?);
+        if sbn_tag != tag {
+            env.delete_local_ref(sbn)?;
+            continue;
+        }
+
+        let notification = env
+            .call_method(&sbn, "getNotification", "()Landroid/app/Notification;", &[])?
+            .l()?;
+        let extras = env
+            .get_field(&notification, "extras", "Landroid/os/Bundle;")?
+            .l()?;
+
+        let key = JObject::from(env.new_string(EXTRA_MESSAGES)?);
+        let messages = env
+            .call_method(
+                &extras,
+                "getParcelableArray",
+                "(Ljava/lang/String;)[Landroid/os/Parcelable;",
+                &[JValue::Object(&key)],
+            )?
+            .l()?;
+        if messages.is_null() {
+            return Ok(Vec::new());
+        }
+        let messages = JObjectArray::from(messages);
+        let count = env.get_array_length(&messages)?;
+
+        let mut shown = Vec::with_capacity(count as usize);
+        for j in 0..count {
+            let bundle = env.get_object_array_element(&messages, j)?;
+            if bundle.is_null() {
+                continue;
+            }
+
+            let text_key = JObject::from(env.new_string("text")?);
+            let text = env
+                .call_method(
+                    &bundle,
+                    "getCharSequence",
+                    "(Ljava/lang/String;)Ljava/lang/CharSequence;",
+                    &[JValue::Object(&text_key)],
+                )?
+                .l()?;
+            if text.is_null() {
+                continue;
+            }
+            let text = env
+                .call_method(&text, "toString", "()Ljava/lang/String;", &[])?
+                .l()?;
+            let text = String::from(env.get_string(&JString::from(text))?);
+
+            let time_key = JObject::from(env.new_string("time")?);
+            let time = env
+                .call_method(
+                    &bundle,
+                    "getLong",
+                    "(Ljava/lang/String;)J",
+                    &[JValue::Object(&time_key)],
+                )?
+                .j()?;
+
+            let person_key = JObject::from(env.new_string("sender_person")?);
+            let sender = env
+                .call_method(
+                    &bundle,
+                    "getParcelable",
+                    "(Ljava/lang/String;)Landroid/os/Parcelable;",
+                    &[JValue::Object(&person_key)],
+                )?
+                .l()?;
+
+            shown.push((text, time, sender));
+        }
+
+        return Ok(shown);
+    }
+
+    Ok(Vec::new())
+}
+
+/// An `android.app.Person` with the given name.
+fn person<'a>(env: &mut AttachGuard<'a>, name: &str) -> Result<JObject<'a>, AndroidJniError> {
+    let builder = env.new_object("android/app/Person$Builder", "()V", &[])?;
+    let name = JObject::from(env.new_string(name)?);
+    env.call_method(
+        &builder,
+        "setName",
+        "(Ljava/lang/CharSequence;)Landroid/app/Person$Builder;",
+        &[JValue::Object(&name)],
+    )?;
+
+    Ok(env
+        .call_method(&builder, "build", "()Landroid/app/Person;", &[])?
+        .l()?)
+}
+
+/// Post the summary notification for [`GROUP_KEY`], under which the
+/// conversation notifications bundle.
+///
+/// Posting it again is a cheap replace, so every message posts it. Its tap
+/// plainly opens the application: with several conversations collapsed into
+/// one card there is no single room to open, and the shade expands the bundle
+/// rather than firing this on most Androids anyway. What matters is that the
+/// intent is chosen, not inherited from whichever notification the shade
+/// happens to promote.
+fn post_group_summary(
+    env: &mut AttachGuard<'_>,
+    context: &JObject,
+    manager: &JObject,
+) -> Result<(), AndroidJniError> {
+    let builder = base_builder(env, context, None)?;
+
+    let group = JObject::from(env.new_string(GROUP_KEY)?);
+    env.call_method(
+        &builder,
+        "setGroup",
+        "(Ljava/lang/String;)Landroid/app/Notification$Builder;",
+        &[JValue::Object(&group)],
+    )?;
+    env.call_method(
+        &builder,
+        "setGroupSummary",
+        "(Z)Landroid/app/Notification$Builder;",
+        &[JValue::Bool(u8::from(true))],
+    )?;
+
+    // `Intent(ACTION_MAIN)` addressed to our own Activity — the launcher's
+    // own gesture, which resumes the task where it was.
+    let main = JObject::from(env.new_string("android.intent.action.MAIN")?);
+    let intent = env.new_object(
+        "android/content/Intent",
+        "(Ljava/lang/String;)V",
+        &[JValue::Object(&main)],
+    )?;
+    let package = env
+        .call_method(context, "getPackageName", "()Ljava/lang/String;", &[])?
+        .l()?;
+    let class = JObject::from(env.new_string(ACTIVITY_CLASS)?);
+    env.call_method(
+        &intent,
+        "setClassName",
+        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+        &[JValue::Object(&package), JValue::Object(&class)],
+    )?;
+    let pending = env
+        .call_static_method(
+            "android/app/PendingIntent",
+            "getActivity",
+            "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;",
+            &[
+                JValue::Object(context),
+                JValue::Int(0),
+                JValue::Object(&intent),
+                JValue::Int(PENDING_INTENT_FLAGS),
+            ],
+        )?
+        .l()?;
+    env.call_method(
+        &builder,
+        "setContentIntent",
+        "(Landroid/app/PendingIntent;)Landroid/app/Notification$Builder;",
+        &[JValue::Object(&pending)],
+    )?;
+
+    let notification = env
+        .call_method(&builder, "build", "()Landroid/app/Notification;", &[])?
+        .l()?;
+
+    let tag = JObject::from(env.new_string(SUMMARY_TAG)?);
+    env.call_method(
+        manager,
+        "notify",
+        "(Ljava/lang/String;ILandroid/app/Notification;)V",
+        &[
+            JValue::Object(&tag),
+            JValue::Int(NOTIFICATION_ID),
+            JValue::Object(&notification),
+        ],
+    )?;
+
+    Ok(())
+}
+
+/// Whether nothing but the summary itself is left in [`GROUP_KEY`], the
+/// just-canceled tag not counting — `cancel()` is asynchronous, so the
+/// notification it took may still be listed.
+fn group_is_empty(
+    env: &mut AttachGuard<'_>,
+    manager: &JObject,
+    canceled_tag: &str,
+) -> Result<bool, AndroidJniError> {
+    let actives = env
+        .call_method(
+            manager,
+            "getActiveNotifications",
+            "()[Landroid/service/notification/StatusBarNotification;",
+            &[],
+        )?
+        .l()?;
+    let actives = JObjectArray::from(actives);
+    let count = env.get_array_length(&actives)?;
+
+    for i in 0..count {
+        let sbn = env.get_object_array_element(&actives, i)?;
+        let notification = env
+            .call_method(&sbn, "getNotification", "()Landroid/app/Notification;", &[])?
+            .l()?;
+
+        let group = env
+            .call_method(&notification, "getGroup", "()Ljava/lang/String;", &[])?
+            .l()?;
+        if group.is_null() || String::from(env.get_string(&JString::from(group))?) != GROUP_KEY {
+            env.delete_local_ref(sbn)?;
+            continue;
+        }
+
+        let flags = env.get_field(&notification, "flags", "I")?.i()?;
+        if flags & FLAG_GROUP_SUMMARY != 0 {
+            continue;
+        }
+
+        let tag = env
+            .call_method(&sbn, "getTag", "()Ljava/lang/String;", &[])?
+            .l()?;
+        if !tag.is_null() && String::from(env.get_string(&JString::from(tag))?) == canceled_tag {
+            continue;
+        }
+
+        return Ok(false);
+    }
+
+    Ok(true)
 }
 
 /// The resource ID of the status bar icon.
@@ -636,6 +1145,18 @@ fn cancel(id: &str) -> Result<(), AndroidJniError> {
             "(Ljava/lang/String;I)V",
             &[JValue::Object(&tag), JValue::Int(NOTIFICATION_ID)],
         )?;
+
+        // The group's summary is a notification of its own, and one the system
+        // will happily keep showing alone after its last conversation is gone.
+        if group_is_empty(env, &manager, id)? {
+            let summary_tag = JObject::from(env.new_string(SUMMARY_TAG)?);
+            env.call_method(
+                &manager,
+                "cancel",
+                "(Ljava/lang/String;I)V",
+                &[JValue::Object(&summary_tag), JValue::Int(NOTIFICATION_ID)],
+            )?;
+        }
 
         Ok(())
     })
