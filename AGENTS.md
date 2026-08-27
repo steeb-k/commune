@@ -55,6 +55,8 @@ timeline, `doc/chat-bubbles.md` for the bubbled timeline layout,
 `doc/message-shields.md` for the per-message trust verdicts,
 `doc/failed-sends.md` for retrying a message that failed to send,
 `doc/knocks.md` for the banner that announces pending knocks,
+`doc/room-tags.md` for the order of the favorites,
+`doc/policy-lists.md` for reading the moderation policy rules,
 and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.

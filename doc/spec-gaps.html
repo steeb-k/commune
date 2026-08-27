@@ -487,12 +487,12 @@
     <div class="eyebrow">
       <span>Commune 1.0.0-rc1</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ b7c48b55</span>
+      <span>main @ 9b860e19</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
       Every module in the v1.19 Client-Server API, checked against the tree. Six gaps:
-      two with no implementation at all, four implemented partly. Effort is measured in UI
+      one with no implementation at all, five implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -541,18 +541,21 @@
       build-first shortlist below is empty for the first time. Round 8 closed the day out by
       finishing what was already claimed: the trust verdict the SDK computed for every message
       of an encrypted room is drawn, an undecryptable message names its actual cause, a failed
-      send can be retried, and the knock banner remembers what was reviewed.
+      send can be retried, and the knock banner remembers what was reviewed. Round 9 — the
+      plan's optional one — followed: the favorites keep the manual order another client gave
+      them, and a policy room's rules read as sentences, which moves Moderation Policy Lists
+      to the partial column and leaves exactly one module absent, OpenID, valued at none.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">2</div>
+      <div class="score-num">1</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">4</div>
+      <div class="score-num">5</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
@@ -591,7 +594,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">2 modules</span></h2>
+      <h2>Absent <span class="tick gone">1 module</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -607,13 +610,6 @@
         </thead>
         <tbody>
           <tr>
-            <td><span class="feat">Moderation policy lists</span></td>
-            <td class="mod">Moderation policy lists</td>
-            <td class="state">No subscribing to a ban list, no authoring one. <code>m.policy.rule.*</code> events are never parsed. Ignoring users is per-account and manual, one user at a time.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
             <td><span class="feat">OpenID</span></td>
             <td class="mod">OpenID</td>
             <td class="state">No OpenID token request. Only matters for proving your identity to an integration manager or a widget, and Commune hosts neither.</td>
@@ -627,13 +623,15 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">5 modules</span></h2>
       <p class="sec-sub">
         Something is there, but it is narrower than the spec says. Two are gaps in coverage;
         the account's identifiers are narrower by decision, since adding a phone
-        number takes SMS infrastructure almost no homeserver runs; and policy servers arrived
+        number takes SMS infrastructure almost no homeserver runs; policy servers arrived
         here from the absent column on 26 August 2026 — the timeline says what
-        <code>m.room.policy</code> means, and setting it is what remains. The last deliberate
+        <code>m.room.policy</code> means, and setting it is what remains — and moderation
+        policy lists followed the same day, their rules read and said, with client-side
+        enforcement left to server-side tooling by decision. The last deliberate
         departure before it, image packs
         writing unstable names, was closed on 22 August 2026. Spaces passed through this column
         and out of it in August 2026; threads passed through it in a single day, arriving from
@@ -700,9 +698,16 @@
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
           <tr>
+            <td><span class="feat">Moderation policy lists</span></td>
+            <td class="mod">Moderation policy lists</td>
+            <td class="state">Since 26 August 2026 the <code>m.policy.rule.*</code> events are read and said: a policy room’s timeline renders each rule as a sentence — who recommended banning the users, rooms or servers matching which entity, and why; a withdrawn rule reads as the removal. What keeps the row here, by decision: subscribing to a list and applying it client-side is a moderation action with teeth that the field does through server-side tooling, and authoring rules is the same story — a client owes its user legibility, not half an enforcement engine.</td>
+            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+          </tr>
+          <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
-            <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Arbitrary user tags aren't supported and the <code>order</code> field is neither read nor written, so manual ordering is lost across clients.</td>
+            <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Since 26 August 2026 the <code>order</code> field is read — the favorites keep the manual order another client gave them, ordered rooms first and the rest by activity — but not written, since nothing here offers reordering yet. Arbitrary user tags stay unsupported: a <code>u.*</code> tag wants a sidebar section of its own, and the sidebar’s sections are a fixed enum — a rework, not a tack-on.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
@@ -722,7 +727,7 @@
     <div class="sec-head">
       <h2>Added since the fork <span class="tick have">31 touch the protocol</span></h2>
       <p class="sec-sub">
-325 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
+327 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
         rebrand, which the spec has no opinion about. The additions below do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
@@ -908,7 +913,7 @@
       </table>
     </div>
     <p class="sec-sub">
-      The rest of the 325 commits stay clear of the protocol: the macOS port — its own
+      The rest of the 327 commits stay clear of the protocol: the macOS port — its own
       <code style="font-family:var(--f-mono);font-size:0.875em">GtkMediaStream</code> for audio and
       video, an image-decoder API with a pure-Rust backend, Keychain storage, the menu bar, the
       bundle, icons and fonts — plus the rebrand to Commune, the media history viewer's age
@@ -1359,7 +1364,7 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>b7c48b55</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>9b860e19</code>, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link

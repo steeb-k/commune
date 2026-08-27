@@ -1379,3 +1379,33 @@ device.
 * [ ] **A new knock raises it again**, counting only the new one.
 * [ ] **Answering from the members page needs no banner.** Accept or
       decline a knock there: nothing re-appears.
+
+## Room tag order — `doc/room-tags.md`
+
+The favorites keep the order another client gave them. Element's room
+list settings can set a manual order, or curl can write
+`{"order": 0.1}` on `m.favourite` via
+`/user/{id}/rooms/{roomId}/tags/m.favourite`.
+
+* [ ] **Ordered favorites come first, in order.** Give two favorite rooms
+      orders 0.2 and 0.1 from another client: the sidebar lists the 0.1
+      room first, the 0.2 room second, and any unordered favorites after
+      them.
+* [ ] **Unordered rooms still follow activity.** With no orders set,
+      nothing about the sidebar changed, in any section.
+* [ ] **A change from elsewhere moves the row here** without reopening
+      anything.
+
+## Moderation policy rules — `doc/policy-lists.md`
+
+Sentences in a policy room's timeline. Join a public policy list (for
+example a community ban list) or write rules with another client.
+
+* [ ] **A user rule reads as a sentence.** An `m.policy.rule.user` event
+      reads "{sender} recommended banning the users matching {entity}:
+      {reason}" — not "Unsupported event".
+* [ ] **Room and server rules read the same way**, with rooms and servers
+      in the sentence.
+* [ ] **A withdrawn rule reads as the removal.** Redact a rule event: the
+      timeline says the sender removed a moderation rule.
+* [ ] **The room's state list draws them too**, rather than falling back.

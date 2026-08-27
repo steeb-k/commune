@@ -1573,6 +1573,11 @@ fn show_in_timeline(
                 // Which server checks this room's messages is an act of
                 // moderation too, and one worth a sentence.
                 | AnySyncStateEvent::RoomPolicy(_)
+                // The moderation policy rules: who wrote which rule, about
+                // whom, and why, is the whole history of a policy room.
+                | AnySyncStateEvent::PolicyRuleUser(_)
+                | AnySyncStateEvent::PolicyRuleRoom(_)
+                | AnySyncStateEvent::PolicyRuleServer(_)
         ),
     }
 }
