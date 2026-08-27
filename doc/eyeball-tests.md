@@ -1063,33 +1063,33 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
 * [x] **The threads button is in the header bar**, a toggle with the thread
       icon, in every room — there is no cheap way to know whether a room has
       threads before asking, so it does not hide.
-* [ ] **Pressing it lists both seeded threads**, most recent activity first:
+* [x] **Pressing it lists both seeded threads**, most recent activity first:
       bob's second thread above alice's first. Each row shows the root's
       sender with avatar and timestamp, a preview of the root message, the
       reply count ("1 reply" / "3 replies"), and the latest reply as
       "name: message".
-* [ ] **Activating a row opens that thread** — the list closes, the thread
+* [x] **Activating a row opens that thread** — the list closes, the thread
       view appears with its banner, and the composer writes into that thread.
-* [ ] **A room with no threads says so.** Open the threads list in Public
+* [x] **A room with no threads says so.** Open the threads list in Public
       Room: "No Threads", with the thread icon, not a spinner that never
       stops.
-* [ ] **The list stays current.** With the list open, send a reply into a
+* [x] **The list stays current.** With the list open, send a reply into a
       seeded thread with the curl above: that row's count and latest-reply
       line must update without closing the list. A brand-new thread rooted
       while the list is open is **not** expected to appear as a new row —
       the endpoint is paginated and the live half only updates threads
       already listed; reopening the list picks it up.
-* [ ] **The pinned and threads toggles put each other out.** With pinned
+* [x] **The pinned and threads toggles put each other out.** With pinned
       messages open, press the threads button: the threads list shows and
       the pin toggle pops out, and the other way round.
-* [ ] **The thread banner does not sit over the list.** Enter a thread, then
+* [x] **The thread banner does not sit over the list.** Enter a thread, then
       open the threads list: the "Viewing a thread" banner must go while the
       list shows and come back if the list is closed with the thread still
       displayed.
-* [ ] **Switching rooms resets the list.** Open the threads list in Invite
+* [x] **Switching rooms resets the list.** Open the threads list in Invite
       Room, switch to Public Room, open its list: never the first room's
       threads, not even for an instant.
-* [ ] **The error page recovers.** Stop the homeserver, open the threads
+* [x] **The error page recovers.** Stop the homeserver, open the threads
       list in a room whose list was never opened this session: it should say
       the threads could not be listed and offer _Try Again_. Bring the
       server back and press it — the list fills in.
