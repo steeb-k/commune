@@ -1414,3 +1414,20 @@ example a community ban list) or write rules with another client.
 * [ ] **A withdrawn rule reads as the removal.** Redact a rule event: the
       timeline says the sender removed a moderation rule.
 * [ ] **The room's state list draws them too**, rather than falling back.
+
+## Guardrails — `doc/guardrails.md`
+
+Three small guards; each check is a mistake the app used to allow.
+
+* [ ] **No duplicate direct chat.** From another client, make alice and
+      bob's DM look stale (bob leaves and the room stays in m.direct),
+      then press Create Direct Chat on bob's profile here: the existing
+      room opens instead of a second one appearing.
+* [ ] **The last-device warning is plain.** On an account with exactly
+      one session and no recovery set up, the log out page says this IS
+      the last session and messages will be lost — not "if". With a
+      second session logged in, the hedged sentence returns.
+* [ ] **A too-large file is refused up front.** Attach a file over the
+      homeserver's limit (Synapse defaults to 50M; the harness accepts a
+      dd-made 60M file): the toast names the limit immediately, with no
+      long upload first. A file under the limit sends as always.

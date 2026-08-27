@@ -57,6 +57,7 @@ timeline, `doc/chat-bubbles.md` for the bubbled timeline layout,
 `doc/knocks.md` for the banner that announces pending knocks,
 `doc/room-tags.md` for the order of the favorites,
 `doc/policy-lists.md` for reading the moderation policy rules,
+`doc/guardrails.md` for the small guards from the SDK audit,
 and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.

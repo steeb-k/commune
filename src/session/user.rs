@@ -364,6 +364,17 @@ impl User {
             return Ok(room);
         }
 
+        // The local check needs the room's direct member to be computed; the
+        // SDK's reads `m.direct` itself, so it still finds the direct chat
+        // whose membership does not currently look like one — which is
+        // exactly the case that used to end in a duplicate room.
+        if let Some(matrix_room) = self.session().client().get_dm_room(user_id)
+            && let Some(room) = self.session().room_list().get(matrix_room.room_id())
+        {
+            debug!("Using the direct chat m.direct names for {user_id}…");
+            return Ok(room);
+        }
+
         debug!("Creating direct chat with {user_id}…");
         self.imp().create_direct_chat().await.map_err(|_| ())
     }
