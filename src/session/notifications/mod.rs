@@ -5,6 +5,8 @@ use gettextrs::gettext;
 use gtk::gio;
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
+#[cfg(target_os = "android")]
+use matrix_sdk_ui::notification_client::{NotificationEvent, NotificationItem};
 use ruma::{
     OwnedRoomId, RoomId, UserId,
     api::client::device::get_device,
@@ -384,6 +386,139 @@ impl Notifications {
             session_id,
             &SessionIntent::ShowMatrixId(matrix_uri),
             icon.as_ref(),
+        );
+
+        self.imp()
+            .push
+            .borrow_mut()
+            .entry(room_id)
+            .or_default()
+            .insert(id);
+    }
+
+    /// Ask the system to show a notification for a pushed event, if
+    /// applicable.
+    ///
+    /// The wake counterpart of [`Self::show_push()`]: the same suppression,
+    /// the same body, and the same ID — so whichever of the push and the sync
+    /// arrives second replaces rather than duplicates — but everything shown
+    /// comes out of the [`NotificationItem`] the fetch returned, and nothing
+    /// waits on the room models. That is the point: a push-started process
+    /// has about ten seconds before the freezer (`doc/android.md`, S5b), and
+    /// the room-info initialization [`Self::show_push()`] waits on runs at
+    /// idle priority, which a restoring session starves — measured, the wait
+    /// outlived the freezer, silently.
+    ///
+    /// What that trades away is the room avatar: its `AvatarData` hangs off
+    /// the room model, so this notification posts without a large icon.
+    #[cfg(target_os = "android")]
+    pub(crate) async fn show_pushed_item(&self, room_id: OwnedRoomId, item: NotificationItem) {
+        // The settings load from the homeserver after the session is built,
+        // and their unloaded default is "disabled". A wake asks within about
+        // two seconds of the session existing, so an unbounded trust in that
+        // default drops every notification a wake fetches — measured. Give
+        // the load a bounded moment; the homeserver only pushed because the
+        // account-level rules said notify, so "no" here is almost always
+        // "not loaded yet". A genuinely disabled setting still wins: the
+        // re-check below is the loaded value.
+        let settings = self.settings();
+        for _ in 0..20 {
+            if settings.account_enabled() && settings.session_enabled() {
+                break;
+            }
+            glib::timeout_future(Duration::from_millis(250)).await;
+        }
+        if !self.enabled() {
+            debug!("Notifications are disabled; dropping a pushed event");
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let app = Application::default();
+        let window = app.active_window().and_downcast::<Window>();
+        let session_id = session.session_id();
+
+        // Do not show notifications for the current room in the current
+        // session if the window is active — as in `show_push()`.
+        if window.is_some_and(|w| {
+            w.is_active()
+                && w.current_session_id().as_deref() == Some(session_id)
+                && w.session_view()
+                    .selected_room()
+                    .is_some_and(|r| r.room_id() == room_id)
+        }) {
+            return;
+        }
+
+        let event = match item.event {
+            NotificationEvent::Timeline(event) => AnySyncOrStrippedTimelineEvent::Sync(event),
+            NotificationEvent::Invite(event) => AnySyncOrStrippedTimelineEvent::Stripped(Box::new(
+                AnyStrippedStateEvent::RoomMember(*event),
+            )),
+        };
+
+        if is_call_invite(&event) {
+            // Same reasoning as in `show_push()`: the calls module is the one
+            // that rings, notifies and withdraws.
+            return;
+        }
+
+        let sender_id = event.sender();
+        let sender_name = match &item.sender_display_name {
+            Some(name) if item.is_sender_name_ambiguous => format!("{name} ({sender_id})"),
+            Some(name) => name.clone(),
+            None => sender_id.localpart().to_owned(),
+        };
+        let is_direct = item.is_direct_message_room;
+
+        let (body, _is_invite) = if let Some(body) =
+            message_notification_body(&event, &sender_name, !is_direct)
+        {
+            (body, false)
+        } else if let Some(body) = incoming_call_notification_body(&event, &sender_name, is_direct)
+        {
+            (body, false)
+        } else if let Some(body) =
+            own_invite_notification_body(&event, &sender_name, session.user_id())
+        {
+            (body, true)
+        } else {
+            debug!("Received push for event of unexpected type {event:?}");
+            return;
+        };
+
+        let event_id = event.event_id();
+
+        let room_uri = MatrixRoomIdUri {
+            id: room_id.clone().into(),
+            via: vec![],
+        };
+        let matrix_uri = if let Some(event_id) = event_id {
+            MatrixIdUri::Event(MatrixEventIdUri {
+                event_id: event_id.to_owned(),
+                room_uri,
+            })
+        } else {
+            MatrixIdUri::Room(room_uri)
+        };
+
+        let id = if event_id.is_some() {
+            format!("{session_id}//{matrix_uri}")
+        } else {
+            let random_id = glib::uuid_string_random();
+            format!("{session_id}//{matrix_uri}//{random_id}")
+        };
+
+        Self::send_notification(
+            &id,
+            &item.room_computed_display_name,
+            &body,
+            session_id,
+            &SessionIntent::ShowMatrixId(matrix_uri),
+            None,
         );
 
         self.imp()

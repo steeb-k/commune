@@ -140,6 +140,29 @@ perl -MXML::LibXML -e '
         $application->appendChild($node);
     }
 
+    # The raise service, which a distributor binds around a message delivery
+    # so the freezer leaves Commune alone while the pushed event is fetched —
+    # see `build-aux/android/PushRaiseService.java` for why that is needed.
+    # Exported for the same reason the receiver is.
+    my $raise_name = "org.gtk.android.PushRaiseService";
+    my ($raise) = $xpc->findnodes(
+        qq(//application/service[\@android:name="$raise_name"])
+    );
+    if (!$raise) {
+        my $node = $doc->createElement("service");
+        $node->setAttributeNS($android, "android:name", $raise_name);
+        $node->setAttributeNS($android, "android:exported", "true");
+
+        my $filter = $doc->createElement("intent-filter");
+        my $action = $doc->createElement("action");
+        $action->setAttributeNS($android, "android:name",
+            "org.unifiedpush.android.connector.RAISE_TO_FOREGROUND");
+        $filter->appendChild($action);
+        $node->appendChild($filter);
+
+        $application->appendChild($node);
+    }
+
     # The UnifiedPush receiver, beside the service. Exported: the broadcasts
     # come from the distributor, which is another application. The actions are
     # the five the AND_3 spec has a distributor send a connector.
@@ -208,6 +231,7 @@ for expected in \
     'android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"' \
     'android:name="org.gtk.android.SyncService"' \
     'android:name="org.gtk.android.PushReceiver"' \
+    'android:name="org.gtk.android.PushRaiseService"' \
     'android:scheme="unifiedpush"'
 do
     if ! grep -q "$expected" "$MANIFEST"; then

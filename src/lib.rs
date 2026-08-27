@@ -106,8 +106,19 @@ pub fn run() {
     // Initialize logger, debug is carried out via debug!, info!, warn! and error!.
     // Default to the INFO level for this crate and WARN for everything else.
     // It can be overridden with the RUST_LOG environment variable.
+    //
+    // Except on Android, where debug is the default: there is no environment
+    // to override with — even the `wrap.<package>` property trick is refused
+    // on current emulator images — and the port is still being measured
+    // through logcat, which filters by level fine on its own
+    // (`adb logcat -s Commune:I`).
+    #[cfg(target_os = "android")]
+    const DEFAULT_FILTER: &str = "commune=debug,warn";
+    #[cfg(not(target_os = "android"))]
+    const DEFAULT_FILTER: &str = "commune=info,warn";
+
     let env_filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("commune=info,warn"));
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER));
 
     // An Android application has no stdout: anything written there is dropped,
     // so the same subscriber that works everywhere else would log into nothing.
