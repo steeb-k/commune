@@ -28,6 +28,7 @@ whole route hung on.
 * [S8 — Three input bugs that were one](#s8--three-input-bugs-that-were-one)
 * [S9 — The space bar, and the reset that cancelled it](#s9--the-space-bar-and-the-reset-that-cancelled-it)
 * [S10 — The keyboard that would not capitalise, and the gesture that left](#s10--the-keyboard-that-would-not-capitalise-and-the-gesture-that-left)
+* [One bubble per conversation, and a banner that stops guessing](#one-bubble-per-conversation-and-a-banner-that-stops-guessing)
 * [Before this ships](#before-this-ships)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
@@ -2840,6 +2841,80 @@ IME before the activity while the keyboard is up, so the app never sees that pre
 behaviour recorded under [Known gaps](#known-gaps) — BACK hides the keyboard and leaves the room
 open — is unchanged.
 
+## One bubble per conversation, and a banner that stops guessing
+
+Two reports from living with the S5b build on the Pixel, 27 August 2026, fixed together because
+they are both about the app misrepresenting its state — the shade's and its own.
+
+### Messages stack into their conversation
+
+Every message used to post its own notification — the tag was
+`{session}//{matrix-event-uri}`, unique per event, which is exactly right for replace-dedup
+between the push-wake and sync paths and exactly wrong for a busy chat, which piled the shade
+with bubbles that Android then auto-bundled under one generic Commune heading.
+
+Messages now go through `android_notifications::send_message()` instead of the generic
+`send()`:
+
+* **The tag is the room's** — `{session}//{matrix-room-uri}`, the same string from the sync
+  path and the wake path, so both feed one notification per conversation.
+* **The body is a `Notification.MessagingStyle`** — the platform's own shape for a chat. Each
+  message carries its sender as a `Person`, so the body strings no longer prepend the sender
+  themselves (`show_sender` is forced off on Android; the shade renders the name). A group room
+  gets `setConversationTitle` + `setGroupConversation(true)`; a direct chat gets neither, so
+  the sender's name is its whole heading.
+* **The already-shown messages are read back from the notification itself**, out of
+  `EXTRA_MESSAGES` on `getActiveNotifications()`, not remembered in the process. That is the
+  design decision worth defending: a push-woken process that never saw the earlier messages
+  still appends to them, and a bubble the user dismissed starts over from nothing — both for
+  free, no state file. The cost is that the per-message `Bundle` keys (`text`, `time`,
+  `sender_person`) are the framework's internal ones, not API; they have not moved since
+  `Person` arrived in API 28 and AndroidX's `extractMessagingStyleFromNotification` depends on
+  them, and a failed parse degrades to starting the conversation over.
+* **Dedup moved from the tag to the message.** With one tag per room, the old
+  same-ID-replaces trick no longer tells the wake path and the sync path apart, so
+  `send_message()` skips posting entirely when a message with the same `origin_server_ts` and
+  the same text is already shown. Skipping (rather than re-posting) also means one alert per
+  event, where the old replace re-alerted.
+* **Message notifications carry an explicit group key** with a posted summary, which strikes
+  the Known-gaps entry about the collapsed bundle: the sync service's ongoing notification can
+  no longer be bundled with the conversations, so its open-the-app intent no longer answers a
+  tap aimed at a message. The summary's own tap deliberately just opens the app — with several
+  conversations collapsed into one card there is no single room to mean. `withdraw()` cancels
+  the summary when the last grouped notification goes, because Android will otherwise show a
+  summary of nothing.
+
+Invites keep the one-per-event path: their rooms have no conversation yet, their body is
+"{user} invited you", and a stripped event has no `origin_server_ts` to dedup by.
+
+### The banner stops claiming what it no longer knows
+
+Opening the app — even right on the heels of a push — showed **Offline** across the top until
+the first sync landed. The banner was not observing a fresh fact; it was replaying a stale one.
+`Session.is_offline` flips true after three consecutive failed syncs or a failed reachability
+check, and backgrounding on Android manufactures exactly that: the OS cuts the network first
+and freezes the process second, so the last thing a session learns before the freezer is "the
+syncs are failing", and that claim is still standing — with the sync loop possibly parked in a
+30-second backoff computed against a network that no longer exists — when the user comes back.
+
+The fix is `Session::recheck_connectivity()`, called for every session when the window's
+`is-active` flips on (the same property the notification-suppression check already trusts on
+Android): reset the missed-sync count, clear `is_offline`, and — only if the session was
+actually struggling — abort the backoff and restart the sync loop, or re-run the reachability
+check if that is what failed. Unknown is presented as online: the banner's job is to announce
+known trouble, not unfinished measurement, and if the trouble is real the fresh checks re-raise
+the banner within a few seconds.
+
+Both halves are `cfg(android)`. The desktop keeps its behavior on purpose: a backgrounded
+desktop process keeps running and keeps measuring, so its offline claim on refocus is fresh,
+and clearing it there would be the same lie in the other direction.
+
+**Not yet measured on hardware.** Both changes compile and ride the next install; the eyeball
+checks are: two messages in one room → one bubble that grows; dismiss it, third message → bubble
+with only the third; two rooms → two bubbles under one Commune summary whose expanded rows tap
+true; reopening the app after hours backgrounded → no Offline flash. `dumpsys notification
+--noredact` shows tags and group keys if the shade needs ground truth.
+
 ## Before this ships
 
 A running list, in the user's words where they said it. Nothing here blocks further development;
@@ -2923,12 +2998,13 @@ all of it blocks calling the port finished.
   entry scroll horizontally inside itself rather than wrap like the timeline (which breaks
   anywhere) renders the same text. Found while chasing a composer overflow that turned out to be
   the too-wide sticker rendering, which is already fixed on `main` and arrives with the re-merge.
-* **A collapsed notification group answers with the wrong tap.** When the shade groups a message
-  notification under one Commune heading with the sync service's ongoing one, tapping the
-  collapsed card fires the sync notification's plain open-the-app intent — the app opens on the
-  room list and the message's URI never arrives. Expanded, each row taps true (measured, S5b
-  step 3). The likely fix is a group key of the message notifications' own, so the ongoing
-  notification never collapses into them.
+* ~~**A collapsed notification group answers with the wrong tap.**~~ **Fixed on 27 August 2026**,
+  the way this entry predicted: message notifications now carry a group key of their own with a
+  posted summary, so the sync service's ongoing notification — whose plain open-the-app intent
+  is what a tap on the old auto-bundle fired — can no longer be bundled with them. See
+  [the stacking section](#one-bubble-per-conversation-and-a-banner-that-stops-guessing); the
+  fix rides the same change that stacks a conversation into one notification. Not yet
+  measured on hardware.
 * **The account switcher popover can open invisibly.** Its `GdkAndroidPopup` surface was created
   and later hidden without ever becoming visible — taps toggled a popover nobody could see, and
   blind keyboard navigation through it is how an Account Settings dialog got opened by accident
