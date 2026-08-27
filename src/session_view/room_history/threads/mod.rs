@@ -85,11 +85,13 @@ mod imp {
         fn map(&self) {
             self.parent_map();
 
-            // A GtkStack maps only its visible child, so this is the first
-            // time anybody has asked to see the threads of this room. Most
-            // rooms are opened and their threads never listed; building the
-            // list on the way past would be a request each, for nothing.
-            self.ensure_thread_list();
+            // A GtkStack maps only its visible child, so this runs each time
+            // somebody asks to see the threads of this room — never on the way
+            // past, which would be a request per room for nothing. The list is
+            // rebuilt rather than kept: the SDK service only rewrites the
+            // threads it has already fetched, so a thread rooted since the
+            // last look would otherwise never join the list.
+            self.rebuild_thread_list();
         }
     }
     impl BinImpl for RoomHistoryThreads {}
@@ -148,7 +150,7 @@ mod imp {
             self.room.replace(room);
 
             if self.obj().is_mapped() {
-                self.ensure_thread_list();
+                self.rebuild_thread_list();
             }
 
             self.update_view();
@@ -162,12 +164,13 @@ mod imp {
             }
         }
 
-        /// Build the thread list of the current room, if it is not built
-        /// already, and start loading it.
-        fn ensure_thread_list(&self) {
-            if self.thread_list.obj().is_some() {
-                return;
-            }
+        /// Build the thread list of the current room from a fresh request,
+        /// dropping any list built on an earlier look, and start loading it.
+        fn rebuild_thread_list(&self) {
+            self.thread_list.disconnect_signals();
+            self.disconnect_list();
+            self.list_view.set_model(None::<&gtk::NoSelection>);
+
             let room = self.room.borrow().clone();
             let Some(room) = room else {
                 return;
