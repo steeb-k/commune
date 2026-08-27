@@ -113,19 +113,34 @@ mod imp {
                     .watch_items(true)
                     .build();
 
-                // Sort the list by activity.
+                // Sort the list by the account's own order first — the
+                // `m.tag` order, which the specification puts before
+                // anything else within a tagged section, and which reads as
+                // a value past the whole range for a room without one — and
+                // by activity after it. Outside the tagged sections every
+                // room is unordered, so activity keeps deciding there.
+                let room_tag_order = Room::this_expression("tag-order");
+                let tag_order_sorter = gtk::NumericSorter::builder()
+                    .expression(&room_tag_order)
+                    .sort_order(gtk::SortType::Ascending)
+                    .build();
+
                 let room_latest_activity = Room::this_expression("latest-activity");
-                let sorter = gtk::NumericSorter::builder()
+                let activity_sorter = gtk::NumericSorter::builder()
                     .expression(&room_latest_activity)
                     .sort_order(gtk::SortType::Descending)
                     .build();
 
-                let latest_activity_expr_model = ExpressionListModel::new();
-                latest_activity_expr_model.set_expressions(vec![room_latest_activity.upcast()]);
-                latest_activity_expr_model.set_model(Some(filter_model.clone()));
+                let sorter = gtk::MultiSorter::new();
+                sorter.append(tag_order_sorter);
+                sorter.append(activity_sorter);
 
-                let sort_model =
-                    gtk::SortListModel::new(Some(latest_activity_expr_model), Some(sorter));
+                let sort_expr_model = ExpressionListModel::new();
+                sort_expr_model
+                    .set_expressions(vec![room_tag_order.upcast(), room_latest_activity.upcast()]);
+                sort_expr_model.set_model(Some(filter_model.clone()));
+
+                let sort_model = gtk::SortListModel::new(Some(sort_expr_model), Some(sorter));
 
                 // Watch for notification count and highlight changes in the filtered room list.
                 let room_notification_count = Room::this_expression("notification-count");
