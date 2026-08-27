@@ -81,6 +81,12 @@ use crate::{
 /// sending requests.
 const DEFAULT_RETRY_AFTER: u32 = 30;
 
+/// The tag order of a room that has none.
+///
+/// The specification keeps real orders in `[0, 1]` and asks that ordered
+/// rooms come first, so anything past 1 sorts a room after all of them.
+const NO_TAG_ORDER: f64 = 2.0;
+
 /// Whether the given error is the homeserver refusing to let our user out of
 /// the server notices room.
 ///
@@ -145,6 +151,15 @@ mod imp {
         /// The category of this room.
         #[property(get, builder(RoomCategory::default()))]
         category: Cell<RoomCategory>,
+        /// The order of this room inside its tag, from the `m.tag` account
+        /// data.
+        ///
+        /// The specification orders it in `[0, 1]`, smaller first, and asks
+        /// that rooms carrying an order come before rooms without one — so a
+        /// room without one reports [`NO_TAG_ORDER`], which sorts after
+        /// every real value.
+        #[property(get)]
+        tag_order: Cell<f64>,
         /// Whether this room is a direct chat.
         #[property(get)]
         is_direct: Cell<bool>,
@@ -295,6 +310,14 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Room {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            // A `Cell<f64>` starts at zero, which would read as the highest
+            // possible order; a room starts unordered instead.
+            self.tag_order.set(NO_TAG_ORDER);
+        }
+
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![
@@ -811,6 +834,47 @@ mod imp {
             };
 
             self.set_category(category);
+            self.update_tag_order(category).await;
+        }
+
+        /// Update the order of this room inside its tag.
+        ///
+        /// Only the two tags that place a room in a sorted section matter;
+        /// everything else reads as unordered.
+        async fn update_tag_order(&self, category: RoomCategory) {
+            let tag_name = match category {
+                RoomCategory::Favorite => TagName::Favorite,
+                RoomCategory::LowPriority => TagName::LowPriority,
+                _ => {
+                    self.set_tag_order(NO_TAG_ORDER);
+                    return;
+                }
+            };
+
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.tags().await });
+
+            let tag_order = match handle.await.expect("task was not aborted") {
+                Ok(tags) => tags
+                    .and_then(|tags| tags.get(&tag_name).and_then(|info| info.order))
+                    .unwrap_or(NO_TAG_ORDER),
+                Err(error) => {
+                    error!("Could not read the tags of the room: {error}");
+                    NO_TAG_ORDER
+                }
+            };
+
+            self.set_tag_order(tag_order);
+        }
+
+        /// Set the order of this room inside its tag.
+        fn set_tag_order(&self, tag_order: f64) {
+            if (self.tag_order.get() - tag_order).abs() < f64::EPSILON {
+                return;
+            }
+
+            self.tag_order.set(tag_order);
+            self.obj().notify_tag_order();
         }
 
         /// Set whether this room is a direct chat.
