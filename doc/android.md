@@ -388,7 +388,9 @@ compiling the whole GTK stack is not the slow part of this port.
 
 The debug APK is **136 MB** — unstripped, and carrying both demos GTK builds. Gradle says as much:
 `Unable to strip the following libraries, packaging them as they are:` and then all 32 `.so`s.
-A release build with stripping is the number that matters, and has not been measured.
+A release build with stripping is the number that matters, and was finally measured on
+27 August 2026, for the full application rather than the demo: **171 MB** for the `arm64-v8a`
+release APK. See [Building a release for the device](#building-a-release-for-the-device).
 
 The libadwaita demo on the Arch host, with the package cache pre-seeded: `prepare` configured
 libadwaita plus 22 subprojects, `build` took **1m16s** wall clock (11m user across cores) of which
@@ -1030,6 +1032,43 @@ $PW build
 Run these in the **archlinux** WSL distro, not Git Bash: `patch-manifest.sh` needs `XML::LibXML`,
 which Git Bash's perl does not have, and the Java patches' `perl` and `awk` there mangle the
 backslashes in their own substitutions and silently apply nothing.
+
+### Building a release for the device
+
+First done 27 August 2026; the arm64 release APK came out at **171 MB**, against ~400 MB debug.
+The pieces that are not obvious:
+
+* `--buildtype release --strip` are baked in at `prepare` — but re-running `prepare` re-extracts
+  the wraps and loses every `subprojects/gtk` patch. Reconfigure in place instead, then flip the
+  Gradle side by hand:
+
+  ```sh
+  meson configure .pixiewood/bin-aarch64 --buildtype=release -Dstrip=true
+  meson configure .pixiewood/bin-x86_64 --buildtype=release -Dstrip=true
+  sed -i 's/^release=false/release=true/' .pixiewood/pixiewood.ini   # gradle: assembleRelease
+  perl ~/src/gtk-android-builder/pixiewood build
+  ```
+
+  The buildtype switch recompiles the whole native stack once; after that it is incremental.
+
+* `assembleRelease` emits an **unsigned** APK — the generated `build.gradle` has no release
+  `signingConfig`. Sign it with the same debug keystore every install on the device has carried,
+  or `install -r` is refused with a signature mismatch and recovering means uninstalling, which
+  wipes the session:
+
+  ```sh
+  BT=~/android/sdk/build-tools/36.0.0
+  cd .pixiewood/android/app/build/outputs/apk/release
+  cp app-arm64-v8a-release-unsigned.apk commune-arm64-release.apk
+  $BT/apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android commune-arm64-release.apk
+  ```
+
+  Before the first device install, compare `apksigner verify --print-certs` between the new APK
+  and any debug APK from the same machine; the SHA-256 digests must be identical.
+
+* Install from the Windows side (`adb -s <device> install -r`). Verified on the Pixel 9a:
+  `pkgFlags` loses `DEBUGGABLE`, and the session survives the install-over — restore, sync and
+  push all came back on first launch.
 
 **The Gradle copies of the glue are hard links, not copies.**
 `.pixiewood/android/app/src/main/java/org/gtk/android/*.java` and
