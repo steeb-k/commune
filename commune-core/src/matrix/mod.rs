@@ -1,0 +1,628 @@
+//! Collection of methods related to the Matrix specification.
+//!
+//! This is the portable subset of the application's `utils::matrix`: the
+//! pieces that stayed behind are the ones that build widgets (`Pill`
+//! construction, `GDateTime` conversion), and they stayed because of what
+//! they return, not what they know.
+
+use std::{fmt, path::Path, str::FromStr};
+
+use matrix_sdk::{
+    AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
+    authentication::{
+        matrix::MatrixSession,
+        oauth::{OAuthSession, UserSession},
+    },
+    config::RequestConfig,
+    deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
+    encryption::{BackupDownloadStrategy, EncryptionSettings},
+    search_index::SearchIndexStoreKind,
+};
+use ruma::{
+    EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, OwnedEventId, OwnedRoomAliasId,
+    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedTransactionId, OwnedUserId, RoomId,
+    RoomOrAliasId, UserId,
+    events::{
+        AnyStrippedStateEvent, AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        room::message::{OriginalSyncRoomMessageEvent, Relation as MessageRelation},
+    },
+    html::matrix::AnchorUri,
+    matrix_uri::MatrixId,
+    serde::Raw,
+};
+use thiserror::Error;
+
+mod url_preview;
+
+pub use self::url_preview::previewable_url;
+use crate::{UserFacingError, secret::StoredSession};
+
+/// The result of a password validation.
+#[derive(Debug, Default, Clone, Copy)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct PasswordValidity {
+    /// Whether the password includes at least one lowercase letter.
+    pub has_lowercase: bool,
+    /// Whether the password includes at least one uppercase letter.
+    pub has_uppercase: bool,
+    /// Whether the password includes at least one number.
+    pub has_number: bool,
+    /// Whether the password includes at least one symbol.
+    pub has_symbol: bool,
+    /// Whether the password is at least 8 characters long.
+    pub has_length: bool,
+    /// The percentage of checks passed for the password, between 0 and 100.
+    ///
+    /// If progress is 100, the password is valid.
+    pub progress: u32,
+}
+
+impl PasswordValidity {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+/// Validate a password according to the Matrix specification.
+///
+/// A password should include a lower-case letter, an upper-case letter, a
+/// number and a symbol and be at a minimum 8 characters in length.
+///
+/// See: <https://spec.matrix.org/v1.1/client-server-api/#notes-on-password-management>
+#[must_use]
+pub fn validate_password(password: &str) -> PasswordValidity {
+    let mut validity = PasswordValidity::new();
+
+    for char in password.chars() {
+        if char.is_numeric() {
+            validity.has_number = true;
+        } else if char.is_lowercase() {
+            validity.has_lowercase = true;
+        } else if char.is_uppercase() {
+            validity.has_uppercase = true;
+        } else {
+            validity.has_symbol = true;
+        }
+    }
+
+    validity.has_length = password.len() >= 8;
+
+    let mut passed = 0;
+    if validity.has_number {
+        passed += 1;
+    }
+    if validity.has_lowercase {
+        passed += 1;
+    }
+    if validity.has_uppercase {
+        passed += 1;
+    }
+    if validity.has_symbol {
+        passed += 1;
+    }
+    if validity.has_length {
+        passed += 1;
+    }
+    validity.progress = passed * 100 / 5;
+
+    validity
+}
+
+/// An deserialized event received in a sync response.
+#[derive(Debug, Clone)]
+pub enum AnySyncOrStrippedTimelineEvent {
+    /// An event from a joined or left room.
+    Sync(Box<AnySyncTimelineEvent>),
+    /// An event from an invited room.
+    Stripped(Box<AnyStrippedStateEvent>),
+}
+
+impl AnySyncOrStrippedTimelineEvent {
+    /// Deserialize the given raw event.
+    pub fn from_raw(raw: &RawAnySyncOrStrippedTimelineEvent) -> Result<Self, serde_json::Error> {
+        let ev = match raw {
+            RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?.into()),
+            RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => {
+                Self::Stripped(Box::new(ev.deserialize()?))
+            }
+        };
+
+        Ok(ev)
+    }
+
+    /// The sender of the event.
+    #[must_use]
+    pub fn sender(&self) -> &UserId {
+        match self {
+            AnySyncOrStrippedTimelineEvent::Sync(ev) => ev.sender(),
+            AnySyncOrStrippedTimelineEvent::Stripped(ev) => ev.sender(),
+        }
+    }
+
+    /// The ID of the event, if it's not a stripped state event.
+    #[must_use]
+    pub fn event_id(&self) -> Option<&EventId> {
+        match self {
+            AnySyncOrStrippedTimelineEvent::Sync(ev) => Some(ev.event_id()),
+            AnySyncOrStrippedTimelineEvent::Stripped(_) => None,
+        }
+    }
+}
+
+/// All errors that can occur when setting up the Matrix client.
+#[derive(Error, Debug)]
+pub enum ClientSetupError {
+    /// An error when building the client.
+    #[error("Matrix client build error: {0}")]
+    Client(#[from] ClientBuildError),
+    /// An error when using the client.
+    #[error("Matrix client restoration error: {0}")]
+    Sdk(#[from] matrix_sdk::Error),
+    /// An error creating the unique local ID of the session.
+    #[error("Could not generate unique session ID")]
+    NoSessionId,
+    /// An error accessing the session tokens.
+    #[error("Could not access session tokens")]
+    NoSessionTokens,
+}
+
+impl UserFacingError for ClientSetupError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::Client(err) => err.to_string(),
+            Self::Sdk(err) => err.to_string(),
+            Self::NoSessionId => "Could not generate unique session ID".to_owned(),
+            Self::NoSessionTokens => "Could not access the session tokens".to_owned(),
+        }
+    }
+}
+
+/// Where the message search index for a session should live.
+///
+/// Everywhere but Windows this is a directory in the cache, encrypted with the
+/// same passphrase as the databases so that message bodies are not readable at
+/// rest. The search index can always be rebuilt from the event cache, which is
+/// why the cache directory is the right place for it.
+#[cfg(not(target_os = "windows"))]
+fn search_index_store(cache_path: &Path, passphrase: &str) -> SearchIndexStoreKind {
+    SearchIndexStoreKind::EncryptedDirectory(cache_path.join("search_index"), passphrase.to_owned())
+}
+
+/// Where the message search index for a session should live.
+///
+/// On Windows it cannot live on disk at all. The SDK gives each room a
+/// directory named after its room ID — `self.path.join(self.room_id.as_str())`
+/// in `matrix-sdk-search` — and a room ID contains a colon, which Windows will
+/// not accept in a file name. Every room fails to index, once per batch of
+/// events, and the only visible symptom is a log full of
+/// `InvalidFilename` errors and a search that finds nothing.
+///
+/// An in-memory index works and is not a large concession: it is built from the
+/// event cache as events arrive, so search covers what has been synced this
+/// run. What is lost is the index surviving a restart, and the encryption at
+/// rest that a stored index needed in the first place.
+///
+/// This should go away if the SDK ever names those directories with something
+/// that is legal on every platform.
+#[cfg(target_os = "windows")]
+fn search_index_store(_cache_path: &Path, _passphrase: &str) -> SearchIndexStoreKind {
+    SearchIndexStoreKind::InMemory
+}
+
+/// Create a [`Client`] with the given stored session.
+pub async fn client_with_stored_session(
+    session: StoredSession,
+    tokens: SessionTokens,
+) -> Result<Client, ClientSetupError> {
+    let has_refresh_token = tokens.refresh_token.is_some();
+    let data_path = session.data_path();
+    let cache_path = session.cache_path();
+
+    let StoredSession {
+        homeserver,
+        user_id,
+        device_id,
+        passphrase,
+        client_id,
+        ..
+    } = session;
+
+    let meta = SessionMeta { user_id, device_id };
+    let session_data: AuthSession = if let Some(client_id) = client_id {
+        OAuthSession {
+            user: UserSession { meta, tokens },
+            client_id,
+        }
+        .into()
+    } else {
+        MatrixSession { meta, tokens }.into()
+    };
+
+    let encryption_settings = EncryptionSettings {
+        auto_enable_cross_signing: true,
+        backup_download_strategy: BackupDownloadStrategy::AfterDecryptionFailure,
+        // This only enables room keys backup and not recovery, which would leave us in an awkward
+        // state, because we want both to be enabled at the same time.
+        auto_enable_backups: false,
+    };
+
+    // Worked out before the builder takes ownership of `cache_path`.
+    let search_index_store = search_index_store(&cache_path, &passphrase);
+
+    let mut client_builder = Client::builder()
+        // Otherwise the SDK builds its own client with the TLS backend that
+        // does not work on Android. See `crate::tls`.
+        .http_client(crate::tls::matrix_client())
+        .homeserver_url(homeserver)
+        .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
+        // force_auth option to solve an issue with some servers configuration to require
+        // auth for profiles:
+        // https://gitlab.gnome.org/World/fractal/-/issues/934
+        .request_config(RequestConfig::new().retry_limit(2).force_auth())
+        .with_encryption_settings(encryption_settings)
+        .search_index_store(search_index_store);
+
+    if has_refresh_token {
+        client_builder = client_builder.handle_refresh_tokens();
+    }
+
+    let client = client_builder.build().await?;
+
+    client.restore_session(session_data).await?;
+
+    Ok(client)
+}
+
+/// The textual representation of a room mention.
+pub const AT_ROOM: &str = "@room";
+
+/// Find `@room` in the given string.
+///
+/// This uses the same algorithm as the pushrules from the Matrix spec to detect
+/// it in the `body`.
+///
+/// Returns the position of the first match.
+pub fn find_at_room(s: &str) -> Option<usize> {
+    for (pos, _) in s.match_indices(AT_ROOM) {
+        let is_at_word_start = pos == 0 || s[..pos].ends_with(char_is_ascii_word_boundary);
+        if !is_at_word_start {
+            continue;
+        }
+
+        let pos_after_match = pos + 5;
+        let is_at_word_end = pos_after_match == s.len()
+            || s[pos_after_match..].starts_with(char_is_ascii_word_boundary);
+        if is_at_word_end {
+            return Some(pos);
+        }
+    }
+
+    None
+}
+
+/// Whether the given `char` is a word boundary, according to the Matrix spec.
+///
+/// A word boundary is any character not in the sets `[A-Z]`, `[a-z]`, `[0-9]`
+/// or `_`.
+fn char_is_ascii_word_boundary(c: char) -> bool {
+    !c.is_ascii_alphanumeric() && c != '_'
+}
+
+/// Compare two raw JSON sources.
+#[must_use]
+pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
+    let Some(lhs) = lhs else {
+        // They are equal only if both are `None`.
+        return rhs.is_none();
+    };
+    let Some(rhs) = rhs else {
+        // They cannot be equal.
+        return false;
+    };
+
+    lhs.json().get() == rhs.json().get()
+}
+
+/// A URI for a Matrix ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MatrixIdUri {
+    /// A room.
+    Room(MatrixRoomIdUri),
+    /// A user.
+    User(OwnedUserId),
+    /// An event.
+    Event(MatrixEventIdUri),
+}
+
+impl MatrixIdUri {
+    /// Constructs a `MatrixIdUri` from the given ID and servers list.
+    fn try_from_parts(id: MatrixId, via: &[OwnedServerName]) -> Result<Self, ()> {
+        let uri = match id {
+            MatrixId::Room(room_id) => Self::Room(MatrixRoomIdUri {
+                id: room_id.into(),
+                via: via.to_owned(),
+            }),
+            MatrixId::RoomAlias(room_alias) => Self::Room(MatrixRoomIdUri {
+                id: room_alias.into(),
+                via: via.to_owned(),
+            }),
+            MatrixId::User(user_id) => Self::User(user_id),
+            MatrixId::Event(room_id, event_id) => Self::Event(MatrixEventIdUri {
+                event_id,
+                room_uri: MatrixRoomIdUri {
+                    id: room_id,
+                    via: via.to_owned(),
+                },
+            }),
+            _ => return Err(()),
+        };
+
+        Ok(uri)
+    }
+
+    /// Try parsing a `&str` into a `MatrixIdUri`.
+    pub fn parse(s: &str) -> Result<Self, MatrixIdUriParseError> {
+        if let Ok(uri) = MatrixToUri::parse(s) {
+            return uri.try_into();
+        }
+
+        MatrixUri::parse(s)?.try_into()
+    }
+
+    /// Get this ID as a `matrix:` URI.
+    #[must_use]
+    pub fn as_matrix_uri(&self) -> MatrixUri {
+        match self {
+            MatrixIdUri::Room(room_uri) => match <&RoomId>::try_from(&*room_uri.id) {
+                Ok(room_id) => room_id.matrix_uri_via(room_uri.via.clone(), false),
+                Err(room_alias) => room_alias.matrix_uri(false),
+            },
+            MatrixIdUri::User(user_id) => user_id.matrix_uri(false),
+            MatrixIdUri::Event(event_uri) => {
+                let room_id = <&RoomId>::try_from(&*event_uri.room_uri.id)
+                    .expect("room alias should not be used to construct event URI");
+
+                room_id.matrix_event_uri_via(
+                    event_uri.event_id.clone(),
+                    event_uri.room_uri.via.clone(),
+                )
+            }
+        }
+    }
+}
+
+impl fmt::Display for MatrixIdUri {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_matrix_uri().fmt(f)
+    }
+}
+
+impl TryFrom<&MatrixUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: &MatrixUri) -> Result<Self, Self::Error> {
+        // We ignore the action, because we always offer to join a room or DM a user.
+        Self::try_from_parts(uri.id().clone(), uri.via())
+            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+    }
+}
+
+impl TryFrom<MatrixUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: MatrixUri) -> Result<Self, Self::Error> {
+        Self::try_from(&uri)
+    }
+}
+
+impl TryFrom<&MatrixToUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: &MatrixToUri) -> Result<Self, Self::Error> {
+        Self::try_from_parts(uri.id().clone(), uri.via())
+            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+    }
+}
+
+impl TryFrom<MatrixToUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: MatrixToUri) -> Result<Self, Self::Error> {
+        Self::try_from(&uri)
+    }
+}
+
+impl FromStr for MatrixIdUri {
+    type Err = MatrixIdUriParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+impl TryFrom<&str> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Self::parse(s)
+    }
+}
+
+impl TryFrom<&AnchorUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(value: &AnchorUri) -> Result<Self, Self::Error> {
+        match value {
+            AnchorUri::Matrix(uri) => MatrixIdUri::try_from(uri),
+            AnchorUri::MatrixTo(uri) => MatrixIdUri::try_from(uri),
+            // The same error that should be returned by `parse()` when parsing a non-Matrix URI.
+            _ => Err(IdParseError::InvalidMatrixUri(MatrixUriError::WrongScheme).into()),
+        }
+    }
+}
+
+impl TryFrom<AnchorUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(value: AnchorUri) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
+    }
+}
+
+/// A URI for a Matrix room ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MatrixRoomIdUri {
+    /// The room ID.
+    pub id: OwnedRoomOrAliasId,
+    /// Matrix servers usable to route a `RoomId`.
+    pub via: Vec<OwnedServerName>,
+}
+
+impl MatrixRoomIdUri {
+    /// Try parsing a `&str` into a `MatrixRoomIdUri`.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<MatrixRoomIdUri> {
+        MatrixIdUri::parse(s)
+            .ok()
+            .and_then(|uri| match uri {
+                MatrixIdUri::Room(room_uri) => Some(room_uri),
+                _ => None,
+            })
+            .or_else(|| RoomOrAliasId::parse(s).ok().map(Into::into))
+    }
+}
+
+impl From<OwnedRoomOrAliasId> for MatrixRoomIdUri {
+    fn from(id: OwnedRoomOrAliasId) -> Self {
+        Self {
+            id,
+            via: Vec::new(),
+        }
+    }
+}
+
+impl From<OwnedRoomId> for MatrixRoomIdUri {
+    fn from(value: OwnedRoomId) -> Self {
+        OwnedRoomOrAliasId::from(value).into()
+    }
+}
+
+impl From<OwnedRoomAliasId> for MatrixRoomIdUri {
+    fn from(value: OwnedRoomAliasId) -> Self {
+        OwnedRoomOrAliasId::from(value).into()
+    }
+}
+
+impl From<&MatrixRoomIdUri> for MatrixUri {
+    fn from(value: &MatrixRoomIdUri) -> Self {
+        match <&RoomId>::try_from(&*value.id) {
+            Ok(room_id) => room_id.matrix_uri_via(value.via.clone(), false),
+            Err(alias) => alias.matrix_uri(false),
+        }
+    }
+}
+
+/// A URI for a Matrix event ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MatrixEventIdUri {
+    /// The event ID.
+    pub event_id: OwnedEventId,
+    /// The event's room ID URI.
+    pub room_uri: MatrixRoomIdUri,
+}
+
+/// Errors encountered when parsing a Matrix ID URI.
+#[derive(Debug, Clone, Error)]
+pub enum MatrixIdUriParseError {
+    /// Not a valid Matrix URI.
+    #[error(transparent)]
+    InvalidUri(#[from] IdParseError),
+    /// Unsupported Matrix ID.
+    #[error("unsupported Matrix ID: {0:?}")]
+    UnsupportedId(MatrixId),
+}
+
+/// Deserialize the given raw event as an original room message event, with its
+/// bundled edit applied.
+///
+/// Returns `None` if the event is not an original `m.room.message` event, or if
+/// it is an edit, since edits are bundled with the event they replace.
+#[must_use]
+pub fn original_message_event_from_raw(
+    raw: &Raw<AnySyncTimelineEvent>,
+) -> Option<OriginalSyncRoomMessageEvent> {
+    let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
+        SyncMessageLikeEvent::Original(mut message_event),
+    ))) = raw.deserialize()
+    else {
+        return None;
+    };
+
+    // Filter out edits, they should be bundled with the original event.
+    if matches!(
+        message_event.content.relates_to,
+        Some(MessageRelation::Replacement(_))
+    ) {
+        return None;
+    }
+
+    // Apply bundled edit.
+    if let Some(MessageRelation::Replacement(replacement)) = message_event
+        .unsigned
+        .relations
+        .replace
+        .as_ref()
+        .and_then(|e| e.content.relates_to.as_ref())
+    {
+        message_event
+            .content
+            .apply_replacement(replacement.new_content.clone());
+    }
+
+    Some(message_event)
+}
+
+/// The data used as a cache key for messages.
+///
+/// This is used when there is no reliable way to detect if the content of a
+/// message changed. For example, the URI of a media file might change between a
+/// local echo and a remote echo, but we do not need to reload the media in this
+/// case, and we have no other way to know that both URIs point to the same
+/// file.
+#[derive(Debug, Clone, Default)]
+pub struct MessageCacheKey {
+    /// The transaction ID of the event.
+    ///
+    /// Local echo should keep its transaction ID after the message is sent, so
+    /// we do not need to reload the message if it did not change.
+    pub transaction_id: Option<OwnedTransactionId>,
+    /// The global ID of the event.
+    ///
+    /// Local echo that was sent and remote echo should have the same event ID,
+    /// so we do not need to reload the message if it did not change.
+    pub event_id: Option<OwnedEventId>,
+    /// Whether the message is edited.
+    ///
+    /// The message must be reloaded when it was edited.
+    pub is_edited: bool,
+}
+
+impl MessageCacheKey {
+    /// Whether the given new `MessageCacheKey` should trigger a reload of the
+    /// message compared to this one.
+    #[must_use]
+    pub fn should_reload(&self, new: &MessageCacheKey) -> bool {
+        if new.is_edited {
+            return true;
+        }
+
+        let transaction_id_invalidated = self.transaction_id.is_none()
+            || new.transaction_id.is_none()
+            || self.transaction_id != new.transaction_id;
+        let event_id_invalidated =
+            self.event_id.is_none() || new.event_id.is_none() || self.event_id != new.event_id;
+
+        transaction_id_invalidated && event_id_invalidated
+    }
+}
