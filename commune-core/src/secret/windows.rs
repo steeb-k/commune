@@ -327,15 +327,10 @@ mod tests {
     #[test]
     fn a_session_survives_a_round_trip() {
         // The application bakes its id in at compile time; the core takes it
-        // from the embedder, which for this test is us. The id carries a
-        // suffix of its own so the test can never collide with a real
+        // from the embedder, which for this test is us. The test id carries
+        // a suffix of its own so the test can never collide with a real
         // profile's credentials.
-        crate::config::init(crate::config::CoreConfig {
-            app_id: "io.github.steeb_k.Commune.CoreTest".to_owned(),
-            profile: "test".to_owned(),
-            data_dir: std::env::temp_dir().join("commune-core-test").join("data"),
-            cache_dir: std::env::temp_dir().join("commune-core-test").join("cache"),
-        });
+        crate::config::init_test_config();
 
         let id = format!("test-{}", std::process::id());
         let session = StoredSession {

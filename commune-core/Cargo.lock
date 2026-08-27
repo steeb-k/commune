@@ -661,7 +661,10 @@ version = "0.1.0"
 dependencies = [
  "ashpd",
  "cfg-if",
+ "eyeball",
+ "eyeball-im",
  "futures-util",
+ "indexmap",
  "jni 0.21.1",
  "linkify",
  "matrix-sdk",
@@ -680,6 +683,7 @@ dependencies = [
  "thiserror 2.0.20",
  "tld",
  "tokio",
+ "tokio-stream",
  "tracing",
  "uniffi",
  "url",
