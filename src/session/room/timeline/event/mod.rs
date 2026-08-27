@@ -10,8 +10,8 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
     events::{
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent, TimelineEventType,
-        call::invite::CallInviteEventContent, receipt::Receipt,
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, StateEventType, SyncMessageLikeEvent,
+        TimelineEventType, call::invite::CallInviteEventContent, receipt::Receipt,
     },
     serde::Raw,
 };
@@ -684,6 +684,31 @@ impl Event {
             TimelineItemContent::MembershipChange(_)
                 | TimelineItemContent::ProfileChange(_)
                 | TimelineItemContent::OtherState(_)
+        ) || self.is_unparsed_policy_server_change()
+    }
+
+    /// Whether this is an `m.room.policy` event whose content does not parse.
+    ///
+    /// The spec reads an invalid or empty `m.room.policy` content as the room
+    /// using no policy server, so this parse failure is itself the change
+    /// worth a sentence — the policy server was removed. Every other
+    /// unparsable event says nothing and stays hidden.
+    pub(crate) fn is_unparsed_policy_server_change(&self) -> bool {
+        matches!(
+            self.item().content(),
+            TimelineItemContent::FailedToParseState {
+                event_type: StateEventType::RoomPolicy,
+                ..
+            }
+        )
+    }
+
+    /// Whether this event's content failed to deserialize.
+    pub(crate) fn failed_to_parse(&self) -> bool {
+        matches!(
+            self.item().content(),
+            TimelineItemContent::FailedToParseMessageLike { .. }
+                | TimelineItemContent::FailedToParseState { .. }
         )
     }
 
@@ -701,7 +726,7 @@ impl Event {
                     AnyOtherStateEventContentChange::RoomCreate(_)
                 )
             }
-            _ => false,
+            _ => self.is_unparsed_policy_server_change(),
         }
     }
 

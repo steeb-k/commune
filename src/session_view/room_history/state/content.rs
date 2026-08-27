@@ -93,6 +93,13 @@ mod imp {
                 TimelineItemContent::OtherState(other_state) => {
                     self.update_with_other_state(&other_state, &sender, &event);
                 }
+                TimelineItemContent::FailedToParseState { .. } => {
+                    // Only `m.room.policy` reaches a state row unparsed: an
+                    // invalid or empty content is the unset gesture, and the
+                    // sentence reads the raw event as the removal.
+                    let child = self.obj().child_or_else::<gtk::Label>(text);
+                    child.set_label(&policy_server_message(&event, &sender.disambiguated_name()));
+                }
                 _ => unreachable!(),
             }
         }
