@@ -22,12 +22,12 @@
 //! broadcast carrying a token that is not the stored one is dropped here,
 //! with a warning, before anything reads the rest of it.
 //!
-//! **Discovery is a `PackageManager` query, selection is not built yet.**
-//! Every `AND_3` distributor exposes an activity on `unifiedpush://link`
-//! (the `<queries>` entry in `patch-manifest.sh` is what makes other packages
-//! visible to the query at all). Until the first-time-setup screen exists —
-//! step 5 of the plan — the first distributor found is the one used, which is
-//! correct on a device with one and arbitrary on a device with several.
+//! **Discovery is a `PackageManager` query, selection is not built.** Every
+//! `AND_3` distributor exposes an activity on `unifiedpush://link` (the
+//! `<queries>` entry in `patch-manifest.sh` is what makes other packages
+//! visible to the query at all). The first distributor found is the one used
+//! — correct on a device with one, arbitrary on a device with several, and
+//! the setup dialog and the settings page both lean on that same rule.
 //!
 //! **State survives the process, in a file.** The token has to: it is the
 //! identity of the registration, a fresh one per run would pile up dead
@@ -254,6 +254,54 @@ pub(crate) fn has_distributor() -> bool {
             warn!("Could not look for UnifiedPush distributors: {error}");
             false
         }
+    }
+}
+
+/// Where to get ntfy, asked of whatever store the device has.
+const NTFY_MARKET_URI: &str = "market://details?id=io.heckel.ntfy";
+
+/// The fallback when no store answers: F-Droid's page, in the browser.
+const NTFY_WEB_URI: &str = "https://f-droid.org/packages/io.heckel.ntfy/";
+
+/// Open ntfy's page in a store, or in the browser when there is none.
+///
+/// `market:` is answered by whatever store the device has — Play, F-Droid's
+/// client, any of them — and by nothing on a device without one, which is
+/// what the web fallback is for. Both arms measured in step 5 of the plan.
+pub(crate) fn open_ntfy_store(parent: &gtk::Window) {
+    if let Err(error) = android::launch_uri(parent, NTFY_MARKET_URI) {
+        debug!("No store answered for ntfy; opening the F-Droid page: {error}");
+        if let Err(error) = android::launch_uri(parent, NTFY_WEB_URI) {
+            warn!("Could not open a page to get ntfy: {error}");
+        }
+    }
+}
+
+/// How push delivery stands, for the two UIs that show it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DeliveryStatus {
+    /// An endpoint exists and its pusher registration succeeded.
+    Delivering,
+    /// A distributor is installed, but the chain up to the homeserver has not
+    /// been confirmed (yet, or any more).
+    Pending,
+    /// No distributor is installed, so push cannot happen.
+    NoDistributor,
+}
+
+/// The current push delivery status.
+///
+/// Must be called with the application on screen, like [`has_distributor()`].
+pub(crate) fn delivery_status() -> DeliveryStatus {
+    if !has_distributor() {
+        return DeliveryStatus::NoDistributor;
+    }
+
+    let state = State::load();
+    if state.endpoint.is_some() && state.pusher_ok {
+        DeliveryStatus::Delivering
+    } else {
+        DeliveryStatus::Pending
     }
 }
 

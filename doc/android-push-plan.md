@@ -228,10 +228,10 @@ What was planned, for the record:
 3. Offers "just keep Commune running" (the foreground service) as the no-extra-app choice, so
    declining ntfy is a decision rather than a dead end.
 
-The same choices should also live permanently in notification settings, because the person who
-taps through a setup screen is not the person who later installs ntfy — re-detection on return to
-settings makes switching modes a toggle, not a reinstall. **That settings home is the one piece
-step 5 did not build**; today the dialog is the only door, and it opens once.
+The same choices also live permanently in notification settings — **built and measured later the
+same day**: a _While the App Is Closed_ group on the account settings' Notifications page, with
+the mode combo acting the moment it changes and a push status row that re-detects on every return
+to the page. The ledger's S5b section has the measurements.
 
 ## The Play store, later
 

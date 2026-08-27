@@ -41,7 +41,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | **steps 0, 1 and 2 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 28 plugins are registered, and **audio and video both play on the emulator** through the same code every other platform runs. A voice message plays through OpenSL ES; an mp4 previews, sends and plays in the timeline, as does one that was already in the room. GTK's own `media-gstreamer` turned out not to be needed: `GstMediaStream`, written for macOS, covers Android too. Still missing: hardware decode via `androidmedia`, and calls. The plan and every measurement are in `doc/android-media-plan.md` |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push works as S5b, the whole ladder, steps 0–5, done 26 August 2026** — the plan is `doc/android-push-plan.md`: a UnifiedPush endpoint registers itself as a pusher, a real message at a **dead** Commune posts a real notification whose tap opens the conversation, the foreground service runs only when push does not deliver, and a one-time setup dialog onboards the choice. Remaining threads: the permanent settings home for the mode, and the hardware retest that carries decryption-on-wake |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push works as S5b, the whole ladder, steps 0–5, done 26 August 2026** — the plan is `doc/android-push-plan.md`: a UnifiedPush endpoint registers itself as a pusher, a real message at a **dead** Commune posts a real notification whose tap opens the conversation, the foreground service runs only when push does not deliver, a one-time setup dialog onboards the choice, and the account settings' Notifications page carries it permanently. Remaining thread: the hardware retest that carries decryption-on-wake |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
@@ -2086,13 +2086,36 @@ broadcast thread, and the second save won. Every mutation now goes through `Stat
 lock around the load-modify-save cycle; plain reads stay free, because a stale read is harmless
 where a lost write is not. Re-measured through the identical racing sequence: the flag survives.
 
-**What step 5 leaves for later:** the permanent settings home — the plan wants the same choices
-reachable in settings afterwards, so that installing ntfy later is a toggle rather than a
-reinstall; today the dialog is the only door, and the `background-delivery` key can otherwise
-only be changed by hand. The `service` row's write and the two mode overrides also remain
-unexercised on a device — three-line branches identical in shape to the measured one. And the
-dialog's strings are English-only, like everything else on the port, until the missing
+The dialog's strings are English-only, like everything else on the port, until the missing
 translations are fixed port-wide.
+
+### The settings home
+
+**Done, 26 August 2026** — the piece of step 5 that keeps the choice reachable after the dialog
+has had its one showing, because the person who taps through a setup screen is not the person who
+later installs ntfy. The Notifications page of account settings grew a _While the App Is Closed_
+group — declared hidden in the shared blueprint, since Blueprint has no conditionals, and shown
+and filled only by `cfg`-gated code; the template callbacks exist on every platform with empty
+bodies, because the template binds them everywhere. It holds a Delivery combo mapping directly
+onto the `background-delivery` key (`Automatic`, `Push only`, `Keep Commune running`) and a Push
+status row that renders `android_push::delivery_status()`: connected, waiting, or — with no
+distributor — a tap-to-get-ntfy door sharing the store-launch path the dialog measured.
+Re-detection runs every time the page maps, which is what makes installing ntfy later a toggle
+rather than a reinstall.
+
+The mode acts where it is set: the `Application` now watches the key — with the obligatory read
+before connecting, since GSettings only notifies about keys it has been asked for — and re-weighs
+the service on every change. **Measured, from the UI on a freshly cold-booted emulator:**
+choosing _Keep Commune running_ logged `Started syncing in the background` the same second, and
+switching back to _Automatic_ — with a confirmed pusher — stopped it again; the status row read
+_Connected_ throughout, from the state the reconciliation had written. `Push only` and the
+no-distributor arm of this page remain unexercised on a device; both share every line of the
+measured code below the surface.
+
+One environmental postscript: this measurement took three attempts across two emulator reboots,
+because the warm-booted emulator ANR-looped System UI itself. A **cold boot**
+(`emulator -no-snapshot-load`) is what cured it, and the session it produced was the healthiest
+of the day — worth trying before blaming anything else when the device turns to molasses.
 
 ## S6 — The formats that would not draw
 
