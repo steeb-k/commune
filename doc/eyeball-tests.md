@@ -1001,10 +1001,10 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
 
 ### The chip
 
-* [ ] **The chip appears on the root.** Open Invite Room as alice: the seeded
+* [x] **The chip appears on the root.** Open Invite Room as alice: the seeded
       root message carries a chip reading "3 replies", with the thread icon
       legible in both the light and dark styles.
-* [ ] **The replies are not in the room.** Bob's three threaded replies do
+* [x] **The replies are not in the room.** Bob's three threaded replies do
       **not** sit inline in the main timeline any more — `hide_threaded_events`
       went on when the thread view landed. The root is there, with its chip;
       the replies are only inside the thread. If they still show inline, the
