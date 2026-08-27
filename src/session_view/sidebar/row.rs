@@ -269,12 +269,19 @@ mod imp {
         }
 
         /// Whether this has a room context menu.
+        ///
+        /// This must name every category that `room_actions` builds something
+        /// for. The menu itself is one model whose items hide themselves when
+        /// their action is missing, so a category left out here has its
+        /// actions built and no way to reach them.
         fn has_room_context_menu(&self) -> bool {
             self.room().is_some_and(|r| {
                 matches!(
                     r.category(),
                     RoomCategory::Invited
+                        | RoomCategory::Knocked
                         | RoomCategory::ServerNotice
+                        | RoomCategory::Space
                         | RoomCategory::Favorite
                         | RoomCategory::Normal
                         | RoomCategory::LowPriority
@@ -508,7 +515,25 @@ mod imp {
                         ))
                         .build()]);
                 }
-                RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {}
+                // A space is joined and left like any other room, but none of
+                // the tags apply to it, so leaving is all it gets.
+                RoomCategory::Space => {
+                    action_group.add_action_entries([gio::ActionEntry::builder("leave")
+                        .activate(clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move |_, _, _| {
+                                if let Some(room) = imp.room() {
+                                    spawn!(async move {
+                                        imp.set_room_category(&room, TargetRoomCategory::Left)
+                                            .await;
+                                    });
+                                }
+                            }
+                        ))
+                        .build()]);
+                }
+                RoomCategory::Outdated | RoomCategory::Ignored => {}
             }
 
             // A room can be reported whatever our membership is, and an unwanted

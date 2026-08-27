@@ -2,10 +2,11 @@ mod animated_image_paintable;
 mod audio_player;
 mod content_viewer;
 // GTK only has a media backend of its own where it was built against
-// GStreamer. The conda-forge build we use on macOS was not, and neither is
-// pixiewood's Android build: its cross file sets `media-gstreamer =
-// 'disabled'`.
-#[cfg(any(target_os = "macos", target_os = "android"))]
+// GStreamer. None of the builds we use off Linux were: the conda-forge one
+// on macOS, the MSYS2 one on Windows, and pixiewood's on Android, whose
+// cross file sets `media-gstreamer = 'disabled'`. Where it is missing, we
+// play media ourselves.
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "android"))]
 mod gst_media_stream;
 // The map viewer is libshumate, which is not cross-built for Android; see
 // `doc/android.md`.

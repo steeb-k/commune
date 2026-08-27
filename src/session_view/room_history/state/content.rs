@@ -3,13 +3,17 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, pango};
 use matrix_sdk_ui::timeline::{
     AnyOtherStateEventContentChange, MemberProfileChange, MembershipChange, OtherState,
-    RoomMembershipChange, TimelineItemContent,
+    RoomMembershipChange, RoomPinnedEventsChange, TimelineItemContent,
 };
 use ruma::{
     UserId,
     events::{
-        StateEventContentChange,
-        room::{member::MembershipState, server_acl::RoomServerAclEventContent},
+        StateEventContentChange, StateEventType,
+        policy::rule::{PolicyRuleEventContent, Recommendation},
+        room::{
+            member::MembershipState, policy::RoomPolicyEventContent,
+            server_acl::RoomServerAclEventContent,
+        },
     },
 };
 use tracing::warn;
@@ -29,8 +33,8 @@ mod imp {
     #[properties(wrapper_type = super::StateContent)]
     pub struct StateContent {
         /// The state event displayed by this widget.
-        #[property(get, set = Self::set_event, nullable)]
-        event: glib::WeakRef<Event>,
+        #[property(get = Self::event_owned, set = Self::set_event, nullable)]
+        event: BoundObjectWeakRef<Event>,
         /// The sender of the event.
         sender: BoundObjectWeakRef<Member>,
     }
@@ -49,12 +53,20 @@ mod imp {
     impl BinImpl for StateContent {}
 
     impl StateContent {
+        /// The event presented by this row.
+        fn event_owned(&self) -> Option<Event> {
+            self.event.obj()
+        }
+
         /// Set the event presented by this row.
         fn set_event(&self, event: Option<&Event>) {
             let Some(event) = event else {
                 // Only handle when an event is set.
                 return;
             };
+
+            self.event.disconnect_signals();
+            self.sender.disconnect_signals();
 
             let sender = event.sender();
             let disambiguated_name_handler = sender.connect_disambiguated_name_notify(clone!(
@@ -66,13 +78,24 @@ mod imp {
             ));
             self.sender.set(&sender, vec![disambiguated_name_handler]);
 
-            self.event.set(Some(event));
+            // A state event can change under its row — a moderation policy
+            // rule redacted while the room is open, for one — and the
+            // sentence must follow it without waiting for a re-entry.
+            let item_changed_handler = event.connect_item_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_content();
+                }
+            ));
+            self.event.set(event, vec![item_changed_handler]);
+
             self.update_content();
         }
 
         /// Update the content for the current state.
         fn update_content(&self) {
-            let Some(event) = self.event.upgrade() else {
+            let Some(event) = self.event.obj() else {
                 return;
             };
             let Some(sender) = self.sender.obj() else {
@@ -87,14 +110,26 @@ mod imp {
                     self.update_with_profile_change(&profile_change, &sender);
                 }
                 TimelineItemContent::OtherState(other_state) => {
-                    self.update_with_other_state(&other_state, &sender);
+                    self.update_with_other_state(&other_state, &sender, &event);
+                }
+                TimelineItemContent::FailedToParseState { .. } => {
+                    // Only `m.room.policy` reaches a state row unparsed: an
+                    // invalid or empty content is the unset gesture, and the
+                    // sentence reads the raw event as the removal.
+                    let child = self.obj().child_or_else::<gtk::Label>(text);
+                    child.set_label(&policy_server_message(&event, &sender.disambiguated_name()));
                 }
                 _ => unreachable!(),
             }
         }
 
         /// Update this row with the given [`OtherState`].
-        fn update_with_other_state(&self, other_state: &OtherState, sender: &Member) {
+        fn update_with_other_state(
+            &self,
+            other_state: &OtherState,
+            sender: &Member,
+            event: &Event,
+        ) {
             let widget = match other_state.content() {
                 AnyOtherStateEventContentChange::RoomCreate(content) => {
                     WidgetType::Creation(StateCreation::new(content))
@@ -124,6 +159,71 @@ mod imp {
                 }
                 AnyOtherStateEventContentChange::RoomServerAcl(content) => {
                     WidgetType::Text(server_acl_message(content, &sender.disambiguated_name()))
+                }
+                AnyOtherStateEventContentChange::RoomPinnedEvents(content) => {
+                    // The SDK reduces the two lists to which way they differ, which
+                    // is all a sentence can carry: how many were pinned, and which
+                    // ones, is what the pinned messages view is for.
+                    let message = match RoomPinnedEventsChange::from(content) {
+                        RoomPinnedEventsChange::Added => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} pinned a message.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                        RoomPinnedEventsChange::Removed => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} unpinned a message.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                        RoomPinnedEventsChange::Changed => gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "{user} changed the pinned messages.",
+                            &[("user", &sender.disambiguated_name())],
+                        ),
+                    };
+                    WidgetType::Text(message)
+                }
+                // The SDK's state-change enum does not carry `m.room.policy`,
+                // so the event arrives as its custom variant and the server
+                // name is read from the raw event instead.
+                _ if other_state.content().event_type() == StateEventType::RoomPolicy => {
+                    WidgetType::Text(policy_server_message(event, &sender.disambiguated_name()))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleUser(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::User,
+                    ))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleRoom(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::Room,
+                    ))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleServer(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::Server,
+                    ))
                 }
                 _ => {
                     warn!(
@@ -488,6 +588,135 @@ fn server_acl_message(
             &[("sender", sender_name), ("servers", &unblocked.join(", "))],
         ),
         _ => generic(),
+    }
+}
+
+/// What a moderation policy rule is about.
+#[derive(Debug, Clone, Copy)]
+enum PolicyRuleScope {
+    /// A rule about users.
+    User,
+    /// A rule about rooms.
+    Room,
+    /// A rule about servers.
+    Server,
+}
+
+/// The sentence for a moderation policy rule event.
+///
+/// A rule the sender wrote reads with its entity, its recommendation and
+/// its reason; a redacted one — which is how a rule is withdrawn — reads
+/// as the removal. The only recommendation the specification defines is
+/// `m.ban`; anything else is named a rule without claiming to know what
+/// it asks for.
+fn policy_rule_message(
+    rule: Option<&PolicyRuleEventContent>,
+    sender_name: &str,
+    scope: PolicyRuleScope,
+) -> String {
+    let Some(rule) = rule else {
+        return match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about users.",
+                &[("sender", sender_name)],
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about rooms.",
+                &[("sender", sender_name)],
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about servers.",
+                &[("sender", sender_name)],
+            ),
+        };
+    };
+
+    let vars: &[(&str, &str)] = &[
+        ("sender", sender_name),
+        ("entity", &rule.entity),
+        ("reason", &rule.reason),
+    ];
+
+    if rule.recommendation == Recommendation::Ban {
+        match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters, like @spammer*:example.org.
+                "{sender} recommended banning the users matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters.
+                "{sender} recommended banning the rooms matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters.
+                "{sender} recommended banning the servers matching {entity}: {reason}",
+                vars,
+            ),
+        }
+    } else {
+        match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the users matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the rooms matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the servers matching {entity}: {reason}",
+                vars,
+            ),
+        }
+    }
+}
+
+/// The sentence for an `m.room.policy` event.
+///
+/// The SDK hands the event over as a custom state change, without its
+/// content, so the server name is read from the raw event. An event whose
+/// content does not parse — including one written empty to unset the policy
+/// server, and a redacted one — reads as the policy server being removed,
+/// which is what the specification says an invalid content means.
+fn policy_server_message(event: &Event, sender_name: &str) -> String {
+    let via = event.raw().and_then(|raw| {
+        raw.get_field::<RoomPolicyEventContent>("content")
+            .ok()
+            .flatten()
+            .map(|content| content.via)
+    });
+
+    if let Some(via) = via {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', these are
+            // variable names. The server checks the messages of the room for spam.
+            "{sender} made {server} check the messages of this room.",
+            &[("sender", sender_name), ("server", via.as_str())],
+        )
+    } else {
+        gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            "{sender} stopped the checking of this room’s messages.",
+            &[("sender", sender_name)],
+        )
     }
 }
 

@@ -1,0 +1,115 @@
+using Gtk 4.0;
+using Adw 1;
+
+// A near-copy of `window.blp`, kept separate rather than shared, for the
+// Windows-only route to Aero Snap described in `doc/windows-snapping-plan.md`:
+// a plain `Gtk.ApplicationWindow` with no titlebar, drawn by GTK with normal
+// (non-CSD) frame styles and given system resize borders and a caption by a
+// Win32 frame subclass installed in `Window::install_native_frame`.
+//
+// `Adw.ApplicationWindow` cannot be used here -- `gtk_window_set_titlebar()`
+// enables client-side decoration unconditionally, and `AdwApplicationWindow`
+// always sets one -- so the breakpoint that used to live on the window
+// itself moves into an `Adw.BreakpointBin`, the same pattern already used in
+// `session_view/explore/mod.blp` and `components/media/audio_player/mod.blp`.
+template $Window: Gtk.ApplicationWindow {
+  default-width: 900;
+  default-height: 850;
+  title: _("Commune");
+
+  child: Adw.BreakpointBin {
+    width-request: 360;
+    height-request: 294;
+
+    Adw.ToastOverlay toast_overlay {
+      Gtk.Stack main_stack {
+        transition-type: crossfade;
+
+        Gtk.StackPage {
+          name: "loading";
+          title: _("Loading");
+
+          child: Gtk.WindowHandle loading {
+            child: Adw.ToolbarView {
+              [top]
+              Adw.HeaderBar {
+                [start]
+                $AccountSwitcherButton {}
+
+                [end]
+                Gtk.Button {
+                  action-name: "app.about";
+                  tooltip-text: _("About Commune");
+                  icon-name: "about-symbolic";
+
+                  accessibility {
+                    label: _("About Commune");
+                  }
+                }
+              }
+
+              content: Gtk.Box {
+                orientation: vertical;
+
+                $OfflineBanner {}
+
+                Gtk.Box {
+                  orientation: vertical;
+                  valign: center;
+                  vexpand: true;
+                  spacing: 24;
+
+                  Adw.Spinner {
+                    height-request: 64;
+                    width-request: 64;
+                  }
+
+                  Gtk.Label {
+                    halign: center;
+                    justify: center;
+                    wrap: true;
+                    wrap-mode: word_char;
+                    label: _("Fetching Account Data…");
+
+                    styles [
+                      "title-2",
+                    ]
+                  }
+                }
+              };
+            };
+          };
+        }
+
+        Gtk.StackPage {
+          name: "login";
+          title: _("Log In");
+
+          child: $Login login {};
+        }
+
+        Gtk.StackPage {
+          name: "session";
+          title: _("Session");
+
+          child: $SessionView session_view {};
+        }
+
+        Gtk.StackPage {
+          name: "error";
+          title: _("Error");
+
+          child: $ErrorPage error_page {};
+        }
+      }
+    }
+
+    Adw.Breakpoint {
+      condition ("max-width: 600sp")
+
+      setters {
+        template.compact: true;
+      }
+    }
+  };
+}

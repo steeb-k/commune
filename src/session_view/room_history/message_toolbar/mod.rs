@@ -13,7 +13,7 @@ use matrix_sdk_ui::timeline::{
     AttachmentConfig, AttachmentSource, TimelineEventItemId, TimelineItemContent,
 };
 use ruma::{
-    OwnedRoomId,
+    OwnedEventId, OwnedRoomId,
     events::{
         AnyMessageLikeEventContent, Mentions,
         room::{
@@ -31,11 +31,15 @@ mod completion;
 mod composer_parser;
 mod composer_state;
 mod sticker_picker;
+mod voice_recorder;
 
 pub(crate) use self::composer_state::{ComposerState, MessageEventSource, RelationInfo};
 use self::{
-    attachment_dialog::AttachmentDialog, completion::CompletionPopover,
-    composer_parser::ComposerParser, sticker_picker::StickerPicker,
+    attachment_dialog::AttachmentDialog,
+    completion::CompletionPopover,
+    composer_parser::ComposerParser,
+    sticker_picker::StickerPicker,
+    voice_recorder::{VoiceRecorder, VoiceRecorderError},
 };
 use super::message_row::MessageContent;
 use crate::{
@@ -57,14 +61,21 @@ use crate::{
     },
 };
 
-/// A map of composer state per-session and per-room.
-type ComposerStatesMap = HashMap<Option<String>, HashMap<Option<OwnedRoomId>, ComposerState>>;
+/// A map of composer state per-session, then per-room and thread.
+///
+/// A thread keeps a composer state of its own — the state is where the
+/// half-typed draft and the reply selection live, and a draft typed for the
+/// room must not be one thread-open away from being sent into a thread.
+type ComposerStatesMap =
+    HashMap<Option<String>, HashMap<Option<(OwnedRoomId, Option<OwnedEventId>)>, ComposerState>>;
 
 /// The available stack pages of the [`MessageToolbar`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum MessageToolbarPage {
     /// The composer and other buttons to send messages.
     Composer,
+    /// A voice message is being recorded.
+    VoiceRecording,
     /// The user is not allowed to send messages in the room.
     NoPermission,
     /// The room was tombstoned.
@@ -76,6 +87,7 @@ impl MessageToolbarPage {
     const fn name(self) -> &'static str {
         match self {
             Self::Composer => "composer",
+            Self::VoiceRecording => "voice-recording",
             Self::NoPermission => "no-permission",
             Self::Tombstoned => "tombstoned",
         }
@@ -87,6 +99,7 @@ impl MessageToolbarPage {
     fn from_name(name: &str) -> Self {
         match name {
             "composer" => Self::Composer,
+            "voice-recording" => Self::VoiceRecording,
             "no-permission" => Self::NoPermission,
             "tombstoned" => Self::Tombstoned,
             _ => panic!("Unknown MessageToolbarPage: {name}"),
@@ -122,6 +135,10 @@ mod imp {
         action_row: TemplateChild<gtk::Box>,
         #[template_child]
         toolbar_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        voice_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        recording_elapsed_label: TemplateChild<gtk::Label>,
         #[template_child]
         sticker_button: TemplateChild<gtk::MenuButton>,
         #[template_child]
@@ -160,6 +177,10 @@ mod imp {
         composer_states: RefCell<ComposerStatesMap>,
         /// A guard to avoid sending several messages at once.
         send_guard: Mutex<()>,
+        /// The recorder of a voice message, while one is being recorded.
+        voice_recorder: RefCell<Option<VoiceRecorder>>,
+        /// The binding of the elapsed time of the recording to its label.
+        voice_elapsed_binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]
@@ -302,7 +323,7 @@ mod imp {
 
             match visible_page {
                 MessageToolbarPage::Composer => self.message_entry.grab_focus(),
-                MessageToolbarPage::NoPermission => false,
+                MessageToolbarPage::VoiceRecording | MessageToolbarPage::NoPermission => false,
                 MessageToolbarPage::Tombstoned => {
                     if self.tombstoned_button.is_visible() {
                         self.tombstoned_button.grab_focus()
@@ -325,6 +346,12 @@ mod imp {
                 return;
             }
             let obj = self.obj();
+
+            // A recording does not follow across rooms or threads.
+            if let Some(recorder) = self.voice_recorder.borrow().clone() {
+                recorder.cancel();
+            }
+            self.reset_voice_recording();
 
             self.disconnect_signals();
 
@@ -413,7 +440,11 @@ mod imp {
             if room.is_tombstoned() {
                 MessageToolbarPage::Tombstoned
             } else if room.permissions().can_send_message() {
-                MessageToolbarPage::Composer
+                if self.voice_recorder.borrow().is_some() {
+                    MessageToolbarPage::VoiceRecording
+                } else {
+                    MessageToolbarPage::Composer
+                }
             } else {
                 MessageToolbarPage::NoPermission
             }
@@ -429,8 +460,20 @@ mod imp {
 
         /// Update the visible stack page.
         fn update_visible_page(&self) {
-            self.main_stack
-                .set_visible_child_name(self.visible_page().name());
+            let page = self.visible_page();
+
+            if page != MessageToolbarPage::VoiceRecording && self.voice_recorder.borrow().is_some()
+            {
+                // The state changed under the recording — the permission went,
+                // or the room was tombstoned. Nothing sensible can be done
+                // with the recording, so it is dropped.
+                if let Some(recorder) = self.voice_recorder.borrow().clone() {
+                    recorder.cancel();
+                }
+                self.reset_voice_recording();
+            }
+
+            self.main_stack.set_visible_child_name(page.name());
         }
 
         /// Update the identifier to watch for the successor of the current
@@ -512,7 +555,9 @@ mod imp {
             self.composer_state(timeline)
         }
 
-        /// The composer state for the given room.
+        /// The composer state for the given timeline.
+        ///
+        /// A room and a thread within it have composer states of their own.
         ///
         /// If the composer state does not exist, it is created.
         fn composer_state(&self, timeline: Option<Timeline>) -> ComposerState {
@@ -526,7 +571,12 @@ mod imp {
                         .map(|s| s.session_id().to_owned()),
                 )
                 .or_default()
-                .entry(room.map(|room| room.room_id().to_owned()))
+                .entry(room.map(|room| {
+                    (
+                        room.room_id().to_owned(),
+                        timeline.as_ref().and_then(Timeline::thread_root),
+                    )
+                }))
                 .or_insert_with(|| ComposerState::new(timeline))
                 .clone()
         }
@@ -655,12 +705,134 @@ mod imp {
         /// Toggle UI for sending non-text messages.
         fn enable_sending_non_text_messages(&self, enable: bool) {
             self.attach_button.set_sensitive(enable);
+            self.voice_button.set_sensitive(enable);
             self.can_send_non_text_messages.set(enable);
             self.update_sticker_button();
             self.obj().action_set_enabled(
                 "message-toolbar.send-location",
                 enable && Location::new().is_available(),
             );
+        }
+
+        /// Start recording a voice message.
+        #[template_callback]
+        fn start_voice_recording(&self) {
+            if !self.can_compose_message() || !self.can_send_non_text_messages.get() {
+                return;
+            }
+            if self.voice_recorder.borrow().is_some() {
+                return;
+            }
+
+            let recorder = VoiceRecorder::new();
+
+            recorder.connect_failed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, no_microphone| {
+                    // On some platforms a missing microphone only surfaces
+                    // here, after the pipeline accepted starting.
+                    let message = if no_microphone {
+                        gettext("No microphone could be opened")
+                    } else {
+                        gettext("Could not record a voice message")
+                    };
+                    toast!(imp.obj(), message);
+                    imp.reset_voice_recording();
+                    imp.update_visible_page();
+                }
+            ));
+
+            match recorder.start() {
+                Ok(()) => {
+                    let binding = recorder
+                        .bind_property("elapsed", &*self.recording_elapsed_label, "label")
+                        .sync_create()
+                        .build();
+                    self.voice_elapsed_binding.replace(Some(binding));
+                    self.voice_recorder.replace(Some(recorder));
+                    self.update_visible_page();
+                }
+                Err(VoiceRecorderError::NoMicrophone) => {
+                    toast!(self.obj(), gettext("No microphone could be opened"));
+                }
+                Err(VoiceRecorderError::Other) => {
+                    toast!(self.obj(), gettext("Could not record a voice message"));
+                }
+            }
+        }
+
+        /// Stop recording a voice message and throw the recording away.
+        #[template_callback]
+        fn cancel_voice_recording(&self) {
+            if let Some(recorder) = self.voice_recorder.borrow().clone() {
+                recorder.cancel();
+            }
+
+            self.reset_voice_recording();
+            self.update_visible_page();
+        }
+
+        /// Forget the current voice recording.
+        ///
+        /// Does not touch the recorder itself: the caller decides whether the
+        /// recording is cancelled or already stopped.
+        fn reset_voice_recording(&self) {
+            if let Some(binding) = self.voice_elapsed_binding.take() {
+                binding.unbind();
+            }
+            self.voice_recorder.take();
+        }
+
+        /// Stop recording a voice message and send it.
+        #[template_callback]
+        async fn send_voice_message(&self) {
+            let Some(_send_guard) = self.send_guard.try_lock() else {
+                return;
+            };
+            let Some(recorder) = self.voice_recorder.borrow().clone() else {
+                return;
+            };
+
+            let path = recorder.stop().await;
+            self.reset_voice_recording();
+            self.update_visible_page();
+
+            let Ok(path) = path else {
+                toast!(self.obj(), gettext("Could not record a voice message"));
+                return;
+            };
+
+            // The same code that measures an audio file picked from disk
+            // computes the duration and the waveform of the recording.
+            let file = gio::File::for_path(&path);
+            let mut base_info = load_audio_info(&file).await;
+
+            let bytes = std::fs::read(&path);
+            if let Err(error) = std::fs::remove_file(&path) {
+                warn!("Could not remove the voice recording file: {error}");
+            }
+            let Ok(bytes) = bytes else {
+                error!("Could not read the voice recording");
+                toast!(self.obj(), gettext("Could not send voice message"));
+                return;
+            };
+
+            base_info.size = bytes.len().try_into().ok();
+
+            let Ok(mime) = "audio/ogg".parse::<mime::Mime>() else {
+                return;
+            };
+
+            let source = AttachmentSource::Data {
+                bytes,
+                // Translators: This is the body of a voice message, which is
+                // what other clients show as its file name.
+                filename: format!("{}.ogg", gettext("Voice message")),
+            };
+
+            self.send_attachment(source, mime, AttachmentInfo::Voice(base_info), None)
+                .await;
         }
 
         /// Update whether a sticker can be sent in the current state.
@@ -1109,6 +1281,38 @@ mod imp {
                 return;
             };
 
+            // Ask the homeserver's upload limit before sending, rather than
+            // uploading the whole file to be told no at the end. The answer
+            // is cached after the first ask; when it cannot be had, the
+            // upload proceeds and the server stays the judge.
+            let size = match &source {
+                AttachmentSource::Data { bytes, .. } => u64::try_from(bytes.len()).ok(),
+                AttachmentSource::File(path) => {
+                    std::fs::metadata(path).ok().map(|metadata| metadata.len())
+                }
+            };
+            if let Some(size) = size
+                && let Some(session) = timeline.room().session()
+            {
+                let client = session.client();
+                let handle =
+                    spawn_tokio!(async move { client.load_or_fetch_max_upload_size().await });
+                if let Ok(max_upload_size) = handle.await.expect("task was not aborted")
+                    && size > u64::from(max_upload_size)
+                {
+                    toast!(
+                        self.obj(),
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this
+                            // is a variable name.
+                            "This file is too large, the homeserver takes up to {max}",
+                        ),
+                        max = glib::format_size(u64::from(max_upload_size)).as_str(),
+                    );
+                    return;
+                }
+            }
+
             let config = AttachmentConfig {
                 info: Some(info),
                 thumbnail,
@@ -1221,6 +1425,9 @@ mod imp {
         async fn send_file_inner(&self, file: gio::File) {
             let obj = self.obj();
 
+            #[cfg(target_os = "macos")]
+            let file = crate::utils::repair_pasteboard_file(file);
+
             let file_info = match FileInfo::try_from_file(&file).await {
                 Ok(file_info) => file_info,
                 Err(error) => {
@@ -1242,36 +1449,35 @@ mod imp {
             //
             // `source_file` is held until this function returns, because a
             // temporary one deletes itself when the last reference to it goes.
-            let (source_file, source) = match local_path(&file) {
-                Some(path) => (File::from(file), AttachmentSource::from(path)),
-                None => {
-                    let data = match file.load_contents_future().await {
-                        Ok((data, _)) => data.to_vec(),
-                        Err(error) => {
-                            warn!("Could not read file: {error}");
-                            toast!(obj, gettext("Error reading file"));
-                            return;
-                        }
-                    };
+            let (source_file, source) = if let Some(path) = local_path(&file) {
+                (File::from(file), AttachmentSource::from(path))
+            } else {
+                let data = match file.load_contents_future().await {
+                    Ok((data, _)) => data.to_vec(),
+                    Err(error) => {
+                        warn!("Could not read file: {error}");
+                        toast!(obj, gettext("Error reading file"));
+                        return;
+                    }
+                };
 
-                    // The upload is given the bytes rather than the copy's
-                    // path, because `matrix-sdk` names an attachment after the
-                    // file it read, and the copy is named `.tmp` followed by
-                    // six random characters. The cost is holding the attachment
-                    // twice while the dialog is open, and the alternative is
-                    // sending every picked file under a name nobody chose.
-                    let source = AttachmentSource::Data {
-                        bytes: data.clone(),
-                        filename: file_info.filename.clone(),
-                    };
+                // The upload is given the bytes rather than the copy's
+                // path, because `matrix-sdk` names an attachment after the
+                // file it read, and the copy is named `.tmp` followed by
+                // six random characters. The cost is holding the attachment
+                // twice while the dialog is open, and the alternative is
+                // sending every picked file under a name nobody chose.
+                let source = AttachmentSource::Data {
+                    bytes: data.clone(),
+                    filename: file_info.filename.clone(),
+                };
 
-                    match save_data_to_tmp_file(data).await {
-                        Ok(file) => (file, source),
-                        Err(error) => {
-                            warn!("Could not copy the file to a temporary file: {error}");
-                            toast!(obj, gettext("Error reading file"));
-                            return;
-                        }
+                match save_data_to_tmp_file(data).await {
+                    Ok(file) => (file, source),
+                    Err(error) => {
+                        warn!("Could not copy the file to a temporary file: {error}");
+                        toast!(obj, gettext("Error reading file"));
+                        return;
                     }
                 }
             };

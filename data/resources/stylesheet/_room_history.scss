@@ -76,6 +76,18 @@ room-title {
         margin-right: 54px;
       }
     }
+
+    // An own bubble's avatar sits on the trailing side, so the margin
+    // that aligns an avatar-less row under its group mirrors over too.
+    message-row.bubble-own .event-content {
+      &:dir(ltr) {
+        margin-right: 54px;
+      }
+
+      &:dir(rtl) {
+        margin-left: 54px;
+      }
+    }
   }
 
   &.has-open-popup  {
@@ -230,6 +242,23 @@ message-sender {
   .timestamp {
     min-width: 36px;
     font-weight: normal;
+  }
+}
+
+// The chat bubbles setting. The row's own code hides the name and the
+// avatar of an own message and aligns its pieces to the end; what is drawn
+// is decided here. `currentColor` keeps the neutral bubble legible in both
+// themes without naming a color twice, and the own bubble borrows the
+// accent the way the focused-event background above does.
+message-row.bubble {
+  .bubble-surface {
+    padding: 6px 10px;
+    border-radius: 12px;
+    background-color: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  &.bubble-own .bubble-surface {
+    background-color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);
   }
 }
 
@@ -416,6 +445,14 @@ message-reactions {
   .reaction-count {
     font-size: 0.8em;
   }
+}
+
+.thread-chip {
+  margin-top: 3px;
+  padding: 1px 8px;
+  min-height: 0;
+  font-size: 0.9em;
+  -gtk-icon-size: 14px;
 }
 
 .reaction-chooser {

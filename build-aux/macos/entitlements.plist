@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  The hardened runtime denies the microphone and the camera outright unless
+  the signature carries these entitlements. The denial is separate from the
+  TCC permission the user grants: with the permission but without the
+  entitlement, CoreAudio hands the process silence, so a voice message
+  records a file of the right length with nothing in it. Ad-hoc builds never
+  see this, because only the hardened runtime turns the check on, which is
+  why the bug shows in a Developer-ID bundle and nowhere else.
+-->
+<dict>
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+    <key>com.apple.security.device.camera</key>
+    <true/>
+</dict>
+</plist>

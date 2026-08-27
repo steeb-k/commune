@@ -1,0 +1,240 @@
+using Gtk 4.0;
+using Adw 1;
+
+menu space-menu-model {
+  section {
+    item {
+      // Translators: A space is a collection of rooms, presented as a
+      // folder-like room that other rooms belong to.
+      label: _("Space _Details");
+      action: "space.details";
+      hidden-when: "action-disabled";
+    }
+
+    item {
+      label: _("_Invite New Members…");
+      action: "space.invite-members";
+      hidden-when: "action-disabled";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Leave Space");
+      action: "space.leave";
+      hidden-when: "action-disabled";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Report Space…");
+      action: "space.report";
+      hidden-when: "action-disabled";
+    }
+  }
+}
+
+template $ContentSpace: Adw.Bin {
+  vexpand: true;
+  hexpand: true;
+
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar header_bar {
+      [title]
+      Adw.WindowTitle {
+        title: bind template.room as <$Room>.display-name;
+        // Translators: A space is a collection of rooms, presented as a
+        // folder-like room that other rooms belong to.
+        subtitle: _("Space");
+      }
+
+      [end]
+      Gtk.MenuButton space_menu {
+        valign: center;
+        icon-name: "menu-secondary-symbolic";
+        menu-model: space-menu-model;
+        tooltip-text: _("Space Menu");
+        primary: false;
+      }
+    }
+
+    content: Gtk.ScrolledWindow {
+      vexpand: true;
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 600;
+        tightening-threshold: 400;
+        margin-top: 24;
+        margin-bottom: 24;
+        margin-start: 24;
+        margin-end: 24;
+
+        child: Gtk.Box {
+          valign: start;
+          spacing: 24;
+          orientation: vertical;
+
+          accessibility {
+            label: _("Space");
+          }
+
+          Gtk.Box {
+            spacing: 12;
+            orientation: vertical;
+
+            $Avatar avatar {
+              size: 96;
+              halign: center;
+              data: bind template.room as <$Room>.avatar-data;
+              watched-room: bind template.room;
+              watched-safety-setting: "invite-avatars";
+              accessible-role: "presentation";
+            }
+
+            Gtk.Label {
+              wrap: true;
+              wrap-mode: word_char;
+              justify: center;
+              label: bind template.room as <$Room>.display-name;
+
+              styles [
+                "title-1",
+              ]
+            }
+
+            Gtk.Label room_alias {
+              wrap: true;
+              wrap-mode: word_char;
+              justify: center;
+              label: bind template.room as <$Room>.aliases as <$RoomAliases>.alias-string;
+              visible: bind $string_not_empty(template.room as <$Room>.aliases as <$RoomAliases>.alias-string) as <bool>;
+
+              styles [
+                "dimmed",
+              ]
+            }
+
+            Gtk.Label room_topic {
+              wrap: true;
+              wrap-mode: word_char;
+              justify: center;
+              use-markup: true;
+              label: bind template.room as <$Room>.topic-linkified;
+              visible: bind $string_not_empty(template.room as <$Room>.topic-linkified) as <bool>;
+
+              styles [
+                "dimmed",
+                "body",
+              ]
+            }
+          }
+
+          Gtk.Stack children_stack {
+            transition-type: crossfade;
+            vhomogeneous: false;
+
+            Gtk.StackPage {
+              name: "loading";
+              title: _("Loading");
+
+              child: Adw.Spinner {
+                height-request: 32;
+              };
+            }
+
+            Gtk.StackPage {
+              name: "empty";
+              title: _("No Rooms");
+
+              child: Gtk.Label {
+                wrap: true;
+                wrap-mode: word_char;
+                justify: center;
+                label: _("There are no rooms in this space yet.");
+
+                styles [
+                  "dimmed",
+                  "body",
+                ]
+              };
+            }
+
+            Gtk.StackPage {
+              name: "error";
+              title: _("Error");
+
+              child: Gtk.Box {
+                spacing: 12;
+                orientation: vertical;
+
+                Gtk.Label {
+                  wrap: true;
+                  wrap-mode: word_char;
+                  justify: center;
+                  label: _("The rooms in this space could not be listed.");
+
+                  styles [
+                    "dimmed",
+                    "body",
+                  ]
+                }
+
+                Gtk.Button {
+                  halign: center;
+                  label: _("Try Again");
+                  clicked => $retry_children() swapped;
+                }
+              };
+            }
+
+            Gtk.StackPage {
+              name: "list";
+              title: _("Rooms");
+
+              child: Gtk.Box {
+                spacing: 12;
+                orientation: vertical;
+
+                Gtk.Label {
+                  xalign: 0;
+                  // Translators: This is a heading above the list of rooms
+                  // that are inside a space.
+                  label: _("Rooms");
+
+                  styles [
+                    "heading",
+                  ]
+                }
+
+                Gtk.ListBox children_list {
+                  selection-mode: none;
+
+                  styles [
+                    "boxed-list",
+                    "space-children",
+                  ]
+                }
+
+                Gtk.Label truncated_label {
+                  visible: false;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  xalign: 0;
+                  label: _("This space holds more rooms than are listed here.");
+
+                  styles [
+                    "dimmed",
+                    "caption",
+                  ]
+                }
+              };
+            }
+          }
+        };
+      };
+    };
+  }
+}

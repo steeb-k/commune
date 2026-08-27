@@ -23,6 +23,38 @@ menu event-actions-menu {
       action: "event.forward";
       hidden-when: "action-missing";
     }
+
+    item {
+      label: _("View _Thread");
+      action: "event.view-thread";
+      hidden-when: "action-missing";
+    }
+
+    item {
+      // Translators: In this string, 'Reply' is a verb. This starts a new
+      // thread rooted at the message.
+      label: _("Reply in _Thread");
+      action: "event.reply-in-thread";
+      hidden-when: "action-missing";
+    }
+  }
+
+  section {
+    item {
+      // Translators: In this string, 'Pin' is a verb, as in pinning a message
+      // to a noticeboard.
+      label: _("_Pin");
+      action: "event.pin";
+      hidden-when: "action-missing";
+    }
+
+    item {
+      // Translators: In this string, 'Unpin' is a verb: this removes a message
+      // from the pinned ones.
+      label: _("Un_pin");
+      action: "event.unpin";
+      hidden-when: "action-missing";
+    }
   }
 
   section {
@@ -86,6 +118,12 @@ menu event-actions-menu {
   }
 
   section {
+    item {
+      label: _("Try Sending _Again");
+      action: "event.retry-send";
+      hidden-when: "action-missing";
+    }
+
     item {
       label: _("_Discard");
       action: "event.cancel-send";

@@ -36,6 +36,18 @@ macOS 26.
 There is now a **relocatable `Commune.app`**, and a `.dmg` and a `.tar.gz` around it. It launches
 from a shell with nothing exported, and loads no library from outside itself.
 
+**The Windows port and the feature rounds behind it merged clean under this port.** The first
+macOS build after the merge (`cdc9b942` and what followed) tripped over exactly two things, both
+fixed since: `build-aux/cargo-build.sh` — new, shared, and executed directly by `src/meson.build` —
+arrived without its executable bit, which only NTFS forgives (`6d3448e4`), and this machine's
+clippy raised six lints no machine in the merge saw (`702526e3`). With those settled the whole bar
+passes again on macOS 26: `cargo check`, clippy, fmt, `cargo nextest run` (148 tests),
+`meson test`, `meson compile` through the new wrapper, and `macos-bundle` — a 339 MB development
+bundle, deployment floor still 11.0, reference audit still clean, and every GStreamer plugin a
+call needs inside it (`sctp` is absent, and only data channels — which Matrix 1:1 calls never
+open — would miss it). What the merge owes this platform is eyeball time, not code: none of the
+200 checks in `doc/eyeball-tests.md` has been run here — see [Not done yet](#not-done-yet).
+
 The environment it all needs is created by a script in `build-aux/macos/`.
 
 | Area | State |
@@ -331,6 +343,19 @@ because two bundles cannot share one name.
 `src/utils/app_bundle.rs`, which reads it back at startup and points GLib, GdkPixbuf, GStreamer and
 fontconfig at it. Moving anything in one means moving it in the other.
 
+**`Info.plist` never sees the rc suffix.** Its two version keys accept nothing but
+period-separated numbers — LaunchServices shrugs at anything else today, but notarization and the
+App Store validate — and Apple's three-integer format cannot even express "before 1.0" as a
+suffix, since `1.0.1` would order _above_ a stable `1.0`. That is the problem Debian's `~` solves
+and Apple simply does not have, so `bundle.sh` follows Apple's own model instead of fighting it:
+`CFBundleShortVersionString` is the marketing version's longest numeric prefix (`c36f52dc`) —
+`1.rc1` goes in as `1`, a stable `1` or `1.1` passes through whole — and `CFBundleVersion` is not
+a version at all but a **build number**, the commit count of the checkout (`28351aa7`), monotonic
+across every rc and release with nothing to remember at release time. Outside a git checkout it
+falls back to the numeric prefix. The full `1.rc1` still appears everywhere a human reads a
+version: the About dialog, and the artefact names, which take it from the bundle's own
+`CommuneVersion` key (`9e840906`) because the Apple keys no longer carry it.
+
 ### The release profile does not fit in 8 GB
 
 `Cargo.toml` asks for `debug = true`, `lto = "thin"` and `codegen-units = 1`. On the machine this
@@ -410,22 +435,63 @@ it in one call but is deprecated and signs in an order `codesign` itself warns a
 
 The default is an ad-hoc signature (`-`), which is a **new identity on every build**. The Keychain
 binds an item's access control to the signing identity, so every rebuild makes macOS ask again
-whether the app may read the session it stored last time. The fix is a stable identity: make a
-self-signed **Code Signing** certificate in Keychain Access (Certificate Assistant → Create a
-Certificate, type "Code Signing", self-signed), then
+whether the app may read the session it stored last time. The fix is any stable identity, and there
+is now a real one — the paid team is `VLC2KZKNBH`:
 
 ```sh
-CODESIGN_IDENTITY="Commune Dev" meson compile -C _build macos-bundle
+CODESIGN_IDENTITY='Developer ID Application: Steve Kaznak (VLC2KZKNBH)' \
+    meson compile -C _build-release macos-dmg
 ```
+
+A real identity changes what `bundle.sh` asks `codesign` for: ad-hoc keeps `--timestamp=none`, but
+anything else signs with `--timestamp --options runtime`, because a secure timestamp and the
+hardened runtime are exactly what notarization checks beyond the signature itself. The hardened
+runtime's library validation is satisfied by construction — every dylib and plugin in the bundle is
+signed by the same identity in the same pass — and a signed release build has been seen running
+with it: session restore, sync, the lot.
+
+The hardened runtime also denies the microphone and the camera unless the signature carries
+`com.apple.security.device.audio-input` and `com.apple.security.device.camera`, which
+`bundle.sh` embeds from `entitlements.plist` on the bundle-level sign — the call that signs the
+main executable, the only place entitlements mean anything. The denial sits **beneath TCC**: the
+usage strings in `Info.plist` still get the permission prompt, System Settings shows the
+permission granted, and CoreAudio hands the process silence anyway, so a voice message records a
+file of the right length with nothing in it. An ad-hoc build never shows the bug, because only
+`--options runtime` turns the check on.
+
+Two one-time behaviours worth expecting. Signing with the key pops a Keychain consent dialog on
+first use — "Always Allow" covers the several dozen files of a bundle pass. And the first launch of
+a Developer-ID build over a session stored by an ad-hoc build re-asks for Keychain access once —
+the item's ACL names the old identity — after which updates signed with the same identity are
+silent, which is the entire point. The certificates themselves are Xcode's cloud-managed kind:
+the private keys sync through iCloud Keychain, are **not exportable** as `.p12`, and their backup
+is the Apple ID itself. `spctl -a -t exec -vv` on a signed, un-notarized bundle says
+`rejected — Unnotarized Developer ID`; that is the expected resting state until a release is
+notarized and stapled.
 
 ### `.dmg` or `.tar.gz`
 
 Both are built, and the difference matters more than it looks.
 
 A `.dmg` is the familiar shape — open it, drag the icon onto `Applications`. But anything a browser
-downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc or self-signed
-signature for a quarantined app, so the **first launch is refused outright**. Until there is a
-Developer ID to sign and notarize with, the `.dmg` is the artefact that will not open.
+downloads is tagged `com.apple.quarantine`, and Gatekeeper will not accept an ad-hoc signature — or
+a Developer ID one it cannot check a notarization ticket for — on a quarantined app, so the
+**first launch is refused outright**. The Developer ID now exists and the bundle signs with it;
+what stands between the `.dmg` and a clean download-and-open is notarization, and `make-dmg.sh`
+does it on request:
+
+```sh
+CODESIGN_IDENTITY='Developer ID Application: Steve Kaznak (VLC2KZKNBH)' \
+NOTARIZE_PROFILE=notary \
+    meson compile -C _build-release macos-dmg
+```
+
+`NOTARIZE_PROFILE` names a `notarytool store-credentials` profile — `notary` is the one stored on
+this machine — and the step is opt-in because the same target is the dev-iteration one: a
+submission uploads the image to Apple and takes a few minutes, which a local test build should not
+pay. The script refuses an ad-hoc bundle before anything leaves the machine, waits for the
+verdict, and staples the ticket so a downloaded copy verifies offline. On a rejection,
+`xcrun notarytool log <submission id>` names the exact file and reason.
 
 Files extracted from a tarball on the command line are never quarantined in the first place, which
 is why the sibling SEED Sync project ships a `curl | sh` tarball. **`make-tarball.sh` produces the
@@ -618,9 +684,40 @@ subprocess, without the process boundary. The thread exits when the last `Image`
 It reads one frame ahead when it starts, because a GIF container has no cheap frame count and a
 single-frame GIF has to be reported as a still image rather than a one-frame animation.
 
-**Formats not supported on macOS: SVG, HEIC, AVIF and JXL.** They surface in the UI as "Image
+**Formats not supported on macOS: HEIC, AVIF and JXL.** They surface in the UI as "Image
 format not supported". BMP, GIF, ICO, JPEG, PNG, APNG, TIFF and WebP all work, animated where the
-format allows. An ImageIO-backed decoder would close the gap and is the obvious later option.
+format allows. SVG came off this list with the Windows port: anything the `image` crate does not
+recognise is now handed to GdkPixbuf, which brings whatever loaders the platform ships, and the
+conda-forge prefix ships librsvg's — so an SVG renders as a still instead of an error. It is the
+only format the fallback gains here, because conda-forge packages no HEIC or AVIF loader, where
+MSYS2 on Windows has both. Two caveats. A dev prefix created before the fallback existed has a
+`loaders.cache` without the SVG loader — re-run the setup script (or its
+`gdk-pixbuf-query-loaders` line) before concluding the fallback is broken. And the fallback's
+tests are `#[gtk::test]`, which macOS cannot run, so this path is eyeball-only here. An
+ImageIO-backed decoder would close the remaining gap and is the obvious later option.
+
+**Attachments used to send as plain files.** GIO's content types are MIME types only on Linux:
+macOS reports UTIs (`public.png`) and Windows reports registry extensions (`.png`), neither of
+which parses as a MIME type, so every attachment fell back to `application/octet-stream` and
+arrived in the timeline as a downloadable file row rather than a picture.
+`FileInfo::try_from_file` now asks GIO to translate its own platform's type
+(`g_content_type_get_mime_type`, which is `public.png` → `image/png` here — measured against the
+prefix's GLib) before parsing it (`cd668da1`). The bug was shared with Windows and the fix is
+shared too; only Linux never saw it. A test in `utils/media` pins the behaviour on all three
+platforms, since it needs no GTK and so is not caught by the `#[gtk::test]` exclusion.
+
+**Dropping and pasting files was broken by GTK, and is repaired on the way in.** GTK 4.22's macOS
+backend builds the `text/uri-list` for a file dropped on the window — or copied in the Finder —
+by percent-encoding the whole assembled `file://…` string, and the scheme's own colon comes out
+as `%3A`. GIO cannot parse a scheme from `file%3A//…`, so every drop and every pasted file
+surfaced a file with no path and failed with "Error reading file", no special characters in the
+name required. Upstream introduced this in `8d3e15b8` (in every 4.22 release) and fixed it on
+`main` in `2a8a2895` (May 2026), which no 4.22 tag carries. Measured against AppKit directly: the
+broken and the fixed backend produce byte-identical URIs except for that one `%3A`. So
+`utils::repair_pasteboard_file` (`afe47e75`) puts the colon back — `send_file_inner` runs every
+incoming file through it, covering the drop target and the clipboard alike — and the repair stops
+matching the
+day a fixed GTK arrives, because a healthy local file has a path and is passed through untouched.
 
 **Video and audio playback.** `GtkVideo` plays a file with `GtkMediaFile`, and `GtkMediaFile` has
 no backend of its own: GTK 4.22 compiles a GStreamer one into `libgtk`, but only when the
@@ -841,6 +938,38 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
 ## Not done yet
 
+* **Nothing from the Windows merge has been eyeballed here.** The merge brought spaces, peeking,
+  access requests, pinned messages, presence, in-app registration and working calls, and all 200
+  checks in `doc/eyeball-tests.md` were struck on Linux — none on macOS. The checklist is not
+  platform-tagged, so a macOS pass is a genuinely fresh run. The rows that exercise macOS-only
+  machinery deserve to go first:
+
+  * **The startup reorder** (`033e6b04`) moved GTK's own init, the gresources, the colour scheme
+    and `macos_text_scale` out of `main()` into `Application::startup`, which only the winning
+    instance runs. It was verified on Windows and Arch, not here. The launch itself, a second
+    launch handing off to the first, the `matrix:` URL warm and cold, a notification tap, the
+    menu bar and the text size are all downstream of it.
+  * **SVG through the pixbuf fallback** — see [What differs from Linux](#what-differs-from-linux);
+    the tests for it cannot run on macOS, so a sticker or timeline SVG has to be looked at.
+  * **A call, both directions.** The webrtc plugins this environment builds have never carried a
+    real call; the RGBA capsfilter in the pipeline exists for `avfvideosrc`, which makes a Mac the
+    machine that can regress it.
+* **Calls do not ring on macOS**, by omission rather than decision: `ringtone.rs` resolves the
+  freedesktop sound theme event `phone-incoming-call` through the XDG data directories, and a Mac
+  has no such theme, so `sound_file()` finds nothing and the call is silent until the notification
+  is noticed. Bundling an `.oga` under `Contents/Resources/share/sounds/` would satisfy the
+  existing lookup without a platform branch.
+* **A call notification carries no Answer and Decline buttons on macOS.** The new
+  `send_notification_with_buttons` drops the buttons on the macOS arm —
+  `UNNotificationAction` is the missing wiring — so only the banner click works, which shows the
+  call rather than answering it.
+* **The local test homeserver has not run on macOS.** `testing/local-homeserver.sh` uses GNU
+  `sed -i` (BSD sed wants `sed -i ''`), and it gives coturn `--network=host`, which inside
+  podman's Linux VM is the VM's network, not the Mac's — the split-horizon failure the script
+  itself warns about. Synapse's own container uses `-p` and should be fine. The eyeball run
+  depends on this script, so it is first in line. `hooks/doc-freshness` has the same GNU habits
+  (`sed -i`, `sha256sum`, bash-4 `mapfile`) — its `--staged` pre-commit path survives on macOS,
+  but `--fix` and `--published` do not.
 * **M3 is mostly proven.** The menu bar, the File and View items, the hidden hamburger, the
   `matrix:` scheme warm and cold, session restore, the Keychain, video and audio have all been
   seen working. What is left on the [Testing by hand](#testing-by-hand) list is the Command keys,
@@ -871,7 +1000,10 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
   The candidate fix, when there is something to test it against: a focus controller on the picker
   that calls `popdown()` when focus leaves its subtree, belt-and-braces beside the grab.
 
-Still unverified: GTK's macOS backend for input methods and drag and drop.
+Still unverified: GTK's macOS backend for input methods. Drag and drop has now been exercised —
+and found broken upstream, then repaired; see
+[What differs from Linux](#what-differs-from-linux). A drop and a Finder-copy paste both want a
+fresh eyeball with the repair in place.
 
 Two cosmetic things a run turns up that are nobody's bug in particular. GTK's macOS backend
 reports the system font as `.AppleSystemUIFont`, and libadwaita's stylesheet feeds that

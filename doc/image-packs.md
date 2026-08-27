@@ -144,7 +144,12 @@ small and listed in the ledger below.
   inline in a message. Among words it is sized from the font metrics, not
   from the `height` attribute, which the specification only requires for the
   clients that do not support image packs. Alone in a message it takes the
-  size the timeline gives a sticker, from `THUMBNAIL_MAX_DIMENSIONS`.
+  size the timeline gives a sticker, from `THUMBNAIL_MAX_DIMENSIONS` — and
+  since 26 August 2026 that size is only the natural one: the measure is
+  height-for-width, a large emoticon's minimum width is zero, and one wider
+  than the view shrinks to fit it instead of overflowing the chat window.
+  Among words the exact reserved shape is kept, because the label around it
+  places it as a shape in the text.
 
 A message that contains nothing but emoticons does not go through
 `LabelWithWidgets` at all: `widgets.rs` returns a plain box of widgets

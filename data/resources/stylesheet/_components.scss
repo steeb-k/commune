@@ -32,6 +32,22 @@ inline-pill {
   border: 2px solid var(--accent-bg-color);
 }
 
+.presence-badge {
+  /* A ring in the window colour so the dot reads as a badge sitting on the
+     avatar rather than as part of the picture underneath it. */
+  border-radius: 9999px;
+  background-color: var(--window-bg-color);
+  box-shadow: 0 0 0 1px var(--window-bg-color);
+
+  &.online {
+    color: var(--success-color);
+  }
+
+  &.unavailable {
+    color: var(--warning-color);
+  }
+}
+
 role-badge {
   color: var(--dark-5);
   background-color: var(--light-3);
@@ -164,4 +180,9 @@ audio-player waveform {
   &:focus {
     color: var(--accent-color);
   }
+}
+
+// The messages of a room read without joining it.
+.room-peek row {
+  padding: 12px;
 }

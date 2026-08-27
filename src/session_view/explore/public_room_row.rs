@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone};
 
 use crate::{
     Window,
-    components::{Avatar, LoadingButton},
+    components::{Avatar, LoadingButton, RoomPreviewDialog},
     gettext_f, ngettext_f,
     prelude::*,
     session::RemoteRoom,
@@ -36,7 +36,13 @@ mod imp {
         #[template_child]
         members_count_box: TemplateChild<gtk::Box>,
         #[template_child]
+        space_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        suggested_box: TemplateChild<gtk::Box>,
+        #[template_child]
         button: TemplateChild<LoadingButton>,
+        #[template_child]
+        preview_button: TemplateChild<gtk::Button>,
         /// The room displayed by this row.
         #[property(get, set= Self::set_room, explicit_notify)]
         room: RefCell<Option<RemoteRoom>>,
@@ -165,6 +171,11 @@ mod imp {
             );
             self.members_count_box
                 .set_tooltip_text(Some(&members_count_tooltip));
+
+            self.space_box.set_visible(room.is_space());
+            // Only a room that came from a space's hierarchy can be suggested;
+            // the flag belongs to the `m.space.child` event, not to the room.
+            self.suggested_box.set_visible(room.is_suggested());
         }
 
         /// Update the join/view button of this row.
@@ -184,9 +195,9 @@ mod imp {
                 )
             } else if room.can_knock() {
                 (
-                    gettext("Request an Invite"),
+                    gettext("Request Access"),
                     gettext_f(
-                        "Request an invite to {room_name}",
+                        "Ask to be let into {room_name}",
                         &[("room_name", &room_name)],
                     ),
                 )
@@ -202,6 +213,31 @@ mod imp {
                 .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);
 
             self.button.set_is_loading(room_list_info.is_joining());
+
+            // Reading a room that has already been joined is what the room
+            // history is for, and an encrypted room answers with ciphertext
+            // nobody outside it can turn back into words.
+            self.preview_button.set_visible(
+                room.is_world_readable()
+                    && !room.is_encrypted()
+                    && room_list_info.local_room().is_none(),
+            );
+        }
+
+        /// Read the last messages of this room without joining it.
+        #[template_callback]
+        fn preview(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let dialog = RoomPreviewDialog::new(&session);
+            dialog.set_room_and_peek(&room);
+            dialog.present(Some(&*obj));
         }
 
         /// Join or view the public room.

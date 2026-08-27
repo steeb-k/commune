@@ -4,11 +4,12 @@ use tracing::warn;
 use super::AvatarImage;
 use crate::{
     application::Application,
+    session::Presence,
     utils::notifications::{paintable_as_notification_icon, string_as_notification_icon},
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use super::*;
 
@@ -21,6 +22,13 @@ mod imp {
         /// The display name used as a fallback for this avatar.
         #[property(get, set = Self::set_display_name, explicit_notify)]
         display_name: RefCell<String>,
+        /// Whether the owner of this avatar is around.
+        ///
+        /// Always [`Presence::Unknown`] for a room, and for a user on a
+        /// homeserver that keeps the Presence module switched off — which is
+        /// most of them.
+        #[property(get, set = Self::set_presence, explicit_notify, builder(Presence::default()))]
+        presence: Cell<Presence>,
     }
 
     #[glib::object_subclass]
@@ -51,6 +59,16 @@ mod imp {
 
             self.display_name.replace(display_name);
             self.obj().notify_display_name();
+        }
+
+        /// Set whether the owner of this avatar is around.
+        fn set_presence(&self, presence: Presence) {
+            if self.presence.get() == presence {
+                return;
+            }
+
+            self.presence.set(presence);
+            self.obj().notify_presence();
         }
     }
 }

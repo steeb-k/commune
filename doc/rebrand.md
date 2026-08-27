@@ -20,6 +20,40 @@ causes on a rebase. See `fork.md` for why this tree is a fork at all.
 | macOS session data | `~/Library/Application Support/commune[-Devel]` |
 | macOS cache | `~/Library/Caches/commune[-Devel]` |
 | macOS Keychain | Service = the application ID, account = the session ID |
+| Windows session data | `%LOCALAPPDATA%\commune[-Devel]\data` |
+| Windows cache | `%LOCALAPPDATA%\commune[-Devel]\cache` |
+| Windows Credential Manager | Target name = `{application ID}/{session ID}` |
+| Windows install location | `%LOCALAPPDATA%\Programs\Commune[ Devel]`, per-user |
+| Windows AUMID | The application ID, claimed by the app and declared on the shortcut |
+| Windows toast activator | CLSID `{7DC899BF-5566-4BDF-8169-77118EFC646B}` |
+
+### The Windows GUIDs, which are permanent
+
+An MSI upgrade code is how Windows recognises an installed copy as an earlier
+version of the same product. Change one and every existing install becomes
+invisible to the installer, so it stops upgrading and starts installing
+alongside — with two entries in the list of installed programs and no way for
+either to remove the other. There is one per profile so that a development
+build and a stable one can be installed at the same time, which is the whole
+reason they differ.
+
+| Profile | MSI `UpgradeCode` |
+| --- | --- |
+| Stable | `9434FE95-FA50-4428-A565-E1491147CE85` |
+| Devel | `2CF39ACA-5B32-47B8-B73F-91BC3C2512BB` |
+| Beta | `7974C0E9-61F9-4533-90FD-D6C70EC3AA4C` |
+
+One more is not an upgrade code but is just as permanent:
+`7DC899BF-5566-4BDF-8169-77118EFC646B` is the toast activator CLSID, the COM
+class Windows activates when somebody clicks a notification that has to start
+the app rather than one that arrives while it is running. Changing it orphans
+the `HKCU\Software\Classes\CLSID\{…}` entry of everyone who has ever run
+Commune. It appears in three places, which have to agree:
+`src/utils/windows_toast_activator.rs`, the `ToastActivatorCLSID` shortcut
+property in `build-aux/windows/commune.wxs`, and the `CustomActivator` value
+the application writes for itself.
+
+### Why `steeb_k`
 
 The ID uses `steeb_k`, with an underscore, because an application ID is also
 a D-Bus name and D-Bus name elements cannot contain a hyphen. The GitHub
@@ -124,9 +158,14 @@ has to carry inside the code:
   rustdoc logo URLs.
 * `login/method_page.rs` — `initial_device_display_name`, the name other
   people see for this device in a Matrix room.
-* `secret/linux.rs` and `secret/macos.rs` — the label of the keyring or
-  Keychain item. Both use the same string, so a change has to be made in both
-  or the translations diverge.
+* `secret/linux.rs`, `secret/macos.rs` and `secret/windows.rs` — the label of
+  the keyring, Keychain or Credential Manager item. All three use the same
+  string, so a change has to be made in all three or they diverge. The Windows
+  one is deliberately not translated: it is read in among entries written by
+  other applications in Windows' own list of credentials.
+* `build.rs` — `ProductName`, `FileDescription` and `CompanyName`, which are
+  what the Windows Properties dialog and Task Manager show. The product name
+  comes from Meson so that it carries the profile.
 * `login/local_server.rs` — the OAuth "you can go back now" page.
 * `identity_verification_view/no_supported_methods_page.rs` — four strings.
 * `account_settings/encryption_page/import_export_keys_subpage.rs` — the

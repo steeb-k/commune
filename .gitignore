@@ -29,6 +29,7 @@ build-flatpak*/
 # Dynamically-generated files
 src/config.rs
 hooks/checks-bin
+hooks/checks-bin.exe
 
 # Python bytecode from the image pack tool
 __pycache__/
@@ -58,3 +59,8 @@ testing/.homeserver/
 !/subprojects/adwaita-icon-theme.wrap
 /subprojects/.wraplock
 /.buildconfig
+
+# Azure Trusted Signing metadata. Machine-local: it names a signing account
+# and this repository is public. `build-aux/windows/sign.ps1` skips signing
+# when it is absent, so a build without it still succeeds, unsigned.
+/artifact-signing-metadata.json

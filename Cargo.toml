@@ -1,6 +1,6 @@
 [package]
 name = "commune"
-version = "14.1.0"
+version = "1.0.0-rc1"
 authors = ["Julian Sparber <julian@sparber.net>"]
 license = "GPL-3.0-or-later"
 edition = "2024"
@@ -15,6 +15,12 @@ ignored = [
     "rusqlite",
     # Used by the SecretFile API.
     "serde_bytes",
+    # Used by `build.rs`, inside a `cfg(target_os = "windows")` that
+    # cargo-machete does not follow.
+    "winresource",
+    # Named only by what `#[implement]` expands to, in
+    # `src/utils/windows_toast_activator.rs`, so no source file mentions it.
+    "windows-core",
 ]
 
 [profile.release]
@@ -45,6 +51,7 @@ futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.8", features = ["gettext-system"] }
+http = "1.5"
 indexmap = "2"
 linkify = "0.11"
 mime = "0.3"
@@ -97,6 +104,13 @@ features = [
     "sso-login",
 ]
 
+[dependencies.matrix-sdk-base]
+# version = "0.18"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
+default-features = false
+features = ["e2e-encryption"]
+
 [dependencies.matrix-sdk-store-encryption]
 # version = "0.18"
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
@@ -115,6 +129,7 @@ git = "https://github.com/ruma/ruma.git"
 rev = "db24422e03aea7c7974230098fe9aeb5481cddc6"
 features = [
     "client-api-c",
+    "identity-service-api-c",
     "markdown",
     "html-matrix",
     "compat-arbitrary-length-ids",
@@ -238,8 +253,40 @@ objc2-user-notifications = { version = "0.3", default-features = false, features
 ] }
 security-framework = "3"
 
+# Windows-only dependencies.
+[target.'cfg(target_os = "windows")'.dependencies]
+# `win32` gives its `HWND` (and friends) as the `windows` crate's own types,
+# rather than its fallback newtype, so `windows_frame` needs no conversion.
+gdk4-win32 = { version = "0.11", features = ["win32"] }
+windows = { version = "0.62", features = [
+    "Data_Xml_Dom",
+    "Foundation",
+    "UI_Notifications",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security_Credentials",
+    "Win32_System_Com",
+    "Win32_System_Registry",
+    "Win32_UI_Controls",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Notifications",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+# The `#[implement]` macro that builds the notification activator expands to
+# paths in `windows_core`, so it has to be nameable at the crate root rather
+# than only through `windows::core`.
+windows-core = "0.62"
+
 [dev-dependencies]
 assert_matches2 = "0.1"
+
+# The icon, the version information and the manifest that `build.rs` compiles
+# into the executable. Windows has no metadata file beside the binary to put
+# them in, the way a macOS bundle has its `Info.plist`.
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1"
 
 [lints.rust]
 # ruma's `EventContent` derive emits this cfg; it is ruma's to set, not ours.

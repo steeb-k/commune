@@ -7,6 +7,11 @@ mod item;
 mod list;
 mod row;
 
+use matrix_sdk::ruma::{
+    api::client::membership::{Invite3pid, Invite3pidInit},
+    thirdparty::Medium,
+};
+
 use self::{
     item::InviteItem,
     list::{InviteList, InviteListState},
@@ -14,10 +19,26 @@ use self::{
 };
 use crate::{
     components::{LoadingButton, PillSearchEntry, PillSource},
+    gettext_f,
     prelude::*,
-    session::{Room, User},
-    toast,
+    session::{EmailInviteReadiness, IdentityServerError, PendingTerm, Room, Session, User},
+    spawn, spawn_tokio, toast,
 };
+
+/// The email address in the given search text, if that is what it holds.
+///
+/// The same rule the account settings use for an address: an `@` between
+/// two non-empty halves, and nothing that cannot be part of one.
+fn email_in_search(text: &str) -> Option<String> {
+    let text = text.trim();
+    let (local, domain) = text.split_once('@')?;
+
+    (!local.is_empty()
+        && !domain.is_empty()
+        && !domain.contains('@')
+        && !text.contains(char::is_whitespace))
+    .then(|| text.to_owned())
+}
 
 mod imp {
     use std::cell::OnceCell;
@@ -36,6 +57,12 @@ mod imp {
         list_view: TemplateChild<gtk::ListView>,
         #[template_child]
         invite_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        email_invite_clamp: TemplateChild<adw::Clamp>,
+        #[template_child]
+        email_invite_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        email_invite_label: TemplateChild<gtk::Label>,
         #[template_child]
         cancel_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -119,10 +146,41 @@ mod imp {
                 }
             ));
 
+            self.search_entry.connect_activated(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    // Return does what the button does, and nothing when the
+                    // button would do nothing.
+                    if !imp.invite_button.is_sensitive() {
+                        return;
+                    }
+
+                    spawn!(clone!(
+                        #[weak]
+                        imp,
+                        async move {
+                            imp.invite().await;
+                        }
+                    ));
+                }
+            ));
+
             self.search_entry
                 .bind_property("text", invite_list, "search-term")
                 .sync_create()
                 .build();
+
+            self.search_entry.connect_notify_local(
+                Some("text"),
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _| {
+                        imp.update_email_invite();
+                    }
+                ),
+            );
 
             invite_list
                 .bind_property("has-invitees", &*self.invite_button, "sensitive")
@@ -156,6 +214,174 @@ mod imp {
             };
 
             self.stack.set_visible_child_name(page);
+        }
+
+        /// Offer to invite by email when that is what the search says.
+        fn update_email_invite(&self) {
+            let email = email_in_search(&self.search_entry.text());
+
+            if let Some(email) = &email {
+                self.email_invite_label.set_label(&gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "Invite {email} by email",
+                    &[("email", email)],
+                ));
+            }
+            self.email_invite_clamp.set_visible(email.is_some());
+        }
+
+        /// Invite the email address in the search entry to the room.
+        #[template_callback]
+        async fn invite_by_email(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
+            let Some(email) = email_in_search(&self.search_entry.text()) else {
+                return;
+            };
+
+            self.email_invite_button.set_sensitive(false);
+            self.run_email_invite(&room, &session, email).await;
+            self.email_invite_button.set_sensitive(true);
+        }
+
+        /// Run the email invite flow for the given address.
+        async fn run_email_invite(&self, room: &Room, session: &Session, email: String) {
+            let identity_server = session.identity_server();
+
+            // At most twice: once to learn about the terms, once after they
+            // were agreed to.
+            for terms_seen in [false, true] {
+                let readiness = match identity_server.email_invite_readiness(session).await {
+                    Ok(readiness) => readiness,
+                    Err(IdentityServerError::NoServer) => {
+                        toast!(
+                            self.obj(),
+                            gettext(
+                                "Inviting by email needs an identity server, and there is none to use"
+                            )
+                        );
+                        return;
+                    }
+                    Err(IdentityServerError::Other) => {
+                        toast!(self.obj(), gettext("Could not invite by email"));
+                        return;
+                    }
+                };
+
+                match readiness {
+                    EmailInviteReadiness::Terms(terms) => {
+                        if terms_seen || !self.ask_terms(session, terms).await {
+                            return;
+                        }
+                        // Agreed: go around and ask again.
+                    }
+                    EmailInviteReadiness::Ready { id_server, token } => {
+                        self.send_email_invite(room, id_server, token, email).await;
+                        return;
+                    }
+                }
+            }
+        }
+
+        /// Present the terms of the identity server and accept them if the
+        /// person agrees.
+        ///
+        /// Returns whether they were agreed to and accepted.
+        async fn ask_terms(&self, session: &Session, terms: Vec<PendingTerm>) -> bool {
+            let dialog = adw::AlertDialog::builder()
+                .heading(gettext("Terms of the Identity Server"))
+                .body(gettext(
+                    "Inviting by email goes through an identity server, which asks you to agree to its terms first.",
+                ))
+                .build();
+
+            let links = gtk::Box::builder()
+                .orientation(gtk::Orientation::Vertical)
+                .spacing(6)
+                .build();
+            for term in &terms {
+                links.append(
+                    &gtk::LinkButton::builder()
+                        .label(&term.name)
+                        .uri(&term.url)
+                        .build(),
+                );
+            }
+            dialog.set_extra_child(Some(&links));
+
+            dialog.add_responses(&[("cancel", &gettext("Cancel")), ("agree", &gettext("Agree"))]);
+            dialog.set_response_appearance("agree", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_close_response("cancel");
+
+            if dialog.choose_future(Some(&*self.obj())).await != "agree" {
+                return false;
+            }
+
+            let urls = terms.into_iter().map(|term| term.url).collect();
+            let accepted = session
+                .identity_server()
+                .accept_terms(session, urls)
+                .await
+                .is_ok();
+            if !accepted {
+                toast!(
+                    self.obj(),
+                    gettext("Could not accept the terms of the identity server")
+                );
+            }
+            accepted
+        }
+
+        /// Send the email invitation itself.
+        async fn send_email_invite(
+            &self,
+            room: &Room,
+            id_server: String,
+            token: String,
+            email: String,
+        ) {
+            let invite = Invite3pid::from(Invite3pidInit {
+                id_server,
+                id_access_token: token,
+                medium: Medium::Email,
+                address: email.clone(),
+            });
+
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.invite_user_by_3pid(invite).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(()) => {
+                    self.search_entry.clear();
+                    toast!(
+                        self.obj(),
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this
+                            // is a variable name.
+                            "An invitation was sent to {email}",
+                        ),
+                        email,
+                    );
+                }
+                Err(error) => {
+                    error!("Could not invite {email} by email: {error}");
+                    toast!(
+                        self.obj(),
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this
+                            // is a variable name.
+                            "Could not invite {email}",
+                        ),
+                        email,
+                    );
+                }
+            }
         }
 
         /// Close this subpage.

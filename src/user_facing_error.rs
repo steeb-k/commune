@@ -25,6 +25,14 @@ impl UserFacingError for HttpError {
             match kind {
                 ErrorKind::Forbidden => gettext("Invalid credentials."),
                 ErrorKind::UserDeactivated => gettext("Account deactivated."),
+                ErrorKind::UserInUse => gettext("This username is already taken."),
+                ErrorKind::InvalidUsername => {
+                    gettext("This username is not valid on this homeserver.")
+                }
+                ErrorKind::Exclusive => gettext("This username is reserved by the homeserver."),
+                ErrorKind::WeakPassword => {
+                    gettext("The homeserver rejected the password for being too weak.")
+                }
                 ErrorKind::LimitExceeded(limit_exceeded) => {
                     if let Some(retry_after) = &limit_exceeded.retry_after {
                         let duration = match retry_after {

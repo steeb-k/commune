@@ -16,7 +16,10 @@ mod user_session;
 
 use self::{
     encryption_page::{EncryptionPage, ImportExportKeysSubpage, ImportExportKeysSubpageMode},
-    general_page::{ChangePasswordSubpage, DeactivateAccountSubpage, GeneralPage, LogOutSubpage},
+    general_page::{
+        ChangePasswordSubpage, DeactivateAccountSubpage, GeneralPage, LogOutSubpage,
+        ThirdPartyIdsSubpage,
+    },
     image_packs_page::ImagePacksPage,
     notifications_page::NotificationsPage,
     safety_page::{IgnoredUsersSubpage, SafetyPage},
@@ -34,6 +37,8 @@ use crate::{
 pub(crate) enum AccountSettingsSubpage {
     /// A form to change the account's password.
     ChangePassword,
+    /// A page to manage the email addresses and phone numbers of the account.
+    ThirdPartyIds,
     /// A page to view the list of account's sessions.
     UserSessionList,
     /// A page to confirm the logout.
@@ -297,6 +302,7 @@ impl AccountSettings {
 
         let page: adw::NavigationPage = match subpage {
             AccountSettingsSubpage::ChangePassword => ChangePasswordSubpage::new(&session).upcast(),
+            AccountSettingsSubpage::ThirdPartyIds => ThirdPartyIdsSubpage::new(&session).upcast(),
             AccountSettingsSubpage::UserSessionList => {
                 UserSessionListSubpage::new(&session).upcast()
             }

@@ -1,5 +1,7 @@
 cache = false
-exclude = ["data/resources/mapstyle/osm-liberty/*.md"]
+# `.pixiewood` is another tool's scratch directory — untracked, with a cargo
+# home full of vendored READMEs that are not ours to lint.
+exclude = ["data/resources/mapstyle/osm-liberty/*.md", ".pixiewood/*"]
 
 [per-file-ignores]
 ".gitlab/issue_templates/*.md" = ["first-line-heading", "line-length"]

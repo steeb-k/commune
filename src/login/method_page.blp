@@ -113,6 +113,18 @@ template $LoginMethodPage: Adw.NavigationPage {
               }
             }
 
+            Gtk.Button {
+              halign: center;
+              can-shrink: true;
+              label: _("Forgot Password?");
+              use-underline: true;
+              action-name: "login.reset-password";
+
+              styles [
+                "flat",
+              ]
+            }
+
             Gtk.Button sso_button {
               styles [
                 "standalone-button",

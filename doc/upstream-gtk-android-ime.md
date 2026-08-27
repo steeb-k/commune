@@ -233,7 +233,7 @@ _Inference, not measurement._ A `GtkTextView` with
 `input-hints: GTK_INPUT_HINT_UPPERCASE_SENTENCES` — which
 `_gtk_im_context_android_get_input_type` correctly turns into
 `InputType.TYPE_TEXT_FLAG_CAP_SENTENCES` — should get a keyboard that shifts the first letter of
-*every* word rather than of every sentence.
+_every_ word rather than of every sentence.
 
 Marked as inference because it was read out of the code and fixed in the same change that first set
 the hint downstream, so the broken behaviour was never shipped and never watched. What _is_

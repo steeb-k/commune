@@ -101,7 +101,7 @@ source:
     {
         "type": "git",
         "url": "https://github.com/steeb-k/commune.git",
-        "tag": "v14.1",
+        "tag": "v1.rc1",
         "commit": "<the commit the tag points at>"
     }
 ]

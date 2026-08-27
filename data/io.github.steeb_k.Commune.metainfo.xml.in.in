@@ -73,18 +73,43 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="14.1" type="stable" date="2026-08-19">
+    <release version="1~rc1" type="development" date="2026-08-25">
       <description>
         <p>
-          The first Commune release. Commune forks Fractal 14.1 and carries its own name, icon and
-          settings, so it installs and runs alongside Fractal without either app disturbing the
-          other’s sessions or preferences.
+          The first Commune release candidate. Commune forks Fractal 14.1 and carries its own name,
+          icon and settings, so it installs and runs alongside Fractal without either app disturbing
+          the other’s sessions or preferences. Since the fork it has grown:
         </p>
         <ul>
+          <li>Voice and video calls between two people.</li>
+          <li>Searching a room’s messages, with results opening a timeline centred on the match.</li>
+          <li>Creating an account, and resetting a forgotten password, without leaving the app.</li>
+          <li>
+            Spaces: a Spaces section in the sidebar, and opening a space lists the rooms inside
+            it.
+          </li>
+          <li>
+            Previewing a world-readable room before joining it, from Explore and from a space’s
+            room list.
+          </li>
+          <li>Pinning messages, and a page that shows what a room has pinned.</li>
+          <li>
+            Presence: who is around, shown in the member list and on profiles, with a switch for
+            whether you share your own.
+          </li>
           <li>
             Custom sticker and emoticon packs can be browsed, added and removed from account
             settings and from room details, and used from the composer.
           </li>
+          <li>A GIF picker in the composer.</li>
+          <li>Link previews under messages, with a switch to turn them off.</li>
+          <li>Quick reactions drawn from the emoji recently used on any client of the account.</li>
+          <li>
+            Moderation: editing a restricted room’s join rule, server ACLs, and reporting rooms
+            and users.
+          </li>
+          <li>Server notices from the homeserver get their own sidebar section.</li>
+          <li>The app also builds and runs on macOS and Windows.</li>
         </ul>
         <p>
           Everything else is Fractal 14.1, whose release notes remain the best description of the

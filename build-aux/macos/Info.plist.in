@@ -39,8 +39,12 @@
       About dialog shows the full version from `config.rs` anyway.
     -->
     <key>CFBundleShortVersionString</key>
-    <string>@VERSION@</string>
+    <string>@PLIST_VERSION@</string>
     <key>CFBundleVersion</key>
+    <string>@BUILD_NUMBER@</string>
+    <!-- The full version, rc suffix included; the two keys above only accept
+         numbers. make-dmg.sh and make-tarball.sh name their artefacts by it. -->
+    <key>CommuneVersion</key>
     <string>@VERSION@</string>
 
     <key>LSMinimumSystemVersion</key>
@@ -90,10 +94,13 @@
 
     <!--
       The same rule, and the same consequence for leaving it out: a voice call
-      opens the microphone through autoaudiosrc, so without this key placing
-      one kills the application rather than showing a permission prompt.
+      or a voice message opens the microphone through autoaudiosrc, so without
+      this key doing either kills the application rather than showing a
+      permission prompt. This key is only half of microphone access -- the
+      hardened runtime additionally requires the audio-input entitlement in
+      entitlements.plist, or the granted permission yields silence.
     -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>@APP_NAME@ uses the microphone for voice and video calls.</string>
+    <string>@APP_NAME@ uses the microphone for voice and video calls, and to record voice messages.</string>
 </dict>
 </plist>

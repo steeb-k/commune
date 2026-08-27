@@ -4,6 +4,7 @@ use gtk::{glib, glib::clone};
 use matrix_sdk::{
     Client, ClientBuildError, ClientBuilder, config::RequestConfig, sanitize_server_name,
 };
+use ruma::OwnedServerName;
 use tracing::warn;
 use url::Url;
 
@@ -25,6 +26,10 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/login/homeserver_page.ui")]
     #[properties(wrapper_type = super::LoginHomeserverPage)]
     pub struct LoginHomeserverPage {
+        #[template_child]
+        matrix_org_check: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        other_revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
         homeserver_entry: TemplateChild<adw::EntryRow>,
         #[template_child]
@@ -59,7 +64,11 @@ mod imp {
 
     impl WidgetImpl for LoginHomeserverPage {
         fn grab_focus(&self) -> bool {
-            self.homeserver_entry.grab_focus()
+            if self.is_matrix_org() {
+                self.next_button.grab_focus()
+            } else {
+                self.homeserver_entry.grab_focus()
+            }
         }
     }
 
@@ -119,24 +128,73 @@ mod imp {
 
         /// Reset this page.
         pub(super) fn clean(&self) {
+            self.matrix_org_check.set_active(true);
             self.homeserver_entry.set_text("");
             self.next_button.set_is_loading(false);
             self.update_next_state();
         }
 
-        /// The current text from the homeserver entry.
+        /// Whether the default homeserver is the one that is chosen.
+        pub(super) fn is_matrix_org(&self) -> bool {
+            self.matrix_org_check.is_active()
+        }
+
+        /// The homeserver that is chosen.
+        ///
+        /// Either the default, or whatever was typed for another one.
         pub(super) fn homeserver(&self) -> glib::GString {
-            self.homeserver_entry.text()
+            if self.is_matrix_org() {
+                DEFAULT_SERVER_NAME.into()
+            } else {
+                self.homeserver_entry.text()
+            }
+        }
+
+        /// Whether to discover the homeserver from a domain name.
+        ///
+        /// The default homeserver is always a domain name, so it is always
+        /// discovered; the setting in the advanced dialog is about a URL
+        /// somebody types, and only applies to one.
+        fn use_autodiscovery(&self) -> bool {
+            if self.is_matrix_org() {
+                return true;
+            }
+
+            self.login.obj().is_some_and(|login| login.autodiscovery())
+        }
+
+        /// The name of the server that was chosen, when it is a domain name.
+        ///
+        /// `None` when a URL was typed instead, since a URL is not a server
+        /// name and guessing one from it would be wrong.
+        pub(super) fn server_name(&self) -> Option<OwnedServerName> {
+            self.use_autodiscovery()
+                .then(|| sanitize_server_name(&self.homeserver()).ok())
+                .flatten()
+        }
+
+        /// A choice was made between the default homeserver and another one.
+        #[template_callback]
+        fn server_choice_changed(&self) {
+            let is_matrix_org = self.is_matrix_org();
+
+            self.other_revealer.set_reveal_child(!is_matrix_org);
+            self.update_next_state();
+
+            if !is_matrix_org {
+                self.homeserver_entry.grab_focus();
+            }
         }
 
         /// Whether the current state allows to go to the next step.
         fn can_go_next(&self) -> bool {
-            let Some(login) = self.login.obj() else {
-                return false;
-            };
+            if self.is_matrix_org() {
+                return true;
+            }
+
             let homeserver = self.homeserver();
 
-            if login.autodiscovery() {
+            if self.use_autodiscovery() {
                 sanitize_server_name(homeserver.as_str()).is_ok()
             } else {
                 Url::parse(homeserver.as_str()).is_ok()
@@ -163,8 +221,7 @@ mod imp {
             self.next_button.set_is_loading(true);
             login.freeze();
 
-            let autodiscovery = login.autodiscovery();
-            let res = self.build_client(autodiscovery).await;
+            let res = self.build_client().await;
 
             match res {
                 Ok(client) => {
@@ -181,11 +238,8 @@ mod imp {
         }
 
         /// Try to build a client with the current homeserver.
-        pub(super) async fn build_client(
-            &self,
-            autodiscovery: bool,
-        ) -> Result<Client, ClientBuildError> {
-            if autodiscovery {
+        pub(super) async fn build_client(&self) -> Result<Client, ClientBuildError> {
+            if self.use_autodiscovery() {
                 self.build_client_with_autodiscovery().await
             } else {
                 self.build_client_with_url().await
@@ -285,6 +339,12 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
+/// The homeserver this client offers first.
+///
+/// The biggest public homeserver, and the one somebody with no answer to the
+/// question should be given.
+const DEFAULT_SERVER_NAME: &str = "matrix.org";
+
 impl LoginHomeserverPage {
     /// The tag for this page.
     pub(super) const TAG: &str = "homeserver";
@@ -293,9 +353,9 @@ impl LoginHomeserverPage {
         glib::Object::new()
     }
 
-    /// The current text from the homeserver entry.
-    pub(super) fn homeserver(&self) -> glib::GString {
-        self.imp().homeserver()
+    /// The name of the server that was chosen, when it is a domain name.
+    pub(super) fn server_name(&self) -> Option<OwnedServerName> {
+        self.imp().server_name()
     }
 
     /// Reset this page.
@@ -304,10 +364,7 @@ impl LoginHomeserverPage {
     }
 
     /// Try to build a client with the current homeserver.
-    pub(super) async fn build_client(
-        &self,
-        autodiscovery: bool,
-    ) -> Result<Client, ClientBuildError> {
-        self.imp().build_client(autodiscovery).await
+    pub(super) async fn build_client(&self) -> Result<Client, ClientBuildError> {
+        self.imp().build_client().await
     }
 }

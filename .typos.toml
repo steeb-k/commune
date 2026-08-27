@@ -1,12 +1,31 @@
 [default]
 # The title of an issue on Fractal's tracker, quoted in doc/upstream-defects.html
 # as the tracker has it. Correcting the quote would misattribute it.
-extend-ignore-re = ["Hiting enter key"]
+extend-ignore-re = [
+  "Hiting enter key",
+  # Abbreviated git hashes read as words: `11ba74aa` carries `ba`, which this
+  # wants to be `by`. The ledgers are full of them, and they only ever appear
+  # in a code span or after `main @`, so match those rather than hex anywhere —
+  # `defaced` is seven hexadecimal characters too.
+  "<code>[0-9a-f]{7,40}</code>",
+  "`[0-9a-f]{7,40}`",
+  "main @ [0-9a-f]{7,40}",
+  # `doc/eyeball-run.html` names each check by a hash of its own text, so the
+  # same hazard arrives a hundred and ninety-three times over. They only ever
+  # appear as an attribute value or a key of the map that migrates them.
+  "\"k[0-9a-f]{10}\"",
+  # doc/pages.state is machine-written by hooks/doc-freshness. Its hex spells
+  # words by accident too — `afe47e75` carries `afe` — and it arrives in two
+  # forms: the marker line and the published-page checksums.
+  "commit [0-9a-f]{7,40}",
+  "sha256 [0-9a-f]{64}",
+]
 
 [default.extend-words]
 gir = "gir"
 inout = "inout"
 numer = "numer" # Short for numerator in GStreamer
+tme = "tme" # Win32's TrackMouseEvent flag prefix, TME_LEAVE and TME_NONCLIENT
 ue = "ue" # End of word after mnemonic
 
 [type.po]

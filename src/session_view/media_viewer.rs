@@ -402,6 +402,7 @@ mod imp {
         /// Not the widget's visibility: that stays set until the closing
         /// transition finishes and `transition_done` puts it away, which on
         /// Android does not always arrive. The revealer knows synchronously.
+        #[cfg(target_os = "android")]
         pub(super) fn is_open(&self) -> bool {
             self.revealer.reveal_child()
         }
@@ -549,6 +550,7 @@ impl MediaViewer {
     }
 
     /// Whether this widget is showing something.
+    #[cfg(target_os = "android")]
     pub(crate) fn is_open(&self) -> bool {
         self.imp().is_open()
     }
@@ -557,6 +559,7 @@ impl MediaViewer {
     ///
     /// This is what the `media-viewer.close` action does, for callers that
     /// have the widget rather than an action context.
+    #[cfg(target_os = "android")]
     pub(crate) fn close(&self) {
         self.imp().close();
     }

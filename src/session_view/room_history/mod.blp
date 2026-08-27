@@ -56,7 +56,7 @@ template $ContentRoomHistory: Adw.Bin {
   Adw.ToolbarView {
     [top]
     Adw.HeaderBar header_bar {
-      centering-policy: strict;
+      centering-policy: loose;
 
       [title]
       $RoomHistoryTitle room_title {
@@ -87,6 +87,26 @@ template $ContentRoomHistory: Adw.Bin {
         icon-name: "system-search-symbolic";
         tooltip-text: _("Search Messages");
         active: bind search_bar.search-mode-enabled bidirectional;
+      }
+
+      [end]
+      Gtk.ToggleButton pinned_button {
+        valign: center;
+        icon-name: "view-pin-symbolic";
+        tooltip-text: _("Pinned Messages");
+        visible: bind $show_pinned_button(
+          template.timeline as <$Timeline>.room as <$Room>.pinned-count,
+          template.is-showing-pinned
+        ) as <bool>;
+        active: bind template.is-showing-pinned bidirectional;
+      }
+
+      [end]
+      Gtk.ToggleButton threads_button {
+        valign: center;
+        icon-name: "thread-symbolic";
+        tooltip-text: _("Threads");
+        active: bind template.is-showing-threads bidirectional;
       }
 
       [end]
@@ -149,6 +169,16 @@ template $ContentRoomHistory: Adw.Bin {
         button-clicked => $view_pending_knocks() swapped;
       }
 
+      Adw.Banner thread_banner {
+        title: _("Viewing a thread");
+        button-label: _("Back to All Messages");
+        revealed: bind $thread_banner_revealed(
+          template.timeline as <$Timeline>.is-thread,
+          template.is-showing-threads
+        ) as <bool>;
+        button-clicked => $leave_thread() swapped;
+      }
+
       Gtk.Stack stack {
         transition-type: crossfade;
 
@@ -189,6 +219,20 @@ template $ContentRoomHistory: Adw.Bin {
           title: _("Search Results");
 
           child: $RoomHistorySearch search_view {};
+        }
+
+        Gtk.StackPage {
+          name: "pinned";
+          title: _("Pinned Messages");
+
+          child: $RoomHistoryPinned pinned_view {};
+        }
+
+        Gtk.StackPage {
+          name: "threads";
+          title: _("Threads");
+
+          child: $RoomHistoryThreads threads_view {};
         }
 
         Gtk.StackPage {
@@ -260,9 +304,11 @@ template $ContentRoomHistory: Adw.Bin {
         visible: bind search_bar.search-mode-enabled inverted;
 
         $MessageToolbar message_toolbar {
-          // Always compose in the live timeline: a focused timeline never receives
+          // A thread timeline is composed into directly — it receives its own
+          // local echoes and scopes what is sent to the thread. Anything else
+          // defers to the live timeline: a focused timeline never receives
           // local echoes, so a message sent through it would not appear.
-          timeline: bind template.timeline as <$Timeline>.room as <$Room>.live-timeline;
+          timeline: bind $compose_timeline(template.timeline) as <$Timeline>;
         }
       }
     };

@@ -21,11 +21,11 @@
 //! Anything it does not recognise is handed to **`GdkPixbuf`**, which is
 //! already here — GTK loads every icon in the application through it — and
 //! which brings whatever loaders the platform installed with it. What that
-//! adds is up to the platform: a desktop GTK stack usually has SVG, AVIF and
-//! HEIC/HEIF, and Android wires its own codecs for HEIC, HEIF and AVIF
-//! straight into gdk-pixbuf. A pixbuf-decoded image is always a still: the
-//! fallback exists to show a picture that would otherwise be an error, not to
-//! animate one.
+//! adds depends on the stack: MSYS2 on Windows ships loaders for SVG, AVIF
+//! and HEIC/HEIF; the conda-forge stack the macOS builds use ships SVG only;
+//! Android wires its own codecs for HEIC, HEIF and AVIF straight into
+//! gdk-pixbuf. A pixbuf-decoded image is always a still: the fallback exists
+//! to show a picture that would otherwise be an error, not to animate one.
 //!
 //! Pixbuf normally picks its loader by sniffing the bytes, but a loader may
 //! declare no signature to sniff for, and Android's HEIF one does exactly
@@ -116,7 +116,7 @@ impl Loader {
         }
 
         RUNTIME
-            .spawn_blocking(move || probe(data))
+            .spawn_blocking(move || probe(&data))
             .await
             .expect("task was not aborted")
     }
@@ -128,7 +128,7 @@ impl Loader {
 /// not recognise. Both ways of not recognising something arrive here as
 /// [`Error::UnknownFormat`]: either the format could not be guessed at all, or
 /// it was guessed and the decoder for it is not compiled in.
-fn probe(data: Arc<[u8]>) -> Result<Image, Error> {
+fn probe(data: &Arc<[u8]>) -> Result<Image, Error> {
     match probe_encoded(data.clone()) {
         Err(error) if error.is_unknown_format() => probe_pixbuf(data),
         result => result,
@@ -178,12 +178,13 @@ fn probe_encoded(data: Arc<[u8]>) -> Result<Image, Error> {
 /// read.
 ///
 /// Whether this succeeds depends on the loaders installed beside the GTK stack
-/// in use, which is the point: the platform's loaders come along with pixbuf
-/// at no cost to us, and on Android those are the system codecs themselves.
-fn probe_pixbuf(data: Arc<[u8]>) -> Result<Image, Error> {
+/// in use, which is the point: the SVG loader is already required for the
+/// application's own icons, and the platform's other loaders come along with
+/// it at no cost to us — on Android those are the system codecs themselves.
+fn probe_pixbuf(data: &Arc<[u8]>) -> Result<Image, Error> {
     // A loader that is not installed and a file that is corrupt are the same
     // error here, and the honest answer to both is that we could not read it.
-    let pixbuf = decode_pixbuf(&data).ok_or(Error::UnknownFormat)?;
+    let pixbuf = decode_pixbuf(data).ok_or(Error::UnknownFormat)?;
 
     // JPEGs inside HEIF containers carry the same orientation tag as any
     // other, and pixbuf will apply it but does not do so by itself.
@@ -857,7 +858,15 @@ impl From<ImageCrateError> for Error {
     }
 }
 
-#[cfg(test)]
+// Each of these needs GTK started, for `GdkPixbuf` and the SVG loader.
+// `#[gtk::test]` starts it on a shared `GThreadPool` thread, which is the only
+// way three tests in one binary can have it: the harness gives every test its
+// own thread, and `gtk::init()` panics the moment a second one calls it. On
+// macOS GTK insists on the process main thread, which no harness we use runs a
+// test body on — the decoder has nothing platform-specific in it, so the other
+// platforms cover it. The same reasoning, and the same exclusion, as
+// `session_view::room_details::history_viewer::visual_media_row_model`.
+#[cfg(all(test, not(target_os = "macos")))]
 mod tests {
     use super::*;
 
@@ -881,11 +890,9 @@ mod tests {
     /// This needs GTK's type system for `GdkPixbuf`, and it needs the SVG
     /// loader to be installed — which it must be anyway, or none of the
     /// application's own icons would draw.
-    #[test]
+    #[gtk::test]
     fn an_svg_decodes_through_the_fallback() {
-        gtk::init().expect("GTK should start");
-
-        let image = probe(Arc::from(SVG)).expect("the SVG should decode");
+        let image = probe(&Arc::from(SVG)).expect("the SVG should decode");
 
         assert_eq!(image.width(), 8);
         assert_eq!(image.height(), 4);
@@ -897,11 +904,9 @@ mod tests {
 
     /// And the fallback must stay a fallback: anything the `image` crate reads
     /// has to keep going through it, animations included.
-    #[test]
+    #[gtk::test]
     fn a_png_does_not_reach_the_fallback() {
-        gtk::init().expect("GTK should start");
-
-        let image = probe(Arc::from(PNG)).expect("the PNG should decode");
+        let image = probe(&Arc::from(PNG)).expect("the PNG should decode");
 
         assert!(
             matches!(image.inner.source, FrameSource::Encoded { .. }),
@@ -911,11 +916,9 @@ mod tests {
 
     /// Something no loader anywhere will claim still reports the error the UI
     /// knows how to show.
-    #[test]
+    #[gtk::test]
     fn nonsense_is_still_an_unknown_format() {
-        gtk::init().expect("GTK should start");
-
-        let error = probe(Arc::from(&b"not an image, nor anything else"[..]))
+        let error = probe(&Arc::from(&b"not an image, nor anything else"[..]))
             .expect_err("nonsense should not decode");
 
         assert!(error.is_unknown_format());

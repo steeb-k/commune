@@ -124,6 +124,41 @@ not been exercised by hand yet; camera QR scanning and location sharing are stub
 [`doc/macos.md`](doc/macos.md) for the full story, the environment probe, the list of what still
 has to be tested, and what is stubbed.
 
+### Windows
+
+The GTK stack comes from **MSYS2's UCRT64** repository, and everything is built from a UCRT64
+shell. That is a mingw-ABI toolchain, so the build uses MSYS2's own Rust rather than an MSVC
+rustup; `build-aux/windows/probe-env.sh` reports on the whole environment and names what is
+missing. With it in place the usual Meson build works:
+
+```sh
+meson setup _build -Dprofile=development --prefix=$MINGW_PREFIX
+ninja -C _build
+meson install -C _build
+```
+
+Two more targets package it, and a PowerShell script builds the installer:
+
+```sh
+meson compile -C _build windows-bundle    # a relocatable Commune folder
+meson compile -C _build windows-zip       # ... and a .zip beside it
+```
+
+```powershell
+pwsh -File build-aux\windows\build-msi.ps1 -BundleDir "_build\windows\Commune Devel"
+```
+
+The folder runs with nothing but `C:\Windows` on `PATH`, and the per-user MSI needs no
+administrator. Both are signed when Azure Trusted Signing metadata is present and built unsigned
+when it is not.
+
+Logging in, the timeline, images and stickers, video and voice playback, message search, and
+notifications — banners, buttons, withdrawal, and a click that opens the room whether or not
+Commune was running — have all been exercised against a real account. Calls have not: they need a
+microphone, and the machine this was built on reaches Windows over Remote Desktop, which does not
+carry one. See [`doc/windows.md`](doc/windows.md) for the environment, the six things that bit us
+on the way, and what is still owed.
+
 ## Runtime Dependencies
 
 On top of the dependencies required at build time and checked by Meson, Commune depends on the
@@ -141,10 +176,19 @@ following dependencies at runtime:
   * libgstpipewire with the `pipewiredeviceprovider`: used to list and access the cameras.
 
 On macOS none of the portals apply. Secrets go to the Keychain, the 12h/24h format is read from the
-locale at startup, and location sharing and camera QR scanning are not available. GStreamer is
+locale at startup, and location sharing is not available. Neither is scanning a QR code with a
+camera, which is declined rather than missing: the other three ways of verifying an identity all
+work without one, and showing a QR code for a phone to scan is the direction that suits a desktop
+anyway. GStreamer is
 still needed, including gst-plugin-gtk4 and — for calls — `webrtcbin` and the libnice and libsrtp2
 under it; `build-aux/macos/setup-conda-macos.sh` builds all of those from source, because
 conda-forge packages none of them.
+
+On Windows the portals do not apply either. Secrets go to the Credential Manager, the 12h/24h
+format is read at startup from the setting Windows keeps for it, and location sharing and camera
+QR scanning are not available. GStreamer is needed on the same terms as macOS, but every piece of
+it — gst-plugin-gtk4, `webrtcbin`, libnice and libsrtp2 — is a package in MSYS2's UCRT64 repository
+rather than something to build.
 
 ### Storing secrets
 

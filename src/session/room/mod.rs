@@ -46,6 +46,8 @@ mod member;
 mod member_list;
 mod permissions;
 mod search;
+mod spaces;
+mod thread_list;
 mod timeline;
 mod typing_list;
 
@@ -58,11 +60,13 @@ pub(crate) use self::{
     member_list::*,
     permissions::*,
     search::{RoomSearch, RoomSearchResult},
+    spaces::{add_room_to_space, parent_spaces, remove_room_from_space},
+    thread_list::{ThreadList, ThreadListEntry},
     timeline::*,
     typing_list::TypingList,
 };
 use super::{
-    IdentityVerification, Session, User, notifications::NotificationsRoomSetting,
+    IdentityVerification, Presence, Session, User, notifications::NotificationsRoomSetting,
     room_list::RoomMetainfo,
 };
 use crate::{
@@ -76,6 +80,12 @@ use crate::{
 /// The default duration in seconds that we wait for before retrying failed
 /// sending requests.
 const DEFAULT_RETRY_AFTER: u32 = 30;
+
+/// The tag order of a room that has none.
+///
+/// The specification keeps real orders in `[0, 1]` and asks that ordered
+/// rooms come first, so anything past 1 sorts a room after all of them.
+const NO_TAG_ORDER: f64 = 2.0;
 
 /// Whether the given error is the homeserver refusing to let our user out of
 /// the server notices room.
@@ -141,6 +151,15 @@ mod imp {
         /// The category of this room.
         #[property(get, builder(RoomCategory::default()))]
         category: Cell<RoomCategory>,
+        /// The order of this room inside its tag, from the `m.tag` account
+        /// data.
+        ///
+        /// The specification orders it in `[0, 1]`, smaller first, and asks
+        /// that rooms carrying an order come before rooms without one — so a
+        /// room without one reports [`NO_TAG_ORDER`], which sorts after
+        /// every real value.
+        #[property(get)]
+        tag_order: Cell<f64>,
         /// Whether this room is a direct chat.
         #[property(get)]
         is_direct: Cell<bool>,
@@ -187,6 +206,10 @@ mod imp {
         /// there is only one other member.
         #[property(get)]
         direct_member: RefCell<Option<Member>>,
+        /// The member whose presence this room's avatar is carrying, and the
+        /// handler watching it.
+        direct_member_watched: RefCell<Option<Member>>,
+        direct_member_presence_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The live timeline of this room.
         #[property(get)]
         live_timeline: OnceCell<Timeline>,
@@ -267,6 +290,15 @@ mod imp {
         server_notice_admin_contact: RefCell<Option<String>>,
         /// The pinned event IDs that `active_server_notice` was computed from.
         pub(super) server_notice_pinned_ids: RefCell<Vec<OwnedEventId>>,
+        /// The event IDs pinned in this room, oldest first.
+        ///
+        /// Empty in the server notices room: there the pinned events are the
+        /// active notices, and the spec asks for them to be shown "through a
+        /// special UI, and not the normal pinned events interface".
+        pub(super) pinned_event_ids: RefCell<Vec<OwnedEventId>>,
+        /// The number of events pinned in this room.
+        #[property(get)]
+        pinned_count: Cell<u32>,
     }
 
     #[glib::object_subclass]
@@ -278,9 +310,21 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Room {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            // A `Cell<f64>` starts at zero, which would read as the highest
+            // possible order; a room starts unordered instead.
+            self.tag_order.set(NO_TAG_ORDER);
+        }
+
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("room-forgotten").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("room-forgotten").build(),
+                    Signal::builder("pinned-events-changed").build(),
+                ]
+            });
             SIGNALS.as_ref()
         }
     }
@@ -696,6 +740,34 @@ mod imp {
             }
         }
 
+        /// Update the events pinned in this room.
+        ///
+        /// The server notices room is excluded on purpose: there the pinned
+        /// events are the notices that are still active, which the spec asks
+        /// to be shown "through a special UI, and not the normal pinned
+        /// events interface". `update_active_server_notice` is that UI.
+        pub(super) fn update_pinned_events(&self) {
+            let pinned_event_ids = if self.category.get() == RoomCategory::ServerNotice {
+                Vec::new()
+            } else {
+                self.matrix_room().pinned_event_ids().unwrap_or_default()
+            };
+
+            if *self.pinned_event_ids.borrow() == pinned_event_ids {
+                return;
+            }
+
+            let count = pinned_event_ids.len().try_into().unwrap_or(u32::MAX);
+            self.pinned_event_ids.replace(pinned_event_ids);
+
+            if self.pinned_count.get() != count {
+                self.pinned_count.set(count);
+                self.obj().notify_pinned_count();
+            }
+
+            self.obj().emit_by_name::<()>("pinned-events-changed", &[]);
+        }
+
         /// Update the category from the SDK.
         pub(super) async fn update_category(&self) {
             // Do not load the category if this room was upgraded.
@@ -762,6 +834,47 @@ mod imp {
             };
 
             self.set_category(category);
+            self.update_tag_order(category).await;
+        }
+
+        /// Update the order of this room inside its tag.
+        ///
+        /// Only the two tags that place a room in a sorted section matter;
+        /// everything else reads as unordered.
+        async fn update_tag_order(&self, category: RoomCategory) {
+            let tag_name = match category {
+                RoomCategory::Favorite => TagName::Favorite,
+                RoomCategory::LowPriority => TagName::LowPriority,
+                _ => {
+                    self.set_tag_order(NO_TAG_ORDER);
+                    return;
+                }
+            };
+
+            let matrix_room = self.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.tags().await });
+
+            let tag_order = match handle.await.expect("task was not aborted") {
+                Ok(tags) => tags
+                    .and_then(|tags| tags.get(&tag_name).and_then(|info| info.order))
+                    .unwrap_or(NO_TAG_ORDER),
+                Err(error) => {
+                    error!("Could not read the tags of the room: {error}");
+                    NO_TAG_ORDER
+                }
+            };
+
+            self.set_tag_order(tag_order);
+        }
+
+        /// Set the order of this room inside its tag.
+        fn set_tag_order(&self, tag_order: f64) {
+            if (self.tag_order.get() - tag_order).abs() < f64::EPSILON {
+                return;
+            }
+
+            self.tag_order.set(tag_order);
+            self.obj().notify_tag_order();
         }
 
         /// Set whether this room is a direct chat.
@@ -1192,6 +1305,43 @@ mod imp {
             self.direct_member.replace(member);
             self.obj().notify_direct_member();
             self.update_avatar();
+            self.update_direct_member_presence();
+        }
+
+        /// Carry the presence of the other person onto this room's avatar, if
+        /// this is a direct chat.
+        ///
+        /// A direct chat is the one room where the room *is* a person, so its
+        /// avatar answers the same question a member's does. Any other room
+        /// stays at `Presence::Unknown` and so draws no badge.
+        fn update_direct_member_presence(&self) {
+            let obj = self.obj();
+            let avatar_data = obj.avatar_data();
+
+            if let Some(handler) = self.direct_member_presence_handler.take() {
+                avatar_data.set_presence(Presence::default());
+
+                if let Some(member) = self.direct_member_watched.take() {
+                    member.disconnect(handler);
+                }
+            }
+
+            let direct_member = self.direct_member.borrow().clone();
+            let Some(direct_member) = direct_member else {
+                return;
+            };
+
+            let handler = direct_member.connect_presence_notify(clone!(
+                #[weak]
+                avatar_data,
+                move |member| {
+                    avatar_data.set_presence(member.presence());
+                }
+            ));
+
+            avatar_data.set_presence(direct_member.presence());
+            self.direct_member_presence_handler.replace(Some(handler));
+            self.direct_member_watched.replace(Some(direct_member));
         }
 
         /// The ID of the other user, if this is a direct chat and there is only
@@ -1662,6 +1812,7 @@ mod imp {
             self.update_topic();
             self.update_category().await;
             self.update_active_server_notice().await;
+            self.update_pinned_events();
             self.update_is_direct().await;
             self.update_is_marked_unread().await;
             self.update_tombstone();
@@ -2038,31 +2189,9 @@ impl Room {
         receipt_type: ApiReceiptType,
         position: ReceiptPosition,
     ) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let send_public_receipt = session.settings().public_read_receipts_enabled();
-
-        let receipt_type = match receipt_type {
-            ApiReceiptType::Read if !send_public_receipt => ApiReceiptType::ReadPrivate,
-            t => t,
-        };
-
-        let matrix_timeline = self.live_timeline().matrix_timeline();
-        let handle = spawn_tokio!(async move {
-            match position {
-                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
-                ReceiptPosition::Event(event_id) => {
-                    matrix_timeline
-                        .send_single_receipt(receipt_type, event_id)
-                        .await
-                }
-            }
-        });
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not send read receipt: {error}");
-        }
+        self.live_timeline()
+            .send_receipt(receipt_type, position)
+            .await;
     }
 
     /// Mark the room as unread.
@@ -2494,6 +2623,58 @@ impl Room {
     }
 
     /// Connect to the signal emitted when the room was forgotten.
+    /// Whether the event with the given ID is pinned in this room.
+    pub(crate) fn is_pinned(&self, event_id: &EventId) -> bool {
+        self.imp()
+            .pinned_event_ids
+            .borrow()
+            .iter()
+            .any(|pinned| pinned == event_id)
+    }
+
+    /// Pin the event with the given ID in this room.
+    pub(crate) async fn pin_event(&self, event_id: OwnedEventId) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.pin_event(&event_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not pin event: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Unpin the event with the given ID in this room.
+    pub(crate) async fn unpin_event(&self, event_id: OwnedEventId) -> Result<(), ()> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.unpin_event(&event_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Could not unpin event: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Connect to the signal emitted when the pinned events of this room
+    /// change.
+    pub(crate) fn connect_pinned_events_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "pinned-events-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+
     pub(crate) fn connect_room_forgotten<F: Fn(&Self) + 'static>(
         &self,
         f: F,
