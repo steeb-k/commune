@@ -1043,24 +1043,24 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
       sending, open the thread — the composer is empty. Type something there,
       go back — the room's half-typed message is back, and reopening the
       thread restores the thread's own.
-* [ ] **Reply inside the thread stays in the thread.** Use _Reply_ from a
+* [x] **Reply inside the thread stays in the thread.** Use _Reply_ from a
       thread message's context menu, send, and check from another client that
       the event carries both the reply and the thread relation.
-* [ ] **A long thread paginates.** Grow the thread past twenty replies with
+* [x] **A long thread paginates.** Grow the thread past twenty replies with
       the curl in a loop, reopen it: it opens at the newest, and scrolling up
       loads the older replies with the root at the very top.
-* [ ] **The room's read state does not suffer.** Read the thread to the
+* [x] **The room's read state does not suffer.** Read the thread to the
       bottom, go back: the room is not suddenly marked unread, and the room's
       read marker did not jump backwards. On matrix.org against Element, your
       read receipt shows up inside the thread rather than on the main
       timeline.
-* [ ] **Switching rooms while in a thread** lands the other room in its
+* [x] **Switching rooms while in a thread** lands the other room in its
       ordinary live timeline, banner gone, and coming back to Invite Room is
       live too — the thread is left by leaving, not remembered.
 
 ### The list
 
-* [ ] **The threads button is in the header bar**, a toggle with the thread
+* [x] **The threads button is in the header bar**, a toggle with the thread
       icon, in every room — there is no cheap way to know whether a room has
       threads before asking, so it does not hide.
 * [ ] **Pressing it lists both seeded threads**, most recent activity first:
