@@ -1319,6 +1319,21 @@ messages; it now sits to the right of the bubble.
       up with the first one's right edge rather than sticking out past it.
 * [ ] **Clicking it opens your profile**, the same as any sender avatar.
 
+## The bubble header clusters who and when — change of 26 August 2026
+
+In bubble view, the sender's data sits in one spot instead of two
+corners. The flat view is untouched.
+
+* [ ] **Others read avatar, name, time.** The first message of somebody's
+      group is headed "(avatar) Alice 14:32", all at the left, over the
+      bubble's edge — no timestamp at the far right.
+* [ ] **Your own read time, name, avatar.** An own group's first message
+      is headed "14:32 you (avatar)", all at the right — the name is
+      back, and always the piece against the avatar.
+* [ ] **A timestamp-only header follows the side.** A group that shows
+      only a time (same sender after a gap) shows it in that same spot,
+      left for others and right for your own.
+
 ## Message shields — `doc/message-shields.md`
 
 A small shield icon beside a message's delivery state in encrypted rooms,
