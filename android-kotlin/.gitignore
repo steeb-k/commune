@@ -1,0 +1,8 @@
+# Build outputs and machine-local configuration.
+.gradle/
+build/
+local.properties
+
+# The native core is built out of commune-core/ and copied in, never
+# committed: it is a hundred-megabyte build artifact.
+app/src/main/jniLibs/
