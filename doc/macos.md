@@ -450,6 +450,15 @@ runtime's library validation is satisfied by construction — every dylib and pl
 signed by the same identity in the same pass — and a signed release build has been seen running
 with it: session restore, sync, the lot.
 
+The hardened runtime also denies the microphone and the camera unless the signature carries
+`com.apple.security.device.audio-input` and `com.apple.security.device.camera`, which
+`bundle.sh` embeds from `entitlements.plist` on the bundle-level sign — the call that signs the
+main executable, the only place entitlements mean anything. The denial sits **beneath TCC**: the
+usage strings in `Info.plist` still get the permission prompt, System Settings shows the
+permission granted, and CoreAudio hands the process silence anyway, so a voice message records a
+file of the right length with nothing in it. An ad-hoc build never shows the bug, because only
+`--options runtime` turns the check on.
+
 Two one-time behaviours worth expecting. Signing with the key pops a Keychain consent dialog on
 first use — "Always Allow" covers the several dozen files of a bundle pass. And the first launch of
 a Developer-ID build over a session stored by an ad-hoc build re-asks for Keychain access once —
