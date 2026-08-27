@@ -696,8 +696,15 @@ mod imp {
             recorder.connect_failed(clone!(
                 #[weak(rename_to = imp)]
                 self,
-                move |_| {
-                    toast!(imp.obj(), gettext("Could not record a voice message"));
+                move |_, no_microphone| {
+                    // On some platforms a missing microphone only surfaces
+                    // here, after the pipeline accepted starting.
+                    let message = if no_microphone {
+                        gettext("No microphone could be opened")
+                    } else {
+                        gettext("Could not record a voice message")
+                    };
+                    toast!(imp.obj(), message);
                     imp.reset_voice_recording();
                     imp.update_visible_page();
                 }

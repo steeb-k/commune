@@ -57,8 +57,13 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for VoiceRecorder {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("failed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("failed")
+                        .param_types([bool::static_type()])
+                        .build(),
+                ]
+            });
             SIGNALS.as_ref()
         }
 
@@ -159,13 +164,23 @@ mod imp {
                                 // The debug string is where the reason is;
                                 // the element that is named is rarely the
                                 // element that is wrong.
+                                let details = error.debug().unwrap_or_default();
+                                let error = error.error();
                                 error!(
-                                    "Error from the voice recording pipeline: {} ({})",
-                                    error.error(),
-                                    error.debug().unwrap_or_default(),
+                                    "Error from the voice recording pipeline: {error} ({details})"
                                 );
+
+                                // On some platforms the pipeline accepts
+                                // `Playing` and a missing or unopenable
+                                // microphone only surfaces here, as a
+                                // resource error from the source.
+                                let no_microphone = error.matches(gst::ResourceError::NotFound)
+                                    || error.matches(gst::ResourceError::OpenRead)
+                                    || error.matches(gst::ResourceError::OpenReadWrite)
+                                    || error.matches(gst::ResourceError::Busy);
+
                                 imp.cancel();
-                                imp.obj().emit_by_name::<()>("failed", &[]);
+                                imp.obj().emit_by_name::<()>("failed", &[&no_microphone]);
                             }
                             _ => {}
                         }
@@ -283,12 +298,18 @@ impl VoiceRecorder {
     }
 
     /// Connect to the signal emitted when recording fails.
-    pub(crate) fn connect_failed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    ///
+    /// The boolean says whether the failure was the microphone: missing,
+    /// unopenable, or held by somebody else.
+    pub(crate) fn connect_failed<F: Fn(&Self, bool) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
         self.connect_closure(
             "failed",
             true,
-            glib::closure_local!(move |obj: Self| {
-                f(&obj);
+            glib::closure_local!(move |obj: Self, no_microphone: bool| {
+                f(&obj, no_microphone);
             }),
         )
     }
