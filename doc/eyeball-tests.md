@@ -1009,10 +1009,10 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
       went on when the thread view landed. The root is there, with its chip;
       the replies are only inside the thread. If they still show inline, the
       flag did not reach the live timeline's focus.
-* [ ] **The count moves while the room is open.** With Invite Room on screen,
+* [x] **The count moves while the room is open.** With Invite Room on screen,
       send a fourth reply with the curl above and watch the chip say
       "4 replies" without the room being reopened.
-* [ ] **The singular reads "1 reply".** Start a fresh thread with exactly one
+* [x] **The singular reads "1 reply".** Start a fresh thread with exactly one
       reply — the same curl against any other message's event ID — and check
       the chip says "1 reply", not "1 replies".
 * [ ] **Against the real world.** On a matrix.org account, open a busy public
@@ -1023,11 +1023,11 @@ curl -X PUT "http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_room 
 
 ### The view
 
-* [ ] **The chip opens the thread.** The history swaps to the thread: the
+* [x] **The chip opens the thread.** The history swaps to the thread: the
       root first, then bob's three replies, and nothing from the rest of the
       room. A banner over it reads _Viewing a thread_ with a
       _Back to All Messages_ button.
-* [ ] **_Back to All Messages_ goes back**, to the live timeline at the
+* [x] **_Back to All Messages_ goes back**, to the live timeline at the
       bottom, with the banner gone.
 * [ ] **_View Thread_ is in the root's context menu** and does the same as
       the chip. It must be absent on a message that is in no thread.
