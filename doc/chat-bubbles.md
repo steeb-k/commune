@@ -60,6 +60,13 @@ and search lists use widgets of their own and are untouched.
   rule for every content keeps the pass small, and the eyeball run will
   say whether a bubbled sticker looks wrong enough to earn the special
   case.
+* **Nothing sits between an own bubble and its avatar.** The delivery
+  state and the shield used to keep their column between the two, which
+  wedged the bubble's right edge short of the line the name and the
+  avatar draw — the user's third correction. For an own bubble they move
+  to the line's far left, the exact mirror of where everybody else's
+  sit, and the bubble lands flush on the avatar line like the left side
+  always did.
 * **The 54px continuation margin is untouched.** Rows without an avatar
   keep the indent that aligns them under their group's first row; for an
   own bubble it only narrows the line a little from the far side, which is

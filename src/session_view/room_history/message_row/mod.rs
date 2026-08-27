@@ -67,6 +67,8 @@ mod imp {
         #[template_child]
         shield_icon: TemplateChild<gtk::Image>,
         #[template_child]
+        state_box: TemplateChild<gtk::Box>,
+        #[template_child]
         reactions: TemplateChild<MessageReactionList>,
         #[template_child]
         thread_chip: TemplateChild<gtk::Button>,
@@ -321,16 +323,26 @@ mod imp {
             }
 
             // The avatar of an own bubble sits on the bubble's side of the
-            // line: the far column of the grid instead of the first.
-            if let Some(layout_child) = self
-                .avatar_button
-                .parent()
-                .and_downcast::<gtk::Grid>()
-                .and_then(|grid| grid.layout_manager())
-                .map(|manager| manager.layout_child(&*self.avatar_button))
-                .and_downcast::<gtk::GridLayoutChild>()
+            // line: the far column of the grid instead of the first. The
+            // delivery state and shield swap the other way — between the
+            // bubble and the avatar they would wedge the bubble's edge away
+            // from the line the name and the avatar draw, which is exactly
+            // the misalignment the left side does not have.
+            if let Some(grid) = self.avatar_button.parent().and_downcast::<gtk::Grid>()
+                && let Some(manager) = grid.layout_manager()
             {
-                layout_child.set_column(if own { 3 } else { 0 });
+                if let Ok(layout_child) = manager
+                    .layout_child(&*self.avatar_button)
+                    .downcast::<gtk::GridLayoutChild>()
+                {
+                    layout_child.set_column(if own { 3 } else { 0 });
+                }
+                if let Ok(layout_child) = manager
+                    .layout_child(&*self.state_box)
+                    .downcast::<gtk::GridLayoutChild>()
+                {
+                    layout_child.set_column(if own { 0 } else { 2 });
+                }
             }
         }
 

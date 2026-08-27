@@ -1333,6 +1333,11 @@ corners. The flat view is untouched.
 * [ ] **A timestamp-only header follows the side.** A group that shows
       only a time (same sender after a gap) shows it in that same spot,
       left for others and right for your own.
+* [ ] **An own bubble's right edge meets the avatar line.** The bubble
+      ends where the name above it ends, one spacing short of the
+      avatar — no wedge of empty space — and the delivery checkmark of a
+      sending message sits at the line's far left, mirroring where
+      everybody else's state sits.
 
 ## Message shields — `doc/message-shields.md`
 
