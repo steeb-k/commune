@@ -29,6 +29,15 @@ ignored = [
 # bindings load, `staticlib` kept for parity with how Android links today.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+required-features = ["cli"]
+
+[features]
+# The bindings generator; not part of the library.
+cli = ["uniffi/cli"]
+
 # Please keep dependencies sorted.
 [dependencies]
 cfg-if = "1"
