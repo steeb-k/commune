@@ -49,7 +49,7 @@ whole route hung on.
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
 | S9 — the space-bar cursor slide | **fixed, and confirmed on a Pixel 9a on 25 August 2026**. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
 | S10 — auto-capitalisation and the back gesture | **fixed, 25 August 2026, on the emulator.** Two unrelated things that both made the app feel unlike an Android app: the composer never asked for sentence capitalisation, and every back gesture closed the application from wherever you were, media viewer included |
-| S11 — the IME mirror | **done, 27 August 2026, on the emulator; Pixel verification pending.** The scratch-buffer `InputConnection` and its three per-method patches are replaced wholesale by one backed by a real `Editable` mirroring the document — see [S11](#s11--the-inputconnection-is-backed-by-the-document). Fixes the held-backspace word duplication and the composer hidden behind the keyboard on room open, and retires the stale-cursor seed |
+| S11 — the IME mirror | **rebuilt, 27 August 2026; the emulator battery passes; the Pixel says the reported bugs do not.** The scratch-buffer `InputConnection` and its three per-method patches are replaced wholesale by one backed by a real `Editable` mirroring the document — see [S11](#s11--the-inputconnection-is-backed-by-the-document). Every emulator-measurable behaviour passes, and the stale-cursor seed is retired — but on the Pixel, same day, **held backspace still duplicates the first letter and swipe-typing inserts the word twice**. Both live in the composing path the emulator's Gboard cannot produce; see Known gaps |
 
 ## Where things are
 
@@ -3081,8 +3081,34 @@ speed input can still race a transaction into the dropped-and-resynced path — 
 diagnostic when it happens. Not measurable on the emulator, so still owed to the Pixel: the
 composing word-resume itself (the emulator's Gboard never composes), autocorrect and swipe-typing.
 
+**Measured on the Pixel, later the same day, and the answer is no.** The stripped release went onto
+the hardware with the session intact, and the two bugs this round was started for are both still
+there: holding backspace on a drafted word still duplicates its first letter, and swipe-typing a
+word that auto-completes inserts it twice. Every emulator pass above stands — those paths really do
+work — but the paths that matter run through Gboard's composition, which the emulator's Gboard
+never engages, so the battery measured everything except the disease. The lesson for whoever picks
+this up: **an emulator pass on this subsystem is evidence about the emulator.** The doubled swipe
+word is the more talkative symptom — it points at the mirror's preedit↔committed handoff counting
+the word twice, which would explain both bugs at once. The glue now logs every `InputConnection`
+call and names every dropped transaction, so the next diagnosis starts from
+`adb logcat -s "IME Connection"` during one repro, not from another architecture. Work stopped
+here by decision: a Kotlin-native UI over the existing Rust core is being scoped instead, and this
+ledger entry is the argument.
+
 ## Known gaps
 
+* **The composing path still duplicates on hardware, S11 notwithstanding.** Measured on the
+  Pixel 9a, 27 August 2026, on the S11 mirror build: holding backspace on a drafted word
+  duplicates its first letter (`Testing` → `TTesting`), and swipe-typing a word that
+  auto-completes inserts it twice. Both symptoms are composition-driven — the word-resume and
+  glide paths that only a hardware Gboard runs — and the double insert suggests one root: the
+  mirror counting the preedit into the committed text somewhere in the adopt/commit handoff, so
+  the word exists twice by the time composition ends. Unreproducible on the emulator, whose
+  Gboard never composes; every emulator measurement in S11 passes regardless, which is exactly
+  why they were insufficient. First move for whoever returns here:
+  `adb logcat -s "IME Connection"` during one repro — the S11 glue logs every call and names
+  every dropped transaction, so the failing sequence can be read rather than guessed. No further
+  GTK-side rounds are planned; the Kotlin-native UI being scoped is the intended resolution.
 * ~~**`onCreateInputConnection` can seed the keyboard a stale cursor.**~~ **Retired by S11 on
   27 August 2026**: the seed now comes from the connection's own mirror, and even a wrong first
   guess is corrected by the `updateSelection` that `patch-gtk-ime-cursor-notify.sh` sends on the
