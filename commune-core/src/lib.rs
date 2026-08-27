@@ -16,7 +16,11 @@ pub mod matrix;
 pub mod paths;
 pub mod platform;
 pub mod secret;
+pub mod session;
+pub mod session_list;
+pub mod settings;
 pub mod tls;
+pub mod utils;
 
 uniffi::setup_scaffolding!();
 

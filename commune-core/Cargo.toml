@@ -32,7 +32,12 @@ crate-type = ["lib", "cdylib", "staticlib"]
 # Please keep dependencies sorted.
 [dependencies]
 cfg-if = "1"
+# The same reactive primitives the SDK itself uses, at the versions its
+# workspace pins, so core state and SDK state speak one vocabulary.
+eyeball = { version = "0.8.8", default-features = false, features = ["tracing"] }
+eyeball-im = { version = "0.8.0", default-features = false, features = ["tracing"] }
 futures-util = "0.3"
+indexmap = "2"
 linkify = "0.11"
 rand = "0.10"
 rmp-serde = "1"
@@ -41,7 +46,8 @@ serde_bytes = "0.11"
 serde_json = "1"
 thiserror = "2"
 tld = "2"
-tokio = { version = "1", features = ["fs", "rt", "rt-multi-thread", "sync"] }
+tokio = { version = "1", features = ["fs", "net", "rt", "rt-multi-thread", "sync", "time"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 url = "2"
 zeroize = "1"
