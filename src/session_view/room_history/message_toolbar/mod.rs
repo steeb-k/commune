@@ -115,6 +115,14 @@ mod imp {
         #[template_child]
         attach_button: TemplateChild<gtk::Button>,
         #[template_child]
+        emoji_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        more_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        action_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        toolbar_row: TemplateChild<gtk::Box>,
+        #[template_child]
         sticker_button: TemplateChild<gtk::MenuButton>,
         #[template_child]
         sticker_picker: TemplateChild<StickerPicker>,
@@ -190,6 +198,29 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
+
+            // Six widgets do not fit beside a typing area on a phone — the
+            // send button was the one pushed off the screen — so the
+            // auxiliary buttons move to a row of their own above the entry,
+            // and the row that types keeps only the entry and Send. Done here
+            // rather than with a breakpoint because on Android narrow is not
+            // a window state, it is the shape of the device.
+            #[cfg(target_os = "android")]
+            {
+                for button in [
+                    self.attach_button.upcast_ref::<gtk::Widget>(),
+                    self.emoji_button.upcast_ref(),
+                    self.sticker_button.upcast_ref(),
+                    self.more_button.upcast_ref(),
+                ] {
+                    self.toolbar_row.remove(button);
+                    self.action_row.append(button);
+                }
+                // The overflow menu reads best at the far end of its row.
+                self.more_button.set_hexpand(true);
+                self.more_button.set_halign(gtk::Align::End);
+                self.action_row.set_visible(true);
+            }
 
             // Markdown highlighting.
             let settings = Application::default().settings();

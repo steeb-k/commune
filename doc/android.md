@@ -2909,6 +2909,11 @@ all of it blocks calling the port finished.
 
 ## Known gaps
 
+* **A long unbroken word in the composer scrolls sideways instead of breaking.** The message
+  entry wraps at `word`, and a token with no break point — a pasted URL, most days — makes the
+  entry scroll horizontally inside itself rather than wrap like the timeline (which breaks
+  anywhere) renders the same text. Found while chasing a composer overflow that turned out to be
+  the too-wide sticker rendering, which is already fixed on `main` and arrives with the re-merge.
 * **A collapsed notification group answers with the wrong tap.** When the shade groups a message
   notification under one Commune heading with the sync service's ongoing one, tapping the
   collapsed card fires the sync notification's plain open-the-app intent — the app opens on the
