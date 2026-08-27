@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune &middot; b7c48b55</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune &middot; bd6f0fad</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a><a href="#s11" data-for="s11"><span>Notification rules</span><b>6</b></a><a href="#s12" data-for="s12"><span>Email and phone on the account</span><b>7</b></a><a href="#s13" data-for="s13"><span>Voice messages</span><b>6</b></a><a href="#s14" data-for="s14"><span>Mutual rooms</span><b>4</b></a><a href="#s15" data-for="s15"><span>Policy servers</span><b>3</b></a><a href="#s16" data-for="s16"><span>Wide stickers and emoticons shrink — fix of 26 August 2026</span><b>4</b></a><a href="#s17" data-for="s17"><span>Chat bubbles</span><b>9</b></a><a href="#s18" data-for="s18"><span>Invite by email</span><b>8</b></a><a href="#s19" data-for="s19"><span>Own bubbles carry the avatar — fix of 26 August 2026</span><b>3</b></a><a href="#s20" data-for="s20"><span>Message shields</span><b>4</b></a><a href="#s21" data-for="s21"><span>Failed sends</span><b>2</b></a><a href="#s22" data-for="s22"><span>Knock banner memory</span><b>4</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Threads: the chip, the view, and the list</span><b>25</b></a><a href="#s2" data-for="s2"><span>Spaces</span><b>0</b></a><a href="#s3" data-for="s3"><span>Choosing a space, restricting a room to one, and putting one in</span><b>0</b></a><a href="#s4" data-for="s4"><span>Reading a room without joining it</span><b>0</b></a><a href="#s5" data-for="s5"><span>Going to a message without leaving the present</span><b>0</b></a><a href="#s6" data-for="s6"><span>Signing up and resetting a password</span><b>0</b></a><a href="#s7" data-for="s7"><span>Presence</span><b>0</b></a><a href="#s8" data-for="s8"><span>Pinned messages</span><b>0</b></a><a href="#s9" data-for="s9"><span>Calls</span><b>0</b></a><a href="#s10" data-for="s10"><span>Server ACLs</span><b>0</b></a><a href="#s11" data-for="s11"><span>Notification rules</span><b>6</b></a><a href="#s12" data-for="s12"><span>Email and phone on the account</span><b>7</b></a><a href="#s13" data-for="s13"><span>Voice messages</span><b>6</b></a><a href="#s14" data-for="s14"><span>Mutual rooms</span><b>4</b></a><a href="#s15" data-for="s15"><span>Policy servers</span><b>3</b></a><a href="#s16" data-for="s16"><span>Wide stickers and emoticons shrink — fix of 26 August 2026</span><b>4</b></a><a href="#s17" data-for="s17"><span>Chat bubbles</span><b>9</b></a><a href="#s18" data-for="s18"><span>Invite by email</span><b>8</b></a><a href="#s19" data-for="s19"><span>Own bubbles carry the avatar — fix of 26 August 2026</span><b>3</b></a><a href="#s20" data-for="s20"><span>The bubble header clusters who and when — change of 26 August 2026</span><b>3</b></a><a href="#s21" data-for="s21"><span>Message shields</span><b>4</b></a><a href="#s22" data-for="s22"><span>Failed sends</span><b>2</b></a><a href="#s23" data-for="s23"><span>Knock banner memory</span><b>4</b></a><a href="#s24" data-for="s24"><span>Room tag order</span><b>3</b></a><a href="#s25" data-for="s25"><span>Moderation policy rules</span><b>4</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -3800,7 +3800,46 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s20" data-open="1" data-checks="4"><header><h2>Message shields</h2><span class="src">doc/message-shields.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>A small shield icon beside a message&#x27;s delivery state in encrypted rooms, and honest sentences on undecryptable messages. Needs an encrypted room and a second account with an unverified session.</p><div class="chk" data-id="k1c5fbf3aa6" data-state="" data-lead="A clean message draws nothing.">
+</div></div></section><section id="s20" data-open="1" data-checks="3"><header><h2>The bubble header clusters who and when — change of 26 August 2026</h2><span class="cnt" data-count>3 left</span></header><div class="body"><p>In bubble view, the sender&#x27;s data sits in one spot instead of two corners. The flat view is untouched.</p><div class="chk" data-id="ka7b7344586" data-state="" data-lead="Others read avatar, name, time.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Others read avatar, name, time.</strong> The first message of somebody&#x27;s group is headed &quot;(avatar) Alice 14:32&quot;, all at the left, over the bubble&#x27;s edge — no timestamp at the far right.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kec2eb33646" data-state="" data-lead="Your own read time, name, avatar.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Your own read time, name, avatar.</strong> An own group&#x27;s first message is headed &quot;14:32 you (avatar)&quot;, all at the right — the name is back, and always the piece against the avatar.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kd0b166fbd9" data-state="" data-lead="A timestamp-only header follows the side.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A timestamp-only header follows the side.</strong> A group that shows only a time (same sender after a gap) shows it in that same spot, left for others and right for your own.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s21" data-open="1" data-checks="4"><header><h2>Message shields</h2><span class="src">doc/message-shields.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>A small shield icon beside a message&#x27;s delivery state in encrypted rooms, and honest sentences on undecryptable messages. Needs an encrypted room and a second account with an unverified session.</p><div class="chk" data-id="k1c5fbf3aa6" data-state="" data-lead="A clean message draws nothing.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -3852,7 +3891,7 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s21" data-open="1" data-checks="2"><header><h2>Failed sends</h2><span class="src">doc/failed-sends.md</span><span class="cnt" data-count>2 left</span></header><div class="body"><p><em>Try Sending Again</em> in the context menu of a message that failed.</p><div class="chk" data-id="kf10023e878" data-state="" data-lead="A failed message can be retried.">
+</div></div></section><section id="s22" data-open="1" data-checks="2"><header><h2>Failed sends</h2><span class="src">doc/failed-sends.md</span><span class="cnt" data-count>2 left</span></header><div class="body"><p><em>Try Sending Again</em> in the context menu of a message that failed.</p><div class="chk" data-id="kf10023e878" data-state="" data-lead="A failed message can be retried.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -3878,7 +3917,7 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s22" data-open="1" data-checks="4"><header><h2>Knock banner memory</h2><span class="src">doc/knocks.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>The pending-knocks banner counts only requests not yet reviewed on this device.</p><div class="chk" data-id="kdc9f8a5b03" data-state="" data-lead="A knock raises the banner">
+</div></div></section><section id="s23" data-open="1" data-checks="4"><header><h2>Knock banner memory</h2><span class="src">doc/knocks.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>The pending-knocks banner counts only requests not yet reviewed on this device.</p><div class="chk" data-id="kdc9f8a5b03" data-state="" data-lead="A knock raises the banner">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -3923,6 +3962,97 @@ curl -X PUT &quot;http://localhost:8008/_matrix/client/v3/rooms/$(jq -r .invite_
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
 </div>
 <div class="txt"><strong>Answering from the members page needs no banner.</strong> Accept or decline a knock there: nothing re-appears.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s24" data-open="1" data-checks="3"><header><h2>Room tag order</h2><span class="src">doc/room-tags.md</span><span class="cnt" data-count>3 left</span></header><div class="body"><p>The favorites keep the order another client gave them. Element&#x27;s room list settings can set a manual order, or curl can write <code>{&quot;order&quot;: 0.1}</code> on <code>m.favourite</code> via <code>/user/{id}/rooms/{roomId}/tags/m.favourite</code>.</p><div class="chk" data-id="k0d7051e2ec" data-state="" data-lead="Ordered favorites come first, in order.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Ordered favorites come first, in order.</strong> Give two favorite rooms orders 0.2 and 0.1 from another client: the sidebar lists the 0.1 room first, the 0.2 room second, and any unordered favorites after them.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k18f7ad8a08" data-state="" data-lead="Unordered rooms still follow activity.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Unordered rooms still follow activity.</strong> With no orders set, nothing about the sidebar changed, in any section.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="ka30076a884" data-state="" data-lead="A change from elsewhere moves the row here">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A change from elsewhere moves the row here</strong> without reopening anything.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div></div></section><section id="s25" data-open="1" data-checks="4"><header><h2>Moderation policy rules</h2><span class="src">doc/policy-lists.md</span><span class="cnt" data-count>4 left</span></header><div class="body"><p>Sentences in a policy room&#x27;s timeline. Join a public policy list (for example a community ban list) or write rules with another client.</p><div class="chk" data-id="k40f22fecbf" data-state="" data-lead="A user rule reads as a sentence.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A user rule reads as a sentence.</strong> An <code>m.policy.rule.user</code> event reads &quot;{sender} recommended banning the users matching {entity}: {reason}&quot; — not &quot;Unsupported event&quot;.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k9494a8993f" data-state="" data-lead="Room and server rules read the same way">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>Room and server rules read the same way</strong>, with rooms and servers in the sentence.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="kcc70fd5664" data-state="" data-lead="A withdrawn rule reads as the removal.">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>A withdrawn rule reads as the removal.</strong> Redact a rule event: the timeline says the sender removed a moderation rule.</div>
+<div class="extra">
+<textarea placeholder="What happened? Not what should have."></textarea>
+<div class="shot">
+<div class="drop" tabindex="0" role="button">Drop, paste or click for a screenshot</div>
+<div class="shot-acts"></div>
+</div>
+</div>
+</div><div class="chk" data-id="k21a71e17e2" data-state="" data-lead="The room&#x27;s state list draws them too">
+<div class="ctl">
+<button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
+<button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
+</div>
+<div class="txt"><strong>The room&#x27;s state list draws them too</strong>, rather than falling back.</div>
 <div class="extra">
 <textarea placeholder="What happened? Not what should have."></textarea>
 <div class="shot">
