@@ -433,20 +433,28 @@ mod imp {
             }
         }
 
-        /// Sync in the background only while there is a session to sync.
+        /// Sync in the background only while something needs it.
         ///
-        /// The same question `update_preferences_action` asks, for a different
-        /// reason: with no session there is nothing to keep the process alive
-        /// for, and the ongoing notification a foreground service must show
-        /// would be claiming work that is not happening.
+        /// Two questions decide. With no session there is nothing to keep the
+        /// process alive for, and the ongoing notification a foreground
+        /// service must show would be claiming work that is not happening. And
+        /// with push delivering -- an endpoint whose pusher registration
+        /// succeeded, unless the mode setting overrides -- the service running
+        /// too would spend all day syncing for messages a push would have
+        /// announced anyway; one delivery mode at a time is step 4 of
+        /// `doc/android-push-plan.md`.
         ///
         /// This is called from where it is because a foreground service may
-        /// only be started while the application is on screen, and both callers
-        /// -- presenting the window, and the session list changing -- are
-        /// moments when it is.
+        /// only be started while the application is on screen, and the callers
+        /// -- presenting the window, the session list changing, and a delivery
+        /// change arriving through `update_background_delivery()` while the
+        /// app happens to be visible -- are moments when it is, or when
+        /// stopping (which is always allowed) is the likely direction.
         #[cfg(target_os = "android")]
-        fn update_sync_service(&self) {
-            crate::utils::android_sync_service::update(self.session_list.n_items() > 0);
+        pub(super) fn update_sync_service(&self) {
+            let needed = self.session_list.n_items() > 0
+                && crate::utils::android_push::service_needed(&self.settings);
+            crate::utils::android_sync_service::update(needed);
         }
 
         /// Fill the macOS menu bar.
@@ -765,6 +773,17 @@ impl Application {
     /// The application settings.
     pub(crate) fn settings(&self) -> gio::Settings {
         self.imp().settings.clone()
+    }
+
+    /// Re-evaluate how messages are delivered while the app is not on screen.
+    ///
+    /// Called by `utils::android_push` when push delivery becomes available or
+    /// stops being. Starting the foreground service only works with the
+    /// application on screen; a change that arrives in the background takes
+    /// effect at the next present, which calls this too.
+    #[cfg(target_os = "android")]
+    pub(crate) fn update_background_delivery(&self) {
+        self.imp().update_sync_service();
     }
 
     /// The system settings.
