@@ -151,17 +151,7 @@ impl Notifications {
             SessionIntent,
         )],
     ) {
-        // Truncate the body if necessary.
-        let body = if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
-            let mut body = body[..end].trim_end().to_owned();
-            if !body.ends_with('…') {
-                body.push('…');
-            }
-            Cow::Owned(body)
-        } else {
-            Cow::Borrowed(body)
-        };
-
+        let body = truncate_body(body);
         let action = intent.app_action_name();
         let target_value = intent.to_variant_with_session_id(session_id.to_owned());
 
@@ -214,6 +204,45 @@ impl Notifications {
                 Application::default().send_notification(Some(id), &notification);
             }
         }
+    }
+
+    /// Helper method to create a notification for a message, stacked into its
+    /// room's conversation.
+    ///
+    /// The Android counterpart of [`Self::send_notification()`] for messages:
+    /// the notification is keyed by the room rather than the event, and the
+    /// platform accumulates the messages of one room into one notification —
+    /// see `android_notifications::send_message()`.
+    #[cfg(target_os = "android")]
+    #[allow(clippy::too_many_arguments)]
+    fn send_message_notification(
+        tag: &str,
+        conversation_title: &str,
+        self_name: &str,
+        sender_name: &str,
+        body: &str,
+        timestamp_ms: i64,
+        is_group_conversation: bool,
+        session_id: &str,
+        intent: &SessionIntent,
+        icon: Option<&gdk::Texture>,
+    ) {
+        let body = truncate_body(body);
+        let action = intent.app_action_name();
+        let target_value = intent.to_variant_with_session_id(session_id.to_owned());
+
+        android_notifications::send_message(
+            tag,
+            conversation_title,
+            self_name,
+            sender_name,
+            &body,
+            timestamp_ms,
+            is_group_conversation,
+            action,
+            &target_value,
+            icon,
+        );
     }
 
     /// Ask the system to remove the notification with the given ID.
@@ -333,11 +362,18 @@ impl Notifications {
             },
         );
 
+        // On Android the sender travels as the message's `Person`, so the body
+        // must not name them a second time.
+        #[cfg(target_os = "android")]
+        let show_sender = false;
+        #[cfg(not(target_os = "android"))]
+        let show_sender = !is_direct;
+
         let (body, is_invite) =
             // These are ordered by the likelihood of an event being of the type to reduce checking
             // in the common case.
             if let Some(body) =
-                message_notification_body(&event, &sender_name, !is_direct)
+                message_notification_body(&event, &sender_name, show_sender)
             {
                 (body, false)
             } else if let Some(body) =
@@ -360,6 +396,45 @@ impl Notifications {
             id: room_id.clone().into(),
             via: vec![],
         };
+
+        // Messages stack into one notification per room; only an invite —
+        // whose room has no conversation yet — takes the one-per-event path
+        // below.
+        #[cfg(target_os = "android")]
+        if !is_invite {
+            let timestamp_ms = match &event {
+                AnySyncOrStrippedTimelineEvent::Sync(ev) => {
+                    i64::try_from(u64::from(ev.origin_server_ts().0)).unwrap_or_default()
+                }
+                AnySyncOrStrippedTimelineEvent::Stripped(_) => 0,
+            };
+
+            let matrix_uri = MatrixIdUri::Room(room_uri);
+            let tag = format!("{session_id}//{matrix_uri}");
+            let icon = room.avatar_data().as_notification_icon(false).await;
+
+            Self::send_message_notification(
+                &tag,
+                &room.display_name(),
+                &session.user().display_name(),
+                &sender_name,
+                &body,
+                timestamp_ms,
+                !is_direct,
+                session_id,
+                &SessionIntent::ShowMatrixId(matrix_uri),
+                icon.as_ref(),
+            );
+
+            self.imp()
+                .push
+                .borrow_mut()
+                .entry(room_id)
+                .or_default()
+                .insert(tag);
+            return;
+        }
+
         let matrix_uri = if let Some(event_id) = event_id {
             MatrixIdUri::Event(MatrixEventIdUri {
                 event_id: event_id.to_owned(),
@@ -400,8 +475,9 @@ impl Notifications {
     /// applicable.
     ///
     /// The wake counterpart of [`Self::show_push()`]: the same suppression,
-    /// the same body, and the same ID — so whichever of the push and the sync
-    /// arrives second replaces rather than duplicates — but everything shown
+    /// the same body, and the same conversation tag and timestamp — so
+    /// whichever of the push and the sync arrives second is recognized as
+    /// already shown instead of alerting twice — but everything shown
     /// comes out of the [`NotificationItem`] the fetch returned, and nothing
     /// waits on the room models. That is the point: a push-started process
     /// has about ten seconds before the freezer (`doc/android.md`, S5b), and
@@ -474,8 +550,10 @@ impl Notifications {
         };
         let is_direct = item.is_direct_message_room;
 
-        let (body, _is_invite) = if let Some(body) =
-            message_notification_body(&event, &sender_name, !is_direct)
+        // As in `show_push()`: the sender travels as the message's `Person`,
+        // so the body must not name them a second time.
+        let (body, is_invite) = if let Some(body) =
+            message_notification_body(&event, &sender_name, false)
         {
             (body, false)
         } else if let Some(body) = incoming_call_notification_body(&event, &sender_name, is_direct)
@@ -496,6 +574,44 @@ impl Notifications {
             id: room_id.clone().into(),
             via: vec![],
         };
+
+        // Messages stack into the room's conversation notification. The tag,
+        // the timestamp and the body match `show_push()`'s exactly, which is
+        // what lets whichever of the wake and the sync arrives second be
+        // recognized as already shown instead of alerting twice.
+        if !is_invite {
+            let timestamp_ms = match &event {
+                AnySyncOrStrippedTimelineEvent::Sync(ev) => {
+                    i64::try_from(u64::from(ev.origin_server_ts().0)).unwrap_or_default()
+                }
+                AnySyncOrStrippedTimelineEvent::Stripped(_) => 0,
+            };
+
+            let matrix_uri = MatrixIdUri::Room(room_uri);
+            let tag = format!("{session_id}//{matrix_uri}");
+
+            Self::send_message_notification(
+                &tag,
+                &item.room_computed_display_name,
+                &session.user().display_name(),
+                &sender_name,
+                &body,
+                timestamp_ms,
+                !is_direct,
+                session_id,
+                &SessionIntent::ShowMatrixId(matrix_uri),
+                None,
+            );
+
+            self.imp()
+                .push
+                .borrow_mut()
+                .entry(room_id)
+                .or_default()
+                .insert(tag);
+            return;
+        }
+
         let matrix_uri = if let Some(event_id) = event_id {
             MatrixIdUri::Event(MatrixEventIdUri {
                 event_id: event_id.to_owned(),
@@ -816,6 +932,19 @@ impl Notifications {
 impl Default for Notifications {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Truncate the given body to what a notification can be expected to display.
+fn truncate_body(body: &str) -> Cow<'_, str> {
+    if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
+        let mut body = body[..end].trim_end().to_owned();
+        if !body.ends_with('…') {
+            body.push('…');
+        }
+        Cow::Owned(body)
+    } else {
+        Cow::Borrowed(body)
     }
 }
 
