@@ -29,6 +29,14 @@ menu event-actions-menu {
       action: "event.view-thread";
       hidden-when: "action-missing";
     }
+
+    item {
+      // Translators: In this string, 'Reply' is a verb. This starts a new
+      // thread rooted at the message.
+      label: _("Reply in _Thread");
+      action: "event.reply-in-thread";
+      hidden-when: "action-missing";
+    }
   }
 
   section {

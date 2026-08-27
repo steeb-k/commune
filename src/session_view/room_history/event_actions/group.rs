@@ -270,6 +270,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         let thread_root = event
             .thread_root()
             .or_else(|| event.thread_summary().and_then(|_| event.event_id()));
+        let is_in_thread = thread_root.is_some();
         if let Some(thread_root) = thread_root {
             action_group.add_action_entries([gio::ActionEntry::builder("view-thread")
                 .activate(clone!(
@@ -289,6 +290,35 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                     }
                 ))
                 .build()]);
+        }
+
+        // Root a new thread at the event.
+        //
+        // Only an event in no thread can root one: a threaded reply continues
+        // its own thread, and a root's thread is viewed instead. The thread
+        // view's composer scopes the send, so starting a thread is just
+        // opening the view on the future root.
+        if !is_in_thread && event.can_be_replied_to() {
+            if let Some(event_id) = event.event_id() {
+                action_group.add_action_entries([gio::ActionEntry::builder("reply-in-thread")
+                    .activate(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _| {
+                            if imp
+                                .obj()
+                                .activate_action(
+                                    "room-history.show-thread",
+                                    Some(&event_id.as_str().to_variant()),
+                                )
+                                .is_err()
+                            {
+                                error!("Could not activate `room-history.show-thread` action");
+                            }
+                        }
+                    ))
+                    .build()]);
+            }
         }
 
         // Pin or unpin the event.
