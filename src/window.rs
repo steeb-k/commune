@@ -259,6 +259,26 @@ mod imp {
                     }
                 ));
             }
+
+            // Coming back to the foreground is the moment every session's
+            // connectivity knowledge went stale: the background cut the
+            // process off the network, froze it mid-claim, and the claim —
+            // usually "offline", since the syncs died first — would otherwise
+            // greet the user as if it were news.
+            #[cfg(target_os = "android")]
+            self.obj().connect_is_active_notify(|window| {
+                if !window.is_active() {
+                    return;
+                }
+
+                let app = Application::default();
+                let session_list = app.session_list();
+                for position in 0..session_list.n_items() {
+                    if let Some(session) = session_list.item(position).and_downcast::<Session>() {
+                        session.recheck_connectivity();
+                    }
+                }
+            });
         }
     }
 

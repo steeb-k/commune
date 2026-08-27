@@ -366,6 +366,53 @@ mod imp {
             self.obj().notify_is_offline();
         }
 
+        /// Drop any stale offline claim and find out fresh.
+        ///
+        /// On Android, backgrounding cuts the process off the network and then
+        /// freezes it, so the last thing this session learned before the
+        /// freeze is usually "the syncs are failing" — and that stale claim is
+        /// what an `is-offline` banner would greet the user with on every
+        /// return, right up until the first sync lands. Coming back to the
+        /// foreground makes the connectivity genuinely unknown, and unknown is
+        /// presented as online: the banner's job is to announce known trouble,
+        /// not unfinished measurement. If the trouble is real, the fresh
+        /// checks this kicks off will say so within a few seconds.
+        #[cfg(target_os = "android")]
+        pub(super) fn recheck_connectivity(&self) {
+            if self.state.get() < SessionState::InitialSync {
+                return;
+            }
+
+            let was_struggling = self.is_offline.get() || self.missed_sync_count.get() > 0;
+            self.missed_sync_count.set(0);
+            self.set_offline(false);
+
+            if !was_struggling {
+                // The sync loop is healthy — its running long-poll is already
+                // the fresh check.
+                return;
+            }
+
+            if self.is_homeserver_reachable.get() {
+                // Restart the sync loop rather than let it sleep out a backoff
+                // delay measured against a network that no longer exists.
+                if let Some(handle) = self.sync_handle.take() {
+                    handle.abort();
+                }
+                self.sync();
+            } else {
+                // The reachability check restarts the sync loop itself when it
+                // succeeds.
+                spawn!(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.update_homeserver_reachable().await;
+                    }
+                ));
+            }
+        }
+
         /// The settings stored in the global account data for this session.
         fn global_account_data(&self) -> &GlobalAccountData {
             self.global_account_data
@@ -864,6 +911,16 @@ impl Session {
     /// The cache for remote data.
     pub(crate) fn remote_cache(&self) -> &RemoteCache {
         self.imp().remote_cache()
+    }
+
+    /// Drop any stale offline claim and find out fresh.
+    ///
+    /// For the moment the application comes back to the foreground, when what
+    /// this session last learned about its connection predates a background
+    /// freeze.
+    #[cfg(target_os = "android")]
+    pub(crate) fn recheck_connectivity(&self) {
+        self.imp().recheck_connectivity();
     }
 
     /// Log out of this session.
