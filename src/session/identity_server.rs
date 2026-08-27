@@ -107,27 +107,48 @@ pub(crate) async fn identity_server_choice(session: &Session) -> IdentityServerC
             _ => JsOption::Undefined,
         };
 
-        match preference {
-            JsOption::Some(base_url) => IdentityServerChoice::Account(base_url),
-            JsOption::Null => IdentityServerChoice::Declined,
-            JsOption::Undefined => {
-                let Some(user_id) = client.user_id() else {
-                    return IdentityServerChoice::None;
-                };
-                match well_known_identity_server(
-                    client.http_client(),
-                    user_id.server_name().as_str(),
-                )
-                .await
-                {
-                    Some(base_url) => IdentityServerChoice::Homeserver(base_url),
-                    None => IdentityServerChoice::None,
-                }
-            }
-        }
+        choice_for_preference(&client, preference).await
     });
 
     handle.await.expect("task was not aborted")
+}
+
+/// The identity server choice, resolved as if the account data carried the
+/// given preference.
+///
+/// After a write, the SDK's cached account data lags the server until the
+/// next sync echoes it back; the writer already knows what it wrote and
+/// passes it here rather than re-reading the cache.
+pub(crate) async fn identity_server_choice_for_preference(
+    session: &Session,
+    preference: JsOption<String>,
+) -> IdentityServerChoice {
+    let client = session.client();
+    let handle = spawn_tokio!(async move { choice_for_preference(&client, preference).await });
+
+    handle.await.expect("task was not aborted")
+}
+
+/// Resolve the identity server choice from the given preference.
+async fn choice_for_preference(
+    client: &matrix_sdk::Client,
+    preference: JsOption<String>,
+) -> IdentityServerChoice {
+    match preference {
+        JsOption::Some(base_url) => IdentityServerChoice::Account(base_url),
+        JsOption::Null => IdentityServerChoice::Declined,
+        JsOption::Undefined => {
+            let Some(user_id) = client.user_id() else {
+                return IdentityServerChoice::None;
+            };
+            match well_known_identity_server(client.http_client(), user_id.server_name().as_str())
+                .await
+            {
+                Some(base_url) => IdentityServerChoice::Homeserver(base_url),
+                None => IdentityServerChoice::None,
+            }
+        }
+    }
 }
 
 /// Set the identity server preference of the given session.
